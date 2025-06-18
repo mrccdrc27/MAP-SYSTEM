@@ -20,7 +20,7 @@ ROOT_ENV = BASE_DIR.parent / '.env'      # project-root/.env
 LOCAL_ENV = BASE_DIR / '.env'            # app1/.env
 load_dotenv(dotenv_path=ROOT_ENV)
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.100.6').split(',')
 
 
 # Quick-start development settings - unsuitable for production

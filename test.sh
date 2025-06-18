@@ -13,10 +13,10 @@ setup_env() {
 }
 setup_env
 
-echo "Starting JSON server..."
-cd frontend
-npx json-server --watch db.json --port 5000 --host 0.0.0.0 &
-cd ..
+# echo "Starting JSON server..."
+# cd frontend
+# npx json-server --watch db.json --port 5000 --host 0.0.0.0 &
+# cd ..
 
 cd workflow_api
 python manage.py flush --no-input
@@ -30,6 +30,7 @@ cd ..
 echo "Starting user_service..."
 cd user_service
 python manage.py flush --no-input
+python manage.py makemigrations
 python manage.py migrate
 python manage.py seed_accounts
 python manage.py runserver 0.0.0.0:3000 &
