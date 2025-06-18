@@ -1,0 +1,125 @@
+.container {
+    display: flex;
+    gap: 24px;
+    padding: 24px;
+    font-family: Arial, sans-serif;
+    width: auto;
+  }
+  
+  .section {
+    margin-bottom: 24px;
+  }
+  
+  .grid {
+    display: flex;
+    gap: 24px;
+    flex: 1;
+  }
+  
+  /* Panels */
+  .leftPanel {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .rightPanel {
+    flex: 1;
+    min-width: 300px;
+  }
+  
+  /* Headings & Text */
+  .heading {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  
+  .textGray {
+    color: #6b7280;
+    font-size: 14px;
+  }
+  
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  
+  /* Cards */
+  .card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #fff;
+  }
+  
+  .cardGray {
+    background-color: #f9fafb;
+  }
+  
+  /* Form Elements */
+  .input,
+  .select,
+  .textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  
+  /* Buttons */
+  .button {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: white;
+  }
+  
+  .button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .buttonBlue {
+    border-color: #2563eb;
+    color: #2563eb;
+  }
+  
+  .buttonBlue:hover {
+    background-color: #2563eb;
+    color: white;
+  }
+  
+  .buttonGreen {
+    border-color: #16a34a;
+    color: #16a34a;
+  }
+  
+  .buttonGreen:hover {
+    background-color: #16a34a;
+    color: white;
+  }
+  
+  .buttonRed {
+    border-color: #dc2626;
+    color: #dc2626;
+  }
+  
+  .buttonRed:hover {
+    background-color: #dc2626;
+    color: white;
+  }
+  

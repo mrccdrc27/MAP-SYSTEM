@@ -3,16 +3,15 @@ import table from "./ticket-table.module.css";
 import general from "../styles/general-table-styles.module.css";
 
 // api
-const ticketURL = import.meta.env.VITE_TICKET_API;
+import useUserTickets from "../../api/useUserTickets";
 
 // react
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
 
 // components
 import { Dropdown, SearchBar, Datetime } from "../components/General";
-import Pagination from "../components/Pagination"; // Import Pagination component
+import Pagination from "../components/Pagination";
 
 export function TicketHeader() {
   return (
@@ -30,31 +29,32 @@ export function TicketHeader() {
 }
 
 export function TicketItem({ ticket }) {
+  const data = ticket.task.ticket;
   return (
     <tr className={general.item}>
-      <td className={general.ticketID}>{ticket.ticket_id}</td>
-      <td className={general.ticketSubject}>{ticket.subject}</td>
-      <td className={general.tickeCustomer}>{ticket.customer}</td>
+      <td className={general.ticketID}>{data.ticket_id}</td>
+      <td className={general.ticketSubject}>{data.subject}</td>
+      <td className={general.tickeCustomer}>{data.customer}</td>
       <td>
-        <div className={general[`priority-${ticket.priority.toLowerCase()}`]}>
-          {ticket.priority}
+        <div className={general[`priority-${data.priority.toLowerCase()}`]}>
+          {data.priority}
         </div>
       </td>
-      <td className={general.ticketOpenedOn}>{ticket.opened_on}</td>
-      <td className={general.ticketSLA}>{ticket.sla}</td>
+      <td className={general.ticketOpenedOn}>{data.opened_on}</td>
+      <td className={general.ticketSLA}>{data.sla}</td>
       <td>
         <div
           className={
             general[
-              `status-${ticket.status.replace(/\s+/g, "-").toLowerCase()}`
+              `status-${data.status.replace(/\s+/g, "-").toLowerCase()}`
             ]
           }
         >
-          {ticket.status}
+          {data.status}
         </div>
       </td>
       <td className={general.ticketButton}>
-        <Link to={`/agent/ticket/${ticket.id}`} state={{ ticket }}>
+        <Link to={`/agent/ticket/${data.id}`} state={{ ticket }}>
           <button className={general.viewButton}>View</button>
         </Link>
       </td>
@@ -63,9 +63,7 @@ export function TicketItem({ ticket }) {
 }
 
 export default function TicketTable() {
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { tickets, loading, error } = useUserTickets();
 
   // Priority
   const [priorityOptions, setPriorityOptions] = useState([]);
@@ -75,7 +73,7 @@ export default function TicketTable() {
   const [statusOptions, setStatusOptions] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  // Searcbar
+  // Searchbar
   const [searchTerm, setSearchTerm] = useState("");
 
   // Datetime
@@ -85,13 +83,28 @@ export default function TicketTable() {
   // Filter Section
   const [showFilter, setShowFilter] = useState(false);
 
-  // Pagination State
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Define how many items per page
+  const itemsPerPage = 5;
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filtered tickets based on search and filters
-  const filteredTickets = tickets.filter((ticket) => {
+  // Extract filters when tickets change
+  useEffect(() => {
+    if (tickets.length > 0) {
+      const priorities = [
+        ...new Set(tickets.map((t) => t.task.ticket.priority)),
+      ];
+      setPriorityOptions(priorities);
+
+      const statuses = [
+        ...new Set(tickets.map((t) => t.task.ticket.status)),
+      ];
+      setStatusOptions(statuses);
+    }
+  }, [tickets]);
+
+  const filteredTickets = tickets.filter((item) => {
+    const ticket = item.task.ticket;
     const priorityMatch =
       !selectedPriority || ticket.priority === selectedPriority;
     const statusMatch = !selectedStatus || ticket.status === selectedStatus;
@@ -103,58 +116,23 @@ export default function TicketTable() {
     const dateMatch =
       (!startDate || ticket.opened_on >= startDate) &&
       (!endDate || ticket.opened_on <= endDate);
+
     return priorityMatch && statusMatch && searchMatch && dateMatch;
   });
 
-  // PAGINATION STUFF START
-
-  // Calculate the total pages
+  // Pagination
   useEffect(() => {
     setTotalPages(Math.ceil(filteredTickets.length / itemsPerPage));
   }, [filteredTickets]);
 
-  // Slice the tickets based on current page
   const currentTickets = filteredTickets.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // PAGINATION STUFF END
-
-  // Fetching Data
-  useEffect(() => {
-    axios
-      .get(ticketURL)
-      .then((response) => {
-        // fetch tickets
-        const allTickets = response.data;
-        setTickets(allTickets);
-
-        // fetch priority
-        const priorities = [
-          ...new Set(allTickets.map((ticket) => ticket.priority)),
-        ];
-        setPriorityOptions(priorities);
-
-        // fetct status
-        const status = [...new Set(allTickets.map((ticket) => ticket.status))];
-        setStatusOptions(status);
-
-        setLoading(false);
-      })
-      .catch((error) => {
-        setError("Failed to fetch data");
-        setLoading(false);
-      });
-  }, []);
-
-  // if (loading) {
-  //   return <div>Loading...</div>;
-  // }
-
-  // if (error) {
-  //   return <div>{error}</div>;
-  // }
+  // Early return if loading or error
+  if (loading) return <div>Loading tickets...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className={table.ticketTable}>
@@ -162,24 +140,21 @@ export default function TicketTable() {
         <div className={table.ticketTableLeft}>
           <div className={table.headerSection}>
             <div className={table.title}>Filter</div>
-            <div>
-              <button
-                className={table.resetButton}
-                onClick={() => {
-                  setSelectedPriority("");
-                  setSelectedStatus("");
-                  setStartDate("");
-                  setEndDate("");
-                  // alert('Filter Reset!');
-                }}
-              >
-                Reset
-              </button>
-            </div>
+            <button
+              className={table.resetButton}
+              onClick={() => {
+                setSelectedPriority("");
+                setSelectedStatus("");
+                setStartDate("");
+                setEndDate("");
+              }}
+            >
+              Reset
+            </button>
           </div>
+
           <div className={table.filterSection}>
             <div className={table.title}>Priority</div>
-            {/* Priority */}
             <Dropdown
               name="priority"
               value={selectedPriority}
@@ -188,9 +163,9 @@ export default function TicketTable() {
               placeholder="Filter by Priority"
             />
           </div>
+
           <div className={table.filterSection}>
             <div className={table.title}>Status</div>
-            {/* Status */}
             <Dropdown
               name="status"
               value={selectedStatus}
@@ -199,11 +174,11 @@ export default function TicketTable() {
               placeholder="Filter by Status"
             />
           </div>
+
           <div className={table.filterSection}>
             <div className={table.dateTime}>
               <div className={table.title}>Start Date</div>
               <Datetime
-                className={table.dateTime}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 name="start-date"
@@ -237,6 +212,7 @@ export default function TicketTable() {
             />
           </div>
         </div>
+
         <div className={general.ticketTableWrapper}>
           <table className={general.ticketPageTable}>
             <thead>
@@ -251,14 +227,16 @@ export default function TicketTable() {
                 </tr>
               ) : (
                 currentTickets.map((ticket) => (
-                  <TicketItem key={ticket.ticket_id} ticket={ticket} />
+                  <TicketItem
+                    key={ticket.task.ticket.ticket_id}
+                    ticket={ticket}
+                  />
                 ))
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination Component */}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

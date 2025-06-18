@@ -1,231 +1,219 @@
-// style
-import styles from "./ticket-detail.module.css";
-import general from "../../../tables/styles/general-table-styles.module.css";
+import React, { useState } from 'react';
+import styles from './WorkflowBuilder.module.css';
 
-// react
-import { useEffect, useState, useCallback } from "react";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import getRoles from '../../../api/getRoles';
+import useCreateStep from '../../../api/createStep';
+import useWorkflow from '../../../api/useWorkflow';
+import useCreateTransition from '../../../api/useCreateTransition';
 
-// axios
-import axios from "axios";
+const WorkflowBuilder = () => {
+  const { role } = getRoles();
+  const { createStep } = useCreateStep();
+  const { createTransition } = useCreateTransition();
 
-// comp
-import AgentNav from "../../../components/navigations/agent-nav/AgentNav";
-import TicketAction from "../../../components/modals/ticket-action/TicketAction";
-import CommentSection from "./components/CommentSection";
-import HistoryLogs from "./components/HistoryLogs";
+  const {
+    workflow,
+    roles,
+    steps,
+    actions,
+    transitions,
+    loading,
+    error,
+    removeStep,
+    removeTransition,
+    getRoleName,
+    getActionName,
+    getStepName,
+    refetch,
+  } = useWorkflow(1); // replace with dynamic ID if needed
 
-// api
-const ticketURL = import.meta.env.VITE_TICKET_API;
-const commentURL = import.meta.env.VITE_COMMENTS_API;
-const activityLogURL = import.meta.env.VITE_ACTIVITY_LOG_API;
+  const [StepformData, setStepFormData] = useState({
+    step_id: '',
+    workflow_id: null,
+    role_id: '',
+    name: '',
+    description: '',
+  });
 
-export default function TicketDetail() {
-  const location = useLocation();
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [error, setError] = useState(null);
+  const [newTransition, setNewTransition] = useState({
+    from: '',
+    to: '',
+    actionName: '',
+    actionDescription: '',
+  });
 
-  const [ticket, setTicket] = useState(null);
+  // Create Step Handler
+  const handleCreateStep = async () => {
+    if (!StepformData.name || !StepformData.role_id || !workflow?.workflow_id) return;
 
-  // open ticket action modal
-  const [openTicketAction, setOpenTicketAction] = useState(false);
+    const payload = {
+      ...StepformData,
+      workflow_id: workflow.workflow_id,
+      description: StepformData.name,
+    };
 
-  // hide Ticket Information Panel
-  const [showTicketInfo, setShowTicketInfo] = useState(true);
+    await createStep(payload);
+    await refetch();
 
-  const toggTicketInfosVisibility = () => {
-    setShowTicketInfo((prev) => !prev);
+    setStepFormData({
+      step_id: '',
+      workflow_id: null,
+      role_id: '',
+      name: '',
+      description: '',
+    });
   };
 
-  // If ticket is passed via Link's state, use it directly
-  useEffect(() => {
-    if (location.state?.ticket) {
-      setTicket(location.state.ticket);
-    }
-    fetchTicket();
-  }, [id]);
+  // Create Transition Handler
+  const handleCreateTransition = async () => {
+    if (!newTransition.from || !newTransition.actionName || !workflow?.workflow_id) return;
 
-  const fetchTicket = async () => {
-    try {
-      const res = await axios.get(`${ticketURL}/${id}`);
-      setTicket(res.data);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to fetch ticket:", err);
-      setError("Ticket not found.");
-    }
+    const payload = {
+      workflow_id: workflow.workflow_id,
+      from_step_id: newTransition.from,
+      to_step_id: newTransition.to || null,
+      action: {
+        name: newTransition.actionName,
+        description: newTransition.actionDescription || '',
+      },
+    };
+
+    await createTransition(payload);
+    await refetch();
+
+    setNewTransition({
+      from: '',
+      to: '',
+      actionName: '',
+      actionDescription: '',
+    });
   };
 
-  if (error) {
-    return <div style={{ color: "red" }}>{error}</div>;
-  }
-
-  if (!ticket) {
-    return <div>Loading ticket data for ID: {id}...</div>;
-  }
+  // Loading/Error states
+  if (loading) return <div className={styles.container}>Loading...</div>;
+  if (error) return <div className={styles.container}>Error: {error}</div>;
+  if (!workflow) return <div>No workflow found</div>;
 
   return (
-    <>
-      <AgentNav />
-      <main className={styles.ticketDetailPage}>
-        {openTicketAction && (
-          <div className="ticket-action-section">
-            <TicketAction
-              closeTicketAction={setOpenTicketAction}
-              ticket={ticket}
-              refreshTicket={fetchTicket}
-              // refreshLogs={fetchActivityLogs}
-            />
-          </div>
-        )}
-        <section className={styles.tdTopSection}>
-          <div className={styles.tdBack} onClick={() => navigate(-1)}>
-            <i className="fa fa-chevron-left"></i>
-          </div>
-          <div className={styles.tdLabel}>
-            <p>Ticket Details</p>
-          </div>
-        </section>
+    <div className={styles.container}>
+      {/* LEFT PANEL */}
+      <div className={styles.leftPanel}>
+        <div className={styles.workflowSection}>
+          <h2 className={styles.heading}>{workflow.name}</h2>
+          <p className={styles.textGray}>{workflow.description}</p>
+          <span className={styles.badge}>{workflow.status}</span>
+        </div>
 
-        <section className={styles.tdBotSection}>
-          <div className={styles.tdLeftSection}>
-            <div className={styles.tdHeader}>
-              <div className={styles.tdTitle}>
-                <h3 className={styles.tdTitle}>Ticket No.{ticket.ticket_id}</h3>
+        <div className={styles.stepSection}>
+          <h3 className={styles.heading}>Workflow Steps</h3>
+
+          {steps.map(step => (
+            <div key={step.step_id} className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <h4>{step.order}. {step.description}</h4>
+                <button onClick={() => removeStep(step.step_id)} className={styles.removeButton}>Remove</button>
               </div>
-              <p className={styles.tdSubject}>
-                <strong>Subject: </strong>
-                {ticket.subject}
-              </p>
-              <div className={styles.tdMetaData}>
-                <p className={styles.tdDateOpened}>
-                  Opened On: {ticket.opened_on}
+              <p className={styles.textGray}>Role: {getRoleName(step.role_id)}</p>
+              {transitions.filter(t => t.from_step_id === step.step_id).map(t => (
+                <p key={t.transition_id} className={styles.textGray}>
+                  {getActionName(t.action_id)} → {getStepName(t.to_step_id)}
                 </p>
-                <p className={styles.tdDateResolution}>Expected Resolution: </p>
-              </div>
+              ))}
             </div>
+          ))}
 
-            <div className={styles.tdDescription}>
-              <h3>Description</h3>
-              <p>{ticket.description}</p>
-            </div>
+          {/* Add Step Form */}
+          <div className={styles.stepCardGray}>
+            <h4>Add New Step</h4>
+            <input
+              type="text"
+              placeholder="Step name"
+              value={StepformData.name}
+              onChange={e => setStepFormData({ ...StepformData, name: e.target.value })}
+              className={styles.input}
+            />
 
-            <div className={styles.tdInstructions}>
-              <h3>Instructions</h3>
-              <p>Details</p>
-            </div>
-
-            <div className={styles.tdAttachment}>
-              <h3>Attachment</h3>
-              <div className={styles.tdAttached}>
-                <i className="fa fa-upload"></i>
-                <span className={styles.placeholderText}>No file attached</span>
-                <input
-                  type="file"
-                  id="file-upload"
-                  accept=".pdf, .jpg, .jpeg, .docx"
-                  style={{ display: "none" }}
-                />
-              </div>
-            </div>
-
-            <CommentSection ticket={ticket} />
-          </div>
-
-          {/* BREAK */}
-
-          <div className={styles.tdRightSection}>
-            <button
-              className={styles.actionButton}
-              onClick={() => {
-                setOpenTicketAction(true);
-              }}
+            <select
+              value={StepformData.role_id}
+              onChange={e => setStepFormData({ ...StepformData, role_id: e.target.value })}
+              className={styles.select}
             >
-              Make an Action
-            </button>
+              <option value="">Select Role</option>
+              {role.map(r => (
+                <option key={r.role_id} value={r.role_id}>{r.name}</option>
+              ))}
+            </select>
 
-            <div className={styles.tdStatusCard}>
-              <div className={styles.tdStatusLabel}>Status</div>
-              <div
-                className={
-                  general[
-                    `status-${ticket.status.replace(/\s+/g, "-").toLowerCase()}`
-                  ]
-                }
-              >
-                {ticket.status}
-              </div>
-            </div>
-
-            <div className={styles.tdProgressTrack}>
-              <div className={styles.progressBar}></div>
-              <div className={styles.progressStep}>
-                <div className={styles.stepIcon}></div>
-              </div>
-              <div className={styles.progressStep}>
-                <div className={styles.stepIcon}></div>
-              </div>
-              <div className={styles.progressStep}>
-                <div className={styles.stepIcon}></div>
-              </div>
-              <div className={styles.progressStep}>
-                <div className={styles.stepIcon}></div>
-              </div>
-            </div>
-
-            <div className={styles.tdInfoWrapper}>
-              <div className={styles.tdInfoHeader}>
-                <h3>Details</h3>
-                <div
-                  className={styles.tdCSButton}
-                  onClick={toggTicketInfosVisibility}
-                >
-                  <i
-                    className={`fa-solid fa-caret-${
-                      showTicketInfo ? "down" : "up"
-                    }`}
-                  ></i>
-                </div>
-              </div>
-              {showTicketInfo && (
-                <div className={styles.tdInfoItem}>
-                  <div className={styles.tdInfoLabelValue}>
-                    <div className={styles.tdInfoLabel}>Priority</div>
-                    <div
-                      className={
-                        general[`priority-${ticket.priority.toLowerCase()}`]
-                      }
-                    >
-                      {ticket.priority}
-                    </div>
-                  </div>
-                  <div className={styles.tdInfoLabelValue}>
-                    <div className={styles.tdInfoLabel}>Ticket Owner</div>
-                    <div className={styles.tdInfoValue}>{ticket.customer}</div>
-                  </div>
-                  <div className={styles.tdInfoLabelValue}>
-                    <div className={styles.tdInfoLabel}>Department</div>
-                    <div className={styles.tdInfoValue}>
-                      {ticket.department}
-                    </div>
-                  </div>
-                  <div className={styles.tdInfoLabelValue}>
-                    <div className={styles.tdInfoLabel}>Position</div>
-                    <div className={styles.tdInfoValue}>{ticket.position}</div>
-                  </div>
-                  <div className={styles.tdInfoLabelValue}>
-                    <div className={styles.tdInfoLabel}>SLA</div>
-                    <div className={styles.tdInfoValue}>{ticket.sla}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <HistoryLogs ticket={ticket} />
+            <button onClick={handleCreateStep} className={styles.button}>Add Step</button>
           </div>
-        </section>
-      </main>
-    </>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div className={styles.rightPanel}>
+        <div className={styles.stepSection}>
+          <h3 className={styles.heading}>Workflow Flow</h3>
+
+          {transitions.map(t => (
+            <div key={t.transition_id} className={styles.stepCardGray}>
+              <p>{getStepName(t.from_step_id)} → {getStepName(t.to_step_id)}</p>
+              <p className={styles.textGray}>Action: {getActionName(t.action_id)}</p>
+              <button onClick={() => removeTransition(t.transition_id)} className={styles.removeButton}>Remove</button>
+            </div>
+          ))}
+
+          {/* Add Transition Form */}
+          <div className={styles.stepCardGray}>
+            <h4>Add New Flow</h4>
+
+            <label>From Step</label>
+            <select
+              value={newTransition.from}
+              onChange={e => setNewTransition({ ...newTransition, from: e.target.value })}
+              className={styles.select}
+            >
+              <option value="">Select step</option>
+              {steps.map(s => (
+                <option key={s.step_id} value={s.step_id}>{s.description}</option>
+              ))}
+            </select>
+
+            <label>To Step</label>
+            <select
+              value={newTransition.to}
+              onChange={e => setNewTransition({ ...newTransition, to: e.target.value })}
+              className={styles.select}
+            >
+              <option value="">End workflow</option>
+              {steps.filter(s => s.step_id !== newTransition.from).map(s => (
+                <option key={s.step_id} value={s.step_id}>{s.description}</option>
+              ))}
+            </select>
+
+            <label>Action Name</label>
+            <input
+              type="text"
+              value={newTransition.actionName}
+              onChange={e => setNewTransition({ ...newTransition, actionName: e.target.value })}
+              placeholder="Enter action name"
+              className={styles.input}
+            />
+
+            <label>Action Description</label>
+            <input
+              type="text"
+              value={newTransition.actionDescription}
+              onChange={e => setNewTransition({ ...newTransition, actionDescription: e.target.value })}
+              placeholder="Enter action description"
+              className={styles.input}
+            />
+
+            <button onClick={handleCreateTransition} className={styles.button}>Add Flow</button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default WorkflowBuilder;

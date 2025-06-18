@@ -73,7 +73,7 @@ class Command(BaseCommand):
                 'first_name': 'John',
                 'last_name': 'Doe',
                 'middle_name': 'Michael',
-                'email': 'john.doe@example.com',
+                'email': 'cubecore27+1@gmail.com',
                 'username': 'johndoe',
                 'phone_number': '+1234567890',
                 'role': 'Admin'
@@ -82,7 +82,7 @@ class Command(BaseCommand):
                 'first_name': 'Jane',
                 'last_name': 'Smith',
                 'middle_name': 'Elizabeth',
-                'email': 'jane.smith@example.com',
+                'email': 'cubecore27+2@gmail.com',
                 'username': 'janesmith',
                 'phone_number': '+1234567891',
                 'role': 'Manager'
@@ -91,7 +91,7 @@ class Command(BaseCommand):
                 'first_name': 'Bob',
                 'last_name': 'Johnson',
                 'middle_name': '',
-                'email': 'bob.johnson@example.com',
+                'email': 'cubecore27+3@gmail.com',
                 'username': 'bobjohnson',
                 'phone_number': '+1234567892',
                 'role': 'Employee'
@@ -100,7 +100,7 @@ class Command(BaseCommand):
                 'first_name': 'Alice',
                 'last_name': 'Brown',
                 'middle_name': 'Marie',
-                'email': 'alice.brown@example.com',
+                'email': 'cubecore27+4@gmail.com',
                 'username': 'alicebrown',
                 'phone_number': '+1234567893',
                 'role': 'Guest'
@@ -135,16 +135,17 @@ class Command(BaseCommand):
         
         # Create remaining random users to reach 20 total
         existing_users_count = User.objects.count()
-        remaining_users = 20 - existing_users_count
+        remaining_users = 10 - existing_users_count
         
         if remaining_users > 0:
             for i in range(remaining_users):
                 # Generate unique email
-                email = fake.unique.email()
-                
+                email = f"cubecore27+{i + 5}@gmail.com"
                 # Ensure email doesn't already exist
                 while User.objects.filter(email=email).exists():
-                    email = fake.unique.email()
+                    i += 1
+                    email = f"cubecore27+{i + 5}@gmail.com"
+
                 
                 # Generate username from email
                 username = email.split('@')[0] + str(random.randint(100, 999))

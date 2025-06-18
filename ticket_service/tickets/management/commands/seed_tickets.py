@@ -34,7 +34,7 @@ class Command(BaseCommand):
         categories = ['General Inquiry', 'Technical Issue', 'Billing']
         subcategories = ['Software', 'Hardware', 'Payment']
 
-        for i in range(1, 21):
+        for i in range(1, 11):  # Create 10 tickets
             opened_date = fake.date_between(start_date='-30d', end_date='today')
             fetched_dt = datetime.combine(opened_date, datetime.min.time()) + timedelta(hours=i % 6)
 
@@ -57,5 +57,5 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"Created ticket TK-{100000 + i}"))
 
         self.stdout.write(self.style.SUCCESS(
-            "✅ Seeded 20 tickets. Automatic push/queueing handled by post_save signal."
+            "✅ Seeded 10 tickets. Automatic push/queueing handled by post_save signal."
         ))
