@@ -5,7 +5,7 @@ FROM python:3.11-alpine
 
 
 # Set working directory
-WORKDIR /app/user_service
+WORKDIR /app
 
 ARG DJANGO_ALLOWED_HOSTS
 ENV DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
@@ -31,4 +31,4 @@ EXPOSE 8000
 COPY start.sh .
 RUN chmod +x start.sh
 
-CMD ["sh", "start.sh"]
+CMD ["sh", "./start.sh"]
