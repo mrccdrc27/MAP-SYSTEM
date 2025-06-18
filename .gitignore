@@ -1,7 +1,10 @@
 # Ignore Python virtual environments and env files
 venv/
 env/
-.env
+
+# Ignore all .env files
+*.env
+
 
 # Ignore test directory
 test/
