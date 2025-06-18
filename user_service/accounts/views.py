@@ -105,6 +105,15 @@ class Verify(APIView):
             return Response(content, status= status.HTTP_200_OK)
         return Response(content, status= status.HTTP_200_OK)
 
+class Me(APIView):
+    # checks if there are any tampering done to the jwt
+    permission_classes = (IsAuthenticated, )
+    def get(self, request):
+        content = {'is_staff': request.user.is_staff}
+        if not request.user.is_staff:
+            return Response(content, status= status.HTTP_200_OK)
+        return Response(content, status= status.HTTP_200_OK)
+
 
 class UserLoginAPIView(GenericAPIView):
     permission_classes = (AllowAny,)
@@ -404,3 +413,11 @@ class UsersByRoleView(APIView):
         users = CustomUser.objects.filter(role__role_id=role_id)
         serializer = CustomUserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class Me(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)

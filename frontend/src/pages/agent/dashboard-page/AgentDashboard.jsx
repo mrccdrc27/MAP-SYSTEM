@@ -8,8 +8,16 @@ import RecentUpdates from "./components/RecentUpdates";
 // import styles from './agent-dashboard.module.css'
 import UpcomingTicketTable from "../../../tables/agent/UpcomingTicketTable";
 import styles from "./agent-dashboard1.module.css";
+import { useAuth } from "../../../api/AuthContext";
+
 
 export default function AgentDashboard() {
+
+  // for importing user (in global)
+  const { user, loading, logout } = useAuth(); // ✅ Hook at top level
+  if (loading) return <p>Loading...</p>; // loading seems to be important too
+
+
   return (
     <>
       <AgentNav />
@@ -52,7 +60,7 @@ export default function AgentDashboard() {
     </main> */}
       <main className={styles.dashboardPage}>
         <section className={styles.dpTop}>
-          <div className={styles.dpHeading}>For you,<span> Minatozaki</span></div>
+          <div className={styles.dpHeading}>For you,<span> {user.first_name}</span></div>
           <div className={styles.dpSubHeading}>
             Welcome back, Minatozaki! Here’s what happening with your tickets.
           </div>

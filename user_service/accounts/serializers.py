@@ -64,7 +64,18 @@ class UserActivationSerializer(serializers.ModelSerializer):
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ("id", "username", "email")
+        fields = [
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'middle_name',
+            'last_name',
+            'phone_number',
+            'profile_picture',
+            'role'
+        ]
+        depth = 1  # Expand role object if you want role fields like name
 
 
 class UserInfoSerializer(serializers.ModelSerializer):

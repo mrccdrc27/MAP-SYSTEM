@@ -47,4 +47,6 @@ urlpatterns = [
     path('account/<int:id>', AccountDetailView.as_view(), name='bypass-account-create-update-delete'),
     path("roles/<str:role_id>/", UsersByRoleView.as_view(), name="users-by-role"),
 
+    # verify, display:
+    path('me/', Me.as_view(), name='me'),
 ]
