@@ -13,10 +13,6 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
-volumes:
-  rabbitmq_data:
-
-  
   # --- User Microservice ---
   user_service:
     build:
@@ -27,7 +23,8 @@ volumes:
     ports:
       - "8001:8000"
     depends_on:
-      - localhost
+      - db
+      - rabbitmq
 
   db:
     image: postgres:15
@@ -37,7 +34,6 @@ volumes:
       POSTGRES_DB: usermanagement
     ports:
       - "5432:5432"
-  
 
   # --- Workflow Microservice ---
   workflow_api:
@@ -46,10 +42,11 @@ volumes:
       dockerfile: Dockerfile.workflow
     env_file:
       - ./workflow_api/workflow.env
-    depends_on:
-      - localhost
     ports:
       - "8002:8000"
+    depends_on:
+      - workflow_db
+      - rabbitmq
 
   workflow_db:
     image: postgres:15
@@ -59,7 +56,7 @@ volumes:
       POSTGRES_PASSWORD: workflowpass
     ports:
       - "5433:5432"
-  
+
   # --- Tracking Microservice ---
   tracking_service:
     build:
@@ -67,10 +64,11 @@ volumes:
       dockerfile: Dockerfile.tracking
     env_file:
       - ./tracking_service/tracking.env
-    depends_on:
-      - localhost
     ports:
       - "8003:8000"
+    depends_on:
+      - tracking_db
+      - rabbitmq
 
   tracking_db:
     image: postgres:15
@@ -79,8 +77,8 @@ volumes:
       POSTGRES_USER: trackinguser
       POSTGRES_PASSWORD: trackingpass
     ports:
-      - "5433:5432"
-  
+      - "5434:5432"
+
   # --- Ticket Microservice ---
   ticket_service:
     build:
@@ -91,8 +89,9 @@ volumes:
     ports:
       - "8004:8000"
     depends_on:
-      - localhost
-  
+      - ticket_db
+      - rabbitmq
+
   ticket_db:
     image: postgres:15
     environment:
@@ -100,4 +99,7 @@ volumes:
       POSTGRES_USER: ticketuser
       POSTGRES_PASSWORD: ticketpass
     ports:
-      - "5433:5432"
+      - "5435:5432"
+
+volumes:
+  rabbitmq_data:
