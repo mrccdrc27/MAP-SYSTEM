@@ -5,34 +5,30 @@ from action.models import Actions
 from workflow.models import Workflows, Category
 from step.models import Steps, StepTransition
 from django.core.exceptions import ValidationError
+import random
 
 
 class Command(BaseCommand):
-    help = 'Seed workflows with step-specific actions and robust transitions.'
+    help = 'Seed workflows with step-specific actions, robust transitions, and end logic.'
 
     def handle(self, *args, **options):
         with transaction.atomic():
-            # Seed Roles (previously Positions)
-            # for name, uid in [('Requester', 1), ('Reviewer', 2), ('Approver', 3)]:
-            #     Roles.objects.get_or_create(
-            #         name=name,
-            #         defaults={'user_id': uid, 'description': f'{name} role'}
-            #     )
-            # self.stdout.write(self.style.SUCCESS('Roles seeded.'))
-
+            # Define main and sub category names
             main_names = ['General Inquiry', 'Technical Issue', 'Billing']
             sub_names = ['Software', 'Hardware', 'Payment']
+            end_logic_choices = ['asset', 'budget', 'notification']
 
             for main in main_names:
                 main_cat, _ = Category.objects.get_or_create(name=main, parent=None)
                 for sub in sub_names:
-                    # Ensure subcategory exists (unique constraint on name)
+                    # Ensure subcategory exists (respecting uniqueness)
                     try:
                         sub_cat, _ = Category.objects.get_or_create(name=sub, parent=main_cat)
                     except IntegrityError:
                         sub_cat = Category.objects.get(name=sub)
 
                     wf_name = f"{main} - {sub}"
+                    end_logic = random.choice(end_logic_choices)
                     wf, created = Workflows.objects.get_or_create(
                         name=wf_name,
                         defaults={
@@ -40,21 +36,21 @@ class Command(BaseCommand):
                             'description': f'{wf_name} workflow',
                             'category': main_cat,
                             'sub_category': sub_cat,
-                            'status': 'draft'
+                            'status': 'draft',
+                            'end_logic': end_logic
                         }
                     )
                     self.stdout.write(self.style.SUCCESS(
-                        f'Workflow "{wf_name}" {"created" if created else "exists"}.'
+                        f'Workflow "{wf_name}" {"created" if created else "exists"} with end_logic="{end_logic}".'
                     ))
 
-                    # Define step configurations
+                    # Define step configurations: (step label, role name, events)
                     steps_cfg = [
                         ('Submit Form', 'Requester', ['start', 'submit']),
                         ('Review Documents', 'Reviewer', ['approve', 'reject']),
                         ('Final Approval', 'Approver', ['complete']),
                     ]
 
-                    # Create step objects
                     step_objs = []
                     for idx, (label, role, _) in enumerate(steps_cfg):
                         step_name = f"{wf_name} - {label}"
@@ -73,14 +69,13 @@ class Command(BaseCommand):
                     for idx, (label, _, events) in enumerate(steps_cfg):
                         step = step_objs[idx]
                         for event in events:
-                            # Unique action per step-event
                             act_name = f"{step.name} - {event}"
                             action, _ = Actions.objects.get_or_create(
                                 name=act_name,
                                 defaults={'description': f'{event} action on {step.name}'}
                             )
 
-                            # Determine transition endpoints
+                            # Determine transition logic
                             if event == 'start':
                                 frm, to = None, step
                             elif event == 'submit':
@@ -89,10 +84,9 @@ class Command(BaseCommand):
                                 frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
                             elif event == 'reject':
                                 frm, to = step, step_objs[idx - 1] if idx > 0 else None
-                            else:  # complete
+                            else:  # 'complete'
                                 frm, to = step, None
 
-                            # Create transition with updated field names
                             try:
                                 StepTransition.objects.get_or_create(
                                     from_step_id=frm,
@@ -100,9 +94,8 @@ class Command(BaseCommand):
                                     action_id=action
                                 )
                             except (ValidationError, IntegrityError):
-                                # Skip invalid or duplicate transitions
                                 continue
 
             self.stdout.write(self.style.SUCCESS(
-                'Seeding complete: workflows, steps, actions, transitions.'
+                'Seeding complete: workflows, steps, actions, transitions, end_logic.'
             ))

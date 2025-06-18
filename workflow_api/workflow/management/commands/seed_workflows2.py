@@ -5,10 +5,11 @@ from action.models import Actions
 from workflow.models import Workflows, Category
 from step.models import Steps, StepTransition
 from django.core.exceptions import ValidationError
+import random  # <- Import random
 
 
 class Command(BaseCommand):
-    help = 'Seed workflows with step-specific actions and robust transitions.'
+    help = 'Seed workflows with step-specific actions and robust transitions, including random end logic.'
 
     def handle(self, *args, **options):
         with transaction.atomic():
@@ -24,6 +25,7 @@ class Command(BaseCommand):
 
             main_names = ['General Inquiry', 'Technical Issue', 'Billing']
             sub_names = ['Software', 'Hardware', 'Payment']
+            end_logic_choices = ['asset', 'budget', 'notification']  # <- Define choices
 
             for main in main_names:
                 main_cat, _ = Category.objects.get_or_create(name=main, parent=None)
@@ -34,6 +36,7 @@ class Command(BaseCommand):
                         sub_cat = Category.objects.get(name=sub)
 
                     wf_name = f"{main} - {sub}"
+                    end_logic = random.choice(end_logic_choices)  # <- Randomly choose
                     wf, created = Workflows.objects.get_or_create(
                         name=wf_name,
                         defaults={
@@ -41,21 +44,20 @@ class Command(BaseCommand):
                             'description': f'{wf_name} workflow',
                             'category': main_cat,
                             'sub_category': sub_cat,
-                            'status': 'draft'
+                            'status': 'draft',
+                            'end_logic': end_logic  # <- Assign here
                         }
                     )
                     self.stdout.write(self.style.SUCCESS(
-                        f'Workflow "{wf_name}" {"created" if created else "exists"}'
+                        f'Workflow "{wf_name}" {"created" if created else "exists"} with end_logic="{end_logic}"'
                     ))
 
-                    # Define step configurations
                     steps_cfg = [
                         ('Submit Form', 'Requester', ['start', 'submit']),
                         ('Review Documents', 'Reviewer', ['approve', 'reject']),
                         ('Final Approval', 'Approver', ['complete']),
                     ]
 
-                    # Create step objects
                     step_objs = []
                     for idx, (label, role, _) in enumerate(steps_cfg):
                         step_name = f"{wf_name} - {label}"
@@ -70,7 +72,6 @@ class Command(BaseCommand):
                         )
                         step_objs.append(step)
 
-                    # Create actions and transitions
                     for idx, (label, _, events) in enumerate(steps_cfg):
                         step = step_objs[idx]
                         for event in events:
@@ -80,7 +81,6 @@ class Command(BaseCommand):
                                 defaults={'description': f'{event} action on {step.name}'}
                             )
 
-                            # Determine transition logic
                             if event == 'start':
                                 frm, to = None, step
                             elif event == 'submit':
@@ -92,7 +92,6 @@ class Command(BaseCommand):
                             else:  # complete
                                 frm, to = step, None
 
-                            # Create the step transition
                             try:
                                 StepTransition.objects.get_or_create(
                                     from_step_id=frm,
@@ -100,8 +99,8 @@ class Command(BaseCommand):
                                     action_id=action
                                 )
                             except (ValidationError, IntegrityError):
-                                continue  # Skip invalid or duplicate transitions
+                                continue
 
             self.stdout.write(self.style.SUCCESS(
-                'Seeding complete: workflows, steps, actions, transitions.'
+                'Seeding complete: workflows, steps, actions, transitions with random end logic.'
             ))

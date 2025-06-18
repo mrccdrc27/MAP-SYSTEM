@@ -87,24 +87,31 @@ class TriggerNextStepSerializer(serializers.Serializer):
         except StepTransition.DoesNotExist:
             raise serializers.ValidationError("No transition linked to this action")
 
-        if not transition.to_step_id:
-            raise serializers.ValidationError("This transition does not lead to another step (to_step_id is null)")
-
-        # Mark original as acted
+        # Mark original step instance as completed
         original_instance.has_acted = True
         original_instance.save(update_fields=['has_acted'])
 
-        # Create the next step instance
-        new_step_instance = StepInstance.objects.create(
-            task_id=original_instance.task_id,
-            user_id=original_instance.user_id,
-            step_transition_id=transition
-        )
-
-        # 🔹 Create ActionLog linked to the original step and action
+        # Create action log
         ActionLog.objects.create(
             step_instance_id=original_instance,
             action_id=action,
-            task_id=original_instance.task_id  # ✅ Add this line
+            task_id=original_instance.task_id
         )
-        return new_step_instance
+
+        if not transition.to_step_id:
+            print("🛑 Ending workflow: no next step.")
+            # 🔁 END LOGIC: Graceful ending
+            task = original_instance.task_id
+            task.mark_as_completed()  # ← Or whatever your end logic is
+            # task.save(update_fields=['status'])  # example field
+            return original_instance  # or return a flag if preferred
+
+        # Continue the workflow as normal
+        if transition.to_step_id:
+            print("🚨 Creating new step instance...")
+            new_step_instance = StepInstance.objects.create(
+                task_id=original_instance.task_id,
+                user_id=original_instance.user_id,
+                step_transition_id=transition
+            )
+            return new_step_instance

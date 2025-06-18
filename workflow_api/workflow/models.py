@@ -52,7 +52,7 @@ class Workflows(models.Model):
         max_length=32,
         choices=END_LOGIC_CHOICES,
         blank=True,
-        default='asset',  # default to Asset Management
+        # default='asset',  # default to Asset Management
         help_text="Optional end-condition to trigger when workflow completes."
     )
 

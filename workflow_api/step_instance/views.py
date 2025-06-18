@@ -70,12 +70,20 @@ class TriggerNextStepView(CreateAPIView):
 
         serializer = self.get_serializer(data=request.data, context={'step_instance': step_instance})
         serializer.is_valid(raise_exception=True)
-        step_instance = serializer.save()
+        result = serializer.save()
 
+        # Check if we're at the end (no new step was created)
+        if result == step_instance:
+            return Response({
+                'message': 'complete, workflow ended',
+            }, status=status.HTTP_200_OK)
+
+        # If a new step was created
         return Response({
             'message': 'Step instance created',
-            'step_instance_id': step_instance.step_instance_id
+            'step_instance_id': result.step_instance_id
         }, status=status.HTTP_201_CREATED)
+
     
 class StepInstanceView(ListAPIView):
     serializer_class = StepInstanceSerializer

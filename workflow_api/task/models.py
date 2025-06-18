@@ -35,3 +35,27 @@ class Task(models.Model):
                 raise ValidationError("task_id cannot be modified after creation.")  # Prevent updates
         
         super().save(*args, **kwargs)
+
+    def mark_as_completed(self):
+        # self.status = 'completed'
+        # self.save(update_fields=['status'])
+
+        # 🔍 Extract end logic from related workflow
+        if not self.workflow_id:
+            print("⚠️ No workflow associated with this task.")
+            return
+
+        end_logic = self.workflow_id.end_logic
+
+        # ⚙️ Trigger logic based on end_logic
+        if end_logic == 'asset':
+            print("✅ Asset logic triggered.")
+            # You could trigger asset processing here
+        elif end_logic == 'budget':
+            print("💰 Budget logic triggered.")
+            # Or budget updates here
+        elif end_logic == 'notification':
+            print("🔔 Notification logic triggered.")
+            # Send a notification here
+        else:
+            print("⚠️ Unknown end logic:", end_logic)
