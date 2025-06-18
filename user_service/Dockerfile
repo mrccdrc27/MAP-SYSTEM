@@ -5,7 +5,7 @@ FROM python:3.11-alpine
 
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/user_service
 
 ARG DJANGO_ALLOWED_HOSTS
 ENV DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
