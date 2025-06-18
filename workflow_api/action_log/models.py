@@ -8,11 +8,11 @@ import uuid
 class ActionLog(models.Model):
     action_log_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # New UUID field
     step_instance_id =  models.ForeignKey('step_instance.StepInstance', on_delete=models.CASCADE, to_field='step_instance_id')
+    task_id = models.ForeignKey('task.Task', on_delete=models.CASCADE, to_field='task_id', null=True, blank=True)  # ✅ New field
     action_id = models.ForeignKey(
         Actions,
         on_delete=models.CASCADE,
         null=True,
-        unique=True,  # enforce one-to-one between Action and StepTransition
         to_field='action_id'  # Reference the UUID field
     )
 
@@ -29,6 +29,9 @@ class ActionLog(models.Model):
     def get_step_instance_id(self):
         from step_instance.models import StepInstance
         return StepInstance.objects.first()
-
+    
+    def get_task_id(self):
+        from task.models import Task
+        return Task.objects.first()
 
         

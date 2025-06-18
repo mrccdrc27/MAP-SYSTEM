@@ -94,6 +94,7 @@ class TriggerNextStepSerializer(serializers.Serializer):
         # 🔹 Create ActionLog linked to the original step and action
         ActionLog.objects.create(
             step_instance_id=original_instance,
-            action_id=action
+            action_id=action,
+            task_id=original_instance.task_id  # ✅ Add this line
         )
         return new_step_instance
