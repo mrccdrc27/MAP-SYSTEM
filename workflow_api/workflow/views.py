@@ -35,4 +35,4 @@ class WorkflowAggregatedView(generics.ListAPIView):
 class WorkflowAggregatedDetailView(RetrieveAPIView):
     queryset = Workflows.objects.all()
     serializer_class = FullWorkflowSerializer
-    lookup_field = 'id'
+    lookup_field = 'workflow_id'

@@ -7,5 +7,5 @@ urlpatterns = [
 
     path('categories/', CategoryListCreateView.as_view(), name='step-list-create'),
     path('all/', WorkflowAggregatedView.as_view(), name='step-list-create'),
-    path('all/<int:id>/', WorkflowAggregatedDetailView.as_view(), name='step-list-detail'),
+    path('all/<uuid:workflow_id>/', WorkflowAggregatedDetailView.as_view(), name='step-list-detail'),
 ]

@@ -11,5 +11,3 @@ test/
 
 # Ignore all __pycache__ directories anywhere
 __pycache__/
-
-__Test__/

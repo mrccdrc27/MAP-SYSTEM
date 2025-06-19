@@ -9,8 +9,9 @@ import style from "./WorkflowCreator.module.css";
 // import WorkflowSteps from "./components/stepcard";
 // import WorkflowManager from "./components/WorkflowManager.jsx";
 import WorkflowManager from "./workflowmanager";
+import CreateWorkflowForm from "./CreateWorkflowForm";
 
-export default function WorkflowEditor() {
+export default function WorkflowCreate() {
   const navigate = useNavigate();
 
   return (
@@ -34,14 +35,7 @@ export default function WorkflowEditor() {
           <hr />
         </section>
         <section className={style.whole}>
-          <WorkflowManager/>
-          {/* <div className={style.step}>
-            <WorkflowSteps/>
-          </div>
-          <div className={style.configure}>
-            <CreateStep/>
-          </div> */}
-
+          <CreateWorkflowForm />
         </section>
       </main>
     </>

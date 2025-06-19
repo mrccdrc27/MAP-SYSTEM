@@ -15,7 +15,7 @@ import Workflow from '../pages/admin/workflow-page/Workflow';
 import Agent from '../pages/admin/agent-page/Agent';
 import AdminArchive from '../pages/admin/archive-page/AdminArchive';
 import AgentInvite from '../pages/admin/agent-page/AgentInvite';
-import WorkflowEditor from '../pages/admin/workflow-page/WorkflowCreator';
+import WorkflowCreate from '../pages/admin/workflow-page/WorkflowCreator';
 
 import ProtectedRoute from './ProtectedRoute';
 import Unauthorized from '../pages/error/Unauthorized';
@@ -25,6 +25,8 @@ import NotFound from '../pages/error/NotFound';
 import Test from '../pages/agent/ticket-details-page/TicketDetail';
 import AgentPositionView from '../pages/admin/agent-page/AgentPosition';
 import ProtectedRegister from './ProtectedRegister';
+import WorkflowEditor from '../pages/admin/workflow-page/WorkflowEditor';
+import WorkflowEditorPage from '../pages/admin/workflow-page/WorkflowEditPage';
 
 function MainRoutes() {
   return (
@@ -82,7 +84,8 @@ function MainRoutes() {
         <Route path="/admin/agent" element={<Agent />} />
         <Route path="/admin/agent/position" element={<AgentPositionView/>} />
         <Route path="/admin/workflow" element={<Workflow />} />
-        <Route path="/admin/workflow/create" element={<WorkflowEditor />} />
+        <Route path="/admin/workflow/create" element={<WorkflowCreate />} />
+        <Route path="/admin/workflow/:uuid" element={<WorkflowEditorPage />} />
         <Route path="/admin/archive" element={<AdminArchive />} />
 
         <Route path="/register" element={<ProtectedRegister />} />

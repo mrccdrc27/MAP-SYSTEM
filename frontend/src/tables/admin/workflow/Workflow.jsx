@@ -1,6 +1,7 @@
 // dependencies import
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // styles import
 import table from "../../styles/general-table.module.css";
@@ -12,6 +13,7 @@ const ticketURL = import.meta.env.VITE_WORKFLOW_API;
 // component import
 import { Pagination } from "../../components/tableforms";
 import { AgentStatus } from "../../components/tableforms";
+import useFetchWorkflows from "../../../api/useFetchWorkflows";
 
 function TableHeader() {
   // Inline styles for the width of each rows
@@ -70,7 +72,12 @@ function TableRow(props) {
           display: 'table-cell',
           textAlign: 'center'
         }}>
-        <i class="fa-solid fa-pen"></i>
+        <i 
+          className="fa-solid fa-pen" 
+          onClick={() => props.onManage(props.WorkflowID)}
+          style={{ cursor: 'pointer', color: '#3b82f6' }}
+        ></i>
+
       </td>
     </tr>
   )
@@ -434,6 +441,9 @@ function Filters({
 }
 
 function WorkflowTable() {
+
+  const navigate = useNavigate();
+
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -444,20 +454,15 @@ function WorkflowTable() {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const itemsPerPage = 7; // rows per page
 
+  const { workflows, loading, error } = useFetchWorkflows();
+  console.log("Workflows fetched:", workflows);
   useEffect(() => {
-    axios
-      .get(`${ticketURL}`)
-      .then((response) => {
-        const data = response.data;
-        const workflowData = Array.isArray(data) ? data : data.tableData || [];
-        setTableData(workflowData);
-        setFilteredData(workflowData);
-      })
-      .catch((error) => {
-        console.error("Failed to fetch workflows", error);
-      });
-  }, []);
-
+    if (workflows) {
+      setTableData(workflows);
+      setFilteredData(workflows);
+    }
+  }, [workflows]);
+  
   // Get unique categories, subcategories, and statuses
   const categories = [...new Set(tableData.map(item => item.category).filter(Boolean))];
   const subCategories = [...new Set(tableData.map(item => item.sub_category).filter(Boolean))];
@@ -501,8 +506,8 @@ function WorkflowTable() {
   const start = (currentPage - 1) * itemsPerPage;
   const pagedAgents = filteredData.slice(start, start + itemsPerPage);
 
-  const handleManage = (id) => {
-    console.log("Manage agent", id);
+  const handleManage = (uuid) => {
+    navigate(`/admin/workflow/${uuid}`);
   };
 
   const handleCategoryChange = (category) => {
@@ -562,7 +567,7 @@ function WorkflowTable() {
               {pagedAgents.map((tableData) => (
                 <TableRow
                   key={tableData.ID}
-                  ID={tableData.ID}
+                  WorkflowID={tableData.workflow_id}
                   Name={tableData.name}
                   Category={tableData.category}
                   SubCategory={tableData.sub_category}
