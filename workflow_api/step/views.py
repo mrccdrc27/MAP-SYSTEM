@@ -17,7 +17,7 @@ class StepListCreateView(generics.ListCreateAPIView):
 class StepDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Steps.objects.all()
     serializer_class = StepSerializer
-    lookup_field = 'id'
+    lookup_field = 'step_id'
 
 class Stepviews(generics.ListAPIView):
     """
@@ -44,4 +44,4 @@ class StepTransitionListCreateView(generics.ListCreateAPIView):
 class StepTransitionDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = StepTransition.objects.all()
     serializer_class = StepTransitionSerializer
-    lookup_field = 'id'
+    lookup_field = 'transition_id'
