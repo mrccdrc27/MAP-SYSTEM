@@ -25,7 +25,7 @@ env_path = Path(__file__).resolve().parent.parent / "user.env"
 load_dotenv(dotenv_path=env_path)
 
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.100.6').split(',')
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost').split(',')
 
 # For PFP and media uploads
 MEDIA_URL = '/media/'

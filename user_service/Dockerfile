@@ -10,6 +10,9 @@ WORKDIR /app/user_service
 ARG DJANGO_ALLOWED_HOSTS
 ENV DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
 
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Install necessary dependencies
 RUN apk add --no-cache \
     build-base \
