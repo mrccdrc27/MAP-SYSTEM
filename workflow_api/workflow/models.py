@@ -47,61 +47,44 @@ class Workflows(models.Model):
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=256, null=True)
     workflow_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
-    
+
     end_logic = models.CharField(
         max_length=32,
         choices=END_LOGIC_CHOICES,
         blank=True,
-        # default='asset',  # default to Asset Management
-        help_text="Optional end-condition to trigger when workflow completes."
+        help_text="Optional end‐condition to trigger when workflow completes."
     )
 
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.PROTECT,
-        related_name='main_workflows',
-        limit_choices_to={'parent__isnull': True},
-        to_field='category_id'
+    # Now simple text fields instead of FKs
+    category = models.CharField(
+        max_length=64,
+        help_text="Top‐level category name (previously a FK)."
     )
-    sub_category = models.ForeignKey(
-        Category,
-        on_delete=models.PROTECT,
-        related_name='sub_workflows',
-        limit_choices_to={'parent__isnull': False},
-        to_field='category_id'
+    sub_category = models.CharField(
+        max_length=64,
+        help_text="Sub‐category name (previously a FK)."
     )
 
     is_published = models.BooleanField(default=False)
-
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="draft")
-    createdAt = models.DateTimeField(auto_now_add=True)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        # if you still want uniqueness on category + sub_category per user:
         constraints = [
             models.UniqueConstraint(
-                fields=['category', 'sub_category'],
-                name='unique_main_sub_per_workflow'
+                fields=['user_id', 'category', 'sub_category'],
+                name='unique_category_subcategory_per_user'
             ),
         ]
 
-    def clean(self):
-        if self.category and self.category.parent is not None:
-            raise ValidationError({
-                'category': 'Must be a top-level category (parent is null).'
-            })
-        if self.sub_category and self.sub_category.parent is None:
-            raise ValidationError({
-                'sub_category': 'Must be a sub-category (parent is not null).'
-            })
-
     def save(self, *args, **kwargs):
-        if not self.pk:
-            if not self.workflow_id:
-                self.workflow_id = str(uuid.uuid4())
+        # Assign UUID on create
+        if not self.pk and not self.workflow_id:
+            self.workflow_id = str(uuid.uuid4())
+        # Prevent updates to workflow_id
         else:
-            if 'workflow_id' in kwargs.get('update_fields', []):
+            if 'workflow_id' in (kwargs.get('update_fields') or []):
                 raise ValidationError("workflow_id cannot be modified after creation.")
-
-        self.full_clean()
         super().save(*args, **kwargs)

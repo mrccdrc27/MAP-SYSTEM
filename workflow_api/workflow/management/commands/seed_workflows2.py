@@ -1,11 +1,11 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction, IntegrityError
+from django.core.exceptions import ValidationError
 from role.models import Roles
 from action.models import Actions
-from workflow.models import Workflows, Category
+from workflow.models import Workflows
 from step.models import Steps, StepTransition
-from django.core.exceptions import ValidationError
-import random  # <- Import random
+import random
 
 
 class Command(BaseCommand):
@@ -25,54 +25,53 @@ class Command(BaseCommand):
 
             main_names = ['General Inquiry', 'Technical Issue', 'Billing']
             sub_names = ['Software', 'Hardware', 'Payment']
-            end_logic_choices = ['asset', 'budget', 'notification']  # <- Define choices
+            end_logic_choices = ['asset', 'budget', 'notification']
 
             for main in main_names:
-                main_cat, _ = Category.objects.get_or_create(name=main, parent=None)
                 for sub in sub_names:
-                    try:
-                        sub_cat, _ = Category.objects.get_or_create(name=sub, parent=main_cat)
-                    except IntegrityError:
-                        sub_cat = Category.objects.get(name=sub)
-
                     wf_name = f"{main} - {sub}"
-                    end_logic = random.choice(end_logic_choices)  # <- Randomly choose
+                    end_logic = random.choice(end_logic_choices)
+
                     wf, created = Workflows.objects.get_or_create(
                         name=wf_name,
                         defaults={
                             'user_id': 1,
                             'description': f'{wf_name} workflow',
-                            'category': main_cat,
-                            'sub_category': sub_cat,
+                            'category': main,           # now a CharField
+                            'sub_category': sub,        # now a CharField
                             'status': 'draft',
-                            'end_logic': end_logic  # <- Assign here
+                            'end_logic': end_logic,
                         }
                     )
                     self.stdout.write(self.style.SUCCESS(
-                        f'Workflow "{wf_name}" {"created" if created else "exists"} with end_logic="{end_logic}"'
+                        f'Workflow "{wf_name}" {"created" if created else "exists"} '
+                        f'with end_logic="{end_logic}"'
                     ))
 
+                    # Define the step/action structure
                     steps_cfg = [
                         ('Submit Form', 'Requester', ['start', 'submit']),
                         ('Review Documents', 'Reviewer', ['approve', 'reject']),
                         ('Final Approval', 'Approver', ['complete']),
                     ]
 
+                    # Create or fetch steps
                     step_objs = []
-                    for idx, (label, role, _) in enumerate(steps_cfg):
+                    for idx, (label, role_key, _) in enumerate(steps_cfg):
                         step_name = f"{wf_name} - {label}"
                         step, _ = Steps.objects.get_or_create(
-                            workflow_id=wf,
+                            workflow_id=wf,  # assuming a FK to Workflows
                             name=step_name,
                             defaults={
                                 'description': label,
                                 'order': idx + 1,
-                                'role_id': role_map[role]
+                                'role_id': role_map[role_key]
                             }
                         )
                         step_objs.append(step)
 
-                    for idx, (label, _, events) in enumerate(steps_cfg):
+                    # Create transitions for each event
+                    for idx, (_, _, events) in enumerate(steps_cfg):
                         step = step_objs[idx]
                         for event in events:
                             act_name = f"{step.name} - {event}"
@@ -81,15 +80,16 @@ class Command(BaseCommand):
                                 defaults={'description': f'{event} action on {step.name}'}
                             )
 
+                            # Determine from/to
                             if event == 'start':
                                 frm, to = None, step
                             elif event == 'submit':
                                 frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
-                            elif event == 'approve':
+                            elif event in ('approve',):
                                 frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
                             elif event == 'reject':
                                 frm, to = step, step_objs[idx - 1] if idx > 0 else None
-                            else:  # complete
+                            else:  # 'complete'
                                 frm, to = step, None
 
                             try:
@@ -99,6 +99,7 @@ class Command(BaseCommand):
                                     action_id=action
                                 )
                             except (ValidationError, IntegrityError):
+                                # skip invalid or duplicate
                                 continue
 
             self.stdout.write(self.style.SUCCESS(

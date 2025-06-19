@@ -6,8 +6,8 @@ from task.models import Task
 def allocate_task_for_ticket(ticket):
     """
     Create Tasks for every Workflows entry whose
-    category.name == ticket.category (case‐insensitive)
-    AND sub_category.name == ticket.subcategory.
+    category (case‐insensitive) matches ticket.category
+    AND sub_category matches ticket.subcategory.
     Returns True if at least one Task was created (or already existed).
     """
     cat = ticket.category.strip()
@@ -16,10 +16,10 @@ def allocate_task_for_ticket(ticket):
     if not cat or not sub:
         return False
 
-    # find matching workflows directly by name
+    # Now filtering on CharField rather than FK linked name
     workflows = Workflows.objects.filter(
-        category__name__iexact=cat,
-        sub_category__name__iexact=sub
+        category__iexact=cat,
+        sub_category__iexact=sub
     )
 
     created_any = False
@@ -32,7 +32,7 @@ def allocate_task_for_ticket(ticket):
             )
             created_any = True
         except IntegrityError:
-            # already exists
+            # Duplicate Task; treat as “exists”
             created_any = True
 
     return created_any
