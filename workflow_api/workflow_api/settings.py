@@ -86,7 +86,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "django.middleware.common.CommonMiddleware",
 ]
-
 ROOT_URLCONF = "workflow_api.urls"
 CORS_ALLOW_ALL_ORIGINS = True
 
