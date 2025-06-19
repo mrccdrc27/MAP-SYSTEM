@@ -23,7 +23,7 @@ RUN apk add --no-cache \
 # Copy application requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
+RUN pip install gunicorn
 # Copy project files into the container
 COPY . .
 
