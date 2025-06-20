@@ -1,0 +1,17 @@
+.workflowDetailPage {
+  margin: var(--margin-size-others);
+}
+
+.wpdHeader {
+  margin-top: 40px;
+  /* margin-bottom: 5px; */
+}
+
+.wpdHeader h1 { 
+  color: var(--heading-color);
+  font-size: var(--h1-font-size);
+}
+
+/* tpBody */
+
+/* here */

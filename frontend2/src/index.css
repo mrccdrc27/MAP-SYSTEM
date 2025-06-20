@@ -1,0 +1,79 @@
+/* MAIN CSS FILE */
+
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+  /* font-family: "Roboto", sans-serif; */
+}
+
+body {
+  background-color: var(--bg-color);
+}
+
+:root {
+  /* COLOR */
+  --bg-color: #fcfcfc;
+  --bg1-color: #ffffff;
+  --bg-content-color: #f9f9f9;
+  --primary-color: #007bff;
+  --primary-color-hover: rgba(0, 123, 255, 0.8);
+  --text-color: #242424;
+  --heading-color: #333;
+  --table-color: #555555;
+  --secondary-color: #545f71;
+  --muted-text-color: #6b7280;
+  --border-color: #e0e0e0;
+
+  --accent-color: #ffb800;
+  --success-color: #49c564;
+  --error-color: #ae131b;
+  --red-color: #ff0000;
+  --green-color: #34c759;
+
+  /* PRIORITY COLOR */
+  --critical-color: #a00000;
+  --critical-bg-color: #f8d7da;
+  --high-color: #b35000;
+  --high-bg-color: #ffe5b4;
+  --medium-color: #b38f00;
+  --medium-bg-color: #fff9cc;
+  --low-color: #2e7d32;
+  --low-bg-color: #d0f0c0;
+
+  /* FONT SIZES */
+  --table-font-size: 0.75rem; /* 12 */
+  --table-head-size: 0.8125rem; /* 13 */
+  --default-font-size: 0.875rem; /* 14 */
+  --base-font-size: 1rem; /* 16 */
+  --h2-font-size: 1.25rem;
+  --h1-font-size: 1.5rem; /* 24 */
+  --header-font-size: 1.8rem;
+
+  /* PAGES MARGIN */
+  /* --margin-size-main: 0 12vw; */
+  --margin-size-main: 0 12vw;
+  --margin-size-min: 0 6vw;
+  --margin-size-others: 0 2.5vw;
+
+  /* DESIGNS */
+  --border-bottom: 1px solid var(--border-color);
+  --border-black: 1px solid #000000;
+  --border-dark-gray: 1px solid #333333;
+  --border-medium-gray: 1px solid #666666;
+  --border-light-gray: 1px solid #999999;
+  --border-very-light-gray: 1px solid #cccccc;
+
+  /* BOX SHADOW */
+  --box-shadow-as: 0 1px 3px rgba(0, 0, 0, 0.2); /* normal cards */
+  --box-shadow: 4px 4px 20px 5px rgba(0, 0, 0, 0.15); /* table and container */
+  --shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* much lighter */
+
+  /* TRANSITION */
+  --transition: all 0.3s ease-in-out;
+}

@@ -1,0 +1,49 @@
+.dashboardPage {
+  margin: var(--margin-size-min);
+}
+
+.dpHeader {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.dpHeader h1 {
+  color: var(--heading-color);
+  font-size: 32px; /* for heading */
+}
+
+/* dpBody */
+
+/* dpCardSection */
+.dpCardSection {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dpLeft {
+  display: flex;
+  flex: 1;
+}
+
+.dpRight {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  flex: 2;
+}
+
+@media (max-width: 768px) {
+  .dpCardSection {
+    flex-direction: column;
+  }
+
+  .dpLeft,
+  .dpRight {
+    width: 100%;
+  }
+
+  .dpRight {
+    grid-template-columns: 1fr; 
+  }
+}
