@@ -16,9 +16,9 @@ from dotenv import load_dotenv
 
 # locate .env root
 BASE_DIR = Path(__file__).resolve().parent.parent
-ROOT_ENV = BASE_DIR.parent / '.env'      # project-root/.env
+# ROOT_ENV = BASE_DIR.parent / '.env'      # project-root/.env
 LOCAL_ENV = BASE_DIR / '.env'            # app1/.env
-load_dotenv(dotenv_path=ROOT_ENV)
+load_dotenv(dotenv_path=LOCAL_ENV)
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.100.6').split(',')
 
@@ -249,11 +249,11 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-USER_SERVICE_URL = "http://localhost:3000"
+USER_SERVICE_URL = os.getenv("DJANGO_USER_SERVICE")
 
 # Base directory of the project
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_URL =  "http://localhost:2000"
+BASE_URL =  os.getenv("DJANGO_USER_SERVICE")
 
 # Media files (uploaded by users or scripts)
 MEDIA_URL = '/media/'  # URL prefix to access media files

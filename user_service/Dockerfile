@@ -10,9 +10,6 @@ ARG DJANGO_ALLOWED_HOSTS
 ENV DJANGO_JWT_KEY=${DJANGO_JWT_KEY}
 ENV DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
 
-
-
-
 # Install necessary dependencies
 RUN apk add --no-cache \
     build-base \
