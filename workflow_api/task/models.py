@@ -1,6 +1,11 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 import uuid
+import os
+from django.conf import settings
+from .utils.document_parser import process_document 
+import json
+
 
 class Task(models.Model):
     task_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # New UUID field
@@ -37,10 +42,6 @@ class Task(models.Model):
         super().save(*args, **kwargs)
 
     def mark_as_completed(self):
-        # self.status = 'completed'
-        # self.save(update_fields=['status'])
-
-        # 🔍 Extract end logic from related workflow
         if not self.workflow_id:
             print("⚠️ No workflow associated with this task.")
             return
@@ -50,12 +51,118 @@ class Task(models.Model):
         # ⚙️ Trigger logic based on end_logic
         if end_logic == 'asset':
             print("✅ Asset logic triggered.")
-            # You could trigger asset processing here
+            self._process_attachments_from_ticket()
         elif end_logic == 'budget':
             print("💰 Budget logic triggered.")
-            # Or budget updates here
+            self._process_attachments_from_ticket()
         elif end_logic == 'notification':
             print("🔔 Notification logic triggered.")
-            # Send a notification here
+            self._process_attachments_from_ticket()
+            # Could send emails or push messages here
         else:
             print("⚠️ Unknown end logic:", end_logic)
+
+    def _process_attachments_from_ticket(self):
+        from amscheckout.serializers import CheckoutSerializer
+        import requests
+        from bmscheckout.serializers import ProjectSerializer
+        from bmscheckout.models import Project
+
+        # Hardcoded URL and API key (temporary solution)
+        API_URL = "https://budget-pro-production.up.railway.app/api/external-budget-proposals/"
+        API_KEY = "t@=1%4-ib(ow*i2#87$l4=i%3@ak!vnwyp2l&p52^+a!f$s#^r"
+
+        if not self.ticket_id:
+            print("⚠️ No ticket associated with this task.")
+            return
+
+        ticket = self.ticket_id
+        attachments = ticket.attachments or []
+
+        if not attachments:
+            print("📭 No attachments to process.")
+            return
+
+        for attachment in attachments:
+            file_url = attachment.get("file")
+            if not file_url:
+                print("⚠️ Malformed attachment object, missing 'file' key.")
+                continue
+
+            try:
+                relative_path = file_url.split("/media/")[1]
+                relative_path = os.path.normpath(relative_path)
+                abs_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+            except IndexError:
+                print(f"⚠️ Could not extract media path from: {file_url}")
+                continue
+
+            if os.path.exists(abs_path):
+                try:
+                    print(f"📄 Processing: {abs_path}")
+                    result = process_document(abs_path)
+                    print("✅ Extracted JSON:\n", result)
+
+                    data = json.loads(result)
+
+                    # Add ticket_id from the Task instance to the JSON data
+                    data["ticket_id"] = ticket.ticket_id
+
+                    # AMS Checkout JSON
+                    if "asset_id" in data and "requestor" in data:
+                        print("1️⃣ AMS-style JSON detected.")
+
+                        serializer = CheckoutSerializer(data={
+                            "ticket_id": data.get("ticket_id"),
+                            "asset_id": data.get("asset_id"),
+                            "asset_name": data.get("asset_name"),
+                            "requestor": data.get("requestor"),
+                            "requestor_location": data.get("requestor_location"),
+                            "requestor_id": data.get("requestor_id"),
+                            "checkout_date": data.get("checkout_date"),
+                            "checkin_date": data.get("checkin_date"),
+                            "return_date": data.get("return_date"),
+                            "is_resolved": data.get("is_resolved", False),
+                            "checkout_ref_id": data.get("checkout_ref_id"),
+                            "condition": data.get("condition", 1),
+                        })
+
+                        if serializer.is_valid():
+                            serializer.save()
+                            print(f"✅ Checkout record saved for ticket: {data.get('ticket_id')}")
+                        else:
+                            print(f"❌ Failed to save Checkout record: {serializer.errors}")
+
+                    # BMS Proposal JSON
+                    elif "title" in data and "project_summary" in data and "items" in data:
+                        print("2️⃣ BMS-style JSON detected.")
+
+                        serializer = ProjectSerializer(data={"ticket_id": data.get("ticket_id")})
+                        if serializer.is_valid():
+                            serializer.save()
+                            print(f"✅ Project record saved for ticket: {data.get('ticket_id')}")
+                        else:
+                            print(f"❌ Failed to save Project record: {serializer.errors}")
+
+                    else:
+                        print("⚠️ Unknown JSON structure.")
+
+                    # 🚀 Always send data to API endpoint
+                    try:
+                        headers = {
+                            "Content-Type": "application/json",
+                            "X-API-Key": API_KEY
+                        }
+                        response = requests.post(API_URL, headers=headers, json=data)
+
+                        if response.status_code in (200, 201):
+                            print(f"📡 Data pushed successfully to API ({response.status_code})")
+                        else:
+                            print(f"❌ Failed to push to API ({response.status_code}): {response.text}")
+                    except Exception as e:
+                        print(f"❌ Error sending data to API: {e}")
+
+                except Exception as e:
+                    print(f"❌ Failed to process {abs_path}: {e}")
+            else:
+                print(f"⚠️ Attachment not found: {abs_path}")

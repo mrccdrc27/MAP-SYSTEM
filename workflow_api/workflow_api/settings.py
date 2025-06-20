@@ -253,6 +253,7 @@ USER_SERVICE_URL = "http://localhost:3000"
 
 # Base directory of the project
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_URL =  "http://localhost:2000"
 
 # Media files (uploaded by users or scripts)
 MEDIA_URL = '/media/'  # URL prefix to access media files

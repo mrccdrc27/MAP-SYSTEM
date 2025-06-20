@@ -26,3 +26,32 @@ class ProjectApproveView(APIView):
         project.is_approved = True
         project.save()
         return Response({"message": f"Project {ticket_id} approved."})
+    
+
+class UpdateProjectStatusView(APIView):
+    def post(self, request):
+        data = request.data
+        external_system_id = data.get("external_system_id")
+        new_status = data.get("new_status")
+
+        if not external_system_id or new_status not in ["APPROVED", "REJECTED"]:
+            return Response(
+                {"detail": "Invalid or missing 'external_system_id' or 'new_status'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            project = Project.objects.get(ticket_id=external_system_id)
+        except Project.DoesNotExist:
+            return Response(
+                {"detail": f"No Project found with ticket_id={external_system_id}"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        project.is_approved = new_status == "APPROVED"
+        project.save()
+
+        return Response(
+            {"detail": f"Project status updated to {new_status}."},
+            status=status.HTTP_200_OK
+        )

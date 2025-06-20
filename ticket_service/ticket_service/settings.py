@@ -137,4 +137,18 @@ CELERY_BROKER_URL = 'amqp://GY6Jx5nsXW5edoIB:DGHuVF0tWCZgWnO~T51D._6viJWc7U_B@ba
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_TASK_DEFAULT_QUEUE = 'ticket_tasks'  # Only if you plan to run worker here
+CELERY_TASK_DEFAULT_QUEUE = 'ticket_tasks9'  # Only if you plan to run worker here
+
+
+import os
+# Base directory of the project
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+# settings.py
+BASE_URL = "http://localhost:8000"  # Replace with your actual domain in production
+
+
+# Media files (uploaded by users or scripts)
+MEDIA_URL = '/media/'  # URL prefix to access media files
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Actual filesystem path

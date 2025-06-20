@@ -23,27 +23,7 @@ class WorkflowTicketSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WorkflowTicket
-        fields = [
-            'id',
-            'ticket_id',
-            'subject',
-            'customer',
-            'priority',
-            'status',
-            'opened_on',
-            'sla',
-            'description',
-            'department',
-            'position',
-            'fetched_at',
-            'category',
-            'subcategory',
-            'original_ticket_id',
-            'source_service',
-            'created_at',
-            'updated_at',
-            'is_task_allocated',
-        ]
+        fields =  '__all__'
         read_only_fields = [
             'id',
             'created_at',
@@ -59,21 +39,7 @@ class WorkflowTicketListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WorkflowTicket
-        fields = [
-            'id',
-            'ticket_id',
-            'subject',
-            'customer',
-            'priority',
-            'status',
-            'opened_on',
-            'department',
-            'category',
-            'subcategory',
-            'original_ticket_id',
-            'created_at',
-            'is_task_allocated',
-        ]
+        fields = '__all__'
 
 
 class WorkflowTicketDetailSerializer(serializers.ModelSerializer):
@@ -88,31 +54,7 @@ class WorkflowTicketDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WorkflowTicket
-        fields = [
-            'id',
-            'ticket_id',
-            'subject',
-            'customer',
-            'priority',
-            'priority_display',
-            'status',
-            'status_display',
-            'opened_on',
-            'sla',
-            'description',
-            'department',
-            'position',
-            'fetched_at',
-            'category',
-            'subcategory',
-            'original_ticket_id',
-            'source_service',
-            'created_at',
-            'updated_at',
-            'is_task_allocated',
-            'days_since_opened',
-            'workflow_ticket_reference',
-        ]
+        fields =  '__all__'
         read_only_fields = [
             'id',
             'created_at',
@@ -124,13 +66,13 @@ class WorkflowTicketDetailSerializer(serializers.ModelSerializer):
             'workflow_ticket_reference',
         ]
     
-    def get_days_since_opened(self, obj):
-        """Calculate days since ticket was opened"""
-        from django.utils import timezone
-        if obj.opened_on:
-            today = timezone.now().date()
-            return (today - obj.opened_on).days
-        return None
+    # def get_days_since_opened(self, obj):
+    #     """Calculate days since ticket was opened"""
+    #     from django.utils import timezone
+    #     if obj.opened_on:
+    #         today = timezone.now().date()
+    #         return (today - obj.opened_on).days
+    #     return None
     
     def get_workflow_ticket_reference(self, obj):
         """Generate workflow ticket reference"""
