@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    axios.get('http://192.168.100.6:3000/api/me/', {
+    axios.get('http://localhost:3000/api/me/', {
       headers: {
         Authorization: `Bearer ${token}`,
       },

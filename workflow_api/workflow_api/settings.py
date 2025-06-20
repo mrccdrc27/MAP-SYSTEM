@@ -249,7 +249,7 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-USER_SERVICE_URL = os.getenv("DJANGO_USER_SERVICE")
+USER_SERVICE_URL = "http://localhost:3000" # Default user service URL, can be overridden by environment variable
 
 # Base directory of the project
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

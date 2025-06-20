@@ -18,7 +18,7 @@ class RoleListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         position_id = self.request.query_params.get('id')
         if position_id:
-            return Roles.objects.filter(id=position_id)
+            return Roles.objects.filter(role_id=position_id)
         return Roles.objects.all()
     
 class RoleDetailView(generics.RetrieveUpdateDestroyAPIView):

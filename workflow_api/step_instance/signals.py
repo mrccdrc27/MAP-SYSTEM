@@ -22,7 +22,7 @@ def assign_user_to_step_instance(sender, instance, created, **kwargs):
         logger.info(f"Role ID: {role_id}")
 
         # 2. Fetch users assigned to this role from the user service
-        response = requests.get(f"{settings.USER_SERVICE_URL}/api/roles/{role_id}")
+        response = requests.get(f"{settings.USER_SERVICE_URL}/api/role/?id={role_id}")
         logger.info(f"User service responded with {response.status_code}")
 
         if response.status_code != 200:

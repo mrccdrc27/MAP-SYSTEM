@@ -73,8 +73,9 @@ cd ..
 
 # Start React app
 echo "Starting React app..."
-cd frontend
+cd frontend2
 setup_env
+npx json-server --watch db.json --port 5000 --host 0.0.0.0 &
 npm install
 npm run dev &
 

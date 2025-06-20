@@ -21,7 +21,7 @@ export default function Profile() {
                 <img
                   src={
                     user.profile_picture
-                      ? `http://192.168.100.6:3000${user.profile_picture}`
+                      ? `http://localhost:3000${user.profile_picture}`
                       : "https://i.pinimg.com/736x/e6/50/7f/e6507f42d79520263d8d952633cedcf2.jpg"
                   }
                   alt="Profile"

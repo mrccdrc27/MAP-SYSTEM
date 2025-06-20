@@ -14,12 +14,15 @@ import TicketTable from "../../../tables/agent/TicketTable";
 
 // axios
 import axios from "axios";
+import useUserTickets from "../../../api/useUserTickets";
 
 // api
 const ticketURL = import.meta.env.VITE_TICKET_API;
 
 export default function Ticket() {
   // for tab
+  const {tickets} = useUserTickets();
+  console.log(tickets);
   const [activeTab, setActiveTab] = useState("All");
 
   // for filter states

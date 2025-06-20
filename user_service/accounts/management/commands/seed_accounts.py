@@ -135,7 +135,7 @@ class Command(BaseCommand):
         
         # Create remaining random users to reach 20 total
         existing_users_count = User.objects.count()
-        remaining_users = 10 - existing_users_count
+        remaining_users = 5 - existing_users_count
         
         if remaining_users > 0:
             for i in range(remaining_users):

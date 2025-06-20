@@ -52,7 +52,7 @@ class Command(BaseCommand):
         if not sample_files:
             self.stdout.write(self.style.WARNING("⚠️ No sample attachment files found. Proceeding without attachments."))
 
-        for i in range(10):
+        for i in range(5):
             submit_date = make_aware(datetime.now() - timedelta(days=random.randint(1, 30)))
             update_date = submit_date + timedelta(days=random.randint(0, 5))
 
