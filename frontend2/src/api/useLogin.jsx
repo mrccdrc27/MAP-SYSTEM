@@ -45,6 +45,7 @@ export function useLogin() {
         temp_token: tempToken,
         otp,
       });
+      console.timeEnd("OTPSubmit");
       localStorage.setItem("accessToken", response.data.access);
       localStorage.setItem("refreshToken", response.data.refresh);
       localStorage.removeItem("tempToken");
@@ -53,6 +54,7 @@ export function useLogin() {
         navigate("/admin");
       } else {
         navigate("/agent/dashboard");
+        console.timeEnd("OTPSubmit");
       }
     } catch (err) {
       setError("Invalid or expired OTP.");

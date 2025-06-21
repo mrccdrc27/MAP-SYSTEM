@@ -18,23 +18,27 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('workflow/', include('workflow.urls')),
-    path('workflow/roles/', include('role.urls')),
-    path('workflow/actions/', include('action.urls')),
-    path('workflow/steps/', include('step.urls')),
-    path('workflow/', include('tickets.urls')),
-    path('workflow/tasks/', include('task.urls')),
-    path('workflow/instance/', include('step_instance.urls')),
+    path('roles/', include('role.urls')),
+    path('actions/', include('action.urls')),
+    path('steps/', include('step.urls')),
+    path('tickets/', include('tickets.urls')),
+    path('tasks/', include('task.urls')),
+    path('instance/', include('step_instance.urls')),
 
-    path('workflow/action_log/', include('action_log.urls')),
+    path('action_log/', include('action_log.urls')),
     path('', include('amscheckout.urls')),
     path('', include('bmscheckout.urls')),
-]
 
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),  # raw schema (still useful)
+    path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),  # Swagger UI
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),  # Redoc UI
+]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

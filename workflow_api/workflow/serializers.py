@@ -23,9 +23,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workflows
         fields = (
-            "id",
             "workflow_id",
-            "user_id",
             "name",
             "description",
             "category",
@@ -33,7 +31,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
             "status",
             "is_published",
         )
-        read_only_fields = ("status", "workflow_id")
+        read_only_fields = ("id", "status", "workflow_id", "user_id")
 
     def update_status(self, workflow):
         """
