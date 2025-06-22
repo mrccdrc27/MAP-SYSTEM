@@ -14,6 +14,7 @@
     "@projectstorm/react-diagrams": "^7.0.4",
     "@react-pdf-viewer/core": "^3.12.0",
     "axios": "^1.10.0",
+    "dagre": "^0.8.5",
     "date-fns": "^4.1.0",
     "font-awesome": "^4.7.0",
     "jwt-decode": "^4.0.0",

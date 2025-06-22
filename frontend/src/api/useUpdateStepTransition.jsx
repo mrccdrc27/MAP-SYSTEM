@@ -13,7 +13,7 @@ const useUpdateStepTransition = () => {
     setUpdated(null);
 
     try {
-      const res = await api.patch(`workflow/steps/step-transitions/${transitionId}`, {
+      const res = await api.patch(`steps/step-transitions/${transitionId}`, {
         from_step_id: updateData.from_step_id,
         to_step_id: updateData.to_step_id,
         action: {

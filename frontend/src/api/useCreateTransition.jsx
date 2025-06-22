@@ -12,7 +12,7 @@ export default function useCreateTransition() {
     setError(null);
 
     try {
-      const res = await api.post('/workflow/steps/step-transitions/', data); // adjust endpoint if different
+      const res = await api.post('steps/step-transitions/', data); // adjust endpoint if different
       setResponse(res.data);
       return res.data;
     } catch (err) {

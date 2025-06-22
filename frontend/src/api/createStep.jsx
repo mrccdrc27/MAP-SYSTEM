@@ -12,7 +12,7 @@ export default function useCreateStep() {
     setError(null);
 
     try {
-      const res = await api.post('workflow/steps/', data); // ✅ Corrected endpoint
+      const res = await api.post('steps/', data); // ✅ Corrected endpoint
       setResponse(res.data);
       return res.data;
     } catch (err) {

@@ -11,7 +11,7 @@ const useStepUpdater = ({ stepId, name, role_id, trigger = false }) => {
     if (trigger && stepId && name && role_id) {
       setLoading(true);
       api
-        .patch(`workflow/steps/${stepId}/`, {
+        .patch(`steps/${stepId}/`, {
           name,
           role_id
         })

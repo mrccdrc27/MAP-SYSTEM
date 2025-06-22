@@ -7,7 +7,7 @@ const getRoles = () => {
   
     useEffect(() => {
       if (true) {
-        userService_api.get(`api/role/`)
+        userService_api.get(`role/`)
           .then(res => {
             setRoles(res.data);
           })

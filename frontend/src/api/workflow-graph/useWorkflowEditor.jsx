@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchWorkflowGraph, saveWorkflowGraph } from "../api/workflow";
+import { fetchWorkflowGraph, saveWorkflowGraph } from "./workflow";
 import { v4 as uuidv4 } from "uuid";
 
 export function useWorkflowEditor(workflowId) {

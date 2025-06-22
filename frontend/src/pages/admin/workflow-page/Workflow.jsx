@@ -17,13 +17,26 @@ import WorkflowTable from "../../../tables/admin/WorkflowTable";
 
 // axios
 import axios from "axios";
-
+import useFetchWorkflows from "../../../api/useFetchWorkflows";
 // api
 const workflowURL = import.meta.env.VITE_TICKET_API;
+
+
 
 export default function Workflow() {
   // open ticket action modal
   const [openAddWorkflow, setOpenAddWorkflow] = useState(false);
+  const {workflows, refetch} = useFetchWorkflows();
+  const [allworkflow, setAllWorkflow] = useState([]);
+
+  useEffect(() => {
+    if (workflows.length > 0) {
+      // setOpenAddWorkflow(workflows)
+      setAllWorkflow(workflows)
+    }
+  }, [workflows])
+
+
   return (
     <>
       <AdminNav />
@@ -37,7 +50,7 @@ export default function Workflow() {
           </div>
           <div className={styles.wpTableSection}>
             <div className={general.tpTable}>
-              <WorkflowTable onAddWorkflow={() => setOpenAddWorkflow(true)} />
+              <WorkflowTable workflows={allworkflow}/>
             </div>
           </div>
         </section>

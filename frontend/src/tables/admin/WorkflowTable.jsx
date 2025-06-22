@@ -33,15 +33,15 @@ function WorkflowItem({ item }) {
   const navigate = useNavigate();
   return (
     <tr className={general.item}>
-      <td>Workflow</td>
-      <td>Main Category</td>
-      <td>Sub Category</td>
-      <td>Description</td>
-      <td>Status</td>
+      <td>{item.name}</td> 
+      <td>{item.category}</td> 
+      <td>{item.sub_category}</td> 
+      <td>{item.description}</td> 
+      <td>{item.status}</td> 
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/agent/ticket/${item.id}`)}
+          onClick={() => navigate(`/admin/workflow/${item.workflow_id}`)}
         >
           👁
         </button>
@@ -51,7 +51,7 @@ function WorkflowItem({ item }) {
 }
 
 export default function WorkflowTable({
-  workflows = [],
+  workflows,
   searchValue = "",
   onSearchChange,
   activeTab,
@@ -82,8 +82,10 @@ export default function WorkflowTable({
         </thead>
         <tbody>
           {workflows.length > 0 ? (
-            paginatedTickets.map((workflow) => (
-              <WorkflowItem key={workflow.id} item={workflow} />
+            paginatedTickets.map((workflows) => (
+              <WorkflowItem 
+              key={workflows.workflow_id} item={workflows} 
+              />
             ))
           ) : (
             <tr>

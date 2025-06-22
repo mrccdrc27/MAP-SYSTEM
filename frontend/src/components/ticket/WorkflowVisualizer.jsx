@@ -1,25 +1,46 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   useNodesState,
-  useEdgesState
+  useEdgesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { fetchWorkflowGraph } from "../../api/workflow-graph/workflow";
 
-export default function WorkflowVisualizer({ workflowData }) {
-  if (!workflowData) {
-    return <p style={{ padding: "1rem", fontStyle: "italic" }}>Loading visual workflow...</p>;
-  }
+export default function WorkflowVisualizer() {
+  const { uuid } = useParams();
+  const [graphData, setGraphData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const { nodes: rawNodes, edges: rawEdges } = workflowData;
+  useEffect(() => {
+    if (!uuid) return;
+
+    setLoading(true);
+    fetchWorkflowGraph(uuid)
+      .then((data) => {
+        setGraphData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching graph:", err);
+        setError(err.message || "Unknown error");
+        setLoading(false);
+      });
+  }, [uuid]);
+
+  // Safe fallback values for hooks
+  const rawNodes = graphData?.nodes || [];
+  const rawEdges = graphData?.edges || [];
 
   const flowNodes = useMemo(() => rawNodes.map((node, index) => {
     const statusColor = {
-      done: "#4CAF50",       // Green
-      active: "#FF9800",     // Orange
-      pending: "#B0BEC5"     // Gray
+      done: "#4CAF50",
+      active: "#FF9800",
+      pending: "#B0BEC5",
     }[node.status] || "#ccc";
 
     return {
@@ -75,6 +96,19 @@ export default function WorkflowVisualizer({ workflowData }) {
   const [nodes, , onNodesChange] = useNodesState(flowNodes);
   const [edges, , onEdgesChange] = useEdgesState(flowEdges);
 
+  // Render logic
+  if (loading) {
+    return <p style={{ padding: "1rem", fontStyle: "italic" }}>Loading visual workflow...</p>;
+  }
+
+  if (error) {
+    return <p style={{ padding: "1rem", color: "red" }}>Error: {error}</p>;
+  }
+
+  if (!graphData) {
+    return <p style={{ padding: "1rem", fontStyle: "italic" }}>No workflow data found.</p>;
+  }
+
   return (
     <div style={{ height: "80vh", width: "100%" }}>
       <ReactFlow
@@ -85,7 +119,7 @@ export default function WorkflowVisualizer({ workflowData }) {
         fitView
       >
         <MiniMap nodeStrokeWidth={2} nodeColor="#ccc" />
-        <Controls showZoom={true} showFitView={true} />
+        <Controls showZoom showFitView />
         <Background gap={12} color="#eee" />
       </ReactFlow>
     </div>

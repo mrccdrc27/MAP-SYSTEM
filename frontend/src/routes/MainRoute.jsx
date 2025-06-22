@@ -52,9 +52,10 @@ export default function MainRoute() {
         <Route path="/admin/ticket" element={<AdminTicket />} />
         <Route path="/admin/ticket/:id" element={<AdminTicketDetail />} />
         <Route path="/admin/assigned" element={<AdminTicket />} />
+        <Route path="/admin/workflow/:uuid" element={<WorkflowDetail />} />
       </Route>
 
-      <Route path="/test" element={<TEST />} />
+      {/* <Route path="/test" element={<TEST />} /> */}
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
