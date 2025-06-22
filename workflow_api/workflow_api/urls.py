@@ -34,6 +34,7 @@ urlpatterns = [
     path('action_log/', include('action_log.urls')),
     path('', include('amscheckout.urls')),
     path('', include('bmscheckout.urls')),
+    path('', include('workflowmanager.urls')),
 
     path('schema/', SpectacularAPIView.as_view(), name='schema'),  # raw schema (still useful)
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),  # Swagger UI

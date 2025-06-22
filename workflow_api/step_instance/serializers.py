@@ -75,6 +75,8 @@ class TriggerNextStepSerializer(serializers.Serializer):
     action_id = serializers.CharField()
     available_actions = serializers.SerializerMethodField()
     has_acted = serializers.BooleanField(read_only=True)
+    user = serializers.CharField(required=True)  # ✅ Add user input
+    comment = serializers.CharField(required=True) 
 
     def validate_action_id(self, value):
         try:
@@ -100,6 +102,8 @@ class TriggerNextStepSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         action = validated_data['action_id']
+        user = validated_data['user']
+        comment = validated_data['comment']
         original_instance = self.context['step_instance']
 
         # Prevent re-acting
@@ -119,7 +123,9 @@ class TriggerNextStepSerializer(serializers.Serializer):
         ActionLog.objects.create(
             step_instance_id=original_instance,
             action_id=action,
-            task_id=original_instance.task_id
+            task_id=original_instance.task_id,
+            user=user,
+            comment=comment
         )
 
         if not transition.to_step_id:

@@ -25,7 +25,7 @@ class Ticket(models.Model):
     source_service = models.CharField(max_length=50, default='ticket_service', db_index=True)
 
     # Customer info
-    customer = models.JSONField(blank=True, null=True)  # Dict with id, name, company_id, etc.
+    employee = models.JSONField(blank=True, null=True)  # Dict with id, name, company_id, etc.
 
     # Ticket metadata
     subject = models.CharField(max_length=255)
@@ -63,7 +63,7 @@ class Ticket(models.Model):
             models.Index(fields=['source_service']),
             models.Index(fields=['status']),
             models.Index(fields=['priority']),
-            models.Index(fields=['customer']),
+            models.Index(fields=['employee']),
             models.Index(fields=['department']),
         ]
 

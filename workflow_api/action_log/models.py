@@ -9,12 +9,15 @@ class ActionLog(models.Model):
     action_log_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # New UUID field
     step_instance_id =  models.ForeignKey('step_instance.StepInstance', on_delete=models.CASCADE, to_field='step_instance_id')
     task_id = models.ForeignKey('task.Task', on_delete=models.CASCADE, to_field='task_id', null=True, blank=True)  # ✅ New field
+    user = models.CharField(max_length=200, null=True, blank=True)
     action_id = models.ForeignKey(
         Actions,
         on_delete=models.CASCADE,
         null=True,
         to_field='action_id'  # Reference the UUID field
     )
+    comment = models.CharField(max_length=200, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.pk:  # Only enforce immutability on creation

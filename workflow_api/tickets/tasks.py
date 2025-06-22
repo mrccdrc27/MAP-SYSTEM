@@ -43,7 +43,7 @@ def receive_ticket(ticket_data):
 
         # ✅ Filter allowed fields
         allowed_fields = {
-            'ticket_id', 'subject', 'customer', 'priority', 'status', 'opened_on', 'sla',
+            'ticket_id', 'subject', 'employee', 'priority', 'status', 'opened_on', 'sla',
             'description', 'department', 'position', 'fetched_at', 'category', 'subcategory',
             'original_ticket_id', 'source_service', 'attachments', 'is_task_allocated',
             'submit_date', 'update_date', 'response_time', 'resolution_time', 'time_closed', 'rejection_reason'

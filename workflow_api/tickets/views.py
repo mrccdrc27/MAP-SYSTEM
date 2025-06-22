@@ -24,7 +24,7 @@ class WorkflowTicketViewSet(viewsets.ModelViewSet):
         # Filter parameters
         status = self.request.query_params.get('status')
         priority = self.request.query_params.get('priority')
-        customer = self.request.query_params.get('customer')
+        employee = self.request.query_params.get('employee')
         department = self.request.query_params.get('department')
         category = self.request.query_params.get('category')
         search = self.request.query_params.get('search')
@@ -33,8 +33,8 @@ class WorkflowTicketViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
         if priority:
             queryset = queryset.filter(priority=priority)
-        if customer:
-            queryset = queryset.filter(customer__icontains=customer)
+        if employee:
+            queryset = queryset.filter(employee__icontains=employee)
         if department:
             queryset = queryset.filter(department__icontains=department)
         if category:
@@ -44,7 +44,7 @@ class WorkflowTicketViewSet(viewsets.ModelViewSet):
                 Q(subject__icontains=search) |
                 Q(description__icontains=search) |
                 Q(ticket_id__icontains=search) |
-                Q(customer__icontains=search)
+                Q(employee__icontains=search)
             )
         
         return queryset.order_by('-created_at')

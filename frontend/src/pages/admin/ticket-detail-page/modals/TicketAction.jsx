@@ -9,12 +9,15 @@ import { useState } from "react";
 export default function TicketAction({ closeTicketAction, ticket, action, instance }) {
   const [selectedActionId, setSelectedActionId] = useState("");
   const [triggerNow, setTriggerNow] = useState(false);
+  const [comment, setComment] = useState("");
+
 
   // Use the custom hook to trigger an action
   const { loading, error, response } = useTriggerAction({
     uuid: instance,
     action_id: selectedActionId,
     method: "post",
+    comment,
     trigger: triggerNow,
   });
 
@@ -70,6 +73,15 @@ export default function TicketAction({ closeTicketAction, ticket, action, instan
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <h3>Comment</h3>
+            <textarea
+              className={styles.actionStatus}
+              placeholder="Enter a comment..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
           </div>
 
           <button

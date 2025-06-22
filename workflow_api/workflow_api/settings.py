@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'tickets',
     'amscheckout',
     'bmscheckout',
+    'workflowmanager',
 
     # Third-party dependencies
     'rest_framework',

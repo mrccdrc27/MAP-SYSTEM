@@ -23,6 +23,7 @@ import Login from "../pages/auth/Login";
 import PasswordReset from "../pages/auth/PasswordReset";
 import NotFound from "../pages/error/NotFound";
 import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
+import TEST from "../pages/test";
 
 export default function MainRoute() {
   return (
@@ -52,6 +53,8 @@ export default function MainRoute() {
         <Route path="/admin/ticket/:id" element={<AdminTicketDetail />} />
         <Route path="/admin/assigned" element={<AdminTicket />} />
       </Route>
+
+      <Route path="/test" element={<TEST />} />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

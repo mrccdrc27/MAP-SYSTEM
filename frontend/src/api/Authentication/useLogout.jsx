@@ -20,9 +20,9 @@ export function useLogout() {
     }
 
     // Clear all tokens and redirect
-    // localStorage.removeItem("accessToken");
-    // localStorage.removeItem("refreshToken");
-    // localStorage.removeItem("tempToken");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("tempToken");
 
     navigate("/", { replace: true });
   };

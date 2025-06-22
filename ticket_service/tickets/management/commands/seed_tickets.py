@@ -80,15 +80,29 @@ class Command(BaseCommand):
                 }
                 attached_paths.append(attachment_data)
 
+            # Random employee data
+            first_name = random.choice(NAMES)
+            last_name = random.choice(NAMES)
+            email = f"{first_name.lower()}.{last_name.lower()}@example.com"
+            company_id = f"MA{random.randint(1000, 9999)}"
+            department = random.choice(DEPARTMENTS)
+            image_url = urljoin(settings.BASE_URL, "/media/employee_images/resized-placeholder.jpeg")
+
+            employee = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "company_id": company_id,
+                "department": department,
+                "image": image_url,
+            }
+
+
 
             ticket = Ticket.objects.create(
                 ticket_id=f"WF-{random.randint(1000, 9999)}",
                 original_ticket_id=f"TK-{random.randint(1000, 9999)}",
-                customer={
-                    "id": random.randint(1, 100),
-                    "name": random.choice(NAMES),
-                    "company": random.choice(COMPANIES),
-                },
+                employee=employee,
                 subject=f"Issue {i+1}: {random.choice(SUBCATEGORIES)}",
                 category=random.choice(CATEGORIES),
                 subcategory=random.choice(SUBCATEGORIES),
