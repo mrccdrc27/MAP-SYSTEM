@@ -31,7 +31,7 @@ class StepInstance(models.Model):
        
         # ensure clean() runs on every save
         super().save(*args, **kwargs)
-
+    created_at= models.DateTimeField(auto_now_add=True)
     def get_task_id(self):
         from task.models import Task
         return Task.objects.first()

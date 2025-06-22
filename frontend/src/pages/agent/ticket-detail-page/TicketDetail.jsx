@@ -14,43 +14,77 @@ import axios from "axios";
 
 // modal
 import TicketAction from "./modals/TicketAction";
+import useUserTickets from "../../../api/useUserTickets";
+
 
 // Your API URL
 const ticketURL = import.meta.env.VITE_TICKET_API;
 
-export default function TicketDetail() {
-  // navigate back
+export default function AdminTicketDetail() {
+
   const navigate = useNavigate();
-  // get id passed from table
-  const { id } = useParams();
-  // open ticket action modal
+  const { id } = useParams(); // ticket_id from URL
+  const { userTickets } = useUserTickets();
+
+  // States
+  const [ticket, setTicket] = useState(null);
+  const [action, setAction] = useState([]);
+  const [instance, setInstance] = useState([]);
+  const [stepInstance, setStepInstance] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [openTicketAction, setOpenTicketAction] = useState(false);
-  // hide Ticket Information Panel
   const [showTicketInfo, setShowTicketInfo] = useState(true);
-  // info visibility
+
   const toggTicketInfosVisibility = () => {
     setShowTicketInfo((prev) => !prev);
   };
 
-  // fetch ticket
-  const [ticket, setTicket] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   useEffect(() => {
-    const fetchTicket = async () => {
-      try {
-        const res = await axios.get(`${ticketURL}/${id}`);
-        setTicket(res.data);
-      } catch (err) {
-        setError("Ticket not found");
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!userTickets || userTickets.length === 0) return;
 
-    fetchTicket();
-  }, [id]);
+    // 1️⃣ Filter step instance by ticket_id
+    const matchedInstance = userTickets.find(
+      (instance) => instance.task?.ticket?.ticket_id === id
+    );
+
+    if (!matchedInstance) {
+      setError("Ticket not found.");
+      setTicket(null);
+      setAction([]);
+      setStepInstance(null);
+    } else {
+      setTicket(matchedInstance.task.ticket);
+      setInstance(matchedInstance.step_instance_id)
+      setAction(matchedInstance.available_actions || []);
+      setStepInstance(matchedInstance);
+      setError("");
+    }
+
+    setLoading(false);
+  }, [userTickets, id]);
+
+  if (error) {
+    return (
+      <>
+        <AgentNav />
+        <main className={styles.ticketDetailPage}>
+          <section className={styles.tdpHeader}>
+            <div className={styles.tdBack} onClick={() => navigate(-1)}>
+              <i className="fa fa-chevron-left"></i>
+            </div>
+            <h1>Error</h1>
+          </section>
+          <section className={styles.tdpBody}>
+            <div style={{ padding: "2rem", color: "red" }}>
+              {error}
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
+  
 
   return (
     <>
@@ -175,7 +209,7 @@ export default function TicketDetail() {
         </section>
       </main>
       {openTicketAction && (
-        <TicketAction closeTicketAction={setOpenTicketAction} ticket={ticket} />
+        <TicketAction closeTicketAction={setOpenTicketAction} ticket={ticket} action={action} instance={instance}/>
       )}
     </>
   );

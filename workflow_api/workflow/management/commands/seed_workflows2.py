@@ -7,6 +7,14 @@ from workflow.models import Workflows
 from step.models import Steps, StepTransition
 import random
 
+instructions_pool = [
+    "Ensure all fields are filled before proceeding.",
+    "Double-check your inputs before submission.",
+    "Follow the guidelines provided in the documentation.",
+    "Contact your supervisor if you're unsure how to proceed.",
+    "This step requires careful attention to detail.",
+    "Only proceed if all previous steps are completed."
+]
 
 class Command(BaseCommand):
     help = 'Seed workflows with step-specific actions and robust transitions, including random end logic.'
@@ -64,8 +72,8 @@ class Command(BaseCommand):
                             name=step_name,
                             defaults={
                                 'description': label,
-                                'order': idx + 1,
-                                'role_id': role_map[role_key]
+                                'role_id': role_map[role_key],
+                                'instruction': random.choice(instructions_pool)
                             }
                         )
                         step_objs.append(step)

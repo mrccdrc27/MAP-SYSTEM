@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext';
 
 const useUserTickets = () => {
   const { user, loading: authLoading } = useAuth();
-  const [tickets, setTickets] = useState([]);
+  const [userTickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -28,7 +28,7 @@ const useUserTickets = () => {
     }
   }, [user, authLoading]);
 
-  return { tickets, loading, error };
+  return { userTickets, loading, error };
 };
 
 export default useUserTickets;

@@ -32,6 +32,7 @@ function TicketHeader() {
 
 function TicketItem({ item }) {
   const navigate = useNavigate();
+  console.log("id",item);
   return (
     <tr className={general.item}>
       <td>{item.ticket_id}</td>
@@ -48,7 +49,7 @@ function TicketItem({ item }) {
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/agent/ticket/${item.id}`)}
+          onClick={() => navigate(`/agent/ticket/${item.ticket_id}`)}
         >
           👁
         </button>

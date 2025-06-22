@@ -17,21 +17,15 @@ import axios from "axios";
 import useUserTickets from "../../../api/useUserTickets";
 import { useAuth } from "../../../api/AuthContext";
 
-// api
-const ticketURL = import.meta.env.VITE_TICKET_API;
 
 export default function Ticket() {
+  const { userTickets, loading, error } = useUserTickets();
+  console.log(userTickets);
 
-  const { user } = useAuth();
-  const { ticket } = useUserTickets
-
-
-  // for tab
-  const {tickets} = useUserTickets();
-  console.log(tickets);
+  // Tabs
   const [activeTab, setActiveTab] = useState("All");
 
-  // for filter states
+  // Filters
   const [filters, setFilters] = useState({
     category: "",
     status: "",
@@ -40,46 +34,31 @@ export default function Ticket() {
     search: "",
   });
 
-  // fetching states
-  const [allTickets, setAllTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  // Status options
   const [statusOptions, setStatusOptions] = useState([]);
 
-  // Fetch tickets from backend
+  // Extract all ticket data from step instances
+  const allTickets = (userTickets || [])
+    .map((entry) => entry.task.ticket)
+    .filter((t) => t); // safety: remove undefined/null
+
+  // Extract status options on ticket update
   useEffect(() => {
-    const fetchTickets = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await axios.get(ticketURL);
-        const fetchedTickets = res.data;
+    const statusSet = new Set(
+      allTickets.map((t) => t.status).filter(Boolean)
+    );
+    setStatusOptions(["All", ...Array.from(statusSet)]);
+  }, [userTickets]);
 
-        setAllTickets(fetchedTickets);
+  console.log(allTickets);
 
-        // extract status options
-        const statusSet = new Set(
-          fetchedTickets.map((t) => t.status).filter(Boolean)
-        );
-        setStatusOptions(["All", ...Array.from(statusSet)]);
-      } catch (err) {
-        console.error("Failed to fetch tickets:", err);
-        setError("Failed to load tickets. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTickets();
-  }, []);
-
-  // Handle tab change (priority)
+  // Handle tab click
   const handleTabClick = (e, tab) => {
     e.preventDefault();
     setActiveTab(tab);
   };
 
-  // Handle input changes in FilterPanel
+  // Handle filter input
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({
@@ -88,7 +67,7 @@ export default function Ticket() {
     }));
   };
 
-  // Handle reset
+  // Reset all filters
   const resetFilters = () => {
     setFilters({
       category: "",
@@ -99,25 +78,18 @@ export default function Ticket() {
     });
   };
 
-  // Filter tickets based on tab and filters
+  // Filter tickets
   const filteredTickets = allTickets.filter((ticket) => {
-    // Filter by priority tab
     if (activeTab !== "All" && ticket.priority !== activeTab) return false;
-
-    // Filter by category
     if (filters.category && ticket.category !== filters.category) return false;
-
-    // Filter by status
     if (filters.status && ticket.status !== filters.status) return false;
 
-    // Filter by date range
     const openedDate = new Date(ticket.opened_on);
     const start = filters.startDate ? new Date(filters.startDate) : null;
     const end = filters.endDate ? new Date(filters.endDate) : null;
     if (start && openedDate < start) return false;
     if (end && openedDate > end) return false;
 
-    // Filter by search term
     const search = filters.search.toLowerCase();
     if (
       search &&
@@ -156,6 +128,7 @@ export default function Ticket() {
               </a>
             ))}
           </div>
+
           {/* Filters */}
           <div className={styles.tpFilterSection}>
             <FilterPanel
@@ -165,6 +138,7 @@ export default function Ticket() {
               onResetFilters={resetFilters}
             />
           </div>
+
           {/* Table */}
           <div className={styles.tpTableSection}>
             <div className={general.tpTable}>
@@ -177,10 +151,13 @@ export default function Ticket() {
                 tickets={filteredTickets}
                 searchValue={filters.search}
                 onSearchChange={(e) =>
-                  setFilters((prev) => ({ ...prev, search: e.target.value }))
+                  setFilters((prev) => ({
+                    ...prev,
+                    search: e.target.value,
+                  }))
                 }
                 error={error}
-                activeTab={activeTab} 
+                activeTab={activeTab}
               />
             </div>
           </div>

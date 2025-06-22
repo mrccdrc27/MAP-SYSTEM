@@ -15,10 +15,10 @@ class StepSerializer(serializers.ModelSerializer):
             "role_id", 
             "name", 
             "description",
-            "order",
             "is_initialized",
             "created_at", 
-            "updated_at"
+            "updated_at",
+            "instruction"
         )
     def get_is_initialized(self, obj):
         return StepTransition.objects.filter(to_step_id=obj).exists()

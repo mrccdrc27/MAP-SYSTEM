@@ -88,6 +88,14 @@ export default function AdminNav() {
             Dashboard
           </NavLink>
           <NavLink
+            to="/admin/ticket"
+            className={({ isActive }) =>
+              isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
+            }
+          >
+            Tickets
+            </NavLink>
+          <NavLink
             to="/admin/workflow"
             className={({ isActive }) =>
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink

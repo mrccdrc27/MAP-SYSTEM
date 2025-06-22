@@ -22,6 +22,7 @@ import AdminTicket from "../pages/admin/ticket-page/AdminTicket";
 import Login from "../pages/auth/Login";
 import PasswordReset from "../pages/auth/PasswordReset";
 import NotFound from "../pages/error/NotFound";
+import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
 
 export default function MainRoute() {
   return (
@@ -48,6 +49,8 @@ export default function MainRoute() {
         <Route path="/admin/archive" element={<AdminArchive />} />
         <Route path="/admin/workflow/detail" element={<WorkflowDetail />} />
         <Route path="/admin/ticket" element={<AdminTicket />} />
+        <Route path="/admin/ticket/:id" element={<AdminTicketDetail />} />
+        <Route path="/admin/assigned" element={<AdminTicket />} />
       </Route>
 
       {/* 404 */}

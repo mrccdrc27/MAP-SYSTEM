@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.utils.timezone import make_aware
 from django.conf import settings
 from tickets.models import Ticket
+import mimetypes
 
 # Constants
 PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
@@ -59,15 +60,25 @@ class Command(BaseCommand):
             # Copy random files and collect full URLs
             selected_files = random.sample(sample_files, k=random.randint(0, min(3, len(sample_files))))
             attached_paths = []
-
             for file_path in selected_files:
                 filename = f"{datetime.now().timestamp()}_{os.path.basename(file_path)}"
                 destination_path = os.path.join(dest_dir, filename)
 
                 shutil.copy(file_path, destination_path)
+
                 relative_path = os.path.join(ATTACHMENT_UPLOAD_DIR, filename).replace("\\", "/")
                 full_url = urljoin(settings.BASE_URL, f"/media/{relative_path}")
-                attached_paths.append({"file": full_url})  # Change here
+                file_stat = os.stat(destination_path)
+
+                attachment_data = {
+                    "id": random.randint(50, 9999),  # Or use a counter if needed
+                    "file": full_url,
+                    "file_name": os.path.basename(file_path),
+                    "file_type": mimetypes.guess_type(file_path)[0] or "application/octet-stream",
+                    "file_size": file_stat.st_size,
+                    "upload_date": datetime.now().isoformat(),
+                }
+                attached_paths.append(attachment_data)
 
 
             ticket = Ticket.objects.create(

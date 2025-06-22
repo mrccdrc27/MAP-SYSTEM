@@ -36,7 +36,7 @@ function Login() {
         });
 
         if (res.data.is_staff) {
-          navigate("/admin");
+          navigate("/admin/dashboard");
         } else {
           navigate("/agent/dashboard");
         }

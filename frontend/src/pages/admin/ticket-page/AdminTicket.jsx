@@ -1,5 +1,5 @@
 // components
-import AgentNav from "../../../components/navigation/AgentNav";
+import AdminNav from "../../../components/navigation/AdminNav";
 import FilterPanel from "../../../components/component/FilterPanel";
 
 // style
@@ -12,17 +12,17 @@ import { useEffect, useState } from "react";
 // table
 import TicketTable from "../../../tables/admin/TicketTable";
 
-// axios
-import axios from "axios";
-
-// api
-const ticketURL = import.meta.env.VITE_TICKET_API;
+// hook
+import useUserTickets from "../../../api/useUserTickets";
 
 export default function AdminTicket() {
-  // for tab
+  const { userTickets, loading, error } = useUserTickets();
+  console.log(userTickets);
+
+  // Tabs
   const [activeTab, setActiveTab] = useState("All");
 
-  // for filter states
+  // Filters
   const [filters, setFilters] = useState({
     category: "",
     status: "",
@@ -31,46 +31,33 @@ export default function AdminTicket() {
     search: "",
   });
 
-  // fetching states
-  const [allTickets, setAllTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  // Status options
   const [statusOptions, setStatusOptions] = useState([]);
 
-  // Fetch tickets from backend
+  // Extract all ticket data with step_instance_id
+  const allTickets = (userTickets || [])
+    .filter((entry) => entry.task?.ticket)
+    .map((entry) => ({
+      ...entry.task.ticket,
+      step_instance_id: entry.step_instance_id, // ✅ attach here
+      hasacted: entry.has_acted, // ✅ attach here
+    }));
+  
+  // Extract status options on ticket update
   useEffect(() => {
-    const fetchTickets = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await axios.get(ticketURL);
-        const fetchedTickets = res.data;
+    const statusSet = new Set(
+      allTickets.map((t) => t.status).filter(Boolean)
+    );
+    setStatusOptions(["All", ...Array.from(statusSet)]);
+  }, [userTickets]);
 
-        setAllTickets(fetchedTickets);
-
-        // extract status options
-        const statusSet = new Set(
-          fetchedTickets.map((t) => t.status).filter(Boolean)
-        );
-        setStatusOptions(["All", ...Array.from(statusSet)]);
-      } catch (err) {
-        console.error("Failed to fetch tickets:", err);
-        setError("Failed to load tickets. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTickets();
-  }, []);
-
-  // Handle tab change (priority)
+  // Handle tab click
   const handleTabClick = (e, tab) => {
     e.preventDefault();
     setActiveTab(tab);
   };
 
-  // Handle input changes in FilterPanel
+  // Handle filter input
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({
@@ -79,7 +66,7 @@ export default function AdminTicket() {
     }));
   };
 
-  // Handle reset
+  // Reset all filters
   const resetFilters = () => {
     setFilters({
       category: "",
@@ -90,25 +77,18 @@ export default function AdminTicket() {
     });
   };
 
-  // Filter tickets based on tab and filters
+  // Filter tickets
   const filteredTickets = allTickets.filter((ticket) => {
-    // Filter by priority tab
     if (activeTab !== "All" && ticket.priority !== activeTab) return false;
-
-    // Filter by category
     if (filters.category && ticket.category !== filters.category) return false;
-
-    // Filter by status
     if (filters.status && ticket.status !== filters.status) return false;
 
-    // Filter by date range
     const openedDate = new Date(ticket.opened_on);
     const start = filters.startDate ? new Date(filters.startDate) : null;
     const end = filters.endDate ? new Date(filters.endDate) : null;
     if (start && openedDate < start) return false;
     if (end && openedDate > end) return false;
 
-    // Filter by search term
     const search = filters.search.toLowerCase();
     if (
       search &&
@@ -126,7 +106,7 @@ export default function AdminTicket() {
 
   return (
     <>
-      <AgentNav />
+      <AdminNav />
       <main className={styles.ticketPage}>
         <section className={styles.tpHeader}>
           <h1>Tickets</h1>
@@ -147,6 +127,7 @@ export default function AdminTicket() {
               </a>
             ))}
           </div>
+
           {/* Filters */}
           <div className={styles.tpFilterSection}>
             <FilterPanel
@@ -156,6 +137,7 @@ export default function AdminTicket() {
               onResetFilters={resetFilters}
             />
           </div>
+
           {/* Table */}
           <div className={styles.tpTableSection}>
             <div className={general.tpTable}>
@@ -168,10 +150,13 @@ export default function AdminTicket() {
                 tickets={filteredTickets}
                 searchValue={filters.search}
                 onSearchChange={(e) =>
-                  setFilters((prev) => ({ ...prev, search: e.target.value }))
+                  setFilters((prev) => ({
+                    ...prev,
+                    search: e.target.value,
+                  }))
                 }
                 error={error}
-                activeTab={activeTab} 
+                activeTab={activeTab}
               />
             </div>
           </div>
