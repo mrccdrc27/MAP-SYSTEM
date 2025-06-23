@@ -15,7 +15,7 @@ def is_transition_initialized(transition):
     """
     result = (
         transition.action_id is not None and
-        (transition.from_step_id is not None or transition.to_step_id is not None)
+        (transition.from_step_id_id is not None or transition.to_step_id_id is not None)
     )
     logger.debug(f"Transition {getattr(transition, 'transition_id', transition)} initialized: {result}")
     return result

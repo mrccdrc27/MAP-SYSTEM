@@ -51,7 +51,7 @@ export function useLogin() {
       localStorage.removeItem("tempToken");
 
       if (response.data.is_staff) {
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
         navigate("/agent/dashboard");
         console.timeEnd("OTPSubmit");

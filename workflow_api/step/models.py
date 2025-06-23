@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 import uuid
 
 class Steps(models.Model):
-    step_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # New UUID field
+    step_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     # foreign keys - now reference UUID fields
     workflow_id = models.ForeignKey('workflow.Workflows', on_delete=models.CASCADE, to_field='workflow_id')
@@ -33,7 +33,7 @@ class Steps(models.Model):
     def save(self, *args, **kwargs):
         if not self.pk:
             if not self.step_id:
-                self.step_id = str(uuid.uuid4())
+                self.step_id = uuid.uuid4()
         else:
             if 'step_id' in kwargs.get('update_fields', []):
                 raise ValidationError("step_id cannot be modified after creation.")
