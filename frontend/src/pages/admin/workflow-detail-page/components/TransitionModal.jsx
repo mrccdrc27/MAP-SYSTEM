@@ -1,13 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../WorkflowEditor.module.css';
+import { useWorkflowRefresh } from '../../../../components/workflow/WorkflowRefreshContext';
 
 export default function TransitionModal({
   editTransitionModal,
+  handleUpdateTransition,
   setEditTransitionModal,
-  updateTransition,
   steps,
-  refetch
 }) {
+  const { triggerRefresh } = useWorkflowRefresh();
+  const [previousTransition, setPreviousTransition] = useState(null);
+
+  // Save backup on modal open
+  useEffect(() => {
+    if (editTransitionModal.isOpen && editTransitionModal.transition) {
+      setPreviousTransition({ ...editTransitionModal.transition });
+    }
+  }, [editTransitionModal.isOpen]);
+
   if (!editTransitionModal.isOpen) return null;
 
   const updateField = (field, value) => {
@@ -17,16 +27,21 @@ export default function TransitionModal({
     }));
   };
 
+  const handleUndo = () => {
+    if (previousTransition) {
+      setEditTransitionModal({
+        isOpen: true,
+        transition: { ...previousTransition },
+      });
+    }
+  };
+
   const handleSave = async () => {
     const t = editTransitionModal.transition;
     if (!t.transition_id || !t.from_step_id || !t.to_step_id || !t.action_name) return;
 
-    await updateTransition(t.transition_id, {
-      from_step_id: t.from_step_id,
-      to_step_id: t.to_step_id,
-      action_name: t.action_name,
-    });
-    await refetch();
+    await handleUpdateTransition();
+    triggerRefresh();
     setEditTransitionModal({ isOpen: false, transition: null });
   };
 
@@ -42,6 +57,7 @@ export default function TransitionModal({
         </div>
 
         <div className={styles.modalContent}>
+          {/* From Step */}
           <div className={styles.formField}>
             <label className={styles.label}>From Step</label>
             <select
@@ -56,6 +72,7 @@ export default function TransitionModal({
             </select>
           </div>
 
+          {/* To Step */}
           <div className={styles.formField}>
             <label className={styles.label}>To Step</label>
             <select
@@ -72,6 +89,7 @@ export default function TransitionModal({
             </select>
           </div>
 
+          {/* Action Name */}
           <div className={styles.formField}>
             <label className={styles.label}>Action Name</label>
             <input
@@ -90,6 +108,9 @@ export default function TransitionModal({
             className={styles.cancelButton}
           >
             Cancel
+          </button>
+          <button onClick={handleUndo} className={styles.undoButton}>
+            Undo Changes
           </button>
           <button onClick={handleSave} className={styles.saveButton}>
             Save Changes

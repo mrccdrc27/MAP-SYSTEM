@@ -6,12 +6,15 @@ import useCreateTransition from '../../../../api/useCreateTransition';
 import useStepUpdater from '../../../../api/useUpdateStep';
 import useUpdateStepTransition from '../../../../api/useUpdateStepTransition';
 import { useWorkflowRefresh } from '../../../../components/workflow/WorkflowRefreshContext';
-// import { useWorkflowRefresh } from '../../../../context/WorkflowRefreshContext';
 
 export default function useWorkflowEditorState(uuid) {
   const { role } = getRoles();
   const { createStep } = useCreateStep();
   const { createTransition } = useCreateTransition();
+  const { updateStep } = useStepUpdater();
+  const { updateTransition } = useUpdateStepTransition();
+  const { triggerRefresh } = useWorkflowRefresh();
+
   const {
     workflow,
     steps: fetchedSteps,
@@ -25,18 +28,9 @@ export default function useWorkflowEditorState(uuid) {
     getStepName,
   } = useWorkflow(uuid);
 
-  const { triggerRefresh } = useWorkflowRefresh(); // 👈 added
-
   const [steps, setSteps] = useState([]);
   const [transitions, setTransitions] = useState([]);
-
-  useEffect(() => {
-    setSteps(fetchedSteps);
-  }, [fetchedSteps]);
-
-  useEffect(() => {
-    setTransitions(fetchedTransitions);
-  }, [fetchedTransitions]);
+  const [previousTransition, setPreviousTransition] = useState(null);
 
   const [StepformData, setStepFormData] = useState({
     step_id: '',
@@ -55,29 +49,14 @@ export default function useWorkflowEditorState(uuid) {
 
   const [editStepModal, setEditStepModal] = useState({ isOpen: false, step: null });
   const [editTransitionModal, setEditTransitionModal] = useState({ isOpen: false, transition: null });
-  const [triggerUpdate, setTriggerUpdate] = useState(false);
-
-  const { data: updatedStepData } = useStepUpdater({
-    stepId: editStepModal.step?.step_id || '',
-    name: editStepModal.step?.name || '',
-    role_id: editStepModal.step?.role_id || '',
-    trigger: triggerUpdate,
-  });
-
-  const { updateTransition } = useUpdateStepTransition();
 
   useEffect(() => {
-    if (!loading && updatedStepData) {
-      setSteps((prev) =>
-        prev.map((step) =>
-          step.step_id === updatedStepData.step_id ? updatedStepData : step
-        )
-      );
-      setEditStepModal({ isOpen: false, step: null });
-      setTriggerUpdate(false);
-      triggerRefresh(); // 👈 refresh visualizer
-    }
-  }, [updatedStepData, loading, triggerRefresh]);
+    setSteps(fetchedSteps);
+  }, [fetchedSteps]);
+
+  useEffect(() => {
+    setTransitions(fetchedTransitions);
+  }, [fetchedTransitions]);
 
   const handleCreateStep = async () => {
     if (!StepformData.name || !StepformData.role_id || !workflow?.workflow_id) return;
@@ -89,7 +68,7 @@ export default function useWorkflowEditorState(uuid) {
     const created = await createStep(payload);
     if (created?.step_id) {
       setSteps((prev) => [...prev, created]);
-      triggerRefresh(); // 👈 refresh visualizer
+      triggerRefresh();
     }
     setStepFormData({
       step_id: '',
@@ -114,18 +93,36 @@ export default function useWorkflowEditorState(uuid) {
     const created = await createTransition(payload);
     if (created?.transition_id) {
       setTransitions((prev) => [...prev, created]);
-      triggerRefresh(); // 👈 refresh visualizer
+      triggerRefresh();
     }
     setNewTransition({ from: '', to: '', actionName: '', actionDescription: '' });
   };
 
-  const handleUpdateStep = () => setTriggerUpdate(true);
+  const handleUpdateStep = async () => {
+    const step = editStepModal.step;
+    if (!step?.step_id || !step.name || !step.role_id) return;
+
+    const updated = await updateStep({
+      stepId: step.step_id,
+      name: step.name,
+      role_id: step.role_id,
+    });
+
+    if (updated) {
+      setSteps((prev) =>
+        prev.map((s) => (s.step_id === updated.step_id ? updated : s))
+      );
+      setEditStepModal({ isOpen: false, step: null });
+      triggerRefresh();
+    }
+  };
 
   const handleEditStep = (step) => {
     setEditStepModal({ isOpen: true, step: { ...step } });
   };
 
   const handleEditTransition = (transition) => {
+    setPreviousTransition({ ...transition }); // ← Save original before editing
     setEditTransitionModal({
       isOpen: true,
       transition: {
@@ -149,10 +146,32 @@ export default function useWorkflowEditorState(uuid) {
       setTransitions((prev) =>
         prev.map((tr) => (tr.transition_id === updated.transition_id ? updated : tr))
       );
-      triggerRefresh(); // 👈 refresh visualizer
+      triggerRefresh();
     }
 
     setEditTransitionModal({ isOpen: false, transition: null });
+  };
+
+  const handleUndoTransition = async () => {
+    if (!previousTransition) return;
+
+    const { transition_id, from_step_id, to_step_id, action_id } = previousTransition;
+    const action_name = getActionName(action_id) || '';
+
+    const reverted = await updateTransition(transition_id, {
+      from_step_id,
+      to_step_id,
+      action_name,
+    });
+
+    if (reverted?.transition_id) {
+      setTransitions((prev) =>
+        prev.map((tr) => (tr.transition_id === reverted.transition_id ? reverted : tr))
+      );
+      triggerRefresh();
+      setPreviousTransition(null); // clear undo
+      setEditTransitionModal({ isOpen: false, transition: null });
+    }
   };
 
   return {
@@ -182,5 +201,7 @@ export default function useWorkflowEditorState(uuid) {
     handleUpdateStep,
     handleEditStep,
     handleEditTransition,
+    handleUndoTransition,
+    previousTransition, // expose if you want to enable/disable Undo button
   };
 }

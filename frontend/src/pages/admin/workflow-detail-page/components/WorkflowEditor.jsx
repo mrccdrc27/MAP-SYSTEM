@@ -8,8 +8,11 @@ import StepModal from './StepModal';
 import TransitionModal from './TransitionModal';
 import useWorkflowEditorState from './useWorkflowEditorState';
 import NewWorkflowVisualizer from "../../../../components/workflow/NewWorkflowVisualizer";
+import { useWorkflowRefresh } from '../../../../components/workflow/WorkflowRefreshContext';
 
 export default function WorkflowEditor2() {
+
+  const { triggerRefresh } = useWorkflowRefresh()
   const { uuid } = useParams();
   const state = useWorkflowEditorState(uuid);
   const { workflow, loading, error } = state;
@@ -28,6 +31,23 @@ export default function WorkflowEditor2() {
           <h1 style={styles.title}>{workflow.name}</h1>
           <p style={styles.subtitle}>{workflow.description}</p>
         </div>
+
+        <button
+          onClick={async () => {
+            await state.handleUndoTransition();
+            triggerRefresh(); // ensure it's called after undo finishes
+          }}
+          
+          disabled={!state.previousTransition}
+          style={{
+            ...styles.undoButton,
+            opacity: state.previousTransition ? 1 : 0.4,
+            cursor: state.previousTransition ? 'pointer' : 'not-allowed'
+          }}
+        >
+          ⟲ Undo Transition Edit
+        </button>
+        
       </header>
 
       {/* Main Area */}
