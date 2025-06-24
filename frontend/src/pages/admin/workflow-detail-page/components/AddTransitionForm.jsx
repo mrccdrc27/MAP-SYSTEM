@@ -16,11 +16,11 @@ export default function AddTransitionForm({
           <select
             value={newTransition.from}
             onChange={(e) =>
-              setNewTransition({ ...newTransition, from: e.target.value || null })
+              setNewTransition({ ...newTransition, from: e.target.value })
             }
             className={styles.select}
           >
-            <option value="">Select Step</option>
+            <option value="">Start Workflow</option>
             {steps.map((step) => (
               <option key={step.step_id} value={step.step_id}>
                 {step.description}

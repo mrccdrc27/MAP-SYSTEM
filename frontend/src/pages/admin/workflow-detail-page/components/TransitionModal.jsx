@@ -65,7 +65,7 @@ export default function TransitionModal({
               onChange={(e) => updateField('from_step_id', e.target.value)}
               className={styles.select}
             >
-              <option value="">Select step</option>
+              <option value="">Start Workflow</option>
               {steps.map(step => (
                 <option key={step.step_id} value={step.step_id}>{step.name}</option>
               ))}

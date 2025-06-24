@@ -2,6 +2,8 @@ from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 from .models import Steps
 from .serializers import *
+from rest_framework.response import Response
+from rest_framework import status
 
 # --- STEPS ---
 class StepListCreateView(generics.ListCreateAPIView):
@@ -45,3 +47,17 @@ class StepTransitionDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = StepTransition.objects.all()
     serializer_class = StepTransitionSerializer
     lookup_field = 'transition_id'
+
+class StepTransitionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = StepTransition.objects.all()
+    serializer_class = StepTransitionSerializer
+    lookup_field = 'transition_id'
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.from_step_id is None:
+            return Response(
+                {"detail": "Cannot delete the start transition (from_step = null)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)

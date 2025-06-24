@@ -121,26 +121,31 @@ export default function useWorkflowEditorState(uuid) {
 
   // --- Transition Logic ---
   const handleCreateTransition = async () => {
-    if (!newTransition.from || !newTransition.actionName || !workflow?.workflow_id) return;
-
+    const hasAction = newTransition.actionName?.trim();
+    const hasWorkflow = workflow?.workflow_id;
+  
+    // Explicitly allow from = "" (which maps to null)
+    if (newTransition.from === undefined || !hasAction || !hasWorkflow) return;
+  
     const payload = {
       workflow_id: workflow.workflow_id,
-      from_step_id: newTransition.from,
+      from_step_id: newTransition.from || null,  // "" → null
       to_step_id: newTransition.to || null,
       action: {
         name: newTransition.actionName,
         description: newTransition.actionDescription || '',
       },
     };
-
+  
     const created = await createTransition(payload);
     if (created?.transition_id) {
       setTransitions((prev) => [...prev, created]);
       triggerRefresh();
     }
-
+  
     setNewTransition({ from: '', to: '', actionName: '', actionDescription: '' });
   };
+  
 
   const handleUpdateTransition = async () => {
     const t = editTransitionModal.transition;
