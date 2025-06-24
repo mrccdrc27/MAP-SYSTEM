@@ -1,5 +1,5 @@
 // style
-import useTriggerAction from "../../../../api/usetriggeraction";
+import useTriggerAction from "../../../../api/useTriggerAction";
 import styles from "./ticket-action.module.css";
 
 // hooks

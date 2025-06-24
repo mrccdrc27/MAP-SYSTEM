@@ -8,7 +8,7 @@ import TodayTasks from "./components/TodayTasks";
 
 // style
 import styles from "./dashboard.module.css";
-import general from "./components/component.module.css";
+import general from "./components/Component.module.css";
 
 export default function Dashboard() {
   return (

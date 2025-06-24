@@ -1,5 +1,5 @@
 // TodayTasks.jsx
-import styles from './component.module.css';
+import styles from './Component.module.css';
 
 const TodayTasks = () => {
   const tasks = [

@@ -1,5 +1,5 @@
 // SLACard.jsx
-import styles from './component.module.css';
+import styles from './Component.module.css';
 
 const SLACard = () => {
   const slaItems = [
