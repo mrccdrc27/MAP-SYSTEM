@@ -153,31 +153,31 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{asctime} [{levelname}] {name} — {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'workflow_file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'workflow.log'),
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'workflow': {
-            'handlers': ['workflow_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'verbose': {
+#             'format': '{asctime} [{levelname}] {name} — {message}',
+#             'style': '{',
+#         },
+#     },
+#     'handlers': {
+#         'workflow_file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': os.path.join(BASE_DIR, 'logs', 'workflow.log'),
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         'workflow': {
+#             'handlers': ['workflow_file'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }
 
 # Celery settings
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')

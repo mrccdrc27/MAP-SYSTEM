@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Ticket
-from .serializers import TicketSerializer
+from .serializers import TicketSerializer, TicketSerializer2
 from .tasks import push_ticket_to_workflow
+from rest_framework import generics
 
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
@@ -52,3 +53,15 @@ class TicketViewSet(viewsets.ModelViewSet):
             {"message": f"Enqueued {len(ticket_ids)} tickets for workflow push."},
             status=status.HTTP_202_ACCEPTED
         )
+
+
+
+class TicketListCreateView(generics.ListCreateAPIView):
+    queryset = Ticket.objects.all().order_by('-created_at')
+    serializer_class = TicketSerializer2
+
+
+class TicketRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Ticket.objects.all()
+    serializer_class = TicketSerializer2
+    lookup_field = 'id'
