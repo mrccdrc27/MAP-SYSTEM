@@ -27,4 +27,4 @@ celery -A workflow_api worker -Q workflow_updates --loglevel=info
 celery -A task_service worker -Q workflow_send_queue --loglevel=info --pool=solo
 celery -A workflow_api worker --pool=solo --loglevel=info -Q ticket_tasks
 
-update1
+update2
