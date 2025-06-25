@@ -25,7 +25,13 @@ export default function useWorkflow(workflowId) {
         description: w.description,
         status: w.status,
         createdAt: w.createdAt,
-        updatedAt: w.updatedAt
+        updatedAt: w.updatedAt,
+        low_sla: w.low_sla,
+        medium_sla: w.medium_sla,
+        high_sla: w.high_sla,
+        urgent_sla: w.urgent_sla,
+        category: w.category,
+        sub_category: w.sub_category,
       });
       setRoles(w.roles || []);
       setSteps(w.steps || []);

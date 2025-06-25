@@ -50,13 +50,15 @@ export default function Workflow() {
           </div>
           <div className={styles.wpTableSection}>
             <div className={general.tpTable}>
-              <WorkflowTable workflows={allworkflow}/>
+              <WorkflowTable workflows={allworkflow} onAddWorkflow={setOpenAddWorkflow}/>
             </div>
           </div>
         </section>
       </main>
       {openAddWorkflow && (
-        <AddWorkflow closeAddWorkflow={() => setOpenAddWorkflow(false)} />
+        <AddWorkflow closeAddWorkflow={() => 
+          setOpenAddWorkflow(false)
+        } />
       )}
     </>
   );

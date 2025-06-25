@@ -4,6 +4,7 @@ from django.db.models.signals import post_save
 from django.conf import settings
 from django.dispatch import receiver
 from .models import StepInstance, RoleRoundRobinPointer
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,22 @@ def assign_user_to_step_instance(sender, instance, created, **kwargs):
         pointer.pointer = (index + 1) % len(users)
         pointer.save(update_fields=["pointer"])
         logger.info(f"Pointer updated to {pointer.pointer} for role {role_id}")
+
+
+        from celery import Celery
+        celery = Celery(broker=settings.CELERY_BROKER_URL)
+
+        message = (
+            f"You have been assigned to the step '{instance.step_transition_id.to_step_id.name}' "
+            f"in workflow '{instance.step_transition_id.workflow_id.name}' "
+            f"for ticket '{instance.task_id.ticket_id}'."
+        )
+
+        celery.send_task(
+            "notifications.tasks.create_assignment_notification",
+            args=[selected_user_id, message, str(instance.step_instance_id)],
+            queue="notification-queue"
+        )
 
     except Exception as e:
         logger.exception(f"Error assigning user to StepInstance: {e}")

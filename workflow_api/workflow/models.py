@@ -55,23 +55,22 @@ class Workflows(models.Model):
         help_text="Optional end‐condition to trigger when workflow completes."
     )
 
-    # Now simple text fields instead of FKs
-    category = models.CharField(
-        max_length=64,
-        help_text="Top‐level category name (previously a FK)."
-    )
-    sub_category = models.CharField(
-        max_length=64,
-        help_text="Sub‐category name (previously a FK)."
-    )
+    category = models.CharField(max_length=64)
+    sub_category = models.CharField(max_length=64)
 
     is_published = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="draft")
+
+    # ✅ SLA per priority
+    low_sla = models.DurationField(null=True, blank=True, help_text="SLA for low priority")
+    medium_sla = models.DurationField(null=True, blank=True, help_text="SLA for medium priority")
+    high_sla = models.DurationField(null=True, blank=True, help_text="SLA for high priority")
+    urgent_sla = models.DurationField(null=True, blank=True, help_text="SLA for urgent priority")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        # if you still want uniqueness on category + sub_category per user:
         constraints = [
             models.UniqueConstraint(
                 fields=['user_id', 'category', 'sub_category'],
@@ -79,12 +78,30 @@ class Workflows(models.Model):
             ),
         ]
 
+    def clean(self):
+        """
+        Enforce SLA ordering: urgent < high < medium < low
+        """
+        sla_list = [
+            ('urgent_sla', self.urgent_sla),
+            ('high_sla', self.high_sla),
+            ('medium_sla', self.medium_sla),
+            ('low_sla', self.low_sla)
+        ]
+
+        for i in range(len(sla_list) - 1):
+            current_name, current = sla_list[i]
+            next_name, next_val = sla_list[i + 1]
+            if current and next_val and current >= next_val:
+                raise ValidationError(
+                    f"{current_name} should be less than {next_name} (i.e., urgent < high < medium < low)"
+                )
+
     def save(self, *args, **kwargs):
-        # Assign UUID on create
         if not self.pk and not self.workflow_id:
             self.workflow_id = str(uuid.uuid4())
-        # Prevent updates to workflow_id
         else:
             if 'workflow_id' in (kwargs.get('update_fields') or []):
                 raise ValidationError("workflow_id cannot be modified after creation.")
+        self.full_clean()  # Trigger SLA ordering validation
         super().save(*args, **kwargs)

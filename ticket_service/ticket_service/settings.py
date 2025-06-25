@@ -137,7 +137,7 @@ CELERY_BROKER_URL = 'amqp://GY6Jx5nsXW5edoIB:DGHuVF0tWCZgWnO~T51D._6viJWc7U_B@ba
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_TASK_DEFAULT_QUEUE = 'ticket_tasks9'  # Only if you plan to run worker here
+CELERY_TASK_DEFAULT_QUEUE = 'ticket_tasks7'  # Only if you plan to run worker here
 
 
 import os

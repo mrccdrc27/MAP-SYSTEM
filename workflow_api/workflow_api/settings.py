@@ -190,3 +190,7 @@ CELERY_TASK_SERIALIZER = 'json'
 # External service URLs
 USER_SERVICE_URL = os.getenv('DJANGO_USER_SERVICE')
 BASE_URL = os.getenv('DJANGO_USER_SERVICE')
+
+CELERY_TASK_ROUTES = {
+    "notifications.tasks.create_assignment_notification": {"queue": "notification-queue"},
+}

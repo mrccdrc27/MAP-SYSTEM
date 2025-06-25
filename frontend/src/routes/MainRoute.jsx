@@ -25,10 +25,12 @@ import NotFound from "../pages/error/NotFound";
 import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
 import TEST from "../pages/test";
 import AdminProfile from "../pages/auth/AdminProfile";
+import ProtectedRegister from "./ProtectedRegister";
 
 export default function MainRoute() {
   return (
     <Routes>
+      <Route path="/register" element={<ProtectedRegister />} />
       {/* PUBLIC ROUTES */}
       <Route path="/" element={<Login />} />
       <Route path="/password-reset" element={<PasswordReset />} />
