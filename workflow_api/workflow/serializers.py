@@ -16,9 +16,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class WorkflowSerializer(serializers.ModelSerializer):
-    # Now plain text fields, not slug‐related
     category = serializers.CharField(max_length=64)
     sub_category = serializers.CharField(max_length=64)
+
+    # Add SLA duration fields as ISO 8601 durations or human-readable strings
+    low_sla = serializers.DurationField(required=False, allow_null=True)
+    medium_sla = serializers.DurationField(required=False, allow_null=True)
+    high_sla = serializers.DurationField(required=False, allow_null=True)
+    urgent_sla = serializers.DurationField(required=False, allow_null=True)
 
     class Meta:
         model = Workflows
@@ -31,39 +36,28 @@ class WorkflowSerializer(serializers.ModelSerializer):
             "sub_category",
             "status",
             "is_published",
+            "low_sla",
+            "medium_sla",
+            "high_sla",
+            "urgent_sla",
         )
-        read_only_fields = ("id", "status", "workflow_id")
+        read_only_fields = ("workflow_id",)
 
-    def update_status(self, workflow):
+    def validate(self, data):
         """
-        Determines whether a workflow should be marked as 'initialized'.
+        Validate that urgent < high < medium < low
         """
-        steps = Steps.objects.filter(workflow_id=workflow)
-        if steps.exists():
-            all_initialized = all(
-                StepTransition.objects.filter(
-                    models.Q(from_step_id=step) | models.Q(to_step_id=step)
-                ).exists()
-                for step in steps
-            )
-            workflow.status = "initialized" if all_initialized else "draft"
-        else:
-            workflow.status = "draft"
-        workflow.save(update_fields=["status"])
+        sla_keys = ["urgent_sla", "high_sla", "medium_sla", "low_sla"]
+        sla_values = [data.get(key) for key in sla_keys]
 
-    def create(self, validated_data):
-        with transaction.atomic():
-            workflow = Workflows.objects.create(**validated_data)
-            return workflow
-
-    def update(self, instance, validated_data):
-        is_published = validated_data.get("is_published", instance.is_published)
-        if is_published and instance.status != "initialized":
-            raise serializers.ValidationError(
-                "Workflow must be in 'initialized' state before it can be published."
-            )
-        return super().update(instance, validated_data)
-
+        for i in range(len(sla_values) - 1):
+            a = sla_values[i]
+            b = sla_values[i + 1]
+            if a is not None and b is not None and a >= b:
+                raise serializers.ValidationError(
+                    f"{sla_keys[i]} should be less than {sla_keys[i + 1]} (urgent < high < medium < low)"
+                )
+        return data
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -105,12 +99,7 @@ class WorkflowAggregatedSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workflows
-        fields = [
-            'workflow_id', 'user_id', 'name', 'description',
-            'status', 'created_at', 'updated_at',
-            'category', 'sub_category'
-        ]
-
+        fields = '__all__'
 
 class FullWorkflowSerializer(serializers.Serializer):
     workflow = serializers.SerializerMethodField()

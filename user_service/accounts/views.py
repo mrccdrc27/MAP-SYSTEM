@@ -34,6 +34,10 @@ from urllib.parse import urlencode
 from rest_framework.decorators import api_view
 from django.core import signing
 
+from django.conf import settings
+
+
+
 
 User = get_user_model()
 
@@ -336,7 +340,8 @@ class InviteUserView(CreateAPIView):
 
         # FRONTEND URL (change this to your production domain when deployed)
         # frontend_base_url = "http://localhost:3000/api/authapi/register/${token}/"
-        frontend_base_url = "http://localhost:1000/register"
+# "http://localhost:1000/register"
+        frontend_base_url = settings.FRONTEND_URL
         query_string = urlencode({'token': token})
         url = f"{frontend_base_url}?{query_string}"
 

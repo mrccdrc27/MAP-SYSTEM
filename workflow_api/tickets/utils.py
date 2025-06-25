@@ -5,19 +5,22 @@ from task.models import Task
 
 def allocate_task_for_ticket(ticket):
     """
-    Create Tasks for every Workflows entry whose
-    category (case‐insensitive) matches ticket.category
-    AND sub_category matches ticket.subcategory.
+    Create Tasks for every Workflows entry whose:
+    - department matches ticket.department (case-insensitive),
+    - category matches ticket.category (case-insensitive),
+    - sub_category matches ticket.subcategory (case-insensitive).
+
     Returns True if at least one Task was created (or already existed).
     """
-    cat = ticket.category.strip()
-    sub = ticket.subcategory.strip()
+    dep = (ticket.department or '').strip()
+    cat = (ticket.category or '').strip()
+    sub = (ticket.subcategory or '').strip()
 
-    if not cat or not sub:
+    if not (dep and cat and sub):
         return False
 
-    # Now filtering on CharField rather than FK linked name
     workflows = Workflows.objects.filter(
+        department__iexact=dep,
         category__iexact=cat,
         sub_category__iexact=sub
     )
@@ -32,7 +35,7 @@ def allocate_task_for_ticket(ticket):
             )
             created_any = True
         except IntegrityError:
-            # Duplicate Task; treat as “exists”
+            # Duplicate Task; treat as already exists
             created_any = True
 
     return created_any

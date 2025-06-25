@@ -73,8 +73,11 @@ class WorkflowTicket(models.Model):
 
         if is_new and not self.is_task_allocated:
             from tickets.utils import allocate_task_for_ticket
-            if allocate_task_for_ticket(self):
-                WorkflowTicket.objects.filter(pk=self.pk).update(
+            success = allocate_task_for_ticket(self)
+
+            if success:
+                # Important: prevent race condition from parallel creation
+                WorkflowTicket.objects.filter(pk=self.pk, is_task_allocated=False).update(
                     is_task_allocated=True
                 )
 

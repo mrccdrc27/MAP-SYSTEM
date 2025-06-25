@@ -17,11 +17,10 @@ instructions_pool = [
 ]
 
 class Command(BaseCommand):
-    help = 'Seed workflows with step-specific actions and robust transitions, including random end logic.'
+    help = 'Seed selected workflows for Asset, Budget, and IT departments with steps, actions, and transitions.'
 
     def handle(self, *args, **options):
         with transaction.atomic():
-            # Ensure required roles exist
             try:
                 role_map = {
                     'Requester': Roles.objects.get(name='Admin'),
@@ -31,85 +30,110 @@ class Command(BaseCommand):
             except Roles.DoesNotExist as e:
                 raise CommandError(f"Missing expected role: {e}")
 
-            main_names = ['General Inquiry', 'Technical Issue', 'Billing']
-            sub_names = ['Software', 'Hardware', 'Payment']
+            workflows_to_create = [
+                {
+                    "name": "Asset - Asset Check-in",
+                    "category": "Asset Category",
+                    "sub_category": "Asset Check-in",
+                    "department": "Asset Department",
+                },
+                {
+                    "name": "Asset - Asset Check-out",
+                    "category": "Asset Category",
+                    "sub_category": "Asset Check-out",
+                    "department": "Asset Department",
+                },
+                {
+                    "name": "Budget - Project Proposal",
+                    "category": "Budget Category",
+                    "sub_category": "Project Proposal",
+                    "department": "Budget Department",
+                },
+                {
+                    "name": "IT - Access Request",
+                    "category": "IT Category",
+                    "sub_category": "Access Request",
+                    "department": "IT Department",
+                },
+                {
+                    "name": "IT - Software Installation",
+                    "category": "IT Category",
+                    "sub_category": "Software Installation",
+                    "department": "IT Department",
+                },
+            ]
+
             end_logic_choices = ['asset', 'budget', 'notification']
 
-            for main in main_names:
-                for sub in sub_names:
-                    wf_name = f"{main} - {sub}"
-                    end_logic = random.choice(end_logic_choices)
+            for wf_data in workflows_to_create:
+                end_logic = random.choice(end_logic_choices)
 
-                    wf, created = Workflows.objects.get_or_create(
-                        name=wf_name,
+                wf, created = Workflows.objects.get_or_create(
+                    name=wf_data["name"],
+                    defaults={
+                        'user_id': 1,
+                        'description': f'{wf_data["name"]} workflow',
+                        'category': wf_data["category"],
+                        'sub_category': wf_data["sub_category"],
+                        'status': 'draft',
+                        'end_logic': end_logic,
+                        'department': wf_data["department"],
+                    }
+                )
+
+                self.stdout.write(self.style.SUCCESS(
+                    f'Workflow "{wf.name}" {"created" if created else "exists"} with end_logic="{end_logic}"'
+                ))
+
+                steps_cfg = [
+                    ('Submit Form', 'Requester', ['start', 'submit']),
+                    ('Review Documents', 'Reviewer', ['approve', 'reject']),
+                    ('Final Approval', 'Approver', ['complete']),
+                ]
+
+                step_objs = []
+                for idx, (label, role_key, _) in enumerate(steps_cfg):
+                    step_name = f"{wf.name} - {label}"
+                    step, _ = Steps.objects.get_or_create(
+                        workflow_id=wf,
+                        name=step_name,
                         defaults={
-                            'user_id': 1,
-                            'description': f'{wf_name} workflow',
-                            'category': main,           # now a CharField
-                            'sub_category': sub,        # now a CharField
-                            'status': 'draft',
-                            'end_logic': end_logic,
+                            'description': label,
+                            'role_id': role_map[role_key],
+                            'instruction': random.choice(instructions_pool)
                         }
                     )
-                    self.stdout.write(self.style.SUCCESS(
-                        f'Workflow "{wf_name}" {"created" if created else "exists"} '
-                        f'with end_logic="{end_logic}"'
-                    ))
+                    step_objs.append(step)
 
-                    # Define the step/action structure
-                    steps_cfg = [
-                        ('Submit Form', 'Requester', ['start', 'submit']),
-                        ('Review Documents', 'Reviewer', ['approve', 'reject']),
-                        ('Final Approval', 'Approver', ['complete']),
-                    ]
-
-                    # Create or fetch steps
-                    step_objs = []
-                    for idx, (label, role_key, _) in enumerate(steps_cfg):
-                        step_name = f"{wf_name} - {label}"
-                        step, _ = Steps.objects.get_or_create(
-                            workflow_id=wf,  # assuming a FK to Workflows
-                            name=step_name,
-                            defaults={
-                                'description': label,
-                                'role_id': role_map[role_key],
-                                'instruction': random.choice(instructions_pool)
-                            }
+                for idx, (_, _, events) in enumerate(steps_cfg):
+                    step = step_objs[idx]
+                    for event in events:
+                        act_name = f"{step.name} - {event}"
+                        action, _ = Actions.objects.get_or_create(
+                            name=act_name,
+                            defaults={'description': f'{event} action on {step.name}'}
                         )
-                        step_objs.append(step)
 
-                    # Create transitions for each event
-                    for idx, (_, _, events) in enumerate(steps_cfg):
-                        step = step_objs[idx]
-                        for event in events:
-                            act_name = f"{step.name} - {event}"
-                            action, _ = Actions.objects.get_or_create(
-                                name=act_name,
-                                defaults={'description': f'{event} action on {step.name}'}
+                        if event == 'start':
+                            frm, to = None, step
+                        elif event == 'submit':
+                            frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
+                        elif event == 'approve':
+                            frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
+                        elif event == 'reject':
+                            frm, to = step, step_objs[idx - 1] if idx > 0 else None
+                        else:  # complete
+                            frm, to = step, None
+
+                        try:
+                            StepTransition.objects.get_or_create(
+                                from_step_id=frm,
+                                to_step_id=to,
+                                action_id=action
                             )
-
-                            # Determine from/to
-                            if event == 'start':
-                                frm, to = None, step
-                            elif event == 'submit':
-                                frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
-                            elif event in ('approve',):
-                                frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
-                            elif event == 'reject':
-                                frm, to = step, step_objs[idx - 1] if idx > 0 else None
-                            else:  # 'complete'
-                                frm, to = step, None
-
-                            try:
-                                StepTransition.objects.get_or_create(
-                                    from_step_id=frm,
-                                    to_step_id=to,
-                                    action_id=action
-                                )
-                            except (ValidationError, IntegrityError):
-                                # skip invalid or duplicate
-                                continue
+                        except (ValidationError, IntegrityError):
+                            continue
 
             self.stdout.write(self.style.SUCCESS(
-                'Seeding complete: workflows, steps, actions, transitions with random end logic.'
+                'Seeding complete: 5 unique workflows for Asset, Budget, and IT departments.'
             ))
