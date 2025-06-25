@@ -15,6 +15,8 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 
+import dj_database_url
+
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -94,12 +96,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'workflow_api.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.getenv('DJANGO_ENV') == 'production':
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL')
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
 
 # Authentication and password validation
 AUTH_PASSWORD_VALIDATORS = [
