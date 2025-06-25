@@ -15,12 +15,12 @@ class Command(BaseCommand):
             {
                 "name": "Asset Manager",
                 "description": "Manages asset lifecycle, tracking, and documentation.",
-                "user_id": 1
+                "user_id": 2
             },
             {
                 "name": "Budget Manager",
                 "description": "Approves financial expenditures and tracks budgets.",
-                "user_id": 1
+                "user_id": 3
             }
         ]
 
