@@ -1,0 +1,49 @@
+{
+        "id": 77,
+        "ticket_number": "TX9044",
+        "subject": "cancel appointments",
+        "category": "Scheduling",
+        "sub_category": "Shift Adjustment Inquiry",
+        "description": "testing 3 attachments",
+        "scheduled_date": null,
+        "priority": null,
+        "department": null,
+        "status": "New",
+        "submit_date": "2025-06-20T21:18:15.899023+08:00",
+        "update_date": "2025-06-20T21:18:15.899056+08:00",
+        "assigned_to": null,
+        "attachments": [
+            {
+                "id": 52,
+                "file": "http://127.0.0.1:8000/media/ticket_attachments/Pelagio_-_Ethics_-_Reflection_Paper_5_Hq0gXXo.pdf",
+                "file_name": "Pelagio - Ethics - Reflection Paper #5.pdf",
+                "file_type": "application/pdf",
+                "file_size": 47340,
+                "upload_date": "2025-06-20T21:18:16.414835+08:00"
+            },
+            {
+                "id": 53,
+                "file": "http://127.0.0.1:8000/media/ticket_attachments/Pelagio_-_Reflection_Paper_4_kXyotG4.pdf",
+                "file_name": "Pelagio - Reflection Paper #4.pdf",
+                "file_type": "application/pdf",
+                "file_size": 39016,
+                "upload_date": "2025-06-20T21:18:16.561018+08:00"
+            },
+            {
+                "id": 54,
+                "file": "http://127.0.0.1:8000/media/ticket_attachments/Pelagio_-_TCW_-_Impact_of_Environmental_Crisis_on_Globalization_LhyAjXx.pdf",
+                "file_name": "Pelagio - TCW - Impact of Environmental Crisis on Globalization.pdf",
+                "file_type": "application/pdf",
+                "file_size": 39680,
+                "upload_date": "2025-06-20T21:18:16.616186+08:00"
+            }
+        ],
+        "employee": {
+            "first_name": "Sealtiel Joseph",
+            "last_name": "Pelagio",
+            "email": "sethpelagio20@gmail.com",
+            "company_id": "MA0002",
+            "department": "IT Department",
+            "image": "http://127.0.0.1:8000/media/employee_images/resized-image_OoWpSL9.jpeg"
+        }
+    }

@@ -1,0 +1,27 @@
+{
+  "title": "Q1 System Upgrade 2026",
+  "project_summary": "Upgrade core accounting software.",
+  "project_description": "Migrate to new version of accounting platform for improved features",
+  "performance_notes": "This will run through the 3rd quarter",
+  "department_input": 2,
+  "fiscal_year": 2,
+  "submitted_by_name": "External System Interface",
+  "status": "SUBMITTED",
+  "performance_start_date": "2026-01-01",
+  "performance_end_date": "2026-01-01",
+  "ticket_id": "TTF-FIN-2026-001",
+  "items": [
+    {
+      "cost_element": "Software License",
+      "description": "New Accounting Software License",
+      "estimated_cost": "25000.00",
+      "account": 2
+    },
+    {
+      "cost_element": "Training",
+      "description": "Staff training for new software",
+      "estimated_cost": "5000.00",
+      "account": 2
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+.header {
+  /* padding: 1rem; */
+  padding-bottom: 20px;
+  /* background-color: #fcfcfc; */
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.headerTitle {
+  display: flex;
+  gap: 10px;
+}
+
+.headerTitle h1 {
+  margin: 0;
+  font-size: var(--h1-font-size);
+  color: var(--table-color);
+}
+
+.headerTitle p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555555;
+}
+
+.undoButton {
+  opacity: 1;
+  cursor: pointer;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--accent-color);
+  color: var(--bg-color);
+}
+
+.undoButton.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar (Left) */
+.sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  background-color: #fcfcfc;
+
+  width: 300px;
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #fcfcfc;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  color: var(--heading-color);
+}
+
+.tabActive {
+  flex: 1;
+  padding: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #007bff;
+  border: 0px solid #007bff;
+  border-bottom: 3px solid #007bff;
+  background-color: var(--bg1-color);
+}
+
+.sidebarContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Visualizer (Right) */
+.visualizer {
+  flex: 2;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.centerText {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.error {
+  color: red;
+}
+
+/* Base styles remain as-is */
+
+@media (max-width: 1024px) {
+  .main {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+    flex: 3;
+  }
+
+  .visualizer {
+    /* flex: none; */
+    padding: 1rem;
+    flex: 1;
+    margin-bottom: 40px;
+  }
+
+  .tabBar {
+    justify-content: space-around;
+  }
+
+  .tab,
+  .tabActive {
+    flex: none;
+    width: 50%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .headerTitle {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .undoButton {
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+  }
+
+  .sidebarContent {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .visualizer {
+    padding: 0.5rem;
+  }
+
+  .centerText {
+    font-size: 0.9rem;
+    padding: 1rem;
+  }
+
+  .tab,
+  .tabActive {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+}

@@ -1,0 +1,247 @@
+.loginPage {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-color);
+}
+
+.leftPanel,
+.rightPanel {
+  display: flex;
+  height: 100vh;
+  width: 50vw;
+  justify-content: center;
+  align-items: center;
+}
+
+.leftPanel {
+  flex: 1;
+}
+
+.leftPanel img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.rightPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.formHeader {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.formHeader .logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1rem;
+  gap: 10px;
+}
+
+.formHeader .logo img {
+  height: 5.8rem;
+  width: 5.8rem;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.formHeader .logoText {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.formHeader h1 {
+  font-size: 1.5rem;
+}
+
+.formHeader p {
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+fieldset {
+  border: none;
+}
+
+.logInButton {
+  width: 100%;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: ease 0.5s;
+  cursor: pointer;
+}
+
+.formBtn {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.formBtn button {
+  width: 100%;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: ease 0.5s;
+  cursor: pointer;
+}
+
+.formBtn button:disabled {
+  cursor: not-allowed;
+  background-color: #d3d3d3;
+}
+
+.formBtn button:hover:not(button:disabled) {
+  background-color: rgba(0, 123, 255, 0.8);
+}
+
+.forgotPassword,
+.registerBtn {
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.forgotPassword:hover,
+.registerBtn:hover {
+  color: rgba(0, 123, 255, 0.8);
+}
+
+.loginPage p {
+  color: var(--text-color);
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.loginPage p.resendLabel {
+  text-align: left;
+  width: 100%;
+}
+
+.loginPage form,
+.resendButton {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 70%;
+  gap: 20px;
+}
+
+.loginPage form fieldset {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  width: 100%;
+  gap: 8px;
+}
+
+.loginPage form fieldset input {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  padding: 18px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  background-color: var(--bg-color);
+}
+
+.loginPage input:focus {
+  outline: 2px solid var(--primary-color);
+}
+
+.passwordContainer {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.loginPage input[type="password"],
+.loginPage input[type="text"]:nth-child(1) {
+  padding-right: 40px;
+}
+
+.showPassword {
+  height: 20px;
+  width: 20px;
+  position: absolute;
+  right: 16px;
+  cursor: pointer;
+}
+
+input[type="password"]::-ms-reveal {
+  display: none;
+}
+
+.errorMsg {
+  color: var(--warning-text);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.passwordRequirements {
+  margin-top: 10px;
+}
+
+.passwordRequirements .errorMsg {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.logInButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ADDED */
+.logInButton:disabled {
+  background-color: #d3d3d3;
+  color: #777;
+  cursor: not-allowed;
+  transition: var(--transition);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

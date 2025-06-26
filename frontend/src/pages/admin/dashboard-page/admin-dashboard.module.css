@@ -1,0 +1,137 @@
+.adminDashboardPage {
+  margin: var(--margin-size-min);
+}
+
+.adpHeader {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.adpHeader h1 {
+  color: var(--heading-color);
+  font-size: 32px; /* for heading */
+}
+
+/* dpBody */
+.adpBody {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* adpCardSection */
+.adpCardSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.adpWrapper {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.adpLeftRight {
+  display: flex;
+  gap: 20px;
+  flex: 2;
+}
+
+.adpLeft {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 20px;
+}
+
+.adpRight {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 20px;
+}
+
+.adpMid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 20px;
+}
+
+.adpSide {
+  flex: 1;
+  display: flex;
+}
+
+/* adpContent */
+.adpContentSection {
+  display: flex;
+}
+
+.adpVisuals {
+  flex: 2;
+}
+
+.adpQuickActionSection {
+  flex: 1;
+}
+
+/* quick action */
+.adpVisuals h2 {
+  color: var(--heading-color);
+  font-size: var(--h1-font-size);
+}
+
+.adpQuickActionSection h2 {
+  color: var(--heading-color);
+  font-size: var(--h1-font-size);
+}
+
+/* MEDIA QUERIES */
+@media (max-width: 1200px) {
+  .adpWrapper {
+    flex-direction: column;
+  }
+
+  .adpLeftRight {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .adpSide {
+    flex: 1;
+    margin-top: 20px; /* Stack the "Critical" card after the rest */
+  }
+
+  .adpVisuals,
+  .adpQuickActionSection {
+    flex: 1;
+    min-width: unset; /* Let them take full width on small screens */
+  }
+
+  .adpContentSection {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .adpWrapper {
+    gap: 10px;
+  }
+
+  .adpLeftRight {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .adpCardSection {
+    gap: 15px;
+  }
+
+  .adpVisuals h2,
+  .adpQuickActionSection h2 {
+    font-size: 1.2rem; /* Make headings smaller on mobile */
+  }
+}

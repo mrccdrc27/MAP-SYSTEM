@@ -1,0 +1,40 @@
+.quickActionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  height: 70px;
+  gap: 20px;
+  padding: 10px 20px;
+  /* background-color: var(--primary-color); */
+  /* border: 1px solid var(--primary-color); */
+  background-color: var(--bg1-color);
+  color: var(--primary-color);
+  border: var(--border-bottom);
+  /* border: none; */
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, transform 0.3s ease; /* added transform transition */
+}
+
+.actionButton i {
+  font-size: 1rem;
+  transition: transform 0.3s ease; /* smooth transition for icon scaling and translation */
+}
+
+.actionButton:hover {
+  background-color: #0056b3;
+  transform: scale(1.05) translateY(-3px);
+  box-shadow: var(--box-shadow-as);
+  color: var(--bg1-color);
+  border: none;
+}
+
+

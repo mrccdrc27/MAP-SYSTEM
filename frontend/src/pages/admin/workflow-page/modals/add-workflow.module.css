@@ -1,0 +1,358 @@
+/* === Overlay Backdrop === */
+.awOverlayWrapper,
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(2px);
+  background: rgba(13, 13, 13, 0.1);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* === Modal Container === */
+.addWorkflowModal,
+.modalContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #ffffff;
+  z-index: 1001;
+  width: 100%;
+  max-width: 70%;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 2rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  animation: fadeInScale 0.3s ease-out;
+}
+
+/* === Exit Button === */
+.awExit,
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1002;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeButtonIcon {
+  background-color: #dc3545;
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* === Header === */
+.awHeader {
+  text-align: start;
+  margin-bottom: 1.25rem;
+}
+
+.awHeader h2 {
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+/* === Input Form === */
+.awWrapper,
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inputGroup,
+.stepContentContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label,
+.label {
+  font-size: 0.875rem;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.inputGroup input,
+.input,
+.textarea,
+.select {
+  padding: 10px;
+  font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  width: 100%;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus,
+.inputGroup input:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+/* === Form Container === */
+.stepContentContainer {
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+/* === Buttons === */
+.submitBtn,
+.buttonPrimary {
+  background-color: #3b82f6;
+  color: #ffffff;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submitBtn:hover,
+.buttonPrimary:hover {
+  background-color: #2563eb;
+}
+
+.buttonSecondary {
+  background-color: #f3f4f6;
+  color: #111827;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+.buttonSecondary:hover {
+  background-color: #e5e7eb;
+}
+
+.buttonDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === Step Indicator === */
+.stepIndicator {
+  margin-bottom: 2rem;
+}
+
+.stepIndicatorInner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stepNumber {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  color: #333;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.stepTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.stepDescription {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.stepSeparator {
+  margin: 0 1rem;
+  color: #999;
+}
+
+.stepActive {
+  border-color: #333;
+  font-weight: bold;
+}
+
+.stepCompleted {
+  background-color: #333;
+  color: white;
+}
+
+.stepInactive {
+  opacity: 0.5;
+}
+
+.stepTitleActive,
+.stepTitleCompleted,
+.stepTitleInactive {
+  font-weight: normal;
+  color: #333;
+}
+
+/* === SLA Section === */
+.slaInputGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.slaInputContainer {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.slaLabel {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.unitLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.slaInput {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.slaInput:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* === SLA Templates === */
+.templateContainer {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.templateTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+}
+
+.templateButton {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1d4ed8;
+  background-color: #dbeafe;
+  border: 1px solid #93c5fd;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.templateButton:hover {
+  background-color: #bfdbfe;
+  border-color: #60a5fa;
+}
+
+.templateHint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+.slaUrgent {
+  background-color: #fef2f2;
+}
+
+.slaHigh {
+  background-color: #fff7ed;
+}
+
+.slaMedium {
+  background-color: #fefce8;
+}
+
+.slaLow {
+  background-color: #ecfdf5;
+}
+
+/* === Animation === */
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}

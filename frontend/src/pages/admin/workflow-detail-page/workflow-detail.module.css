@@ -1,0 +1,39 @@
+.workflowDetailPage {
+  margin: var(--margin-size-min);
+}
+
+/* .wpdHeader {
+  margin-top: 40px;
+} */
+
+/* .wpdHeader h1 { 
+  color: var(--heading-color);
+  font-size: var(--h1-font-size);
+} */
+
+.wpdHeader {
+  margin-top: 60px;
+  display: flex;
+  gap: 10px;
+}
+
+.wpdBack {
+  color: var(--heading-color);
+  font-size: var(--base-font-size);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.wpdBack:hover {
+  color: var(--primary-color);
+}
+
+.wpdCurrent {
+  color: var(--text-color);
+  font-size: var(--base-font-size);
+  font-weight: 400;
+}
+
+/* tpBody */
+
+/* here */
