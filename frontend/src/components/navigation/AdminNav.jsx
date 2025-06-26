@@ -94,7 +94,7 @@ export default function AdminNav() {
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }
           >
-            Tickets
+            Tasks
             </NavLink>
           <NavLink
             to="/admin/workflow"
@@ -126,7 +126,7 @@ export default function AdminNav() {
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }
           >
-            Archive
+            Tickets
           </NavLink>
         </div>
 
