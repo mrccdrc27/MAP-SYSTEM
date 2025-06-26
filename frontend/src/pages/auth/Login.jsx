@@ -1,5 +1,5 @@
 import { useLogin } from "../../api/useLogin";
-import React, { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import styles from "./login.module.css";
@@ -7,6 +7,7 @@ import styles from "./login.module.css";
 const verifyURL = import.meta.env.VITE_VERIFY_API;
 
 function Login() {
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -22,6 +23,17 @@ function Login() {
     handleOTPSubmit,
     handleBackToLogin,
   } = useLogin();
+
+  // ADDED
+  const onLoginSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await handleLogin(e); // your original logic
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkIfLoggedIn = async () => {
@@ -76,7 +88,8 @@ function Login() {
         </header>
 
         {!showOTP ? (
-          <form className={styles.lpForm} onSubmit={handleLogin}>
+          <form className={styles.lpForm} onSubmit={onLoginSubmit}>
+            {/* <form className={styles.lpForm} onSubmit={handleLogin}> */}
             <fieldset>
               <label htmlFor="email">Email:</label>
               <input
@@ -108,9 +121,23 @@ function Login() {
             </fieldset>
 
             {error && <p className={styles.error}>{error}</p>}
-
+            {/* 
             <button type="submit" className={styles.logInButton}>
               Log In
+            </button> */}
+            <button
+              type="submit"
+              className={styles.logInButton}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className={styles.spinner}></span>
+                  Logging in...
+                </>
+              ) : (
+                "Log In"
+              )}
             </button>
           </form>
         ) : (

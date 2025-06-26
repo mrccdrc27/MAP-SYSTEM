@@ -5,12 +5,14 @@ import styles from "./ticket-action.module.css";
 // hooks
 import { useState } from "react";
 
+// modal
+import AlertBox from "../../../../components/modal/AlertBox";
+
 
 export default function TicketAction({ closeTicketAction, ticket, action, instance }) {
   const [selectedActionId, setSelectedActionId] = useState("");
   const [triggerNow, setTriggerNow] = useState(false);
   const [comment, setComment] = useState("");
-
 
   // Use the custom hook to trigger an action
   const { loading, error, response } = useTriggerAction({

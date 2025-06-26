@@ -8,9 +8,7 @@ import Pagination from "../../components/component/Pagination";
 // react
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { format } from 'date-fns';
-
-
+import { format } from "date-fns";
 
 // headers for the table
 const ticketHeaders = [
@@ -36,11 +34,10 @@ function TicketHeader() {
 
 function TicketItem({ item }) {
   const navigate = useNavigate();
-  console.log("id",item);
+  console.log("id", item);
   return (
     <tr className={general.item}>
-      
-      <td>{item.hasacted ? 'Has Acted' : 'Not Yet'}</td>
+      <td>{item.hasacted ? "Has Acted" : "Not Yet"}</td>
       <td>{item.ticket_id}</td>
       <td>{item.subject}</td>
       <td>{item.description}</td>
@@ -51,7 +48,7 @@ function TicketItem({ item }) {
         </div>
       </td>
       <td>{item.status}</td>
-      <td>{format(new Date(item.created_at), 'yyyy-MM-dd hh:mm:ss a')}</td>
+      <td>{format(new Date(item.created_at), "yyyy-MM-dd hh:mm:ss a")}</td>
       <td>
         <button
           className={general.btn}
@@ -81,30 +78,34 @@ export default function TicketTable({
   return (
     <div className={general.ticketTableSection}>
       <div className={general.tableHeader}>
-        <h2>{activeTab} ({tickets.length})</h2>
+        <h2>
+          {activeTab} ({tickets.length})
+        </h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
           <button className={general.exportButton}>Export</button>
         </div>
       </div>
-      <table className={general.ticketTable}>
-        <thead>
-          <TicketHeader />
-        </thead>
-        <tbody>
-          {tickets.length > 0 ? (
-            paginatedTickets.map((ticket) => (
-              <TicketItem key={ticket.id} item={ticket} />
-            ))
-          ) : (
-            <tr>
-              <td colSpan={ticketHeaders.length} className={general.noData}>
-                No tickets found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <div className={general.ticketTableWrapper}>
+        <table className={general.ticketTable}>
+          <thead>
+            <TicketHeader />
+          </thead>
+          <tbody>
+            {tickets.length > 0 ? (
+              paginatedTickets.map((ticket) => (
+                <TicketItem key={ticket.id} item={ticket} />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={ticketHeaders.length} className={general.noData}>
+                  No tickets found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       <div className={general.ttPagination}>
         <Pagination
           currentPage={currentPage}

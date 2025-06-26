@@ -93,29 +93,30 @@ export default function AgentTable({
           </button>
         </div>
       </div>
-
-      <table className={general.ticketTable}>
-        <thead>
-          <AgentHeader />
-        </thead>
-        <tbody>
-          {agents.length > 0 ? (
-            paginatedAgents.map((agent) => (
-              <AgentItem
-                key={agent.id}
-                item={agent}
-                onActivateClick={handleActivateClick}
-              />
-            ))
-          ) : (
-            <tr>
-              <td colSpan={agentHeaders.length} className={general.noData}>
-                No agents found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <div className={general.ticketTableWrapper}>
+        <table className={general.ticketTable}>
+          <thead>
+            <AgentHeader />
+          </thead>
+          <tbody>
+            {agents.length > 0 ? (
+              paginatedAgents.map((agent) => (
+                <AgentItem
+                  key={agent.id}
+                  item={agent}
+                  onActivateClick={handleActivateClick}
+                />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={agentHeaders.length} className={general.noData}>
+                  No agents found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className={general.ttPagination}>
         <Pagination

@@ -214,3 +214,34 @@ input[type="password"]::-ms-reveal {
   display: block;
   margin-bottom: 5px;
 }
+
+.logInButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ADDED */
+.logInButton:disabled {
+  background-color: #d3d3d3;
+  color: #777;
+  cursor: not-allowed;
+  transition: var(--transition);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

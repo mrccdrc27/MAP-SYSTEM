@@ -79,24 +79,26 @@ export default function ArchiveTable({
           <button className={general.exportButton}>Export</button>
         </div>
       </div>
-      <table className={general.ticketTable}>
-        <thead>
-          <ArchiveHeader />
-        </thead>
-        <tbody>
-          {tickets.length > 0 ? (
-            paginatedTickets.map((ticket) => (
-              <ArchiveItem key={ticket.id} item={ticket} />
-            ))
-          ) : (
-            <tr>
-              <td colSpan={ticketHeaders.length} className={general.noData}>
-                No tickets found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <div className={general.ticketTableWrapper}>
+        <table className={general.ticketTable}>
+          <thead>
+            <ArchiveHeader />
+          </thead>
+          <tbody>
+            {tickets.length > 0 ? (
+              paginatedTickets.map((ticket) => (
+                <ArchiveItem key={ticket.id} item={ticket} />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={ticketHeaders.length} className={general.noData}>
+                  No tickets found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       <div className={general.ttPagination}>
         <Pagination
           currentPage={currentPage}

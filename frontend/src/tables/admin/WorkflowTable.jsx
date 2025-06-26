@@ -33,11 +33,11 @@ function WorkflowItem({ item }) {
   const navigate = useNavigate();
   return (
     <tr className={general.item}>
-      <td>{item.name}</td> 
-      <td>{item.category}</td> 
-      <td>{item.sub_category}</td> 
-      <td>{item.description}</td> 
-      <td>{item.status}</td> 
+      <td>{item.name}</td>
+      <td>{item.category}</td>
+      <td>{item.sub_category}</td>
+      <td>{item.description}</td>
+      <td>{item.status}</td>
       <td>
         <button
           className={general.btn}
@@ -76,26 +76,26 @@ export default function WorkflowTable({
           </button>
         </div>
       </div>
-      <table className={general.ticketTable}>
-        <thead>
-          <WorkflowHeader />
-        </thead>
-        <tbody>
-          {workflows.length > 0 ? (
-            paginatedTickets.map((workflows) => (
-              <WorkflowItem 
-              key={workflows.workflow_id} item={workflows} 
-              />
-            ))
-          ) : (
-            <tr>
-              <td colSpan={workflowHeaders.length} className={general.noData}>
-                No workflow found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <div className={general.ticketTableWrapper}>
+        <table className={general.ticketTable}>
+          <thead>
+            <WorkflowHeader />
+          </thead>
+          <tbody>
+            {workflows.length > 0 ? (
+              paginatedTickets.map((workflows) => (
+                <WorkflowItem key={workflows.workflow_id} item={workflows} />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={workflowHeaders.length} className={general.noData}>
+                  No workflow found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       <div className={general.ttPagination}>
         <Pagination
           currentPage={currentPage}

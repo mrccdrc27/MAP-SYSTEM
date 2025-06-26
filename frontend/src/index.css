@@ -58,7 +58,9 @@ body {
   /* PAGES MARGIN */
   /* --margin-size-main: 0 12vw; */
   --margin-size-main: 0 12vw;
-  --margin-size-min: 0 6vw;
+   /* --margin-size-min: 0 6vw; */
+   
+  --margin-size-min: 0 4.5vw;
   --margin-size-others: 0 2.5vw;
 
   /* DESIGNS */

@@ -1,6 +1,6 @@
 // style
 import styles from "./ticket-detail.module.css";
-import general from '../../../style/general.module.css';
+import general from "../../../style/general.module.css";
 
 // component
 import AgentNav from "../../../components/navigation/AgentNav";
@@ -14,7 +14,6 @@ import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
 import ActionLogList from "../../../components/ticket/ActionLogList";
@@ -25,7 +24,6 @@ import TicketAction from "./modals/TicketAction";
 import useUserTickets from "../../../api/useUserTickets";
 
 export default function AdminTicketDetail() {
-
   const navigate = useNavigate();
   const { id } = useParams(); // ticket_id from URL
   const { userTickets } = useUserTickets();
@@ -60,7 +58,7 @@ export default function AdminTicketDetail() {
       setStepInstance(null);
     } else {
       setTicket(matchedInstance.task.ticket);
-      setInstance(matchedInstance.step_instance_id)
+      setInstance(matchedInstance.step_instance_id);
       setAction(matchedInstance.available_actions || []);
       setTaskid(matchedInstance.task.task_id); // ✅ FIXED: set actual task_id
       setInstruction(matchedInstance.step.instruction); // ✅ FIXED: set actual task_id
@@ -76,10 +74,9 @@ export default function AdminTicketDetail() {
   }, [taskid]);
 
   const { tracker } = useWorkflowProgress(taskid);
-  console.log('tracker',tracker)
+  console.log("tracker", tracker);
 
-  console.log('loglog', logs)
-
+  console.log("loglog", logs);
 
   if (error) {
     return (
@@ -93,31 +90,30 @@ export default function AdminTicketDetail() {
             <h1>Error</h1>
           </section>
           <section className={styles.tdpBody}>
-            <div style={{ padding: "2rem", color: "red" }}>
-              {error}
-            </div>
+            <div style={{ padding: "2rem", color: "red" }}>{error}</div>
           </section>
         </main>
       </>
     );
   }
-  console.log('aaticket',ticket?.attachments)
+  console.log("aaticket", ticket?.attachments);
 
   return (
     <>
       <AgentNav />
       <main className={styles.ticketDetailPage}>
         <section className={styles.tdpHeader}>
-          <div className={styles.tdBack} onClick={() => navigate(-1)}>
-            <i className="fa fa-chevron-left"></i>
-          </div>
           <div>
-            <h2>Workflow Visualization</h2>
+            <span className={styles.tdpBack} onClick={() => navigate(-1)}>
+              Tickets{" "}
+            </span>
+            <span className={styles.tdpCurrent}>/ Ticket Detail</span>
           </div>
-          <h1>Ticket Detail</h1>
         </section>
-        <div className="max-w-4xl mx-auto mt-10">
-          <h1 className="text-xl font-semibold mb-4">Document Preview</h1>
+        <div className={styles.headerTitle}>
+          <div>
+            <h1>Document Preview</h1>
+          </div>
         </div>
         <section className={styles.tdpBody}>
           <div className={styles.tdpWrapper}>
@@ -141,7 +137,8 @@ export default function AdminTicketDetail() {
                     Opened On: {new Date(ticket?.created_at).toLocaleString()}
                   </p>
                   <p className={styles.tdDateResolution}>
-                    Expected Resolution: {new Date(ticket?.created_at).toLocaleString()}
+                    Expected Resolution:{" "}
+                    {new Date(ticket?.created_at).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -154,17 +151,15 @@ export default function AdminTicketDetail() {
                   <i class="fa-solid fa-lightbulb"></i>
                   <h3>Instructions</h3>
                 </div>
-                <p>
-                  {instruction}
-                </p>
+                <p>{instruction}</p>
               </div>
               <div className={styles.tdAttachment}>
                 <h3>Attachment</h3>
                 <div className={styles.tdAttached}>
                   <i className="fa fa-upload"></i>
                   <span className={styles.placeholderText}>
-                  <DocumentViewer attachments={ticket?.attachments} />;
-                    No file attached
+                    <DocumentViewer attachments={ticket?.attachments} />; No
+                    file attached
                   </span>
                   <input
                     type="file"
@@ -208,16 +203,18 @@ export default function AdminTicketDetail() {
                   <div className={styles.tdInfoItem}>
                     <div className={styles.tdInfoLabelValue}>
                       <div className={styles.tdInfoLabel}>Ticket Owner</div>
-                      {`${ticket?.employee.first_name} ${ticket?.employee.last_name}`}
-                      <div className={styles.tdInfoValue}></div>
+                      <div className={styles.tdInfoValue}>
+                        {" "}
+                        {`${ticket?.employee.first_name} ${ticket?.employee.last_name}`}
+                      </div>
                     </div>
                     <div className={styles.tdInfoLabelValue}>
                       <div className={styles.tdInfoLabel}>Department</div>
-                      {`${ticket?.employee.department}`}
-                      <div className={styles.tdInfoValue}></div>
+                      <div className={styles.tdInfoValue}>
+                        {" "}
+                        {`${ticket?.employee.department}`}
+                      </div>
                     </div>
-
-
 
                     {/* <div className={styles.tdInfoLabelValue}>
                       <div className={styles.tdInfoLabel}>Position</div>
@@ -231,21 +228,20 @@ export default function AdminTicketDetail() {
                 )}
               </div>
               <div className="action-logs">
-
-
-
-              <h3>Action Logs</h3>
-              <ActionLogList logs={logs} loading={loading} error={error} />
-
-
-
-            </div>
+                <h3>Action Logs</h3>
+                <ActionLogList logs={logs} loading={loading} error={error} />
+              </div>
             </div>
           </div>
         </section>
       </main>
       {openTicketAction && (
-        <TicketAction closeTicketAction={setOpenTicketAction} ticket={ticket} action={action} instance={instance}/>
+        <TicketAction
+          closeTicketAction={setOpenTicketAction}
+          ticket={ticket}
+          action={action}
+          instance={instance}
+        />
       )}
     </>
   );

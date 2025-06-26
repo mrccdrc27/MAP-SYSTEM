@@ -20,11 +20,8 @@
   background-color: var(--bg-color);
   z-index: 1001;
   width: 100%;
-  /* height: 70%; */
   max-width: 50%;
-  /* max-height: 90vh; */
   overflow: hidden;
-  /* overflow-y: auto; */
   padding: 20px;
   border-radius: 20px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
@@ -134,3 +131,81 @@
     transform: translate(-50%, -50%) scale(1);
   }
 }
+
+/* MEDIA QUERIES */
+@media screen and (max-width: 1024px) {
+  .ticketActionModal {
+    max-width: 70%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ticketActionModal {
+    max-width: 90%;
+    padding: 16px;
+  }
+
+  .taHeader h1 {
+    font-size: 1.2rem;
+  }
+
+  .taSubject {
+    font-size: 1rem;
+  }
+
+  .actionStatus,
+  .taActionButton,
+  textarea {
+    font-size: 14px;
+    padding: 12px 8px;
+  }
+
+  .taDescriptionCont h3 {
+    font-size: 1rem;
+  }
+
+  .taDescriptionCont p {
+    font-size: 14px;
+  }
+
+  .tdMetaData p {
+    font-size: 13px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .ticketActionModal {
+    max-width: 95%;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .taExit i {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .taHeader h1 {
+    font-size: 1rem;
+  }
+
+  .taSubject {
+    font-size: 0.95rem;
+  }
+
+  .taActionButton {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  .taBody {
+    height: auto;
+    max-height: 50vh;
+  }
+
+  textarea {
+    min-height: 80px;
+  }
+}
+

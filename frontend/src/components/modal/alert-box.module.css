@@ -1,0 +1,60 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* make sure it floats above other UI */
+}
+
+.alertBox {
+  background-color: white;
+  min-width: 300px;
+  max-width: 90vw;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  position: relative;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.success {
+  border-left: 6px solid #28a745;
+  color: #155724;
+  background-color: #d4edda;
+}
+
+.error {
+  border-left: 6px solid #dc3545;
+  color: #721c24;
+  background-color: #f8d7da;
+}
+
+.info {
+  border-left: 6px solid #17a2b8;
+  color: #0c5460;
+  background-color: #d1ecf1;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #555;
+  cursor: pointer;
+  font-weight: bold;
+  line-height: 1;
+}
+.closeBtn:hover {
+  color: #000;
+}

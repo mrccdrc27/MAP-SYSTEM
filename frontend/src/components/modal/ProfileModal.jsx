@@ -31,7 +31,7 @@ export default function ProfileModal({ closeProfileAction }) {
         <div className={styles.pmBody}>
           <button
             className={styles.pmButton}
-            onClick={() => navigate("/profile")}
+            onClick={() => navigate("/agent/profile")}
           >
             Account Settings
           </button>
