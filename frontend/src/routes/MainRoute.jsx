@@ -26,7 +26,7 @@ import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDeta
 import AdminProfile from "../pages/auth/AdminProfile";
 import ProtectedRegister from "./ProtectedRegister";
 import ManageProfile from "../pages/auth/ManageProfile";
-import AgentProfile from "../pages/auth/AdminProfile";
+import AgentProfile from "../pages/auth/AgentProfile";
 
 // test
 import Test from "../pages/test";

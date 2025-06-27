@@ -50,16 +50,14 @@ function TicketItem({ item }) {
       <td>
         <div
           className={
-            general[
-              `status-${item?.status.replace(/\s+/g, "-").toLowerCase()}`
-            ]
+            general[`status-${item?.status.replace(/\s+/g, "-").toLowerCase()}`]
           }
         >
           {item?.status}
         </div>
       </td>
       <td>{item.category}</td>
-      <td>{format(new Date(item.created_at), "yyyy-MM-dd hh:mm:ss a")}</td>
+      <td>{format(new Date(item.submit_date), "MMMM dd, yyyy")}</td>
       <td>
         <button
           className={general.btn}
@@ -94,7 +92,7 @@ export default function TicketTable({
         </h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          <button className={general.exportButton}>Export</button>
+          {/* <button className={general.exportButton}>Export</button> */}
         </div>
       </div>
       <div className={general.ticketTableWrapper}>

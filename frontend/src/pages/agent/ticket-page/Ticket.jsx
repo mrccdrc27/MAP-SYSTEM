@@ -19,7 +19,7 @@ import { useAuth } from "../../../api/AuthContext";
 
 export default function AdminTicket() {
   const { userTickets, loading, error } = useUserTickets();
-  console.log(userTickets);
+  // console.log(userTickets);
 
   // Tabs
   const [activeTab, setActiveTab] = useState("All");

@@ -4,7 +4,7 @@ import styles from "./manage-profile.module.css";
 // components
 import AgentNav from "../../components/navigation/AgentNav";
 
-// reacf
+// react
 import { useAuth } from "../../api/AuthContext";
 import { useNavigate } from "react-router-dom";
 

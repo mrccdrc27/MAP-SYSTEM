@@ -22,16 +22,21 @@ ChartJS.register(
   Legend
 );
 
-const LineChart = () => {
+const LineChart = ({ chartData }) => {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
   const data = {
-    labels: ['January', 'February', 'March', 'April', 'May'],
+    labels: months,
     datasets: [
       {
-        label: 'Sales over Months',
-        data: [65, 59, 80, 81, 56],
+        label: "New Tickets Per Month",
+        data: months.map((month) => chartData[month] || 0),
         fill: false,
-        borderColor: 'rgba(75,192,192,1)',
-        tension: 0.1,
+        borderColor: "rgba(75,192,192,1)",
+        tension: 0.2,
       },
     ],
   };
@@ -39,7 +44,7 @@ const LineChart = () => {
   const options = {
     responsive: true,
     plugins: {
-      legend: { position: 'top' },
+      legend: { position: "top" },
       tooltip: { enabled: true },
     },
   };
@@ -48,3 +53,4 @@ const LineChart = () => {
 };
 
 export default LineChart;
+

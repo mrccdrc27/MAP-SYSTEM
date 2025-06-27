@@ -12,12 +12,21 @@ import LineChart from "./charts/LineChart";
 // hooks
 import useUserTickets from "../../../api/useUserTickets";
 
+// date helper
+import { format } from "date-fns";
+
 export default function AdminDashboard() {
   const { userTickets, loading, error } = useUserTickets();
-
+  
+  // fetch tickets and filter those tickets that !has_acted
   const allTickets = (userTickets || [])
-    .filter((e) => e.task?.ticket)
-    .map((e) => e.task.ticket);
+    .filter((e) => e.task?.ticket && !e.has_acted)
+    .map((e) => ({
+      ...e.task.ticket,
+      step_instance_id: e.step_instance_id,
+      has_acted: e.has_acted,
+      agent: e.agent,
+    }));
 
   const counts = {
     new: 0,
@@ -29,24 +38,26 @@ export default function AdminDashboard() {
     critical: 0,
   };
 
-  allTickets.forEach(
-    (t) =>
-      (counts[
-        t.status.toLowerCase().replace(/\s+/g, "") === "new"
-          ? "new"
-          : t.status.toLowerCase().replace(/\s+/g, "") === "open"
-          ? "open"
-          : t.status.toLowerCase().replace(/\s+/g, "") === "resolved"
-          ? "resolved"
-          : t.status.toLowerCase().replace(/\s+/g, "") === "onhold"
-          ? "onHold"
-          : t.status.toLowerCase().replace(/\s+/g, "") === "inprogress"
-          ? "inProgress"
-          : t.status.toLowerCase().replace(/\s+/g, "") === "rejected"
-          ? "rejected"
-          : null
-      ] += 1)
-  );
+  const monthlyNewTickets = {};
+
+  allTickets.forEach((t) => {
+    const statusKey = t.status.toLowerCase().replace(/\s+/g, "");
+    const priorityKey = t.priority.toLowerCase().replace(/\s+/g, "");
+
+    if (statusKey === "new") counts.new += 1;
+    if (statusKey === "open") counts.open += 1;
+    if (statusKey === "resolved") counts.resolved += 1;
+    if (statusKey === "onhold") counts.onHold += 1;
+    if (statusKey === "inprogress") counts.inProgress += 1;
+    if (statusKey === "rejected") counts.rejected += 1;
+    if (priorityKey === "critical") counts.critical += 1;
+
+    // Group new tickets by month
+    if (statusKey === "new" && t.created_at) {
+      const month = format(new Date(t.submit_date), "MMMM");
+      monthlyNewTickets[month] = (monthlyNewTickets[month] || 0) + 1;
+    }
+  });
 
   return (
     <>
@@ -55,24 +66,23 @@ export default function AdminDashboard() {
         <section className={styles.adpHeader}>
           <h1>Dashboard</h1>
         </section>
+
         <section className={styles.adpBody}>
           <div className={styles.adpCardSection}>
             <div className={styles.adpWrapper}>
               <div className={styles.adpLeftRight}>
                 <div className={styles.adpLeft}>
-                  {/* <TicketCard number="9" label="New Tickets" />
-                  <TicketCard number="9" label="Open Tickets" /> */}
                   <TicketCard number={counts.new} label="New Tickets" />
                   <TicketCard number={counts.open} label="Open Tickets" />
                 </div>
                 <div className={styles.adpMid}>
-                  <TicketCard number="X" label="Resolved Tickets" />
-                  {/* <TicketCard number="X" label="On Hold Tickets" /> */}
+                  <TicketCard
+                    number={counts.resolved}
+                    label="Resolved Tickets"
+                  />
                   <TicketCard number={counts.onHold} label="On Hold Tickets" />
                 </div>
                 <div className={styles.adpRight}>
-                  {/* <TicketCard number="9" label="In Progress" />
-                  <TicketCard number="9" label="Rejected Tickets" /> */}
                   <TicketCard
                     number={counts.rejected}
                     label="Rejected Tickets"
@@ -81,15 +91,15 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className={styles.adpSide}>
-                {/* <TicketCard number="9" label="Critical" /> */}
                 <TicketCard number={counts.critical} label="Critical" />
               </div>
             </div>
           </div>
+
           <div className={styles.adpContentSection}>
             <div className={styles.adpVisuals}>
               <h2>Charts</h2>
-              <LineChart />
+              <LineChart chartData={monthlyNewTickets} />
             </div>
             <div className={styles.adpQuickActionSection}>
               <h2>Quick Actions</h2>
