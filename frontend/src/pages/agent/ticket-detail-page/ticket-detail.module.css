@@ -184,6 +184,20 @@
   transition: background-color 0.3s, transform 0.5s ease-in;
 }
 
+.actionButtonDisabled {
+  background-color: var(--border-color);
+  color: var(--bg-color);
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  width: 100%;
+  font-size: var(--base-font-size);
+  font-weight: bold;
+  cursor: disabled;
+  margin-bottom: 10px;
+  transition: background-color 0.3s, transform 0.5s ease-in;
+}
+
 .tdStatusCard {
   display: flex;
   justify-content: space-between;
@@ -267,6 +281,11 @@
 }
 
 .tdInfoValue {
+  font-size: var(--default-font-size);
+  color: var(--heading-color);
+}
+
+.actionLogs {
   font-size: var(--default-font-size);
   color: var(--heading-color);
 }
@@ -370,4 +389,3 @@
     font-size: 14px;
   }
 }
-

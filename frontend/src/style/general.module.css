@@ -264,6 +264,47 @@ tr:hover {
   animation: pulseCircle 1.5s infinite;
 }
 
+/* STATUS STYLE */
+.status-open {
+  display: inline-block;
+  color: #0EA5E9;
+  background-color: #A6CCDD;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: var(--table-font-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.status-approved {
+  display: inline-block;
+  color: #10B981;
+  background-color: #A7D1C3;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: var(--table-font-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.status-in-progress {
+  display: inline-block;
+  color: #6366F1;
+  background-color: #BCBCDF;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: var(--table-font-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+}
+
+
 /* === ANIMATION === */
 /* LOADING ANIMATION */
 .loaderOverlay {

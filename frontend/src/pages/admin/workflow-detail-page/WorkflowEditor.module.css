@@ -77,16 +77,13 @@
 }
 
 .stepTitle {
-  /* font-size: 1.1rem; */
   font-size: var(--base-font-size);
   color: var(--heading-color);
   font-weight: 600;
-  /* margin: 0 0 0.25rem 0; */
   margin-bottom: 5px;
 }
 
 .stepRole {
-  /* font-size: 0.875rem; */
   font-size: var(--default-font-size);
   color: var(--secondary-color);
   font-weight: 500;
@@ -276,6 +273,14 @@
   background-color: var(--success-color);
   color: var(--bg-color);
 }
+
+.error {
+  color: #dc2626; /* Red */
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
 
 /* Modal Styles */
 .modalOverlay {

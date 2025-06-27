@@ -7,7 +7,6 @@ import AgentNav from "../../../components/navigation/AgentNav";
 import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import WorkflowVisualizer from "../../../components/ticket/WorkflowVisualizer";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
-// react
 
 // react
 import { useNavigate } from "react-router-dom";
@@ -27,6 +26,7 @@ export default function TicketDetail() {
   const navigate = useNavigate();
   const { id } = useParams(); // ticket_id from URL
   const { userTickets } = useUserTickets();
+
   // States
   const [ticket, setTicket] = useState(null);
   const [action, setAction] = useState([]);
@@ -46,7 +46,7 @@ export default function TicketDetail() {
   useEffect(() => {
     if (!userTickets || userTickets.length === 0) return;
 
-    // 1️⃣ Filter step instance by ticket_id
+    // 1Filter step instance by ticket_id
     const matchedInstance = userTickets.find(
       (instance) => instance.step_instance_id === id
     );
@@ -57,12 +57,15 @@ export default function TicketDetail() {
       setAction([]);
       setStepInstance(null);
     } else {
-      setTicket(matchedInstance.task.ticket);
+      setTicket({
+        ...matchedInstance.task.ticket,
+        hasacted: matchedInstance.has_acted,
+      });
+      // setTicket(matchedInstance.task.ticket);
       setInstance(matchedInstance.step_instance_id);
       setAction(matchedInstance.available_actions || []);
-      setTaskid(matchedInstance.task.task_id); // ✅ FIXED: set actual task_id
-      setInstruction(matchedInstance.step.instruction); // ✅ FIXED: set actual task_id
-      setError("");
+      setTaskid(matchedInstance.task.task_id);
+      setInstruction(matchedInstance.step.instruction);
     }
     setLoading(false);
   }, [userTickets, id]);
@@ -172,17 +175,39 @@ export default function TicketDetail() {
             </div>
 
             <div className={styles.tdpRightCont}>
-              <button
+              {/* <button
                 className={styles.actionButton}
                 onClick={() => {
                   setOpenTicketAction(true);
                 }}
               >
                 Make an Action
+              </button> */}
+              <button
+                className={
+                  ticket?.hasacted
+                    ? styles.actionButtonDisabled
+                    : styles.actionButton
+                }
+                onClick={() => setOpenTicketAction(true)}
+                disabled={ticket?.hasacted}
+              >
+                {ticket?.hasacted ? "Action Already Taken" : "Make an Action"}
               </button>
+
               <div className={styles.tdStatusCard}>
                 <div className={styles.tdStatusLabel}>Status</div>
-                <div>{ticket?.status}</div>
+                <div
+                  className={
+                    general[
+                      `status-${ticket?.status
+                        .replace(/\s+/g, "-")
+                        .toLowerCase()}`
+                    ]
+                  }
+                >
+                  {ticket?.status}
+                </div>
               </div>
               <WorkflowTracker2 workflowData={tracker} />
               <div className={styles.tdInfoWrapper}>
@@ -227,8 +252,8 @@ export default function TicketDetail() {
                   </div>
                 )}
               </div>
-              <div className="action-logs">
-                <h3>Action Logs</h3>
+              <div className={styles.actionLogs}>
+                <h4>Action Logs</h4>
                 <ActionLogList logs={logs} loading={loading} error={error} />
               </div>
             </div>

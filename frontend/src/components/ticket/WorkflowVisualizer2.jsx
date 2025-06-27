@@ -27,8 +27,16 @@ const statusIcons = {
 };
 
 export default function WorkflowVisualizer2({ workflowData }) {
-  if (!workflowData) {
-    return <div className={styles.loading}>Loading tracker...</div>;
+  // if (!workflowData) {
+  //   return <div className={styles.loading}>Loading tracker...</div>;
+  // }
+
+  if (
+    !workflowData ||
+    !Array.isArray(workflowData.nodes) ||
+    workflowData.nodes.length === 0
+  ) {
+    return <div className={styles.loading}>Loading visual workflow...</div>;
   }
 
   const renderConnector = (index, currentStatus, nextStatus) => {
@@ -48,8 +56,7 @@ export default function WorkflowVisualizer2({ workflowData }) {
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>Workflow Progress</h3>
-
+      {/* <h3 className={styles.title}>Workflow Progress</h3> */}
 
       {/* og */}
       <div className={styles.workflow}>
@@ -64,7 +71,7 @@ export default function WorkflowVisualizer2({ workflowData }) {
                 </div>
 
                 <div className={styles.nodeInfo}>
-                  {/* <div className={styles.nodeLabel}>{node.label}</div> */}
+                  <div className={styles.nodeLabel}>{node.label}</div>
                   <div className={styles.nodeRole}>
                     {node.role}
                     {/* <strong>{node.role}</strong> */}

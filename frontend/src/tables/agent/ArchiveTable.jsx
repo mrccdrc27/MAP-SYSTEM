@@ -8,6 +8,7 @@ import Pagination from "../../components/component/Pagination";
 // react
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { format } from "date-fns";
 
 // headers for the table
 const ticketHeaders = [
@@ -15,7 +16,7 @@ const ticketHeaders = [
   "TITLE",
   "DESCRIPTION",
   "PRIORITY",
-  "STATUS",
+  "HAS ACTED",
   "OPENED ON",
   "ACTION",
 ];
@@ -37,18 +38,17 @@ function ArchiveItem({ item }) {
       <td>{item.ticket_id}</td>
       <td>{item.subject}</td>
       <td>{item.description}</td>
-      {/* <td>{item.priority}</td> */}
       <td>
         <div className={general[`priority-${item.priority.toLowerCase()}`]}>
           {item.priority}
         </div>
       </td>
-      <td>{item.status}</td>
-      <td>{item.opened_on}</td>
+      <td>{item.hasacted ? "Has Acted" : "Not Yet"}</td>
+      <td>{format(new Date(item.submit_date), "MMMM dd, yyyy")}</td>
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/agent/ticket/${item.id}`)}
+          onClick={() => navigate(`/agent/ticket/${item.step_instance_id}`)}
         >
           👁
         </button>
@@ -76,7 +76,7 @@ export default function ArchiveTable({
         <h2>Archive</h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          <button className={general.exportButton}>Export</button>
+          {/* <button className={general.exportButton}>Export</button> */}
         </div>
       </div>
       <div className={general.ticketTableWrapper}>

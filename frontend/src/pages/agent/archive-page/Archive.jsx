@@ -1,3 +1,6 @@
+// react
+import { useState } from "react";
+
 // components
 import AgentNav from "../../../components/navigation/AgentNav";
 
@@ -5,10 +8,43 @@ import AgentNav from "../../../components/navigation/AgentNav";
 import styles from "./archive.module.css";
 
 // table
-import TicketTable from "../../../tables/agent/TicketTable";
 import ArchiveTable from "../../../tables/agent/ArchiveTable";
 
+// hooks
+import useUserTickets from "../../../api/useUserTickets";
+
 export default function Archive() {
+  const { userTickets, loading, error } = useUserTickets();
+
+  // Filters
+  const [filters, setFilters] = useState({
+    search: "",
+  });
+
+  // Extract all ticket data with step_instance_id
+  const allTickets = (userTickets || [])
+    .filter((entry) => entry.task?.ticket)
+    .map((entry) => ({
+      ...entry.task.ticket,
+      step_instance_id: entry.step_instance_id,
+      hasacted: entry.has_acted,
+    }));
+
+  const filteredTickets = allTickets.filter((ticket) => {
+    const search = filters.search.toLowerCase();
+    if (
+      search &&
+      !(
+        ticket.ticket_id.toLowerCase().includes(search) ||
+        ticket.subject.toLowerCase().includes(search) ||
+        ticket.description.toLowerCase().includes(search)
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  });
   return (
     <>
       <AgentNav />
@@ -19,7 +55,16 @@ export default function Archive() {
         <section className={styles.apBody}>
           <div className={styles.apTableSection}>
             <div className={styles.apTable}>
-              <ArchiveTable />
+              <ArchiveTable
+                tickets={filteredTickets}
+                searchValue={filters.search}
+                onSearchChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    search: e.target.value,
+                  }))
+                }
+              />
             </div>
           </div>
         </section>

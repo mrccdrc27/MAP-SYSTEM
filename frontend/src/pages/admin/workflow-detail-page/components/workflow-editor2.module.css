@@ -5,10 +5,50 @@
   font-family: sans-serif;
 }
 
-.header {
-  /* padding: 1rem; */
+.title {
   padding-bottom: 20px;
-  /* background-color: #fcfcfc; */
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.title h2 {
+  color: var(--table-color);
+}
+
+/* tabs */
+.topTabBar {
+}
+
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #fcfcfc;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  color: var(--heading-color);
+}
+
+.tabActive {
+  flex: 1;
+  padding: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #007bff;
+  border: 0px solid #007bff;
+  border-bottom: 3px solid #007bff;
+  background-color: var(--bg1-color);
+}
+
+.header {
+  padding-bottom: 20px;
   border-bottom: 1px solid #ddd;
   margin-bottom: 10px;
   display: flex;
@@ -33,6 +73,7 @@
 }
 
 .undoButton {
+  display: none;   /* para di makita yung undo button */
   opacity: 1;
   cursor: pointer;
   padding: 5px 10px;
@@ -63,34 +104,6 @@
 
   width: 300px;
   overflow: hidden;
-}
-
-.tabBar {
-  display: flex;
-  border-bottom: 1px solid #ccc;
-}
-
-.tab {
-  flex: 1;
-  padding: 0.75rem;
-  background-color: #fcfcfc;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  color: var(--heading-color);
-}
-
-.tabActive {
-  flex: 1;
-  padding: 0.75rem;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #007bff;
-  border: 0px solid #007bff;
-  border-bottom: 3px solid #007bff;
-  background-color: var(--bg1-color);
 }
 
 .sidebarContent {
@@ -124,6 +137,13 @@
 @media (max-width: 1024px) {
   .main {
     flex-direction: column;
+  }
+
+  .topTabBar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 
   .sidebar {

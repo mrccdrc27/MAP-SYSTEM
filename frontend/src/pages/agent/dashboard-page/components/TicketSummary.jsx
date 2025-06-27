@@ -1,10 +1,10 @@
 // TicketSummary.jsx
-import styles from './Component.module.css';
+import styles from "./Component.module.css";
 
-const TicketSummary = () => {
+const TicketSummary = ({ inProgressCount, resolvedTodayCount }) => {
   const summaryData = [
-    { label: 'In Progress', count: 8 },
-    { label: 'Resolved Today', count: 4 },
+    { label: "In Progress", count: inProgressCount },
+    { label: "Resolved Today", count: resolvedTodayCount },
   ];
 
   return (

@@ -1,101 +1,64 @@
-import React, { useEffect, useState } from "react";
-import styles from "./WorkflowHeader.module.css";
+import React, { useState } from 'react';
+import styles from './WorkflowHeader.module.css';
 
-export default function WorkflowHeader({
-  workflow,
-  onSave,
-  forceEditable = false,
-  forceDetailsOnly = false, // ✅ NEW PROP
-}) {
-  const [editable, setEditable] = useState(forceEditable);
-  const [showDetails, setShowDetails] = useState(
-    forceEditable || forceDetailsOnly
-  ); // ✅ Always show details in these modes
+export default function WorkflowHeader({ workflow, onSave }) {
+    const [editable, setEditable] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [formData, setFormData] = useState({ ...workflow });
-
-  useEffect(() => {
-    if (forceEditable) {
-      setEditable(true);
-      setShowDetails(true);
-    }
-  }, [forceEditable]);
-
-  useEffect(() => {
-    if (forceDetailsOnly) {
-      setEditable(false);
-      setShowDetails(true);
-    }
-  }, [forceDetailsOnly]);
 
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
 
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
-      case "active":
-        return styles.statusActive;
-      case "inactive":
-        return styles.statusInactive;
-      case "draft":
-      default:
-        return styles.statusDraft;
+      case 'active': return styles.statusActive;
+      case 'inactive': return styles.statusInactive;
+      case 'draft':
+      default: return styles.statusDraft;
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSave = () => {
     onSave?.(formData);
-    if (!forceEditable) {
-      setEditable(false);
-    }
+    setEditable(false);
   };
 
   return (
     <div className={styles.container}>
-      {/* Always show action buttons when editable, even in forceEditable mode */}
-      {editable && (
-        <div className={styles.headerActions}>
-          <button
+    <div className={styles.headerActions}>
+    {!editable ? (
+        <button className={styles.editBtn} onClick={() => 
+        {
+            setEditable(true)
+            setShowDetails(true)
+        }
+        }>✏️ Edit</button>
+    ) : (
+        <>
+        <button
             className={styles.editBtn}
             onClick={() => {
-              setFormData({ ...workflow });
-              setEditable(false);
-              setShowDetails(false);
+            setFormData({ ...workflow }); // Revert changes
+            setEditable(false);          // Exit edit mode
+            setShowDetails(false)
             }}
-          >
-            Cancel
-          </button>
-          <button className={styles.saveBtn} onClick={handleSave}>
-            Save
-          </button>
-        </div>
-      )}
+        >
+            ❌ Cancel
+        </button>
 
-      {/* Only show Edit and Toggle Details buttons when not in forced modes */}
-      {!forceEditable && !forceDetailsOnly && !editable && (
-        <div className={styles.headerActions}>
-          <button
-            className={styles.editBtn}
-            onClick={() => {
-              setEditable(true);
-              setShowDetails(true);
-            }}
-          >
-            ✏️ Edit
-          </button>
-          <button
-            className={styles.toggleBtn}
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            {showDetails ? "▾ Hide Details" : "▸ Show Details"}
-          </button>
-        </div>
-      )}
+        <button className={styles.saveBtn} onClick={handleSave}>💾 Save</button>
+        </>
+    )}
+        <button className={styles.toggleBtn} onClick={() => setShowDetails(!showDetails)}>
+        {showDetails ? '▾ Hide Details' : '▸ Show Details'}
+        </button>
+    </div>
 
-      {/* Name and description */}
+
       {editable ? (
         <input
           className={styles.titleInput}
@@ -118,17 +81,12 @@ export default function WorkflowHeader({
         <p className={styles.subtitle}>{workflow.description}</p>
       )}
 
-      {/* Details always shown when showDetails is true */}
       {showDetails && (
         <>
           <div className={styles.metadata}>
             <div className={styles.metadataItem}>
               <span className={styles.metadataLabel}>Status</span>
-              <span
-                className={`${styles.status} ${getStatusClass(
-                  workflow.status
-                )}`}
-              >
+              <span className={`${styles.status} ${getStatusClass(workflow.status)}`}>
                 {workflow.status}
               </span>
             </div>
@@ -140,15 +98,15 @@ export default function WorkflowHeader({
                   <input
                     className={styles.categoryInput}
                     name="category"
-                    value={formData.category}
                     placeholder="Category"
+                    value={formData.category}
                     onChange={handleChange}
                   />
                   <input
                     className={styles.categoryInput}
                     name="sub_category"
-                    value={formData.sub_category}
                     placeholder="Subcategory"
+                    value={formData.sub_category}
                     onChange={handleChange}
                   />
                 </>
@@ -161,46 +119,29 @@ export default function WorkflowHeader({
             </div>
           </div>
 
-          {/* SLA */}
           <div className={styles.slaContainer}>
-            {["low", "medium", "high", "urgent"].map((priority) => {
-              const label = `${priority[0].toUpperCase()}${priority.slice(
-                1
-              )} Priority`;
+            {['low', 'medium', 'high', 'urgent'].map((priority) => {
+              const label = `${priority[0].toUpperCase()}${priority.slice(1)} Priority`;
               const slaKey = `${priority}_sla`;
               const sla = formData[slaKey] || {};
 
               return (
                 <div
                   key={priority}
-                  className={`${styles.slaItem} ${
-                    styles[
-                      `sla${
-                        priority.charAt(0).toUpperCase() + priority.slice(1)
-                      }`
-                    ]
-                  }`}
+                  className={`${styles.slaItem} ${styles[`sla${priority.charAt(0).toUpperCase() + priority.slice(1)}`]}`}
                 >
                   <span className={styles.slaLabel}>{label}</span>
                   {editable ? (
                     <div className={styles.slaInputGroup}>
-                      {["days", "hours", "minutes"].map((unit) => (
-                        <div className={styles.slaField} key={unit}>
-                          <label className={styles.unitLabel}>
-                            {unit[0].toUpperCase() + unit.slice(1)}
-                          </label>
+                      {['days', 'hours', 'minutes'].map((unit, idx) => (
+                        <div className={styles.slaField} key={idx}>
+                          <label className={styles.unitLabel}>{unit[0].toUpperCase() + unit.slice(1)}</label>
                           <input
                             type="number"
                             min="0"
-                            max={
-                              unit === "hours"
-                                ? 23
-                                : unit === "minutes"
-                                ? 59
-                                : 365
-                            }
+                            max={unit === 'hours' ? 23 : unit === 'minutes' ? 59 : 365}
                             name={`${slaKey}_${unit}`}
-                            value={sla[unit] || ""}
+                            value={sla[unit] || ''}
                             onChange={(e) =>
                               setFormData((prev) => ({
                                 ...prev,
@@ -225,19 +166,14 @@ export default function WorkflowHeader({
             })}
           </div>
 
-          {/* Dates */}
           <div className={styles.dates}>
             <div className={styles.dateItem}>
               <span className={styles.dateLabel}>Created</span>
-              <span className={styles.dateValue}>
-                {formatDate(workflow.createdAt)}
-              </span>
+              <span className={styles.dateValue}>{formatDate(workflow.createdAt)}</span>
             </div>
             <div className={styles.dateItem}>
               <span className={styles.dateLabel}>Updated</span>
-              <span className={styles.dateValue}>
-                {formatDate(workflow.updatedAt)}
-              </span>
+              <span className={styles.dateValue}>{formatDate(workflow.updatedAt)}</span>
             </div>
           </div>
         </>

@@ -22,12 +22,6 @@
   font-size: var(--header-font-size);
 }
 
-/* Grid Layout for Cards */
-/* .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-} */
 
 .dpCardLayout {
   display: flex;
@@ -105,10 +99,18 @@ ul {
 li {
   margin-bottom: 0.75rem;
   font-size: var(--default-font-size);
+  color: var(--heading-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
+.empty {
+  color: #888;
+  font-style: italic;
+  padding: 1rem 0;
+}
+
 
 /* Ticket Status Tags */
 .status {

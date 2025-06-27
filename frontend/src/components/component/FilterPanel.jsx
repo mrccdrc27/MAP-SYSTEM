@@ -10,6 +10,7 @@ import { useState } from "react";
 export default function FilterPanel({
   filters,
   onFilterChange,
+  categoryOptions = [],
   statusOptions = [],
   onResetFilters,
 }) {
@@ -33,9 +34,9 @@ export default function FilterPanel({
             <label htmlFor="category">Category</label>
             <Dropdown
               name="category"
-              // value={filters.category}
+              value={filters.category}
               onChange={onFilterChange}
-              options={["All", "Books", "Electronics", "Clothing"]}
+              options={categoryOptions}
               placeholder="Select category"
             />
           </div>

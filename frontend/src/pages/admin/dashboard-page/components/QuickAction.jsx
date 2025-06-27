@@ -27,10 +27,10 @@ export default function QuickAction() {
         <i className="fa-solid fa-users"></i>
         Active Agent
       </button>
-      <button className={styles.actionButton}>
+      {/* <button className={styles.actionButton}>
         <i className="fas fa-sync"></i>
         Atake?
-      </button>
+      </button> */}
     </div>
   );
 }
