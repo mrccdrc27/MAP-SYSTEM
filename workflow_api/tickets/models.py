@@ -90,5 +90,11 @@ class WorkflowTicket(models.Model):
                 )
 
         # Send status update
+        # Send status update
         if not is_new and old_status != self.status:
-            send_ticket_status.delay(self.original_ticket_id or self.ticket_id, self.status)
+            print("status changed")
+            try:
+                result = send_ticket_status.delay(self.original_ticket_id or self.ticket_id, self.status)
+                print(f"✅ Task queued to Celery. ID: {result.id}")
+            except Exception as e:
+                print(f"❌ Failed to queue task: {e}")

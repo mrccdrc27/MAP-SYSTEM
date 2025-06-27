@@ -224,7 +224,7 @@ def process_document(file_path):
 
 if __name__ == "__main__":
     test_files = [
-        r"C:\work\god\Ticket-Tracking-System\ticket_service\media\documents\BMSDOCU.docx",
+        r"C:\work\god\Ticket-Tracking-System\workflow_api\task\utils\BMSDOCU.docx",
     ]
     for file_path in test_files:
         print(f"\nProcessing: {file_path}")

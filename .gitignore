@@ -22,3 +22,5 @@ __uploads__/
 uploads/
 
 bin/
+
+generated_docs/

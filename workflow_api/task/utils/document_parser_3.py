@@ -2,6 +2,9 @@ import json
 import re
 import os
 from datetime import datetime
+import requests
+import io
+
 
 import pdfplumber
 from dateutil import parser as date_parser  # pip install python-dateutil
@@ -190,46 +193,98 @@ def detect_document_type(text):
     match = re.search(r"Document Type:\s*(\w+)", text, re.IGNORECASE)
     return match.group(1).strip().upper() if match else None
 
+
+# MEMORY
+
+def extract_items_from_pdf_bytes(file_bytes):
+    """
+    Extract items from an in-memory PDF file.
+    """
+    items = []
+    file_bytes.seek(0)
+    with pdfplumber.open(file_bytes) as pdf:
+        for page in pdf.pages:
+            tables = page.extract_tables()
+            for table in tables:
+                headers = [cell.strip().lower() if cell else '' for cell in table[0]]
+                if "cost element" in headers and "description" in headers:
+                    for row in table[1:]:
+                        cells = [c.replace("\n", " ").strip() if c else '' for c in row]
+                        if len(cells) >= 4:
+                            item = {
+                                "cost_element": cells[0],
+                                "description": cells[1],
+                                "estimated_cost": format_cost(cells[2]),
+                                "account": int(cells[3]) if cells[3].isdigit() else cells[3],
+                            }
+                            if len(cells) > 4 and cells[4]:
+                                item["notes"] = cells[4]
+                            items.append(item)
+    return items
+
+
 # -------------------- MAIN PROCESSOR --------------------
 
-def process_document(file_path):
+def process_document(source):
     """
-    Main entry point: reads file, detects type, dispatches to appropriate parser,
-    and bundles items if BMS. Ensures missing fields are null.
-    Returns a JSON string of the extracted data.
+    Accepts either a local file path or an HTTP URL to a .pdf or .docx file.
+    Extracts and processes based on document type (BMS/AMS).
+    Returns a JSON string.
     """
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext == ".pdf":
-        text = extract_text_from_pdf(file_path)
-        doc = None
-    elif ext == ".docx":
-        text = extract_text_from_docx(file_path)
-        doc = Document(file_path)
-    else:
+    is_url = source.startswith("http://") or source.startswith("https://")
+    ext = os.path.splitext(source)[1].lower()
+
+    if ext not in [".pdf", ".docx"]:
         raise ValueError(f"Unsupported file type: {ext}")
 
-    doc_type = detect_document_type(text)
-    if doc_type == "BMS":
-        data = parse_structured_fields(text)
-        items = extract_items_from_pdf_table(file_path) if ext == ".pdf" else extract_items_from_docx_table(doc)
-        data["items"] = items if items else []
-    elif doc_type == "AMS":
-        data = parse_ams_fields(text)
+    # Download from HTTP if it's a URL
+    if is_url:
+        response = requests.get(source)
+        response.raise_for_status()
+        file_bytes = io.BytesIO(response.content)
     else:
-        raise ValueError("Unsupported or missing Document Type header.")
+        file_bytes = open(source, "rb")
 
-    return json.dumps(data, indent=2)
+    try:
+        if ext == ".pdf":
+            with pdfplumber.open(file_bytes) as pdf:
+                text = "\n".join(page.extract_text() or '' for page in pdf.pages)
+                doc = None
+                items = extract_items_from_pdf_table(source) if not is_url else extract_items_from_pdf_bytes(file_bytes)
+        elif ext == ".docx":
+            doc = Document(file_bytes)
+            text = "\n".join(p.text for p in doc.paragraphs)
+            items = extract_items_from_docx_table(doc)
+        else:
+            raise ValueError("Unsupported file type.")
+
+        doc_type = detect_document_type(text)
+        if doc_type == "BMS":
+            data = parse_structured_fields(text)
+            data["items"] = items if items else []
+        elif doc_type == "AMS":
+            data = parse_ams_fields(text)
+        else:
+            raise ValueError("Unsupported or missing Document Type header.")
+
+        return json.dumps(data, indent=2)
+    finally:
+        if not is_url:
+            file_bytes.close()
 
 # -------------------- SCRIPT TEST --------------------
 
 if __name__ == "__main__":
-    test_files = [
-        r"C:\work\god\Ticket-Tracking-System\ticket_service\media\documents\BMSDOCU.docx",
+    test_sources = [
+        # Local
+        # Remote
+        "https://smartsupport-hdts-backend.up.railway.app/media/ticket_attachments/BMSDOCU_Y3ea6ZR.docx"
     ]
-    for file_path in test_files:
-        print(f"\nProcessing: {file_path}")
+
+    for src in test_sources:
+        print(f"\nProcessing: {src}")
         try:
-            output = process_document(file_path)
+            output = process_document(src)
             print("Resulting JSON:\n", output)
         except Exception as e:
             print("Error:", e)

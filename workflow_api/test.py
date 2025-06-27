@@ -6,7 +6,7 @@ import time
 app = Celery('ticket_status_mq', broker='amqp://GY6Jx5nsXW5edoIB:DGHuVF0tWCZgWnO~T51D._6viJWc7U_B@ballast.proxy.rlwy.net:48690//')
 
 # Task that simulates sending a JSON message
-@app.task(queue='ticket_status-prod', name='send_ticket_status')
+@app.task(queue='ticket_status-prod-capstone', name='send_ticket_status')
 def send_ticket_status(ticket_id, status):
     data = {
         "ticket_number": ticket_id,
@@ -18,7 +18,7 @@ def send_ticket_status(ticket_id, status):
 
 if __name__ == "__main__":  # Fixed incorrect "__main__" check
     print("Sending task to queue...")
-    result = send_ticket_status.delay("TX7929", "On Process")
+    result = send_ticket_status.delay("TX4811", "Resolved")
     print("Task ID:", result.id)
 
     # Optional: wait for result

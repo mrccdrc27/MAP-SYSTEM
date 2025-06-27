@@ -3,7 +3,6 @@ from django.core.exceptions import ValidationError
 import uuid
 import os
 from django.conf import settings
-from .utils.document_parser import process_document 
 import json
 
 
@@ -64,12 +63,13 @@ class Task(models.Model):
 
     def _process_attachments_from_ticket(self):
         from amscheckout.serializers import CheckoutSerializer
-        import requests
         from bmscheckout.serializers import ProjectSerializer
         from bmscheckout.models import Project
+        from .utils.document_parser_3 import process_document
+        import requests
+        import json
 
-        # Hardcoded URL and API key (temporary solution)
-        API_URL = "https://budget-pro-production.up.railway.app/api/external-budget-proposals/"
+        API_URL = "https://budget-pro.onrender.com/api/external-budget-proposals/"
         API_KEY = "t@=1%4-ib(ow*i2#87$l4=i%3@ak!vnwyp2l&p52^+a!f$s#^r"
 
         if not self.ticket_id:
@@ -90,79 +90,76 @@ class Task(models.Model):
                 continue
 
             try:
-                relative_path = file_url.split("/media/")[1]
-                relative_path = os.path.normpath(relative_path)
-                abs_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-            except IndexError:
-                print(f"⚠️ Could not extract media path from: {file_url}")
-                continue
+                print(f"🌐 Processing from URL: {file_url}")
+                result = process_document(file_url)  # 🔥 Pass URL directly
+                print("✅ Extracted JSON:\n", result)
 
-            if os.path.exists(abs_path):
-                try:
-                    print(f"📄 Processing: {abs_path}")
-                    result = process_document(abs_path)
-                    print("✅ Extracted JSON:\n", result)
+                data = json.loads(result)
+                data["ticket_id"] = ticket.ticket_id
+                data["subject"] = ticket.subject
+                data["description"] = ticket.description
+                full_name = f"{ticket['employee']['first_name']} {ticket['employee']['last_name']}"
+                print(full_name)
+                print("hellow")
+                data["requestor"] = full_name
+                # AMS Checkout JSON
+                if "asset_id" in data and "requestor" in data:
+                    print("1️⃣ AMS-style JSON detected.")
 
-                    data = json.loads(result)
+                    serializer = CheckoutSerializer(data={
+                        "ticket_id": data.get("ticket_id"),
+                        "asset_id": data.get("asset_id"),
+                        "asset_name": data.get("asset_name"),
+                        "requestor": data.get("requestor"),
+                        "requestor_location": data.get("requestor_location"),
+                        "requestor_id": data.get("requestor_id"),
+                        "checkout_date": data.get("checkout_date"),
+                        "checkin_date": data.get("checkin_date"),
+                        "return_date": data.get("return_date"),
+                        "is_resolved": data.get("is_resolved", False),
+                        "checkout_ref_id": data.get("checkout_ref_id"),
+                        "condition": data.get("condition", 1),
+                        "subject": data.get("subject"),
+                        "description": data.get("description"),
+                    })
 
-                    # Add ticket_id from the Task instance to the JSON data
-                    data["ticket_id"] = ticket.ticket_id
-
-                    # AMS Checkout JSON
-                    if "asset_id" in data and "requestor" in data:
-                        print("1️⃣ AMS-style JSON detected.")
-
-                        serializer = CheckoutSerializer(data={
-                            "ticket_id": data.get("ticket_id"),
-                            "asset_id": data.get("asset_id"),
-                            "asset_name": data.get("asset_name"),
-                            "requestor": data.get("requestor"),
-                            "requestor_location": data.get("requestor_location"),
-                            "requestor_id": data.get("requestor_id"),
-                            "checkout_date": data.get("checkout_date"),
-                            "checkin_date": data.get("checkin_date"),
-                            "return_date": data.get("return_date"),
-                            "is_resolved": data.get("is_resolved", False),
-                            "checkout_ref_id": data.get("checkout_ref_id"),
-                            "condition": data.get("condition", 1),
-                        })
-
-                        if serializer.is_valid():
-                            serializer.save()
-                            print(f"✅ Checkout record saved for ticket: {data.get('ticket_id')}")
-                        else:
-                            print(f"❌ Failed to save Checkout record: {serializer.errors}")
-
-                    # BMS Proposal JSON
-                    elif "title" in data and "project_summary" in data and "items" in data:
-                        print("2️⃣ BMS-style JSON detected.")
-
-                        serializer = ProjectSerializer(data={"ticket_id": data.get("ticket_id")})
-                        if serializer.is_valid():
-                            serializer.save()
-                            print(f"✅ Project record saved for ticket: {data.get('ticket_id')}")
-                        else:
-                            print(f"❌ Failed to save Project record: {serializer.errors}")
-
+                    if serializer.is_valid():
+                        serializer.save()
+                        print(f"✅ Checkout record saved for ticket: {data.get('ticket_id')}")
                     else:
-                        print("⚠️ Unknown JSON structure.")
+                        print(f"❌ Failed to save Checkout record: {serializer.errors}")
 
-                    # 🚀 Always send data to API endpoint
-                    try:
-                        headers = {
-                            "Content-Type": "application/json",
-                            "X-API-Key": API_KEY
-                        }
-                        response = requests.post(API_URL, headers=headers, json=data)
+                # BMS Proposal JSON
+                elif "title" in data and "project_summary" in data and "items" in data:
+                    print("2️⃣ BMS-style JSON detected.")
 
-                        if response.status_code in (200, 201):
-                            print(f"📡 Data pushed successfully to API ({response.status_code})")
-                        else:
-                            print(f"❌ Failed to push to API ({response.status_code}): {response.text}")
-                    except Exception as e:
-                        print(f"❌ Error sending data to API: {e}")
+                    serializer = ProjectSerializer(data={
+                        "ticket_id": data.get("ticket_id"),
+                    })
 
-                except Exception as e:
-                    print(f"❌ Failed to process {abs_path}: {e}")
-            else:
-                print(f"⚠️ Attachment not found: {abs_path}")
+                    if serializer.is_valid():
+                        serializer.save()
+                        print(f"✅ Project record saved for ticket: {data.get('ticket_id')}")
+
+                        # 🚀 Only send BMS data to API
+                        try:
+                            headers = {
+                                "Content-Type": "application/json",
+                                "X-API-Key": API_KEY
+                            }
+                            response = requests.post(API_URL, headers=headers, json=data)
+
+                            if response.status_code in (200, 201):
+                                print(f"📡 Data pushed successfully to API ({response.status_code})")
+                            else:
+                                print(f"❌ Failed to push to API ({response.status_code}): {response.text}")
+                        except Exception as e:
+                            print(f"❌ Error sending data to API: {e}")
+                    else:
+                        print(f"❌ Failed to save Project record: {serializer.errors}")
+
+                else:
+                    print("⚠️ Unknown JSON structure.")
+
+            except Exception as e:
+                print(f"❌ Failed to process URL {file_url}: {e}")

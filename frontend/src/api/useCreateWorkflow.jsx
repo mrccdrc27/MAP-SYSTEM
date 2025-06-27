@@ -22,6 +22,7 @@ const useWorkflow = () => {
       medium_sla: data.medium_sla || null,
       high_sla: data.high_sla || null,
       urgent_sla: data.urgent_sla || null,
+      department: data.department?.trim() || null,
     };
 
     setLoading(true);

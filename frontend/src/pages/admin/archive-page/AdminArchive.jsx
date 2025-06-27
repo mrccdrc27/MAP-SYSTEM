@@ -29,15 +29,15 @@ export default function AdminArchive() {
 
   // Tabs
   const [activeTab, setActiveTab] = useState("Active");
-  const [openAddAgent, setOpenAddAgent] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState(null); // State to track the selected agent
+  const [openAssignTicket, setOpenAssignTicket] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
 
-  // const onInviteAgent = (agent) => {
-  //   setSelectedAgent(agent); // Set the selected agent
-  //   setOpenAddAgent(true); // Open the modal
-  // };
 
-  const onInviteAgent = () => setOpenAddAgent(true)
+  // useEffect(() => {
+  //   setOpenAssignTicket(true);
+  // }, []);
+
+  console.log("openAssignTicket:", openAssignTicket);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -242,18 +242,22 @@ export default function AdminArchive() {
               )}
               {activeTab === "Unassigned" && (
                 <UnassignedTable
-                onInviteAgent={() => setOpenAddAgent(true)}
                   tickets={filteredTickets}
                   error={ticketsError}
+                  onInviteAgent={(ticket_id) => {
+                    setSelectedTicketId(ticket_id);
+                    setOpenAssignTicket(true);   
+                  }}
                 />
               )}
             </div>
           </div>
         </section>
       </main>
-      {openAddAgent && <TicketTaskAssign closeAddAgent={() =>
-         setOpenAddAgent(false)} 
-         closeActivateAgent={handleCloseModal}
+      {openAssignTicket && <TicketTaskAssign 
+      ticket_id={selectedTicketId}
+      closeAssignTicket={() =>setOpenAssignTicket(false)} 
+      closeActivateAgent={handleCloseModal}
          />}
     </>
   );

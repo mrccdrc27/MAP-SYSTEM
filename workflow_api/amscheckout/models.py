@@ -5,6 +5,8 @@ class Checkout(models.Model):
 
     asset_id = models.IntegerField(null=True, blank=True)  # Consider replacing with ForeignKey to Asset model in future
     asset_name = models.CharField(max_length=255)
+    subject = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
 
     requestor = models.CharField(max_length=100)
     requestor_location = models.CharField(max_length=255)
