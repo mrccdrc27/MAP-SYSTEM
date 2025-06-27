@@ -1,3 +1,4 @@
+import os    
 from rest_framework import generics
 from rest_framework.views import APIView
 from django.shortcuts import render
@@ -445,8 +446,7 @@ class Me(APIView):
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
         return Response(serializer.data)
-        
-
+    
 class UserIDsByRoleView(APIView):
     def get(self, request):
         role_id = request.query_params.get('role_id')

@@ -32,13 +32,14 @@ function TicketHeader() {
 }
 
 function TicketItem({ item }) {
-  
   const navigate = useNavigate();
+  console.log("id", item);
   return (
     <tr className={general.item}>
       <td>{item.ticket_id}</td>
       <td>{item.subject}</td>
       <td>{item.description}</td>
+      {/* <td>{item.priority}</td> */}
       <td>
         <div className={general[`priority-${item.priority.toLowerCase()}`]}>
           {item.priority}
@@ -49,9 +50,9 @@ function TicketItem({ item }) {
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/admin/archive/${item.ticket_id}`)}
+          onClick={() => alert()}
         >
-          👁 View
+          👁
         </button>
       </td>
     </tr>
@@ -64,6 +65,7 @@ export default function UnassignedTable({
   onSearchChange,
   onInviteAgent,
   activeTab,
+  handleCloseModal,
 }) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,16 +76,18 @@ export default function UnassignedTable({
   const paginatedTickets = tickets.slice(startIndex, endIndex);
 
   return (
+    
     <div className={general.ticketTableSection}>
+      <button className={general.btn} onClick={() => onInviteAgent()}>
+        hello
+      </button>
       <div className={general.tableHeader}>
         <h2>
           {activeTab} ({tickets.length})
         </h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          <button className={general.exportButton} onClick={onInviteAgent}>
-            Invite Agent
-          </button>
+          <button className={general.exportButton}>Export</button>
         </div>
       </div>
       <div className={general.ticketTableWrapper}>
@@ -94,7 +98,7 @@ export default function UnassignedTable({
           <tbody>
             {tickets.length > 0 ? (
               paginatedTickets.map((ticket) => (
-                <TicketItem key={ticket.ticket_id} item={ticket} />
+                <TicketItem key={ticket.id} item={ticket} />
               ))
             ) : (
               <tr>
@@ -115,6 +119,8 @@ export default function UnassignedTable({
           onPageSizeChange={setPageSize}
         />
       </div>
+
+      
     </div>
   );
 }

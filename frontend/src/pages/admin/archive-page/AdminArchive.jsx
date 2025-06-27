@@ -25,12 +25,19 @@ export default function AdminArchive() {
   const { userTickets, loading: userTicketsLoading, error: userTicketsError } = useUserTickets();
   const { tickets, fetchTickets, loading: ticketsLoading, error: ticketsError } = useTicketsFetcher();
   const { tasks, fetchTasks, loading: tasksLoading, error: tasksError } = useTasksFetcher();
+  
 
   // Tabs
-  const [activeTab, setActiveTab] = useState("All");
+  const [activeTab, setActiveTab] = useState("Active");
   const [openAddAgent, setOpenAddAgent] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null); // State to track the selected agent
 
-  const onInviteAgent = () => setOpenAddAgent(true);
+  // const onInviteAgent = (agent) => {
+  //   setSelectedAgent(agent); // Set the selected agent
+  //   setOpenAddAgent(true); // Open the modal
+  // };
+
+  const onInviteAgent = () => setOpenAddAgent(true)
 
   // Filters
   const [filters, setFilters] = useState({
@@ -159,6 +166,13 @@ export default function AdminArchive() {
 
     return true;
   });
+  console.log("Filtered Tickets:", filteredTasks);
+  const handleCloseModal = () => {
+    setOpenActivateAgent(false);
+    fetchUsers(); // refresh pendingInvite list after modal closes
+  };
+  
+  
 
   return (
     <>
@@ -170,7 +184,7 @@ export default function AdminArchive() {
         <section className={styles.tpBody}>
           {/* Tabs */}
           <div className={styles.tpTabs}>
-            {["All", "Active", "Inactive", "Unassigned"].map((tab) => (
+            {["Active", "Inactive", "Unassigned"].map((tab) => (
               <a
                 key={tab}
                 href=""
@@ -195,6 +209,7 @@ export default function AdminArchive() {
           </div>
 
           {/* Table */}
+
           <div className={styles.tpTableSection}>
             <div className={general.tpTable}>
               {(userTicketsLoading || ticketsLoading || tasksLoading) && (
@@ -214,6 +229,8 @@ export default function AdminArchive() {
                   }
                   error={userTicketsError || ticketsError || tasksError}
                   activeTab={activeTab}
+
+                  
                 />
               )}
               {(activeTab === "Active" || activeTab === "Inactive") && (
@@ -225,7 +242,7 @@ export default function AdminArchive() {
               )}
               {activeTab === "Unassigned" && (
                 <UnassignedTable
-
+                onInviteAgent={() => setOpenAddAgent(true)}
                   tickets={filteredTickets}
                   error={ticketsError}
                 />
@@ -234,8 +251,10 @@ export default function AdminArchive() {
           </div>
         </section>
       </main>
-
-      {openAddAgent && <TicketTaskAssign closeAddAgent={() => setOpenAddAgent(false)} />}
+      {openAddAgent && <TicketTaskAssign closeAddAgent={() =>
+         setOpenAddAgent(false)} 
+         closeActivateAgent={handleCloseModal}
+         />}
     </>
   );
 }
