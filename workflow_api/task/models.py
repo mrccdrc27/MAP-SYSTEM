@@ -98,10 +98,6 @@ class Task(models.Model):
                 data["ticket_id"] = ticket.ticket_id
                 data["subject"] = ticket.subject
                 data["description"] = ticket.description
-                full_name = f"{ticket['employee']['first_name']} {ticket['employee']['last_name']}"
-                print(full_name)
-                print("hellow")
-                data["requestor"] = full_name
                 # AMS Checkout JSON
                 if "asset_id" in data and "requestor" in data:
                     print("1️⃣ AMS-style JSON detected.")
