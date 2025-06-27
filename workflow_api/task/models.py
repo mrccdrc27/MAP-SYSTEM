@@ -137,7 +137,11 @@ class Task(models.Model):
                     elif "title" in data and "project_summary" in data and "items" in data:
                         print("2️⃣ BMS-style JSON detected.")
 
-                        serializer = ProjectSerializer(data={"ticket_id": data.get("ticket_id")})
+                        serializer = ProjectSerializer(data={
+                            "ticket_id": data.get("ticket_id"),
+                            })
+
+                        
                         if serializer.is_valid():
                             serializer.save()
                             print(f"✅ Project record saved for ticket: {data.get('ticket_id')}")

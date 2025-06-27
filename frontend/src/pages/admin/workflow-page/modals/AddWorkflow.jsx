@@ -15,6 +15,7 @@ const AddWorkflow = ({closeAddWorkflow }) => {
     description: '',
     category: '',
     sub_category: '',
+    department: '',
     status: 'draft',
     is_published: false,
     low_sla: { days: '', hours: '', minutes: '' },
@@ -161,6 +162,7 @@ const AddWorkflow = ({closeAddWorkflow }) => {
 
     switch (step) {
       case 1:
+        if (!formData.department.trim()) newErrors.department = 'Department is required';
         if (!formData.name.trim()) newErrors.name = 'Workflow name is required';
         if (!formData.description.trim()) newErrors.description = 'Description is required';
         break;
@@ -204,6 +206,7 @@ const AddWorkflow = ({closeAddWorkflow }) => {
       description: formData.description,
       category: formData.category,
       sub_category: formData.sub_category,
+      department: formData.department,
       status: formData.status,
       is_published: formData.is_published,
       low_sla: convertSlaToSeconds(formData.low_sla),
@@ -278,6 +281,24 @@ const AddWorkflow = ({closeAddWorkflow }) => {
       case 1:
         return (
           <div className={styles.stepContent}>
+            <div>
+            <label className={styles.label}>
+              Department *
+            </label>
+            <input
+              type="text"
+              className={`${styles.input} ${errors.department ? styles.inputError : ''}`}
+              value={formData.department}
+              onChange={(e) => handleInputChange('department', e.target.value)}
+              placeholder="Enter department name"
+            />
+            {errors.department && (
+              <p className={styles.errorMessage}>
+                <span className={styles.alertIcon}>⚠️</span>
+                {errors.department}
+              </p>
+            )}
+          </div>
             <div>
               <label className={styles.label}>
                 Workflow Name *
@@ -437,6 +458,7 @@ const AddWorkflow = ({closeAddWorkflow }) => {
         <div className={styles.stepContent}>
           <h3 className={styles.reviewTitle}>Review Workflow Details</h3>
           <div className={styles.reviewGrid}>
+            <div><strong>Department:</strong> {formData.department}</div>
             <div><strong>Name:</strong> {formData.name}</div>
             <div><strong>Description:</strong> {formData.description}</div>
             <div><strong>Category:</strong> {formData.category}</div>
@@ -540,6 +562,7 @@ const AddWorkflow = ({closeAddWorkflow }) => {
                     description: '',
                     category: '',
                     sub_category: '',
+                    department: '',
                     status: 'draft',
                     is_published: false,
                     low_sla: { days: '', hours: '', minutes: '' },

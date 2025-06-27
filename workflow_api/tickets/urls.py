@@ -8,7 +8,13 @@ router.register(r'tickets', WorkflowTicketViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('assign-task/', ManualTaskAssignmentView.as_view(), name='manual-task-assignment'),
-    path("assign-task/<uuid:ticket_id>/<uuid:workflow_id>/", ManualTaskAssignmentView.as_view(), name="assign-task"),
+    # ad
+    # path('assign-task/', ManualTaskAssignmentView.as_view(), name='manual-task-assignment'),
+    # # /workflow/WF-6158/55570dd0-b3e6-4ba7-a8db-6b3906b827e4/
+    # path("assign-task/<uuid:ticket_id>/<str:workflow_id>/", ManualTaskAssignmentView.as_view(), name="assign-task"),
+
+    path("assign-task/", TaskAssignmentView.as_view(), name="assign-task"),
+
+
 
 ]

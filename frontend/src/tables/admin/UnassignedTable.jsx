@@ -31,7 +31,8 @@ function TicketHeader() {
   );
 }
 
-function TicketItem({ item }) {
+function TicketItem({ item, onInviteAgent }) {
+  
   const navigate = useNavigate();
   console.log("id", item);
   return (
@@ -48,11 +49,8 @@ function TicketItem({ item }) {
       <td>{item.status}</td>
       <td>{format(new Date(item.created_at), "yyyy-MM-dd hh:mm:ss a")}</td>
       <td>
-        <button
-          className={general.btn}
-          onClick={() => alert()}
-        >
-          👁
+        <button className={general.btn} onClick={() => onInviteAgent(item.ticket_id)}>
+          <i className="fa-solid fa-plus"></i> Assign Task
         </button>
       </td>
     </tr>
@@ -78,9 +76,6 @@ export default function UnassignedTable({
   return (
     
     <div className={general.ticketTableSection}>
-      <button className={general.btn} onClick={() => onInviteAgent()}>
-        hello
-      </button>
       <div className={general.tableHeader}>
         <h2>
           {activeTab} ({tickets.length})
@@ -98,7 +93,8 @@ export default function UnassignedTable({
           <tbody>
             {tickets.length > 0 ? (
               paginatedTickets.map((ticket) => (
-                <TicketItem key={ticket.id} item={ticket} />
+              <TicketItem key={ticket.id} item={ticket} onInviteAgent={onInviteAgent} />
+
               ))
             ) : (
               <tr>

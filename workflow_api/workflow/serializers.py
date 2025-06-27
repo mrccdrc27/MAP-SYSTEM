@@ -40,6 +40,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
             "medium_sla",
             "high_sla",
             "urgent_sla",
+            "department",  # New field for department
         )
         read_only_fields = ("workflow_id",)
 

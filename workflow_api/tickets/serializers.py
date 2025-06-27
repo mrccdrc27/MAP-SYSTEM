@@ -107,3 +107,10 @@ class ManualTaskAssignmentSerializer(serializers.Serializer):
         if not success:
             raise serializers.ValidationError("Failed to assign task. Try again later.")
         return {"ticket_id": ticket.id, "workflow_id": workflow.id}
+
+
+from rest_framework import serializers
+
+class TaskAssignmentSerializer(serializers.Serializer):
+    ticket_id = serializers.CharField()
+    workflow_id = serializers.CharField()
