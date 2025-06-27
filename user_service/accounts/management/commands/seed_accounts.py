@@ -8,7 +8,7 @@ from role.models import Roles
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Seed database with predefined roles and users using default burnthisway22+N@gmail.com emails'
+    help = 'Seed database with predefined roles and users using default lawrencearellanoafable+N@gmail.com emails'
 
     def handle(self, *args, **options):
         self.stdout.write('Seeding roles and users...')
@@ -40,13 +40,13 @@ class Command(BaseCommand):
                 self.stdout.write(f'Role already exists: {role.name}')
 
     def create_users(self):
-        """Create five users using default burnthisway22+N@gmail.com email format."""
+        """Create five users using default lawrencearellanoafable+N@gmail.com email format."""
         predefined_users = [
             {
                 'first_name': 'Marc Cedric',
                 'last_name': 'Mayuga',
                 'middle_name': 'Cortes',
-                'email': 'burnthisway22@gmail.com',
+                'email': 'lawrencearellanoafable@gmail.com',
                 'username': 'marco',
                 'phone_number': '+10000000002',
                 'role': 'Admin',
@@ -57,7 +57,7 @@ class Command(BaseCommand):
                 'first_name': 'John',
                 'last_name': 'Doe',
                 'middle_name': 'Michael',
-                'email': 'burnthisway22+1@gmail.com',
+                'email': 'lawrencearellanoafable+1@gmail.com',
                 'username': 'admin',
                 'phone_number': '+10000000001',
                 'role': 'Admin',
@@ -68,7 +68,7 @@ class Command(BaseCommand):
                 'first_name': 'Jane',
                 'last_name': 'Smith',
                 'middle_name': 'Elizabeth',
-                'email': 'burnthisway22+2@gmail.com',
+                'email': 'lawrencearellanoafable+2@gmail.com',
                 'username': 'assetmanager',
                 'phone_number': '+10000000002',
                 'role': 'Asset Manager',
@@ -79,7 +79,7 @@ class Command(BaseCommand):
                 'first_name': 'Bob',
                 'last_name': 'Johnson',
                 'middle_name': '',
-                'email': 'burnthisway22+3@gmail.com',
+                'email': 'lawrencearellanoafable+3@gmail.com',
                 'username': 'budgetmanager',
                 'phone_number': '+10000000003',
                 'role': 'Budget Manager',
@@ -90,7 +90,7 @@ class Command(BaseCommand):
                 'first_name': 'Alice',
                 'last_name': 'Williams',
                 'middle_name': 'Grace',
-                'email': 'burnthisway22+4@gmail.com',
+                'email': 'lawrencearellanoafable+4@gmail.com',
                 'username': 'assetstaff',
                 'phone_number': '+10000000004',
                 'role': 'Asset Manager',
