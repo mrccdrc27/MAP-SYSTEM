@@ -2,55 +2,58 @@
 import AgentNav from "../../../components/navigation/AgentNav";
 import TrackResult from "./components/TrackResult";
 
-// === changed: use custom hook instead of env + axios
-import useUserTickets from "../../../api/useUserTickets";
-import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
+// api
+const ticketURL = import.meta.env.VITE_TICKET_API;
 
 // style
 import styles from "./track.module.css";
 
 // react
-import React, { useState } from "react"; // === changed: removed useEffect
-import { useNavigate } from "react-router-dom"; // === added if you want to redirect
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function Track() {
-  const { userTickets } = useUserTickets(); // === added
-  const tickets = userTickets || []; // === added
-  const loading = !userTickets; // === added
-
-  const navigate = useNavigate(); // === added (optional)
+  // fetch tickets states
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // search bar states
   const [searchTerm, setSearchTerm] = useState("");
   const [matchedTicket, setMatchedTicket] = useState(null);
   const [notFound, setNotFound] = useState(false);
 
-  // state and tracker hook
-  const [taskId, setTaskId] = useState(null); // === added
-  const { tracker } = useWorkflowProgress(taskId); // === added
+  useEffect(() => {
+    axios
+      .get(ticketURL)
+      .then((response) => {
+        // fetch tickets
+        const allTickets = response.data;
+        setTickets(allTickets);
+        setLoading(false);
+      })
+      .catch((error) => {
+        setError("Failed to fetch data");
+        setLoading(false);
+      });
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
 
-    // === changed: adjust search to match userTickets structure
     const match = tickets.find(
-      (instance) =>
-        instance.task.ticket.ticket_id.toLowerCase() ===
-        searchTerm.trim().toLowerCase()
+      (ticket) =>
+        ticket.ticket_id.toLowerCase() === searchTerm.trim().toLowerCase()
     );
 
     if (match) {
-      setMatchedTicket(match.task.ticket);
-      setTaskId(match.task.task_id); // === added
+      setMatchedTicket(match);
       setNotFound(false);
     } else {
       setMatchedTicket(null);
-      setTaskId(null); // === added
       setNotFound(true);
     }
   };
-
-  console.log("Tracker Data:", tracker); // === Log tracker data
 
   return (
     <>
@@ -76,7 +79,6 @@ export default function Track() {
             matchedTicket={matchedTicket}
             notFound={notFound}
             searchTerm={searchTerm}
-            tracker={tracker}
           />
         </section>
       </main>

@@ -17,7 +17,6 @@ import axios from "axios";
 import useUserTickets from "../../../api/useUserTickets";
 import { useAuth } from "../../../api/AuthContext";
 
-
 export default function AdminTicket() {
   const { userTickets, loading, error } = useUserTickets();
   console.log(userTickets);
@@ -34,24 +33,31 @@ export default function AdminTicket() {
     search: "",
   });
 
-  // Status options
+  // Status & Category Status
   const [statusOptions, setStatusOptions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
 
   // Extract all ticket data with step_instance_id
   const allTickets = (userTickets || [])
     .filter((entry) => entry.task?.ticket)
     .map((entry) => ({
       ...entry.task.ticket,
-      step_instance_id: entry.step_instance_id, // ✅ attach here
-      hasacted: entry.has_acted, // ✅ attach here
+      step_instance_id: entry.step_instance_id,
+      hasacted: entry.has_acted,
     }));
-  
-  // Extract status options on ticket update
+
+  // fetch status and category
   useEffect(() => {
-    const statusSet = new Set(
-      allTickets.map((t) => t.status).filter(Boolean)
-    );
-    setStatusOptions(["All", ...Array.from(statusSet)]);
+    const statusSet = new Set();
+    const categorySet = new Set();
+
+    allTickets.forEach((t) => {
+      if (t.status) statusSet.add(t.status);
+      if (t.category) categorySet.add(t.category);
+    });
+
+    setStatusOptions([...Array.from(statusSet)]);
+    setCategoryOptions([...Array.from(categorySet)]);
   }, [userTickets]);
 
   // Handle tab click
@@ -137,6 +143,7 @@ export default function AdminTicket() {
               filters={filters}
               onFilterChange={handleFilterChange}
               statusOptions={statusOptions}
+              categoryOptions={categoryOptions}
               onResetFilters={resetFilters}
             />
           </div>

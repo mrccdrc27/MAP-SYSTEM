@@ -1,8 +1,14 @@
 // components/TrackResult.jsx
 import styles from "./track-result.module.css";
-import ProgressTracker from "../../../../components/component/ProgressTracker";
+import general from "../../../../style/general.module.css";
 
-const TrackResult = ({ matchedTicket, notFound, searchTerm }) => {
+// hooks
+import { useWorkflowProgress } from "../../../../api/workflow-graph/useWorkflowProgress";
+
+// visual
+import WorkflowVisualizer2 from "../../../../components/ticket/WorkflowVisualizer2";
+
+const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
   if (notFound) {
     return (
       <div className={styles.SearchImageContainer}>
@@ -32,6 +38,8 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm }) => {
     );
   }
 
+  // const { tracker } = useWorkflowProgress(matchedTicket);
+
   return (
     matchedTicket && (
       <div className={styles.resultsContainer}>
@@ -42,7 +50,7 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm }) => {
           </div>
           <div
             className={
-              styles[
+              general[
                 `status-${matchedTicket.status
                   .replace(/\s+/g, "-")
                   .toLowerCase()}`
@@ -54,9 +62,14 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm }) => {
         </div>
 
         {/* Progress Tracker */}
-        <div className={styles.ticketProgress}>
+        {/* <div className={styles.ticketProgress}>
           <h3>Current Progress</h3>
           <ProgressTracker currentStatus={matchedTicket.status} />
+          <WorkflowTracker2 workflowData={tracker} />
+        </div> */}
+        <div className={styles.ticketProgress}>
+          <h3>Current Progress</h3>
+          <WorkflowVisualizer2 workflowData={tracker} />
         </div>
 
         <div className={styles.ticketDetails}>
@@ -64,23 +77,23 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm }) => {
             <h3>Priority</h3>
             <p
               className={
-                styles[`priority-${matchedTicket.priority.toLowerCase()}`]
+                general[`priority-${matchedTicket.priority.toLowerCase()}`]
               }
             >
               {matchedTicket.priority}
             </p>
           </div>
           <div className={styles.detailCard}>
-            <h3>Current Operator</h3>
-            <p>{matchedTicket.position}</p>
+            <h3>Category</h3>
+            <p>{matchedTicket.category}</p>
+          </div>
+          <div className={styles.detailCard}>
+            <h3>Department</h3>
+            <p>{matchedTicket.department}</p>
           </div>
           <div className={styles.detailCard}>
             <h3>Created On</h3>
-            <p>{matchedTicket.opened_on}</p>
-          </div>
-          <div className={styles.detailCard}>
-            <h3>Expected Resolution</h3>
-            <p>{matchedTicket.sla}</p>
+            <p>{new Date(matchedTicket.submit_date).toLocaleString()}</p>
           </div>
         </div>
 

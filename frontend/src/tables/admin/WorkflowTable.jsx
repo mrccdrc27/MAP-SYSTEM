@@ -43,7 +43,7 @@ function WorkflowItem({ item }) {
           className={general.btn}
           onClick={() => navigate(`/admin/workflow/${item.workflow_id}`)}
         >
-          👁
+          <i className="fa-solid fa-pen-to-square"></i>
         </button>
       </td>
     </tr>

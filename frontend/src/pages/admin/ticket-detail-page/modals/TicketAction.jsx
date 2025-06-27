@@ -8,8 +8,12 @@ import { useState } from "react";
 // modal
 import AlertBox from "../../../../components/modal/AlertBox";
 
-
-export default function TicketAction({ closeTicketAction, ticket, action, instance }) {
+export default function TicketAction({
+  closeTicketAction,
+  ticket,
+  action,
+  instance,
+}) {
   const [selectedActionId, setSelectedActionId] = useState("");
   const [triggerNow, setTriggerNow] = useState(false);
   const [comment, setComment] = useState("");
@@ -23,12 +27,28 @@ export default function TicketAction({ closeTicketAction, ticket, action, instan
     trigger: triggerNow,
   });
 
+  // OG
+  // const handleClick = () => {
+  //   if (!selectedActionId) {
+  //     alert("Please select an action first.");
+  //     return;
+  //   }
+  //   setTriggerNow(true);
+  // };
+
+  // NEW
   const handleClick = () => {
     if (!selectedActionId) {
       alert("Please select an action first.");
       return;
     }
+
     setTriggerNow(true); // Trigger the action
+
+    // Reload the page after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000); // adjust the delay if needed
   };
 
   // Reset the trigger after the action is completed
@@ -37,8 +57,14 @@ export default function TicketAction({ closeTicketAction, ticket, action, instan
   }
 
   return (
-    <div className={styles.taOverlayWrapper} onClick={() => closeTicketAction(false)}>
-      <div className={styles.ticketActionModal} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={styles.taOverlayWrapper}
+      onClick={() => closeTicketAction(false)}
+    >
+      <div
+        className={styles.ticketActionModal}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.taExit} onClick={() => closeTicketAction(false)}>
           <i className="fa-solid fa-xmark"></i>
         </div>
@@ -51,6 +77,17 @@ export default function TicketAction({ closeTicketAction, ticket, action, instan
         <div className={styles.tdMetaData}>
           <p className={styles.tdDateOpened}>Opened On: {ticket?.opened_on}</p>
           <p className={styles.tdDateResolution}>Expected Resolution: </p>
+        </div>
+
+        <div className={styles.tdValidation}>
+          {error && error.comment && (
+            <p style={{ color: "red" }}>
+              {`Comment: ${error.comment.join(", ")}`}
+            </p>
+          )}
+          {response && (
+            <p style={{ color: "green" }}>Action triggered successfully!</p>
+          )}
         </div>
 
         <div className={styles.taBody}>
@@ -76,7 +113,8 @@ export default function TicketAction({ closeTicketAction, ticket, action, instan
               ))}
             </select>
           </div>
-          <div>
+
+          <div className={styles.taCommentCont}>
             <h3>Comment</h3>
             <textarea
               className={styles.actionStatus}
@@ -91,11 +129,14 @@ export default function TicketAction({ closeTicketAction, ticket, action, instan
             onClick={handleClick}
             disabled={loading}
           >
-            {loading ? "Sending..." : "Push Changes"}
+            {loading ? (
+              <>
+                <span className={styles.spinner}></span> Sending...
+              </>
+            ) : (
+              "Push Changes"
+            )}
           </button>
-
-          {error && <p style={{ color: "red" }}>{JSON.stringify(error)}</p>}
-          {response && <p style={{ color: "green" }}>Action triggered successfully!</p>}
         </div>
       </div>
     </div>

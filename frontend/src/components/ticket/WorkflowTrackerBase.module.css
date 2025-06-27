@@ -21,8 +21,7 @@
 .workflow {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  /* gap: 2.5rem; */
+  justify-content: space-between;
   gap: 20px;
   min-width: fit-content;
   padding: 1rem 0;

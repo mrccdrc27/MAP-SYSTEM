@@ -69,6 +69,11 @@
   font-size: var(--default-font-size);
 }
 
+/* validation */
+.tdValidation {
+  margin-bottom: 20px;
+}
+
 /* taBody */
 .taBody {
   height: 250px;
@@ -108,6 +113,22 @@
   line-height: 1.6;
 }
 
+.taCommentCont {
+  display: flex;
+  flex-direction: column;
+  gap: 10x;
+}
+
+.taCommentCont h3 {
+  color: var(--heading-color);
+  font-size: var(--base-font-size);
+}
+
+/* textarea */
+textarea {
+  resize: none;
+}
+
 /* button */
 .taActionButton {
   border: none;
@@ -118,6 +139,28 @@
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  border: 4px solid transparent;
+  border-top: 4px solid #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* animation */
@@ -208,4 +251,3 @@
     min-height: 80px;
   }
 }
-

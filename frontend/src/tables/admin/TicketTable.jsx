@@ -18,6 +18,7 @@ const ticketHeaders = [
   "DESCRIPTION",
   "PRIORITY",
   "STATUS",
+  "CATEGORY",
   "OPENED ON",
   "ACTION",
 ];
@@ -41,13 +42,23 @@ function TicketItem({ item }) {
       <td>{item.ticket_id}</td>
       <td>{item.subject}</td>
       <td>{item.description}</td>
-      {/* <td>{item.priority}</td> */}
       <td>
         <div className={general[`priority-${item.priority.toLowerCase()}`]}>
           {item.priority}
         </div>
       </td>
-      <td>{item.status}</td>
+      <td>
+        <div
+          className={
+            general[
+              `status-${item?.status.replace(/\s+/g, "-").toLowerCase()}`
+            ]
+          }
+        >
+          {item?.status}
+        </div>
+      </td>
+      <td>{item.category}</td>
       <td>{format(new Date(item.created_at), "yyyy-MM-dd hh:mm:ss a")}</td>
       <td>
         <button
