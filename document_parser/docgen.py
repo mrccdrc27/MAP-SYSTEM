@@ -40,7 +40,7 @@ def generate_bms_document(doc_index):
         "Project Description": fake.paragraph(nb_sentences=2),
         "Performance Notes": fake.sentence(),
         "Department Input": str(random.randint(1, 5)),
-        "Fiscal Year": str(start_date.year)
+        "Fiscal Year": 2
     }
 
     for key, value in fields.items():

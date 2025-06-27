@@ -278,7 +278,7 @@ if __name__ == "__main__":
     test_sources = [
         # Local
         # Remote
-        "http://localhost:8000/media/uploads/tickets/1751014283.178135_TestDoc.pdf"
+        "https://smartsupport-hdts-backend.up.railway.app/media/ticket_attachments/BMSDOCU_Y3ea6ZR.docx"
     ]
 
     for src in test_sources:
