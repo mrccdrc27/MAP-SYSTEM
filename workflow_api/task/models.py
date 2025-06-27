@@ -117,6 +117,7 @@ class Task(models.Model):
                         "condition": data.get("condition", 1),
                         "subject": data.get("subject"),
                         "description": data.get("description"),
+                        'is_resolved': False
                     })
 
                     if serializer.is_valid():
