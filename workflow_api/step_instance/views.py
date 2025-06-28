@@ -100,4 +100,7 @@ class StepInstanceView(ListAPIView):
         if user_id:
             queryset = queryset.filter(user_id=user_id)
 
+        # Sort by latest created
+        queryset = queryset.order_by('-created_at')  # Assuming 'created_at' is the field for creation timestamp
+
         return queryset
