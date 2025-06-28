@@ -13,7 +13,7 @@ const useUsersApi = () => {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${baseUrl}/users/`);
+      const response = await axios.get(`${baseUrl}users/`);
       setUsers(response.data);
       setError("");
     } catch (err) {
@@ -26,7 +26,7 @@ const useUsersApi = () => {
   // POST /users/{user_id}/activate/
   const activateUser = useCallback(async (userId, isActive) => {
     try {
-      await axios.post(`${baseUrl}/users/${userId}/activate/`, {
+      await axios.post(`${baseUrl}users/${userId}/activate/`, {
         is_active: isActive,
       });
       fetchUsers(); // Refresh after update

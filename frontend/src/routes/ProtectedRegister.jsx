@@ -12,7 +12,7 @@ const ProtectedRegister = () => {
     const checkToken = async () => {
       try {
         const baseUrl = import.meta.env.VITE_USER_SERVER_API;
-        const res = await axios.get(`${baseUrl}/registration/validate-token/?token=${token}`);
+        const res = await axios.get(`${baseUrl}registration/validate-token/?token=${token}`);
         if (res.data.valid) {
           setIsValid(true);
         } else {
