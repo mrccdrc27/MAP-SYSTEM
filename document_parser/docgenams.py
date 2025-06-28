@@ -65,9 +65,10 @@ def generate_ams_document(record, doc_index):
     doc.add_heading('Document Type: AMS', level=1)
     doc.add_paragraph('')
 
-    # Add fields to the document
+    # Add only non-None fields
     for key, value in record.items():
-        doc.add_paragraph(f"{key}: {value if value is not None else 'N/A'}")
+        if value is not None:
+            doc.add_paragraph(f"{key}: {value}")
 
     # Save the document
     filename = f"AMS_Ticket_{doc_index+1:03d}.docx"
