@@ -17,7 +17,9 @@ auth_patterns = [
 password_patterns = [
     path("reset/", RequestPasswordResetAPIView.as_view(), name="password_reset"),
     path("reset/confirm/", PasswordResetConfirmAPIView.as_view(), name="password_reset_confirm"),
+    path('reset/confirm/<uidb64>/<token>/', PasswordResetConfirmAPIView.as_view(), name='password_reset_confirm'),
     path("reset-complete/", PasswordResetCompleteAPIView.as_view(), name="password_reset_complete"),
+    path('validate-reset-token/<uidb64>/<token>/', ValidatePasswordResetTokenAPIView.as_view(), name='validate_reset_token'),
 ]
 
 registration_patterns = [

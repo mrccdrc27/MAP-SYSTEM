@@ -5,9 +5,15 @@ import axios from "axios";
 import styles from "./login.module.css";
 
 const verifyURL = import.meta.env.VITE_VERIFY_API;
+const resetPasswordURL = import.meta.env.VITE_PASSWORD_RESET_API;
 
 function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState(""); // Generic message for both success and error
+
   const navigate = useNavigate();
 
   const {
@@ -24,14 +30,30 @@ function Login() {
     handleBackToLogin,
   } = useLogin();
 
-  // ADDED
   const onLoginSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await handleLogin(e); // your original logic
+      await handleLogin(e);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetMessage(""); // Clear previous messages
+    try {
+      await axios.post(resetPasswordURL, { email });
+    } catch (err) {
+      // Do nothing specific for errors to avoid exposing account existence
+    } finally {
+      setResetMessage(
+        "If an account with this email exists, reset instructions have been sent."
+      );
+      setResetLoading(false);
+      setResetSent(true);
     }
   };
 
@@ -57,7 +79,6 @@ function Login() {
           "JWT invalid or expired:",
           err.response?.data || err.message
         );
-        // Clear localStorage if token is invalid
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
       }
@@ -87,9 +108,53 @@ function Login() {
           <p>Welcome! Please provide your credentials to log in.</p>
         </header>
 
-        {!showOTP ? (
+        {forgotMode ? (
+          <form className={styles.lpForm} onSubmit={handlePasswordReset}>
+            <fieldset>
+              <label htmlFor="reset-email">Email:</label>
+              <input
+                type="email"
+                id="reset-email"
+                name="reset-email"
+                placeholder="Enter your email"
+                className={styles.input}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-label="Reset Email"
+              />
+            </fieldset>
+
+            {resetMessage && <p className={styles.info}>{resetMessage}</p>}
+
+            <button
+              type="submit"
+              className={styles.logInButton}
+              disabled={resetLoading}
+            >
+              {resetLoading ? (
+                <>
+                  <span className={styles.spinner}></span>
+                  Sending...
+                </>
+              ) : (
+                "Send Reset Link"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForgotMode(false);
+                setResetMessage("");
+                setResetSent(false);
+              }}
+              className={styles.backButton}
+            >
+              Back to Login
+            </button>
+          </form>
+        ) : !showOTP ? (
           <form className={styles.lpForm} onSubmit={onLoginSubmit}>
-            {/* <form className={styles.lpForm} onSubmit={handleLogin}> */}
             <fieldset>
               <label htmlFor="email">Email:</label>
               <input
@@ -121,10 +186,7 @@ function Login() {
             </fieldset>
 
             {error && <p className={styles.error}>{error}</p>}
-            {/* 
-            <button type="submit" className={styles.logInButton}>
-              Log In
-            </button> */}
+
             <button
               type="submit"
               className={styles.logInButton}
@@ -176,9 +238,9 @@ function Login() {
           </form>
         )}
 
-        {!showOTP && (
+        {!showOTP && !forgotMode && (
           <a
-            onClick={() => handleBackToLogin()} // or navigate("/password-reset")
+            onClick={() => setForgotMode(true)}
             className={styles.forgotPassword}
           >
             Forgot Password?

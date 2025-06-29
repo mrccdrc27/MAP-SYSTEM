@@ -37,8 +37,7 @@ from django.core import signing
 
 from django.conf import settings
 
-
-
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -238,9 +237,12 @@ class RequestPasswordResetAPIView(GenericAPIView):
         try:
             user = CustomUser.objects.get(email=email)
             token = PasswordResetTokenGenerator().make_token(user)
+            frontend_base_url = settings.FRONTEND_URL
+            query_string = urlencode({'token': token})
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            reset_link = f"http://localhost:8000/api/password/reset/confirm/?uid={uid}&token={token}"
-  # Change to your frontend URL
+            reset_link = f"{frontend_base_url}/reset-password/{uid}/{token}"
+            # reset_link = f"{frontend_base_url}?"
+            # Change to your frontend URL
 
             message = f"""
             Hi,
@@ -273,25 +275,53 @@ class PasswordResetConfirmAPIView(GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = PasswordResetConfirmSerializer
 
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        uidb64 = serializer.validated_data['uid']
-        token = serializer.validated_data['token']
-        new_password = serializer.validated_data['new_password']
+    def post(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
-            user = CustomUser.objects.get(pk=uid)
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({'error': 'Invalid or expired reset link.'}, status=status.HTTP_404_NOT_FOUND)
 
-            if PasswordResetTokenGenerator().check_token(user, token):
-                user.set_password(new_password)
-                user.save()
-                return Response({'message': 'Password reset successfully.'}, status=200)
-            else:
-                return Response({'error': 'Invalid or expired token.'}, status=400)
-        except Exception:
-            return Response({'error': 'Invalid reset link.'}, status=400)
+        if not user.is_active:
+            return Response({'error': 'User account is inactive.'}, status=status.HTTP_404_NOT_FOUND)
 
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Inject UID/token into data for serializer validation
+        data = {
+            'uid': uidb64,
+            'token': token,
+            'new_password': request.data.get('new_password'),
+            'confirm_password': request.data.get('confirm_password'),
+        }
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+
+        return Response({'message': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
+
+class ValidatePasswordResetTokenAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (User.DoesNotExist, ValueError, OverflowError):
+            return Response({'error': 'Invalid link.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.is_active:
+            return Response({'error': 'User is inactive.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'message': 'Token is valid.'}, status=status.HTTP_200_OK)
+    
 class PasswordTokenCheckAPI(APIView):
     permission_classes = (AllowAny,)
     
@@ -341,13 +371,15 @@ class InviteUserView(CreateAPIView):
 
         # FRONTEND URL (change this to your production domain when deployed)
         # frontend_base_url = "http://localhost:3000/api/authapi/register/${token}/"
-# "http://localhost:1000/register"
+        # "http://localhost:1000/register"
         frontend_base_url = settings.FRONTEND_URL
         query_string = urlencode({'token': token})
-        url = f"{frontend_base_url}?{query_string}"
+        url = f"{frontend_base_url}/register?{query_string}"
 
         send_mail(
             subject="Action Required: Complete Your Registration",
+
+
             message=(
                 f"Dear Agent,\n\n"
                 f"You have been invited to complete your account registration.\n"

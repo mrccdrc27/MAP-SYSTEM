@@ -31,6 +31,7 @@ import AgentProfile from "../pages/auth/AgentProfile";
 import Test from "../pages/test";
 import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
 import AdminArchiveDetail from "../pages/admin/archive-page/AdminArchiveDetail";
+import ResetPassword from "../pages/auth/PasswordReset";
 
 export default function MainRoute() {
   return (
@@ -38,7 +39,7 @@ export default function MainRoute() {
       <Route path="/register" element={<ProtectedRegister />} />
       {/* PUBLIC ROUTES */}
       <Route path="/" element={<Login />} />
-      <Route path="/password-reset" element={<PasswordReset />} />
+      <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
 
       {/* PROTECTED AGENT ROUTES */}
       <Route element={<ProtectedRoute />}>
