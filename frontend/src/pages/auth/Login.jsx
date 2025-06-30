@@ -5,7 +5,7 @@ import axios from "axios";
 import styles from "./login.module.css";
 
 const verifyURL = import.meta.env.VITE_VERIFY_API;
-const resetPasswordURL = import.meta.env.VITE_PASSWORD_RESET_API;
+const resetPasswordURL = import.meta.env.VITE_USER_SERVER_API;
 
 function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +45,7 @@ function Login() {
     setResetLoading(true);
     setResetMessage(""); // Clear previous messages
     try {
-      await axios.post(resetPasswordURL, { email });
+      await axios.post(`${resetPasswordURL}password/reset/`, { email });
     } catch (err) {
       // Do nothing specific for errors to avoid exposing account existence
     } finally {
