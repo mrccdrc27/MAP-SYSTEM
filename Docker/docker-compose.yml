@@ -2,6 +2,7 @@
 # docker-compose build
 # docker-compose up -d
 # lessen the postgresql to one, provision multiple dbs in the same instance
+# none of the following env's would be used if there is already an .env file in the respective service directory
 
 services:
   # RabbitMQ for message queueing
@@ -31,6 +32,48 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d
 
+  # Worker derived from user_service
+  user_worker:
+    build:
+      context: ../user_service
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/usermanagement"
+    command: sh -c "celery -A user_service worker --pool=solo --loglevel=info -Q notification-queue-prod"
+    depends_on:
+      - rabbitmq
+      - db
+
+  # Worker derived from workflow_api
+  workflow_worker:
+    build:
+      context: ../workflow_api
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
+    command: sh -c "celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION"
+    depends_on:
+      - rabbitmq
+      - db
+
+  # Ticket service for integration mockup
+  ticket_service:
+    build:
+      context: ../ticket_service
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/ticketmanagement"
+    ports:
+      - "8004:8000"
+    command: sh -c "sleep 60 && ./start.sh"
+    depends_on:
+      - rabbitmq
+      - db
+
+  
   # User service for decentralized authentication
   user_service:
     build:
@@ -42,8 +85,8 @@ services:
     ports:
       - "8001:8000"
     depends_on:
-      - db
       - rabbitmq
+      - db
 
   # Workflow API service
   workflow_api:
@@ -59,46 +102,6 @@ services:
       - rabbitmq
       - db
 
-  # Worker derived from workflow_api
-  workflow_worker:
-    build:
-      context: ../workflow_api
-      dockerfile: Dockerfile
-    environment:
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
-    command: celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION
-    depends_on:
-      - rabbitmq
-      - db
-
-  # Worker derived from user_service
-  user_worker:
-    build:
-      context: ../user_service
-      dockerfile: Dockerfile
-    environment:
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/usermanagement"
-    command: celery -A user_service worker --pool=solo --loglevel=info -Q notification-queue-prod
-    depends_on:
-      - rabbitmq
-      - db
-
-  # Ticket service for integration mockup
-  ticket_service:
-    build:
-      context: ../ticket_service
-      dockerfile: Dockerfile
-    environment:
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/ticketmanagement"
-    ports:
-      - "8004:8000"
-    depends_on:
-      - rabbitmq
-      - db
-
   # Frontend service
   frontend:
     build:
@@ -106,22 +109,22 @@ services:
       dockerfile: Dockerfile
     environment:
       VITE_VALUE_TEST: "Test"
-      VITE_AGENTS_API: "http://localhost:5000/agents"
-      VITE_ARCHIVE_API: "http://localhost:5000/archive"
-      VITE_WORKFLOW_API: "http://localhost:5000/workflow"
-      VITE_TICKET_API: "http://localhost:5000/tickets"
-      VITE_ADMINTICKET_API: "http://localhost:5000/adminTicket"
-      VITE_ARCHIVE_TICKETS_API: "http://localhost:5000/archived_tickets"
-      VITE_UPCOMING_TICKETS_API: "http://localhost:5000/upcoming_tickets"
-      VITE_LOGIN_API: "http://localhost:8001/auth/login/"
-      VITE_VERIFY_API: "http://localhost:8001/auth/verify/"
-      VITE_VERIFY_OTP_API: "http://localhost:8001/auth/login/verify-otp/"
-      VITE_BACKEND_API: "http://localhost:8002/"
-      VITE_USER_SERVER_API: "http://localhost:8001/"
-      VITE_LOGOUT_API: "http://localhost:8001/auth/logout/"
-      VITE_PASSWORD_RESET_API: "http://localhost:8001/password/reset/"
-      VITE_VALIDATE_RESET_TOKEN_API: "http://localhost:8001/password/reset/validate-token/"
-      VITE_CONFIRM_RESET_API: "http://localhost:8001/password/reset/confirm/"
+      VITE_AGENTS_API: "http://ticket_service:5000/agents"
+      VITE_ARCHIVE_API: "http://ticket_service:5000/archive"
+      VITE_WORKFLOW_API: "http://workflow_api:8002/workflow"
+      VITE_TICKET_API: "http://ticket_service:5000/tickets"
+      VITE_ADMINTICKET_API: "http://ticket_service:5000/adminTicket"
+      VITE_ARCHIVE_TICKETS_API: "http://ticket_service:5000/archived_tickets"
+      VITE_UPCOMING_TICKETS_API: "http://ticket_service:5000/upcoming_tickets"
+      VITE_LOGIN_API: "http://user_service:8001/auth/login/"
+      VITE_VERIFY_API: "http://user_service:8001/auth/verify/"
+      VITE_VERIFY_OTP_API: "http://user_service:8001/auth/login/verify-otp/"
+      VITE_BACKEND_API: "http://workflow_api:8002/"
+      VITE_USER_SERVER_API: "http://user_service:8001/"
+      VITE_LOGOUT_API: "http://user_service:8001/auth/logout/"
+      VITE_PASSWORD_RESET_API: "http://user_service:8001/password/reset/"
+      VITE_VALIDATE_RESET_TOKEN_API: "http://user_service:8001/password/reset/validate-token/"
+      VITE_CONFIRM_RESET_API: "http://user_service:8001/password/reset/confirm/"
     ports:
       - "1000:1000"
     depends_on:
