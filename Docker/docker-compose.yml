@@ -27,7 +27,7 @@ services:
       POSTGRES_PASSWORD: postgrespass
       POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Changed the host port to 5433
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d
@@ -64,16 +64,15 @@ services:
       context: ../ticket_service
       dockerfile: Dockerfile
     environment:
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/ticketmanagement"
+      CELERY_TASK_DEFAULT_QUEUE: "TICKET_TASKS_PRODUCTION"
     ports:
       - "8004:8000"
-    command: sh -c "sleep 60 && ./start.sh"
     depends_on:
       - rabbitmq
       - db
 
-  
   # User service for decentralized authentication
   user_service:
     build:

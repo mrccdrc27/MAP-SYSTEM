@@ -11,4 +11,4 @@ python manage.py seed_tickets
 
 
 # Start Gunicorn server
-gunicorn workflow_api.wsgi:application --bind 0.0.0.0:8000
+gunicorn ticket_service.wsgi:application --bind 0.0.0.0:8000
