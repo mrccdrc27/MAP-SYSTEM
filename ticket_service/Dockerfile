@@ -7,13 +7,19 @@ FROM python:3.11-alpine
 # Set working directory
 WORKDIR /app
 
-ARG DJANGO_ALLOWED_HOSTS
-ENV DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-
 # Install necessary dependencies
 RUN apk add --no-cache \
     build-base \
     libffi-dev \
+    openssl-dev \
+    python3-dev \
+    musl-dev \
+    zlib-dev \
+    jpeg-dev \
+    gcc \
+    libc-dev \
+    linux-headers \
+    pcre-dev \
     postgresql-dev \
     && pip install --no-cache-dir --upgrade pip
 
@@ -24,7 +30,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port (optional, for local dev)
-EXPOSE 8000
+EXPOSE 7000
 
 # Command to run the Django server
 COPY start.sh .

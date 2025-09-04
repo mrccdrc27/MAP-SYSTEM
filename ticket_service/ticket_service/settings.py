@@ -155,4 +155,4 @@ CELERY_TASK_DEFAULT_QUEUE = os.getenv('CELERY_TASK_DEFAULT_QUEUE', 'ticket_tasks
 
 
 # Base URL for the project
-BASE_URL = "http://localhost:8000"  # Replace with your actual domain in production
+BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')  # Default to 'http://localhost:8004' if not set
