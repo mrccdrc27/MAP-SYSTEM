@@ -86,33 +86,6 @@ export default function AdminTicket() {
     });
   };
 
-  // Filter tickets
-  // const filteredTickets = allTickets.filter((ticket) => {
-  //   if (activeTab !== "All" && ticket.priority !== activeTab) return false;
-  //   if (filters.category && ticket.category !== filters.category) return false;
-  //   if (filters.status && ticket.status !== filters.status) return false;
-
-  //   const openedDate = new Date(ticket.submit_date);
-  //   const start = filters.startDate ? new Date(filters.startDate) : null;
-  //   const end = filters.endDate ? new Date(filters.endDate) : null;
-  //   if (start && openedDate < start) return false;
-  //   if (end && openedDate > end) return false;
-
-  //   const search = filters.search.toLowerCase();
-  //   if (
-  //     search &&
-  //     !(
-  //       ticket.ticket_id.toLowerCase().includes(search) ||
-  //       ticket.subject.toLowerCase().includes(search) ||
-  //       ticket.description.toLowerCase().includes(search)
-  //     )
-  //   ) {
-  //     return false;
-  //   }
-
-  //   return true;
-  // });
-
   const filteredTickets = allTickets.filter((ticket) => {
     if (activeTab === "Acted") {
       return ticket.hasacted === true;

@@ -22,20 +22,28 @@ import AddAgent from "../agent-page/modals/AddAgent";
 import TicketTaskAssign from "./modals/ActivateAgent";
 
 export default function AdminArchive() {
-  const { userTickets, loading: userTicketsLoading, error: userTicketsError } = useUserTickets();
-  const { tickets, fetchTickets, loading: ticketsLoading, error: ticketsError } = useTicketsFetcher();
-  const { tasks, fetchTasks, loading: tasksLoading, error: tasksError } = useTasksFetcher();
-  
+  const {
+    userTickets,
+    loading: userTicketsLoading,
+    error: userTicketsError,
+  } = useUserTickets();
+  const {
+    tickets,
+    fetchTickets,
+    loading: ticketsLoading,
+    error: ticketsError,
+  } = useTicketsFetcher();
+  const {
+    tasks,
+    fetchTasks,
+    loading: tasksLoading,
+    error: tasksError,
+  } = useTasksFetcher();
 
   // Tabs
   const [activeTab, setActiveTab] = useState("Active");
   const [openAssignTicket, setOpenAssignTicket] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState(null);
-
-
-  // useEffect(() => {
-  //   setOpenAssignTicket(true);
-  // }, []);
 
   console.log("openAssignTicket:", openAssignTicket);
 
@@ -68,9 +76,7 @@ export default function AdminArchive() {
 
   // Extract status options on ticket update
   useEffect(() => {
-    const statusSet = new Set(
-      allTickets.map((t) => t.status).filter(Boolean)
-    );
+    const statusSet = new Set(allTickets.map((t) => t.status).filter(Boolean));
     setStatusOptions(["All", ...Array.from(statusSet)]);
   }, [userTickets]);
 
@@ -102,7 +108,8 @@ export default function AdminArchive() {
 
   // Filter tickets for the "Unassigned" tab
   const filteredTickets = (tickets || []).filter((ticket) => {
-    if (activeTab === "Unassigned" && ticket.is_task_allocated !== false) return false;
+    if (activeTab === "Unassigned" && ticket.is_task_allocated !== false)
+      return false;
 
     // Filter by category
     if (filters.category && ticket.category !== filters.category) return false;
@@ -135,11 +142,20 @@ export default function AdminArchive() {
 
   // Filter tasks for the "Active" and "Inactive" tabs
   const filteredTasks = (tasks || []).filter((task) => {
-    if (activeTab === "Active" && !["Open", "In Progress"].includes(task.ticket?.status)) return false;
-    if (activeTab === "Inactive" && !["Closed", "Resolved"].includes(task.ticket?.status)) return false;
+    if (
+      activeTab === "Active" &&
+      !["Open", "In Progress"].includes(task.ticket?.status)
+    )
+      return false;
+    if (
+      activeTab === "Inactive" &&
+      !["Closed", "Resolved"].includes(task.ticket?.status)
+    )
+      return false;
 
     // Filter by category
-    if (filters.category && task.ticket?.category !== filters.category) return false;
+    if (filters.category && task.ticket?.category !== filters.category)
+      return false;
 
     // Filter by status
     if (filters.status && task.ticket?.status !== filters.status) return false;
@@ -171,8 +187,6 @@ export default function AdminArchive() {
     setOpenActivateAgent(false);
     fetchUsers(); // refresh pendingInvite list after modal closes
   };
-  
-  
 
   return (
     <>
@@ -229,8 +243,6 @@ export default function AdminArchive() {
                   }
                   error={userTicketsError || ticketsError || tasksError}
                   activeTab={activeTab}
-
-                  
                 />
               )}
               {(activeTab === "Active" || activeTab === "Inactive") && (
@@ -246,7 +258,7 @@ export default function AdminArchive() {
                   error={ticketsError}
                   onInviteAgent={(ticket_id) => {
                     setSelectedTicketId(ticket_id);
-                    setOpenAssignTicket(true);   
+                    setOpenAssignTicket(true);
                   }}
                 />
               )}
@@ -254,11 +266,13 @@ export default function AdminArchive() {
           </div>
         </section>
       </main>
-      {openAssignTicket && <TicketTaskAssign 
-      ticket_id={selectedTicketId}
-      closeAssignTicket={() =>setOpenAssignTicket(false)} 
-      closeActivateAgent={handleCloseModal}
-         />}
+      {openAssignTicket && (
+        <TicketTaskAssign
+          ticket_id={selectedTicketId}
+          closeAssignTicket={() => setOpenAssignTicket(false)}
+          closeActivateAgent={handleCloseModal}
+        />
+      )}
     </>
   );
 }
