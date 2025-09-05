@@ -8,6 +8,7 @@ from django.conf import settings
 import requests
 from urllib.parse import urlparse, urljoin
 import os
+from django.db import transaction
 
 @shared_task(name='tickets.tasks.receive_ticket')
 def receive_ticket(ticket_data):
@@ -97,10 +98,15 @@ def receive_ticket(ticket_data):
                 print(f"❌ Error processing attachment {file_url}: {e}")
                 continue
 
-        # ✅ Create and save
-        ticket = WorkflowTicket(**ticket_data)
-        ticket.full_clean()
-        ticket.save()
+        # ✅ Create and save with explicit transaction
+        with transaction.atomic():
+            ticket = WorkflowTicket(**ticket_data)
+            ticket.full_clean()
+            ticket.save()
+            
+            # Force a database query to verify the save worked
+            saved_ticket = WorkflowTicket.objects.get(pk=ticket.pk)
+            print(f"✅ Verified ticket saved with ID: {saved_ticket.pk}")
 
         return {"status": "success", "ticket_id": ticket.ticket_id}
 
