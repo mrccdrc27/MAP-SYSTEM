@@ -24,12 +24,10 @@ LOCAL_ENV = BASE_DIR / '.env'
 load_dotenv(dotenv_path=LOCAL_ENV)
 
 # Security settings
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-$6412+n(t#!#4zo%akvxla5cub-u-i8!ulxck68_+97g_z066^')
+# Use SECRET_KEY from environment, fallback to DJANGO_SECRET_KEY, then fallback to a hardcoded default
+SECRET_KEY = os.getenv('SECRET_KEY') or os.getenv('DJANGO_SECRET_KEY') or 'django-insecure-$6412+n(t#!#4zo%akvxla5cub-u-i8!ulxck68_+97g_z066^'
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
 
 # Application definition
 
