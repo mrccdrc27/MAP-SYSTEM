@@ -1,7 +1,6 @@
 // src/api/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import axios from "axios";
-import { authApi } from './axios.jsx';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
 import { 
   hasAccessToken, 
   getAccessToken,
@@ -13,24 +12,27 @@ import {
 } from './TokenUtils';
 
 const AuthContext = createContext();
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || "/api/v1";
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || "";
+// API endpoints
+const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 
-// Add a module-level rate limiter for profile requests
-let lastProfileCheck = 0;
-const PROFILE_CHECK_COOLDOWN = 2000; // 2 second minimum between profile checks
+// Create auth API instance for auth service requests
+const createAuthRequest = () => {
+  return axios.create({
+    baseURL: AUTH_URL,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    withCredentials: true  // Ensure cookies are sent with requests
+  });
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [refreshAttempted, setRefreshAttempted] = useState(false);
-  const [lastCheckTime, setLastCheckTime] = useState(0);
   
-  // Use a ref to track pending promises to prevent race conditions
-  const pendingAuthCheck = useRef(null);
-  // Track the last profile request time
-  const lastProfileRequest = useRef(0);
-
   // Check if user has admin role for TTS system
   const isAdmin = useCallback(() => {
     return user && hasSystemRole(user, 'tts', 'Admin');
@@ -48,8 +50,8 @@ export const AuthProvider = ({ children }) => {
       if (!token) return false;
       
       // Call the token verify endpoint with correct URL path including api/v1
+      const authApi = createAuthRequest();
       const response = await authApi.post(`${AUTH_URL}/api/v1/token/verify/`, { token });
-      console.log('Token verification response:', response.status);
       return response.status === 200;
     } catch (error) {
       console.error("Token verification failed:", error);
@@ -57,38 +59,43 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Rate-limited profile fetch
-  const fetchUserProfile = useCallback(async (force = false) => {
-    const now = Date.now();
-    // Check if we should throttle requests
-    if (!force && now - lastProfileRequest.current < PROFILE_CHECK_COOLDOWN) {
-      throw new Error('Rate limited');
+  // Fetch user profile from token
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      // First get basic user info from token
+      const tokenUser = getUserFromToken();
+      if (!tokenUser) {
+        throw new Error('Invalid token');
+      }
+      
+      // Then fetch full profile from API
+      const authApi = createAuthRequest();
+      const response = await authApi.get(PROFILE_URL, {
+        headers: {
+          Authorization: `Bearer ${getAccessToken()}`
+        }
+      });
+      
+      if (response.data) {
+        // Merge token data with profile data
+        return {
+          ...tokenUser,
+          ...response.data,
+          // Ensure roles from token are preserved
+          roles: tokenUser.roles
+        };
+      }
+      throw new Error('Failed to fetch user profile');
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      // Fall back to token data if API call fails
+      return getUserFromToken();
     }
-    
-    lastProfileRequest.current = now;
-    lastProfileCheck = now; // Update module-level tracker too
-    
-    // Extract user data from token
-    const userData = getUserFromToken();
-    if (userData) {
-      return userData;
-    }
-    throw new Error('No valid user data in token');
   }, []);
 
   // Check auth status and update user state
   const checkAuthStatus = useCallback(async (force = false) => {
     console.log('Checking authentication status...');
-    
-    // Don't make multiple simultaneous auth checks unless forced
-    if (!force && loading && initialized) return false;
-    
-    // Add a cooldown period to prevent rapid firing, unless forced
-    const now = Date.now();
-    if (!force && now - lastCheckTime < 1000) {
-      return !!user; // Return current auth state during cooldown
-    }
-    setLastCheckTime(now);
     
     if (!hasAccessToken()) {
       console.log('No access token found');
@@ -97,109 +104,83 @@ export const AuthProvider = ({ children }) => {
       setInitialized(true);
       return false;
     }
-    
-    // If we already have a pending auth check, use that instead of creating a new one
-    if (pendingAuthCheck.current && !force) {
-      return pendingAuthCheck.current;
-    }
 
-    // Create a new promise for this auth check
-    const authCheckPromise = (async () => {
-      try {
-        // Log the token to help with debugging
-        console.log('Current token:', getAccessToken());
-        
-        // Verify token with auth service
-        const isValid = await verifyToken();
-        console.log('Token is valid:', isValid);
-        
-        if (isValid) {
-          // Use our rate-limited profile fetch
-          try {
-            const userData = await fetchUserProfile(force);
-            console.log('User data retrieved:', userData);
-            setUser(userData);
-            setLoading(false);
-            setInitialized(true);
-            return true;
-          } catch (error) {
-            if (error.message === 'Rate limited') {
-              // Return current auth state if rate limited
-              return !!user;
-            }
-            
-            // If we get a verification failure, try refreshing the token before giving up
-            if (!refreshAttempted) {
-              try {
-                // Try to refresh token
-                console.log('Attempting to refresh token...');
-                const refreshResponse = await authApi.post(`${AUTH_URL}/token/refresh/`);
+    try {
+      // Verify token with auth service
+      const isValid = await verifyToken();
+      console.log('Token is valid:', isValid);
+      
+      if (isValid) {
+        try {
+          const userData = await fetchUserProfile();
+          console.log('User data retrieved:', userData);
+          setUser(userData);
+          setLoading(false);
+          setInitialized(true);
+          return true;
+        } catch (error) {
+          // If we get a verification failure, try refreshing the token before giving up
+          if (!refreshAttempted) {
+            try {
+              // Try to refresh token
+              console.log('Attempting to refresh token...');
+              const authApi = createAuthRequest();
+              const refreshResponse = await authApi.post(`${AUTH_URL}/token/refresh/`);
+              
+              if (refreshResponse.data && refreshResponse.data.access) {
+                // Save new token to localStorage
+                setAccessToken(refreshResponse.data.access);
+                setRefreshAttempted(true);
                 
-                if (refreshResponse.data && refreshResponse.data.access) {
-                  // Save new token to localStorage
-                  setAccessToken(refreshResponse.data.access);
-                  setRefreshAttempted(true);
-                  
-                  // Try profile again after refresh
-                  try {
-                    const userData = await fetchUserProfile(true); // Force fetch after refresh
-                    setUser(userData);
-                    setLoading(false);
-                    setInitialized(true);
-                    return true;
-                  } catch (profileError) {
-                    if (profileError.message === 'Rate limited') {
-                      return !!user;
-                    }
-                    removeAccessToken();
-                    setUser(null);
-                    setLoading(false);
-                    setInitialized(true);
-                    return false;
-                  }
+                // Try profile again after refresh
+                try {
+                  const userData = await fetchUserProfile();
+                  setUser(userData);
+                  setLoading(false);
+                  setInitialized(true);
+                  return true;
+                } catch (profileError) {
+                  removeAccessToken();
+                  setUser(null);
+                  setLoading(false);
+                  setInitialized(true);
+                  return false;
                 }
-              } catch (refreshError) {
-                console.error("Token refresh failed:", refreshError);
-                // Refresh failed, user is not authenticated
-                removeAccessToken();
-                setUser(null);
-                setLoading(false);
-                setInitialized(true);
-                return false;
               }
+            } catch (refreshError) {
+              console.error("Token refresh failed:", refreshError);
+              // Refresh failed, user is not authenticated
+              removeAccessToken();
+              setUser(null);
+              setLoading(false);
+              setInitialized(true);
+              return false;
             }
           }
         }
-        
-        // Token invalid or couldn't extract user data
-        console.log('Token is invalid or user data extraction failed');
-        removeAccessToken();
-        setUser(null);
-        setLoading(false);
-        setInitialized(true);
-        return false;
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        removeAccessToken();
-        setUser(null);
-        setLoading(false);
-        setInitialized(true);
-        return false;
-      } finally {
-        // Clear the pending promise reference when done
-        pendingAuthCheck.current = null;
       }
-    })();
-
-    // Store the promise in our ref
-    pendingAuthCheck.current = authCheckPromise;
-    return authCheckPromise;
-  }, [verifyToken, fetchUserProfile, loading, initialized, refreshAttempted, lastCheckTime, user]);
+      
+      // Token invalid or couldn't extract user data
+      console.log('Token is invalid or user data extraction failed');
+      removeAccessToken();
+      setUser(null);
+      setLoading(false);
+      setInitialized(true);
+      return false;
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      removeAccessToken();
+      setUser(null);
+      setLoading(false);
+      setInitialized(true);
+      return false;
+    }
+  }, [verifyToken, fetchUserProfile, refreshAttempted]);
 
   // Initial authentication check on component mount
   useEffect(() => {
     const initialCheck = async () => {
-      // Force an immediate check regardless of cooldown
+      // Force an immediate check
       await checkAuthStatus(true);
       setRefreshAttempted(false); // Reset for future checks
     };
@@ -214,6 +195,7 @@ export const AuthProvider = ({ children }) => {
     
     // Set up a periodic refresh every 10 minutes
     const refreshInterval = setInterval(() => {
+      const authApi = createAuthRequest();
       authApi.post(`${AUTH_URL}/token/refresh/`)
         .then(response => {
           if (response.data && response.data.access) {
@@ -236,12 +218,6 @@ export const AuthProvider = ({ children }) => {
 
   // Refresh auth data
   const refreshAuth = useCallback(async () => {
-    // Only refresh if enough time has passed since last profile check
-    const now = Date.now();
-    if (now - lastProfileCheck < PROFILE_CHECK_COOLDOWN) {
-      return !!user; // Return current auth state if we're rate limited
-    }
-    
     setLoading(true);
     try {
       const result = await checkAuthStatus(true); // Force refresh
@@ -249,7 +225,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [checkAuthStatus, user]);
+  }, [checkAuthStatus]);
 
   // Login function
   const login = async (credentials) => {
@@ -263,30 +239,20 @@ export const AuthProvider = ({ children }) => {
         password: credentials.password,
       };
       
-      console.log('Sending login data with fields:', Object.keys(loginData).join(', '));
-      
       // Use the correct URL with api/v1 prefix
       const baseUrl = import.meta.env.VITE_AUTH_URL || "";
       const tokenUrl = `${baseUrl}/api/v1/token/obtain/`;
       
       console.log('Sending login request to:', tokenUrl);
       
-      // Create a separate axios instance for this specific request with more detailed logging
-      const response = await axios.post(tokenUrl, loginData, {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        }
-      });
-      
-      console.log('Login response:', response);
+      // Create a separate axios instance for this specific request
+      const authApi = createAuthRequest();
+      const response = await authApi.post(tokenUrl, loginData);
       
       // Check if we have access token in the response
       if (response.data && response.data.access) {
         // Save token to localStorage
         setAccessToken(response.data.access);
-      } else {
-        console.log('No access token in response data, checking cookies');
       }
       
       // Immediately verify and get user data
@@ -311,24 +277,10 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Login failed:", error);
       
-      // Add more detailed debugging for the error response
-      if (error.response) {
-        console.error("Status:", error.response.status);
-        console.error("Headers:", error.response.headers);
-        console.error("Data:", error.response.data);
-      } else if (error.request) {
-        console.error("Request was made but no response received:", error.request);
-      } else {
-        console.error("Error setting up the request:", error.message);
-      }
-      
       // Extract the most useful error message from the response
       let errorDetail = "Login failed. Please check your credentials.";
       
       if (error.response?.data) {
-        console.error("Error response data:", error.response.data);
-        
-        // Check various possible error fields
         if (typeof error.response.data === 'string') {
           errorDetail = error.response.data;
         } else if (error.response.data.detail) {
@@ -357,10 +309,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function - currently has no logout endpoint, so just clear state
   const logout = async () => {
     try {
       // Try to call the logout endpoint if available
+      const authApi = createAuthRequest();
       await authApi.post(`${AUTH_URL}/logout/`, {}, {
         withCredentials: true
       }).catch(err => console.warn('Logout API call failed:', err));

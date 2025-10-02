@@ -88,10 +88,16 @@ services:
       context: ../user_service
       dockerfile: Dockerfile
     environment:
+      DJANGO_FRONTEND_URL: http://localhost:1000/
       DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/usermanagement"
       DJANGO_DEBUG: "True"
       DJANGO_ALLOWED_HOSTS: "*"
+      DJANGO_ENV: "production"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue-default"  # Example: Queue for notifications
+      DJANGO_TICKET_STATUS_QUEUE: "ticket_status-default"  # Example: Queue for ticket status updates
+      DJANGO_ROLES_QUEUE: "role_send-prod27"  # Example: Queue for role-related tasks
+      SECRET_KEY: "your-secret-key-here"
     ports:
       - "8001:8000"
     depends_on:
@@ -109,6 +115,8 @@ services:
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
       DJANGO_ENV: "production"
       DJANGO_USER_SERVICE: "http://user-service:8000"
+      DJANGO_NOTIFICATION_QUEUE: notification-queue-default
+      DJANGO_TICKET_STATUS_QUEUE: ticket_status-default
     ports:
       - "8002:8000"
     depends_on:
@@ -117,34 +125,34 @@ services:
     command: sh -c "sleep 10 && ./start.sh"
 
   # Frontend service - No sleep
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    environment:
-      VITE_VALUE_TEST: "Test"
-      VITE_AGENTS_API: "http://ticket_service:7000/agents"
-      VITE_ARCHIVE_API: "http://ticket_service:7000/archive"
-      VITE_WORKFLOW_API: "http://workflow_api:8000/workflow"
-      VITE_TICKET_API: "http://ticket_service:7000/tickets"
-      VITE_ADMINTICKET_API: "http://ticket_service:7000/adminTicket"
-      VITE_ARCHIVE_TICKETS_API: "http://ticket_service:7000/archived_tickets"
-      VITE_UPCOMING_TICKETS_API: "http://ticket_service:7000/upcoming_tickets"
-      VITE_LOGIN_API: "http://user-service:8000/auth/login/"
-      VITE_VERIFY_API: "http://user-service:8000/auth/verify/"
-      VITE_VERIFY_OTP_API: "http://user-service:8000/auth/login/verify-otp/"
-      VITE_BACKEND_API: "http://workflow_api:8000/"
-      VITE_USER_SERVER_API: "http://user-service:8000/"
-      VITE_LOGOUT_API: "http://user-service:8000/auth/logout/"
-      VITE_PASSWORD_RESET_API: "http://user-service:8000/password/reset/"
-      VITE_VALIDATE_RESET_TOKEN_API: "http://user-service:8000/password/reset/validate-token/"
-      VITE_CONFIRM_RESET_API: "http://user-service:8000/password/reset/confirm/"
-    ports:
-      - "1000:1000"
-    depends_on:
-      - user-service
-      - ticket_service
-      - workflow_api
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     VITE_VALUE_TEST: "Test"
+  #     VITE_AGENTS_API: "http://ticket_service:7000/agents"
+  #     VITE_ARCHIVE_API: "http://ticket_service:7000/archive"
+  #     VITE_WORKFLOW_API: "http://workflow_api:8000/workflow"
+  #     VITE_TICKET_API: "http://ticket_service:7000/tickets"
+  #     VITE_ADMINTICKET_API: "http://ticket_service:7000/adminTicket"
+  #     VITE_ARCHIVE_TICKETS_API: "http://ticket_service:7000/archived_tickets"
+  #     VITE_UPCOMING_TICKETS_API: "http://ticket_service:7000/upcoming_tickets"
+  #     VITE_LOGIN_API: "http://user-service:8000/auth/login/"
+  #     VITE_VERIFY_API: "http://user-service:8000/auth/verify/"
+  #     VITE_VERIFY_OTP_API: "http://user-service:8000/auth/login/verify-otp/"
+  #     VITE_BACKEND_API: "http://workflow_api:8000/"
+  #     VITE_USER_SERVER_API: "http://user-service:8000/"
+  #     VITE_LOGOUT_API: "http://user-service:8000/auth/logout/"
+  #     VITE_PASSWORD_RESET_API: "http://user-service:8000/password/reset/"
+  #     VITE_VALIDATE_RESET_TOKEN_API: "http://user-service:8000/password/reset/validate-token/"
+  #     VITE_CONFIRM_RESET_API: "http://user-service:8000/password/reset/confirm/"
+  #   ports:
+  #     - "1000:1000"
+  #   depends_on:
+  #     - user-service
+  #     - ticket_service
+  #     - workflow_api
 
 volumes:
   rabbitmq_data:

@@ -1,0 +1,18 @@
+# docker-compose -f Docker/docker-compose-db.yml up -d
+services:
+  # Single PostgreSQL database instance
+  db:
+    image: postgres:15
+    container_name: postgres_db_local
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespass
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"  # Changed the host port to 5433
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data   # unique volume
+      - ./db-init:/docker-entrypoint-initdb.d          # init scripts
+
+volumes:
+  postgres_data_local:

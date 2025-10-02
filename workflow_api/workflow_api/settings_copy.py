@@ -43,7 +43,6 @@ def print_env_check_once():
         print(f"DJANGO_NOTIFICATION_QUEUE: {os.getenv('DJANGO_NOTIFICATION_QUEUE', 'Not set')} (Using: {DJANGO_NOTIFICATION_QUEUE})")
         print(f"DJANGO_TICKET_STATUS_QUEUE: {os.getenv('DJANGO_TICKET_STATUS_QUEUE', 'Not set')} (Using: {DJANGO_TICKET_STATUS_QUEUE})")
         print(f"DJANGO_USER_SERVICE: {os.getenv('DJANGO_USER_SERVICE', 'Not set')}")
-        print(f"DJANGO_AUTH_SERVICE: {os.getenv('DJANGO_AUTH_SERVICE', 'Not set')}")
         print(f"DJANGO_ALLOWED_HOSTS: {os.getenv('DJANGO_ALLOWED_HOSTS', 'Not set')} (Using: {ALLOWED_HOSTS})")
         if not os.getenv('DJANGO_ENV') == 'production' and 'LOCAL_ENV' in globals():
             print(f".env file location: {LOCAL_ENV}")
@@ -188,31 +187,7 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:1000",  # Frontend URL
-    "http://127.0.0.1:1000",
-]
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Logging
 # LOGGING = {
@@ -252,7 +227,6 @@ CELERY_TASK_SERIALIZER = 'json'
 
 # External service URLs
 USER_SERVICE_URL = os.getenv('DJANGO_USER_SERVICE')
-AUTH_SERVICE_URL = os.getenv('DJANGO_AUTH_SERVICE')
 BASE_URL = os.getenv('DJANGO_USER_SERVICE')
 
 CELERY_TASK_ROUTES = {

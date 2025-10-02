@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../api/AuthContext";
-import { authApi } from "../../api/axios.jsx";
+import axios from "axios";
 import styles from "./login.module.css";
 
 const resetPasswordURL = import.meta.env.VITE_AUTH_URL || "/api/v1";
+
+// Create auth request instance for password reset
+const createAuthRequest = () => {
+  return axios.create({
+    baseURL: resetPasswordURL,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    withCredentials: true
+  });
+};
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -69,8 +80,9 @@ function Login() {
     setResetMessage("");
     
     try {
-      // Call the password reset endpoint from the auth service
-      await authApi.post(`${resetPasswordURL}/password/reset/`, { email });
+      // Use the local auth request instance for password reset
+      const authRequest = createAuthRequest();
+      await authRequest.post(`${resetPasswordURL}/password/reset/`, { email });
       setResetMessage(
         "If an account with this email exists, reset instructions have been sent."
       );

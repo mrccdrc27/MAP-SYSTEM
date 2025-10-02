@@ -12,9 +12,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+# Test if environment variables are properly loaded
+print("=============================")
+print("Environment variables check:")
+print(f"CELERY_BROKER_URL: {os.getenv('CELERY_BROKER_URL', 'Not set')}")
+print(f"CELERY_TASK_DEFAULT_QUEUE: {os.getenv('CELERY_TASK_DEFAULT_QUEUE', 'Not set')}")
+print(f"DEBUG from env: {os.getenv('DEBUG', 'Not set')}")
+print(f"SECRET_KEY from env: {os.getenv('SECRET_KEY', 'Using default')}")
+print("=============================\n")
 
 
 # Quick-start development settings - unsuitable for production
@@ -147,11 +160,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Celery
-CELERY_BROKER_URL = 'amqp://GY6Jx5nsXW5edoIB:DGHuVF0tWCZgWnO~T51D._6viJWc7U_B@ballast.proxy.rlwy.net:48690//'
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+# CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'amqp://admin:admin@localhost:5672/')
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_DEFAULT_QUEUE = os.getenv('CELERY_TASK_DEFAULT_QUEUE', 'ticket_tasks-default')
+
+# Option to disable Celery tasks for local development
+CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False').lower() in ('true', '1', 't')
 
 
 # Base URL for the project
