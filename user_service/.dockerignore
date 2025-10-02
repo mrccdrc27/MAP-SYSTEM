@@ -1,0 +1,62 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Database files
+*.sqlite3
+*.db
+
+# Log files
+*.log
+logs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+*.md
+README*
+
+# Test files
+test_*.py
+*_test.py
+
+# Media files (these should be mounted as volumes)
+media/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Node modules (if any)
+node_modules/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Django specific
+migrations/
+staticfiles/

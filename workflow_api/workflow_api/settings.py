@@ -20,14 +20,16 @@ import dj_database_url
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables
-LOCAL_ENV = BASE_DIR / '.env'
-load_dotenv(dotenv_path=LOCAL_ENV)
+# Load environment variables from .env file only if not in production/containerized environment
+# This ensures docker-compose environment variables take precedence
+if not os.getenv('DJANGO_ENV') == 'production':
+    LOCAL_ENV = BASE_DIR / '.env'
+    load_dotenv(dotenv_path=LOCAL_ENV)
 
-# Security settings
+# Security settings - prioritize environment variables from docker-compose
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-$6412+n(t#!#4zo%akvxla5cub-u-i8!ulxck68_+97g_z066^')
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'  # Default to False for security
+ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 # Installed apps
 INSTALLED_APPS = [
