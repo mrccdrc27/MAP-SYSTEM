@@ -5,8 +5,16 @@ from tickets.models import Ticket
 class CommentRatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommentRating
-        fields = ['id', 'user_id', 'rating', 'created_at']
+        fields = ['id', 'user_id', 'firstname', 'lastname', 'role', 'rating', 'created_at']
         read_only_fields = ['created_at']
+        
+    def validate_rating(self, value):
+        """
+        Check that rating is a boolean value (True/1 or False/0)
+        """
+        if not isinstance(value, bool) and value not in [0, 1]:
+            raise serializers.ValidationError("Rating must be a boolean value (True/1 or False/0)")
+        return value
 
 class ReplySerializer(serializers.ModelSerializer):
     ratings_summary = serializers.SerializerMethodField()
@@ -14,8 +22,8 @@ class ReplySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Comment
-        fields = ['comment_id', 'ticket_id', 'user_id', 'content', 'created_at', 
-                 'thumbs_up_count', 'thumbs_down_count', 'ratings_summary']
+        fields = ['comment_id', 'ticket_id', 'user_id', 'firstname', 'lastname', 'role', 
+                 'content', 'created_at', 'thumbs_up_count', 'thumbs_down_count', 'ratings_summary']
         read_only_fields = ['comment_id', 'created_at', 'thumbs_up_count', 'thumbs_down_count', 'ticket_id']
     
     def get_ratings_summary(self, obj):
@@ -39,8 +47,9 @@ class CommentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Comment
-        fields = ['comment_id', 'ticket_id', 'user_id', 'content', 'created_at', 
-                 'parent', 'thumbs_up_count', 'thumbs_down_count', 'replies', 'ratings_summary']
+        fields = ['comment_id', 'ticket_id', 'user_id', 'firstname', 'lastname', 'role', 
+                 'content', 'created_at', 'parent', 'thumbs_up_count', 'thumbs_down_count', 
+                 'replies', 'ratings_summary']
         read_only_fields = ['comment_id', 'created_at', 'thumbs_up_count', 'thumbs_down_count', 'replies']
     
     def get_ratings_summary(self, obj):
@@ -49,8 +58,15 @@ class CommentSerializer(serializers.ModelSerializer):
             'thumbs_down': obj.thumbs_down_count
         }
     
+    def validate(self, data):
+        # Ensure all required user fields are present
+        required_fields = ['user_id', 'firstname', 'lastname', 'role']
+        for field in required_fields:
+            if field not in data:
+                raise serializers.ValidationError({field: "This field is required"})
+        return data
+    
     def validate_parent(self, value):
-        # Ensure parent comment exists and is not itself a reply
         if value is not None:
             if value.parent is not None:
                 raise serializers.ValidationError("Cannot reply to a reply")
@@ -58,27 +74,25 @@ class CommentSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        # Replace ticket ID with ticket_id string
         representation['ticket_id'] = instance.ticket.ticket_id
         return representation
     
     def validate_ticket_id(self, value):
-        # Ensure the ticket exists with the given ticket_id string
-        try:
-            Ticket.objects.get(ticket_id=value)
-            return value
-        except Ticket.DoesNotExist:
-            raise serializers.ValidationError(f"Ticket with ID {value} not found")
+        return value
     
     def create(self, validated_data):
         ticket_id_str = validated_data.pop('ticket_id', None)
         
-        # Get the ticket object from the string ticket_id
-        if ticket_id_str:
-            try:
-                ticket = Ticket.objects.get(ticket_id=ticket_id_str)
-                validated_data['ticket'] = ticket
-            except Ticket.DoesNotExist:
-                raise serializers.ValidationError({"ticket_id": f"Ticket with ID {ticket_id_str} not found"})
+        if not ticket_id_str:
+            raise serializers.ValidationError({"ticket_id": "This field is required"})
         
+        ticket = None
+        try:
+            ticket = Ticket.objects.get(ticket_id=ticket_id_str)
+        except Ticket.DoesNotExist:
+            if not ticket_id_str.startswith('T'):
+                ticket_id_str = f"T{ticket_id_str}"
+            ticket = Ticket.objects.create(ticket_id=ticket_id_str, status='open')
+        
+        validated_data['ticket'] = ticket
         return super().create(validated_data)

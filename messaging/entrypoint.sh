@@ -1,11 +1,8 @@
-#!/bin/bash
-# Wait for database to be ready (if using external DB)
-# For SQLite, we don't need to wait
+#!/bin/sh
 
 echo "Running migrations..."
-python manage.py makemigrations
-python manage.py migrate
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput
 
-echo "Starting messaging service on port 8001..."
-python manage.py runserver 8001
-exec "$@"
+echo "Starting messaging service with Gunicorn..."
+exec gunicorn messaging.wsgi:application --bind 0.0.0.0:8001

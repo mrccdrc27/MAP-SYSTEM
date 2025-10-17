@@ -42,13 +42,6 @@ export const AuthProvider = ({ children }) => {
   const hasTtsAccess = useCallback(() => {
     return user && hasAnySystemRole(user, 'tts');
   }, [user]);
-  
-  // Get the user's role for the TTS system
-  const getTtsRole = useCallback(() => {
-    if (!user || !user.roles) return null;
-    const ttsRole = user.roles.find(r => r.system === 'tts');
-    return ttsRole ? ttsRole.role : null;
-  }, [user]);
 
   // Helper function to verify token with the auth service
   const verifyToken = useCallback(async () => {
@@ -132,7 +125,7 @@ export const AuthProvider = ({ children }) => {
               // Try to refresh token
               console.log('Attempting to refresh token...');
               const authApi = createAuthRequest();
-              const refreshResponse = await authApi.post(`${AUTH_URL}/token/refresh/`);
+              const refreshResponse = await authApi.post(`${AUTH_URL}/api/v1/token/refresh/`);
               
               if (refreshResponse.data && refreshResponse.data.access) {
                 // Save new token to localStorage
@@ -203,7 +196,7 @@ export const AuthProvider = ({ children }) => {
     // Set up a periodic refresh every 10 minutes
     const refreshInterval = setInterval(() => {
       const authApi = createAuthRequest();
-      authApi.post(`${AUTH_URL}/token/refresh/`)
+      authApi.post(`${AUTH_URL}/api/v1/token/refresh/`)
         .then(response => {
           if (response.data && response.data.access) {
             setAccessToken(response.data.access);
@@ -347,7 +340,6 @@ export const AuthProvider = ({ children }) => {
     hasAuth: !!user,
     isAdmin,
     hasTtsAccess,
-    getTtsRole,
     checkAuthStatus,
     getToken
   };

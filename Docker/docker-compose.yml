@@ -119,6 +119,23 @@ services:
       - rabbitmq
       - db
     command: sh -c "sleep 10 && ./entrypoint.sh"
+    
+  # Messaging service - 10 seconds sleep
+  messaging-service:
+    build:
+      context: ../messaging
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/messagingservice"
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "*"
+      SECRET_KEY: "your-messaging-service-secret-key-here"
+      ALLOWED_HOSTS: "*"
+    ports:
+      - "8005:8001"
+    depends_on:
+      - db
+    command: sh -c "sleep 10 && ./entrypoint.sh"
 
   # frontend:
   # frontend:

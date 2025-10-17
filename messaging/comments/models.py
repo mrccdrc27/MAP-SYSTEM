@@ -5,10 +5,17 @@ import uuid
 class Comment(models.Model):
     """
     Comment model for ticket discussion with support for replies and ratings.
+    Includes detailed user information.
     """
     comment_id = models.CharField(max_length=20, unique=True, db_index=True)
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='comments')
     user_id = models.CharField(max_length=255)  # Store user ID as provided
+    
+    # User information fields
+    firstname = models.CharField(max_length=100)
+    lastname = models.CharField(max_length=100)
+    role = models.CharField(max_length=100)
+    
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -29,21 +36,24 @@ class Comment(models.Model):
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.comment_id} - {self.user_id}: {self.content[:50]}"
+        return f"{self.comment_id} - {self.firstname} {self.lastname} ({self.role}): {self.content[:50]}"
 
 
 class CommentRating(models.Model):
     """
     Tracks individual user ratings (thumbs up/down) for comments
+    Using boolean for rating: True (1) = thumbs up, False (0) = thumbs down
     """
-    RATING_CHOICES = [
-        ('up', 'Thumbs Up'),
-        ('down', 'Thumbs Down'),
-    ]
-    
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='ratings')
     user_id = models.CharField(max_length=255)
-    rating = models.CharField(max_length=5, choices=RATING_CHOICES)
+    
+    # User information fields
+    firstname = models.CharField(max_length=100)
+    lastname = models.CharField(max_length=100)
+    role = models.CharField(max_length=100)
+    
+    # True = thumbs up, False = thumbs down
+    rating = models.BooleanField(help_text="True (1) for thumbs up, False (0) for thumbs down")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -56,6 +66,6 @@ class CommentRating(models.Model):
         
         # Count ratings and update the comment
         comment = self.comment
-        comment.thumbs_up_count = comment.ratings.filter(rating='up').count()
-        comment.thumbs_down_count = comment.ratings.filter(rating='down').count()
+        comment.thumbs_up_count = comment.ratings.filter(rating=True).count()
+        comment.thumbs_down_count = comment.ratings.filter(rating=False).count()
         comment.save(update_fields=['thumbs_up_count', 'thumbs_down_count'])

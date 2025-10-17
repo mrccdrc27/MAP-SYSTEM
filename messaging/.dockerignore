@@ -1,0 +1,31 @@
+# Database files
+*.sqlite3
+messaging_db.sqlite3
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Log files
+*.log
+
+# Local settings
+.env
+.env.local
+
+# IDE files
+.idea/
+.vscode/
+
+# Testing
+.coverage
+htmlcov/
+
+# Temp files
+*.swp
+*~

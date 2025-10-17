@@ -1,24 +1,39 @@
-# Use official Python image
+# Use official Python image with specific version for reproducibility
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    # pip
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
 
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+# Install system dependencies and clean up in one step to reduce layer size
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt /app/
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
-COPY . /app/
-
-COPY entrypoint.sh /app/entrypoint.sh
+# Copy entrypoint script first and make executable
+COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
+
+# Copy project files - done last to leverage Docker layer caching
+COPY . .
+
+# Specify port for clarity
+EXPOSE 8000
+
+# Run entrypoint script
 CMD ["/app/entrypoint.sh"]
