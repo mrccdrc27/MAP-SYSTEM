@@ -82,7 +82,7 @@ services:
       DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
       DJANGO_ENV: "production"
-      DJANGO_AUTH_SERVICE: "http://user_service:8000"
+      DJANGO_AUTH_SERVICE: "http://auth-service:8000"
       DJANGO_USER_SERVICE: "http://auth-service:8000"
       DJANGO_NOTIFICATION_QUEUE: notification-queue-default
       DJANGO_TICKET_STATUS_QUEUE: ticket_status-default
