@@ -23,6 +23,9 @@
 }
 
 .tpTabLink {
+  border: none;
+  background: none;
+
   padding: 12px 10px; 
   color: var(--muted-text-color);
   text-decoration: none;

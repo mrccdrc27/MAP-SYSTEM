@@ -1,0 +1,25 @@
+@startuml
+title Notification delivery flow
+actor System
+participant WorkflowAPI
+participant UserService
+participant RabbitMQ
+participant CeleryWorker
+participant Frontend
+participant Postgres
+
+System -> WorkflowAPI: Workflow triggers notification (internal event)
+WorkflowAPI -> RabbitMQ: Enqueue notification task (AMQP JSON)
+RabbitMQ -> CeleryWorker: Deliver task
+activate CeleryWorker
+CeleryWorker -> UserService: Fetch user contact / preferences (HTTP REST)
+activate UserService
+UserService -> Postgres: SELECT user, preferences
+UserService --> CeleryWorker: user info (JSON)
+deactivate UserService
+CeleryWorker -> Postgres: Log notification
+CeleryWorker -> Frontend: Push via websocket/skip (or sends email/SMS via external service)
+note right: Delivery method depends on user preferences
+deactivate CeleryWorker
+
+@enduml

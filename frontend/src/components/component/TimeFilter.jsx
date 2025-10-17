@@ -7,7 +7,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import styles from "./TimeFilter.module.css";
 
-const TimeFilter = () => {
+const TimeFilter = ({ onFilterApply }) => {
   const [selectedOption, setSelectedOption] = useState("today");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -56,15 +56,22 @@ const TimeFilter = () => {
     }
   };
 
-  const resetFilter = () => {
+  const resetFilter1 = () => {
     setSelectedOption("today");
     setStartDate(null);
     setEndDate(null);
   };
 
   const applyFilter = () => {
-    console.log("Filters Applied: ", { startDate, endDate });
-    // Do something with the selected startDate and endDate, like filtering data
+    console.log("Applying filter with: ", { startDate, endDate }); // ADD THIS
+    onFilterApply({ startDate, endDate });
+  };
+
+  const resetFilter = () => {
+    setSelectedOption("today");
+    setStartDate(null);
+    setEndDate(null);
+    onFilterApply({ startDate: null, endDate: null }); // Add this
   };
 
   return (

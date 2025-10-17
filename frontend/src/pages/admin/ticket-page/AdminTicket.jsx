@@ -1,3 +1,8 @@
+// react
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import useDebounce from "../../../utils/useDebounce";
+
 // components
 import AdminNav from "../../../components/navigation/AdminNav";
 import FilterPanel from "../../../components/component/FilterPanel";
@@ -6,22 +11,18 @@ import FilterPanel from "../../../components/component/FilterPanel";
 import styles from "./admin-ticket.module.css";
 import general from "../../../style/general.module.css";
 
-// react
-import { useEffect, useState } from "react";
-
 // table
 import TicketTable from "../../../tables/admin/TicketTable";
 
 // hook
 import useUserTickets from "../../../api/useUserTickets";
-import { use } from "react";
 
 export default function AdminTicket() {
   const { userTickets, loading, error } = useUserTickets();
-  console.log(userTickets);
-
-  // Tabs
-  const [activeTab, setActiveTab] = useState("All");
+  // Tabs with URL sync
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab") || "All";
+  const [activeTab, setActiveTab] = useState(urlTab);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -37,13 +38,15 @@ export default function AdminTicket() {
   const [categoryOptions, setCategoryOptions] = useState([]);
 
   // Extract all ticket data with step_instance_id
-  const allTickets = (userTickets || [])
-    .filter((entry) => entry.task?.ticket)
-    .map((entry) => ({
-      ...entry.task.ticket,
-      step_instance_id: entry.step_instance_id,
-      hasacted: entry.has_acted,
-    }));
+  const allTickets = useMemo(() => {
+    return (userTickets || [])
+      .filter((entry) => entry.task?.ticket)
+      .map((entry) => ({
+        ...entry.task.ticket,
+        step_instance_id: entry.step_instance_id,
+        hasacted: entry.has_acted,
+      }));
+  }, [userTickets]);
 
   // fetch status and category
   useEffect(() => {
@@ -59,11 +62,10 @@ export default function AdminTicket() {
     setCategoryOptions([...Array.from(categorySet)]);
   }, [userTickets]);
 
-  // Handle tab click
-  const handleTabClick = (e, tab) => {
-    e.preventDefault();
-    setActiveTab(tab);
-  };
+  // Sync tab to URL
+  useEffect(() => {
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
 
   // Handle filter input
   const handleFilterChange = (e) => {
@@ -85,39 +87,44 @@ export default function AdminTicket() {
     });
   };
 
+  // Debounced search value
+  const debouncedSearch = useDebounce(filters.search, 300);
+
   // Filter tickets
-  const filteredTickets = allTickets.filter((ticket) => {
-    if (activeTab === "Acted") {
-      return ticket.hasacted === true;
-    }
+  const filteredTickets = useMemo(() => {
+    return allTickets.filter((ticket) => {
+      if (activeTab === "Acted") {
+        return ticket.hasacted === true;
+      }
 
-    // Exclude acted tickets from other tabs
-    if (ticket.hasacted === true) return false;
+      // Exclude acted tickets from other tabs
+      if (ticket.hasacted === true) return false;
 
-    if (activeTab !== "All" && ticket.priority !== activeTab) return false;
-    if (filters.category && ticket.category !== filters.category) return false;
-    if (filters.status && ticket.status !== filters.status) return false;
+      if (activeTab !== "All" && ticket.priority !== activeTab) return false;
+      if (filters.category && ticket.category !== filters.category) return false;
+      if (filters.status && ticket.status !== filters.status) return false;
 
-    const openedDate = new Date(ticket.submit_date);
-    const start = filters.startDate ? new Date(filters.startDate) : null;
-    const end = filters.endDate ? new Date(filters.endDate) : null;
-    if (start && openedDate < start) return false;
-    if (end && openedDate > end) return false;
+      const openedDate = new Date(ticket.submit_date);
+      const start = filters.startDate ? new Date(filters.startDate) : null;
+      const end = filters.endDate ? new Date(filters.endDate) : null;
+      if (start && openedDate < start) return false;
+      if (end && openedDate > end) return false;
 
-    const search = filters.search.toLowerCase();
-    if (
-      search &&
-      !(
-        ticket.ticket_id.toLowerCase().includes(search) ||
-        ticket.subject.toLowerCase().includes(search) ||
-        ticket.description.toLowerCase().includes(search)
-      )
-    ) {
-      return false;
-    }
+      const search = debouncedSearch.toLowerCase();
+      if (
+        search &&
+        !(
+          ticket.ticket_id.toLowerCase().includes(search) ||
+          ticket.subject.toLowerCase().includes(search) ||
+          ticket.description.toLowerCase().includes(search)
+        )
+      ) {
+        return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [allTickets, filters, activeTab, debouncedSearch]);
 
   return (
     <>
@@ -131,16 +138,16 @@ export default function AdminTicket() {
           <div className={styles.tpTabs}>
             {["All", "Critical", "High", "Medium", "Low", "Acted"].map(
               (tab) => (
-                <a
+                <button
                   key={tab}
-                  href=""
-                  onClick={(e) => handleTabClick(e, tab)}
+                  onClick={() => setActiveTab(tab)}
                   className={`${styles.tpTabLink} ${
                     activeTab === tab ? styles.active : ""
                   }`}
+                  type="button"
                 >
                   {tab}
-                </a>
+                </button>
               )
             )}
           </div>
@@ -159,6 +166,11 @@ export default function AdminTicket() {
           {/* Table */}
           <div className={styles.tpTableSection}>
             <div className={general.tpTable}>
+              {error && (
+                <div className={styles.errorBanner}>
+                  <p>Error loading tickets. Please try again.</p>
+                </div>
+              )}
               {loading && (
                 <div className={styles.loaderOverlay}>
                   <div className={styles.loader}></div>

@@ -76,12 +76,13 @@
 
 /* taBody */
 .taBody {
-  height: 250px;
+  height: 350px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
 }
+
 /* status */
 .actionStatus {
   font-size: var(--default-font-size);
@@ -138,6 +139,7 @@ textarea {
 
 /* button */
 .taActionButton {
+  display: flex;
   border: none;
   border-radius: 8px;
   padding: 15px 5px;
@@ -165,6 +167,7 @@ textarea {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -176,6 +179,7 @@ textarea {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.95);
   }
+
   100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);

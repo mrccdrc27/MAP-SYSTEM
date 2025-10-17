@@ -26,7 +26,10 @@ export default function AgentProfile() {
                 <div className={styles.profileImageSection}>
                   <div className={styles.profileImageContainer}>
                     <img
-                      src={user?.profile_picture || ""}
+                      src={
+                        user?.profile_picture ||
+                        "https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg"
+                      }
                       alt="Profile"
                       className={styles.profileImage}
                     />

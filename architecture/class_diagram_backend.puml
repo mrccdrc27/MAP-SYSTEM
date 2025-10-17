@@ -1,0 +1,206 @@
+@startuml
+title Ticket-Tracking-System (Backend) - Class Diagram (Django models)
+skinparam classAttributeIconSize 0
+
+' ======== User & Notifications ========
+class accounts.CustomUser << (U,#E1F5FE) >> {
+  +id: int
+  +username: str
+  +email: str
+  +middle_name: str
+  +phone_number: str
+  +profile_picture: File
+  +role: FK -> user_service.role.Roles
+  +__str__()
+}
+
+class user_service.notifications.Notification << (N,#FFF3E0) >> {
+  +id: int
+  +user_id: FK -> accounts.CustomUser
+  +type: str
+  +message: Text
+  +ticket_reference_id: UUID (not FK)
+  +is_read: bool
+  +created_at: datetime
+}
+
+class user_service.accounts.PendingRegistration << (P,#F3E5F5) >> {
+  +id: int
+  +email: str
+  +role: str
+  +token: UUID
+  +created_at: datetime
+  +expires_at: datetime
+  +is_used: bool
+  +is_expired()
+}
+
+' ======== Roles ========
+class user_service.role.Roles << (R,#E8F5E9) >> {
+  +id: int
+  +role_id: str (UUID)
+  +name: str
+  +description: str
+  +createdAt: datetime
+  +updatedAt: datetime
+}
+
+class workflow_api.role.Roles << (R,#E8F5E9) >> {
+  +id: int
+  +role_id: str (UUID)
+  +user_id: int
+  +name: str
+  +description: str
+}
+
+class RoleRoundRobinPointer << (P,#FFF9C4) >> {
+  +role: OneToOne -> workflow_api.role.Roles (to_field=role_id)
+  +pointer: int
+  +updated_at: datetime
+}
+
+' ======== Ticket models (source & workflow) ========
+class ticket_service.Ticket << (T,#FFEBEE) >> {
+  +id: int
+  +ticket_id: str
+  +original_ticket_id: str
+  +source_service: str
+  +employee: JSON
+  +subject: str
+  +category/subcategory: str
+  +description: Text
+  +assigned_to: str
+  +priority/status/department: str
+  +attachments: JSON(list)
+  +created_at/updated_at
+}
+
+class workflow_api.tickets.WorkflowTicket << (T,#FFEBEE) >> {
+  +id: int
+  +ticket_id: str
+  +original_ticket_id: str
+  +source_service: str
+  +employee: JSON
+  +subject: str
+  +category/subcategory: str
+  +description: Text
+  +assigned_to: str
+  +priority/status/department: str
+  +attachments: JSON(list)
+  +is_task_allocated: bool
+  +created_at/updated_at
+  +save()  -- triggers task allocation & status update
+}
+
+' Signal (post_save) in ticket_service.Ticket pushes data to workflow (external) -> represented as a note
+note right of ticket_service.Ticket
+  post_save -> push_ticket_to_workflow.delay(serializer.data)
+end note
+
+' ======== Workflow & Steps ========
+class workflow_api.workflow.Category << (C,#E3F2FD) >> {
+  +id: int
+  +category_id: str (UUID)
+  +name: str
+  +parent: FK -> Category
+}
+
+class workflow_api.workflow.Workflows << (W,#E1F5E0) >> {
+  +id: int
+  +workflow_id: str (UUID)
+  +user_id: int
+  +name: str
+  +description: str
+  +end_logic: str
+  +category/sub_category/department: str
+  +is_published: bool
+  +status: str
+  +low/medium/high/urgent_sla: duration
+  +clean()
+  +save()
+}
+
+class step.Steps << (S,#FFF3E0) >> {
+  +id: int
+  +step_id: UUID
+  +workflow_id: FK -> workflow_api.workflow.Workflows (to_field=workflow_id)
+  +role_id: FK -> workflow_api.role.Roles (to_field=role_id)
+  +name: str
+  +description: str
+  +instruction: Text
+  +order: int
+}
+
+class step.StepTransition << (ST,#FCE4EC) >> {
+  +id: int
+  +transition_id: str (UUID)
+  +workflow_id: FK -> workflow_api.workflow.Workflows
+  +from_step_id: FK -> step.Steps (to_field=step_id)
+  +to_step_id: FK -> step.Steps (to_field=step_id)
+  +action_id: FK (unique) -> action.Actions (to_field=action_id)
+  +clean()
+  +save()
+}
+
+class action.Actions << (A,#E8EAF6) >> {
+  +id: int
+  +action_id: str (UUID)
+  +name: str
+  +description: str
+}
+
+' ======== Task & Step Instances ========
+class task.Task << (K,#FFFDE7) >> {
+  +id: int
+  +task_id: str (UUID)
+  +ticket_id: FK -> workflow_api.tickets.WorkflowTicket
+  +workflow_id: FK -> workflow_api.workflow.Workflows
+  +fetched_at: datetime
+  +mark_as_completed()
+}
+
+class step_instance.StepInstance << (SI,#E8F5E9) >> {
+  +id: int
+  +step_instance_id: str (UUID)
+  +user_id: int
+  +step_transition_id: FK -> step.StepTransition (to_field=transition_id)
+  +task_id: FK -> task.Task (to_field=task_id)
+  +has_acted: bool
+  +created_at: datetime
+}
+
+class action_log.ActionLog << (AL,#FFF3E0) >> {
+  +id: int
+  +action_log_id: str (UUID)
+  +step_instance_id: FK -> step_instance.StepInstance (to_field=step_instance_id)
+  +task_id: FK -> task.Task (to_field=task_id)
+  +user: str
+  +action_id: FK -> action.Actions (to_field=action_id)
+  +comment: str
+  +created_at: datetime
+}
+
+' ======== Associations ========
+accounts.CustomUser "1" --> "*" user_service.notifications.Notification : creates
+accounts.CustomUser "*" --> "1" user_service.role.Roles : role
+user_service.notifications.Notification .. workflow_api.tickets.WorkflowTicket : references (UUID)
+
+workflow_api.workflow.Workflows "1" <-- "*" step.Steps : contains
+workflow_api.role.Roles "1" <-- "*" step.Steps : assigned_to
+step.Steps "1" <-- "*" step.StepTransition : from/to
+action.Actions "1" <-- "1" step.StepTransition : action (unique)
+
+workflow_api.tickets.WorkflowTicket "1" <-- "*" task.Task : tasks_for_ticket
+task.Task "1" <-- "*" step_instance.StepInstance : instances_for_task
+step_instance.StepInstance "1" <-- "*" action_log.ActionLog : logs
+
+workflow_api.role.Roles "1" <-- "1" RoleRoundRobinPointer : round_robin
+
+' Notes about cross-app relations
+note left
+ - Several FKs use to_field referencing UUID-like string fields (workflow_id, role_id, step_id, action_id, etc.)
+ - ticket_service.Ticket uses signals to push to the workflow service rather than direct FK
+ - Duplicate model name 'Roles' exists in both user_service and workflow_api apps
+end note
+
+@enduml

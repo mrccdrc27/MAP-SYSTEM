@@ -1,19 +1,21 @@
-// react
-import { useEffect, useState } from "react";
-
 // components
-import AdminNav from "../../../components/navigation/AdminNav";
+import AgentNav from "../../../components/navigation/AgentNav";
 import FilterPanel from "../../../components/component/FilterPanel";
 
 // style
-import styles from "./admin-ticket.module.css";
+import styles from "./ticket.module.css";
 import general from "../../../style/general.module.css";
 
-// table
-import TicketTable from "../../../tables/admin/TicketTable";
+// react
+import { useEffect, useState } from "react";
 
-// hook
+// table
+import TicketTable from "../../../tables/agent/TicketTable";
+
+// axios
+import axios from "axios";
 import useUserTickets from "../../../api/useUserTickets";
+import { useAuth } from "../../../api/AuthContext";
 
 export default function AdminTicket() {
   const { userTickets, loading, error } = useUserTickets();
@@ -31,7 +33,7 @@ export default function AdminTicket() {
     search: "",
   });
 
-  // Status & Category options
+  // Status & Category Status
   const [statusOptions, setStatusOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
 
@@ -84,7 +86,6 @@ export default function AdminTicket() {
     });
   };
 
-  // Filter tickets
   const filteredTickets = allTickets.filter((ticket) => {
     if (activeTab === "Acted") {
       return ticket.hasacted === true;
@@ -120,7 +121,7 @@ export default function AdminTicket() {
 
   return (
     <>
-      <AdminNav />
+      <AgentNav />
       <main className={styles.ticketPage}>
         <section className={styles.tpHeader}>
           <h1>Tickets</h1>
@@ -128,20 +129,18 @@ export default function AdminTicket() {
         <section className={styles.tpBody}>
           {/* Tabs */}
           <div className={styles.tpTabs}>
-            {["All", "Critical", "High", "Medium", "Low", "Acted"].map(
-              (tab) => (
-                <a
-                  key={tab}
-                  href=""
-                  onClick={(e) => handleTabClick(e, tab)}
-                  className={`${styles.tpTabLink} ${
-                    activeTab === tab ? styles.active : ""
-                  }`}
-                >
-                  {tab}
-                </a>
-              )
-            )}
+            {["All", "Critical", "High", "Medium", "Low", "Acted"].map((tab) => (
+              <a
+                key={tab}
+                href=""
+                onClick={(e) => handleTabClick(e, tab)}
+                className={`${styles.tpTabLink} ${
+                  activeTab === tab ? styles.active : ""
+                }`}
+              >
+                {tab}
+              </a>
+            ))}
           </div>
 
           {/* Filters */}
@@ -149,8 +148,8 @@ export default function AdminTicket() {
             <FilterPanel
               filters={filters}
               onFilterChange={handleFilterChange}
-              categoryOptions={categoryOptions}
               statusOptions={statusOptions}
+              categoryOptions={categoryOptions}
               onResetFilters={resetFilters}
             />
           </div>

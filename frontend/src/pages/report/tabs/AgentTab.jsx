@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 // charts
 import PieChart from "../../../components/charts/PieChart";
@@ -52,22 +52,37 @@ const groupByAgent = (tickets) => {
   }));
 };
 
-export default function AgentTab() {
-  const { tickets, fetchTickets,loading, error } = useTicketsFetcher();
+export default function AgentTab({ timeFilter }) {
+  const { tickets, fetchTickets, loading, error } = useTicketsFetcher();
 
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  const filteredTickets = useMemo(() => {
+    const { startDate, endDate } = timeFilter || {};
+    if (!startDate && !endDate) return tickets;
+
+    return tickets.filter((t) => {
+      const created = new Date(t.created_at);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      if (start && created < start) return false;
+      if (end && created > end) return false;
+
+      return true;
+    });
+  }, [tickets, timeFilter]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!tickets || tickets.length === 0)
     return <div>No ticket data available.</div>;
 
-  const agents = groupByAgent(tickets);
-
-  const departments = [...new Set(tickets.map((t) => t.department))];
-  const categories = [...new Set(tickets.map((t) => t.category))];
+  const agents = groupByAgent(filteredTickets);
+  const departments = [...new Set(filteredTickets.map((t) => t.department))];
+  const categories = [...new Set(filteredTickets.map((t) => t.category))];
 
   return (
     <div className={styles.chartsGrid}>
@@ -103,7 +118,8 @@ export default function AgentTab() {
             <PieChart
               labels={departments}
               dataPoints={departments.map(
-                (dep) => tickets.filter((t) => t.department === dep).length
+                (dep) =>
+                  filteredTickets.filter((t) => t.department === dep).length
               )}
               chartTitle="Tickets by Department"
               chartLabel="Tickets"
@@ -114,7 +130,8 @@ export default function AgentTab() {
             <LineChart
               labels={categories}
               dataPoints={categories.map(
-                (cat) => tickets.filter((t) => t.category === cat).length
+                (cat) =>
+                  filteredTickets.filter((t) => t.category === cat).length
               )}
               chartTitle="Top Recurring Issues"
               chartLabel="Issues"

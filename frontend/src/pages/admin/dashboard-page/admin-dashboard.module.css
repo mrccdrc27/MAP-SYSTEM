@@ -9,11 +9,16 @@
   margin-bottom: 20px;
 }
 
-.adpHeader h1 {
+/* .adpHeader h1 {
   color: var(--text-color);
   font-size: 36px;
-  /* for heading */
+} */
+
+.adpHeader h1 {
+  color: var(--text-color);
+  font-size: clamp(24px, 5vw, 36px);
 }
+
 
 .adpHeader h1 span {
   color: var(--primary-color);

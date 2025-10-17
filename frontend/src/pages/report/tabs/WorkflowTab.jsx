@@ -1,16 +1,18 @@
+// react
+import { useMemo } from "react";
+
 // charts
 import BarChart from "../../../components/charts/BarChart";
 import LineChart from "../../../components/charts/LineChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
+import DoughnutChart from "../../../components/charts/DoughnutChart";
+import PieChart from "../../../components/charts/PieChart";
 
 // styles
 import styles from "../report.module.css";
 
 // hooks
 import useFetchWorkflows from "../../../api/useFetchWorkflows";
-import { Doughnut, Pie } from "react-chartjs-2";
-import DoughnutChart from "../../../components/charts/DoughnutChart";
-import PieChart from "../../../components/charts/PieChart";
 
 // Helper function to count occurrences by field
 const countByField = (data, field) => {
@@ -21,10 +23,26 @@ const countByField = (data, field) => {
   }, {});
 };
 
-export default function WorkflowTab() {
+export default function WorkflowTab({ timeFilter }) {
   const { workflows, refetch, loading, error } = useFetchWorkflows();
 
-  console.log("Fetched workflows:", workflows);
+  const filteredWorkflows = useMemo(() => {
+    const { startDate, endDate } = timeFilter || {};
+    if (!startDate && !endDate) return workflows;
+
+    return workflows.filter((wf) => {
+      const created = new Date(wf.created_at);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      if (start && created < start) return false;
+      if (end && created > end) return false;
+
+      return true;
+    });
+  }, [workflows, timeFilter]);
+
+  // console.log("Fetched workflows:", workflows);
 
   if (loading) return <div>Loading data, please wait...</div>;
   if (error)
@@ -33,9 +51,9 @@ export default function WorkflowTab() {
     return <div>No data available.</div>;
 
   // Prepare data
-  const categoryCounts = countByField(workflows, "category");
-  const statusCounts = countByField(workflows, "status");
-  const departmentCounts = countByField(workflows, "department");
+  const categoryCounts = countByField(filteredWorkflows, "category");
+  const statusCounts = countByField(filteredWorkflows, "status");
+  const departmentCounts = countByField(filteredWorkflows, "department");
 
   return (
     <div className={styles.chartsGrid}>

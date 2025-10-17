@@ -4,7 +4,7 @@
   /* margin-bottom: 10px; */
 }
 
-.fpShowFilter span{
+.fpShowFilter span {
   color: var(--primary-color);
   font-size: var(--table-head-size);
   cursor: pointer;
@@ -50,33 +50,33 @@
 .tfButtonGroup {
   display: flex;
   justify-content: flex-start;
-  /* Align the buttons at the start */
   gap: 1rem;
   flex: 1;
   min-width: 250px;
   max-width: 350px;
   align-self: flex-end;
-  /* Align the button group to the bottom of the row */
 }
 
 .tfButtonApply {
-  transition: background-color 0.3s ease;
+  background-color: #007BFF;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
   border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  color: var(--bg-color);
-  background-color: var(--primary-color);
+  font-size: 14px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .tfButton {
-  transition: background-color 0.3s ease;
-  padding: 10px 20px;
-  border-radius: 20px;
-  color: #333;
-  border: 2px solid var(--primary-color);
   background-color: var(--bg-color);
+  color: var(--primary-color);
+  padding: 12px;
+  border-radius: 6px;
+  border: 2px solid var(--primary-color);
+  font-size: 14px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .tfButtonApply:hover {
@@ -87,6 +87,7 @@
   background-color: var(--primary-color);
   color: var(--bg-color);
 }
+
 .tfSelect,
 .tfButton,
 .tfButtonApply {

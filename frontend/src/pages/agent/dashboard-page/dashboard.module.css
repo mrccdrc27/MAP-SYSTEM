@@ -9,7 +9,7 @@
 
 .dpHeader h1 {
   color: var(--text-color);
-  font-size: 36px;
+  font-size: clamp(24px, 5vw, 36px);
 }
 
 .dpHeader h1 span {

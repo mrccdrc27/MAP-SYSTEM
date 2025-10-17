@@ -49,6 +49,11 @@ export default function AdminDashboard() {
   let actedCount = 0;
   let notActedCount = 0;
 
+  (userTickets || []).forEach((e) => {
+    if (e.has_acted) actedCount += 1;
+    else notActedCount += 1;
+  });
+
   pendingTickets.forEach((t) => {
     const statusKey = t.status?.toLowerCase().replace(/\s+/g, "");
     const priorityKey = t.priority?.toLowerCase().replace(/\s+/g, "");
@@ -69,8 +74,8 @@ export default function AdminDashboard() {
     }
 
     // Acted vs Not Acted
-    if (t.has_acted) actedCount += 1;
-    else notActedCount += 1;
+    if (t.has_acted === true) actedCount += 1;
+    else if (t.has_acted === false) notActedCount += 1;
 
     // Group new tickets by month
     if (t.submit_date) {
@@ -79,6 +84,8 @@ export default function AdminDashboard() {
     }
   });
 
+  console.log("has_acted counts:", { actedCount, notActedCount });
+  console.log("tickets: ", pendingTickets);
   return (
     <>
       <AdminNav />
@@ -135,26 +142,26 @@ export default function AdminDashboard() {
           </div>
           <div className={styles.layoutSection}>
             <h2>Ticket Listed</h2>
-              <DynamicTable
-                data={pendingTickets}
-                headers={[
-                  "Ticket No.",
-                  "Title",
-                  "Priority",
-                  "Status",
-                  "Submit Date",
-                ]}
-                columns={[
-                  { key: "ticket_id" },
-                  { key: "subject" },
-                  { key: "priority" },
-                  { key: "status" },
-                  {
-                    key: "submit_date",
-                    format: (d) => (d ? format(new Date(d), "yyyy-MM-dd") : ""),
-                  },
-                ]}
-              />
+            <DynamicTable
+              data={pendingTickets}
+              headers={[
+                "Ticket No.",
+                "Title",
+                "Priority",
+                "Status",
+                "Submit Date",
+              ]}
+              columns={[
+                { key: "ticket_id" },
+                { key: "subject" },
+                { key: "priority" },
+                { key: "status" },
+                {
+                  key: "submit_date",
+                  format: (d) => (d ? format(new Date(d), "yyyy-MM-dd") : ""),
+                },
+              ]}
+            />
           </div>
         </section>
       </main>

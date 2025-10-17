@@ -17,18 +17,20 @@
 /* tpTabs */
 .tpTabs {
   display: flex;
-  gap: 32px; 
-  margin-bottom: 32px; 
+  gap: 32px;
+  margin-bottom: 32px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .tpTabLink {
-  padding: 12px 10px; 
+  padding: 12px 10px;
   color: var(--muted-text-color);
   text-decoration: none;
-  font-size: var(--base-font-size); 
+  font-size: var(--base-font-size);
   position: relative;
   cursor: pointer;
+  border: none;
+  background: none;
 }
 
 .tpTabLink.active {

@@ -1,0 +1,65 @@
+@startuml
+title Ticket Tracking System - Component Diagram (High level)
+
+skinparam componentStyle rectangle
+
+package "User-facing" {
+  [Frontend - React (Vite)\nPort: 1000] as Frontend
+}
+
+package "Backend Services" {
+  component "User Service\n(Django REST, JWT)\nPort: 8001" as UserService
+  component "Ticket Service\n(Django REST)\nPort: 8004" as TicketService
+  component "Workflow API\n(Django REST)\nPort: 8002" as WorkflowAPI
+}
+
+database "PostgreSQL\n(single instance, multiple DBs)" as Postgres
+queue "RabbitMQ\n(AMQP 5672, Management 15672)" as RabbitMQ
+artifact "Media Volume\n(shared volume)" as Media
+node "Celery Workers\n(user_worker, workflow_worker)" as CeleryWorkers
+
+' Frontend interactions
+Frontend --> UserService : HTTP REST (JSON)\n/auth, verify, password, JWT
+Frontend --> TicketService : HTTP REST (JSON)\n/tickets, /agents, /archive
+Frontend --> WorkflowAPI : HTTP REST (JSON)\n/workflow endpoints
+
+' Service-to-service
+WorkflowAPI --> UserService : HTTP REST (JSON)\n(service lookup, user data)
+
+' Databases
+UserService --> Postgres : SQL (PostgreSQL)\n(usermanagement DB)
+TicketService --> Postgres : SQL (PostgreSQL)\n(ticketmanagement DB)
+WorkflowAPI --> Postgres : SQL (PostgreSQL)\n(workflowmanagement DB)
+
+' Async tasks and queues
+UserService -> RabbitMQ : AMQP (Celery tasks - notifications)\n(queue: role_send-default / notification-queue)
+TicketService -> RabbitMQ : AMQP (Celery tasks)\n(queue: TICKET_TASKS_PRODUCTION)
+WorkflowAPI -> RabbitMQ : AMQP (Celery tasks)\n(queue: notification-queue-default, ticket_status-default)
+
+RabbitMQ --> CeleryWorkers : AMQP (workers pull tasks)\n(JSON serialized tasks)
+CeleryWorkers --> Postgres : SQL (background job DB access)
+CeleryWorkers --> Media : Read/Write (if job handles files)
+
+' Storage
+TicketService --> Media : Read/Write (file uploads)
+WorkflowAPI --> Media : Read/Write
+
+' Notes / Legend
+note right of RabbitMQ
+  Task format: JSON (Celery)
+  Persistent delivery, acks-late
+end note
+
+note left of Postgres
+  Single PostgreSQL container
+  Multiple logical DBs for services
+end note
+
+legend left
+  || Protocols & Data formats ||
+  HTTP REST (JSON) : request/response APIs
+  AMQP (Celery) : async task messages (JSON)
+  SQL (PostgreSQL) : relational storage
+endlegend
+
+@enduml

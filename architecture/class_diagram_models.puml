@@ -1,0 +1,62 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+' Core domain classes modeled from repository
+class User {
+  +id: UUID
+  +username: string
+  +email: string
+  +is_active: bool
+  +roles: Role[]
+}
+
+class Role {
+  +id: int
+  +name: string
+  +permissions: string[]
+}
+
+class Ticket {
+  +id: UUID
+  +title: string
+  +description: text
+  +status: string
+  +priority: string
+  +created_by: User
+  +assigned_to: User
+  +created_at: datetime
+  +updated_at: datetime
+}
+
+class Attachment {
+  +id: UUID
+  +ticket: Ticket
+  +file_path: string
+  +uploaded_by: User
+  +uploaded_at: datetime
+}
+
+class Workflow {
+  +id: UUID
+  +ticket: Ticket
+  +current_step: Step
+  +status: string
+}
+
+class Step {
+  +id: UUID
+  +name: string
+  +action: string
+}
+
+User "*" -- "*" Role : has
+User "1" -- "*" Ticket : creates
+Ticket "1" -- "*" Attachment : has
+Ticket "1" -- "1" Workflow : owns
+Workflow "1" -- "*" Step : contains
+
+note top of Ticket
+  Ticket model is split across apps in repo; fields are simplified
+end note
+
+@enduml

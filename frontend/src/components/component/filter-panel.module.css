@@ -4,7 +4,7 @@
   margin-bottom: 10px;
 }
 
-.fpShowFilter span{
+.fpShowFilter span {
   color: var(--primary-color);
   font-size: var(--table-head-size);
   cursor: pointer;
@@ -34,7 +34,7 @@
   margin-bottom: 0.25rem;
 }
 
-.resetButton {
+/* .resetButton {
   border: none;
   padding: 10px 20px;
   border-radius: 20px;
@@ -45,4 +45,20 @@
 
 .resetButton:hover {
   background-color: var(--primary-color-hover);
+} */
+
+/* REVISED BUTTON STYLES */
+.resetButton {
+  background-color: #007BFF; 
+  color: white;            
+  padding: 12px;            
+  border-radius: 6px;       
+  border: none;           
+  font-size: 14px;           
+  cursor: pointer;          
+  transition: background-color 0.3s ease; 
+}
+
+.resetButton:hover {
+  background-color: #0056b3; /* Darker shade of blue on hover */
 }

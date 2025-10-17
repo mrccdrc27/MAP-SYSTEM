@@ -5,13 +5,21 @@
 /* === TEXT INPUT STYLES === */
 /* SEARCH BAR */
 .searchBar {
-  font-size: var(--default-font-size);
-  border-radius: 5px;
+  /* font-size: var(--default-font-size);
   width: 100%;
   padding: 10px 16px;
   border: none;
   border: var(--border-very-light-gray);
-  border-radius: 20px;
+  border-radius: 20px; */
+
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  /* padding: 8px 12px; */
+  padding: 10px 16px;
+  border: none;
+  border: 1px solid #cccccc;
 }
 
 .searchBar:hover {

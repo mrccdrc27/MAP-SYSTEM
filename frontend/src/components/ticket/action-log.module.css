@@ -1,0 +1,98 @@
+.actionLogComponent {
+  width: 100%;
+  background-color: var(--bg1-color);
+  border-radius: 12px;
+  padding: 10px;
+  transition: all 0.3s ease;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.layoutColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.layoutFlex {
+  display: flex;
+  justify-content: space-between;
+  /* flex-direction: row; */
+  /* align-items: center; */
+  gap: 8px;
+}
+
+.logRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.timeline {
+  width: 28px; /* reserve space for dot/line */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+  z-index: 2;
+}
+
+.line {
+  width: 2px;
+  flex: 1;
+  margin-top: 4px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.02));
+  align-self: center;
+  border-radius: 2px;
+}
+
+.content {
+  flex: 1;
+}
+
+.alTicketNo {
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.alTaskName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.alUserName {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.alTimestamp {
+  font-size: 11px;
+  /* font-weight: 600; */
+}
+
+.alComment {
+  background-color: var(--bg-color);
+  padding: 10px;
+  border-left: 3px solid var(--primary-color);
+  border-radius: 4px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+
+.alComment p {
+  font-size: 12px;
+  font-weight: 400;
+  font-style: italic;
+}

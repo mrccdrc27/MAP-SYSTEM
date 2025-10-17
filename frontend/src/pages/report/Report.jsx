@@ -13,6 +13,7 @@ import styles from "./report.module.css";
 
 export default function Report() {
   const [activeTab, setActiveTab] = useState("ticket");
+  const [timeFilter, setTimeFilter] = useState({ startDate: null, endDate: null });
 
   // Data will now be fetched in each tab via hooks
 
@@ -24,11 +25,11 @@ export default function Report() {
   const renderActiveTab = () => {
     switch (activeTab) {
       case "ticket":
-        return <TicketTab />;
+        return <TicketTab timeFilter={timeFilter}/>;
       case "workflow":
-        return <WorkflowTab />;
+        return <WorkflowTab timeFilter={timeFilter} />;
       case "agent":
-        return <AgentTab />;
+        return <AgentTab timeFilter={timeFilter} />;
       case "integration":
         return <IntegrationTab />;
       default:
@@ -65,7 +66,7 @@ export default function Report() {
 
           {/* Time Filter */}
           <div className={styles.timeFilter}>
-            <TimeFilter />
+            <TimeFilter onFilterApply={setTimeFilter}/>
           </div>
 
           {/* Render Active Tab */}

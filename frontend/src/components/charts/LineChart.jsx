@@ -29,17 +29,30 @@ export default function LineChart({
   chartLabel = "Documents",
   chartTitle = "Monthly Document Uploads",
 }) {
+  // Normalize dataPoints: if single array, wrap it in a dataset object
+  const isMultiLine = Array.isArray(dataPoints) && Array.isArray(dataPoints[0]) === false && typeof dataPoints[0] === "object";
+  
+  const datasets = isMultiLine
+    ? dataPoints.map((ds, index) => ({
+        label: ds.label || `Line ${index + 1}`,
+        data: ds.data || [],
+        borderColor: ds.borderColor || `hsl(${index * 60}, 70%, 50%)`,
+        fill: false,
+        tension: 0.1,
+      }))
+    : [
+        {
+          label: chartLabel,
+          data: dataPoints,
+          borderColor: "rgba(75,192,192,1)",
+          fill: false,
+          tension: 0.1,
+        },
+      ];
+
   const data = {
     labels,
-    datasets: [
-      {
-        label: chartLabel,
-        data: dataPoints,
-        fill: false,
-        borderColor: "rgba(75,192,192,1)",
-        tension: 0.1,
-      },
-    ],
+    datasets,
   };
 
   const options = {
@@ -52,7 +65,7 @@ export default function LineChart({
 
   return (
     <div className={styles.chartCardCont}>
-      {labels.length && dataPoints.length ? (
+      {labels.length && datasets.length ? (
         <Line data={data} options={options} />
       ) : (
         <div className={styles.noDataText}>No data available for document growth.</div>

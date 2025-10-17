@@ -1,0 +1,32 @@
+@startuml
+title Ticket creation flow
+actor User
+participant Frontend
+participant TicketService
+participant WorkflowAPI
+participant RabbitMQ
+participant CeleryWorker
+participant Postgres
+
+User -> Frontend: Fill and submit ticket form (JSON)
+Frontend -> TicketService: POST /tickets (JSON)
+activate TicketService
+TicketService -> Postgres: INSERT Ticket, Attachment metadata
+note right: Ticket persisted
+TicketService -> RabbitMQ: Publish task (notify/workflow)\n(Celery task JSON)
+deactivate TicketService
+
+RabbitMQ -> CeleryWorker: Deliver task
+activate CeleryWorker
+CeleryWorker -> WorkflowAPI: POST /workflow/start or call internal handler\n(may be direct RPC or REST)
+activate WorkflowAPI
+WorkflowAPI -> Postgres: Update workflow state
+WorkflowAPI --> CeleryWorker: 200 OK
+deactivate WorkflowAPI
+CeleryWorker -> Postgres: Update ticket status or write logs
+deactivate CeleryWorker
+
+Frontend <-- TicketService: 201 Created (ticket id)
+User <-- Frontend: confirmation
+
+@enduml

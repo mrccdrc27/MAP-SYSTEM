@@ -1,0 +1,33 @@
+@startuml
+left to right direction
+skinparam usecase {
+  BackgroundColor #EEF
+  BorderColor black
+}
+
+actor "Agent / Admin / User" as User
+actor "System (Scheduler)" as System
+
+package "Ticket Tracking System" {
+  usecase UC_Login as "Login / Authenticate (JWT)"
+  usecase UC_CreateTicket as "Create Ticket"
+  usecase UC_UpdateTicket as "Update Ticket"
+  usecase UC_RunWorkflow as "Run Workflow / Automations"
+  usecase UC_ReceiveNotification as "Receive Notification"
+  usecase UC_ManageUsers as "Manage Users & Roles"
+}
+
+User --> UC_Login
+User --> UC_CreateTicket
+User --> UC_UpdateTicket
+User --> UC_ReceiveNotification
+
+System --> UC_RunWorkflow
+User --> UC_ManageUsers
+
+note right of UC_RunWorkflow
+  Triggered by ticket events or scheduled tasks.
+  Invokes workflow API and enqueues async jobs.
+end note
+
+@enduml

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 // charts
 import PieChart from "../../../components/charts/PieChart";
@@ -10,7 +10,7 @@ import ChartContainer from "../../../components/charts/ChartContainer";
 import TicketTable from "../../../tables/admin/TicketTable";
 
 // date helper
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 // icons
 import {
@@ -29,7 +29,7 @@ import general from "../../../style/general.module.css";
 import useTicketsFetcher from "../../../api/useTicketsFetcher";
 import DynamicTable from "../../../tables/components/DynamicTable";
 
-export default function TicketTab() {
+export default function TicketTab({ timeFilter }) {
   const [error, setError] = useState(null);
   const {
     tickets,
@@ -43,22 +43,41 @@ export default function TicketTab() {
     fetchTickets();
   }, [fetchTickets]);
 
+  const filteredTickets = useMemo(() => {
+    const { startDate, endDate } = timeFilter || {};
+    if (!startDate && !endDate) return tickets;
+
+    return tickets.filter((t) => {
+      const created = new Date(t.created_at);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      if (start && created < start) return false;
+      if (end && created > end) return false;
+
+      return true;
+    });
+  }, [tickets, timeFilter]);
+
   if (ticketsLoading) return <div>Loading...</div>;
   if (ticketsError) return <div>Error: {ticketsError}</div>;
   if (!tickets || tickets.length === 0) return <div>No data available.</div>;
 
   // console.log("tickets:", tickets);
-  // const tickets = tickets.tickets;
 
   // --- KPIs computed from tickets ---
-  const totalTickets = tickets.length;
-  const openTickets = tickets.filter((t) => t.status === "Open").length;
-  const closedTickets = tickets.filter((t) => t.status === "Closed").length;
-  const archivedTickets = tickets.filter((t) => t.status === "Archived").length;
+  const totalTickets = filteredTickets.length;
+  const openTickets = filteredTickets.filter((t) => t.status === "Open").length;
+  const closedTickets = filteredTickets.filter(
+    (t) => t.status === "Closed"
+  ).length;
+  const archivedTickets = filteredTickets.filter(
+    (t) => t.status === "Archived"
+  ).length;
   const activeTickets = totalTickets - archivedTickets;
 
   // Average resolution time (in hours) from created_at to time_closed (for closed tickets)
-  const closedWithResolutionTime = tickets.filter((t) => t.time_closed);
+  const closedWithResolutionTime = filteredTickets.filter((t) => t.time_closed);
   const avgResolutionTime =
     closedWithResolutionTime.length > 0
       ? Math.round(
@@ -71,7 +90,8 @@ export default function TicketTab() {
       : 0;
 
   // Storage used (fallback if not available)
-  const storageUsed = tickets.kpi?.storageUsed || 0;
+  // useTicketsFetcher returns an array; if API attaches kpi object elsewhere, make access resilient
+  const storageUsed = (tickets && tickets.kpi && tickets.kpi.storageUsed) || 0;
 
   const kpiCardData = [
     {
@@ -102,23 +122,38 @@ export default function TicketTab() {
     },
   ];
 
-  // Unique categories
-  const categoryLabels = [...new Set(tickets.map((t) => t.category))];
+  // Unique categories (from filtered tickets)
+  const categoryLabels = [...new Set(filteredTickets.map((t) => t.category))];
   const categoryDataPoints = categoryLabels.map(
-    (cat) => tickets.filter((t) => t.category === cat).length
+    (cat) => filteredTickets.filter((t) => t.category === cat).length
   );
 
-  // Tickets sorted by created_at for timeline charts
-  const ticketsSortedByDate = [...tickets].sort(
+  // Tickets sorted by created_at for timeline charts (from filtered tickets)
+  const ticketsSortedByDate = [...filteredTickets].sort(
     (a, b) => new Date(a.created_at) - new Date(b.created_at)
   );
 
-  // Tickets Over Time labels and cumulative counts
-  const dateLabels = ticketsSortedByDate.map((t) => t.created_at.slice(0, 10));
-  const ticketCounts = dateLabels.map((_, idx) => idx + 1);
+  // = Tickets Over Time labels and cumulative counts
+  // Group tickets by created_at date
+  const ticketsByDate = filteredTickets.reduce((acc, t) => {
+    const date = format(new Date(t.created_at), "yyyy-MM-dd");
+    acc[date] = (acc[date] || 0) + 1;
+    return acc;
+  }, {});
+  // Sort dates for proper timeline
+  const sortedDates = Object.keys(ticketsByDate).sort();
+  const dailyTicketCounts = sortedDates.map((date) => ticketsByDate[date]);
 
-  // Resolution Time Trends - bars show resolution times for closed tickets
-  const resolvedTickets = tickets.filter((t) => t.time_closed);
+  // = Volume Trends
+  const ticketDates = Object.keys(ticketsByDate).sort();
+  const todayCounts = ticketDates.map((date) => ticketsByDate[date] || 0);
+  const yesterdayCounts = ticketDates.map((date) => {
+    const yest = format(subDays(new Date(date), 1), "yyyy-MM-dd");
+    return ticketsByDate[yest] || 0;
+  });
+
+  // Resolution Time Trends - bars show resolution times for closed tickets (from filtered tickets)
+  const resolvedTickets = filteredTickets.filter((t) => t.time_closed);
   const resolutionLabels = resolvedTickets.map((t) =>
     t.created_at.slice(0, 10)
   );
@@ -172,7 +207,7 @@ export default function TicketTab() {
                 dataPoints={[
                   openTickets,
                   closedTickets,
-                  tickets.filter((t) => t.status === "Pending").length,
+                  filteredTickets.filter((t) => t.status === "Pending").length,
                   archivedTickets,
                 ]}
                 chartTitle="Tickets by Status"
@@ -183,9 +218,9 @@ export default function TicketTab() {
               <PieChart
                 labels={["High", "Medium", "Low"]}
                 dataPoints={[
-                  tickets.filter((t) => t.priority === "High").length,
-                  tickets.filter((t) => t.priority === "Medium").length,
-                  tickets.filter((t) => t.priority === "Low").length,
+                  filteredTickets.filter((t) => t.priority === "High").length,
+                  filteredTickets.filter((t) => t.priority === "Medium").length,
+                  filteredTickets.filter((t) => t.priority === "Low").length,
                 ]}
                 chartTitle="Tickets by Priority"
                 chartLabel="Priority"
@@ -206,14 +241,23 @@ export default function TicketTab() {
         <div className={styles.chartSection}>
           <h2>Time-Based Metrics</h2>
           <div className={styles.chartRow}>
-            <ChartContainer title="Tickets Over Time">
+            {/* <ChartContainer title="Tickets Over Time">
               <LineChart
                 labels={dateLabels}
                 dataPoints={ticketCounts}
                 chartTitle="Tickets Over Time"
                 chartLabel="Tickets"
               />
+            </ChartContainer> */}
+            <ChartContainer title="Tickets Over Time">
+              <LineChart
+                labels={sortedDates}
+                dataPoints={dailyTicketCounts}
+                chartTitle="Tickets Over Time"
+                chartLabel="Tickets"
+              />
             </ChartContainer>
+
             <ChartContainer title="Resolution Time Trends">
               <BarChart
                 labels={resolutionLabels}
@@ -238,10 +282,25 @@ export default function TicketTab() {
               />
             </ChartContainer>
             <ChartContainer title="Volume Trends">
-              <LineChart
+              {/* <LineChart
                 labels={dateLabels}
                 dataPoints={ticketCounts}
                 chartTitle="Volume Trends"
+                chartLabel="Tickets"
+              /> */}
+              {/* <LineChart
+                labels={sortedDates}
+                dataPoints={dailyTicketCounts}
+                chartTitle="Volume Trends"
+                chartLabel="Tickets"
+              /> */}
+              <LineChart
+                labels={ticketDates}
+                dataPoints={[
+                  { label: "Today", data: todayCounts },
+                  { label: "Yesterday", data: yesterdayCounts },
+                ]}
+                chartTitle="Volume Trends: Today vs Yesterday"
                 chartLabel="Tickets"
               />
             </ChartContainer>
@@ -255,7 +314,7 @@ export default function TicketTab() {
           <div className={general.tpTable}>
             {/* <TicketTable tickets={tickets} error={error} /> */}
             <DynamicTable
-              data={tickets}
+              data={filteredTickets}
               headers={[
                 "Ticket No.",
                 "Title",

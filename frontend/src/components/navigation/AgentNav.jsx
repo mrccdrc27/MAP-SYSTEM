@@ -8,7 +8,6 @@ import { useState, useEffect, useRef } from "react";
 // modal
 import Notification from "../modal/Notification";
 import ProfileModal from "../modal/ProfileModal";
-import AdminProfileModal from "../modal/AdminProfileModal";
 
 // hooks
 import { useAuth } from "../../api/AuthContext";
