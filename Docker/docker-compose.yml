@@ -121,20 +121,20 @@ services:
     command: sh -c "sleep 10 && ./entrypoint.sh"
 
   # frontend:
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    environment:
-      # the following env var don't get used, the one's from the .env file in the frontend directory get used instead
-      VITE_AUTH_URL: http://auth-service:8000
-      VITE_WORKFLOW_API: http://workflow-api:8000/workflow
-      VITE_BACKEND_API: http://workflow-api:8000/
-    ports:
-      - "1000:1000"
-    depends_on:
-      - ticket-service
-      - workflow-api
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     # the following env var don't get used, the one's from the .env file in the frontend directory get used instead
+  #     VITE_AUTH_URL: http://auth-service:8000
+  #     VITE_WORKFLOW_API: http://workflow-api:8000/workflow
+  #     VITE_BACKEND_API: http://workflow-api:8000/
+  #   ports:
+  #     - "1000:1000"
+  #   depends_on:
+  #     - ticket-service
+  #     - workflow-api
 
 volumes:
   rabbitmq_data:
