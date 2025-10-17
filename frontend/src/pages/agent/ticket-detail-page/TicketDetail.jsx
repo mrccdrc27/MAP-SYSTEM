@@ -7,6 +7,7 @@ import AgentNav from "../../../components/navigation/AgentNav";
 import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import WorkflowVisualizer from "../../../components/ticket/WorkflowVisualizer";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
+import TicketComments from "../../../components/ticket/TicketComments";
 
 // react
 import { useNavigate } from "react-router-dom";
@@ -176,6 +177,8 @@ export default function TicketDetail() {
                   />
                 </div>
               </div>
+              {/* Pass the actual ticket_id, not the step_instance_id */}
+              <TicketComments ticketId={ticket?.ticket_id} />
             </div>
 
             <div className={styles.tdpRightCont}>

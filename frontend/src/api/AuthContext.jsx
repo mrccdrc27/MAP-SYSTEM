@@ -42,6 +42,13 @@ export const AuthProvider = ({ children }) => {
   const hasTtsAccess = useCallback(() => {
     return user && hasAnySystemRole(user, 'tts');
   }, [user]);
+  
+  // Get the user's role for the TTS system
+  const getTtsRole = useCallback(() => {
+    if (!user || !user.roles) return null;
+    const ttsRole = user.roles.find(r => r.system === 'tts');
+    return ttsRole ? ttsRole.role : null;
+  }, [user]);
 
   // Helper function to verify token with the auth service
   const verifyToken = useCallback(async () => {
@@ -340,6 +347,7 @@ export const AuthProvider = ({ children }) => {
     hasAuth: !!user,
     isAdmin,
     hasTtsAccess,
+    getTtsRole,
     checkAuthStatus,
     getToken
   };

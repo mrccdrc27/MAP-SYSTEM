@@ -13,7 +13,7 @@ import general from "../../../style/general.module.css";
 import AdminNav from "../../../components/navigation/AdminNav";
 import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
-import Messaging from "../../../components/component/Messaging";
+import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLog from "../../../components/ticket/ActionLog";
 
 // hooks
@@ -278,6 +278,9 @@ export default function AdminTicketDetail() {
                   />
                 </div>
               </div>
+              
+              {/* Comments section under attachments */}
+              <TicketComments ticketId={state.ticket?.ticket_id} />
             </div>
             {/* Right */}
             <div
@@ -388,7 +391,7 @@ export default function AdminTicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    <Messaging />
+                    {/* Comments section is now displayed under attachments in the left column */}
                   </div>
                 )}
               </div>
