@@ -24,6 +24,9 @@ convert_to_unix "auth" "entrypoint.sh"
 # messaging also uses entrypoint.sh
 convert_to_unix "messaging" "entrypoint.sh"
 
+# notification service uses entrypoint.sh
+convert_to_unix "notification_service" "entrypoint.sh"
+
 # Convert init-multiple-dbs.sh in Docker/db-init directory
 convert_to_unix "Docker/db-init" "init-multiple-dbs.sh"
 

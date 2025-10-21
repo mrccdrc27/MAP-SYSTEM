@@ -136,6 +136,48 @@ services:
     depends_on:
       - db
     command: sh -c "sleep 10 && ./entrypoint.sh"
+    
+  # Notification service - 10 seconds sleep
+  notification-service:
+    build:
+      context: ../notification_service
+      dockerfile: Dockerfile
+    environment:
+      # DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      NOTIFICATION_QUEUE: "notification-queue"
+      INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+      DJANGO_ALLOWED_HOSTS: "*"
+      NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456,your-secure-api-key"
+      JWT_SHARED_SECRET_KEY: "your-auth-service-secret-key-here"
+      ALLOWED_HOSTS: "*"
+      AUTH_SERVICE_URL: "http://auth-service:8000"
+      EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+      SECRET_KEY: "your-auth-service-secret-key-here"
+      DJANGO_ENV: "production"
+    ports:
+      - "8006:8001"
+    depends_on:
+      - rabbitmq
+      - db
+    command: sh -c "sleep 10 && ./entrypoint.sh"
+    
+  # Notification worker - 15 seconds sleep
+  notification-worker:
+    build:
+      context: ../notification_service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
+      DJANGO_ENV: "production"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+    depends_on:
+      - rabbitmq
+      - db
+      - notification-service
+    command: >
+      sh -c "sleep 5 && 
+             celery -A notification_service worker --loglevel=info -Q notification-queue,inapp-notification-queue"
 
   # frontend:
   # frontend:

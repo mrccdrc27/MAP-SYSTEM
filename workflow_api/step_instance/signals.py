@@ -75,11 +75,14 @@ def assign_user_to_step_instance(sender, instance, created, **kwargs):
             f"in workflow '{instance.step_transition_id.workflow_id.name}' "
             f"for ticket '{instance.task_id.ticket_id}'."
         )
+        subject = f"New Step Assigned: {instance.step_transition_id.to_step_id.name}"
+
 
         celery.send_task(
-            "notifications.tasks.create_assignment_notification",
-            args=[selected_user_id, message, str(instance.step_instance_id)],
-            queue="notification-queue-prod"
+            "notifications.create_inapp_notification",
+            # args=[selected_user_id, message, str(instance.step_instance_id)],
+            args=[selected_user_id, subject, message],
+            queue="inapp-notification-queue"
         )
 
     except Exception as e:

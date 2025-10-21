@@ -20,6 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
+# Create static and staticfiles directories
+RUN mkdir -p /app/static /app/staticfiles
+
 # Create a non-root user
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
@@ -31,5 +34,5 @@ RUN chmod +x /app/entrypoint.sh
 # Expose port
 EXPOSE 8001
 
-# Run entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Use CMD instead of ENTRYPOINT to allow override from docker-compose
+CMD ["/app/entrypoint.sh"]

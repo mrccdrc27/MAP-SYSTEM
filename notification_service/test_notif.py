@@ -17,7 +17,6 @@ def send_single_notification(user_id, subject, message):
         'notifications.create_inapp_notification',
         args=[user_id, subject, message],
         queue=QUEUE_NAME,
-        task_id=task_id
     )
     
     print(f"Task sent with ID: {result.id}")
