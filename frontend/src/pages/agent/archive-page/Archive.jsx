@@ -22,8 +22,16 @@ export default function Archive() {
   });
 
   // Extract all ticket data with step_instance_id
-  const allTickets = (userTickets || [])
+  const allTickets1 = (userTickets || [])
     .filter((entry) => entry.task?.ticket)
+    .map((entry) => ({
+      ...entry.task.ticket,
+      step_instance_id: entry.step_instance_id,
+      hasacted: entry.has_acted,
+    }));
+
+  const allTickets = (userTickets || [])
+    .filter((entry) => entry.task?.ticket && entry.has_acted)
     .map((entry) => ({
       ...entry.task.ticket,
       step_instance_id: entry.step_instance_id,

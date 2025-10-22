@@ -48,7 +48,7 @@ export default function AdminArchive() {
   const [selectedTicketId, setSelectedTicketId] = useState(null);
 
   // console.log("openAssignTicket:", openAssignTicket);
-  console.log("Tickets fetched by useTicketsFetcher:", tickets);
+  // console.log("Tickets fetched by useTicketsFetcher:", tickets);
 
 
   // Filters

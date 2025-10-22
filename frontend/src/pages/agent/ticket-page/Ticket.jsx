@@ -1,7 +1,6 @@
 // react
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import useDebounce from "../../../utils/useDebounce";
 
 // components
 import AgentNav from "../../../components/navigation/AgentNav";
@@ -16,6 +15,7 @@ import TicketTable from "../../../tables/agent/TicketTable";
 
 // hook
 import useUserTickets from "../../../api/useUserTickets";
+import useDebounce from "../../../utils/useDebounce";
 
 export default function Ticket() {
   const { userTickets, loading, error } = useUserTickets();

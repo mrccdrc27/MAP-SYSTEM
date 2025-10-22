@@ -87,7 +87,7 @@ export default function AdminDashboard() {
 
   // console.log("has_acted counts:", { actedCount, notActedCount });
   // console.log("tickets: ", pendingTickets);
-    
+
   const navigate = useNavigate();
 
   const handleKpiClick = (label) => {
