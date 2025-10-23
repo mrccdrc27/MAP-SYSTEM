@@ -3,7 +3,8 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-	list_display = ("email", "is_active", "is_locked", "failed_login_attempts", "lockout_time")
+	list_display = ("email", "company_id", "is_active", "is_locked", "failed_login_attempts", "lockout_time")
+	readonly_fields = ("company_id",)
 	actions = ["unlock_accounts"]
 
 	def unlock_accounts(self, request, queryset):

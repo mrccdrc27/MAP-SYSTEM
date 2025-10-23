@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings</title>
+    <link rel="stylesheet" href="{% static 'css/profile_settings.css' %}">
+</head>
+<body>
+    <main class="manageProfilePage">
+        <div class="manageProfileContainer">
+            <h1>Manage Profile</h1>
+
+            {% if messages %}
+                <div class="toastContainer">
+                    {% for message in messages %}
+                        <div class="toast {% if message.tags %}{{ message.tags }}{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="profileContent">
+                    <div class="profileLeft">
+                        <div class="profileCard">
+                            <div class="profileImageSection">
+                                <div class="profileImageContainer">
+                                    <img
+                                        id="profile-preview"
+                                        src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg{% endif %}"
+                                        alt="Profile"
+                                        class="profileImage"
+                                    />
+                                </div>
+                                <p id="unsaved-warning" class="unsavedWarning hidden">
+                                    ⚠️ Changes not saved yet
+                                </p>
+
+                                <input
+                                    type="file"
+                                    name="profile_picture"
+                                    id="profile-image-input"
+                                    accept="image/*"
+                                    class="fileInputHidden"
+                                />
+                                <label for="profile-image-input" class="changeImageBtn">
+                                    Change Photo
+                                </label>
+                                {% if user.profile_picture %}
+                                    <div class="checkboxGroup">
+                                        <input type="checkbox" name="profile_picture-clear" id="profile_picture-clear_id">
+                                        <label for="profile_picture-clear_id">Remove photo</label>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="profileInfo">
+                                <h3>{{ user.get_full_name|default:user.username }}</h3>
+                                <div class="profileDetails">
+                                    <p><strong>Username:</strong> {{ user.username }}</p>
+                                    <p><strong>Email:</strong> {{ user.email }}</p>
+                                </div>
+                            </div>
+
+                            <div class="quickLinksCard">
+                                <h3>Quick Links</h3>
+                                <a href="{% url 'cookie-logout' %}" class="linkItem">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profileRight">
+                        <div class="profileSettingsCard">
+                            <h2>Profile Settings</h2>
+
+                            <div class="formGrid">
+                                <div class="formGroup">
+                                    <label>First Name</label>
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <input type="text" name="first_name" value="{{ user.first_name }}">
+                                    {% else %}
+                                        <input type="text" value="{{ user.first_name }}" readonly>
+                                    {% endif %}
+                                </div>
+                            
+                                <div class="formGroup">
+                                    <label>Last Name</label>
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <input type="text" name="last_name" value="{{ user.last_name }}">
+                                    {% else %}
+                                        <input type="text" value="{{ user.last_name }}" readonly>
+                                    {% endif %}
+                                </div>
+                            
+                                <div class="formGroup">
+                                    <label>Username</label>
+                                    <input type="text" name="username" value="{{ user.username }}">
+                                </div>
+                            
+                                <div class="formGroup">
+                                    <label>Phone Number</label>
+                                    <input type="tel" name="phone_number" value="{{ user.phone_number|default:'' }}">
+                                </div>
+                            
+                                <div class="formGroup">
+                                    <label>Email</label>
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <input type="email" name="email" value="{{ user.email }}">
+                                    {% else %}
+                                        <input type="email" value="{{ user.email }}" readonly>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+
+                            <button type="submit" class="saveChangesBtn">SAVE CHANGES</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const input = document.getElementById('profile-image-input');
+        const preview = document.getElementById('profile-preview');
+        const unsaved = document.getElementById('unsaved-warning');
+
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    unsaved.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Auto-hide toast notifications after a few seconds
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(toast => {
+            setTimeout(() => toast.classList.add('hide'), 3500);
+        });
+    </script>
+</body>
+</html>

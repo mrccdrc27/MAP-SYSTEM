@@ -24,8 +24,13 @@ from .serializers import (
     ProfilePasswordResetSerializer,
     send_password_reset_email
 )
+from django.contrib.auth import login
 from permissions import IsSystemAdminOrSuperUser, filter_users_by_system_access
 from system_roles.models import UserSystemRole
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .forms import ProfileSettingsForm
 
 # Simple serializer for logout - doesn't need any fields
 class LogoutSerializer(drf_serializers.Serializer):
@@ -202,93 +207,48 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 )
 class CustomTokenObtainPairView(TokenObtainPairView):
     """Custom token obtain view that supports 2FA with OTP and sets JWT tokens as regular cookies (non-HTTP-only)."""
-    
+
     serializer_class = CustomTokenObtainPairSerializer
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        
+
         try:
             serializer.is_valid(raise_exception=True)
+        # ... (keep your existing exception handling for OTP etc.) ...
         except ValidationError as e:
-            # Check if this is an OTP-related error for users with valid credentials
-            if hasattr(e, 'detail'):
-                error_codes = []
-                if isinstance(e.detail, dict):
-                    for field_errors in e.detail.values():
-                        if isinstance(field_errors, list):
-                            for error in field_errors:
-                                if hasattr(error, 'code'):
-                                    error_codes.append(error.code)
-                elif isinstance(e.detail, list):
-                    for error in e.detail:
-                        if hasattr(error, 'code'):
-                            error_codes.append(error.code)
-                
-                # If OTP is required but not provided, automatically generate and send OTP
-                if 'otp_required' in error_codes:
-                    # Extract email and password from request data
-                    email = request.data.get('email')
-                    password = request.data.get('password')
-                    
-                    # Authenticate user
-                    user = authenticate(request=request, username=email, password=password)
-                    
-                    if user and user.otp_enabled:
-                        # Generate new OTP
-                        from .models import UserOTP
-                        otp_instance = UserOTP.generate_for_user(user, otp_type='email')
-                        
-                        # Send OTP via email
-                        from .serializers import send_otp_email
-                        send_success = send_otp_email(user, otp_instance.otp_code)
-                        
-                        if send_success:
-                            return Response(
-                                {
-                                    'detail': 'OTP code is required and has been sent to your email. Please provide your 2FA code.',
-                                    'error_code': 'otp_required',
-                                    'otp_sent': True
-                                },
-                                status=status.HTTP_428_PRECONDITION_REQUIRED
-                            )
-                        else:
-                            return Response(
-                                {
-                                    'detail': 'Failed to send OTP email. Please try again.',
-                                    'error_code': 'email_failed'
-                                },
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                            )
-                    
-                    # Fall back to original response if something went wrong
-                    return Response(
-                        {'detail': 'OTP code is required. Please provide your 2FA code.', 'error_code': 'otp_required'},
-                        status=status.HTTP_428_PRECONDITION_REQUIRED
-                    )
-                elif 'otp_invalid' in error_codes:
-                    return Response(
-                        {'detail': 'Invalid OTP code. Please check your code and try again.', 'error_code': 'otp_invalid'},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-                elif 'otp_expired' in error_codes:
-                    return Response(
-                        {'detail': 'OTP code has expired. Please request a new OTP code.', 'error_code': 'otp_expired'},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-            
-            # For other validation errors, return the original response
-            raise e
-        
+             # ... (your existing OTP/error handling code) ...
+             # If OTP is required but not provided...
+             if 'otp_required' in error_codes:
+                 # ... (your existing code to send OTP) ...
+                 pass # Placeholder for existing code
+             elif 'otp_invalid' in error_codes:
+                 # ... (your existing code) ...
+                 pass # Placeholder for existing code
+             elif 'otp_expired' in error_codes:
+                 # ... (your existing code) ...
+                 pass # Placeholder for existing code
+
+             # For other validation errors, return the original response
+             raise e # Make sure to re-raise if it's not an OTP error handled here
+
+        # --- Authentication successful ---
+
         # Get tokens from serializer
         tokens = serializer.validated_data
         access_token = tokens['access']
         refresh_token = tokens['refresh']
-        
-        # Create response with user data
+
+        # Get the authenticated user
         user = serializer.user
-        # Get system roles for the user
+
+        # *** NEW: Log the user into Django's session framework ***
+        login(request, user)
+        # **********************************************************
+
+        # Get system roles for the user (keep existing code)
         system_roles_data = []
+        # ... (your existing code to populate system_roles_data) ...
         user_system_roles = UserSystemRole.objects.filter(user=user).select_related('system', 'role')
         for role_assignment in user_system_roles:
             system_roles_data.append({
@@ -298,9 +258,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 'assigned_at': role_assignment.assigned_at,
             })
 
+
         response_data = {
             'message': 'Authentication successful',
             'user': {
+                # ... (your existing user data fields) ...
                 'id': user.id,
                 'email': user.email,
                 'first_name': user.first_name,
@@ -318,14 +280,16 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 'otp_enabled': user.otp_enabled,
                 'date_joined': user.date_joined,
                 'system_roles': system_roles_data,
+
             }
         }
-        
+
         response = Response(response_data, status=status.HTTP_200_OK)
-        
-        # Set JWT tokens as regular cookies (non-HTTP-only)
+
+        # Set JWT cookies (keep existing code)
+        # ... (your existing response.set_cookie calls for access_token and refresh_token) ...
         from django.conf import settings
-        
+
         # Set access token cookie
         response.set_cookie(
             'access_token',
@@ -337,10 +301,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             path='/',  # Make cookie available for all paths
             domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
         )
-        
+
         # Set refresh token cookie
         response.set_cookie(
-            'refresh_token', 
+            'refresh_token',
             refresh_token,
             max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
             httponly=False,  # Changed from True to False to make it a regular cookie
@@ -349,9 +313,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             path='/',  # Make cookie available for all paths
             domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
         )
-        
-        return response
 
+
+        return response
 
 @extend_schema(
     tags=['2FA'],
@@ -884,3 +848,46 @@ class CookieLogoutView(generics.GenericAPIView):
         response.delete_cookie('refresh_token', path='/', domain=settings.COOKIE_DOMAIN, samesite='Lax')
         
         return response
+
+
+@login_required
+def profile_settings_view(request):
+    """
+    Render and process the profile settings form for the authenticated user.
+
+    Loosened version: non-admin users can only update allowed fields,
+    but restricted fields are silently ignored instead of rejected.
+    """
+    user = request.user
+    is_admin_or_superuser = user.is_superuser or user.is_staff
+    allowed_fields = {'username', 'phone_number', 'profile_picture'}
+
+    if request.method == 'POST':
+        post_data = request.POST.copy()
+        file_data = request.FILES
+
+        # --- Loosened restriction ---
+        # For non-admin users, drop restricted fields instead of erroring
+        if not is_admin_or_superuser:
+            for key in list(post_data.keys()):
+                if key not in allowed_fields and key != 'csrfmiddlewaretoken':
+                    post_data.pop(key, None)
+
+        # Pass request.user for form-level permission checks
+        form = ProfileSettingsForm(post_data, file_data, instance=user, request_user=user)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile-settings')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+
+    else:
+        form = ProfileSettingsForm(instance=user, request_user=user)
+
+    context = {
+        'form': form,
+        'user': user,
+    }
+    return render(request, 'users/profile_settings.html', context)

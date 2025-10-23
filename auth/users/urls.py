@@ -16,7 +16,8 @@ from .views import (
     ForgotPasswordView,
     ResetPasswordView,
     UserViewSet,
-    ProfilePasswordResetView
+    ProfilePasswordResetView,
+    profile_settings_view
 )
 
 class PasswordResetSerializer(serializers.Serializer):
@@ -52,6 +53,9 @@ def users_root(request):
             "request_otp": request.build_absolute_uri("2fa/request-otp/"),
             "enable": request.build_absolute_uri("2fa/enable/"),
             "disable": request.build_absolute_uri("2fa/disable/"),
+        },
+        "settings": {
+            "profile": request.build_absolute_uri("settings/profile/"),
         }
     })
 
@@ -60,9 +64,6 @@ router = DefaultRouter()
 # router.register(r'users', UserViewSet)
 
 urlpatterns = [
-    # Root endpoint for users API discovery
-    path('', users_root, name='users-root'),
-    
     # Authentication endpoints
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
@@ -70,8 +71,11 @@ urlpatterns = [
     path('logout/', CookieLogoutView.as_view(), name='cookie-logout'),
     
     # User profile endpoints
-    path('profile/', ProfileView.as_view(), name='user-profile'),
+    path('profile/', ProfileView.as_view(), name='user-profile-api'),
     path('profile/reset-password/', ProfilePasswordResetView.as_view(), name='profile-password-reset'),
+    
+    # Template-based Profile Settings URL
+    path('settings/profile/', profile_settings_view, name='profile-settings'),
     
     # 2FA endpoints
     path('2fa/request-otp/', RequestOTPView.as_view(), name='request-otp'),
@@ -86,6 +90,9 @@ urlpatterns = [
     # User listing endpoint (new path)
     path('list/', UserViewSet.as_view({'get': 'list'}), name='user-list'),
     
-    # User management endpoints (for admins) - include router URLs
-    path('', include(router.urls)),
+    # User management endpoints (for admins) - include router URLs if UserViewSet is used elsewhere
+    # path('', include(router.urls)),
+
+    # Root endpoint for users API discovery
+    path('', users_root, name='users-root'),
 ]
