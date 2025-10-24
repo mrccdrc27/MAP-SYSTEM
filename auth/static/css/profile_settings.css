@@ -112,7 +112,7 @@ body {
     border-radius: 8px;
     font-size: 12px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
     border: none;
 }
 
@@ -142,6 +142,7 @@ body {
     font-size: 12px;
     color: var(--secondary-text-color);
     cursor: pointer;
+    transition: opacity 0.2s ease;
 }
 
 .profileInfo {
@@ -257,17 +258,34 @@ body {
 
 .formGroup input[type="text"],
 .formGroup input[type="email"],
-.formGroup input[type="tel"] {
+.formGroup input[type="tel"],
+.formGroup select {
+    height: 46px; /* Match input height (12px + 16px padding + 16px border = 46px) */
+    line-height: 1.2;
+    font-size: 13px;
     padding: 12px 16px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 13px;
     color: var(--text-color);
     background-color: white;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    -webkit-appearance: none; /* Fix for select styling on iOS */
+    -moz-appearance: none;
+    appearance: none;
 }
 
-.formGroup input:focus {
+/* Add custom arrow for select */
+.formGroup select {
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%236B7280%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-13%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2013l128%20128c3.6%203.6%207.8%205.4%2013%205.4s9.4-1.8%2013-5.4l128-128c3.6-3.6%205.4-7.8%205.4-13%200-4.8-1.8-9.2-5.4-13z%27%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 10px 10px;
+    padding-right: 40px; /* Make space for arrow */
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
@@ -277,10 +295,26 @@ body {
     color: #999;
 }
 
-.formGroup input[readonly] {
-    background-color: #f9f9f9;
+/* --- UPDATED: Styles for readonly and disabled states --- */
+.formGroup input[readonly],
+.formGroup select:disabled {
+    background-color: #f5f5f5;
     cursor: not-allowed;
+    color: var(--secondary-text-color);
+    border-color: #e0e0e0;
 }
+
+.formGroup select:disabled {
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%23AAAAAA%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-13%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2013l128%20128c3.6%203.6%207.8%205.4%2013%205.4s9.4-1.8%2013-5.4l128-128c3.6-3.6%205.4-7.8%205.4-13%200-4.8-1.8-9.2-5.4-13z%27%2F%3E%3C%2Fsvg%3E");
+    opacity: 0.7;
+}
+
+.formGroup input[type="checkbox"]:disabled + label {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+/* --- END UPDATED STATES --- */
+
 
 .formGroup small {
     display: block;
@@ -297,24 +331,7 @@ body {
     font-size: 12px;
 }
 
-.saveChangesBtn {
-    width: 200px;
-    padding: 12px 24px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    margin-left: auto;
-    display: block;
-}
-
-.saveChangesBtn:hover {
-    background-color: var(--primary-color-hover);
-}
+/* --- REMOVED original .saveChangesBtn and .saveChangesBtn:hover styles --- */
 
 .authenticationCard {
     margin-top: 20px;
@@ -389,9 +406,17 @@ body {
         margin-left: 0;
         margin-right: 0;
     }
-}
 
-/* neww */
+    /* --- NEW: Stack buttons on mobile --- */
+    .formActions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .formActions button {
+        width: 100%;
+    }
+}
 
 /* --- Toast Notifications --- */
 .toastContainer {
@@ -441,7 +466,9 @@ body {
 }
 
 /* --- Button subtle feedback --- */
-.saveChangesBtn:active {
+.saveChangesBtn:active,
+.editChangesBtn:active,
+.cancelChangesBtn:active {
     transform: scale(0.98);
     transition: transform 0.1s ease;
 }
@@ -454,4 +481,55 @@ input, button, label {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* --- NEW STYLES for Edit/Save/Cancel buttons --- */
+
+.hidden {
+    display: none;
+}
+
+.formActions {
+    display: flex;
+    justify-content: flex-end; /* Aligns buttons to the right */
+    gap: 15px; /* Space between buttons */
+    margin-top: 20px; /* Space above the buttons */
+}
+
+/* Base style for all buttons in the action bar */
+.formActions button {
+    width: auto;
+    min-width: 150px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    line-height: 1.2;
+}
+
+/* Primary buttons: Edit and Save */
+.editChangesBtn,
+.saveChangesBtn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.editChangesBtn:hover,
+.saveChangesBtn:hover {
+    background-color: var(--primary-color-hover);
+}
+
+/* Secondary button: Cancel */
+.cancelChangesBtn {
+    background-color: #f0f0f0;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.cancelChangesBtn:hover {
+    background-color: #e0e0e0;
 }

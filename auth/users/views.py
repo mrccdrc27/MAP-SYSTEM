@@ -904,7 +904,7 @@ def profile_settings_view(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile updated successfully!')
-            return redirect('token') # Make sure 'profile-settings' is a valid URL name
+            return redirect('profile-settings') # Make sure 'profile-settings' is a valid URL name
         else:
             messages.error(request, 'Please correct the errors below.')
 
