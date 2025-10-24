@@ -1,0 +1,278 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import DOMPurify from "dompurify"; // npm install dompurify
+import styles from "./messaging.module.css";
+
+const API_BASE = "http://localhost:8005";
+
+// Helper: consistent user identifier
+const getUserIdentifier = (user) =>
+  user?.user_id ||
+  user?.id ||
+  user?.email ||
+  `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+  "me";
+
+const Messaging = ({
+  ticket_id,
+  agentName = "Agent",
+  agentStatus = "Active",
+  currentUser = null,
+}) => {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+  const messagesEndRef = useRef(null);
+  const containerRef = useRef(null);
+  const lastMessageIdRef = useRef(null);
+  const fetchingRef = useRef(false);
+  const initialLoadRef = useRef(true);
+
+  const currentIdentifier = useMemo(
+    () => getUserIdentifier(currentUser),
+    [currentUser]
+  );
+
+  // Scroll to bottom
+  const scrollToBottom = useCallback((behavior = "smooth") => {
+    if (!containerRef.current) return;
+    try {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior,
+      });
+    } catch {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, []);
+
+  // Fetch messages
+  const fetchMessages = useCallback(
+    async (after_message_id = null) => {
+      if (!ticket_id || fetchingRef.current) return;
+      fetchingRef.current = true;
+      setError(null);
+      try {
+        const payload = { ticket_id };
+        if (after_message_id) payload.after_message_id = after_message_id;
+
+        const controller = new AbortController();
+        const res = await fetch(`${API_BASE}/api/tickets/fetch/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch messages");
+        const data = await res.json();
+
+        const newMessages = (data.messages || []).map((m) => ({
+          id: m.message_id,
+          sender: m.sender,
+          content: m.message,
+          timestamp: m.created_at,
+        }));
+
+        // Merge new messages without duplicates
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((p) => String(p.id)));
+          const merged = [
+            ...prev,
+            ...newMessages.filter((m) => !existingIds.has(String(m.id))),
+          ];
+          return merged;
+        });
+
+        // Update reference to last message ID
+        if (newMessages.length > 0) {
+          lastMessageIdRef.current = newMessages[newMessages.length - 1].id;
+        }
+      } catch (err) {
+        console.error("Fetch messages error:", err);
+        setError("Failed to load messages. Please try again.");
+      } finally {
+        fetchingRef.current = false;
+        setLoading(false);
+        initialLoadRef.current = false;
+      }
+    },
+    [ticket_id]
+  );
+
+  // Send message
+  const sendMessage = useCallback(async () => {
+    if (!message.trim() || !ticket_id) return;
+    const content = message.trim();
+    setMessage("");
+    setSending(true);
+    setError(null);
+
+    const tempMsg = {
+      id: Date.now(),
+      sender: currentIdentifier,
+      content,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, tempMsg]);
+    scrollToBottom("smooth");
+
+    try {
+      const payload = {
+        ticket_id,
+        sender: currentIdentifier,
+        message: content,
+      };
+
+      const res = await fetch(`${API_BASE}/api/tickets/send/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to send message");
+
+      const data = await res.json();
+      // If backend returns the new message, append it directly
+      if (data?.sent_message) {
+        setMessages((prev) => [...prev, data.sent_message]);
+      } else {
+        await fetchMessages(lastMessageIdRef.current);
+      }
+    } catch (err) {
+      console.error("Send message error:", err);
+      setError("Message failed to send.");
+    } finally {
+      setSending(false);
+    }
+  }, [message, ticket_id, currentIdentifier, fetchMessages, scrollToBottom]);
+
+  // Polling every 10 seconds (only if tab visible)
+  useEffect(() => {
+    if (!ticket_id) return;
+    fetchMessages();
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchMessages(lastMessageIdRef.current);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [ticket_id, fetchMessages]);
+
+  // Auto-scroll when messages update
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      scrollToBottom("auto");
+      initialLoadRef.current = false;
+    } else {
+      scrollToBottom("smooth");
+    }
+  }, [messages, scrollToBottom]);
+
+  const formatTimestamp = useCallback((iso) => {
+    try {
+      const d = new Date(iso);
+      return (
+        d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+        " | " +
+        d.toLocaleDateString()
+      );
+    } catch {
+      return iso;
+    }
+  }, []);
+
+  return (
+    <div className={styles.messagingPage}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerInfo}>
+          <span className={styles.agentName}>{agentName}</span>
+          <span className={styles.agentStatus}>{agentStatus}</span>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className={styles.messageContainer} ref={containerRef}>
+        {loading && messages.length === 0 && (
+          <div className={styles.loadingText}>Loading messages...</div>
+        )}
+        {error && <div className={styles.error}>{error}</div>}
+
+        {messages.map((m) => {
+          const senderValue =
+            typeof m.sender === "object"
+              ? m.sender.id || m.sender.email
+              : m.sender;
+          const isOwn =
+            senderValue &&
+            String(senderValue).toLowerCase() ===
+              String(currentIdentifier).toLowerCase();
+
+          return (
+            <div className={styles.messageGroup} key={m.id}>
+              {isOwn ? (
+                <div className={styles.messageRight}>
+                  <div
+                    className={styles.messageBubbleBlue}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(m.content),
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className={styles.messageLeft}>
+                  <div className={styles.avatar}></div>
+                  <div
+                    className={styles.messageBubbleGray}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(m.content),
+                    }}
+                  />
+                </div>
+              )}
+              <div className={styles.messageTimestamp}>
+                {formatTimestamp(m.timestamp)}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Footer */}
+      <div className={styles.footer}>
+        <div className={styles.inputContainer}>
+          <textarea
+            className={styles.messageInput}
+            placeholder="Type your message..."
+            aria-label="Message input"
+            rows={1}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            disabled={sending}
+          />
+          <button
+            className={styles.sendButton}
+            aria-label="Send message"
+            title="Send"
+            onClick={sendMessage}
+            disabled={sending}
+          >
+            {sending ? "..." : "➤"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Messaging;

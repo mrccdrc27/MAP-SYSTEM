@@ -22,12 +22,14 @@ import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
 import ActionLogList from "../../../components/ticket/ActionLogList";
 import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
 import useUserTickets from "../../../api/useUserTickets";
+import { useAuth } from "../../../api/AuthContext";
 
 // modal
 import TicketAction from "./modals/TicketAction";
 import { min } from "date-fns";
 
 export default function AdminTicketDetail() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const { userTickets } = useUserTickets();
@@ -262,7 +264,10 @@ export default function AdminTicketDetail() {
                   <i className="fa-solid fa-lightbulb"></i>
                   <h3>Instructions</h3>
                 </div>
-                <p>{state.instruction || "No instructions available for this step."}</p>
+                <p>
+                  {state.instruction ||
+                    "No instructions available for this step."}
+                </p>
               </div>
               <div className={styles.tdAttachment}>
                 <h3>Attachment</h3>
@@ -279,7 +284,7 @@ export default function AdminTicketDetail() {
                   />
                 </div>
               </div>
-              
+
               {/* Comments section under attachments */}
               <TicketComments ticketId={state.ticket?.ticket_id} />
             </div>
@@ -391,7 +396,25 @@ export default function AdminTicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    <Messaging />
+                    <Messaging
+                      ticket_id={state.ticket?.ticket_id}
+                      agentName={`${state.ticket?.employee?.first_name} ${state.ticket?.employee?.last_name}`}
+                      agentStatus={state.ticket?.status}
+                      currentUser={user}
+                    />
+                    {/* <Messaging
+                      agentName={
+                        `${state.ticket?.employee?.first_name || ""} ${
+                          state.ticket?.employee?.last_name || ""
+                        }`.trim() || "Employee Name?"
+                      }
+                      agentStatus={
+                        state.ticket?.employee?.status ||
+                        state.ticket?.status ||
+                        "Unknown"
+                      }
+                      initialMessages={[]}
+                    /> */}
                   </div>
                 )}
               </div>
