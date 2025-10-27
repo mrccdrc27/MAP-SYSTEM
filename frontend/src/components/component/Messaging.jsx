@@ -79,7 +79,7 @@ const Messaging = ({
     if (!ticket_id) return;
     setLoading(true);
     try {
-      const payload = { ticket_id };
+      const payload = { ticket_id: String(ticket_id) };
       if (after_message_id) payload.after_message_id = after_message_id;
 
       const res = await fetch(`${API_BASE}/api/tickets/fetch/`, {
@@ -87,6 +87,8 @@ const Messaging = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      console.log("Fetching messages with payload:", payload);
 
       if (!res.ok) throw new Error("Failed to fetch messages");
       const data = await res.json();
