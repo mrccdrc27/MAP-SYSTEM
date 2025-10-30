@@ -10,6 +10,9 @@ import Notification from "../modal/Notification";
 import ProfileModal from "../modal/ProfileModal";
 import AdminProfileModal from "../modal/AdminProfileModal";
 
+// notifications
+import { useNotifications } from "../../api/useNotification";
+
 // hooks
 import { useAuth } from "../../api/AuthContext";
 
@@ -18,6 +21,11 @@ export default function AdminNav() {
   const location = useLocation();
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const [openNotifModal, setOpenNotifModal] = useState(false);
+  const { notifications, fetchNotifications } = useNotifications();
+
+  const unreadCount = Array.isArray(notifications?.unread)
+    ? notifications.unread.length
+    : 0;
 
   const handleAvatarClick = () => {
     setOpenProfileModal((prev) => !prev);
@@ -31,6 +39,8 @@ export default function AdminNav() {
 
   // modal close when the page is resize
   useEffect(() => {
+    // ensure we have the unread count for the badge
+    fetchNotifications("unread");
     const handleResize = () => {
       setOpenProfileModal(false);
       setOpenNotifModal(false);
@@ -43,7 +53,7 @@ export default function AdminNav() {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [fetchNotifications]);
 
   // Burger Menu
   const [menuOpen, setMenuOpen] = useState(false);
@@ -134,6 +144,7 @@ export default function AdminNav() {
           </NavLink>
         </div>
 
+        {/* Profile and Notif icon */}
         <div
           className={`${styles.userSection} ${
             userMenuOpen ? styles.userSectionOpen : ""
@@ -142,6 +153,11 @@ export default function AdminNav() {
           {" "}
           <div className={styles.notifBell} onClick={handleNotifClick}>
             <i className="fa fa-bell"></i>
+            {unreadCount > 0 && (
+              <span className={styles.notifBadge}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </div>
           <img
             className={styles.userAvatar}

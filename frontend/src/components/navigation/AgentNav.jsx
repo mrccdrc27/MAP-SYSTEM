@@ -11,12 +11,18 @@ import ProfileModal from "../modal/ProfileModal";
 
 // hooks
 import { useAuth } from "../../api/AuthContext";
+import { useNotifications } from "../../api/useNotification";
 
 export default function AgentNav() {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const [openNotifModal, setOpenNotifModal] = useState(false);
+  const { notifications, fetchNotifications } = useNotifications();
+
+  const unreadCount = Array.isArray(notifications?.unread)
+    ? notifications.unread.length
+    : 0;
 
   console.log("User in AgentNav:", user);
 
@@ -32,6 +38,8 @@ export default function AgentNav() {
 
   // modal close when the page is resize
   useEffect(() => {
+    // ensure we have the unread count for the badge
+    fetchNotifications("unread");
     const handleResize = () => {
       setOpenProfileModal(false);
       setOpenNotifModal(false);
@@ -44,7 +52,7 @@ export default function AgentNav() {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [fetchNotifications]);
 
   // Burger Menu
   const [menuOpen, setMenuOpen] = useState(false);
@@ -125,6 +133,11 @@ export default function AgentNav() {
           {" "}
           <div className={styles.notifBell} onClick={handleNotifClick}>
             <i className="fa fa-bell"></i>
+            {unreadCount > 0 && (
+              <span className={styles.notifBadge}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </div>
           <img
             className={styles.userAvatar}

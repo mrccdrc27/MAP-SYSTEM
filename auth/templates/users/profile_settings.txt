@@ -1,33 +1,43 @@
-{% load static %}
+{% comment %} REVISED {% endcomment %} {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Profile Settings</title>
-    <link rel="stylesheet" href="{% static 'css/profile_settings.css' %}">
-</head>
-<body>
+
+    <link rel="stylesheet" href="{% static 'css/profile_settings.css' %}" />
+
+    {% comment %}
+    <link
+      rel="stylesheet"
+      href="{% static 'css/profile_settings.css' %}?v={{ time }}"
+    />
+    {% endcomment %}
+  </head>
+  <body>
     <main class="manageProfilePage">
-        <div class="manageProfileContainer">
-            <h1>Manage Profile</h1>
+      <div class="manageProfileContainer">
+        <h1>Manage Profile</h1>
 
-            {% if messages %}
-                <div class="toastContainer">
-                    {% for message in messages %}
-                        <div class="toast {% if message.tags %}{{ message.tags }}{% endif %}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+        {% if messages %}
+        <div class="toastContainer">
+          {% for message in messages %}
+          <div class="toast {% if message.tags %}{{ message.tags }}{% endif %}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
 
-            <form method="post" enctype="multipart/form-data" id="profile-form">
-                {% csrf_token %}
+        <form method="post" enctype="multipart/form-data" id="profile-form">
+          {% csrf_token %}
 
-                <div class="profileContent">
-                    <div class="profileLeft">
-                        <div class="profileCard">
+          <div class="profileContent">
+            <!-- Left -->
+            <div class="profileLeft">
+              <div class="profileCard">
+                <!-- Image -->
                 <div class="profileImageSection">
                   <div class="profileImageMenu hidden">
                     <button
@@ -103,159 +113,109 @@
                       >Manage Agents</a
                     >
                   </div>
-                    <div id="admin-links">
-                    <a href="#" class="linkItem1"
-                      >Change Password</a
-                    >
-                  </div>
                   <a href="{% url 'cookie-logout' %}" class="linkItem2"
                     >Logout</a
                   >
                 </div>
-                        </div>
-                    </div>
+              </div>
+            </div>
 
-                    <div class="profileRight">
-                        <div class="profileSettingsCard">
-                            
-                            <h2>Personal Details</h2>
-                            <div class="formGrid">
-                                <div class="formGroup">
-                                    {{ form.first_name.label_tag }}
-                                    {{ form.first_name.errors }}
-                                    {{ form.first_name }}
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.middle_name.label_tag }}
-                                    {{ form.middle_name.errors }}
-                                    {{ form.middle_name }}
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.last_name.label_tag }}
-                                    {{ form.last_name.errors }}
-                                    {{ form.last_name }}
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.suffix.label_tag }}
-                                    {{ form.suffix.errors }}
-                                    {{ form.suffix }}
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.username.label_tag }}
-                                    {{ form.username.errors }}
-                                    {{ form.username }}
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.phone_number.label_tag }}
-                                    {{ form.phone_number.errors }}
-                                    {{ form.phone_number }}
-                                </div>
-                            </div>
-
-                            <h2>Organization</h2>
-                            <div class="formGrid">
-                                <div class="formGroup">
-                                    {{ form.email.label_tag }}
-                                    {{ form.email.errors }}
-                                    {{ form.email }}
-                                    <small>{{ form.email.help_text }}</small>
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.company_id.label_tag }}
-                                    {{ form.company_id.errors }}
-                                    {{ form.company_id }}
-                                    <small>{{ form.company_id.help_text }}</small>
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.department.label_tag }}
-                                    {{ form.department.errors }}
-                                    {{ form.department }}
-                                </div>
-                            </div>
-
-                            <h2>Account & Security</h2>
-                            <div class="formGrid">
-                                <div class="formGroup formGroupCheckbox">
-                                    {{ form.otp_enabled.errors }}
-                                    {{ form.otp_enabled }}
-                                    {{ form.otp_enabled.label_tag }}
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.last_login.label_tag }}
-                                    {{ form.last_login.errors }}
-                                    {{ form.last_login }}
-                                    <small>{{ form.last_login.help_text }}</small>
-                                </div>
-                                <div class="formGroup">
-                                    {{ form.date_joined.label_tag }}
-                                    {{ form.date_joined.errors }}
-                                    {{ form.date_joined }}
-                                    <small>{{ form.date_joined.help_text }}</small>
-                                </div>
-                            </div>
-
-                            {% if user.is_superuser or user.is_staff %}
-                                <h2>Admin Information</h2>
-                                <div class="formGrid">
-                                    <div class="formGroup">
-                                        {{ form.status.label_tag }}
-                                        {{ form.status.errors }}
-                                        {{ form.status }}
-                                    </div>
-                                    <div class="formGroup">
-                                        {{ form.failed_login_attempts.label_tag }}
-                                        {{ form.failed_login_attempts.errors }}
-                                        {{ form.failed_login_attempts }}
-                                        <small>{{ form.failed_login_attempts.help_text }}</small>
-                                    </div>
-                                    <div class="formGroup">
-                                        {{ form.lockout_time.label_tag }}
-                                        {{ form.lockout_time.errors }}
-                                        {{ form.lockout_time }}
-                                        <small>{{ form.lockout_time.help_text }}</small>
-                                    </div>
-                                </div>
-                                <div class="formGrid formGridCheckboxes">
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.notified.errors }}
-                                        {{ form.notified }}
-                                        {{ form.notified.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_active.errors }}
-                                        {{ form.is_active }}
-                                        {{ form.is_active.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_staff.errors }}
-                                        {{ form.is_staff }}
-                                        {{ form.is_staff.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_superuser.errors }}
-                                        {{ form.is_superuser }}
-                                        {{ form.is_superuser.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_locked.errors }}
-                                        {{ form.is_locked }}
-                                        {{ form.is_locked.label_tag }}
-                                    </div>
-                                </div>
-                            {% endif %}
-                            
-                            <div class="formActions">
-                                <button type="button" id="edit-profile-btn" class="editChangesBtn">EDIT PROFILE</button>
-                                <button type="submit" id="save-changes-btn" class="saveChangesBtn hidden">SAVE CHANGES</button>
-                                <button type="button" id="cancel-changes-btn" class="cancelChangesBtn hidden">CANCEL</button>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Right -->
+            <div class="profileRight">
+              <div class="profileSettingsCard">
+                <h2>Personal Details</h2>
+                <div class="formGrid">
+                  <div class="formGroup">
+                    {{ form.first_name.label_tag }} {{ form.first_name.errors }}
+                    {{ form.first_name }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.middle_name.label_tag }} {{ form.middle_name.errors
+                    }} {{ form.middle_name }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.last_name.label_tag }} {{ form.last_name.errors }}
+                    {{ form.last_name }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.suffix.label_tag }} {{ form.suffix.errors }} {{
+                    form.suffix }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.username.label_tag }} {{ form.username.errors }} {{
+                    form.username }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.phone_number.label_tag }} {{
+                    form.phone_number.errors }} {{ form.phone_number }}
+                  </div>
                 </div>
-            </form>
-        </div>
-    </main>
 
+                <h2>Organization</h2>
+                <div class="formGrid">
+                  <div class="formGroup">
+                    {{ form.email.label_tag }} {{ form.email.errors }} {{
+                    form.email }}
+                    <small>{{ form.email.help_text }}</small>
+                  </div>
+                  <div class="formGroup">
+                    {{ form.company_id.label_tag }} {{ form.company_id.errors }}
+                    {{ form.company_id }}
+                    <small>{{ form.company_id.help_text }}</small>
+                  </div>
+                  <div class="formGroup">
+                    {{ form.department.label_tag }} {{ form.department.errors }}
+                    {{ form.department }}
+                  </div>
+                </div>
+
+                <h2>Account & Security</h2>
+                <div class="formGrid">
+                  <div class="formGroup formGroupCheckbox">
+                    {{ form.otp_enabled.errors }} {{ form.otp_enabled }} {{
+                    form.otp_enabled.label_tag }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.last_login.label_tag }} {{ form.last_login.errors }}
+                    {{ form.last_login }}
+                    <small>{{ form.last_login.help_text }}</small>
+                  </div>
+                  <div class="formGroup">
+                    {{ form.date_joined.label_tag }} {{ form.date_joined.errors
+                    }} {{ form.date_joined }}
+                    <small>{{ form.date_joined.help_text }}</small>
+                  </div>
+                </div>
+
+                <div class="formActions">
+                  <button
+                    type="button"
+                    id="edit-profile-btn"
+                    class="editChangesBtn"
+                  >
+                    EDIT PROFILE
+                  </button>
+                  <button
+                    type="submit"
+                    id="save-changes-btn"
+                    class="saveChangesBtn hidden"
+                  >
+                    SAVE CHANGES
+                  </button>
+                  <button
+                    type="button"
+                    id="cancel-changes-btn"
+                    class="cancelChangesBtn hidden"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         const profileForm = document.getElementById("profile-form");
@@ -293,7 +253,6 @@
 
         function setFormEnabled(enabled) {
           formInputs.forEach((input) => {
-            if (!input) return;
             if (input.type === "button" || input.type === "submit") return;
             if (permanentReadOnlyIds.includes(input.id)) {
               input.readOnly = true;
@@ -433,5 +392,5 @@
         }
       });
     </script>
-    </body>
+  </body>
 </html>
