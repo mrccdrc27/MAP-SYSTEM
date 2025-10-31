@@ -1,3 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+    /* font-family: "Roboto", sans-serif; */
+}
+
 :root {
     --primary-color: #007bff;
     --primary-color-hover: #0056b3;
@@ -5,12 +17,6 @@
     --secondary-text-color: #6B7280;
     --bg-color: #ffffff;
     --border-color: #d3d3d3;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
 }
 
 body {
@@ -56,6 +62,8 @@ body {
     color: #991B1B;
 }
 
+/* Profile stuff */
+
 .profileContent {
     display: grid;
     grid-template-columns: 300px 1fr;
@@ -65,12 +73,15 @@ body {
 
 .profileLeft {
     position: sticky;
-    top: 100px;
+    /* top: 100px; */
+    top: 50px;
     height: fit-content;
+
 }
 
 .profileCard {
     background: white;
+    /* background-color: red; */
     border-radius: 8px;
     padding: 25px 30px 30px 30px;
     box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
@@ -79,70 +90,111 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    gap: 20px;
     justify-content: space-between;
     min-height: calc(100vh - 200px);
 }
 
-.profileImageSection {
-    margin-bottom: 25px;
-    margin-top: 5px;
-    flex-shrink: 0;
-}
-
+/* --- Profile Image Overlay --- */
 .profileImageContainer {
-    width: 120px;
-    height: 120px;
+    position: relative;
+    width: 130px;
+    height: 130px;
     margin: 0 auto 15px;
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #e0e0e0;
+    cursor: pointer;
+    transition: transform 0.2s ease;
 }
 
+.profileImageContainer:hover {
+    transform: scale(1.02);
+}
+
+/* Ensure image fills container and preserves aspect */
 .profileImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
-.changeImageBtn {
-    display: inline-block;
-    padding: 8px 16px;
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-    border: none;
-}
-
-.changeImageBtn:hover {
-    background-color: var(--primary-color-hover);
-}
-
-.fileInputHidden {
-    display: none;
-}
-
-.checkboxGroup {
+/* Camera icon overlay */
+.profileImageOverlay {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 10px;
+    color: var(--primary-color);
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.checkboxGroup input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+.profileImageContainer:hover .profileImageOverlay {
+    opacity: 1;
+}
+
+/* --- Profile Image Menu --- */
+.profileImageMenu {
+    position: absolute;
+    /* bottom: -10px; */
+    /* left: 50%; */
+    left: 70%;
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 0;
+    padding: 10px 5px;
+    width: 120px;
+    z-index: 10;
+    animation: fadeIn 0.2s ease;
+}
+
+.profileMenuBtn {
+    background: none;
+    border: none;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
     cursor: pointer;
+    color: var(--text-color);
+    transition: background 0.2s ease;
 }
 
-.checkboxGroup label {
+.profileMenuBtn:hover {
+    background: #f5f5f5;
+    color: var(--primary-color);
+}
+
+/* Remove option */
+.removePhotoOption {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12px;
+    padding: 6px 12px;
     color: var(--secondary-text-color);
-    cursor: pointer;
-    transition: opacity 0.2s ease;
+}
+
+.removePhotoOption input {
+    width: 14px;
+    height: 14px;
+}
+
+/* Hidden class for toggling */
+.hidden {
+    display: none !important;
 }
 
 .profileInfo {
@@ -173,8 +225,28 @@ body {
     color: var(--text-color);
 }
 
+/* NEW PROFILE INFO */
+.profileInfoContainer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.profileInfoContainer p {
+    margin: 5px 0;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.profileInfoContainer span {
+    margin: 5px 0;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
 .quickLinksCard {
-    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
@@ -189,8 +261,46 @@ body {
     margin-bottom: 15px;
 }
 
+.linkItem1 {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    color: var(--primary-color);
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+.linkItem1:hover {
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.linkItem2 {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+    background-color: #a00000;
+    border: var(--border-very-light-gray);
+    border-radius: 4px;
+    color: var(--bg-color);
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+.linkItem2:hover {
+    background-color: #800000;
+    transition: background-color 0.3s;
+}
+
 .linkItem {
-    display: block;
+    /* display: block;
     padding: 10px 12px;
     margin-bottom: 8px;
     border-radius: 6px;
@@ -198,7 +308,18 @@ body {
     color: var(--text-color);
     font-size: 13px;
     transition: all 0.2s ease;
-    border: 1px solid transparent;
+    border: 1px solid transparent; */
+
+    padding: 8px;
+    background: var(--primary-color);
+    border: var(--border-very-light-gray);
+    /* border-radius: 20px; */
+    border-radius: 4px;
+    color: var(--bg-color);
+    font-size: 14px;
+    cursor: pointer;
+    max-width: 150px;
+    width: 100%;
 }
 
 .linkItem:hover {
@@ -207,12 +328,12 @@ body {
     transform: translateX(4px);
 }
 
-.linkItem::before {
+/* .linkItem::before {
     content: "→";
     margin-right: 8px;
     font-weight: bold;
     color: var(--primary-color);
-}
+} */
 
 .profileRight {
     display: flex;
@@ -260,7 +381,7 @@ body {
 .formGroup input[type="email"],
 .formGroup input[type="tel"],
 .formGroup select {
-    height: 46px; /* Match input height (12px + 16px padding + 16px border = 46px) */
+    /* height: 46px;
     line-height: 1.2;
     font-size: 13px;
     padding: 12px 16px;
@@ -270,9 +391,19 @@ body {
     color: var(--text-color);
     background-color: white;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-    -webkit-appearance: none; /* Fix for select styling on iOS */
+    -webkit-appearance: none;
     -moz-appearance: none;
-    appearance: none;
+    appearance: none; */
+
+    /* New */
+    padding: 12px 16px;
+    border: 1px solid #d3d3d3;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-color);
+    background-color: white;
+    /* background-color: blue; */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Add custom arrow for select */
@@ -281,7 +412,7 @@ body {
     background-repeat: no-repeat;
     background-position: right 16px center;
     background-size: 10px 10px;
-    padding-right: 40px; /* Make space for arrow */
+    padding-right: 40px;
 }
 
 .formGroup input:focus,
@@ -309,10 +440,11 @@ body {
     opacity: 0.7;
 }
 
-.formGroup input[type="checkbox"]:disabled + label {
+.formGroup input[type="checkbox"]:disabled+label {
     cursor: not-allowed;
     opacity: 0.6;
 }
+
 /* --- END UPDATED STATES --- */
 
 
@@ -412,7 +544,7 @@ body {
         flex-direction: column;
         width: 100%;
     }
-    
+
     .formActions button {
         width: 100%;
     }
@@ -436,7 +568,7 @@ body {
     border-left: 5px solid #10b981;
     border-radius: 6px;
     font-size: 14px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     opacity: 1;
     transform: translateX(0);
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -474,13 +606,22 @@ body {
 }
 
 /* --- Minor polish for smoother transitions --- */
-input, button, label {
+input,
+button,
+label {
     transition: all 0.2s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 
@@ -492,9 +633,12 @@ input, button, label {
 
 .formActions {
     display: flex;
-    justify-content: flex-end; /* Aligns buttons to the right */
-    gap: 15px; /* Space between buttons */
-    margin-top: 20px; /* Space above the buttons */
+    justify-content: flex-end;
+    /* Aligns buttons to the right */
+    gap: 15px;
+    /* Space between buttons */
+    margin-top: 20px;
+    /* Space above the buttons */
 }
 
 /* Base style for all buttons in the action bar */

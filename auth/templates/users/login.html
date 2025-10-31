@@ -1,0 +1,518 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - MAP Active TicketFlow</title>
+    
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        .left-panel {
+            flex: 1;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23667eea"/><stop offset="100%" style="stop-color:%23764ba2"/></linearGradient></defs><rect width="100" height="100" fill="url(%23bg)"/></svg>') center/cover;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .office-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .office-content {
+            text-align: center;
+            color: white;
+            z-index: 2;
+            padding: 2rem;
+        }
+        
+        .office-title {
+            font-size: 3rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .office-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .right-panel {
+            flex: 1;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            margin: auto 0;
+        }
+        
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .map-logo {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .ticketflow-logo {
+            color: #2196F3;
+            font-weight: 300;
+            font-size: 1.5rem;
+        }
+        
+        .welcome-text {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #2196F3;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        
+        .password-field {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .login-btn:hover {
+            background: #1976D2;
+            transform: translateY(-1px);
+        }
+        
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .forgot-password {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .forgot-password a {
+            color: #2196F3;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: none;
+        }
+        
+        .alert-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .alert-error, .alert-danger {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .alert-warning {
+            background: #fff8e1;
+            color: #f57c00;
+        }
+        
+        .alert-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .system-selection {
+            margin-bottom: 1.5rem;
+        }
+        
+        .otp-field {
+            margin-bottom: 1.5rem;
+        }
+        
+        .captcha-container {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e1e8ed;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .remember-me input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .invalid-feedback {
+            color: #c62828;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+        
+        .form-text {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            
+            .left-panel {
+                min-height: 30vh;
+                flex-shrink: 0;
+            }
+            
+            .right-panel {
+                flex: 1;
+                min-height: 70vh;
+                align-items: flex-start;
+                padding-top: 2rem;
+                padding-bottom: 2rem;
+            }
+            
+            .office-title {
+                font-size: 2rem;
+            }
+            
+            .login-container {
+                padding: 1rem;
+                margin: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div class="office-bg">
+            <div class="office-content">
+                <h1 class="office-title">Modern Workspace</h1>
+                <p class="office-subtitle">Secure access to your digital environment</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="right-panel">
+        <div class="login-container">
+            <div class="logo-section">
+                <div class="logo-text">
+                    <span class="map-logo">MAP</span>
+                    <span style="color: #666; font-size: 0.8rem;">active</span>
+                    <span class="ticketflow-logo">TicketFlow</span>
+                </div>
+                <p class="welcome-text">Welcome! Please provide your credentials to log in.</p>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- System Selection Info -->
+            {% if selected_system %}
+                <div class="alert alert-info">
+                    You will be signed in to: <strong>{{ selected_system }}</strong>
+                </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <!-- Email Field -->
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">Email:</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.email.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">Password:</label>
+                    <div class="password-field">
+                        {{ form.password }}
+                        <button type="button" class="toggle-password" data-target="{{ form.password.id_for_label }}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.password.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- System Selection -->
+                <div class="form-group system-selection">
+                    <label for="{{ form.system.id_for_label }}" class="form-label">Select System:</label>
+                    {{ form.system }}
+                    {% if form.system.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.system.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">Choose which system you want to access</div>
+                </div>
+
+                <!-- OTP Field -->
+                <div class="form-group otp-field">
+                    <label for="{{ form.otp_code.id_for_label }}" class="form-label">Two-Factor Authentication Code:</label>
+                    {{ form.otp_code }}
+                    {% if form.otp_code.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.otp_code.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">{{ form.otp_code.help_text }}</div>
+                </div>
+
+                <!-- Captcha Field (shown only when needed) -->
+                {% if form.captcha %}
+                <div class="captcha-container">
+                    <label class="form-label">Security Verification:</label>
+                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">
+                        Please type the characters you see in the image below:
+                    </p>
+                    <div style="background: #ffebee; padding: 8px; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.85rem; color: #c62828;">
+                        Security verification required due to multiple failed login attempts.
+                    </div>
+                    {{ form.captcha }}
+                    {% if form.captcha.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.captcha.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Remember Me -->
+                <div class="remember-me">
+                    {{ form.remember_me }}
+                    <label for="{{ form.remember_me.id_for_label }}">{{ form.remember_me.label }}</label>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="login-btn">
+                    Log In
+                </button>
+
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </form>
+
+            <!-- Forgot Password Link -->
+            <div class="forgot-password">
+                <a href="{{ forgot_password_url }}">Forgot Password?</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Password visibility toggle
+            const toggleButtons = document.querySelectorAll('.toggle-password');
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.dataset.target;
+                    const passwordField = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+                    
+                    if (passwordField.type === 'password') {
+                        passwordField.type = 'text';
+                        icon.className = 'fas fa-eye-slash';
+                    } else {
+                        passwordField.type = 'password';
+                        icon.className = 'fas fa-eye';
+                    }
+                });
+            });
+
+            // Form validation feedback
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const requiredFields = form.querySelectorAll('[required]');
+                let isValid = true;
+
+                // Validate required fields
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        field.style.borderColor = '#c62828';
+                        isValid = false;
+                    } else {
+                        field.style.borderColor = '#e1e8ed';
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+            // Real-time field validation
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.trim()) {
+                        this.style.borderColor = '#2196F3';
+                    } else {
+                        this.style.borderColor = '#c62828';
+                    }
+                });
+
+                input.addEventListener('input', function() {
+                    if (this.style.borderColor === 'rgb(198, 40, 40)' && this.value.trim()) {
+                        this.style.borderColor = '#e1e8ed';
+                    }
+                });
+            });
+
+            // Auto-dismiss alerts after 5 seconds
+            const alerts = document.querySelectorAll('.alert:not(.alert-info)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -58,7 +58,7 @@ class Command(BaseCommand):
                 'phone_number': '+639170000001',
                 'role': 'Ticket Coordinator',
                 'is_staff': True,
-                'profile_picture': 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg',
+                'profile_picture': 'https://i.pinimg.com/736x/63/92/24/639224f094deff2ebf9cd261fba24004.jpg',
             },
             {
                 'first_name': 'Maria',
@@ -68,7 +68,7 @@ class Command(BaseCommand):
                 'phone_number': '+639170000002',
                 'role': 'Ticket Coordinator',
                 'is_staff': False,
-                'profile_picture': 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg',
+                'profile_picture': 'https://i.pinimg.com/736x/d6/4f/ad/d64fad416c52bee461fc185a0118aba8.jpg',
             },
             {
                 'first_name': 'David',
@@ -78,7 +78,7 @@ class Command(BaseCommand):
                 'phone_number': '+639170000003',
                 'role': 'Admin',
                 'is_staff': False,
-                'profile_picture': 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg',
+                'profile_picture': 'https://i.pinimg.com/736x/55/29/f1/5529f10dd54c309092226f0f4b57a15d.jpg',
             },
             {
                 'first_name': 'Sarah',
@@ -88,7 +88,7 @@ class Command(BaseCommand):
                 'phone_number': '+639170000004',
                 'role': 'Employee',
                 'is_staff': False,
-                'profile_picture': 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg',
+                'profile_picture': 'https://i.pinimg.com/736x/15/78/a3/1578a3c53f3e4d29e9e1b79bd4d3f7c4.jpg',
             },
             {
                 'first_name': 'Chris',
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 'phone_number': '+639170000005',
                 'role': 'Employee',
                 'is_staff': False,
-                'profile_picture': 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg',
+                'profile_picture': 'https://i.pinimg.com/736x/63/92/24/639224f094deff2ebf9cd261fba24004.jpg',
             },
         ]
 

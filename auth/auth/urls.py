@@ -8,8 +8,7 @@ from rest_framework.reverse import reverse
 from rest_framework import serializers
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from drf_spectacular.utils import extend_schema
-from users.views import CustomTokenObtainPairView, CookieLogoutView
-from django.views.static import serve
+from users.views import CustomTokenObtainPairView, CookieLogoutView, UILogoutView, LoginView, request_otp_for_login
 
 class APIRootSerializer(serializers.Serializer):
     api_v1 = serializers.URLField()
@@ -36,22 +35,23 @@ urlpatterns = [
     # Remove this duplicate inclusion - TTS URLs are already included in v1/urls.py
     # path('api/v1/tts/', include('tts.urls')),
 
+    # UI Login endpoint (supports ?system=<slug> parameter)
+    path('login/', LoginView.as_view(), name='auth_login'),
+    path('request-otp/', request_otp_for_login, name='auth_request_otp'),
+    
+    # Captcha URLs
+    path('captcha/', include('captcha.urls')),
+
     # Shortcut: Token obtain and logout at root level
     path('token/', CustomTokenObtainPairView.as_view(), name='root_token_obtain'),
-    path('logout/', CookieLogoutView.as_view(), name='root_logout'),
-
+    path('logout/', UILogoutView.as_view(), name='root_logout'),
+    # path('logout/', CookieLogoutView.as_view(), name='root_logout'),
+    
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('docs/', SpectacularRedocView.as_view(url_name='schema'), name='redoc-ui'),
-
-    # ignores debug
-    path(
-    f'{settings.MEDIA_URL.lstrip("/")}<path:path>',
-    serve,
-        {'document_root': settings.MEDIA_ROOT},
-    ),
 ]
 
-# # Serve media files in development
-# if settings.DEBUG:
-#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
