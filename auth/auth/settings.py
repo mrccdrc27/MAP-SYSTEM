@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'drf_spectacular', 
     'rest_framework_api_key',
     'corsheaders',  # Add CORS headers support
+    'captcha',  # Django simple captcha
     # Your apps
     'users',
     'roles',
@@ -206,7 +207,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-STATICFILES_DIRS = [
+if DEBUG:
+    STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "static"),
     ]
 
@@ -267,3 +269,20 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Login Configuration
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/api/v1/users/profile/'
+LOGOUT_REDIRECT_URL = '/login/'
+
+# System Template URLs Configuration
+# Configure URLs for different systems - can point to external deployed systems
+SYSTEM_TEMPLATE_URLS = {
+    'tts': config('TTS_SYSTEM_URL', default='http://localhost:3000/tts'),
+    'ams': config('AMS_SYSTEM_URL', default='http://localhost:3000/ams'),
+    'hdts': config('HDTS_SYSTEM_URL', default='http://localhost:3000/hdts'),
+    'bms': config('BMS_SYSTEM_URL', default='http://localhost:3000/bms'),
+}
+
+# Fallback system URL for unknown systems
+DEFAULT_SYSTEM_URL = config('DEFAULT_SYSTEM_URL', default='http://localhost:3000/dashboard')

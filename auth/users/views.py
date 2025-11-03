@@ -11,6 +11,16 @@ from drf_spectacular.types import OpenApiTypes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from .models import User, UserOTP, PasswordResetToken
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
+from django.views.generic import FormView, TemplateView
+from django.urls import reverse_lazy
+from .forms import LoginForm
+from systems.models import System
 from .serializers import (
     UserRegistrationSerializer, 
     UserProfileSerializer,
@@ -27,11 +37,15 @@ from .serializers import (
 )
 from django.contrib.auth import login
 from permissions import IsSystemAdminOrSuperUser, filter_users_by_system_access
+import json
 from system_roles.models import UserSystemRole
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import ProfileSettingsForm
+from .forms import ProfileSettingsForm, ForgotPasswordForm
 from .decorators import jwt_cookie_required # <-- IMPORT THE NEW DECORATOR
+from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView
+from django.http import QueryDict
 
 # Simple serializer for logout - doesn't need any fields
 class LogoutSerializer(drf_serializers.Serializer):
@@ -291,7 +305,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         # Get system roles for the user (keep existing code)
         system_roles_data = []
-        # ... (your existing code to populate system_roles_data) ...
         user_system_roles = UserSystemRole.objects.filter(user=user).select_related('system', 'role')
         for role_assignment in user_system_roles:
             system_roles_data.append({
@@ -300,6 +313,22 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 'role_name': role_assignment.role.name,
                 'assigned_at': role_assignment.assigned_at,
             })
+
+        # Determine the primary system and redirect URL
+        from django.conf import settings
+        primary_system = None
+        redirect_url = settings.DEFAULT_SYSTEM_URL  # Default fallback
+        
+        # If user has system roles, use the first one as primary
+        if system_roles_data:
+            primary_system = system_roles_data[0]['system_slug']
+            redirect_url = settings.SYSTEM_TEMPLATE_URLS.get(primary_system, settings.DEFAULT_SYSTEM_URL)
+        
+        # Prepare available system URLs for frontend
+        available_systems = {}
+        for role_data in system_roles_data:
+            system_slug = role_data['system_slug']
+            available_systems[system_slug] = settings.SYSTEM_TEMPLATE_URLS.get(system_slug, settings.DEFAULT_SYSTEM_URL)
 
 
         response_data = {
@@ -323,7 +352,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 'otp_enabled': user.otp_enabled,
                 'date_joined': user.date_joined,
                 'system_roles': system_roles_data,
-
+            },
+            'redirect': {
+                'primary_system': primary_system,
+                'url': redirect_url,
+                'available_systems': available_systems
             }
         }
 
@@ -963,7 +996,7 @@ class CookieTokenRefreshView(generics.GenericAPIView):
                 secure=not settings.DEBUG,
                 samesite='Lax',
                 path='/',  # Make cookie available for all paths
-                domain=settings.COOKIE_DOMAIN  # Use configurable domain from settings
+                domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
             )
             
             # If rotation is enabled, also set new refresh token
@@ -977,7 +1010,7 @@ class CookieTokenRefreshView(generics.GenericAPIView):
                     secure=not settings.DEBUG,
                     samesite='Lax',
                     path='/',  # Make cookie available for all paths
-                    domain=settings.COOKIE_DOMAIN  # Use configurable domain from settings
+                    domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
                 )
             
             return response
@@ -1011,10 +1044,140 @@ class CookieLogoutView(generics.GenericAPIView):
         response = Response(response_data, status=status.HTTP_200_OK)
         
         # Clear both access and refresh token cookies
-        response.delete_cookie('access_token', path='/', domain=settings.COOKIE_DOMAIN, samesite='Lax')
-        response.delete_cookie('refresh_token', path='/', domain=settings.COOKIE_DOMAIN, samesite='Lax')
+        response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
         
         return response
+
+
+@extend_schema(
+    tags=['Tokens'],
+    summary="Validate JWT token",
+    description="Validate a JWT token and return user information. Used by external systems for SSO validation.",
+    responses={
+        200: OpenApiResponse(
+            response=UserProfileSerializer,
+            description="Token is valid, user information returned"
+        ),
+        401: OpenApiResponse(
+            description="Invalid or expired token"
+        )
+    }
+)
+class ValidateTokenView(generics.RetrieveAPIView):
+    """Validate JWT token and return user information for SSO."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+    
+    def get_object(self):
+        return self.request.user
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Return user profile if token is valid."""
+        user = self.get_object()
+        serializer = self.get_serializer(user)
+        
+        # Add token validation timestamp
+        from django.utils import timezone
+        data = serializer.data
+        data['token_validated_at'] = timezone.now().isoformat()
+        
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class UILogoutView(TemplateView):
+    """UI logout view that clears JWT cookies and redirects to login."""
+    
+    def get(self, request, *args, **kwargs):
+        from django.conf import settings
+        
+        # Create redirect response to login page
+        response = redirect('auth_login')
+        
+        # Clear JWT cookies
+        response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
+        
+        # Add logout message
+        messages.success(request, 'You have been successfully logged out.')
+        
+        return response
+
+
+@method_decorator([never_cache], name='dispatch')  
+class ChangePasswordUIView(TemplateView):
+    """UI view for changing password that uses the existing API endpoint."""
+    template_name = 'users/change_password.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Check if user is authenticated via JWT token
+        from .authentication import CookieJWTAuthentication
+        
+        auth = CookieJWTAuthentication()
+        try:
+            user, validated_token = auth.authenticate(request)
+            if user:
+                request.user = user
+                return super().dispatch(request, *args, **kwargs)
+        except Exception:
+            pass
+        
+        # If not authenticated, redirect to login
+        return redirect('auth_login')
+
+
+@method_decorator([csrf_protect, never_cache], name='dispatch')
+class ForgotPasswordUIView(FormView):
+    """
+    UI view for forgot password that matches the DRF ForgotPasswordView validation.
+    """
+    template_name = 'users/forgot_password.html'
+    form_class = ForgotPasswordForm
+    success_url = reverse_lazy('auth_login')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Redirect authenticated users
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            return redirect(self.success_url)
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        """Add additional context for template"""
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'Forgot Password',
+            'login_url': reverse_lazy('auth_login'),
+        })
+        return context
+    
+    def form_valid(self, form):
+        """Handle successful form submission using the same logic as DRF view"""
+        email = form.cleaned_data['email']
+        
+        try:
+            user = User.objects.get(email=email, is_active=True)
+            reset_token = PasswordResetToken.generate_for_user(user)
+            
+            # Send password reset email using the same function as DRF view
+            from .serializers import send_password_reset_email
+            if send_password_reset_email(user, reset_token, self.request):
+                message = 'If an account with that email exists, a password reset link has been sent.'
+            else:
+                message = 'If an account with that email exists, a password reset link has been sent.'
+                # Note: We still return success even if email sending failed for security
+                
+        except User.DoesNotExist:
+            # For security, don't reveal that the email doesn't exist
+            message = 'If an account with that email exists, a password reset link has been sent.'
+        
+        # Add success message and redirect to login
+        messages.success(self.request, message)
+        return redirect(self.success_url)
+    
+    def form_invalid(self, form):
+        """Handle form errors"""
+        messages.error(self.request, 'Please correct the errors below.')
+        return super().form_invalid(form)
 
 
 # REPLACE @login_required with @jwt_cookie_required
@@ -1030,18 +1193,39 @@ def profile_settings_view(request):
     # The decorator now ensures request.user is set if the JWT is valid
     user = request.user 
     is_admin_or_superuser = user.is_superuser or user.is_staff
-    allowed_fields = {'username', 'phone_number', 'profile_picture'}
+    # Allow otp_enabled and profile_picture-clear (the clear checkbox) as well
+    allowed_fields = {'username', 'phone_number', 'profile_picture', 'otp_enabled', 'profile_picture-clear'}
 
     if request.method == 'POST':
         post_data = request.POST.copy()
         file_data = request.FILES
 
-        # --- Loosened restriction ---
-        # For non-admin users, drop restricted fields instead of erroring
+        # For non-admin users, check and restrict fields (matching API behavior)
         if not is_admin_or_superuser:
-            for key in list(post_data.keys()):
-                if key not in allowed_fields and key != 'csrfmiddlewaretoken':
-                    post_data.pop(key, None)
+            # Get list of fields that are being submitted (excluding CSRF token)
+            submitted_fields = set(post_data.keys()) - {'csrfmiddlewaretoken'}
+            restricted_fields = submitted_fields - allowed_fields
+
+            if restricted_fields:
+                messages.error(
+                    request,
+                    f'Permission denied. You can only update: {", ".join(sorted(allowed_fields))}. '
+                    f'Attempted to update restricted fields: {", ".join(sorted(restricted_fields))}'
+                )
+
+            # Build a filtered POST that contains only allowed fields so the form
+            # will be bound with only permitted values and instance values remain
+            # for any omitted fields (avoids accidentally clearing values).
+            filtered = QueryDict(mutable=True)
+            for key in allowed_fields:
+                if key in post_data:
+                    filtered[key] = post_data.get(key)
+
+            # Also copy CSRF token so form validation still works
+            if 'csrfmiddlewaretoken' in post_data:
+                filtered['csrfmiddlewaretoken'] = post_data.get('csrfmiddlewaretoken')
+
+            post_data = filtered
 
         # Pass request.user for form-level permission checks
         form = ProfileSettingsForm(post_data, file_data, instance=user, request_user=user)
@@ -1089,3 +1273,312 @@ def agent_management_view(request):
         'user': user,
     }
     return render(request, 'users/agent_management.html', context)
+
+
+
+
+
+@method_decorator([csrf_protect, never_cache], name='dispatch')
+class LoginView(FormView):
+    """
+    Custom login view with support for:
+    - Email/password authentication
+    - 2FA OTP verification
+    - System selection
+    - Captcha protection
+    - Remember me functionality
+    - Account lockout protection
+    """
+    template_name = 'users/login.html'
+    form_class = LoginForm
+    success_url = reverse_lazy('system-welcome')  # Redirect after successful login
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Redirect authenticated users
+        if request.user.is_authenticated:
+            return redirect(self.get_success_url())
+        return super().dispatch(request, *args, **kwargs)
+    
+    def post(self, request, *args, **kwargs):
+        """Handle POST requests, including AJAX captcha checks"""
+        # Handle AJAX request for captcha check
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and request.POST.get('check_captcha_only'):
+            email = request.POST.get('email', '').strip()
+            captcha_needed = False
+            
+            if email:
+                try:
+                    user = User.objects.get(email=email)
+                    # Check if captcha is needed (5+ failed attempts or locked)
+                    captcha_needed = user.failed_login_attempts >= 5 or user.is_locked
+                except User.DoesNotExist:
+                    # For non-existent users, don't reveal they don't exist
+                    captcha_needed = True
+            
+            from django.http import JsonResponse
+            return JsonResponse({'captcha_needed': captcha_needed})
+        
+        # Handle normal form submission
+        return super().post(request, *args, **kwargs)
+    
+    def get_form_kwargs(self):
+        """Pass request and system parameter to form"""
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        kwargs['system'] = self.request.GET.get('system')
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        """Add additional context for template"""
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'selected_system': self.request.GET.get('system'),
+            'forgot_password_url': reverse_lazy('forgot-password-ui'),
+            'register_url': reverse_lazy('user-register'),
+            'page_title': 'Sign In',
+            'systems_count': System.objects.count(),
+        })
+        return context
+    
+    def form_valid(self, form):
+        """Handle successful form submission with JWT token authentication"""
+        user = form.get_user()
+        selected_system = form.cleaned_data['system']
+        remember_me = form.cleaned_data.get('remember_me', False)
+        
+        # Get JWT tokens using the same serializer as API
+        serializer_data = {
+            'username': user.email,  # Use email as username
+            'email': user.email,
+            'password': form.cleaned_data['password'],
+            'otp_code': form.cleaned_data.get('otp_code', '')
+        }
+        
+        serializer = CustomTokenObtainPairSerializer(
+            data=serializer_data,
+            context={'request': self.request}
+        )
+        
+        # Get JWT tokens
+        if serializer.is_valid():
+            tokens = serializer.validated_data
+            access_token = tokens['access']
+            refresh_token = tokens['refresh']
+        else:
+            # Fallback: create tokens manually
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+        
+        # Reset failed login attempts on successful login (already done in serializer)
+        user.failed_login_attempts = 0
+        user.is_locked = False
+        user.lockout_time = None
+        user.save(update_fields=["failed_login_attempts", "is_locked", "lockout_time"])
+        
+        # Create response with system redirect
+        print(f"DEBUG: About to call create_system_redirect_response with system slug: {selected_system.slug}")
+        print(f"DEBUG: self.request.user: {self.request.user}")
+        print(f"DEBUG: user from form: {user}")
+        
+        # Import messages at the top
+        from django.contrib import messages
+        
+        # Use get_system_redirect_url directly since request.user is not authenticated yet
+        from users.utils import get_system_redirect_url
+        redirect_url = get_system_redirect_url(user, selected_system.slug)
+        print(f"DEBUG: redirect_url: {redirect_url}")
+        
+        if not redirect_url:
+            from django.http import HttpResponseServerError
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'System redirect URL is None for system: {selected_system.slug}')
+            
+            messages.error(
+                self.request, 
+                f'System "{selected_system.name}" is not properly configured. Please contact support.'
+            )
+            return HttpResponseServerError(
+                f'System "{selected_system.name}" (slug: {selected_system.slug}) URL not configured in environment settings.'
+            )
+        
+        # Create redirect response manually
+        from django.shortcuts import redirect
+        response = redirect(redirect_url)
+        print(f"DEBUG: Created redirect response: {response}")
+        print(f"DEBUG: Response type: {type(response)}")
+        
+        # Set JWT cookies (same as API)
+        from django.conf import settings
+        
+        # Determine max_age based on remember_me
+        if remember_me:
+            access_max_age = 30 * 24 * 60 * 60  # 30 days for remember me
+            refresh_max_age = 30 * 24 * 60 * 60  # 30 days
+        else:
+            access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+            refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
+        
+        # Set access token cookie
+        response.set_cookie(
+            'access_token',
+            access_token,
+            max_age=access_max_age,
+            httponly=False,  # Same as API settings
+            secure=not settings.DEBUG,
+            samesite='Lax',
+            path='/',
+            domain=None
+        )
+
+        # Set refresh token cookie
+        response.set_cookie(
+            'refresh_token',
+            refresh_token,
+            max_age=refresh_max_age,
+            httponly=False,  # Same as API settings
+            secure=not settings.DEBUG,
+            samesite='Lax',
+            path='/',
+            domain=None
+        )
+        
+        # Add success message (this will still use session for this one flash message)
+        messages.success(
+            self.request, 
+            f'Welcome back! You are now signed in to {selected_system.name}.'
+        )
+        
+        # Redirect to next URL if provided, otherwise use success_url
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        
+        return response
+    
+    def form_invalid(self, form):
+        """Handle form errors"""
+        # Extract specific error types for better user feedback
+        errors = form.errors
+        non_field_errors = form.non_field_errors()
+        
+        if 'captcha' in errors:
+            messages.error(self.request, 'Please solve the captcha correctly.')
+        elif 'hcaptcha' in errors:
+            messages.error(self.request, 'Please complete the security verification correctly.')
+        elif 'captcha_required' in str(errors):
+            messages.warning(
+                self.request,
+                'Security verification is required for this account. Please refresh the page and complete the captcha.'
+            )
+        elif 'account_locked' in str(errors):
+            messages.error(
+                self.request, 
+                'Account is locked due to too many failed login attempts. Please try again later.'
+            )
+        elif 'otp_required' in str(errors):
+            messages.warning(
+                self.request, 
+                'OTP code is required for this account. Please provide the 6-digit code.'
+            )
+        elif any('system' in str(error).lower() for error in non_field_errors):
+            # Check for system access errors
+            messages.error(
+                self.request, 
+                'You do not have access to the selected system. Please select a system you have access to or contact your administrator.'
+            )
+        elif any('invalid' in str(error).lower() and ('email' in str(error).lower() or 'password' in str(error).lower()) for error in non_field_errors):
+            messages.error(
+                self.request, 
+                'Invalid email or password. Please check your credentials and try again.'
+            )
+            
+        else:
+            messages.error(
+                self.request, 
+                'Login failed. Please check your credentials and try again.'
+            )
+        
+        return super().form_invalid(form)
+
+
+@csrf_protect
+@never_cache
+def request_otp_for_login(request):
+    """
+    View to request OTP for login when 2FA is enabled.
+    """
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        if email:
+            try:
+                user = User.objects.get(email=email, is_active=True)
+                if user.otp_enabled:
+                    otp_instance = UserOTP.generate_for_user(user, otp_type='email')
+                    
+                    # Send OTP via email
+                    try:
+                        from django.core.mail import send_mail
+                        from django.conf import settings
+                        
+                        send_mail(
+                            subject='Your Login OTP Code',
+                            message=f'Your OTP code is: {otp_instance.code}\n\nThis code will expire in 10 minutes.',
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[user.email],
+                            fail_silently=False,
+                        )
+                        
+                        messages.success(
+                            request, 
+                            'OTP code has been sent to your email address.'
+                        )
+                    except Exception as e:
+                        messages.error(
+                            request, 
+                            'Failed to send OTP. Please try again or contact support.'
+                        )
+                else:
+                    messages.info(
+                        request, 
+                        'This account does not have 2FA enabled.'
+                    )
+            except User.DoesNotExist:
+                # Don't reveal if email exists for security
+                messages.success(
+                    request, 
+                    'If the email exists and has 2FA enabled, an OTP code has been sent.'
+                )
+    
+    return redirect('auth_login')
+
+
+from django.utils.decorators import method_decorator
+from .utils import create_system_redirect_response
+
+@method_decorator(jwt_cookie_required, name='dispatch')
+class SystemWelcomeView(TemplateView):
+    """
+    System welcome landing page view.
+    Redirects to the appropriate system URL based on configuration.
+    """
+    
+    def dispatch(self, request, *args, **kwargs):
+        # JWT authentication is handled by the @jwt_cookie_required decorator
+        
+        # Get system from URL parameter
+        system_slug = self.request.GET.get('system')
+        
+        # Create redirect response using utility function
+        return create_system_redirect_response(request, system_slug, include_token=True)
+    
+    def get_template_names(self):
+        """This method won't be called since we're redirecting in dispatch."""
+        return ['system_welcome.html']
+    
+    def get_context_data(self, **kwargs):
+        """This method won't be called since we're redirecting in dispatch."""
+        context = super().get_context_data(**kwargs)
+        return context

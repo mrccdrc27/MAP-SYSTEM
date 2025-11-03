@@ -60,9 +60,9 @@
               <thead>
                 <tr>
                   <th>Avatar</th>
-                  <th>Username</th>
-                  <th>Email</th>
                   <th>Name</th>
+                  <th>Role</th>
+                  <th>Email</th>
                   <th>Company</th>
                   <th>Phone</th>
                   <th>Status</th>
@@ -255,6 +255,9 @@
           const data = await response.json();
           agents = data.users || [];
 
+          // Log the data to console for debugging
+          console.log("Loaded agents:", agents);
+
           displayAgents(agents);
           const totalCount = agents.length;
           // Update both the H2 title and the small stats span
@@ -363,6 +366,11 @@
 
       // Create table row for an agent
       function createAgentRow(agent) {
+        const roleName =
+          agent.system_roles && agent.system_roles.length > 0
+            ? agent.system_roles[0].role_name
+            : "N/A"; // fallback if no role
+
         const row = document.createElement("tr");
         row.innerHTML = `
         <td>
@@ -373,9 +381,9 @@
                  alt="${agent.username}" 
                  class="agentAvatarSmall">
         </td>
-        <td>${agent.username}</td>
-        <td>${agent.email}</td>
         <td>${agent.first_name || ""} ${agent.last_name || ""}</td>
+        <td>${roleName}</td>
+        <td>${agent.email}</td>
         <td>${agent.company_name || "N/A"}</td>
         <td>${agent.phone_number || "N/A"}</td>
         <td>
@@ -472,10 +480,13 @@
       async function editAgent(agentId) {
         // check
         if (!agentId) {
-            console.error("❌ editAgent called with null/undefined ID");
-            showToast("Invalid agent ID — please refresh and try again.", "error");
-            return;
-          }
+          console.error("❌ editAgent called with null/undefined ID");
+          showToast(
+            "Invalid agent ID — please refresh and try again.",
+            "error"
+          );
+          return;
+        }
 
         try {
           const response = await fetch(`/api/v1/users/${agentId}/`, {

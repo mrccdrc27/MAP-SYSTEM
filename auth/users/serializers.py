@@ -127,10 +127,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         system_roles = UserSystemRole.objects.filter(user=obj).select_related('system', 'role')
         return [
             {
+                'id': assignment.id,  # Include the UserSystemRole ID for updates
                 'system_name': assignment.system.name,
                 'system_slug': assignment.system.slug,
                 'role_name': assignment.role.name,
-                'assigned_at': assignment.assigned_at
+                'assigned_at': assignment.assigned_at,
+                'is_active': assignment.is_active  # System-specific is_active status
             }
             for assignment in system_roles
         ]
@@ -220,6 +222,8 @@ class AdminUserProfileUpdateSerializer(serializers.ModelSerializer):
     Allows admins to edit more fields than regular users, excluding ID fields.
     Admins can activate/deactivate agent accounts in their systems.
     """
+    username = serializers.CharField(max_length=150, read_only=True)  # Read-only for display
+    email = serializers.EmailField(read_only=True)  # Read-only for display
     first_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
     middle_name = serializers.CharField(max_length=100, required=False, allow_blank=True, allow_null=True)
     last_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
@@ -227,7 +231,8 @@ class AdminUserProfileUpdateSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
     department = serializers.ChoiceField(choices=[('IT Department', 'IT Department'), ('Asset Department', 'Asset Department'), ('Budget Department', 'Budget Department')], required=False, allow_blank=True, allow_null=True)
     status = serializers.ChoiceField(choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], required=False)
-    is_active = serializers.BooleanField(required=False, help_text="Set to false to deactivate user account, true to activate")
+    system_role_is_active = serializers.BooleanField(required=False, write_only=True, help_text="Set to false to deactivate user's role in this system, true to activate")
+    system_role_id = serializers.IntegerField(required=False, write_only=True, help_text="ID of the UserSystemRole to update")
     profile_picture = serializers.ImageField(
         required=False,
         allow_null=True,
@@ -237,11 +242,10 @@ class AdminUserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'first_name', 'middle_name', 'last_name', 'suffix', 
-            'phone_number', 'department', 'status', 'is_active', 'profile_picture'
+            'username', 'email', 'first_name', 'middle_name', 'last_name', 'suffix', 
+            'phone_number', 'department', 'status', 'system_role_is_active', 'system_role_id', 'profile_picture'
         )
-        # Explicitly exclude ID fields and other sensitive fields
-        # email, username, company_id, is_staff, is_superuser, otp_enabled are not editable by admins
+        read_only_fields = ('username', 'email')  # Explicitly mark as read-only
 
     def validate_phone_number(self, value):
         """Validate that phone number is unique (excluding current user)."""
@@ -250,6 +254,28 @@ class AdminUserProfileUpdateSerializer(serializers.ModelSerializer):
             if User.objects.filter(phone_number=value).exclude(pk=user.pk).exists():
                 raise serializers.ValidationError("A user with this phone number already exists.")
         return value
+
+    def update(self, instance, validated_data):
+        """Custom update method to handle UserSystemRole is_active updates."""
+        from system_roles.models import UserSystemRole
+        
+        # Extract system role specific fields
+        system_role_is_active = validated_data.pop('system_role_is_active', None)
+        system_role_id = validated_data.pop('system_role_id', None)
+        
+        # Update user fields normally
+        instance = super().update(instance, validated_data)
+        
+        # Handle system role is_active update if provided
+        if system_role_is_active is not None and system_role_id is not None:
+            try:
+                system_role = UserSystemRole.objects.get(id=system_role_id, user=instance)
+                system_role.is_active = system_role_is_active
+                system_role.save()
+            except UserSystemRole.DoesNotExist:
+                raise serializers.ValidationError("System role not found or access denied.")
+        
+        return instance
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -281,7 +307,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         from django.utils import timezone
         from datetime import timedelta
-        LOCKOUT_THRESHOLD = 5  # Number of allowed failed attempts
+        LOCKOUT_THRESHOLD = 10  # Number of allowed failed attempts
         LOCKOUT_TIME = timedelta(minutes=15)  # Lockout duration
 
         email = attrs.get(self.username_field)
@@ -337,7 +363,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                         )
                     else:
                         # Send failed login attempt notification for multiple attempts (but not locked yet)
-                        if user.failed_login_attempts >= 3:  # Start notifying after 3 attempts
+                        if user.failed_login_attempts >= 5:  # Start notifying after 5 attempts
                             notification_client.send_failed_login_notification(
                                 user=user,
                                 ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None,

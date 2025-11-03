@@ -103,12 +103,15 @@
                       >Manage Agents</a
                     >
                   </div>
-                    <div id="admin-links">
-                    <a href="#" class="linkItem1"
+                   <div id="admin-links">
+                    <a href="{% url 'change-password-ui' %}" class="linkItem1"
                       >Change Password</a
                     >
                   </div>
-                  <a href="{% url 'cookie-logout' %}" class="linkItem2"
+                  {% comment %} <a href="{% url 'cookie-logout' %}" class="linkItem2"
+                    >Logout</a
+                  > {% endcomment %}
+                  <a href="{% url 'root_logout' %}" class="linkItem2"
                     >Logout</a
                   >
                 </div>
@@ -194,7 +197,7 @@
                                 </div>
                             </div>
 
-                            {% if user.is_superuser or user.is_staff %}
+                            {% comment %} {% if user.is_superuser or user.is_staff %}
                                 <h2>Admin Information</h2>
                                 <div class="formGrid">
                                     <div class="formGroup">
@@ -242,7 +245,7 @@
                                         {{ form.is_locked.label_tag }}
                                     </div>
                                 </div>
-                            {% endif %}
+                            {% endif %} {% endcomment %}
                             
                             <div class="formActions">
                                 <button type="button" id="edit-profile-btn" class="editChangesBtn">EDIT PROFILE</button>

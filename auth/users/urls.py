@@ -10,15 +10,22 @@ from .views import (
     CustomTokenObtainPairView,
     CookieTokenRefreshView,
     CookieLogoutView,
+    ValidateTokenView,
     RequestOTPView, 
     Enable2FAView, 
     Disable2FAView,
     ForgotPasswordView,
+    ForgotPasswordUIView,
     ResetPasswordView,
     UserViewSet,
     ProfilePasswordResetView,
     profile_settings_view,
-    agent_management_view
+    agent_management_view,
+    LoginView,
+    request_otp_for_login,
+    SystemWelcomeView,
+    UILogoutView,
+    ChangePasswordUIView
 )
 
 class PasswordResetSerializer(serializers.Serializer):
@@ -72,8 +79,14 @@ urlpatterns = [
     # Authentication endpoints
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
+    path('login/ui/', LoginView.as_view(), name='auth_login'),
+    path('login/request-otp/', request_otp_for_login, name='auth_request_otp'),
+    path('forgot-password/', ForgotPasswordUIView.as_view(), name='forgot-password-ui'),
+    path('welcome/', SystemWelcomeView.as_view(), name='system-welcome'),
     path('token/refresh/', CookieTokenRefreshView.as_view(), name='cookie-token-refresh'),
+    path('token/validate/', ValidateTokenView.as_view(), name='validate-token'),
     path('logout/', CookieLogoutView.as_view(), name='cookie-logout'),
+    path('logout/ui/', UILogoutView.as_view(), name='root_logout'),
     
     # User profile endpoints
     path('profile/', ProfileView.as_view(), name='user-profile-api'),
@@ -94,6 +107,7 @@ urlpatterns = [
     path('password/forgot/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('password/reset/', ResetPasswordView.as_view(), name='reset-password'),
     path('password/change/', ProfilePasswordResetView.as_view(), name='change-password'),
+    path('password/change/ui/', ChangePasswordUIView.as_view(), name='change-password-ui'),
     
     # User listing endpoint
     path('list/', UserViewSet.as_view({'get': 'list'}), name='user-list'),

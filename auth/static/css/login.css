@@ -1,0 +1,476 @@
+/* Font */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+.loginPage {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: #fcfcfc;
+}
+
+.leftPanel,
+.rightPanel {
+    display: flex;
+    /* height: 100vh; */
+    width: 50vw;
+    justify-content: center;
+    align-items: center;
+}
+
+.leftPanel img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.rightPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    
+    overflow-y: auto;
+}
+
+.formHeader {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.formHeader .logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+    gap: 10px;
+}
+
+.formHeader .logo img {
+    height: 5.8rem;
+    width: 5.8rem;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+}
+
+.formHeader .logoText {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.formHeader h1 {
+    font-size: 1.5rem;
+}
+
+.formHeader p {
+    font-size: 1rem;
+    color: #242424;
+}
+
+fieldset {
+    border: none;
+}
+
+.logInButton,
+.formBtn button {
+    width: 100%;
+    padding: 12px 32px;
+    border: none;
+    border-radius: 40px;
+    background-color: #007bff;
+    color: #fcfcfc;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.logInButton:disabled,
+.formBtn button:disabled {
+    background-color: #d3d3d3;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.formBtn {
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.formBtn button:hover:not(:disabled) {
+    background-color: rgba(0, 123, 255, 0.8);
+}
+
+.forgotPassword,
+.registerBtn {
+    color: #007bff;
+    cursor: pointer;
+}
+
+.forgotPassword:hover,
+.registerBtn:hover {
+    color: rgba(0, 123, 255, 0.8);
+}
+
+.loginPage p {
+    color: #242424;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.loginPage p.resendLabel {
+    text-align: left;
+    width: 100%;
+}
+
+.loginPage form,
+.resendButton {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 70%;
+    gap: 20px;
+}
+
+.loginPage form fieldset {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    width: 100%;
+    gap: 8px;
+}
+
+.loginPage form fieldset input {
+    display: flex;
+    width: 100%;
+    height: 44px;
+    padding: 18px 16px;
+    border-radius: 40px;
+    border: 1px solid #d3d3d3;
+    background-color: #fcfcfc;
+}
+
+.loginPage input:focus {
+    outline: 2px solid #007bff;
+}
+
+.passwordContainer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    position: relative;
+}
+
+.loginPage input[type="password"],
+.loginPage input[type="text"]:nth-child(1) {
+    padding-right: 40px;
+}
+
+.showPassword {
+    height: 20px;
+    width: 20px;
+    position: absolute;
+    right: 16px;
+    cursor: pointer;
+}
+
+input[type="password"]::-ms-reveal {
+    display: none;
+}
+
+/* Select dropdown */
+.loginPage form fieldset select {
+    width: 100%;
+    height: 44px;
+    padding: 12px 16px;
+    border-radius: 40px;
+    border: 1px solid #d3d3d3;
+    background-color: #fcfcfc;
+    color: #242424;
+    font-size: 13px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px 16px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.loginPage form fieldset select:focus {
+    outline: 2px solid #007bff;
+}
+
+.loginPage form fieldset select option {
+    background-color: #fff;
+    color: #242424;
+}
+
+/* Remember me */
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: flex-start;
+    font-size: 0.95rem;
+    color: #242424;
+    user-select: none;
+    cursor: pointer;
+}
+
+.remember-me input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #d3d3d3;
+    border-radius: 4px;
+    background-color: #fcfcfc;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+}
+
+.remember-me input[type="checkbox"]:hover {
+    border-color: #007bff;
+}
+
+.remember-me input[type="checkbox"]:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.remember-me input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 0px;
+    width: 5px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.remember-me label:hover {
+    color: #007bff;
+}
+
+/* Error messages */
+.errorMsg,
+.errorMsg.fieldError {
+    width: 100%;
+    color: red;
+    font-size: 0.85rem;
+    margin-left: 4px;
+    text-align: left;
+    line-height: 1.2;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+input.is-invalid,
+select.is-invalid {
+    border-color: #ae131b !important;
+    outline: none;
+}
+
+.lpForm>.errorMsg {
+    text-align: center;
+    color: #ae131b;
+    background-color: #ffecec;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #f5b6b6;
+    width: 100%;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Alerts */
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: none;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.alert-success {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.alert-error,
+.alert-danger {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.alert-warning {
+    background: #fff8e1;
+    color: #f57c00;
+}
+
+.alert-info {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+/* Toasts */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    min-width: 250px;
+    max-width: 350px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.5s forwards;
+}
+
+.toast-success {
+    background-color: #4caf50;
+}
+
+.toast-error,
+.toast-danger {
+    background-color: #f44336;
+}
+
+.toast-warning {
+    background-color: #ff9800;
+}
+
+.toast-info {
+    background-color: #2196f3;
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Captcha */
+.captcha-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e1e8ed;
+}
+
+/* Password requirements */
+.passwordRequirements {
+    margin-top: 10px;
+}
+
+.passwordRequirements .errorMsg {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Spinner */
+.spinner1,
+.spinner {
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+    animation: spin 1s linear infinite;
+}
+
+.spinner1 {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    animation-duration: 0.6s;
+}
+
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Back button */
+.backButton {
+    border: none;
+    color: #007bff;
+    background-color: #fcfcfc;
+    cursor: pointer;
+}
+
+.backButton:hover {
+    font-weight: bold;
+}

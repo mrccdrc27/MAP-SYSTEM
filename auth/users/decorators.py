@@ -48,8 +48,7 @@ def jwt_cookie_required(view_func):
         
         if user is None:
             # Not authenticated via JWT, redirect to login page
-            # Make sure you have a URL named 'login' or change this URL
-            login_url = reverse('root_token_obtain') 
+            login_url = reverse('auth_login') 
             # Add the 'next' parameter to redirect back after login
             return redirect(f'{login_url}?next={request.path}') 
             
