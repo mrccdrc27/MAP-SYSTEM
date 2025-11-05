@@ -1,15 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
-
-@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
-    /* font-family: "Roboto", sans-serif; */
-}
-
 :root {
     --primary-color: #007bff;
     --primary-color-hover: #0056b3;
@@ -17,6 +5,12 @@
     --secondary-text-color: #6B7280;
     --bg-color: #ffffff;
     --border-color: #d3d3d3;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
@@ -73,10 +67,8 @@ body {
 
 .profileLeft {
     position: sticky;
-    /* top: 100px; */
-    top: 50px;
+    top: 100px;
     height: fit-content;
-
 }
 
 .profileCard {
@@ -90,111 +82,70 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 20px;
     justify-content: space-between;
     min-height: calc(100vh - 200px);
 }
 
-/* --- Profile Image Overlay --- */
+.profileImageSection {
+    margin-bottom: 25px;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
 .profileImageContainer {
-    position: relative;
-    width: 130px;
-    height: 130px;
+    width: 120px;
+    height: 120px;
     margin: 0 auto 15px;
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid #e0e0e0;
-    cursor: pointer;
-    transition: transform 0.2s ease;
 }
 
-.profileImageContainer:hover {
-    transform: scale(1.02);
-}
-
-/* Ensure image fills container and preserves aspect */
 .profileImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
-/* Camera icon overlay */
-.profileImageOverlay {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
+.changeImageBtn {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    border: none;
+}
+
+.changeImageBtn:hover {
+    background-color: var(--primary-color-hover);
+}
+
+.fileInputHidden {
+    display: none;
+}
+
+.checkboxGroup {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary-color);
-    font-size: 16px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    gap: 8px;
+    margin-top: 10px;
 }
 
-.profileImageContainer:hover .profileImageOverlay {
-    opacity: 1;
-}
-
-/* --- Profile Image Menu --- */
-.profileImageMenu {
-    position: absolute;
-    /* bottom: -10px; */
-    /* left: 50%; */
-    left: 70%;
-    background-color: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 8px 0;
-    padding: 10px 5px;
-    width: 120px;
-    z-index: 10;
-    animation: fadeIn 0.2s ease;
-}
-
-.profileMenuBtn {
-    background: none;
-    border: none;
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 13px;
+.checkboxGroup input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
     cursor: pointer;
-    color: var(--text-color);
-    transition: background 0.2s ease;
 }
 
-.profileMenuBtn:hover {
-    background: #f5f5f5;
-    color: var(--primary-color);
-}
-
-/* Remove option */
-.removePhotoOption {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+.checkboxGroup label {
     font-size: 12px;
-    padding: 6px 12px;
     color: var(--secondary-text-color);
-}
-
-.removePhotoOption input {
-    width: 14px;
-    height: 14px;
-}
-
-/* Hidden class for toggling */
-.hidden {
-    display: none !important;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
 }
 
 .profileInfo {
@@ -225,28 +176,8 @@ body {
     color: var(--text-color);
 }
 
-/* NEW PROFILE INFO */
-.profileInfoContainer {
-    display: flex;
-    justify-content: space-between;
-}
-
-.profileInfoContainer p {
-    margin: 5px 0;
-    font-size: 13px;
-    color: var(--text-color);
-}
-
-.profileInfoContainer span {
-    margin: 5px 0;
-    font-size: 13px;
-    color: var(--text-color);
-}
-
 .quickLinksCard {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    background: white;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
@@ -261,46 +192,8 @@ body {
     margin-bottom: 15px;
 }
 
-.linkItem1 {
-    display: flex;
-    justify-content: center;
-    padding: 8px;
-    border: 2px solid var(--primary-color);
-    border-radius: 4px;
-    color: var(--primary-color);
-    font-size: 14px;
-    text-decoration: none;
-    cursor: pointer;
-    width: 100%;
-}
-
-.linkItem1:hover {
-    background-color: var(--primary-color);
-    color: var(--bg-color);
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.linkItem2 {
-    display: flex;
-    justify-content: center;
-    padding: 8px;
-    background-color: #a00000;
-    border: var(--border-very-light-gray);
-    border-radius: 4px;
-    color: var(--bg-color);
-    font-size: 14px;
-    text-decoration: none;
-    cursor: pointer;
-    width: 100%;
-}
-
-.linkItem2:hover {
-    background-color: #800000;
-    transition: background-color 0.3s;
-}
-
 .linkItem {
-    /* display: block;
+    display: block;
     padding: 10px 12px;
     margin-bottom: 8px;
     border-radius: 6px;
@@ -308,18 +201,7 @@ body {
     color: var(--text-color);
     font-size: 13px;
     transition: all 0.2s ease;
-    border: 1px solid transparent; */
-
-    padding: 8px;
-    background: var(--primary-color);
-    border: var(--border-very-light-gray);
-    /* border-radius: 20px; */
-    border-radius: 4px;
-    color: var(--bg-color);
-    font-size: 14px;
-    cursor: pointer;
-    max-width: 150px;
-    width: 100%;
+    border: 1px solid transparent;
 }
 
 .linkItem:hover {
@@ -328,12 +210,12 @@ body {
     transform: translateX(4px);
 }
 
-/* .linkItem::before {
+.linkItem::before {
     content: "→";
     margin-right: 8px;
     font-weight: bold;
     color: var(--primary-color);
-} */
+}
 
 .profileRight {
     display: flex;
@@ -403,8 +285,7 @@ body {
     color: var(--text-color);
     background-color: white;
     /* background-color: blue; */
-    /* transition: border-color 0.2s ease, box-shadow 0.2s ease; */
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Add custom arrow for select */

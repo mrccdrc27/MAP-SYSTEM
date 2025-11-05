@@ -1377,6 +1377,12 @@ class LoginView(FormView):
         redirect_url = get_system_redirect_url(user, selected_system.slug)
         print(f"DEBUG: redirect_url: {redirect_url}")
         
+        # Add access token to redirect URL for SSO
+        if redirect_url and access_token:
+            separator = '&' if '?' in redirect_url else '?'
+            redirect_url += f"{separator}token={access_token}"
+            print(f"DEBUG: redirect_url with token: {redirect_url}")
+        
         if not redirect_url:
             from django.http import HttpResponseServerError
             import logging

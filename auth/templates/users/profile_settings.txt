@@ -1,0 +1,396 @@
+{% comment %} REVISED {% endcomment %} {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile Settings</title>
+
+    <link rel="stylesheet" href="{% static 'css/profile_settings.css' %}" />
+
+    {% comment %}
+    <link
+      rel="stylesheet"
+      href="{% static 'css/profile_settings.css' %}?v={{ time }}"
+    />
+    {% endcomment %}
+  </head>
+  <body>
+    <main class="manageProfilePage">
+      <div class="manageProfileContainer">
+        <h1>Manage Profile</h1>
+
+        {% if messages %}
+        <div class="toastContainer">
+          {% for message in messages %}
+          <div class="toast {% if message.tags %}{{ message.tags }}{% endif %}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="profile-form">
+          {% csrf_token %}
+
+          <div class="profileContent">
+            <!-- Left -->
+            <div class="profileLeft">
+              <div class="profileCard">
+                <!-- Image -->
+                <div class="profileImageSection">
+                  <div class="profileImageMenu hidden">
+                    <button
+                      type="button"
+                      class="profileMenuBtn"
+                      id="view-photo-btn"
+                    >
+                      View
+                    </button>
+                    <label
+                      for="id_profile_picture"
+                      class="profileMenuBtn changeImageBtn"
+                      >Edit</label
+                    >
+                    {% if user.profile_picture %}
+                    <div class="removePhotoOption">
+                      <input
+                        type="checkbox"
+                        name="profile_picture-clear"
+                        id="profile_picture-clear_id"
+                      />
+                      <label for="profile_picture-clear_id">Remove</label>
+                    </div>
+                    {% endif %}
+                  </div>
+                  <div class="profileImageContainer">
+                    <img
+                      id="profile-preview"
+                      src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg{% endif %}"
+                      alt="Profile"
+                      class="profileImage"
+                    />
+
+                    <!-- Camera Icon Overlay -->
+                    <div class="profileImageOverlay">
+                      <i class="fa fa-camera"></i>
+                    </div>
+                  </div>
+
+                  <p id="unsaved-warning" class="unsavedWarning hidden">
+                    ⚠️ Changes not saved yet
+                  </p>
+
+                  <div class="formGroup formGroupFile hidden">
+                    {{ form.profile_picture.errors }} {{ form.profile_picture }}
+                  </div>
+                </div>
+
+                <div class="profileInfo">
+                  <h3>{{ user.get_full_name|default:user.username }}</h3>
+                  <div class="profileInfoContainer">
+                    <p><strong>Username:</strong></p>
+                    <span>{{ user.username }}</span>
+                  </div>
+                  <div class="profileInfoContainer">
+                    <p><strong>Email:</strong></p>
+                    <span>{{ user.email }}</span>
+                  </div>
+                  <div class="profileInfoContainer">
+                    <p><strong>Company ID:</strong></p>
+                    <span>{{ user.company_id|default:'N/A'}}</span>
+                  </div>
+                  <div class="profileInfoContainer">
+                    <p><strong>Department:</strong></p>
+                    <span>{{ user.get_department_display|default:'N/A'}}</span>
+                  </div>
+                </div>
+
+                <div class="quickLinksCard">
+                  <h3>Quick Links</h3>
+                  <div id="admin-links">
+                    <a href="{% url 'agent-management' %}" class="linkItem1"
+                      >Manage Agents</a
+                    >
+                  </div>
+                  <a href="{% url 'cookie-logout' %}" class="linkItem2"
+                    >Logout</a
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Right -->
+            <div class="profileRight">
+              <div class="profileSettingsCard">
+                <h2>Personal Details</h2>
+                <div class="formGrid">
+                  <div class="formGroup">
+                    {{ form.first_name.label_tag }} {{ form.first_name.errors }}
+                    {{ form.first_name }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.middle_name.label_tag }} {{ form.middle_name.errors
+                    }} {{ form.middle_name }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.last_name.label_tag }} {{ form.last_name.errors }}
+                    {{ form.last_name }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.suffix.label_tag }} {{ form.suffix.errors }} {{
+                    form.suffix }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.username.label_tag }} {{ form.username.errors }} {{
+                    form.username }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.phone_number.label_tag }} {{
+                    form.phone_number.errors }} {{ form.phone_number }}
+                  </div>
+                </div>
+
+                <h2>Organization</h2>
+                <div class="formGrid">
+                  <div class="formGroup">
+                    {{ form.email.label_tag }} {{ form.email.errors }} {{
+                    form.email }}
+                    <small>{{ form.email.help_text }}</small>
+                  </div>
+                  <div class="formGroup">
+                    {{ form.company_id.label_tag }} {{ form.company_id.errors }}
+                    {{ form.company_id }}
+                    <small>{{ form.company_id.help_text }}</small>
+                  </div>
+                  <div class="formGroup">
+                    {{ form.department.label_tag }} {{ form.department.errors }}
+                    {{ form.department }}
+                  </div>
+                </div>
+
+                <h2>Account & Security</h2>
+                <div class="formGrid">
+                  <div class="formGroup formGroupCheckbox">
+                    {{ form.otp_enabled.errors }} {{ form.otp_enabled }} {{
+                    form.otp_enabled.label_tag }}
+                  </div>
+                  <div class="formGroup">
+                    {{ form.last_login.label_tag }} {{ form.last_login.errors }}
+                    {{ form.last_login }}
+                    <small>{{ form.last_login.help_text }}</small>
+                  </div>
+                  <div class="formGroup">
+                    {{ form.date_joined.label_tag }} {{ form.date_joined.errors
+                    }} {{ form.date_joined }}
+                    <small>{{ form.date_joined.help_text }}</small>
+                  </div>
+                </div>
+
+                <div class="formActions">
+                  <button
+                    type="button"
+                    id="edit-profile-btn"
+                    class="editChangesBtn"
+                  >
+                    EDIT PROFILE
+                  </button>
+                  <button
+                    type="submit"
+                    id="save-changes-btn"
+                    class="saveChangesBtn hidden"
+                  >
+                    SAVE CHANGES
+                  </button>
+                  <button
+                    type="button"
+                    id="cancel-changes-btn"
+                    class="cancelChangesBtn hidden"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const profileForm = document.getElementById("profile-form");
+        if (!profileForm) return;
+
+        const formInputs = profileForm.querySelectorAll(
+          ".profileSettingsCard input, .profileSettingsCard select"
+        );
+
+        const editBtn = document.getElementById("edit-profile-btn");
+        const saveBtn = document.getElementById("save-changes-btn");
+        const cancelBtn = document.getElementById("cancel-changes-btn");
+
+        const profilePicInput = document.getElementById("id_profile_picture");
+        const profilePicLabel = document.querySelector("label.changeImageBtn");
+        const removePicCheckbox = document.getElementById(
+          "profile_picture-clear_id"
+        );
+        const removePicLabel = document.querySelector(
+          'label[for="profile_picture-clear_id"]'
+        );
+
+        const preview = document.getElementById("profile-preview");
+        const unsaved = document.getElementById("unsaved-warning");
+        const originalImageSrc = preview.src;
+
+        const permanentReadOnlyIds = [
+          "id_last_login",
+          "id_date_joined",
+          "id_failed_login_attempts",
+          "id_lockout_time",
+          "id_username",
+          "id_email",
+        ];
+
+        function setFormEnabled(enabled) {
+          formInputs.forEach((input) => {
+            if (input.type === "button" || input.type === "submit") return;
+            if (permanentReadOnlyIds.includes(input.id)) {
+              input.readOnly = true;
+              return;
+            }
+            if (
+              input.tagName.toLowerCase() === "select" ||
+              input.type === "checkbox"
+            ) {
+              input.disabled = !enabled;
+            } else {
+              input.readOnly = !enabled;
+            }
+          });
+
+          if (profilePicInput) profilePicInput.disabled = !enabled;
+          if (profilePicLabel) {
+            profilePicLabel.style.pointerEvents = enabled ? "auto" : "none";
+            profilePicLabel.style.opacity = enabled ? "1" : "0.6";
+          }
+          if (removePicCheckbox) removePicCheckbox.disabled = !enabled;
+          if (removePicLabel) {
+            removePicLabel.style.pointerEvents = enabled ? "auto" : "none";
+            removePicLabel.style.opacity = enabled ? "1" : "0.6";
+          }
+
+          if (editBtn) editBtn.classList.toggle("hidden", enabled);
+          if (saveBtn) saveBtn.classList.toggle("hidden", !enabled);
+          if (cancelBtn) cancelBtn.classList.toggle("hidden", !enabled);
+        }
+
+        if (editBtn) {
+          editBtn.addEventListener("click", () => setFormEnabled(true));
+        }
+
+        if (cancelBtn) {
+          cancelBtn.addEventListener("click", () => {
+            profileForm.reset();
+            preview.src = originalImageSrc;
+            unsaved.classList.add("hidden");
+            setFormEnabled(false);
+          });
+        }
+
+        if (profilePicInput) {
+          profilePicInput.addEventListener("change", function () {
+            const file = this.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                preview.src = e.target.result;
+                unsaved.classList.remove("hidden");
+              };
+              reader.readAsDataURL(file);
+            }
+          });
+        }
+
+        const toasts = document.querySelectorAll(".toast");
+        toasts.forEach((toast) =>
+          setTimeout(() => toast.classList.add("hide"), 3500)
+        );
+
+        // Hide file input, keep label clickable
+        if (profilePicInput && profilePicLabel) {
+          if (profilePicLabel.nextSibling !== profilePicInput) {
+            profilePicLabel.parentNode.insertBefore(
+              profilePicInput,
+              profilePicLabel.nextSibling
+            );
+          }
+          profilePicInput.classList.add("fileInputHidden");
+        }
+
+        setFormEnabled(false);
+        checkAdminPrivileges();
+
+        // --- Profile Image Overlay Menu ---
+        const container = document.querySelector(".profileImageContainer");
+        const menu = document.querySelector(".profileImageMenu");
+        const viewBtn = document.getElementById("view-photo-btn");
+
+        if (container && menu && preview) {
+          container.addEventListener("click", (e) => {
+            e.stopPropagation();
+            menu.classList.toggle("hidden");
+          });
+
+          document.addEventListener("click", () =>
+            menu.classList.add("hidden")
+          );
+
+          if (viewBtn) {
+            viewBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              window.open(preview.src, "_blank");
+              menu.classList.add("hidden");
+            });
+          }
+        }
+
+        // --- Admin Privileges ---
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+              cookie = cookie.trim();
+              if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(
+                  cookie.substring(name.length + 1)
+                );
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        async function checkAdminPrivileges() {
+          try {
+            const csrfToken = getCookie("csrftoken");
+            const response = await fetch("/api/v1/users/list/", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+              },
+              credentials: "include",
+            });
+            if (response.ok) {
+              document.getElementById("admin-links").style.display = "block";
+            }
+          } catch {
+            console.log("User does not have admin privileges");
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

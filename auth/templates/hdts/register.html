@@ -545,6 +545,21 @@
                 this.value = this.value.replace(/[^\d]/g, '').slice(0, 4);
             });
         }
+
+        // Add MA prefix to company_id before form submission
+        const registrationForm = document.querySelector('form');
+        if (registrationForm && companyIdInput) {
+            registrationForm.addEventListener('submit', function(e) {
+                // If user entered a company ID, prepend "MA" to it
+                if (companyIdInput.value && companyIdInput.value.trim() !== '') {
+                    // Only add MA if it doesn't already have it
+                    if (!companyIdInput.value.startsWith('MA')) {
+                        companyIdInput.value = 'MA' + companyIdInput.value;
+                    }
+                }
+                // If empty, leave it empty so the backend auto-generates it
+            });
+        }
     </script>
 </body>
 </html>

@@ -39,7 +39,7 @@
         <!-- Agents List -->
         <div id="agents-container" class="agentsContainer">
           <div class="agentsHeader">
-            <h2 id="agents-title">Loading Agents...</h2>
+            <h2 id="agents-title">System Agents</h2>
 
             <div class="agentsSearch">
               <input
@@ -81,86 +81,94 @@
       <!-- Edit Agent Modal -->
       <div id="edit-modal" class="modal hidden">
         <div class="modalContent">
-          <div class="modalHeader">
-            <h3>Edit Agent</h3>
-            <button onclick="closeEditModal()" class="modalClose">
-              &times;
-            </button>
-          </div>
-          <form id="edit-form">
-            <div class="formGroup">
-              <label for="edit-username">Username</label>
-              <input type="text" id="edit-username" name="username" readonly />
-              <small>Username cannot be changed</small>
-            </div>
-            <div class="formGroup">
-              <label for="edit-email">Email</label>
-              <input type="email" id="edit-email" name="email" readonly />
-              <small>Email cannot be changed</small>
-            </div>
-            <div class="formGroup">
-              <label for="edit-first-name">First Name</label>
-              <input type="text" id="edit-first-name" name="first_name" />
-            </div>
-            <div class="formGroup">
-              <label for="edit-last-name">Last Name</label>
-              <input type="text" id="edit-last-name" name="last_name" />
-            </div>
-            <div class="formGroup">
-              <label for="edit-phone">Phone Number</label>
-              <input type="tel" id="edit-phone" name="phone_number" />
-            </div>
-            <div class="formGroup">
-              <label for="edit-company">Company</label>
-              <input
-                type="text"
-                id="edit-company"
-                name="company_name"
-                readonly
-              />
-              <small>Company cannot be changed</small>
-            </div>
-            <div class="formGroup">
-              <label for="edit-active">System Role Status</label>
-              <select id="edit-active" name="is_active">
-                <option value="true">Active in this system</option>
-                <option value="false">Inactive in this system</option>
-              </select>
-              <small>This controls access to the current system only</small>
-            </div>
-            <div class="modalActions">
-              <button
-                type="button"
-                onclick="closeEditModal()"
-                class="btn btnSecondary"
-              >
-                Cancel
+          <div class="modalContentWrapper">
+            <div class="modalHeader">
+              <h3>Edit Agent</h3>
+              <button onclick="closeEditModal()" class="modalClose">
+                &times;
               </button>
-              <button type="submit" class="btn btnPrimary">Save Changes</button>
             </div>
-          </form>
+            <form id="edit-form">
+              <div class="formGroup">
+                <label for="edit-username">Username</label>
+                <input
+                  type="text"
+                  id="edit-username"
+                  name="username"
+                  required
+                />
+              </div>
+              <div class="formGroup">
+                <label for="edit-email">Email</label>
+                <input type="email" id="edit-email" name="email" required />
+              </div>
+              <div class="formGroup">
+                <label for="edit-first-name">First Name</label>
+                <input type="text" id="edit-first-name" name="first_name" />
+              </div>
+              <div class="formGroup">
+                <label for="edit-last-name">Last Name</label>
+                <input type="text" id="edit-last-name" name="last_name" />
+              </div>
+              <div class="formGroup">
+                <label for="edit-phone">Phone Number</label>
+                <input type="tel" id="edit-phone" name="phone_number" />
+              </div>
+              <div class="formGroup">
+                <label for="edit-company">Company</label>
+                <input
+                  type="text"
+                  id="edit-company"
+                  name="company_name"
+                  readonly
+                />
+                <small>Company cannot be changed</small>
+              </div>
+              <div class="formGroup">
+                <label for="edit-active">Status</label>
+                <select id="edit-active" name="is_active">
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div class="modalActions">
+                <button
+                  type="button"
+                  onclick="closeEditModal()"
+                  class="btn btnSecondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btnPrimary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
       <!-- View Agent Modal -->
       <div id="view-modal" class="modal hidden">
-        <div class="modalContent">
-          <div class="modalHeader">
-            <h3>Agent Details</h3>
-            <button onclick="closeViewModal()" class="modalClose">
-              &times;
-            </button>
-          </div>
-          <div class="agentDetails" id="agent-details">
-            <!-- Agent details will be loaded here -->
-          </div>
-          <div class="modalActions">
-            <button onclick="closeViewModal()" class="btn btnSecondary">
-              Close
-            </button>
-            <button onclick="editFromView()" class="btn btnPrimary">
-              Edit Agent
-            </button>
+        <div class="modalContentWrapper">
+          <div class="modalContent">
+            <div class="modalHeader">
+              <h3>Agent Details</h3>
+              <button onclick="closeViewModal()" class="modalClose">
+                &times;
+              </button>
+            </div>
+            <div class="agentDetails" id="agent-details">
+              <!-- Agent details will be loaded here -->
+            </div>
+            <div class="modalActions">
+              <button onclick="closeViewModal()" class="btn btnSecondary">
+                Close
+              </button>
+              <button onclick="editFromView()" class="btn btnPrimary">
+                Edit Agent
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -188,6 +196,100 @@
       const csrfToken = getCookie("csrftoken");
       let currentAgentId = null;
       let agents = [];
+
+      // Toast notification system
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+
+        container.appendChild(toast);
+        container.classList.remove("hidden");
+
+        setTimeout(() => {
+          toast.remove();
+          if (container.children.length === 0) {
+            container.classList.add("hidden");
+          }
+        }, 5000);
+      }
+
+      // Show/hide loading
+      function showLoading() {
+        document.getElementById("loading").classList.remove("hidden");
+        document.getElementById("agents-container").classList.add("hidden");
+        document.getElementById("error-container").classList.add("hidden");
+      }
+
+      function hideLoading() {
+        document.getElementById("loading").classList.add("hidden");
+      }
+
+      // Show error
+      function showError(message) {
+        document.getElementById("error-message").textContent = message;
+        document.getElementById("error-container").classList.remove("hidden");
+        document.getElementById("agents-container").classList.add("hidden");
+        hideLoading();
+      }
+
+      // Load agents from API
+      async function loadAgents() {
+        showLoading();
+
+        try {
+          const response = await fetch("/api/v1/users/list/", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          agents = data.users || [];
+
+          displayAgents(agents);
+          const totalCount = agents.length;
+          // Update both the H2 title and the small stats span
+          const titleEl = document.getElementById("agents-title");
+          const countEl = document.getElementById("agents-count");
+          if (titleEl) titleEl.textContent = `System Agents (${totalCount})`;
+          if (countEl) countEl.textContent = `${totalCount} agents found`;
+
+          document
+            .getElementById("agents-container")
+            .classList.remove("hidden");
+          hideLoading();
+        } catch (error) {
+          console.error("Error loading agents:", error);
+          showError(
+            "Failed to load agents. Please check your connection and try again."
+          );
+        }
+      }
+
+      // Display agents in table
+      function displayAgents(agentsData) {
+        const tableBody = document.getElementById("agents-body");
+        tableBody.innerHTML = "";
+
+        if (agentsData.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="noAgents">No agents found.</td>
+            </tr>`;
+          return;
+        }
+        return cookieValue;
+      }
+
       let currentUser = null; // Store current authenticated user info
       let currentSystemName = "System"; // Store current system name
       let currentSystemSlug = ""; // Store current system slug for filtering

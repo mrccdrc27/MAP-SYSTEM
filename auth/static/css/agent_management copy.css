@@ -1,0 +1,489 @@
+/* Agent Management Specific Styles */
+.agentManagementPage {
+    min-height: 100vh;
+    background-color: #f5f5f5;
+    padding: 20px 0;
+}
+
+.agentManagementContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.headerActions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Button Styles */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.btnPrimary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btnPrimary:hover {
+    background-color: var(--primary-color-hover);
+}
+
+.btnSecondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btnSecondary:hover {
+    background-color: #5a6268;
+}
+
+.btnDanger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btnDanger:hover {
+    background-color: #c82333;
+}
+
+.btnSmall {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* Loading and Error States */
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.errorContainer {
+    text-align: center;
+    padding: 40px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    color: #dc3545;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Toast Messages */
+.toastContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 12px 20px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    min-width: 250px;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.3s ease forwards;
+}
+
+.toast.success {
+    background-color: #28a745;
+}
+
+.toast.error {
+    background-color: #dc3545;
+}
+
+.toast.info {
+    background-color: var(--primary-color);
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Agents Container */
+.agentsContainer {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.agentsHeader {
+    padding: 20px 30px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+}
+
+.agentsHeader h2 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.agentsStats {
+    color: var(--secondary-text-color);
+    font-size: 14px;
+}
+
+/* Agents Grid */
+.agentsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    padding: 30px;
+}
+
+.noAgents {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--secondary-text-color);
+    font-size: 16px;
+}
+
+/* Agent Card */
+.agentCard {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.agentCard:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.agentHeader {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.agentAvatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.agentAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.agentInfo h3 {
+    margin: 0 0 5px 0;
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.agentEmail {
+    margin: 0 0 8px 0;
+    color: var(--secondary-text-color);
+    font-size: 14px;
+}
+
+.agentStatus {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.agentStatus.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.agentStatus.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.agentDetails {
+    flex-grow: 1;
+}
+
+.agentDetails p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: var(--secondary-text-color);
+}
+
+.agentActions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modalHeader {
+    padding: 20px 30px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modalClose {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--secondary-text-color);
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modalClose:hover {
+    color: var(--text-color);
+}
+
+/* Form Styles */
+form {
+    padding: 30px;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.formGroup input,
+.formGroup select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.formGroup input[readonly] {
+    background-color: #f8f9fa;
+    color: var(--secondary-text-color);
+}
+
+.formGroup small {
+    display: block;
+    margin-top: 5px;
+    color: var(--secondary-text-color);
+    font-size: 12px;
+}
+
+.modalActions {
+    padding: 20px 30px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    background-color: #f8f9fa;
+}
+
+/* Agent Details View */
+.agentDetails .detailItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.agentDetails .detailItem:last-child {
+    border-bottom: none;
+}
+
+.agentDetails .detailItem label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0;
+}
+
+.agentDetails .detailItem span {
+    color: var(--secondary-text-color);
+    text-align: right;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .headerActions {
+        justify-content: center;
+    }
+    
+    .agentsGrid {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+    
+    .agentCard {
+        padding: 15px;
+    }
+    
+    .modalContent {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    form {
+        padding: 20px;
+    }
+    
+    .modalActions {
+        flex-direction: column;
+    }
+    
+    .modalActions .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .agentManagementContainer {
+        padding: 0 10px;
+    }
+    
+    .header {
+        padding: 15px 20px;
+    }
+    
+    .agentsGrid {
+        padding: 15px;
+    }
+    
+    .agentHeader {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .agentActions {
+        justify-content: center;
+    }
+}
