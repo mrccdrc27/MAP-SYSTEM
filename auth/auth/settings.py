@@ -155,10 +155,13 @@ REST_FRAMEWORK = {
     ],
     
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    "DEFAULT_RENDERER_CLASSES": [
-    "rest_framework.renderers.JSONRenderer",
-    "rest_framework.renderers.BrowsableAPIRenderer",  # Enables clickable UI
-    ],
+    # Conditionally enable browsable API only in DEBUG mode
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",  # Browsable UI (only in DEBUG)
+    ) if DEBUG else (
+        "rest_framework.renderers.JSONRenderer",
+    ),
     
 }
 # JWT Settings (optional; good defaults)
@@ -243,6 +246,13 @@ FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
 # Cookie domain configuration
 COOKIE_DOMAIN = config('COOKIE_DOMAIN', default='localhost')
+
+# Session and Cookie Security Settings
+# Only enforce secure cookies in production with HTTPS
+# For development, allow HTTP even when DEBUG=False
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+# Set to True in production with HTTPS
 
 # CORS Configuration - Allow frontend to access backend
 CORS_ALLOWED_ORIGINS = config(

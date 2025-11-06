@@ -46,7 +46,7 @@ from .decorators import jwt_cookie_required # <-- IMPORT THE NEW DECORATOR
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from django.http import QueryDict
-
+import logging
 # Simple serializer for logout - doesn't need any fields
 class LogoutSerializer(drf_serializers.Serializer):
     pass
@@ -372,7 +372,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             access_token,
             max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
             httponly=False,  # Changed from True to False to make it a regular cookie
-            secure=not settings.DEBUG,  # Use secure cookies in production
+            secure=settings.SESSION_COOKIE_SECURE,  # Use configured secure setting
             samesite='Lax',
             path='/',  # Make cookie available for all paths
             domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
@@ -384,7 +384,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             refresh_token,
             max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
             httponly=False,  # Changed from True to False to make it a regular cookie
-            secure=not settings.DEBUG,  # Use secure cookies in production
+            secure=settings.SESSION_COOKIE_SECURE,  # Use configured secure setting
             samesite='Lax',
             path='/',  # Make cookie available for all paths
             domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
@@ -515,6 +515,112 @@ class Disable2FAView(generics.CreateAPIView):
             return Response({'message': '2FA disabled successfully'}, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=['2FA'],
+    summary="Request OTP for authenticated user",
+    description="Generate and send OTP code to the authenticated user's email. Used when user wants to disable 2FA.",
+    responses={
+        200: OpenApiResponse(
+            response=inline_serializer(
+                name='RequestOTPAuthenticatedResponse',
+                fields={
+                    'message': drf_serializers.CharField(),
+                    'expires_in_minutes': drf_serializers.IntegerField()
+                }
+            ),
+            description="OTP sent successfully"
+        ),
+        400: OpenApiResponse(description="Bad request - 2FA not enabled"),
+        401: OpenApiResponse(description="Unauthorized")
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def request_otp_authenticated_view(request):
+    """
+    Generate and send OTP to authenticated user's email.
+    Used for operations that require OTP verification (like disabling 2FA).
+    """
+    user = request.user
+    
+    if not user.otp_enabled:
+        return Response({
+            'error': '2FA is not enabled for this account'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Generate OTP for the user
+    otp_instance = UserOTP.generate_for_user(user, otp_type='email')
+    
+    # Send OTP via email
+    try:
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        send_mail(
+            subject='Your 2FA Verification Code',
+            message=f'Your verification code is: {otp_instance.otp_code}\n\nThis code will expire in 5 minutes.\n\nIf you did not request this code, please ignore this email.',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+        
+        return Response({
+            'message': 'OTP sent to your email address',
+            'expires_in_minutes': 5
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send OTP email to {user.email}: {str(e)}")
+        return Response({
+            'error': 'Failed to send email. Please try again later.'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=['2FA'],
+    summary="Verify credentials for disabling OTP",
+    description="Verify password and OTP code before allowing user to disable 2FA in profile settings. This endpoint does not actually disable 2FA, it only validates credentials.",
+    request=Disable2FASerializer,
+    responses={
+        200: OpenApiResponse(
+            response=inline_serializer(
+                name='VerifyDisableOTPResponse',
+                fields={'message': drf_serializers.CharField()}
+            ),
+            description="Credentials verified successfully"
+        ),
+        400: OpenApiResponse(description="Bad request - invalid password or OTP"),
+        401: OpenApiResponse(description="Unauthorized")
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_disable_otp_view(request):
+    """
+    Verify password and OTP for disabling 2FA in profile settings.
+    This endpoint validates credentials but does not actually disable 2FA.
+    The actual disabling happens when the profile form is saved.
+    """
+    serializer = Disable2FASerializer(data=request.data, context={'request': request})
+    
+    if serializer.is_valid():
+        # If validation passes, credentials are correct
+        # Mark the OTP as used since we verified it
+        otp_code = serializer.validated_data.get('otp_code')
+        otp_instance = UserOTP.get_valid_otp_for_user(request.user)
+        if otp_instance and otp_instance.otp_code == otp_code:
+            otp_instance.is_used = True
+            otp_instance.save(update_fields=['is_used'])
+        
+        return Response({
+            'message': 'Credentials verified successfully',
+            'verified': True
+        }, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
@@ -993,7 +1099,7 @@ class CookieTokenRefreshView(generics.GenericAPIView):
                 access_token,
                 max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
                 httponly=False,  # Changed from True to False to make it a regular cookie
-                secure=not settings.DEBUG,
+                secure=settings.SESSION_COOKIE_SECURE,  # Use configured secure setting
                 samesite='Lax',
                 path='/',  # Make cookie available for all paths
                 domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
@@ -1007,7 +1113,7 @@ class CookieTokenRefreshView(generics.GenericAPIView):
                     new_refresh_token,
                     max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
                     httponly=False,  # Changed from True to False to make it a regular cookie
-                    secure=not settings.DEBUG,
+                    secure=settings.SESSION_COOKIE_SECURE,  # Use configured secure setting
                     samesite='Lax',
                     path='/',  # Make cookie available for all paths
                     domain=None  # None for localhost compatibility (works for both localhost and 127.0.0.1)
@@ -1206,11 +1312,12 @@ def profile_settings_view(request):
             submitted_fields = set(post_data.keys()) - {'csrfmiddlewaretoken'}
             restricted_fields = submitted_fields - allowed_fields
 
+            # Log what restricted fields were attempted but don't show error to user
             if restricted_fields:
-                messages.error(
-                    request,
-                    f'Permission denied. You can only update: {", ".join(sorted(allowed_fields))}. '
-                    f'Attempted to update restricted fields: {", ".join(sorted(restricted_fields))}'
+                logger = logging.getLogger(__name__)
+                logger.info(
+                    f'User {user.username} attempted to update restricted fields: {", ".join(sorted(restricted_fields))}. '
+                    f'These fields will be filtered out.'
                 )
 
             # Build a filtered POST that contains only allowed fields so the form
@@ -1235,7 +1342,20 @@ def profile_settings_view(request):
             messages.success(request, 'Profile updated successfully!')
             return redirect('profile-settings') # Make sure 'profile-settings' is a valid URL name
         else:
-            messages.error(request, 'Please correct the errors below.')
+            # Log the actual errors for debugging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Form validation errors for user {user.username}: {form.errors}')
+            
+            # Display specific error messages to the user
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, error)
+                    else:
+                        messages.error(request, f'{field}: {error}')
+            
+            if not form.errors:
+                messages.error(request, 'Please correct the errors below.')
 
     else:
         # Pass the already authenticated user from the decorator
@@ -1294,10 +1414,73 @@ class LoginView(FormView):
     success_url = reverse_lazy('system-welcome')  # Redirect after successful login
     
     def dispatch(self, request, *args, **kwargs):
-        # Redirect authenticated users
+        """Redirect authenticated users to their system dashboard"""
+        # Check if user is authenticated via JWT cookie
+        user = None
+        
+        # First check Django session authentication
         if request.user.is_authenticated:
-            return redirect(self.get_success_url())
+            user = request.user
+        else:
+            # Check JWT token in cookie
+            access_token = request.COOKIES.get('access_token')
+            if access_token:
+                try:
+                    from rest_framework_simplejwt.tokens import AccessToken
+                    from users.models import User
+                    
+                    # Validate and decode the token
+                    token = AccessToken(access_token)
+                    user_id = token.get('user_id')
+                    
+                    # Get the user
+                    user = User.objects.get(id=user_id)
+                except Exception as e:
+                    # Invalid or expired token, let them continue to login page
+                    user = None
+        
+        # If user is authenticated, redirect to their system
+        if user:
+            from users.utils import get_system_redirect_url
+            
+            # Try to get system from request or use user's first system
+            system_slug = request.GET.get('system') or request.POST.get('system')
+            redirect_url = get_system_redirect_url(user, system_slug)
+            
+            if redirect_url:
+                # Add access token to URL for SSO
+                access_token = request.COOKIES.get('access_token')
+                if access_token:
+                    separator = '&' if '?' in redirect_url else '?'
+                    redirect_url += f"{separator}token={access_token}"
+                return redirect(redirect_url)
+            else:
+                # User has no system access, redirect to welcome page
+                return redirect('system-welcome')
+        
         return super().dispatch(request, *args, **kwargs)
+    
+    def get(self, request, *args, **kwargs):
+        """Handle GET requests - clear OTP session if going back to login page"""
+        # Clear any existing OTP session data when accessing the login page via GET
+        # This ensures that if user hits back button or navigates away, the session is cleared
+        session_cleared = False
+        
+        if 'otp_email' in request.session:
+            del request.session['otp_email']
+            session_cleared = True
+        if 'otp_password' in request.session:
+            del request.session['otp_password']
+            session_cleared = True
+        if 'otp_system' in request.session:
+            del request.session['otp_system']
+            session_cleared = True
+        
+        # Force session save to persist the deletion
+        if session_cleared:
+            request.session.modified = True
+        
+        return super().get(request, *args, **kwargs)
     
     def post(self, request, *args, **kwargs):
         """Handle POST requests, including AJAX captcha checks"""
@@ -1343,8 +1526,22 @@ class LoginView(FormView):
     def form_valid(self, form):
         """Handle successful form submission with JWT token authentication"""
         user = form.get_user()
-        selected_system = form.cleaned_data['system']
+        selected_system = form.cleaned_data.get('system')
+        
+        # If system is not in form (OTP mode), get it from session
+        if not selected_system and self.request.session.get('otp_system'):
+            from systems.models import System
+            selected_system = System.objects.get(pk=self.request.session['otp_system'])
+        
         remember_me = form.cleaned_data.get('remember_me', False)
+        
+        # Clear OTP session data if it exists
+        if self.request.session.get('otp_email'):
+            del self.request.session['otp_email']
+        if self.request.session.get('otp_password'):
+            del self.request.session['otp_password']
+        if self.request.session.get('otp_system'):
+            del self.request.session['otp_system']
         
         # Get JWT tokens using the same serializer as API
         serializer_data = {
@@ -1433,7 +1630,7 @@ class LoginView(FormView):
             access_token,
             max_age=access_max_age,
             httponly=False,  # Same as API settings
-            secure=not settings.DEBUG,
+            secure=settings.SESSION_COOKIE_SECURE,  # Use configured secure setting
             samesite='Lax',
             path='/',
             domain=None
@@ -1445,7 +1642,7 @@ class LoginView(FormView):
             refresh_token,
             max_age=refresh_max_age,
             httponly=False,  # Same as API settings
-            secure=not settings.DEBUG,
+            secure=settings.SESSION_COOKIE_SECURE,  # Use configured secure setting
             samesite='Lax',
             path='/',
             domain=None
@@ -1470,6 +1667,50 @@ class LoginView(FormView):
         errors = form.errors
         non_field_errors = form.non_field_errors()
         
+        # Check if OTP is required but not provided
+        error_str = str(errors) + str(non_field_errors)
+        
+        # Check for account lockout first (highest priority)
+        if 'account_locked' in error_str.lower() or any('account is locked' in str(error).lower() for error in non_field_errors):
+            # Extract the lockout message
+            lockout_message = None
+            for error in non_field_errors:
+                if 'locked' in str(error).lower():
+                    lockout_message = str(error)
+                    break
+            
+            if not lockout_message:
+                lockout_message = 'Your account is locked due to too many failed login attempts. Please try again later or contact support.'
+            
+            messages.error(self.request, lockout_message)
+            return super().form_invalid(form)
+        
+        # Check if OTP is required
+        if 'otp' in error_str.lower() and 'required' in error_str.lower():
+            # Store credentials in session for OTP verification
+            self.request.session['otp_email'] = form.data.get('email')
+            self.request.session['otp_password'] = form.data.get('password')
+            self.request.session['otp_system'] = form.data.get('system')
+            
+            # Re-render the page with OTP mode enabled
+            context = self.get_context_data(form=form)
+            context['two_factor_required'] = True
+            context['email_value'] = form.data.get('email')
+            context['system_value'] = form.data.get('system')
+            
+            # Clear the OTP required error from form errors
+            if hasattr(form, '_errors'):
+                form._errors.pop('__all__', None)
+                form._errors.pop('non_field_errors', None)
+            
+            messages.info(
+                self.request,
+                'Two-Factor Authentication is enabled on your account. Please enter your OTP code.'
+            )
+            
+            return self.render_to_response(context)
+        
+        # Handle other specific errors
         if 'captcha' in errors:
             messages.error(self.request, 'Please solve the captcha correctly.')
         elif 'hcaptcha' in errors:
@@ -1479,16 +1720,23 @@ class LoginView(FormView):
                 self.request,
                 'Security verification is required for this account. Please refresh the page and complete the captcha.'
             )
-        elif 'account_locked' in str(errors):
-            messages.error(
-                self.request, 
-                'Account is locked due to too many failed login attempts. Please try again later.'
-            )
         elif 'otp_required' in str(errors):
             messages.warning(
                 self.request, 
                 'OTP code is required for this account. Please provide the 6-digit code.'
             )
+        elif 'otp_invalid' in str(errors) or 'otp_expired' in str(errors):
+            # Extract the specific OTP error message
+            otp_error_message = None
+            for error in non_field_errors:
+                if 'otp' in str(error).lower():
+                    otp_error_message = str(error)
+                    break
+            
+            if otp_error_message:
+                messages.error(self.request, otp_error_message)
+            else:
+                messages.error(self.request, 'Invalid or expired OTP code. Please try again.')
         elif any('system' in str(error).lower() for error in non_field_errors):
             # Check for system access errors
             messages.error(
@@ -1500,12 +1748,16 @@ class LoginView(FormView):
                 self.request, 
                 'Invalid email or password. Please check your credentials and try again.'
             )
-            
         else:
-            messages.error(
-                self.request, 
-                'Login failed. Please check your credentials and try again.'
-            )
+            # Default error message
+            # Try to extract the actual error message from non_field_errors
+            if non_field_errors:
+                messages.error(self.request, str(non_field_errors[0]))
+            else:
+                messages.error(
+                    self.request, 
+                    'Login failed. Please check your credentials and try again.'
+                )
         
         return super().form_invalid(form)
 

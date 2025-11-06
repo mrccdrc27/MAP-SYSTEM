@@ -14,6 +14,8 @@ from .views import (
     RequestOTPView, 
     Enable2FAView, 
     Disable2FAView,
+    request_otp_authenticated_view,
+    verify_disable_otp_view,
     ForgotPasswordView,
     ForgotPasswordUIView,
     ResetPasswordView,
@@ -92,16 +94,16 @@ urlpatterns = [
     path('profile/', ProfileView.as_view(), name='user-profile-api'),
     path('profile/reset-password/', ProfilePasswordResetView.as_view(), name='profile-password-reset'),
     
-    # Template-based Profile Settings URL
-    path('settings/profile/', profile_settings_view, name='profile-settings'),
-    
-    # Agent Management URL - MUST come before router includes
-    path('agent-management/', agent_management_view, name='agent-management'),
+    # Template-based Profile Settings and Agent Management URLs removed
+    # These are now only accessible via root-level shortcuts:
+    # /settings/profile/ and /agent-management/
     
     # 2FA endpoints
     path('2fa/request-otp/', RequestOTPView.as_view(), name='request-otp'),
+    path('2fa/request-otp-authenticated/', request_otp_authenticated_view, name='request-otp-authenticated'),
     path('2fa/enable/', Enable2FAView.as_view(), name='enable-2fa'),
     path('2fa/disable/', Disable2FAView.as_view(), name='disable-2fa'),
+    path('verify-disable-otp/', verify_disable_otp_view, name='verify-disable-otp'),
     
     # Password reset endpoints
     path('password/forgot/', ForgotPasswordView.as_view(), name='forgot-password'),

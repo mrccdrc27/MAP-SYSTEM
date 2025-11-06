@@ -48,6 +48,7 @@
                 placeholder="Search agents by username, email, name, company, or phone..."
               />
               <button id="clear-search" class="btn btnSecondary">Clear</button>
+              <button id="add-agent-btn" class="btn btnPrimary" onclick="openAddAgentModal()">+ Add Agent</button>
             </div>
 
             <!--<div class="agentsStats">
@@ -90,6 +91,30 @@
             </div>
             <form id="edit-form">
               <div class="formGroup">
+                <label for="edit-first-name">First Name</label>
+                <input type="text" id="edit-first-name" name="first_name" />
+              </div>
+              <div class="formGroup">
+                <label for="edit-middle-name">Middle Name</label>
+                <input type="text" id="edit-middle-name" name="middle_name" />
+              </div>
+              <div class="formGroup">
+                <label for="edit-last-name">Last Name</label>
+                <input type="text" id="edit-last-name" name="last_name" />
+              </div>
+              <div class="formGroup">
+                <label for="edit-suffix">Suffix</label>
+                <select id="edit-suffix" name="suffix">
+                  <option value="">---------</option>
+                  <option value="Jr.">Jr.</option>
+                  <option value="Sr.">Sr.</option>
+                  <option value="II">II</option>
+                  <option value="III">III</option>
+                  <option value="IV">IV</option>
+                  <option value="V">V</option>
+                </select>
+              </div>
+              <div class="formGroup">
                 <label for="edit-username">Username</label>
                 <input
                   type="text"
@@ -99,30 +124,35 @@
                 />
               </div>
               <div class="formGroup">
-                <label for="edit-email">Email</label>
-                <input type="email" id="edit-email" name="email" required />
-              </div>
-              <div class="formGroup">
-                <label for="edit-first-name">First Name</label>
-                <input type="text" id="edit-first-name" name="first_name" />
-              </div>
-              <div class="formGroup">
-                <label for="edit-last-name">Last Name</label>
-                <input type="text" id="edit-last-name" name="last_name" />
-              </div>
-              <div class="formGroup">
                 <label for="edit-phone">Phone Number</label>
                 <input type="tel" id="edit-phone" name="phone_number" />
               </div>
               <div class="formGroup">
-                <label for="edit-company">Company</label>
+                <label for="edit-email">Email</label>
+                <input type="email" id="edit-email" name="email" required />
+              </div>
+              <div class="formGroup">
+                <label for="edit-company-id">Company ID</label>
                 <input
                   type="text"
-                  id="edit-company"
-                  name="company_name"
+                  id="edit-company-id"
+                  name="company_id"
                   readonly
                 />
-                <small>Company cannot be changed</small>
+                <small>Company ID cannot be changed</small>
+              </div>
+              <div class="formGroup">
+                <label for="edit-department">Department</label>
+                <select id="edit-department" name="department">
+                  <option value="">---------</option>
+                  <option value="IT Department">IT Department</option>
+                  <option value="Asset Department">Asset Department</option>
+                  <option value="Budget Department">Budget Department</option>
+                </select>
+              </div>
+              <div class="formGroup">
+                <label for="edit-asset-department">Asset Department</label>
+                <input type="text" id="edit-asset-department" name="asset_department" />
               </div>
               <div class="formGroup">
                 <label for="edit-active">Status</label>
@@ -141,6 +171,83 @@
                 </button>
                 <button type="submit" class="btn btnPrimary">
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Agent Modal -->
+      <div id="add-modal" class="modal hidden">
+        <div class="modalContent">
+          <div class="modalContentWrapper">
+            <div class="modalHeader">
+              <h3>Invite New Agent</h3>
+              <button onclick="closeAddModal()" class="modalClose">
+                &times;
+              </button>
+            </div>
+            <form id="add-form">
+              <div class="formGroup">
+                <label for="add-first-name">First Name</label>
+                <input type="text" id="add-first-name" name="first_name" />
+              </div>
+              <div class="formGroup">
+                <label for="add-middle-name">Middle Name</label>
+                <input type="text" id="add-middle-name" name="middle_name" />
+              </div>
+              <div class="formGroup">
+                <label for="add-last-name">Last Name</label>
+                <input type="text" id="add-last-name" name="last_name" />
+              </div>
+              <div class="formGroup">
+                <label for="add-suffix">Suffix</label>
+                <select id="add-suffix" name="suffix">
+                  <option value="">---------</option>
+                  <option value="Jr.">Jr.</option>
+                  <option value="Sr.">Sr.</option>
+                  <option value="II">II</option>
+                  <option value="III">III</option>
+                  <option value="IV">IV</option>
+                  <option value="V">V</option>
+                </select>
+              </div>
+              <div class="formGroup">
+                <label for="add-email">Email</label>
+                <input type="email" id="add-email" name="email" required />
+                <small>User will receive login credentials via email</small>
+              </div>
+              <div class="formGroup">
+                <label for="add-phone">Phone Number</label>
+                <input type="tel" id="add-phone" name="phone_number" />
+              </div>
+              <div class="formGroup">
+                <label for="add-department">Department</label>
+                <select id="add-department" name="department">
+                  <option value="">---------</option>
+                  <option value="IT Department">IT Department</option>
+                  <option value="Asset Department">Asset Department</option>
+                  <option value="Budget Department">Budget Department</option>
+                </select>
+              </div>
+              <div class="formGroup">
+                <label for="add-role">Role & System</label>
+                <select id="add-role" name="role_id" required>
+                  <option value="">Select a role...</option>
+                  <!-- Roles will be loaded dynamically -->
+                </select>
+              </div>
+              <div class="modalActions">
+                <button
+                  type="button"
+                  onclick="closeAddModal()"
+                  class="btn btnSecondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btnPrimary">
+                  Invite Agent
                 </button>
               </div>
             </form>
@@ -438,7 +545,7 @@
                 }" alt="${agent.username}">
               </div>
               <div class="agentProfileInfo">
-                <h3>${agent.first_name || ""} ${agent.last_name || ""}</h3>
+                <h3>${agent.first_name || ""} ${agent.middle_name || ""} ${agent.last_name || ""} ${agent.suffix || ""}</h3>
                 <p class="agentUsername">@${agent.username}</p>
                 <div class="agentInfoGrid">
                   <div><strong>Email:</strong> ${agent.email}</div>
@@ -506,16 +613,23 @@
           currentAgentId = agentId;
 
           // Populate form
-          document.getElementById("edit-username").value = agent.username || "";
-          document.getElementById("edit-email").value = agent.email || "";
           document.getElementById("edit-first-name").value =
             agent.first_name || "";
+          document.getElementById("edit-middle-name").value =
+            agent.middle_name || "";
           document.getElementById("edit-last-name").value =
             agent.last_name || "";
+          document.getElementById("edit-suffix").value =
+            agent.suffix || "";
+          document.getElementById("edit-username").value = agent.username || "";
           document.getElementById("edit-phone").value =
             agent.phone_number || "";
-          document.getElementById("edit-company").value =
-            agent.company_name || "";
+          document.getElementById("edit-email").value = agent.email || "";
+          document.getElementById("edit-company-id").value =
+            agent.company_id || agent.company_name || "";
+          document.getElementById("edit-department").value =
+            agent.department || "";
+
           document.getElementById("edit-active").value = agent.is_active
             ? "true"
             : "false";
@@ -529,8 +643,9 @@
 
       // Edit from view modal
       function editFromView() {
+        const agentId = currentAgentId; // Save the ID before closing modal
         closeViewModal();
-        editAgent(currentAgentId);
+        editAgent(agentId);
       }
 
       // Close modals
@@ -554,11 +669,15 @@
 
           const formData = new FormData(this);
           const data = {
-            username: formData.get("username"),
-            email: formData.get("email"),
             first_name: formData.get("first_name"),
+            middle_name: formData.get("middle_name"),
             last_name: formData.get("last_name"),
+            suffix: formData.get("suffix"),
+            username: formData.get("username"),
             phone_number: formData.get("phone_number"),
+            email: formData.get("email"),
+            department: formData.get("department"),
+            asset_department: formData.get("asset_department"),
             is_active: formData.get("is_active") === "true",
           };
 
@@ -592,6 +711,7 @@
       window.addEventListener("click", function (e) {
         const editModal = document.getElementById("edit-modal");
         const viewModal = document.getElementById("view-modal");
+        const addModal = document.getElementById("add-modal");
 
         if (e.target === editModal) {
           closeEditModal();
@@ -599,7 +719,131 @@
         if (e.target === viewModal) {
           closeViewModal();
         }
+        if (e.target === addModal) {
+          closeAddModal();
+        }
       });
+
+      // Open Add Agent Modal
+      async function openAddAgentModal() {
+        document.getElementById("add-form").reset();
+        
+        // Load available roles
+        try {
+          const response = await fetch("/api/v1/system-roles/invite/", {
+            method: "OPTIONS",
+            headers: {
+              "X-CSRFToken": csrfToken,
+            },
+            credentials: "include",
+          });
+          
+          // Alternative: fetch roles from a dedicated endpoint if available
+          // For now, we'll fetch roles manually
+          await loadRoles();
+          
+          document.getElementById("add-modal").classList.remove("hidden");
+        } catch (error) {
+          console.error("Error loading roles:", error);
+          showToast("Failed to load roles. Please try again.", "error");
+        }
+      }
+
+      // Load available roles for the role dropdown
+      async function loadRoles() {
+        try {
+          // This may need adjustment based on your actual roles endpoint
+          const response = await fetch("/api/v1/roles/", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            credentials: "include",
+          });
+
+          if (response.ok) {
+            const roles = await response.json();
+            const roleSelect = document.getElementById("add-role");
+            roleSelect.innerHTML = '<option value="">Select a role...</option>';
+            
+            // Assuming roles is an array of {id, name, system_name} objects
+            roles.forEach(role => {
+              const option = document.createElement("option");
+              option.value = role.id;
+              option.textContent = `${role.name} (${role.system_name || role.system})`;
+              roleSelect.appendChild(option);
+            });
+          }
+        } catch (error) {
+          console.error("Error loading roles:", error);
+          // If roles endpoint doesn't exist, we'll just show the empty dropdown
+          // and let the backend validation handle it
+        }
+      }
+
+      // Close Add Agent Modal
+      function closeAddModal() {
+        document.getElementById("add-modal").classList.add("hidden");
+        document.getElementById("add-form").reset();
+      }
+
+      // Handle add agent form submission
+      document
+        .getElementById("add-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const formData = new FormData(this);
+          
+          // Create form data in the format expected by the invite endpoint
+          const inviteData = new FormData();
+          inviteData.append('email', formData.get('email'));
+          inviteData.append('first_name', formData.get('first_name') || '');
+          inviteData.append('middle_name', formData.get('middle_name') || '');
+          inviteData.append('last_name', formData.get('last_name') || '');
+          inviteData.append('suffix', formData.get('suffix') || '');
+          inviteData.append('phone_number', formData.get('phone_number') || '');
+          inviteData.append('department', formData.get('department') || '');
+          inviteData.append('role_id', formData.get('role_id'));
+
+          try {
+            const response = await fetch("/api/v1/system-roles/invite/", {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": csrfToken,
+              },
+              credentials: "include",
+              body: inviteData,
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              const errorMsg = errorData.error || errorData.detail || "Failed to invite agent";
+              throw new Error(errorMsg);
+            }
+
+            const result = await response.json();
+            
+            // Show success message with temporary password if user was newly created
+            if (result.temporary_password) {
+              showToast(
+                `Agent invited successfully! Temporary password: ${result.temporary_password}`, 
+                "success"
+              );
+              // You might want to show this in a more prominent way
+              alert(`Agent invited successfully!\n\nEmail: ${result.user}\nTemporary Password: ${result.temporary_password}\nRole: ${result.role}\nSystem: ${result.system}\n\nPlease save this password securely.`);
+            } else {
+              showToast(`Agent ${result.user} has been assigned to ${result.role} role`, "success");
+            }
+            
+            closeAddModal();
+            loadAgents(); // Refresh the list
+          } catch (error) {
+            console.error("Error inviting agent:", error);
+            showToast(error.message || "Failed to invite agent", "error");
+          }
+        });
 
       // Initialize page
       document.addEventListener("DOMContentLoaded", function () {

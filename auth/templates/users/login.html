@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }} - MAP Active TicketFlow</title>
+    <title>{{ page_title }} - MAP Active Sign In</title>
 
     <!-- External stylesheet -->
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
@@ -28,7 +28,7 @@
             <header class="formHeader">
                 <section class="logo">
                     <img src="{% static 'images/map-logo.png' %}" alt="TicketFlow logo" />
-                    <h1 class="logoText">TicketFlow</h1>
+                    <h1 class="logoText">Sign In</h1>
                 </section>
                 <p>Welcome! Please provide your credentials to log in.</p>
             </header>
@@ -129,7 +129,7 @@
 
                 {% else %}
                 {# Two-factor step: show OTP field only. The view should have validated credentials and can either keep the user's identity in session or include hidden inputs as needed. #}
-                <p class="infoMsg">Two-Factor Authentication is enabled on your account. Enter the code from your authenticator app or SMS to continue.</p>
+                <p class="infoMsg">Two-Factor Authentication is enabled on your account. Enter the code from your email to continue.</p>
 
                 <!-- Hidden fields (optional) - include if your view expects to receive them again. Remove if using session-based state. -->
                 {% if email_value %}
@@ -154,9 +154,14 @@
                 </div>
 
                 <button type="submit" class="logInButton" id="otpButton">
-                    <span class="buttonText">Verify code</span>
+                    <span class="buttonText">Verify Code</span>
                     <span class="spinner" style="display:none;"></span>
                 </button>
+                
+                <!-- Back to Login Button -->
+                <a href="{% url 'auth_login' %}" class="backToLogin" id="backToLoginBtn" style="display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none; font-size: 14px;">
+                    <i class="fa fa-arrow-left"></i> Back to Login
+                </a>
 
                 {% endif %}
             </form>
@@ -216,6 +221,16 @@
                     setTimeout(() => toast.remove(), 500);
                 }, 5000);
             });
+
+            // Handle Back to Login button - force server request to clear session
+            const backToLoginBtn = document.getElementById('backToLoginBtn');
+            if (backToLoginBtn) {
+                backToLoginBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Add timestamp to prevent caching and force session cleanup
+                    window.location.href = this.href + '?clear_otp=1&t=' + Date.now();
+                });
+            }
         });
     </script>
 </body>

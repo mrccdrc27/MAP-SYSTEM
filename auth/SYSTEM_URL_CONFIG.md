@@ -129,3 +129,12 @@ fetch('/api/verify-token', {
 ### Debug Mode
 
 In development, you can check the redirect URLs by looking at the Django logs or adding debug prints to the `get_system_redirect_url` function.
+
+## Cookies Security
+Set this to true in Prod
+### Session and Cookie Security Settings
+### Only enforce secure cookies in production with HTTPS
+### For development, allow HTTP even when DEBUG=False
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+### Set to True in production with HTTPS

@@ -83,7 +83,7 @@ class ProfileSettingsForm(forms.ModelForm):
         # We handle actual disabling in __init__ based on roles
         read_only = ('last_login', 'date_joined', 'failed_login_attempts', 'lockout_time')
 
-# UPDATED __init__ including temporary exclusion logic for admin stuff since i commented it out
+    # UPDATED __init__ including temporary exclusion logic for admin stuff since i commented it out
     def __init__(self, *args, **kwargs):
         self.request_user = kwargs.pop('request_user', None)
         super().__init__(*args, **kwargs)
@@ -105,6 +105,25 @@ class ProfileSettingsForm(forms.ModelForm):
             for field_name in self.fields:
                 self.fields[field_name].disabled = True
             return
+        
+        # Handle field restrictions for non-admin users
+        is_admin = self.request_user.is_superuser or self.request_user.is_staff
+        
+        if not is_admin:
+            # Fields that non-admin users cannot edit - make them disabled but visible
+            admin_only_fields = [
+                'email', 'company_id', 'department',
+                'first_name', 'middle_name', 'last_name', 'suffix'
+            ]
+            
+            for field_name in admin_only_fields:
+                if field_name in self.fields:
+                    # Disable the field so it can't be edited
+                    self.fields[field_name].disabled = True
+                    # Make it not required so validation doesn't fail
+                    self.fields[field_name].required = False
+                    # Add help text
+                    
 
 # ORIGINAL __init__ just remove the "1" 
     def __init__1(self, *args, **kwargs):
@@ -144,7 +163,7 @@ class ProfileSettingsForm(forms.ModelForm):
             for field_name in admin_only_editable:
                 if field_name in self.fields:
                     self.fields[field_name].disabled = True
-                    self.fields[field_name].help_text = "Only administrators can edit this field."
+                    
 
         # Add help text for regular user fields
         for field_name in user_editable:
@@ -156,6 +175,10 @@ class ProfileSettingsForm(forms.ModelForm):
         """
         Custom validation to ensure non-admin users cannot submit restricted fields.
         This mirrors the API validation logic.
+        
+        Note: The view already filters the POST data for non-admins, so this is
+        an additional safety check. Disabled fields are allowed to pass through
+        unchanged.
         """
         cleaned_data = super().clean()
         
@@ -165,16 +188,23 @@ class ProfileSettingsForm(forms.ModelForm):
         is_admin = self.request_user.is_superuser or self.request_user.is_staff
         
         # If not admin, check if they're trying to modify restricted fields
+        # Skip this check for disabled fields since they can't be modified
         if not is_admin:
-            allowed_fields = {'username', 'phone_number'}
+            allowed_fields = {'username', 'phone_number', 'profile_picture', 'otp_enabled'}
             admin_only_fields = {
-                'email', 'company_id', 'department', 'status', 'notified',
+                'email', 'company_id', 'department', 'first_name', 'middle_name', 
+                'last_name', 'suffix', 'status', 'notified',
                 'is_active', 'is_staff', 'is_superuser', 'is_locked'
             }
             
             # Check if any admin-only fields were changed
+            # Skip fields that are disabled (they can't be edited anyway)
             for field_name in admin_only_fields:
-                if field_name in self.fields and field_name in cleaned_data:
+                if field_name in cleaned_data and field_name in self.fields:
+                    # Skip disabled fields - they're read-only and safe
+                    if self.fields[field_name].disabled:
+                        continue
+                        
                     # Get the original value from the instance
                     original_value = getattr(self.instance, field_name, None)
                     new_value = cleaned_data.get(field_name)
@@ -182,7 +212,7 @@ class ProfileSettingsForm(forms.ModelForm):
                     # If the value has changed, raise an error
                     if original_value != new_value:
                         raise forms.ValidationError(
-                            f"You can only update: {', '.join(allowed_fields)}. "
+                            f"You can only update: {', '.join(sorted(allowed_fields))}. "
                             f"You do not have permission to modify '{field_name}'."
                         )
         
@@ -190,6 +220,10 @@ class ProfileSettingsForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
+        # Only validate if field exists and is in cleaned_data (for admins)
+        if 'email' not in self.fields:
+            return email
+            
         # Check if the field is disabled (meaning non-admin tried to change it)
         if self.fields['email'].disabled and self.instance and email != self.instance.email:
              raise forms.ValidationError("You do not have permission to change the email address.")
@@ -223,6 +257,10 @@ class ProfileSettingsForm(forms.ModelForm):
     # Clean method for Company ID if admins change it
     def clean_company_id(self):
         company_id = self.cleaned_data.get('company_id')
+        # Only validate if field exists (for admins)
+        if 'company_id' not in self.fields:
+            return company_id
+            
         # Check if the field is disabled (meaning non-admin tried to change it)
         if self.fields['company_id'].disabled and self.instance and company_id != self.instance.company_id:
              raise forms.ValidationError("You do not have permission to change the Company ID.")
@@ -331,12 +369,26 @@ class LoginForm(forms.Form):
         self.selected_system = kwargs.pop('system', None)
         super().__init__(*args, **kwargs)
         
+        # Check if we're in OTP verification mode (credentials stored in session)
+        if self.request and self.request.session.get('otp_email'):
+            # We're in OTP mode - make email, password, system optional since they're in session
+            if 'email' in self.fields:
+                self.fields['email'].required = False
+            if 'password' in self.fields:
+                self.fields['password'].required = False
+            if 'system' in self.fields:
+                self.fields['system'].required = False
+        
         # Check if captcha is needed based on failed login attempts
         email = None
         if self.request and self.request.method == 'POST':
             email = self.request.POST.get('email')
         elif self.data and 'email' in self.data:
             email = self.data.get('email')
+        
+        # If in OTP mode, get email from session
+        if not email and self.request and self.request.session.get('otp_email'):
+            email = self.request.session.get('otp_email')
         
         # Remove captcha field if not needed
         if email:
@@ -376,7 +428,33 @@ class LoginForm(forms.Form):
         otp_code = cleaned_data.get('otp_code')
         system = cleaned_data.get('system')
         
+        # Check if we're in OTP verification mode (credentials in session)
+        if self.request and self.request.session.get('otp_email'):
+            email = self.request.session.get('otp_email')
+            password = self.request.session.get('otp_password')
+            system_id = self.request.session.get('otp_system')
+            if system_id:
+                try:
+                    from systems.models import System
+                    system = System.objects.get(pk=system_id)
+                except System.DoesNotExist:
+                    pass
+        
         if email and password:
+            # First, check if user has access to the selected system BEFORE doing OTP
+            if system:
+                try:
+                    temp_user = User.objects.get(email=email)
+                    has_system_access = temp_user.system_roles.filter(system=system, is_active=True).exists()
+                    if not has_system_access:
+                        raise ValidationError(
+                            f'You do not have access to the {system.name} system. Please contact your administrator.',
+                            code='system_access_denied'
+                        )
+                except User.DoesNotExist:
+                    # Don't reveal that user doesn't exist - will be caught by authentication
+                    pass
+            
             # Use the same authentication logic as the API
             # Provide both username and email to match serializer expectations
             serializer_data = {
@@ -398,6 +476,7 @@ class LoginForm(forms.Form):
                     # Get the authenticated user
                     user = serializer.user
                     
+                    # System access already checked above, just store the user
                     # Check if user has access to the selected system
                     if system:
                         has_system_access = user.system_roles.filter(system=system, is_active=True).exists()
@@ -436,10 +515,22 @@ class LoginForm(forms.Form):
                 else:
                     error_msg = str(error_detail)
                 
-                # Map specific error codes to appropriate validation errors
-                if 'account_locked' in error_msg.lower():
+                # Get the error code from the exception if available
+                error_code = None
+                if hasattr(e, 'detail'):
+                    if isinstance(e.detail, dict):
+                        # Check non_field_errors for code
+                        non_field = e.detail.get('non_field_errors', [])
+                        if non_field and hasattr(non_field[0], 'code'):
+                            error_code = non_field[0].code
+                    elif isinstance(e.detail, list) and e.detail:
+                        if hasattr(e.detail[0], 'code'):
+                            error_code = e.detail[0].code
+                
+                # Map specific error codes or messages to appropriate validation errors
+                if error_code == 'account_locked' or 'account is locked' in error_msg.lower() or 'account locked' in error_msg.lower():
                     raise ValidationError(error_msg, code='account_locked')
-                elif 'otp' in error_msg.lower() and 'required' in error_msg.lower():
+                elif error_code == 'otp_required' or ('otp' in error_msg.lower() and 'required' in error_msg.lower()):
                     raise ValidationError(error_msg, code='otp_required')
                 elif 'otp' in error_msg.lower() and 'invalid' in error_msg.lower():
                     raise ValidationError(error_msg, code='otp_invalid')
