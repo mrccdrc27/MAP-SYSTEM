@@ -40,9 +40,9 @@ export default function AdminTicket() {
   // Extract all ticket data with step_instance_id
   const allTickets = useMemo(() => {
     return (userTickets || [])
-      .filter((entry) => entry.task?.ticket)
+      .filter((entry) => entry.ticket) // ticket is now directly on entry, not entry.task.ticket
       .map((entry) => ({
-        ...entry.task.ticket,
+        ...entry.ticket,
         step_instance_id: entry.step_instance_id,
         hasacted: entry.has_acted,
       }));
