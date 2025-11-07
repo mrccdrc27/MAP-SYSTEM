@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import Comment, CommentRating, DocumentStorage, CommentDocument
 from tickets.models import Ticket
 
@@ -17,7 +18,17 @@ class DocumentStorageSerializer(serializers.ModelSerializer):
     def get_download_url(self, obj):
         request = self.context.get('request')
         if request and obj.file_path:
+            # Use request context when available (REST API calls)
             return request.build_absolute_uri(obj.file_path.url)
+        elif obj.file_path:
+            # Fallback for WebSocket messages - construct URL manually
+            # You may need to adjust this based on your deployment setup
+            base_url = getattr(settings, 'MEDIA_BASE_URL', 'http://localhost:8005')
+            if hasattr(obj.file_path, 'url'):
+                return f"{base_url}{obj.file_path.url}"
+            else:
+                # If file_path doesn't have url attribute, construct it manually
+                return f"{base_url}/media/{obj.file_path}"
         return None
     
     def get_image_info(self, obj):

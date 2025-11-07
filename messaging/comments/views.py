@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from .models import Comment, CommentRating, DocumentStorage, CommentDocument
 from .serializers import CommentSerializer, CommentRatingSerializer, DocumentStorageSerializer, CommentDocumentSerializer
 from tickets.models import Ticket
@@ -21,6 +23,27 @@ class CommentViewSet(viewsets.ModelViewSet):
     lookup_field = 'comment_id'  # Use comment_id instead of id for lookups
     # Support both JSON and file uploads for proper DRF browsable API
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.channel_layer = get_channel_layer()
+    
+    def _send_websocket_notification(self, comment, action='create'):
+        """Send WebSocket notification for comment updates"""
+        if self.channel_layer:
+            ticket_id = comment.ticket.ticket_id
+            room_group_name = f'comments_{ticket_id}'
+            
+            serializer = CommentSerializer(comment)
+            
+            async_to_sync(self.channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'comment_message',
+                    'message': serializer.data,
+                    'action': action
+                }
+            )
     
     def get_queryset(self):
         """
@@ -123,6 +146,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             # Handle document attachments
             self._handle_document_attachments(request, reply, data)
             
+            # Send WebSocket notification
+            self._send_websocket_notification(reply, action='reply')
+            
             # Return updated reply with documents
             reply_serializer = CommentSerializer(reply, context={'request': request})
             return Response(reply_serializer.data, status=status.HTTP_201_CREATED)
@@ -145,6 +171,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             # Handle file attachments after comment is created
             if uploaded_files:
                 self._attach_files_to_comment(comment, uploaded_files, request.data)
+            
+            # Send WebSocket notification
+            self._send_websocket_notification(comment, action='create')
             
             # Return updated comment with documents
             comment_serializer = CommentSerializer(comment, context={'request': request})
@@ -286,6 +315,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 errors.append(f"Error uploading {file_obj.name}: {str(e)}")
         
+        # Send WebSocket notification
+        self._send_websocket_notification(comment, action='attach_document')
+        
         # Return updated comment
         comment_serializer = CommentSerializer(comment, context={'request': request})
         response_data = comment_serializer.data
@@ -319,6 +351,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             
             document_name = comment_doc.document.original_filename
             comment_doc.delete()
+            
+            # Send WebSocket notification
+            self._send_websocket_notification(comment, action='detach_document')
             
             return Response({
                 "message": f"Document '{document_name}' detached successfully"
@@ -399,6 +434,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         if serializer.is_valid():
             serializer.save()
+            
+            # Send WebSocket notification
+            self._send_websocket_notification(comment, action='rate')
             
             # Return updated comment with new rating counts
             comment_serializer = CommentSerializer(comment, context={'request': request})

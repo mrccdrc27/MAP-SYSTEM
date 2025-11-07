@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # Add daphne before django apps for WebSocket support
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'drf_spectacular',
+    'channels',  # Add channels
     'tickets',
     'comments',
 ]
@@ -74,6 +76,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'messaging.wsgi.application'
+ASGI_APPLICATION = 'messaging.asgi.application'
 
 
 # Database
@@ -151,8 +154,7 @@ else:
     ]
 
 # IMPORTANT: When the frontend sends credentialed requests (withCredentials / credentials: 'include'),
-# the backend must return an explicit Access-Control-Allow-Origin header (not '*').
-# Therefore default CORS_ALLOW_ALL_ORIGINS is False. Use CORS_ALLOWED_ORIGINS or set
+# the backend must return an explicit Access-Control-Allow-Origin header (not '*'). Therefore default CORS_ALLOW_ALL_ORIGINS is False. Use CORS_ALLOWED_ORIGINS or set
 # CORS_ALLOWED_ORIGINS via env to include your frontend origin(s).
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower() in ('1', 'true', 'yes')
 
@@ -160,6 +162,13 @@ CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower
 # but ensure CORS_ALLOW_ALL_ORIGINS is False when this is enabled.
 CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOW_CREDENTIALS', 'True').lower() in ('1', 'true', 'yes')
 
+
+# Channels configuration (using in-memory backend for development)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -200,6 +209,9 @@ STATIC_URL = 'static/'
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Base URL for media files (used for WebSocket messages when no request context is available)
+MEDIA_BASE_URL = os.environ.get('MEDIA_BASE_URL', 'http://localhost:8005')
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
