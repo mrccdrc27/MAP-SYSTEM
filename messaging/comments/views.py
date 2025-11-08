@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, Http404
+from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, parser_classes
@@ -21,7 +22,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     """
     API endpoint for comments on tickets with document attachment support
     """
-    # Allow access to all comments, but filter list views to top-level comments
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     lookup_field = 'comment_id'  # Use comment_id instead of id for lookups
@@ -51,25 +51,18 @@ class CommentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        For list views, returns only top-level comments with proper pagination.
-        For detail views (like rating a comment), returns all comments.
+        Dynamic queryset
         """
-        # If this is a detail view (like accessing a specific comment), return all comments
-        if self.action in ['retrieve', 'update', 'partial_update', 'destroy', 'rate', 'reply', 'attach_document', 'detach_document']:
-            return Comment.objects.all()
+        qs = Comment.objects.all()
         
-        # For list views, only return top-level comments with proper ordering for pagination
-        queryset = Comment.objects.filter(parent=None).select_related('ticket').prefetch_related('documents__document', 'replies')
-        ticket_id = self.request.query_params.get('ticket_id', None)
+        # Filter to top-level comments for list views
+        if self.action == 'list':
+            qs = qs.filter(parent=None)
+            ticket_id = self.request.query_params.get('ticket_id')
+            if ticket_id:
+                qs = qs.filter(ticket__ticket_id=ticket_id)
         
-        if ticket_id is not None:
-            try:
-                ticket = Ticket.objects.get(ticket_id=ticket_id)
-                queryset = queryset.filter(ticket=ticket)
-            except Ticket.DoesNotExist:
-                queryset = Comment.objects.none()
-                
-        return queryset.order_by('-created_at')  # Ensure consistent ordering for pagination
+        return qs.order_by('-created_at')
     
     @action(detail=False, methods=['get'], url_path='by-ticket/(?P<ticket_id>[^/.]+)')
     def comments_by_ticket(self, request, ticket_id=None):
@@ -81,7 +74,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             ticket = Ticket.objects.get(ticket_id=ticket_id)
             
             # Get all top-level comments for this ticket
-            comments = Comment.objects.filter(ticket=ticket, parent=None)
+            comments = Comment.objects.filter(ticket=ticket, parent=None).order_by('-created_at')
             
             # Serialize and return the comments
             serializer = self.get_serializer(comments, many=True)
@@ -372,15 +365,19 @@ class CommentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='download-document/(?P<document_id>[^/.]+)')
     def download_document(self, request, document_id=None):
         """
-        Download a document by ID - redirects to cached media endpoint
+        Download a document by ID
         """
         try:
-            # Validate document exists
             document = DocumentStorage.objects.get(id=document_id)
             
-            # Redirect to the cached media view for optimized serving
-            from django.shortcuts import redirect
-            return redirect('cached-document', document_id=document_id)
+            from django.http import FileResponse
+            response = FileResponse(
+                document.file_path.open('rb'),
+                as_attachment=True,
+                filename=document.original_filename
+            )
+            response['Content-Type'] = document.content_type
+            return response
             
         except DocumentStorage.DoesNotExist:
             raise Http404("Document not found")
@@ -410,7 +407,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         # Create the rating data
         rating_data = request.data.copy()
-        rating_data['comment'] = comment.id
+        rating_data['comment'] = comment.id  # Use comment field directly
         
         # Check if user has already rated this comment
         try:
@@ -660,13 +657,15 @@ def get_comments(request, ticket_id):
     
     serializer = CommentSerializer(paginated_comments, many=True, context={'request': request})
     
-    return Response({
+    response_data = {
         'comments': serializer.data,
         'page': page,
         'page_size': page_size,
         'total_count': comments.count(),
         'has_next': end < comments.count()
-    })
+    }
+    
+    return Response(response_data)
 
 
 @extend_schema(

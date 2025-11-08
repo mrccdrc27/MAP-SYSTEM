@@ -5,55 +5,24 @@ from tickets.models import Ticket
 
 class DocumentStorageSerializer(serializers.ModelSerializer):
     download_url = serializers.SerializerMethodField()
-    image_info = serializers.SerializerMethodField()
     
     class Meta:
         model = DocumentStorage
-        fields = ['id', 'file_hash', 'original_filename', 'file_size', 'content_type', 
-                 'uploaded_at', 'uploaded_by_name', 'download_url', 'is_image', 
-                 'image_width', 'image_height', 'image_ratio', 'image_info']
-        read_only_fields = ['id', 'file_hash', 'uploaded_at', 'uploaded_by_name', 
-                           'is_image', 'image_width', 'image_height', 'image_ratio']
+        fields = ['id', 'original_filename', 'file_size', 'content_type', 
+                 'uploaded_at', 'uploaded_by_name', 'is_image', 'image_width', 
+                 'image_height', 'image_ratio', 'download_url']
     
     def get_download_url(self, obj):
+        """Generate download URL for the document"""
         request = self.context.get('request')
-        if request and obj.file_path:
-            # Use request context when available (REST API calls)
-            return request.build_absolute_uri(obj.file_path.url)
-        elif obj.file_path:
-            # Fallback for WebSocket messages - construct URL manually
-            # You may need to adjust this based on your deployment setup
-            base_url = getattr(settings, 'MEDIA_BASE_URL', 'http://localhost:8005')
-            if hasattr(obj.file_path, 'url'):
-                return f"{base_url}{obj.file_path.url}"
-            else:
-                # If file_path doesn't have url attribute, construct it manually
-                return f"{base_url}/media/{obj.file_path}"
-        return None
-    
-    def get_image_info(self, obj):
-        """
-        Provide formatted image information for display purposes
-        """
-        if not obj.is_image:
-            return None
         
-        info = {
-            'dimensions': f"{obj.image_width}x{obj.image_height}" if obj.image_width and obj.image_height else None,
-            'ratio': obj.image_ratio,
-            'orientation': None
-        }
-        
-        # Determine orientation
-        if obj.image_ratio:
-            if obj.image_ratio > 1:
-                info['orientation'] = 'landscape'
-            elif obj.image_ratio < 1:
-                info['orientation'] = 'portrait'
-            else:
-                info['orientation'] = 'square'
-        
-        return info
+        if request:
+            # Use request to build absolute URL
+            from django.urls import reverse
+            return request.build_absolute_uri(reverse('download-attachment', kwargs={'attachment_id': obj.id}))
+        else:
+            # Fallback for WebSocket context where request is not available
+            return f"{settings.MEDIA_BASE_URL}/api/attachments/{obj.id}/download/"
 
 class CommentDocumentSerializer(serializers.ModelSerializer):
     document = DocumentStorageSerializer(read_only=True)
@@ -66,8 +35,14 @@ class CommentDocumentSerializer(serializers.ModelSerializer):
 class CommentRatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommentRating
-        fields = ['id', 'user_id', 'firstname', 'lastname', 'role', 'rating', 'created_at']
-        read_only_fields = ['created_at']
+        fields = ['id', 'comment', 'user_id', 'firstname', 'lastname', 'role', 'rating', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    def create(self, validated_data):
+        # Ensure comment is properly set from comment_id if provided
+        if 'comment_id' in validated_data:
+            validated_data['comment_id'] = validated_data.pop('comment_id')
+        return super().create(validated_data)
         
     def validate_rating(self, value):
         """

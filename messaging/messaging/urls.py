@@ -83,6 +83,9 @@ def api_root(request):
     })
 
 urlpatterns = [
+    # Include comments URLs first to handle custom paths like download
+    path('', include('comments.urls')),
+    
     # Admin interface
     path('admin/', admin.site.urls),
     

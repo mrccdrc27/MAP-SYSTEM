@@ -1,9 +1,11 @@
 from django.db import models
-from tickets.models import Ticket
-import uuid
+from django.core.files.storage import default_storage
+from django.conf import settings
 import hashlib
 import os
-from django.core.files.storage import default_storage
+import uuid
+from datetime import datetime
+from tickets.models import Ticket
 from PIL import Image
 import io
 

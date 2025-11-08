@@ -1,4 +1,4 @@
-// src/api/useComments.jsx
+// src/useComments.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import api from './axios';
@@ -62,7 +62,7 @@ export const useComments = (ticketId) => {
         formData.append('documents', file);
       });
 
-      const response = await api.post(`${MESSAGING_API}/api/comments/`, formData, {
+      const response = await api.post(`${MESSAGING_API}/comments/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -101,7 +101,7 @@ export const useComments = (ticketId) => {
         }
       });
 
-      const response = await api.post(`${MESSAGING_API}/api/comments/${parentCommentId}/reply/`, formData, {
+      const response = await api.post(`${MESSAGING_API}/comments/${parentCommentId}/reply/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -126,19 +126,34 @@ export const useComments = (ticketId) => {
     const userRole = getUserRole();
     
     try {
-      const response = await api.post(`${MESSAGING_API}/api/comments/${commentId}/rate/`, {
+      const response = await api.post(`${MESSAGING_API}/comments/${commentId}/rate/`, {
         user_id: user.id,
         firstname: user.first_name || user.firstname || '',
         lastname: user.last_name || user.lastname || '',
         role: userRole,
         rating: reactionType === 'like' ? true : false // Convert like/dislike to true/false
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      // The backend returns the updated comment data
+      if (response.data && response.data.comment) {
+        return response.data.comment;
+      }
       
       // Don't call refreshComments() - let WebSocket handle the update
       return response.data;
     } catch (err) {
       console.error('Error adding reaction:', err);
-      setError('Failed to save your reaction. Please try again.');
+      if (err.response?.status === 400) {
+        setError('Invalid reaction data. Please try again.');
+      } else if (err.response?.status === 404) {
+        setError('Comment not found. It may have been deleted.');
+      } else {
+        setError('Failed to save your reaction. Please try again.');
+      }
       return null;
     }
   }, [user, getUserRole]);
@@ -153,19 +168,32 @@ export const useComments = (ticketId) => {
     const userRole = getUserRole();
     
     try {
-      await api.post(`${MESSAGING_API}/api/comments/${commentId}/rate/`, {
+      const response = await api.post(`${MESSAGING_API}/comments/${commentId}/rate/`, {
         user_id: user.id,
         firstname: user.first_name || user.firstname || '',
         lastname: user.last_name || user.lastname || '',
         role: userRole,
         rating: null // null to remove rating
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      // The backend returns the updated comment data
+      if (response.data && response.data.comment) {
+        return response.data.comment;
+      }
       
       // Don't call refreshComments() - let WebSocket handle the update
       return true;
     } catch (err) {
       console.error('Error removing reaction:', err);
-      setError('Failed to remove your reaction. Please try again.');
+      if (err.response?.status === 404) {
+        setError('Comment not found. It may have been deleted.');
+      } else {
+        setError('Failed to remove your reaction. Please try again.');
+      }
       return false;
     }
   }, [user, getUserRole]);
@@ -178,7 +206,7 @@ export const useComments = (ticketId) => {
     }
 
     try {
-      await api.delete(`${MESSAGING_API}/api/comments/${commentId}/`);
+      await api.delete(`${MESSAGING_API}/comments/${commentId}/`);
       
       // Don't call refreshComments() - let WebSocket handle the update
       return true;
@@ -210,7 +238,7 @@ export const useComments = (ticketId) => {
         formData.append('documents', file);
       });
 
-      const response = await api.post(`${MESSAGING_API}/api/comments/${commentId}/attach_document/`, formData, {
+      const response = await api.post(`${MESSAGING_API}/comments/${commentId}/attach_document/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -228,7 +256,7 @@ export const useComments = (ticketId) => {
   // Download document
   const downloadDocument = useCallback(async (documentId, filename) => {
     try {
-      const response = await api.get(`${MESSAGING_API}/api/comments/download-document/${documentId}/`, {
+      const response = await api.get(`${MESSAGING_API}/comments/download-document/${documentId}/`, {
         responseType: 'blob',
       });
       
@@ -252,6 +280,8 @@ export const useComments = (ticketId) => {
 
   // Handle incoming WebSocket messages - moved up to avoid dependency issues
   const handleWebSocketMessage = useCallback((data) => {
+    console.log('Raw WebSocket message received:', data); // Debug log
+    
     if (data.type === 'comment_update') {
       const { action, comment } = data;
       
@@ -364,6 +394,8 @@ export const useComments = (ticketId) => {
           total_pages: Math.ceil((prev.count + 1) / 10)
         }));
       }
+    } else {
+      console.log('Unknown WebSocket message type:', data.type); // Debug log
     }
   }, [MESSAGING_API]);
 
@@ -456,21 +488,11 @@ export const useComments = (ticketId) => {
 
     setLoading(true);
     try {
-      const response = await api.get(`${MESSAGING_API}/api/comments/?ticket_id=${ticketId}&page=${page}`);
+      // Use the by-ticket endpoint for fetching comments
+      const response = await api.get(`${MESSAGING_API}/comments/by-ticket/${ticketId}/`);
       
-      // Handle both paginated and non-paginated responses
-      if (response.data.results) {
-        // Paginated response
-        setComments(response.data.results);
-        setPagination({
-          count: response.data.count,
-          next: response.data.next,
-          previous: response.data.previous,
-          current_page: page,
-          total_pages: Math.ceil(response.data.count / 10) // Assuming page size of 10
-        });
-      } else {
-        // Non-paginated response (fallback)
+      // The by-ticket endpoint returns a direct array of comments
+      if (Array.isArray(response.data)) {
         setComments(response.data);
         setPagination({
           count: response.data.length,
@@ -478,6 +500,16 @@ export const useComments = (ticketId) => {
           previous: null,
           current_page: 1,
           total_pages: 1
+        });
+      } else {
+        // Fallback for paginated response
+        setComments(response.data.results || []);
+        setPagination({
+          count: response.data.count || 0,
+          next: response.data.next,
+          previous: response.data.previous,
+          current_page: page,
+          total_pages: Math.ceil((response.data.count || 0) / 10)
         });
       }
       setError(null);

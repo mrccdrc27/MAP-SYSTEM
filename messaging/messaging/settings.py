@@ -50,11 +50,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.middleware.cache.UpdateCacheMiddleware',  # Add cache middleware (first)
-    'messaging.cache_utils.MediaCacheMiddleware',  # Add media cache middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.cache.FetchFromCacheMiddleware',  # Add cache middleware (last)
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -174,7 +171,7 @@ CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower
 # but ensure CORS_ALLOW_ALL_ORIGINS is False when this is enabled.
 CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOW_CREDENTIALS', 'True').lower() in ('1', 'true', 'yes')
 
-# Allow cache-busting headers that trigger preflight requests
+# Standard CORS headers - removed cache-busting headers
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -185,9 +182,6 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
-    'cache-control',
-    'pragma',
-    'expires',
 ]
 
 # Channels configuration (using in-memory backend for development)
@@ -249,59 +243,3 @@ FILE_UPLOAD_PERMISSIONS = 0o644
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Add caching configuration for media files and static content
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'default-cache',
-        'TIMEOUT': 300,  # 5 minutes default
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-        }
-    },
-    'media': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'media-cache',
-        'TIMEOUT': 86400,  # 24 hours for media files
-        'OPTIONS': {
-            'MAX_ENTRIES': 5000,
-        }
-    }
-}
-
-# Cache time for various content types (social media style)
-CACHE_TIMES = {
-    'images': 365 * 24 * 60 * 60,  # 1 year for images
-    'documents': 30 * 24 * 60 * 60,  # 30 days for documents
-    'avatars': 365 * 24 * 60 * 60,   # 1 year for avatars
-    'static': 365 * 24 * 60 * 60,    # 1 year for static assets
-}
-
-# Browser cache settings for different file types
-BROWSER_CACHE_SETTINGS = {
-    # Image files - aggressive caching like Instagram/Twitter
-    'image/jpeg': {'max_age': 365 * 24 * 60 * 60, 'immutable': True},
-    'image/png': {'max_age': 365 * 24 * 60 * 60, 'immutable': True},
-    'image/gif': {'max_age': 365 * 24 * 60 * 60, 'immutable': True},
-    'image/webp': {'max_age': 365 * 24 * 60 * 60, 'immutable': True},
-    'image/svg+xml': {'max_age': 365 * 24 * 60 * 60, 'immutable': True},
-    
-    # Document files - shorter cache for potential updates
-    'application/pdf': {'max_age': 30 * 24 * 60 * 60, 'immutable': False},
-    'application/msword': {'max_age': 30 * 24 * 60 * 60, 'immutable': False},
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {'max_age': 30 * 24 * 60 * 60, 'immutable': False},
-    
-    # Default for other files
-    'default': {'max_age': 7 * 24 * 60 * 60, 'immutable': False},  # 1 week
-}
-
-# Enable ETags for better cache validation
-USE_ETAGS = True
-
-# Session configuration for better caching
-SESSION_CACHE_ALIAS = 'default'
-SESSION_COOKIE_AGE = 86400  # 24 hours
-
-# Static files cache control
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
