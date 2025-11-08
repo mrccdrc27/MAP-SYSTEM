@@ -289,6 +289,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom claims
         token['email'] = user.email
         token['username'] = user.username
+        token['full_name'] = user.get_full_name()
         
         # Add system-specific roles using the existing UserSystemRole model
         roles = []
