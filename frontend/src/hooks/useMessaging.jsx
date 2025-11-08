@@ -4,16 +4,23 @@ const MESSAGING_API_BASE = import.meta.env.VITE_MESSAGING_API || 'http://localho
 const WEBSOCKET_BASE = import.meta.env.VITE_MESSAGING_WS || 'ws://localhost:8005';
 
 export const useMessaging = (ticketId, userId = 'anonymous') => {
+  
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // Refresh messages function
+  const refreshMessages = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
   // API functions
   const apiCall = async (endpoint, options = {}) => {
@@ -23,7 +30,7 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      credentials: 'include', // Include cookies for authentication
+      credentials: 'include',
       ...options,
     };
 
@@ -38,17 +45,20 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
   };
 
   // Fetch messages for a ticket using the correct endpoint
-  const fetchMessages = async () => {
-    if (!ticketId) return;
+  const fetchMessages = useCallback(async () => {
+    if (!ticketId) {
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await apiCall(`/messages/by_ticket/?ticket_id=${ticketId}`, {
+      const url = `/messages/by_ticket/?ticket_id=${ticketId}`;
+      
+      const result = await apiCall(url, {
         method: 'GET',
       });
-
       setTicket({
         ticket_id: result.ticket_id,
         status: result.ticket_status
@@ -57,12 +67,11 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
       return result;
     } catch (err) {
       setError(err.message);
-      console.error('Failed to fetch messages:', err);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [ticketId]); // Keep ticketId dependency but we'll control when this runs
 
   // WebSocket connection management
   const connectWebSocket = useCallback(() => {
@@ -73,10 +82,9 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected to ticket:', ticketId);
         setIsConnected(true);
         setError(null);
-        
+      
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
@@ -88,15 +96,12 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
           const data = JSON.parse(event.data);
           handleWebSocketMessage(data);
         } catch (err) {
-          console.error('Failed to parse WebSocket message:', err);
         }
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
         setIsConnected(false);
         
-        // Attempt to reconnect after a delay (unless manual close)
         if (event.code !== 1000) {
           reconnectTimeoutRef.current = setTimeout(() => {
             connectWebSocket();
@@ -105,12 +110,10 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
         setError('WebSocket connection failed');
       };
 
     } catch (err) {
-      console.error('Failed to connect WebSocket:', err);
       setError('Failed to establish WebSocket connection');
     }
   }, [ticketId]);
@@ -119,11 +122,9 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
   const handleWebSocketMessage = useCallback((data) => {
     switch (data.type) {
       case 'connection_established':
-        console.log('WebSocket connection confirmed:', data.message);
         break;
 
       case 'message_sent':
-        // Add new message from WebSocket (real-time)
         setMessages(prev => {
           const exists = prev.some(msg => msg.message_id === data.message.message_id);
           if (!exists) {
@@ -136,19 +137,16 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         break;
 
       case 'message_edited':
-        // Update edited message in real-time
         setMessages(prev => prev.map(msg => 
           msg.message_id === data.message.message_id ? data.message : msg
         ));
         break;
 
       case 'message_deleted':
-        // Remove deleted message in real-time
         setMessages(prev => prev.filter(msg => msg.message_id !== data.message_id));
         break;
 
       case 'reaction_added':
-        // Update reactions in real-time
         setMessages(prev => prev.map(msg => {
           if (msg.message_id === data.message_id) {
             const updatedReactions = [...(msg.reactions || [])];
@@ -159,7 +157,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
               updatedReactions.push(data.reaction);
             }
             
-            // Recalculate reaction counts
             const reactionCounts = {};
             updatedReactions.forEach(r => {
               reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1;
@@ -172,14 +169,12 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         break;
 
       case 'reaction_removed':
-        // Remove reaction in real-time
         setMessages(prev => prev.map(msg => {
           if (msg.message_id === data.message_id) {
             const updatedReactions = (msg.reactions || []).filter(
               r => !(r.user === data.user && r.reaction === data.reaction)
             );
             
-            // Recalculate reaction counts
             const reactionCounts = {};
             updatedReactions.forEach(r => {
               reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1;
@@ -204,15 +199,12 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         break;
 
       case 'pong':
-        // Handle ping/pong for connection keepalive
         break;
 
       default:
-        console.log('Unknown WebSocket message type:', data.type);
     }
   }, [userId]);
 
-  // Send a message with optional attachments
   const sendMessage = async (messageText, attachments = []) => {
     if (!ticketId || !messageText.trim()) return;
 
@@ -224,7 +216,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
       formData.append('ticket_id', ticketId);
       formData.append('message', messageText.trim());
 
-      // Add attachments
       attachments.forEach((file) => {
         formData.append('attachments', file);
       });
@@ -242,7 +233,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
 
       const newMessage = await result.json();
       
-      // Add the new message to the local state if not already added via WebSocket
       setMessages(prev => {
         const exists = prev.some(msg => msg.message_id === newMessage.message_id);
         if (!exists) {
@@ -262,7 +252,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     }
   };
 
-  // Edit a message
   const editMessage = async (messageId, newContent) => {
     setIsLoading(true);
     setError(null);
@@ -275,7 +264,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         }),
       });
 
-      // Update the message in local state
       setMessages(prev => prev.map(msg => 
         msg.message_id === messageId ? result : msg
       ));
@@ -289,7 +277,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     }
   };
 
-  // Delete a message
   const deleteMessage = async (messageId) => {
     setIsLoading(true);
     setError(null);
@@ -299,7 +286,6 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         method: 'DELETE',
       });
 
-      // Remove the message from local state
       setMessages(prev => prev.filter(msg => msg.message_id !== messageId));
 
       return { success: true };
@@ -311,9 +297,7 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     }
   };
 
-  // Add reaction to a message
   const addReaction = async (messageId, reaction) => {
-    console.log('Adding reaction:', { messageId, reaction, userId });
     try {
       const result = await apiCall('/reactions/add/', {
         method: 'POST',
@@ -323,18 +307,14 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         }),
       });
 
-      console.log('Add reaction result:', result);
       return result;
     } catch (err) {
-      console.error('Add reaction error:', err);
       setError(err.message);
       throw err;
     }
   };
 
-  // Remove reaction from a message
   const removeReaction = async (messageId, reaction) => {
-    console.log('Removing reaction:', { messageId, reaction, userId });
     try {
       const result = await apiCall('/reactions/remove/', {
         method: 'POST',
@@ -343,23 +323,18 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
           reaction: reaction,
         }),
       });
-
-      console.log('Remove reaction result:', result);
       return result;
     } catch (err) {
-      console.error('Remove reaction error:', err);
       setError(err.message);
       throw err;
     }
   };
 
-  // Download attachment
   const downloadAttachment = (attachmentId) => {
     const url = `${MESSAGING_API_BASE}/attachments/${attachmentId}/download/`;
     window.open(url, '_blank');
   };
 
-  // Typing indicators
   const sendTypingIndicator = useCallback((isTyping) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
@@ -372,12 +347,10 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
   const startTyping = useCallback(() => {
     sendTypingIndicator(true);
     
-    // Clear any existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
     
-    // Stop typing indicator after 3 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingIndicator(false);
     }, 3000);
@@ -391,15 +364,10 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     sendTypingIndicator(false);
   }, [sendTypingIndicator]);
 
-  // Initialize: Fetch messages first via HTTP, then connect WebSocket for real-time updates
+  // Initialize: Connect WebSocket for real-time updates
   useEffect(() => {
     if (ticketId) {
-      fetchMessages().then(() => {
-        connectWebSocket();
-      }).catch((error) => {
-        console.error('Failed to fetch messages:', error);
-        connectWebSocket();
-      });
+      connectWebSocket();
     }
 
     return () => {
@@ -413,9 +381,15 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [ticketId, connectWebSocket]);
+  }, [ticketId]);
 
-  // Keepalive ping
+  // Effect to fetch messages only on initial load and manual refresh
+  useEffect(() => {
+    if (ticketId) {
+      fetchMessages();
+    }
+  }, [ticketId, refreshKey]); // Remove fetchMessages dependency to prevent loops
+
   useEffect(() => {
     if (!isConnected) return;
 
@@ -423,21 +397,18 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 30000); // Ping every 30 seconds
+    }, 30000);
 
     return () => clearInterval(pingInterval);
   }, [isConnected]);
 
   return {
-    // State
     ticket,
     messages,
     isConnected,
     isLoading,
     error,
     typingUsers: Array.from(typingUsers),
-
-    // Actions
     fetchMessages,
     sendMessage,
     editMessage,
@@ -445,12 +416,9 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     addReaction,
     removeReaction,
     downloadAttachment,
-
-    // Typing indicators
+    refreshMessages,
     startTyping,
     stopTyping,
-
-    // WebSocket management
     reconnect: connectWebSocket,
   };
 };

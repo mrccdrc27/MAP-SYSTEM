@@ -15,7 +15,7 @@ import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLog from "../../../components/ticket/ActionLog";
-import Messaging from "../../../components/component/Messaging";
+import Messaging from "../../../components/messaging";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
@@ -408,25 +408,7 @@ export default function AdminTicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    <Messaging
-                      ticket_id={state.ticket?.ticket_number}
-                      agentName={`${state.ticket?.employee?.first_name} ${state.ticket?.employee?.last_name}`}
-                      agentStatus={state.ticket?.status}
-                      currentUser={user}
-                    />
-                    {/* <Messaging
-                      agentName={
-                        `${state.ticket?.employee?.first_name || ""} ${
-                          state.ticket?.employee?.last_name || ""
-                        }`.trim() || "Employee Name?"
-                      }
-                      agentStatus={
-                        state.ticket?.employee?.status ||
-                        state.ticket?.status ||
-                        "Unknown"
-                      }
-                      initialMessages={[]}
-                    /> */}
+                    <Messaging ticket_id={state.ticket?.ticket_number} />
                   </div>
                 )}
               </div>

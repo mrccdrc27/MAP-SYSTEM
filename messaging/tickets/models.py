@@ -45,8 +45,7 @@ class MessageAttachment(models.Model):
     content_type = models.CharField(max_length=100)
     
     # User tracking fields from JWT token
-    uploaded_by = models.CharField(max_length=255, blank=True, null=True)
-    uploaded_by_email = models.EmailField(blank=True, null=True)
+    user_id = models.CharField(max_length=255, blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -66,6 +65,7 @@ class Message(models.Model):
     ticket_id = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages')
     sender = models.CharField(max_length=255)
     sender_role = models.CharField(max_length=100, blank=True, null=True)  # Store sender's role
+    user_id = models.CharField(max_length=255, blank=True, null=True)  # Store user ID from JWT token
     message = models.TextField()
     attachments = models.ManyToManyField(MessageAttachment, blank=True, related_name='messages')
   
@@ -140,17 +140,17 @@ class MessageReaction(models.Model):
     ]
     
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='reactions')
-    user = models.CharField(max_length=255)  # User identifier (email, id, or name)
+    user = models.CharField(max_length=255)  # User identifier (name for backward compatibility)
     reaction = models.CharField(max_length=10, choices=REACTION_CHOICES)
     
     # User tracking fields from JWT token
-    user_email = models.EmailField(blank=True, null=True)
+    user_id = models.CharField(max_length=255, blank=True, null=True)
     user_full_name = models.CharField(max_length=255, blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ('message', 'user', 'reaction')  # One reaction per user per message
+        unique_together = ('message', 'user_id', 'reaction')  # One reaction per user per message
         ordering = ['created_at']
     
     def __str__(self):

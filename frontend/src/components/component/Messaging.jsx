@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useMessaging } from "../../hooks/useMessaging";
+import { useAuth } from "../../api/AuthContext";
 import styles from "./messaging.module.css";
 
 const Messaging = ({
@@ -18,22 +19,30 @@ const Messaging = ({
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Get current user identifier - improved logic
-  const currentIdentifier = currentUser?.full_name || 
-    currentUser?.user_id ||
-    currentUser?.id ||
-    currentUser?.email ||
-    `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim() ||
+  // Get user from AuthContext
+  const { user: authUser } = useAuth();
+  
+  // Use authUser if available, fallback to currentUser prop
+  const currentUserData = authUser || currentUser;
+  
+  // Get current user ID - this is the most reliable identifier
+  const currentUserId = currentUserData?.id || currentUserData?.user_id;
+
+  // Get current user identifier for display purposes
+  const currentIdentifier = currentUserData?.full_name || 
+    currentUserData?.user_id ||
+    currentUserData?.id ||
+    currentUserData?.email ||
+    `${currentUserData?.first_name || ""} ${currentUserData?.last_name || ""}`.trim() ||
     "Employee";
 
-  // Debug logging to help identify the issue
+  // Debug logging
   console.log('Current User Debug:', {
+    authUser,
     currentUser,
-    currentIdentifier,
-    fullName: currentUser?.full_name,
-    userId: currentUser?.user_id,
-    id: currentUser?.id,
-    email: currentUser?.email
+    currentUserData,
+    currentUserId,
+    currentIdentifier
   });
 
   const {
@@ -126,30 +135,46 @@ const Messaging = ({
   // Handle reactions
   const handleReaction = async (messageId, reaction) => {
     try {
-      // Enhanced user identification for reaction detection
-      const possibleIdentifiers = [
-        currentUser?.full_name,
-        currentUser?.user_id,
-        currentUser?.id,
-        currentUser?.email,
-        currentUser?.username,
-        `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim(),
-        currentIdentifier
-      ].filter(Boolean);
-
       const message = messages.find(msg => msg.message_id === messageId);
-      const existingReaction = message?.reactions?.find(r => {
-        const reactionUser = r.user_full_name || r.user;
-        return possibleIdentifiers.some(id => 
-          (reactionUser === id || String(reactionUser).toLowerCase() === String(id).toLowerCase()) &&
-          r.reaction === reaction
-        );
-      });
+      
+      // Use user_id for reliable reaction detection (primary method)
+      let existingReaction = null;
+      
+      if (currentUserId && message?.reactions) {
+        existingReaction = message.reactions.find(r => {
+          // First try user_id comparison (most reliable)
+          if (r.user_id && currentUserId) {
+            return String(r.user_id) === String(currentUserId) && r.reaction === reaction;
+          }
+          return false;
+        });
+        
+        // If no user_id match found, fall back to name matching for backward compatibility
+        if (!existingReaction) {
+          const possibleIdentifiers = [
+            currentUserData?.full_name,
+            currentUserData?.user_id,
+            currentUserData?.id,
+            currentUserData?.email,
+            currentUserData?.username,
+            `${currentUserData?.first_name || ""} ${currentUserData?.last_name || ""}`.trim(),
+            currentIdentifier
+          ].filter(Boolean);
+
+          existingReaction = message.reactions.find(r => {
+            const reactionUser = r.user_full_name || r.user;
+            return possibleIdentifiers.some(id => 
+              (reactionUser === id || String(reactionUser).toLowerCase() === String(id).toLowerCase()) &&
+              r.reaction === reaction
+            );
+          });
+        }
+      }
 
       console.log('Handle Reaction Debug:', {
         messageId,
         reaction,
-        possibleIdentifiers,
+        currentUserId,
         existingReaction,
         messageReactions: message?.reactions
       });
@@ -224,33 +249,16 @@ const Messaging = ({
           const senderValue = m.sender || "Unknown User";
           const senderRole = m.sender_role || null;
           
-          // Enhanced user identification - try multiple comparison methods
-          const possibleIdentifiers = [
-            currentUser?.full_name,
-            currentUser?.user_id,
-            currentUser?.id,
-            currentUser?.email,
-            currentUser?.username,
-            `${currentUser?.first_name || ""} ${currentUser?.last_name || ""}`.trim(),
-            currentIdentifier
-          ].filter(Boolean);
+          // Use user_id for reliable message ownership identification
+          const isOwn = currentUserId && m.user_id && 
+            (String(currentUserId) === String(m.user_id));
 
-          const isOwn = possibleIdentifiers.some(identifier => 
-            senderValue === identifier ||
-            String(senderValue).toLowerCase() === String(identifier).toLowerCase()
-          );
-
-          // Enhanced debugging for sender identification
-          console.log(`Message ${m.message_id} Debug:`, {
-            sender: senderValue,
-            currentIdentifier,
-            possibleIdentifiers,
+          // Debug logging for message ownership
+          console.log(`Message ${m.message_id} Ownership:`, {
+            messageUserId: m.user_id,
+            currentUserId,
             isOwn,
-            reactions: m.reactions,
-            userReactions: m.reactions?.filter(r => 
-              possibleIdentifiers.some(id => r.user === id || r.user_full_name === id)
-            ),
-            reactionCounts: m.reaction_counts
+            sender: senderValue
           });
 
           return (
@@ -290,6 +298,126 @@ const Messaging = ({
                           </div>
                         </div>
                       </div>
+
+                      {/* Attachments */}
+                      {m.attachments && m.attachments.length > 0 && (
+                        <div className={styles.attachments}>
+                          {m.attachments.map((attachment) => (
+                            <div key={attachment.attachment_id} className={styles.attachment}>
+                              <button 
+                                onClick={() => downloadAttachment(attachment.attachment_id)}
+                                className={styles.attachmentButton}
+                              >
+                                📎 {attachment.filename} ({Math.round(attachment.file_size / 1024)}KB)
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Reactions for own messages */}
+                      <div className={styles.reactions}>
+                        {/* Show existing reactions with counts */}
+                        {Object.keys(m.reaction_counts || {}).length > 0 && (
+                          <div className={styles.existingReactions}>
+                            {Object.entries(m.reaction_counts || {}).map(([emoji, count]) => {
+                              // Use user_id for reaction detection as well
+                              const userReacted = m.reactions?.some(r => {
+                                // Check if reaction has user_id field, otherwise fall back to name matching
+                                if (r.user_id && currentUserId) {
+                                  return String(r.user_id) === String(currentUserId);
+                                }
+                                // Fallback to name matching if user_id not available in reactions
+                                const reactionUser = r.user_full_name || r.user;
+                                const possibleIdentifiers = [
+                                  currentUserData?.full_name,
+                                  currentUserData?.user_id,
+                                  currentUserData?.id,
+                                  currentUserData?.email,
+                                  currentUserData?.username,
+                                  `${currentUserData?.first_name || ""} ${currentUserData?.last_name || ""}`.trim(),
+                                  currentIdentifier
+                                ].filter(Boolean);
+                                
+                                return possibleIdentifiers.some(id => 
+                                  reactionUser === id || 
+                                  String(reactionUser).toLowerCase() === String(id).toLowerCase()
+                                ) && r.reaction === emoji;
+                              });
+                              
+                              const reactorNames = m.reactions
+                                ?.filter(r => r.reaction === emoji)
+                                ?.map(r => r.user_full_name || r.user)
+                                ?.slice(0, 3) // Show first 3 names
+                                ?.join(', ');
+                              
+                              return (
+                                <button
+                                  key={emoji}
+                                  className={`${styles.reactionCount} ${userReacted ? styles.userReacted : ''}`}
+                                  onClick={() => handleReaction(m.message_id, emoji)}
+                                  title={`${reactorNames}${m.reactions?.filter(r => r.reaction === emoji).length > 3 ? ' and others' : ''}`}
+                                  onMouseEnter={() => setReactionTooltip({ messageId: m.message_id, emoji, names: reactorNames })}
+                                  onMouseLeave={() => setReactionTooltip(null)}
+                                >
+                                  {emoji} {count}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Add reaction button */}
+                        <div className={styles.addReactionContainer}>
+                          <button
+                            className={styles.addReactionButton}
+                            onClick={() => setShowReactionModal(showReactionModal === m.message_id ? null : m.message_id)}
+                            title="Add reaction"
+                          >
+                            😊
+                          </button>
+                          
+                          {/* Facebook-style reaction modal */}
+                          {showReactionModal === m.message_id && (
+                            <div className={styles.reactionModal}>
+                              <div className={styles.reactionModalContent}>
+                                {availableReactions.map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    className={styles.reactionModalOption}
+                                    onClick={() => {
+                                      handleReaction(m.message_id, emoji);
+                                      setShowReactionModal(null);
+                                    }}
+                                    title={`React with ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Message Actions for own messages */}
+                      <div className={styles.messageActions}>
+                        <button 
+                          onClick={() => {
+                            setEditingMessage(m.message_id);
+                            setEditText(m.message);
+                          }}
+                          className={styles.actionButton}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMessage(m.message_id)}
+                          className={styles.actionButton}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className={styles.messageLeft}>
@@ -308,121 +436,107 @@ const Messaging = ({
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Attachments */}
-                  {m.attachments && m.attachments.length > 0 && (
-                    <div className={styles.attachments}>
-                      {m.attachments.map((attachment) => (
-                        <div key={attachment.attachment_id} className={styles.attachment}>
-                          <button 
-                            onClick={() => downloadAttachment(attachment.attachment_id)}
-                            className={styles.attachmentButton}
-                          >
-                            📎 {attachment.filename} ({Math.round(attachment.file_size / 1024)}KB)
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Reactions */}
-                  <div className={styles.reactions}>
-                    {/* Show existing reactions with counts */}
-                    {Object.keys(m.reaction_counts || {}).length > 0 && (
-                      <div className={styles.existingReactions}>
-                        {Object.entries(m.reaction_counts || {}).map(([emoji, count]) => {
-                          // Enhanced user reaction detection - check multiple possible user identifiers
-                          const userReacted = m.reactions?.some(r => {
-                            const reactionUser = r.user_full_name || r.user;
-                            return possibleIdentifiers.some(id => 
-                              reactionUser === id || 
-                              String(reactionUser).toLowerCase() === String(id).toLowerCase()
-                            );
-                          });
-                          
-                          const reactorNames = m.reactions
-                            ?.filter(r => r.reaction === emoji)
-                            ?.map(r => r.user_full_name || r.user)
-                            ?.slice(0, 3) // Show first 3 names
-                            ?.join(', ');
-                          
-                          // Debug logging for reaction detection
-                          console.log(`Reaction ${emoji} Debug:`, {
-                            userReacted,
-                            possibleIdentifiers,
-                            messageReactions: m.reactions?.filter(r => r.reaction === emoji),
-                            reactorNames
-                          });
-                          
-                          return (
-                            <button
-                              key={emoji}
-                              className={`${styles.reactionCount} ${userReacted ? styles.userReacted : ''}`}
-                              onClick={() => handleReaction(m.message_id, emoji)}
-                              title={`${reactorNames}${m.reactions?.filter(r => r.reaction === emoji).length > 3 ? ' and others' : ''}`}
-                              onMouseEnter={() => setReactionTooltip({ messageId: m.message_id, emoji, names: reactorNames })}
-                              onMouseLeave={() => setReactionTooltip(null)}
-                            >
-                              {emoji} {count}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    
-                    {/* Add reaction button */}
-                    <div className={styles.addReactionContainer}>
-                      <button
-                        className={styles.addReactionButton}
-                        onClick={() => setShowReactionModal(showReactionModal === m.message_id ? null : m.message_id)}
-                        title="Add reaction"
-                      >
-                        😊
-                      </button>
-                      
-                      {/* Facebook-style reaction modal */}
-                      {showReactionModal === m.message_id && (
-                        <div className={styles.reactionModal}>
-                          <div className={styles.reactionModalContent}>
-                            {availableReactions.map((emoji) => (
-                              <button
-                                key={emoji}
-                                className={styles.reactionModalOption}
-                                onClick={() => {
-                                  handleReaction(m.message_id, emoji);
-                                  setShowReactionModal(null);
-                                }}
-                                title={`React with ${emoji}`}
+                      {/* Attachments */}
+                      {m.attachments && m.attachments.length > 0 && (
+                        <div className={styles.attachments}>
+                          {m.attachments.map((attachment) => (
+                            <div key={attachment.attachment_id} className={styles.attachment}>
+                              <button 
+                                onClick={() => downloadAttachment(attachment.attachment_id)}
+                                className={styles.attachmentButton}
                               >
-                                {emoji}
+                                📎 {attachment.filename} ({Math.round(attachment.file_size / 1024)}KB)
                               </button>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Message Actions for own messages */}
-                  {isOwn && (
-                    <div className={styles.messageActions}>
-                      <button 
-                        onClick={() => {
-                          setEditingMessage(m.message_id);
-                          setEditText(m.message);
-                        }}
-                        className={styles.actionButton}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteMessage(m.message_id)}
-                        className={styles.actionButton}
-                      >
-                        Delete
-                      </button>
+                      {/* Reactions for other messages */}
+                      <div className={styles.reactions}>
+                        {/* Show existing reactions with counts */}
+                        {Object.keys(m.reaction_counts || {}).length > 0 && (
+                          <div className={styles.existingReactions}>
+                            {Object.entries(m.reaction_counts || {}).map(([emoji, count]) => {
+                              // Use user_id for reaction detection as well
+                              const userReacted = m.reactions?.some(r => {
+                                // Check if reaction has user_id field, otherwise fall back to name matching
+                                if (r.user_id && currentUserId) {
+                                  return String(r.user_id) === String(currentUserId);
+                                }
+                                // Fallback to name matching if user_id not available in reactions
+                                const reactionUser = r.user_full_name || r.user;
+                                const possibleIdentifiers = [
+                                  currentUserData?.full_name,
+                                  currentUserData?.user_id,
+                                  currentUserData?.id,
+                                  currentUserData?.email,
+                                  currentUserData?.username,
+                                  `${currentUserData?.first_name || ""} ${currentUserData?.last_name || ""}`.trim(),
+                                  currentIdentifier
+                                ].filter(Boolean);
+                                
+                                return possibleIdentifiers.some(id => 
+                                  reactionUser === id || 
+                                  String(reactionUser).toLowerCase() === String(id).toLowerCase()
+                                ) && r.reaction === emoji;
+                              });
+                              
+                              const reactorNames = m.reactions
+                                ?.filter(r => r.reaction === emoji)
+                                ?.map(r => r.user_full_name || r.user)
+                                ?.slice(0, 3) // Show first 3 names
+                                ?.join(', ');
+                              
+                              return (
+                                <button
+                                  key={emoji}
+                                  className={`${styles.reactionCount} ${userReacted ? styles.userReacted : ''}`}
+                                  onClick={() => handleReaction(m.message_id, emoji)}
+                                  title={`${reactorNames}${m.reactions?.filter(r => r.reaction === emoji).length > 3 ? ' and others' : ''}`}
+                                  onMouseEnter={() => setReactionTooltip({ messageId: m.message_id, emoji, names: reactorNames })}
+                                  onMouseLeave={() => setReactionTooltip(null)}
+                                >
+                                  {emoji} {count}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Add reaction button */}
+                        <div className={styles.addReactionContainer}>
+                          <button
+                            className={styles.addReactionButton}
+                            onClick={() => setShowReactionModal(showReactionModal === m.message_id ? null : m.message_id)}
+                            title="Add reaction"
+                          >
+                            😊
+                          </button>
+                          
+                          {/* Facebook-style reaction modal */}
+                          {showReactionModal === m.message_id && (
+                            <div className={styles.reactionModal}>
+                              <div className={styles.reactionModalContent}>
+                                {availableReactions.map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    className={styles.reactionModalOption}
+                                    onClick={() => {
+                                      handleReaction(m.message_id, emoji);
+                                      setShowReactionModal(null);
+                                    }}
+                                    title={`React with ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </>

@@ -17,7 +17,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing messages - send, retrieve, edit, and delete messages
     """
-    queryset = Message.objects.filter(is_deleted=False)
+    queryset = Message.objects.filter(is_deleted=False).prefetch_related('reactions', 'attachments')
     serializer_class = MessageSerializer
     lookup_field = 'message_id'
     permission_classes = [SystemRolePermission]
@@ -81,6 +81,7 @@ class MessageViewSet(viewsets.ModelViewSet):
                 ticket_id=ticket,
                 sender=getattr(request.user, 'full_name', request.user.username),
                 sender_role=user_role,
+                user_id=getattr(request.user, 'user_id', getattr(request.user, 'id', None)),
                 message=message_text
             )
             
@@ -91,8 +92,7 @@ class MessageViewSet(viewsets.ModelViewSet):
                     filename=file.name,
                     file=file,
                     content_type=file.content_type or 'application/octet-stream',
-                    uploaded_by=getattr(request.user, 'full_name', request.user.username),
-                    uploaded_by_email=getattr(request.user, 'email', '')
+                    user_id=str(getattr(request.user, 'user_id', getattr(request.user, 'id', None)))
                 )
                 message.attachments.add(attachment)
             
@@ -264,11 +264,12 @@ class ReactionViewSet(viewsets.ViewSet):
             )
         
         user = getattr(request.user, 'full_name', request.user.username)
+        user_id = str(getattr(request.user, 'user_id', getattr(request.user, 'id', None)))
         
         # Remove existing reaction of same type from same user (toggle behavior)
         MessageReaction.objects.filter(
             message=message,
-            user=user,
+            user_id=user_id,
             reaction=reaction
         ).delete()
         
@@ -276,7 +277,7 @@ class ReactionViewSet(viewsets.ViewSet):
         reaction_obj = MessageReaction.objects.create(
             message=message,
             user=user,
-            user_email=getattr(request.user, 'email', ''),
+            user_id=user_id,
             user_full_name=getattr(request.user, 'full_name', request.user.username),
             reaction=reaction
         )
@@ -321,11 +322,12 @@ class ReactionViewSet(viewsets.ViewSet):
             )
         
         user = getattr(request.user, 'full_name', request.user.username)
+        user_id = str(getattr(request.user, 'user_id', getattr(request.user, 'id', None)))
         
         try:
             reaction_obj = MessageReaction.objects.get(
                 message=message,
-                user=user,
+                user_id=user_id,
                 reaction=reaction
             )
             reaction_obj.delete()

@@ -7,7 +7,7 @@ class MessageAttachmentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = MessageAttachment
-        fields = ['attachment_id', 'filename', 'file_url', 'file_size', 'content_type', 'created_at']
+        fields = ['attachment_id', 'filename', 'file_url', 'file_size', 'content_type', 'user_id', 'created_at']
         read_only_fields = ['attachment_id', 'file_size', 'content_type', 'created_at']
     
     def get_file_url(self, obj):
@@ -22,7 +22,7 @@ class MessageAttachmentSerializer(serializers.ModelSerializer):
 class MessageReactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = MessageReaction
-        fields = ['reaction', 'user', 'user_full_name', 'created_at']
+        fields = ['reaction', 'user', 'user_id', 'user_full_name', 'created_at']
         read_only_fields = ['created_at']
 
 
@@ -36,12 +36,12 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = [
-            'message_id', 'ticket_id', 'sender', 'sender_role', 'message', 'created_at', 'updated_at',
+            'message_id', 'ticket_id', 'sender', 'sender_role', 'user_id', 'message', 'created_at', 'updated_at',
             'is_edited', 'edited_at', 'is_deleted', 'deleted_at',
             'attachments', 'reactions', 'reaction_counts'
         ]
         read_only_fields = [
-            'message_id', 'ticket_id', 'sender', 'sender_role', 'created_at', 'updated_at', 'is_edited', 
+            'message_id', 'ticket_id', 'sender', 'sender_role', 'user_id', 'created_at', 'updated_at', 'is_edited', 
             'edited_at', 'is_deleted', 'deleted_at'
         ]
     

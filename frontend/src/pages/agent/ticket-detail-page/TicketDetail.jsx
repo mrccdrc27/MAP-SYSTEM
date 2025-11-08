@@ -15,7 +15,7 @@ import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLog from "../../../components/ticket/ActionLog";
-import Messaging from "../../../components/component/Messaging";
+import Messaging from "../../../components/messaging";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
@@ -391,8 +391,13 @@ export default function TicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    <Messaging />
-                    {/* Comments section is now displayed under attachments in the left column */}
+                    {state.ticket?.ticket_id ? (
+                      <Messaging ticket_id={state.ticket.ticket_id} />
+                    ) : (
+                      <div style={{ padding: "1rem", textAlign: "center" }}>
+                        Loading messages...
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
