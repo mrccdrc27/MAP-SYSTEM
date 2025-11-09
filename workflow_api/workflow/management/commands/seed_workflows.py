@@ -12,6 +12,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with transaction.atomic():
+            # Get existing roles (Admin, Asset Manager, Budget Manager)
+            existing_roles = Roles.objects.all()
+            if not existing_roles.exists():
+                self.stdout.write(self.style.ERROR('❌ No roles found. Run seed_role first!'))
+                return
+            
+            roles = list(existing_roles)
+            self.stdout.write(self.style.SUCCESS(
+                f'✅ Found {len(roles)} existing roles: {", ".join([r.name for r in roles])}'
+            ))
+            
             # Define main and sub category names
             main_names = ['General Inquiry', 'Technical Issue', 'Billing']
             sub_names = ['Software', 'Hardware', 'Payment']
@@ -33,9 +44,11 @@ class Command(BaseCommand):
                         defaults={
                             'user_id': 1,
                             'description': f'{wf_name} workflow',
-                            'category': main_cat,
-                            'sub_category': sub_cat,
-                            'status': 'draft',
+                            'category': main,
+                            'sub_category': sub,
+                            'department': 'General',
+                            'status': 'deployed',
+                            'is_published': True,
                             'end_logic': end_logic
                         }
                     )
@@ -43,15 +56,15 @@ class Command(BaseCommand):
                         f'Workflow "{wf_name}" {"created" if created else "exists"} with end_logic="{end_logic}".'
                     ))
 
-                    # Define step configurations: (step label, role name, events)
+                    # Define step configurations: (step label, role index, events)
                     steps_cfg = [
-                        ('Submit Form', 'Requester', ['start', 'submit']),
-                        ('Review Documents', 'Reviewer', ['approve', 'reject']),
-                        ('Final Approval', 'Approver', ['complete']),
+                        ('Submit Form', 0, ['start', 'submit']),
+                        ('Review Documents', 1, ['approve', 'reject']),
+                        ('Final Approval', 2, ['complete']),
                     ]
 
                     step_objs = []
-                    for idx, (label, role, _) in enumerate(steps_cfg):
+                    for idx, (label, role_idx, _) in enumerate(steps_cfg):
                         step_name = f"{wf_name} - {label}"
                         step, _ = Steps.objects.get_or_create(
                             workflow_id=wf,
@@ -59,7 +72,7 @@ class Command(BaseCommand):
                             defaults={
                                 'description': label,
                                 'order': idx + 1,
-                                'role_id': Roles.objects.get(name=role)
+                                'role_id': roles[role_idx % len(roles)]
                             }
                         )
                         step_objs.append(step)
@@ -76,7 +89,7 @@ class Command(BaseCommand):
                             elif event == 'approve':
                                 frm, to = step, step_objs[idx + 1] if idx + 1 < len(step_objs) else None
                             elif event == 'reject':
-                                frm, to = step, step_objs[idx - 1] if idx > 0 else None
+                                frm, to = step_objs[idx - 1] if idx > 0 else None, step
                             else:  # 'complete'
                                 frm, to = step, None
 
@@ -89,5 +102,5 @@ class Command(BaseCommand):
                                 continue
 
             self.stdout.write(self.style.SUCCESS(
-                'Seeding complete: workflows, steps, transitions, end_logic.'
+                '✅ Seeding complete: workflows, steps, transitions, end_logic.'
             ))

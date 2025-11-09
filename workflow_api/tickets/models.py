@@ -1,5 +1,18 @@
 from django.db import models
 
+class RoundRobin(models.Model):
+    """Stores round-robin state for role-based user assignment"""
+    role_name = models.CharField(max_length=255, unique=True, db_index=True)
+    current_index = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'tickets_roundrobin'
+    
+    def __str__(self):
+        return f"RoundRobin({self.role_name}, index={self.current_index})"
+
 class WorkflowTicket(models.Model):
     PRIORITY_LEVELS = [
         ('Critical', 'Critical'),
@@ -110,14 +123,8 @@ class WorkflowTicket(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Allocate task
-        if is_new and not self.is_task_allocated:
-            from tickets.utils import allocate_task_for_ticket
-            success = allocate_task_for_ticket(self)
-            if success:
-                WorkflowTicket.objects.filter(pk=self.pk, is_task_allocated=False).update(
-                    is_task_allocated=True
-                )
+        # Note: Task allocation now happens in receive_ticket() -> create_task_for_ticket()
+        # which provides intelligent workflow matching and user assignment via round-robin
 
         # Send status update
         if not is_new and old_status != self.status:

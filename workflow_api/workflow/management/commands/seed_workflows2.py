@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
 from role.models import Roles
-from workflow.models import Workflows
+from workflow.models import Workflows, Category
 from step.models import Steps, StepTransition
 import random
 
@@ -56,7 +56,7 @@ class Command(BaseCommand):
       2. Resolve Ticket (Department-specific: Asset Manager, Budget Manager)
       3. Finalize Ticket (Admin)
     - Department-specific instructions for the 'Resolve' step
-    - Clean transitions (e.g., 'reject' from Resolve returns to Triage)
+    - Clean transitions between steps
     
     Usage: python manage.py seed_workflows2
     
@@ -84,21 +84,20 @@ class Command(BaseCommand):
             # Verify required roles exist
             try:
                 role_map = {
-                    'Requester': Roles.objects.get(name='Admin'),
-                    'Asset_Reviewer': Roles.objects.get(name='Asset Manager'),
-                    'Budget_Reviewer': Roles.objects.get(name='Budget Manager'),
-                    'IT_Reviewer': Roles.objects.get(name='Asset Manager'),
+                    'Admin': Roles.objects.get(name='Admin'),
+                    'Asset_Manager': Roles.objects.get(name='Asset Manager'),
+                    'Budget_Manager': Roles.objects.get(name='Budget Manager'),
                 }
                 self.stdout.write(self.style.SUCCESS('✓ All required roles found'))
             except Roles.DoesNotExist as e:
-                raise CommandError(f"Missing expected role: {e}. Please ensure roles are seeded first.")
+                raise CommandError(f"Missing expected role: {e}. Please ensure seed_role is run first.")
 
             # Define the standardized 3-step configuration generator
             def create_3_step_config(resolver_role, resolver_instruction, resolve_desc):
                 return [
                     {
                         'label': 'Triage Ticket',
-                        'role': 'Requester',
+                        'role': 'Admin',
                         'description': 'Initial triage to verify ticket completeness, assign category, and route to the correct resolver.',
                         'instruction_type': 'triage_generic'
                     },
@@ -110,7 +109,7 @@ class Command(BaseCommand):
                     },
                     {
                         'label': 'Finalize Ticket',
-                        'role': 'Requester',
+                        'role': 'Admin',
                         'description': 'Final verification that all records are updated, tasks are completed, and the requester is notified.',
                         'instruction_type': 'finalize_generic'
                     },
@@ -121,11 +120,11 @@ class Command(BaseCommand):
                 {
                     "name": "Asset Check In Workflow",
                     "category": "Asset Check In",
-                    "sub_category": "Check In Process",
+                    "sub_category": "Check In",
                     "department": "Asset Department",
                     "description": "Workflow for checking in company assets. (Triage -> Resolve -> Finalize)",
                     "steps_config": create_3_step_config(
-                        resolver_role='Asset_Reviewer',
+                        resolver_role='Asset_Manager',
                         resolver_instruction='resolve_asset',
                         resolve_desc='Asset Manager performs the check-in: verifies asset, inspects condition, and updates inventory.'
                     )
@@ -133,11 +132,11 @@ class Command(BaseCommand):
                 {
                     "name": "Asset Check Out Workflow",
                     "category": "Asset Check Out",
-                    "sub_category": "Check Out Process",
+                    "sub_category": "Check Out",
                     "department": "Asset Department",
                     "description": "Workflow for checking out company assets. (Triage -> Resolve -> Finalize)",
                     "steps_config": create_3_step_config(
-                        resolver_role='Asset_Reviewer',
+                        resolver_role='Asset_Manager',
                         resolver_instruction='resolve_asset',
                         resolve_desc='Asset Manager performs the check-out: verifies authorization, documents condition, and updates custody.'
                     )
@@ -145,11 +144,11 @@ class Command(BaseCommand):
                 {
                     "name": "New Budget Proposal Workflow",
                     "category": "New Budget Proposal",
-                    "sub_category": "Budget Approval Process",
+                    "sub_category": "Budget Approval",
                     "department": "Budget Department",
                     "description": "Workflow for submitting and approving new project proposals. (Triage -> Resolve -> Finalize)",
                     "steps_config": create_3_step_config(
-                        resolver_role='Budget_Reviewer',
+                        resolver_role='Budget_Manager',
                         resolver_instruction='resolve_budget',
                         resolve_desc='Budget Manager reviews financial feasibility, verifies funding, and authorizes budget allocation.'
                     )
@@ -161,19 +160,19 @@ class Command(BaseCommand):
                     "department": "IT Department",
                     "description": "Workflow for requesting access to systems or applications. (Triage -> Resolve -> Finalize)",
                     "steps_config": create_3_step_config(
-                        resolver_role='IT_Reviewer',
+                        resolver_role='Asset_Manager',
                         resolver_instruction='resolve_it',
                         resolve_desc='IT Reviewer verifies security policy, checks authorization, and provisions the requested system access.'
                     )
                 },
                 {
                     "name": "IT Support Software Installation Workflow",
-                    "category": "IT Support",
+                    "category": "Others",
                     "sub_category": "Software Installation",
                     "department": "IT Department",
                     "description": "Workflow for requesting software installation. (Triage -> Resolve -> Finalize)",
                     "steps_config": create_3_step_config(
-                        resolver_role='IT_Reviewer',
+                        resolver_role='Asset_Manager',
                         resolver_instruction='resolve_it',
                         resolve_desc='IT Reviewer verifies license compliance, checks for security risks, and deploys the software.'
                     )
@@ -204,7 +203,8 @@ class Command(BaseCommand):
                         'description': wf_data.get("description", f'{wf_data["name"]} workflow'),
                         'category': wf_data["category"],
                         'sub_category': wf_data["sub_category"],
-                        'status': 'draft',
+                        'status': 'deployed',
+                        'is_published': True,
                         'end_logic': end_logic,
                         'department': wf_data["department"],
                     }
@@ -236,7 +236,9 @@ class Command(BaseCommand):
                         defaults={
                             'description': step_cfg['description'],
                             'role_id': role_map[step_cfg['role']],
-                            'instruction': instruction
+                            'instruction': instruction,
+                            'order': idx + 1,
+                            'is_initialized': (idx == 0)
                         }
                     )
                     step_objs.append(step)
@@ -245,7 +247,7 @@ class Command(BaseCommand):
                         total_steps += 1
                         self.stdout.write(f'  	✓ Created step: {step_cfg["label"]} (Role: {role_map[step_cfg["role"]].name})')
 
-                # Create transitions without actions
+                # Create transitions (no actions field)
                 for idx, step_cfg in enumerate(steps_cfg):
                     step = step_objs[idx]
                     
@@ -269,13 +271,14 @@ class Command(BaseCommand):
                     
                     for frm, to in transitions:
                         try:
-                            trans, trans_created = StepTransition.objects.get_or_create(
+                            # Create transition without triggering initialization checks
+                            trans = StepTransition(
                                 from_step_id=frm,
                                 to_step_id=to,
                                 workflow_id=wf
                             )
-                            if trans_created:
-                                total_transitions += 1
+                            trans.save()
+                            total_transitions += 1
                         except (ValidationError, IntegrityError) as e:
                             self.stdout.write(self.style.WARNING(
                                 f'  	⚠ Skipped transition: {str(e)}'
@@ -292,16 +295,18 @@ class Command(BaseCommand):
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Standardized 3-Step Workflow Summary:'))
             self.stdout.write('  • Asset Department (end_logic: asset)')
-            self.stdout.write(f'    - Triage ({role_map["Requester"].name}) -> Resolve ({role_map["Asset_Reviewer"].name}) -> Finalize ({role_map["Requester"].name})')
+            self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
             self.stdout.write('  • Budget Department (end_logic: budget)')
-            self.stdout.write(f'    - Triage ({role_map["Requester"].name}) -> Resolve ({role_map["Budget_Reviewer"].name}) -> Finalize ({role_map["Requester"].name})')
+            self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin)')
             self.stdout.write('  • IT Department (end_logic: notification)')
-            self.stdout.write(f'    - Triage ({role_map["Requester"].name}) -> Resolve ({role_map["IT_Reviewer"].name}) -> Finalize ({role_map["Requester"].name})')
+            self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
             
-            self.stdout.write('\n' + self.style.MIGRATE_HEADING('Role Assignments:'))
-            self.stdout.write(f'  • Triage (Step 1): {role_map["Requester"].name}')
-            self.stdout.write(f'  • Resolve (Step 2): Varies by Dept (Asset Manager, Budget Manager)')
-            self.stdout.write(f'  • Finalize (Step 3): {role_map["Requester"].name}')
+            self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflows Created:'))
+            self.stdout.write('  1. Asset Check In Workflow (Asset Management -> Check In)')
+            self.stdout.write('  2. Asset Check Out Workflow (Asset Management -> Check Out)')
+            self.stdout.write('  3. New Budget Proposal Workflow (Budget Management -> Budget Approval)')
+            self.stdout.write('  4. IT Support Access Request Workflow (IT Support -> Access Request)')
+            self.stdout.write('  5. IT Support Software Installation Workflow (IT Support -> Software Installation)')
             self.stdout.write('\n' + '='*70)
 
             if dry_run:

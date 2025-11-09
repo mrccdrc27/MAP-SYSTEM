@@ -156,6 +156,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_ACKS_LATE = True
 
+# Auth Service Configuration
+AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'http://localhost:8001')
+
+# TTS (Ticket Tracking Service) Configuration for round-robin assignment
+TTS_SERVICE_URL = os.getenv('TTS_SERVICE_URL', 'http://localhost:8002')
+
 # Queue Configuration
 DJANGO_NOTIFICATION_QUEUE = os.getenv('DJANGO_NOTIFICATION_QUEUE', 'notification-queue-default')
 DJANGO_TICKET_STATUS_QUEUE = os.getenv('DJANGO_TICKET_STATUS_QUEUE', 'ticket_status-default')

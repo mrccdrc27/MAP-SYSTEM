@@ -10,12 +10,10 @@ logger = logging.getLogger(__name__)
 def is_transition_initialized(transition):
     """
     A transition is considered initialized if:
-      - It has an action assigned, AND
       - At least one of from_step_id or to_step_id is non-null
     """
     result = (
-        transition.action_id is not None and
-        (transition.from_step_id_id is not None or transition.to_step_id_id is not None)
+        transition.from_step_id_id is not None or transition.to_step_id_id is not None
     )
     logger.debug(f"Transition {getattr(transition, 'transition_id', transition)} initialized: {result}")
     return result

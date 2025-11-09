@@ -254,7 +254,7 @@ class Command(BaseCommand):
                 
                 ticket_kwargs['category'] = 'IT Support'
                 ticket_kwargs['subcategory'] = subcategory
-                ticket_kwargs['department'] = 'IT Department'
+                ticket_kwargs['department'] = 'IT Department'  # ✅ Maps to IT Department
                 ticket_kwargs['dynamic_data'] = {'device_type': device_type}
                 
                 if device_type in ASSET_NAMES:
@@ -273,7 +273,7 @@ class Command(BaseCommand):
                 ticket_kwargs['subcategory'] = product
                 ticket_kwargs['asset_name'] = asset_name
                 ticket_kwargs['serial_number'] = f"SN-{random.randint(100000,999999)}"
-                ticket_kwargs['department'] = 'Asset Department'
+                ticket_kwargs['department'] = 'Asset Department'  # ✅ Maps to Asset Department
                 
                 if category == 'Asset Check Out':
                     days = random.randint(7, 60)
@@ -287,7 +287,7 @@ class Command(BaseCommand):
                 
                 ticket_kwargs['category'] = 'New Budget Proposal'
                 ticket_kwargs['subcategory'] = subcategory
-                ticket_kwargs['department'] = 'Budget Department'
+                ticket_kwargs['department'] = 'Budget Department'  # ✅ Maps to Budget Department
                 
                 # Add cost elements and budget
                 if random.random() < 0.8:
@@ -309,6 +309,7 @@ class Command(BaseCommand):
             else:  # Others
                 ticket_kwargs['category'] = 'Others'
                 ticket_kwargs['subcategory'] = None
+                ticket_kwargs['department'] = 'IT Department'  # ✅ Maps Others to IT Department
                 content = generate_ticket_content('Others', 'General Inquiry', company_id)
             
             # Set subject and description

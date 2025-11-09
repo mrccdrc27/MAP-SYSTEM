@@ -5,6 +5,14 @@ import os
 from django.conf import settings
 import json
 
+# Status choices for tasks
+TASK_STATUS_CHOICES = [
+    ('pending', 'Pending'),
+    ('in_progress', 'In Progress'),
+    ('completed', 'Completed'),
+    ('on_hold', 'On Hold'),
+    ('cancelled', 'Cancelled'),
+]
 
 class Task(models.Model):
     task_id = models.AutoField(primary_key=True, unique=True)
@@ -21,8 +29,21 @@ class Task(models.Model):
         blank=True,
         to_field='step_id'
     )
-    users = models.JSONField(default=list, blank=True)
-    status = models.CharField(max_length=36, null=True)
+    users = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="Array of assigned users with format: [{userID, username, email, status, assigned_on, role}, ...]"
+    )
+    status = models.CharField(
+        max_length=36, 
+        choices=TASK_STATUS_CHOICES,
+        default='pending',
+        help_text="Current status of the task"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
 
     def get_workflow(self):
         # Optional: only if you need to reference it somewhere dynamically
@@ -34,15 +55,70 @@ class Task(models.Model):
         from tickets.models import WorkflowTicket
         return WorkflowTicket.objects.first()
 
-    fetched_at = models.DateTimeField(null=True, blank=True)
+    def get_assigned_user_ids(self):
+        """Get list of user IDs assigned to this task"""
+        return [user.get('userID') for user in self.users if user.get('userID')]
+    
+    def get_assigned_users_by_status(self, status=None):
+        """Get users filtered by their assignment status"""
+        if status:
+            return [user for user in self.users if user.get('status') == status]
+        return self.users
+    
+    def update_user_status(self, user_id, new_status):
+        """Update the status of a specific assigned user"""
+        from django.utils import timezone
+        
+        updated = False
+        for user in self.users:
+            if user.get('userID') == user_id:
+                user['status'] = new_status
+                user['status_updated_on'] = timezone.now().isoformat()
+                updated = True
+                break
+        
+        if updated:
+            self.save()
+        return updated
+    
+    def add_user_assignment(self, user_data):
+        """Add a new user assignment to the task"""
+        from django.utils import timezone
+        
+        # Ensure required fields
+        if not user_data.get('userID'):
+            raise ValueError("userID is required for user assignment")
+        
+        # Check if user is already assigned
+        existing_user_ids = self.get_assigned_user_ids()
+        if user_data['userID'] in existing_user_ids:
+            return False  # User already assigned
+        
+        # Add default fields if not provided
+        user_assignment = {
+            "userID": user_data['userID'],
+            "username": user_data.get('username', ''),
+            "email": user_data.get('email', ''),
+            "status": user_data.get('status', 'assigned'),
+            "assigned_on": user_data.get('assigned_on', timezone.now().isoformat()),
+            "role": user_data.get('role', '')
+        }
+        
+        self.users.append(user_assignment)
+        self.save()
+        return True
 
     def __str__(self):
-        return f'Task {self.id} for Ticket ID: {self.ticket_id}'
+        return f'Task {self.task_id} for Ticket ID: {self.ticket_id}'
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
     def mark_as_completed(self):
+        """Mark task as completed and trigger workflow end logic"""
+        self.status = 'completed'
+        self.save()
+        
         if not self.workflow_id:
             print("⚠️ No workflow associated with this task.")
             return
@@ -62,6 +138,49 @@ class Task(models.Model):
             # Could send emails or push messages here
         else:
             print("⚠️ Unknown end logic:", end_logic)
+
+    def move_to_next_step(self):
+        """Move task to the next step in the workflow"""
+        from step.models import StepTransition
+        from django.utils import timezone
+        
+        if not self.current_step:
+            print("⚠️ No current step set for this task")
+            return False
+        
+        # Find next step through transitions
+        transition = StepTransition.objects.filter(
+            from_step_id=self.current_step,
+            workflow_id=self.workflow_id
+        ).first()
+        
+        if not transition:
+            print(f"⚠️ No transition found from step {self.current_step.name}")
+            return False
+        
+        # Move to next step
+        next_step = transition.to_step_id
+        self.current_step = next_step
+        
+        # Reset user assignments for new step
+        if next_step and next_step.role_id:
+            # Fetch new users for the next step's role
+            from tickets.tasks import fetch_users_for_role, apply_round_robin_assignment
+            
+            users_for_role = fetch_users_for_role(next_step.role_id.role_id)
+            if users_for_role:
+                self.users = apply_round_robin_assignment(
+                    users_for_role, 
+                    next_step.role_id.name
+                )
+            else:
+                self.users = []
+        
+        self.status = 'pending'
+        self.save()
+        
+        print(f"✅ Task moved to step: {next_step.name}")
+        return True
 
     def _process_attachments_from_ticket(self):
         from amscheckout.serializers import CheckoutSerializer
