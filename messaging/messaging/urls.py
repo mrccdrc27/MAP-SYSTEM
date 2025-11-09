@@ -94,6 +94,7 @@ urlpatterns = [
     
     # Custom action routes that aren't handled by the router
     path('messages/by-ticket/', MessageViewSet.as_view({'get': 'by_ticket'}), name='messages-by-ticket'),
+    path('messages/<str:message_id>/delete/', MessageViewSet.as_view({'delete': 'destroy'}), name='delete-message'),
     path('reactions/add/', ReactionViewSet.as_view({'post': 'add'}), name='add-reaction'),
     path('reactions/remove/', ReactionViewSet.as_view({'post': 'remove'}), name='remove-reaction'),
     

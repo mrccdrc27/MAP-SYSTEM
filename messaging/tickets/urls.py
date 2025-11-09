@@ -14,6 +14,7 @@ urlpatterns = [
     
     # Custom actions
     path('messages/by-ticket/', views.MessageViewSet.as_view({'get': 'by_ticket'}), name='messages-by-ticket'),
+    path('messages/<str:pk>/delete/', views.MessageViewSet.as_view({'delete': 'destroy'}), name='delete-message'),
     path('reactions/add/', views.ReactionViewSet.as_view({'post': 'add'}), name='add-reaction'),
     path('reactions/remove/', views.ReactionViewSet.as_view({'post': 'remove'}), name='remove-reaction'),
     path('attachments/<str:attachment_id>/download/', views.AttachmentViewSet.as_view({'get': 'download'}), name='download-attachment'),

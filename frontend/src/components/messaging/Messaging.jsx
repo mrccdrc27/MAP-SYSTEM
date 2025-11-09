@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useMessaging } from '../../hooks/useMessaging';
 import { useAuth } from '../../api/AuthContext';
+import { useAutoScroll } from '../../hooks/useAutoScroll';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import styles from './Messaging.module.css';
@@ -27,6 +28,7 @@ const Messaging = ({ ticket_id }) => {
     isLoading,
     error,
     typingUsers,
+    fetchMessages,
     sendMessage: sendMessageAPI,
     editMessage,
     deleteMessage,
@@ -39,14 +41,15 @@ const Messaging = ({ ticket_id }) => {
 
   console.log('🎪 useMessaging returned:', { messagesCount: messages.length, isConnected, isLoading, error });
 
-  // Auto-scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Use auto-scroll hook
+  useAutoScroll(messages, containerRef);
 
+  // Fetch messages on mount and when ticket_id changes
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (ticket_id) {
+      fetchMessages();
+    }
+  }, [ticket_id, fetchMessages]);
 
   // Send message
   const handleSendMessage = async () => {
