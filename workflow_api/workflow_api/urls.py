@@ -29,6 +29,7 @@ class APIRootSerializer(serializers.Serializer):
     workflows = serializers.URLField()
     tickets = serializers.URLField()
     tasks = serializers.URLField()
+    transitions = serializers.URLField()
     roles = serializers.URLField()
     steps = serializers.URLField()
     ams_checkout = serializers.URLField()
@@ -53,6 +54,7 @@ def api_root(request, format=None):
         'workflows': request.build_absolute_uri('workflows/'),
         'tickets': request.build_absolute_uri('tickets/'),
         'tasks': request.build_absolute_uri('tasks/'),
+        'transitions': request.build_absolute_uri('transitions/'),
         'roles': request.build_absolute_uri('roles/'),
         'steps': request.build_absolute_uri('steps/'),
         'ams-checkout': request.build_absolute_uri('ams-checkout/'),
@@ -74,6 +76,7 @@ urlpatterns = [
     path('workflows/', include('workflow.urls')),
     path('tickets/', include('tickets.urls')),
     path('tasks/', include('task.urls')),
+    path('transitions/', include('task.transitions_urls')),
     path('roles/', include('role.urls')),
     path('steps/', include('step.urls')),
     path('ams-checkout/', include('amscheckout.urls')),

@@ -10,7 +10,7 @@ class Steps(models.Model):
     role_id = models.ForeignKey(Roles, on_delete=models.PROTECT, to_field='role_id')
 
     # steps details
-    name = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=64)
     description = models.CharField(max_length=256, null=True)
     instruction = models.TextField(null=True, blank=True)
     order = models.PositiveIntegerField(default=0)
@@ -57,6 +57,7 @@ class StepTransition(models.Model):
         blank=True,
         to_field='step_id'
     )
+    name = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         pass

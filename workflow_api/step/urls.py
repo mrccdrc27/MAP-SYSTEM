@@ -1,13 +1,20 @@
-from django.urls import path
-from .views import *
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import StepViewSet, StepTransitionsListView
+
+# Create a router and register the StepViewSet
+router = DefaultRouter()
+router.register(r'', StepViewSet, basename='step')
+
+app_name = 'step'
 
 urlpatterns = [
-    path('', StepListCreateView.as_view(), name='step-list-create'),
-    path('<uuid:step_id>/', StepDetailView.as_view(), name='step-detail'),
-
-    # path('step-actions/', StepActionListCreateView.as_view(), name='step-action-list-create'),
-    # path('step-actions/<int:id>/', StepActionDetailView.as_view(), name='step-action-detail'),
-
-    path('step-transitions/', StepTransitionListCreateView.as_view(), name='step-transition-list-create'),
-    path('step-transitions/<uuid:transition_id>/', StepTransitionDetailView.as_view(), name='step-transition-detail'),
+    # Dedicated endpoint for getting available transitions from a step
+    # GET /steps/transitions/?step_id=2
+    path('transitions/', StepTransitionsListView.as_view(), name='step-transitions'),
+    
+    # All other step endpoints (list, retrieve)
+    # GET /steps/
+    # GET /steps/{id}/
+    path('', include(router.urls)),
 ]

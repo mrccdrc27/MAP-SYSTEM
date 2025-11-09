@@ -10,7 +10,9 @@ import logging
 
 from .models import Task
 from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer
+from .utils.assignment import assign_users_for_step
 from authentication import JWTCookieAuthentication, MultiSystemPermission
+from step.models import Steps, StepTransition
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +86,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     ViewSet for managing tasks with authentication.
     
     Actions:
-    - list: GET /tasks/ - List all tasks (admin only)
+    - list: GET /tasks/ - List all tasks
     - retrieve: GET /tasks/{id}/ - Get task details
     - create: POST /tasks/ - Create new task
     - update: PUT /tasks/{id}/ - Update task
@@ -92,6 +94,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     - destroy: DELETE /tasks/{id}/ - Delete task
     - my-tasks: GET /tasks/my-tasks/ - Get user's assigned tasks
     - update-user-status: POST /tasks/{id}/update-user-status/ - Update user's task status
+    
+    Note: Task transitions are handled by a separate endpoint at POST /transitions/
     """
     
     queryset = Task.objects.select_related('ticket_id', 'workflow_id', 'current_step')

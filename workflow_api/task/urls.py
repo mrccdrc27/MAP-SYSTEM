@@ -10,16 +10,19 @@ app_name = 'task'
 
 urlpatterns = [
     # Dedicated endpoint for getting user's tasks
-    # GET /tasks/my-tasks/list/ or /tasks/my-tasks/
+    # GET /tasks/my-tasks/
     path('my-tasks/', UserTaskListView.as_view(), name='user-task-list'),
     
-    # All other task endpoints (CRUD operations and custom actions)
-    # GET /tasks/
-    # POST /tasks/
-    # GET /tasks/{id}/
-    # PUT/PATCH /tasks/{id}/
-    # DELETE /tasks/{id}/
-    # GET /tasks/my-tasks/ (via custom action in viewset)
-    # POST /tasks/{id}/update-user-status/
+    # Standard CRUD:
+    # GET    /tasks/                           - List all tasks
+    # POST   /tasks/                           - Create new task
+    # GET    /tasks/{id}/                      - Get task details
+    # PUT    /tasks/{id}/                      - Update task (full)
+    # PATCH  /tasks/{id}/                      - Update task (partial)
+    # DELETE /tasks/{id}/                      - Delete task
+    #
+    # Custom actions:
+    # GET    /tasks/my-tasks/                  - Get user's assigned tasks
+    # POST   /tasks/{id}/update-user-status/   - Update user's task status
     path('', include(router.urls)),
 ]
