@@ -7,7 +7,7 @@ import json
 
 
 class Task(models.Model):
-    task_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # New UUID field
+    task_id = models.AutoField(primary_key=True, unique=True)
 
     ticket_id = models.ForeignKey(
         'tickets.WorkflowTicket',  # Assuming Ticket model is in tickets app
@@ -31,13 +31,6 @@ class Task(models.Model):
         return f'Task {self.id} for Ticket ID: {self.ticket_id}'
     
     def save(self, *args, **kwargs):
-        if not self.pk:  # Only enforce immutability on creation
-            if not self.task_id:
-                self.task_id = str(uuid.uuid4())  # Assign a unique identifier if missing
-        else:
-            if 'task_id' in kwargs.get('update_fields', []):
-                raise ValidationError("task_id cannot be modified after creation.")  # Prevent updates
-        
         super().save(*args, **kwargs)
 
     def mark_as_completed(self):

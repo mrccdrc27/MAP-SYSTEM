@@ -2,12 +2,11 @@ from django.db import models
 from role.models import Roles
 from action.models import Actions
 from django.core.exceptions import ValidationError
-import uuid
 
 class Steps(models.Model):
-    step_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    step_id = models.AutoField(primary_key=True, unique=True)
 
-    # foreign keys - now reference UUID fields
+    # foreign keys - now reference integer fields
     workflow_id = models.ForeignKey('workflow.Workflows', on_delete=models.CASCADE, to_field='workflow_id')
     role_id = models.ForeignKey(Roles, on_delete=models.PROTECT, to_field='role_id')
 
@@ -31,13 +30,6 @@ class Steps(models.Model):
         return f"{self.name} (Order: {self.order})"
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            if not self.step_id:
-                self.step_id = uuid.uuid4()
-        else:
-            if 'step_id' in kwargs.get('update_fields', []):
-                raise ValidationError("step_id cannot be modified after creation.")
-
         super().save(*args, **kwargs)
 
     def get_workflow(self):
@@ -47,7 +39,7 @@ class Steps(models.Model):
 
 
 class StepTransition(models.Model):
-    transition_id = models.CharField(max_length=64, unique=True, null=True, blank=True)  # New UUID field
+    transition_id = models.AutoField(primary_key=True, unique=True)
     workflow_id = models.ForeignKey('workflow.Workflows',  unique=False, on_delete=models.CASCADE, to_field='workflow_id', null=True)
     
     from_step_id = models.ForeignKey(
@@ -56,7 +48,7 @@ class StepTransition(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        to_field='step_id'  # Reference the UUID field
+        to_field='step_id'  # Reference the integer field
     )
     to_step_id = models.ForeignKey(
         Steps,
@@ -64,14 +56,14 @@ class StepTransition(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        to_field='step_id'  # Reference the UUID field
+        to_field='step_id'  # Reference the integer field
     )
     action_id = models.ForeignKey(
         Actions,
         on_delete=models.CASCADE,
         null=True,
         unique=True,  # enforce one-to-one between Action and StepTransition
-        to_field='action_id'  # Reference the UUID field
+        to_field='action_id'  # Reference the integer field
     )
 
     class Meta:
@@ -96,13 +88,6 @@ class StepTransition(models.Model):
             raise ValidationError("from_step and to_step must belong to the same workflow")
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            if not self.transition_id:
-                self.transition_id = str(uuid.uuid4())
-        else:
-            if 'transition_id' in kwargs.get('update_fields', []):
-                raise ValidationError("transition_id cannot be modified after creation.")
-
         # Determine workflow_id from steps
         if self.from_step_id and self.to_step_id:
             if self.from_step_id.workflow_id != self.to_step_id.workflow_id:

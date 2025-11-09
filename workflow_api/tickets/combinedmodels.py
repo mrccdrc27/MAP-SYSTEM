@@ -26,7 +26,7 @@ class Workflows(models.Model):
     user_id        = models.IntegerField(null=False)
     name  = models.CharField(max_length=64, unique=True)
     description   = models.CharField(max_length=256, null=True)
-    workflow_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    workflow_id = models.AutoField(primary_key=True, unique=True)
 
     category = models.ForeignKey(
         Category,
@@ -70,12 +70,9 @@ class Workflows(models.Model):
             })
 
     def save(self, *args, **kwargs):
-        if not self.workflow_id:
-            self.workflow_id = str(uuid.uuid4())
-        else:
-            raise ValidationError("workflow_id cannot be modified after creation.")
         self.full_clean()
         super().save(*args, **kwargs)
+
 class Task(models.Model):
     ticket_id = models.ForeignKey(
         'tickets.WorkflowTicket',  # Assuming Ticket model is in tickets app
@@ -131,6 +128,7 @@ class Steps(models.Model):
         # Optional: only if you need to reference it somewhere dynamically
         from workflow.models import Workflows
         return Workflows.objects.first()
+
 class StepTransition(models.Model):
     from_step_id = models.ForeignKey(
         Steps,

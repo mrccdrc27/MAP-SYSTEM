@@ -18,7 +18,7 @@ END_LOGIC_CHOICES = [
 
 
 class Category(models.Model):
-    category_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    category_id = models.AutoField(primary_key=True, unique=True)
     name = models.CharField(max_length=64, unique=True)
     parent = models.ForeignKey(
         'self',
@@ -33,12 +33,6 @@ class Category(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            if not self.category_id:
-                self.category_id = str(uuid.uuid4())
-        else:
-            if 'category_id' in kwargs.get('update_fields', []):
-                raise ValidationError("category_id cannot be modified after creation.")
         super().save(*args, **kwargs)
 
 
@@ -46,7 +40,7 @@ class Workflows(models.Model):
     user_id = models.IntegerField(null=False)
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=256, null=True)
-    workflow_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    workflow_id = models.AutoField(primary_key=True, unique=True)
 
     end_logic = models.CharField(
         max_length=32,
@@ -99,10 +93,5 @@ class Workflows(models.Model):
                 )
 
     def save(self, *args, **kwargs):
-        if not self.pk and not self.workflow_id:
-            self.workflow_id = str(uuid.uuid4())
-        else:
-            if 'workflow_id' in (kwargs.get('update_fields') or []):
-                raise ValidationError("workflow_id cannot be modified after creation.")
         self.full_clean()  # Trigger SLA ordering validation
         super().save(*args, **kwargs)

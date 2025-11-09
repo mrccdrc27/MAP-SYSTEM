@@ -1,9 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-import uuid
 
 class Actions(models.Model):
-    action_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    action_id = models.AutoField(primary_key=True, unique=True)
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=256, null=True)
     
@@ -11,11 +10,4 @@ class Actions(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # Only enforce immutability on creation
-            if not self.action_id:
-                self.action_id = str(uuid.uuid4())  # Assign a unique identifier if missing
-        else:
-            if 'action_id' in kwargs.get('update_fields', []):
-                raise ValidationError("action_id cannot be modified after creation.")  # Prevent updates
-        
-        super().save(*args, **kwargs)  # Save to database
+        super().save(*args, **kwargs)

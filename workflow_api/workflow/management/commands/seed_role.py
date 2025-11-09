@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
-from role.models import Roles  # adjust this if Roles is in a different app
-import uuid
+from role.models import Roles
 
 class Command(BaseCommand):
     help = 'Seed default roles into the database'
@@ -30,7 +29,6 @@ class Command(BaseCommand):
                 defaults={
                     "description": role["description"],
                     "user_id": role["user_id"],
-                    "role_id": str(uuid.uuid4()),
                 }
             )
             if created:
