@@ -34,10 +34,7 @@ def is_workflow_initialized(workflow):
 
 
 def compute_workflow_status(workflow):
-    from django.db import transaction
-
     new_status = "initialized" if is_workflow_initialized(workflow) else "draft"
     if workflow.status != new_status:
         workflow.status = new_status
-        with transaction.atomic():
-            workflow.save(update_fields=["status"])
+        workflow.save(update_fields=["status"])

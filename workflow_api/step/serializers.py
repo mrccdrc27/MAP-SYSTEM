@@ -9,7 +9,6 @@ class StepSerializer(serializers.ModelSerializer):
     class Meta:
         model = Steps
         fields = (
-            "id", 
             "step_id",
             "workflow_id",
             "role_id", 
@@ -40,8 +39,8 @@ class StepSerializer(serializers.ModelSerializer):
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Actions
-        fields = ['id', 'name', 'description']
-        read_only_fields = ['id']
+        fields = ['action_id', 'name', 'description']
+        read_only_fields = ['action_id']
 
 
 

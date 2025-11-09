@@ -3,14 +3,10 @@ from .models import StepInstance
 from step.models import StepTransition
 from action.models import Actions
 from action_log.models import ActionLog
-
-
-# step_instance/serializers.py
-from rest_framework import serializers
-from .models import StepInstance
 from task.serializers import TaskSerializer
 from action.serializers import ActionSerializer
 from step.serializers import StepSerializer
+import time
 
 class StepInstanceSerializer(serializers.ModelSerializer):
     task = TaskSerializer(source='task_id', read_only=True)
@@ -65,7 +61,12 @@ class NextStepInstanceSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
+        # Generate simple integer-based step_instance_id
+        timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+        step_instance_id = f"{validated_data['task'].task_id}_{validated_data['next_transition'].transition_id}_{timestamp}"
+        
         return StepInstance.objects.create(
+            step_instance_id=step_instance_id,
             task_id=validated_data['task'],
             step_transition_id=validated_data['next_transition'],
             user_id=self.context['request'].user.id  # or pass from context
@@ -139,7 +140,12 @@ class TriggerNextStepSerializer(serializers.Serializer):
         # Continue the workflow as normal
         if transition.to_step_id:
             print("🚨 Creating new step instance...")
+            # Generate simple integer-based step_instance_id
+            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+            step_instance_id = f"{original_instance.task_id.task_id}_{transition.transition_id}_{timestamp}"
+            
             new_step_instance = StepInstance.objects.create(
+                step_instance_id=step_instance_id,
                 task_id=original_instance.task_id,
                 user_id=original_instance.user_id,
                 step_transition_id=transition

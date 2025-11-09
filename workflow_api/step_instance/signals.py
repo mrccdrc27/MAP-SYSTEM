@@ -5,6 +5,7 @@ from django.conf import settings
 from django.dispatch import receiver
 from .models import StepInstance, RoleRoundRobinPointer
 from django.conf import settings
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -47,24 +48,26 @@ def assign_user_to_step_instance(sender, instance, created, **kwargs):
         logger.info(f"Retrieved {len(users)} users for role {role_name}")
 
         # 3. Get or create the round-robin pointer for this role
-        pointer, created_pointer = RoleRoundRobinPointer.objects.get_or_create(
-            role_id=role_id,
-            defaults={"pointer": 0}
-        )
-        logger.info(f"{'Created new' if created_pointer else 'Existing'} pointer for role {role.name} at index {pointer.pointer}")
+        # Use atomic transaction that's separate from the post_save signal transaction
+        with transaction.atomic():
+            pointer, created_pointer = RoleRoundRobinPointer.objects.select_for_update().get_or_create(
+                role_id=role_id,
+                defaults={"pointer": 0}
+            )
+            logger.info(f"{'Created new' if created_pointer else 'Existing'} pointer for role {role.name} at index {pointer.pointer}")
 
-        index = pointer.pointer or 0
-        selected_user_id = users[index % len(users)]
-        logger.info(f"Selected user ID: {selected_user_id} at index: {index}")
+            index = pointer.pointer or 0
+            selected_user_id = users[index % len(users)]
+            logger.info(f"Selected user ID: {selected_user_id} at index: {index}")
 
-        # 4. Assign user to the step instance and update pointer
-        instance.user_id = selected_user_id
-        instance.save(update_fields=["user_id"])
-        logger.info(f"StepInstance {instance.step_instance_id} assigned to user {instance.user_id}")
+            # 4. Assign user to the step instance and update pointer
+            instance.user_id = selected_user_id
+            instance.save(update_fields=["user_id"])
+            logger.info(f"StepInstance {instance.step_instance_id} assigned to user {instance.user_id}")
 
-        pointer.pointer = (index + 1) % len(users)
-        pointer.save(update_fields=["pointer"])
-        logger.info(f"Pointer updated to {pointer.pointer} for role {role_id}")
+            pointer.pointer = (index + 1) % len(users)
+            pointer.save(update_fields=["pointer"])
+            logger.info(f"Pointer updated to {pointer.pointer} for role {role_id}")
 
         # 5. Send notification via Celery
         from celery import Celery

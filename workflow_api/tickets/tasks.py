@@ -8,7 +8,6 @@ from django.conf import settings
 import requests
 from urllib.parse import urlparse, urljoin
 import os
-from django.db import transaction
 
 @shared_task(name='tickets.tasks.receive_ticket')
 def receive_ticket(ticket_data):
@@ -95,69 +94,26 @@ def receive_ticket(ticket_data):
                 "errors": {field: "This field is required." for field in missing}
             }
 
-        # ✅ Validate attachments exist
-        validated_attachments = []
-        for att in ticket_data.get("attachments", []):
-            file_url = att.get("file")
-            if not file_url:
-                continue
-            try:
-                # Extract the path after /media/
-                relative_path = urlparse(file_url).path.split("/media/")[1]
-                abs_path = os.path.join(settings.MEDIA_ROOT, os.path.normpath(relative_path))
-
-                # Ensure destination directory exists
-                os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-
-                # Skip downloading if the file already exists
-                if os.path.exists(abs_path):
-                    print(f"✅ File already exists: {abs_path}")
-                else:
-                    print(f"📥 Downloading: {file_url}")
-                    response = requests.get(file_url)
-                    if response.status_code == 200:
-                        with open(abs_path, "wb") as f:
-                            f.write(response.content)
-                        print(f"✅ Stored: {abs_path}")
-                    else:
-                        print(f"❌ Failed to download: {file_url} (status {response.status_code})")
-                        continue  # skip this attachment
-
-                # Attach the new internal file URL
-                validated_attachments.append({
-                    "file": urljoin(settings.BASE_URL, f"/media/{relative_path.replace(os.sep, '/')}")
-                })
-
-            except Exception as e:
-                print(f"❌ Error processing attachment {file_url}: {e}")
-                continue
-
-        ticket_data["attachments"] = validated_attachments
-
-        # ✅ Create and save with explicit transaction
-        with transaction.atomic():
-            # Use update_or_create to handle duplicates based on original_ticket_id or ticket_number
-            lookup_fields = {}
-            if ticket_data.get('original_ticket_id'):
-                lookup_fields['original_ticket_id'] = ticket_data['original_ticket_id']
-            elif ticket_data.get('ticket_number'):
-                lookup_fields['ticket_number'] = ticket_data['ticket_number']
-            
-            if lookup_fields:
-                ticket, created = WorkflowTicket.objects.update_or_create(
-                    **lookup_fields,
-                    defaults=ticket_data
-                )
-                action = "created" if created else "updated"
-            else:
-                ticket = WorkflowTicket(**ticket_data)
-                ticket.full_clean()
-                ticket.save()
-                action = "created"
-            
-            # Force a database query to verify the save worked
-            saved_ticket = WorkflowTicket.objects.get(pk=ticket.pk)
-            print(f"✅ Verified ticket {action} with ID: {saved_ticket.pk}")
+        # ✅ Create and save - let Django handle transactions naturally
+        lookup_fields = {}
+        if ticket_data.get('original_ticket_id'):
+            lookup_fields['original_ticket_id'] = ticket_data['original_ticket_id']
+        elif ticket_data.get('ticket_number'):
+            lookup_fields['ticket_number'] = ticket_data['ticket_number']
+        
+        if lookup_fields:
+            ticket, created = WorkflowTicket.objects.update_or_create(
+                **lookup_fields,
+                defaults=ticket_data
+            )
+            action = "created" if created else "updated"
+        else:
+            ticket = WorkflowTicket(**ticket_data)
+            ticket.full_clean()
+            ticket.save()
+            action = "created"
+        
+        print(f"✅ Ticket {action} with ID: {ticket.pk}")
 
         return {"status": "success", "ticket_id": ticket.ticket_id or ticket.original_ticket_id, "action": action}
 
