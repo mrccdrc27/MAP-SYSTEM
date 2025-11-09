@@ -14,6 +14,15 @@ class Task(models.Model):
         on_delete=models.CASCADE,
     )
     workflow_id = models.ForeignKey('workflow.Workflows', on_delete=models.CASCADE)
+    current_step = models.ForeignKey(
+        'step.Steps',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        to_field='step_id'
+    )
+    users = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=36, null=True)
 
     def get_workflow(self):
         # Optional: only if you need to reference it somewhere dynamically
