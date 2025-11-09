@@ -66,3 +66,57 @@ class UserAssignmentSerializer(serializers.Serializer):
         if value not in valid_statuses:
             raise serializers.ValidationError(f"Status must be one of: {valid_statuses}")
         return value
+
+class UserAssignmentDetailSerializer(serializers.Serializer):
+    """Serializer for individual user assignment in a task"""
+    userID = serializers.IntegerField()
+    username = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    status = serializers.CharField(max_length=50)
+    assigned_on = serializers.DateTimeField()
+    role = serializers.CharField(max_length=100, required=False, allow_blank=True)
+
+
+class UserTaskListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for displaying tasks assigned to a specific user.
+    Returns task details with related information for easy frontend consumption.
+    """
+    ticket_subject = serializers.CharField(source='ticket_id.subject', read_only=True)
+    ticket_description = serializers.CharField(source='ticket_id.description', read_only=True)
+    workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
+    current_step_name = serializers.CharField(source='current_step.name', read_only=True)
+    current_step_role = serializers.CharField(source='current_step.role_id.name', read_only=True, allow_null=True)
+    user_assignment = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Task
+        fields = [
+            'task_id',
+            'ticket_id',
+            'ticket_subject',
+            'ticket_description',
+            'workflow_id',
+            'workflow_name',
+            'current_step',
+            'current_step_name',
+            'current_step_role',
+            'status',
+            'user_assignment',
+            'created_at',
+            'updated_at',
+            'fetched_at',
+        ]
+        read_only_fields = fields
+    
+    def get_user_assignment(self, obj):
+        """
+        Extract the current user's assignment details from the task.
+        Called when filtering by user_id.
+        """
+        user_id = self.context.get('user_id')
+        if user_id and obj.users:
+            for user in obj.users:
+                if user.get('userID') == user_id:
+                    return UserAssignmentDetailSerializer(user).data
+        return None
