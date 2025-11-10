@@ -11,6 +11,7 @@ from .serializers import (
     WorkflowBasicSerializer,
     WorkflowGraphResponseSerializer,
     CreateWorkflowSerializer,
+    CreateWorkflowWithGraphSerializer,
     UpdateWorkflowDetailsSerializer,
     UpdateWorkflowGraphSerializer,
     UpdateWorkflowGraphSerializerV2,
@@ -47,11 +48,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     
     Actions:
     - list: GET /workflows/ - List all workflows
-    - create: POST /workflows/ - Create a new workflow
+    - create: POST /workflows/ - Create workflow with optional graph
     - retrieve: GET /workflows/{id}/ - Get workflow details
     - update: PUT /workflows/{id}/ - Update workflow
     - update_graph: PUT /workflows/{id}/update-graph/ - Update workflow graph (nodes/edges)
     - update_details: PUT /workflows/{id}/update-details/ - Update workflow metadata
+    - workflow_detail: GET /workflows/{id}/detail/ - Get complete workflow details with graph
+    - get_graph: GET /workflows/{id}/graph/ - Get graph only
     """
     queryset = Workflows.objects.all()
     serializer_class = WorkflowBasicSerializer
@@ -62,12 +65,203 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         """Return appropriate serializer based on action"""
         if self.action == 'create':
-            return CreateWorkflowSerializer
+            return CreateWorkflowWithGraphSerializer
         elif self.action == 'update_details':
             return UpdateWorkflowDetailsSerializer
         elif self.action == 'update_graph':
             return UpdateWorkflowGraphSerializer
         return WorkflowBasicSerializer
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new workflow with optional graph structure.
+        
+        Supports two formats:
+        1. Simple workflow creation (backward compatible):
+           POST /workflows/ 
+           { "name": "...", "description": "...", ... }
+        
+        2. Workflow with graph creation:
+           POST /workflows/
+           {
+               "workflow": { "name": "...", "description": "...", ... },
+               "graph": {
+                   "nodes": [...],
+                   "edges": [...]
+               }
+           }
+        """
+        # Determine which serializer to use
+        if 'workflow' in request.data and 'graph' in request.data:
+            # Combined workflow+graph creation
+            serializer = CreateWorkflowWithGraphSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            try:
+                with transaction.atomic():
+                    workflow_data = serializer.validated_data.get('workflow')
+                    graph_data = serializer.validated_data.get('graph')
+                    
+                    # Create workflow
+                    workflow = Workflows.objects.create(
+                        user_id=request.user.id if hasattr(request.user, 'id') else 1,
+                        name=workflow_data['name'],
+                        description=workflow_data.get('description', ''),
+                        category=workflow_data['category'],
+                        sub_category=workflow_data['sub_category'],
+                        department=workflow_data['department'],
+                        end_logic=workflow_data.get('end_logic', ''),
+                        low_sla=workflow_data.get('low_sla'),
+                        medium_sla=workflow_data.get('medium_sla'),
+                        high_sla=workflow_data.get('high_sla'),
+                        urgent_sla=workflow_data.get('urgent_sla'),
+                    )
+                    logger.info(f"✅ Created workflow: {workflow.name} (ID: {workflow.workflow_id})")
+                    
+                    temp_id_mapping = {}
+                    
+                    # Process nodes if graph is provided
+                    if graph_data:
+                        nodes_data = graph_data.get('nodes', [])
+                        edges_data = graph_data.get('edges', [])
+                        
+                        # Create all nodes
+                        for node in nodes_data:
+                            node_id = node.get('id')
+                            if not node.get('to_delete', False):
+                                role_name = node.get('role')
+                                role = Roles.objects.get(name=role_name)
+                                
+                                new_step = Steps.objects.create(
+                                    workflow_id=workflow,
+                                    role_id=role,
+                                    name=node.get('name', ''),
+                                    description=node.get('description', ''),
+                                    instruction=node.get('instruction', ''),
+                                    design=node.get('design', {}),
+                                    order=0
+                                )
+                                temp_id_mapping[node_id] = new_step.step_id
+                                logger.info(f"✅ Created node: {node_id} -> DB ID {new_step.step_id}")
+                        
+                        # Create all edges
+                        for edge in edges_data:
+                            edge_id = edge.get('id')
+                            if not edge.get('to_delete', False):
+                                from_id = edge.get('from_node')
+                                to_id = edge.get('to_node')
+                                
+                                # Resolve temp IDs to actual IDs
+                                if str(from_id) in temp_id_mapping:
+                                    from_id = temp_id_mapping[str(from_id)]
+                                if str(to_id) in temp_id_mapping:
+                                    to_id = temp_id_mapping[str(to_id)]
+                                
+                                from_step = Steps.objects.get(step_id=int(from_id), workflow_id=workflow.workflow_id)
+                                to_step = Steps.objects.get(step_id=int(to_id), workflow_id=workflow.workflow_id)
+                                
+                                StepTransition.objects.create(
+                                    workflow_id=workflow,
+                                    from_step_id=from_step,
+                                    to_step_id=to_step,
+                                    name=edge.get('name', '')
+                                )
+                                logger.info(f"✅ Created edge: {edge_id} -> DB {from_id}→{to_id}")
+                    
+                    # Return the created workflow with its graph
+                    return self._get_workflow_detail_response(workflow, temp_id_mapping)
+            
+            except Roles.DoesNotExist as e:
+                logger.error(f"❌ Role not found: {str(e)}")
+                return Response(
+                    {'error': f'Role not found: {str(e)}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except ValidationError as e:
+                logger.error(f"❌ Validation error: {str(e)}")
+                return Response(
+                    {'error': f'Validation error: {str(e)}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                logger.error(f"❌ Error creating workflow with graph: {str(e)}")
+                return Response(
+                    {'error': f'Failed to create workflow: {str(e)}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            # Simple workflow creation (backward compatible)
+            serializer = CreateWorkflowSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            try:
+                workflow = Workflows.objects.create(
+                    user_id=request.user.id if hasattr(request.user, 'id') else 1,
+                    **serializer.validated_data
+                )
+                logger.info(f"✅ Created workflow: {workflow.name} (ID: {workflow.workflow_id})")
+                
+                output_serializer = WorkflowBasicSerializer(workflow)
+                return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+            
+            except Exception as e:
+                logger.error(f"❌ Error creating workflow: {str(e)}")
+                return Response(
+                    {'error': f'Failed to create workflow: {str(e)}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+    
+    def _get_workflow_detail_response(self, workflow, temp_id_mapping=None):
+        """Helper method to return complete workflow details with graph"""
+        workflow_serializer = WorkflowBasicSerializer(workflow)
+        workflow_data = workflow_serializer.data
+        
+        nodes = Steps.objects.filter(workflow_id=workflow.workflow_id)
+        edges = StepTransition.objects.filter(workflow_id=workflow.workflow_id)
+        
+        nodes_data = []
+        for node in nodes:
+            created_at = node.created_at
+            updated_at = node.updated_at
+            if hasattr(created_at, 'isoformat'):
+                created_at = created_at.isoformat()
+            if hasattr(updated_at, 'isoformat'):
+                updated_at = updated_at.isoformat()
+            
+            nodes_data.append({
+                'id': node.step_id,
+                'name': node.name,
+                'role': node.role_id.name if node.role_id else '',
+                'description': node.description or '',
+                'instruction': node.instruction or '',
+                'design': node.design or {},
+                'created_at': created_at,
+                'updated_at': updated_at,
+            })
+        
+        edges_data = []
+        for edge in edges:
+            edges_data.append({
+                'id': edge.transition_id,
+                'from': edge.from_step_id.step_id if edge.from_step_id else None,
+                'to': edge.to_step_id.step_id if edge.to_step_id else None,
+                'name': edge.name or ''
+            })
+        
+        graph_data = {
+            'nodes': nodes_data,
+            'edges': edges_data
+        }
+        
+        response_data = {
+            'workflow': workflow_data,
+            'graph': graph_data
+        }
+        
+        if temp_id_mapping:
+            response_data['temp_id_mapping'] = temp_id_mapping
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['put'], url_path='update-graph')
     def update_graph(self, request, workflow_id=None):

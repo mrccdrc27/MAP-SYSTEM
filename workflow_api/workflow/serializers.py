@@ -233,3 +233,113 @@ class TransitionSerializer(serializers.ModelSerializer):
 class UpdateTransitionDetailsSerializer(serializers.Serializer):
     """Serializer for updating transition details (name only)"""
     name = serializers.CharField(max_length=64, required=False, allow_blank=True)
+
+
+class CreateWorkflowWithGraphSerializer(serializers.Serializer):
+    """
+    Serializer for creating a complete workflow with graph in a single request.
+    
+    Example:
+    {
+        "workflow": {
+            "name": "Infrastructure Workflow",
+            "description": "Handles IT reset requests",
+            "category": "IT",
+            "sub_category": "Support",
+            "department": "IT Support",
+            "end_logic": "",
+            "low_sla": "P7D",
+            "medium_sla": "P5D",
+            "high_sla": "P3D",
+            "urgent_sla": "P1D"
+        },
+        "graph": {
+            "nodes": [
+                {
+                    "id": "temp-1",
+                    "name": "Request Received",
+                    "role": "System",
+                    "description": "",
+                    "instruction": "",
+                    "design": {}
+                },
+                {
+                    "id": "temp-2",
+                    "name": "Reset Password",
+                    "role": "Admin",
+                    "description": "",
+                    "instruction": "",
+                    "design": {}
+                }
+            ],
+            "edges": [
+                {
+                    "id": "temp-101",
+                    "from": "temp-1",
+                    "to": "temp-2",
+                    "name": ""
+                }
+            ]
+        }
+    }
+    """
+    
+    class WorkflowDataSerializer(serializers.Serializer):
+        """Nested serializer for workflow metadata"""
+        name = serializers.CharField(max_length=64)
+        description = serializers.CharField(max_length=256, required=False, allow_blank=True)
+        category = serializers.CharField(max_length=64)
+        sub_category = serializers.CharField(max_length=64)
+        department = serializers.CharField(max_length=64)
+        end_logic = serializers.CharField(max_length=32, required=False, allow_blank=True)
+        low_sla = serializers.DurationField(required=False)
+        medium_sla = serializers.DurationField(required=False)
+        high_sla = serializers.DurationField(required=False)
+        urgent_sla = serializers.DurationField(required=False)
+    
+    workflow = WorkflowDataSerializer()
+    graph = UpdateWorkflowGraphSerializer(required=False)
+    
+    def validate_workflow(self, value):
+        """Validate workflow data"""
+        # Check if workflow name is unique
+        if Workflows.objects.filter(name=value.get('name')).exists():
+            raise serializers.ValidationError(
+                f"Workflow with name '{value.get('name')}' already exists"
+            )
+        return value
+    
+    def validate_graph(self, value):
+        """Validate graph structure"""
+        if not value:
+            return value
+        
+        nodes = value.get('nodes', [])
+        edges = value.get('edges', [])
+        
+        # Validate edges reference existing nodes
+        node_ids = {str(node.get('id')) for node in nodes}
+        
+        for edge in edges:
+            from_id = str(edge.get('from_node', ''))
+            to_id = str(edge.get('to_node', ''))
+            
+            if from_id and from_id not in node_ids:
+                raise serializers.ValidationError(
+                    f"Edge references non-existent from_node: {from_id}"
+                )
+            if to_id and to_id not in node_ids:
+                raise serializers.ValidationError(
+                    f"Edge references non-existent to_node: {to_id}"
+                )
+        
+        # Validate all node roles exist
+        for node in nodes:
+            role_name = node.get('role')
+            if role_name and not node.get('to_delete', False):
+                if not Roles.objects.filter(name=role_name).exists():
+                    raise serializers.ValidationError(
+                        f"Role '{role_name}' does not exist"
+                    )
+        
+        return value

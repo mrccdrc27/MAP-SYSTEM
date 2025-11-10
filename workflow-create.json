@@ -47,8 +47,8 @@
       "edges": [
         {
           "id": "temp-101",
-          "from": "temp-1",
-          "to": "temp-2",
+          "from_node": "temp-1",
+          "to_node": "temp-2",
           "name": ""
         },
         {
