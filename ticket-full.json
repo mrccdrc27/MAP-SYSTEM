@@ -1,93 +1,98 @@
 {
-    "step_instance_id": "e30edddc-ca9d-4d0d-90b9-3fb8a14a32a5",
-    "user_id": 6,
-    "step_transition_id": "fcee91ef-a5c8-4c42-8d95-20c90935af70",
-    "has_acted": false,
-    "step": {
-        "id": 13,
-        "step_id": "1732a282-bb96-4f5a-8ef7-1a4d97b67410",
-        "workflow_id": "57e5b2f8-aacf-45d7-a69e-779fe09c17e0",
-        "role_id": "46606d1e-f3b2-4555-b230-98c817dd11f5",
-        "name": "IT Support Software Installation Workflow - Triage Ticket",
-        "description": "Initial triage to verify ticket completeness, assign category, and route to the correct resolver.",
-        "is_initialized": true,
-        "created_at": "2025-11-06T10:57:38.708821Z",
-        "updated_at": "2025-11-06T10:57:38.708832Z",
-        "instruction": "Verify ticket completeness: ensure all required fields, details, and justifications are present."
-    },
-    "task": {
-        "task_id": "0988b00b-4604-4a42-95cf-8182f79c1b47",
-        "workflow_id": 5,
-        "ticket": {
-            "id": 2,
-            "ticket_id": null,
-            "original_ticket_id": "277",
-            "ticket_number": "TX20251106444441",
-            "source_service": "ticket_service",
-            "employee": {
-                "id": 15,
-                "first_name": "Chris",
-                "last_name": "Wilson",
-                "email": "chris.wilson@example.com",
-                "department": null,
-                "position": null,
-                "is_active": true,
-                "date_joined": "2025-11-03T05:54:49.287337Z"
-            },
-            "employee_cookie_id": 15,
-            "subject": "hello this ticket is legit I suppose",
-            "category": "IT Support",
-            "subcategory": null,
-            "sub_category": "Software Installation/Update",
-            "description": "qweqasdzcxasdqweasdzxcsda",
-            "scheduled_date": "2025-11-29",
-            "submit_date": "2025-11-06T11:57:52.266950Z",
-            "update_date": "2025-11-06T12:01:56.665032Z",
-            "assigned_to": null,
-            "priority": "Low",
-            "status": "Open",
-            "department": "IT Department",
-            "asset_name": null,
-            "serial_number": null,
-            "location": null,
-            "expected_return_date": null,
-            "issue_type": null,
-            "other_issue": null,
-            "performance_start_date": null,
-            "performance_end_date": null,
-            "approved_by": "Maria Garcia",
-            "rejected_by": null,
-            "cost_items": null,
-            "requested_budget": null,
-            "fiscal_year": null,
-            "department_input": null,
-            "dynamic_data": {
-                "deviceType": "Laptop",
-                "softwareAffected": "123asdzxc",
-                "scheduleRequest": {
-                    "date": "2025-11-29",
-                    "time": "",
-                    "notes": ""
-                }
-            },
-            "response_time": null,
-            "resolution_time": null,
-            "time_closed": null,
-            "rejection_reason": null,
-            "attachments": [],
-            "is_task_allocated": true,
-            "fetched_at": null,
-            "created_at": "2025-11-06T12:01:56.686463Z",
-            "updated_at": "2025-11-06T12:01:56.686471Z"
+    "nodes": [
+      {
+        "id": "1",
+        "name": "Asset Check In Workflow - Triage Ticket",
+        "role": "Admin",
+        "description": "instructions2",
+        "instruction": "instructions",
+        "design": {
+          "x": 50,
+          "y": 50
         },
-        "fetched_at": "2025-11-06T12:01:58.790555Z"
-    },
-    "available_actions": [
-        {
-            "action_id": "1c2f98ff-14f6-444d-a129-257f1ab0b728",
-            "id": 22,
-            "name": "Software Installation - Triage Ticket - submit",
-            "description": "Submits the Software Installation request from Triage to Asset Manager for resolution"
-        }
+        "to_delete": false
+      },
+      {
+        "id": "2",
+        "name": "Asset Check In Workflow - Resolve Ticket",
+        "role": "Asset Manager",
+        "description": "new description",
+        "instruction": "Update the asset's status (e.g., 'In Stock', 'Assigned', 'In Repair') in the inventory system.",
+        "design": {
+          "x": 50,
+          "y": 250
+        },
+        "to_delete": false
+      },
+      {
+        "id": "3",
+        "name": "Asset Check In Workflow - Finalize Ticket",
+        "role": "Admin",
+        "description": "new description 2",
+        "instruction": "Confirm that the primary task is completed and all data has been accurately updated in the relevant systems.",
+        "design": {
+          "x": 50,
+          "y": 450
+        },
+        "to_delete": false
+      },
+      {
+        "id": "temp-n1762787721542",
+        "name": "New Step",
+        "role": "User",
+        "description": "",
+        "instruction": "",
+        "design": {
+          "x": 405.20339726349044,
+          "y": 62.59945355191259
+        },
+        "to_delete": false
+      }
+    ],
+    "edges": [
+      {
+        "id": "2",
+        "from": "1",
+        "to": "2",
+        "name": "",
+        "design": {
+          "source_handle": "bottom",
+          "target_handle": "top"
+        },
+        "to_delete": false
+      },
+      {
+        "id": "3",
+        "from": "2",
+        "to": "3",
+        "name": "",
+        "design": {
+          "source_handle": "bottom",
+          "target_handle": "top"
+        },
+        "to_delete": false
+      },
+      {
+        "id": "4",
+        "from": "2",
+        "to": "1",
+        "name": "",
+        "design": {
+          "source_handle": "left",
+          "target_handle": "left"
+        },
+        "to_delete": false
+      },
+      {
+        "id": "temp-e1762787734774",
+        "from": null,
+        "to": "1",
+        "name": "New Transition",
+        "design": {
+          "source_handle": "left",
+          "target_handle": "right"
+        },
+        "to_delete": false
+      }
     ]
-}
+  }

@@ -51,6 +51,22 @@
   box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
 }
 
+.addNodeBtn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #8b5cf6;
+  color: white;
+}
+
+.addNodeBtn:hover {
+  background: #7c3aed;
+}
+
 .saveBtn {
   padding: 10px 16px;
   border: none;

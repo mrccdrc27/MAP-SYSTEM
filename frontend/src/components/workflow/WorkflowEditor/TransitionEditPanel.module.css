@@ -115,11 +115,12 @@
   display: flex;
   gap: 10px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .cancelBtn,
-.saveBtn {
-  flex: 1;
+.saveBtn,
+.deleteBtn {
   padding: 10px 16px;
   border: none;
   border-radius: 6px;
@@ -130,6 +131,8 @@
 }
 
 .cancelBtn {
+  flex: 1;
+  min-width: 80px;
   background: #e5e7eb;
   color: #374151;
 }
@@ -139,6 +142,8 @@
 }
 
 .saveBtn {
+  flex: 1;
+  min-width: 80px;
   background: #3b82f6;
   color: white;
 }
@@ -150,4 +155,57 @@
 .saveBtn:disabled {
   background: #9ca3af;
   cursor: not-allowed;
+}
+
+.deleteBtn {
+  flex: 1;
+  min-width: 120px;
+  background: #ef4444;
+  color: white;
+}
+
+.deleteBtn:hover {
+  background: #dc2626;
+}
+
+.deleteConfirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+
+.deleteConfirmation p {
+  margin: 0;
+  font-size: 14px;
+  color: #7f1d1d;
+}
+
+.deleteConfirmation .warning {
+  font-weight: 600;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+}
+
+.deleteConfirmBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deleteConfirmBtn:hover {
+  background: #b91c1c;
 }

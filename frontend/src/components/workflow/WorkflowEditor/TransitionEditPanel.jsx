@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import styles from './TransitionEditPanel.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
-export default function TransitionEditPanel({ transition, onClose, onSave }) {
+export default function TransitionEditPanel({ transition, onClose, onSave, onDelete }) {
   const [formData, setFormData] = useState({
     name: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { updateTransitionDetails } = useWorkflowAPI();
 
@@ -51,6 +52,15 @@ export default function TransitionEditPanel({ transition, onClose, onSave }) {
     }
   };
 
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete();
+    onClose();
+  };
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
@@ -62,38 +72,70 @@ export default function TransitionEditPanel({ transition, onClose, onSave }) {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <div className={styles.info}>
-        <div className={styles.infoItem}>
-          <span>From Step ID:</span>
-          <strong>{transition?.data?.from || transition?.source}</strong>
+      {showDeleteConfirm ? (
+        <div className={styles.deleteConfirmation}>
+          <p>Are you sure you want to delete this transition?</p>
+          <p className={styles.warning}>This action cannot be undone.</p>
+          <div className={styles.confirmActions}>
+            <button
+              className={styles.cancelBtn}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className={styles.deleteConfirmBtn}
+              onClick={confirmDelete}
+            >
+              Delete Transition
+            </button>
+          </div>
         </div>
-        <div className={styles.infoItem}>
-          <span>To Step ID:</span>
-          <strong>{transition?.data?.to || transition?.target}</strong>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className={styles.info}>
+            <div className={styles.infoItem}>
+              <span>From Step ID:</span>
+              <strong>{transition?.data?.from || transition?.source}</strong>
+            </div>
+            <div className={styles.infoItem}>
+              <span>To Step ID:</span>
+              <strong>{transition?.data?.to || transition?.target}</strong>
+            </div>
+          </div>
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.formGroup}>
-          <label>Transition Name / Label</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="e.g., Approved, Rejected, Needs Revision"
-          />
-        </div>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label>Transition Name / Label</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g., Approved, Rejected, Needs Revision"
+              />
+            </div>
 
-        <div className={styles.formActions}>
-          <button type="button" onClick={onClose} className={styles.cancelBtn}>
-            Cancel
-          </button>
-          <button type="submit" className={styles.saveBtn} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Transition'}
-          </button>
-        </div>
-      </form>
+            <div className={styles.formActions}>
+              <button type="button" onClick={onClose} className={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button type="submit" className={styles.saveBtn} disabled={loading}>
+                {loading ? 'Saving...' : 'Save Transition'}
+              </button>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className={styles.deleteBtn}
+                >
+                  Delete Transition
+                </button>
+              )}
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 }

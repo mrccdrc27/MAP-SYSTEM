@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './StepEditPanel.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
-export default function StepEditPanel({ step, roles, onClose, onSave }) {
+export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, onChange }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -11,6 +11,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { updateStepDetails } = useWorkflowAPI();
 
@@ -27,16 +28,31 @@ export default function StepEditPanel({ step, roles, onClose, onSave }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        [name]: value,
+      };
+      if (onChange) onChange(newData);
+      return newData;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (String(step.id).startsWith('temp-')) {
+      onSave({
+        ...step,
+        name: formData.name,
+        role: formData.role,
+        description: formData.description,
+        instruction: formData.instruction,
+      });
+      return;
+    }
 
     try {
       const updateData = {
@@ -60,6 +76,15 @@ export default function StepEditPanel({ step, roles, onClose, onSave }) {
     }
   };
 
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete();
+    onClose();
+  };
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
@@ -71,67 +96,97 @@ export default function StepEditPanel({ step, roles, onClose, onSave }) {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.formGroup}>
-          <label>Step Name</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Enter step name"
-            required
-          />
+      {showDeleteConfirm ? (
+        <div className={styles.deleteConfirmation}>
+          <p>Are you sure you want to delete this step?</p>
+          <p className={styles.warning}>This action cannot be undone.</p>
+          <div className={styles.confirmActions}>
+            <button
+              className={styles.cancelBtn}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className={styles.deleteConfirmBtn}
+              onClick={confirmDelete}
+            >
+              Delete Step
+            </button>
+          </div>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label>Step Name</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Enter step name"
+              required
+            />
+          </div>
 
-        <div className={styles.formGroup}>
-          <label>Role</label>
-          <select
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select a role</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.name}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className={styles.formGroup}>
+            <label>Role</label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a role</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.name}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className={styles.formGroup}>
-          <label>Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Enter step description"
-            rows="3"
-          />
-        </div>
+          <div className={styles.formGroup}>
+            <label>Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Enter step description"
+              rows="3"
+            />
+          </div>
 
-        <div className={styles.formGroup}>
-          <label>Instruction</label>
-          <textarea
-            name="instruction"
-            value={formData.instruction}
-            onChange={handleChange}
-            placeholder="Enter step instruction"
-            rows="3"
-          />
-        </div>
+          <div className={styles.formGroup}>
+            <label>Instruction</label>
+            <textarea
+              name="instruction"
+              value={formData.instruction}
+              onChange={handleChange}
+              placeholder="Enter step instruction"
+              rows="3"
+            />
+          </div>
 
-        <div className={styles.formActions}>
-          <button type="button" onClick={onClose} className={styles.cancelBtn}>
-            Cancel
-          </button>
-          <button type="submit" className={styles.saveBtn} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Step'}
-          </button>
-        </div>
-      </form>
+          <div className={styles.formActions}>
+            <button type="button" onClick={onClose} className={styles.cancelBtn}>
+              Cancel
+            </button>
+            <button type="submit" className={styles.saveBtn} disabled={loading}>
+              {loading ? 'Saving...' : 'Save Step'}
+            </button>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className={styles.deleteBtn}
+              >
+                Delete Step
+              </button>
+            )}
+          </div>
+        </form>
+      )}
     </div>
   );
 }

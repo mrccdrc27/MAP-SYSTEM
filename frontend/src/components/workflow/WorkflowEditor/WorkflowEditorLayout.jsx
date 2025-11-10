@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -7,6 +7,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
+  useReactFlow,
+  ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
@@ -61,13 +63,20 @@ function getLayout(nodes, edges) {
   });
 }
 
-function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
+const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick, onAddNode, onDeleteNode, onDeleteEdge }, ref) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [workflowData, setWorkflowData] = useState(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const { getViewport } = useReactFlow();
 
   const { getWorkflowDetail, updateWorkflowGraph, loading } = useWorkflowAPI();
+
+  useImperativeHandle(ref, () => ({
+    updateNodeData: (nodeId, newData) => {
+      setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
+    }
+  }), [setNodes]);
 
   // Load workflow data
   useEffect(() => {
@@ -117,6 +126,38 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
     loadWorkflow();
   }, [workflowId, getWorkflowDetail, setNodes, setEdges, onStepClick]);
 
+  // Handle adding a new node
+  const handleAddNode = useCallback(() => {
+    const viewport = getViewport();
+    // Calculate approximate center position in flow coordinates
+    const centerX = -viewport.x / viewport.zoom + 200; // Offset to place in visible area
+    const centerY = -viewport.y / viewport.zoom + 100;
+    
+    const newNodeId = `temp-n${Date.now()}`;
+    const newNode = {
+      id: newNodeId,
+      data: {
+        label: 'New Step',
+        role: 'User',
+        description: '',
+        instruction: '',
+        onStepClick: () => onStepClick({
+          id: newNodeId,
+          name: 'New Step',
+          role: 'User',
+          description: '',
+          instruction: '',
+        }),
+      },
+      type: 'stepNode',
+      position: { x: centerX, y: centerY },
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    setUnsavedChanges(true);
+    onAddNode(newNode);
+  }, [getViewport, setNodes, onStepClick, onAddNode]);
+
   // Handle edge connection
   const onConnect = useCallback(
     (connection) => {
@@ -127,8 +168,8 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
             markerEnd: { type: MarkerType.ArrowClosed },
             id: `temp-e${Date.now()}`,
             label: 'New Transition',
-            sourceHandle: normalizeHandleName(connection.sourceHandle),
-            targetHandle: normalizeHandleName(connection.targetHandle),
+            sourceHandle: normalizeHandleName(connection.sourceHandle) || 'bottom',
+            targetHandle: normalizeHandleName(connection.targetHandle) || 'top',
           },
           eds
         )
@@ -152,6 +193,21 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
     },
     [onEdgeClick]
   );
+
+  // Handle node deletion
+  const handleDeleteNode = useCallback((nodeId) => {
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setUnsavedChanges(true);
+    onDeleteNode(nodeId);
+  }, [setNodes, setEdges, onDeleteNode]);
+
+  // Handle edge deletion
+  const handleDeleteEdge = useCallback((edgeId) => {
+    setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+    setUnsavedChanges(true);
+    onDeleteEdge(edgeId);
+  }, [setEdges, onDeleteEdge]);
 
   // Save changes to backend
   const saveChanges = useCallback(async () => {
@@ -211,6 +267,12 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
 
       <div className={styles.actionBar}>
         <button
+          className={styles.addNodeBtn}
+          onClick={handleAddNode}
+        >
+          + Add Step
+        </button>
+        <button
           className={styles.saveBtn}
           onClick={saveChanges}
           disabled={!unsavedChanges || loading}
@@ -220,13 +282,17 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
       </div>
     </>
   );
-}
+});
 
 export default function WorkflowEditorLayout({ workflowId }) {
   const [editingStep, setEditingStep] = useState(null);
   const [editingTransition, setEditingTransition] = useState(null);
   const [editingWorkflow, setEditingWorkflow] = useState(false);
   const [workflowData, setWorkflowData] = useState(null);
+  const [nodesToDelete, setNodesToDelete] = useState([]);
+  const [edgesToDelete, setEdgesToDelete] = useState([]);
+
+  const contentRef = useRef();
 
   const { getWorkflowDetail } = useWorkflowAPI();
   const { roles } = useWorkflowRoles();
@@ -259,14 +325,37 @@ export default function WorkflowEditorLayout({ workflowId }) {
     setEditingWorkflow(false);
   }, []);
 
+  // Handle adding a new node
+  const onAddNode = useCallback((newNode) => {
+    console.log('New node added:', newNode);
+  }, []);
+
+  // Handle deleting a node
+  const onDeleteNode = useCallback((nodeId) => {
+    setNodesToDelete((prev) => [...prev, nodeId]);
+    setEditingStep(null);
+  }, []);
+
+  // Handle deleting an edge
+  const onDeleteEdge = useCallback((edgeId) => {
+    setEdgesToDelete((prev) => [...prev, edgeId]);
+    setEditingTransition(null);
+  }, []);
+
   return (
     <div className={styles.container}>
       <div className={styles.editorWrapper}>
-        <WorkflowEditorContent
-          workflowId={workflowId}
-          onStepClick={onStepClick}
-          onEdgeClick={onEdgeClick}
-        />
+        <ReactFlowProvider>
+          <WorkflowEditorContent
+            ref={contentRef}
+            workflowId={workflowId}
+            onStepClick={onStepClick}
+            onEdgeClick={onEdgeClick}
+            onAddNode={onAddNode}
+            onDeleteNode={onDeleteNode}
+            onDeleteEdge={onDeleteEdge}
+          />
+        </ReactFlowProvider>
 
         <div className={styles.panelContainer}>
           {editingWorkflow && workflowData && (
@@ -286,8 +375,23 @@ export default function WorkflowEditorLayout({ workflowId }) {
               roles={roles}
               onClose={() => setEditingStep(null)}
               onSave={(updated) => {
+                if (String(editingStep.id).startsWith('temp-')) {
+                  contentRef.current.updateNodeData(editingStep.id, {
+                    label: updated.name,
+                    role: updated.role,
+                    description: updated.description,
+                    instruction: updated.instruction,
+                  });
+                }
                 setEditingStep(null);
               }}
+              onDelete={() => onDeleteNode(editingStep.id)}
+              onChange={String(editingStep.id).startsWith('temp-') ? (updated) => contentRef.current.updateNodeData(editingStep.id, {
+                label: updated.name,
+                role: updated.role,
+                description: updated.description,
+                instruction: updated.instruction,
+              }) : undefined}
             />
           )}
 
@@ -298,6 +402,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
               onSave={(updated) => {
                 setEditingTransition(null);
               }}
+              onDelete={() => onDeleteEdge(editingTransition.id)}
             />
           )}
 

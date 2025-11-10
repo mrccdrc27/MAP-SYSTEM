@@ -83,7 +83,7 @@ export const useWorkflowAPI = () => {
     setError(null);
     try {
       const response = await api.put(
-        `/step/${stepId}/update-details/`,
+        `/workflows/steps/${stepId}/update-details/`,
         stepData
       );
       return response.data;
