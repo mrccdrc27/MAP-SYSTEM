@@ -8,6 +8,7 @@ import WorkflowEditorSidebar from './WorkflowEditorSidebar';
 import WorkflowEditorToolbar from './WorkflowEditorToolbar';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
+import AdminNav from "../../../components/navigation/AdminNav";
 
 export default function WorkflowEditorLayout({ workflowId }) {
   const [editingStep, setEditingStep] = useState(null);
@@ -146,6 +147,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
 
   return (
     <div className={styles.wrapper}>
+      <AdminNav/>
       {/* SAVE STATUS TOAST */}
       {saveStatus && (
         <div className={`${styles.saveToast} ${styles[`saveToast${saveStatus.charAt(0).toUpperCase() + saveStatus.slice(1)}`]}`}>

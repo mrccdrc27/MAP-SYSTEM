@@ -79,7 +79,8 @@ export default function MainRoute() {
         <Route path="/admin/archive/:id" element={<AdminArchiveDetail />} />
         <Route path="/admin/workflow/detail" element={<WorkflowDetail />} />
         <Route path="/admin/ticket" element={<AdminTicket />} />
-        <Route path="/admin/ticket/:id" element={<AdminTicketDetail />} />
+        {/* <Route path="/admin/ticket/:id" element={<AdminTicketDetail />} /> */}
+        <Route path="/admin/workflow/:workflowId" element={<WorkflowEditorPage />} />
         <Route path="/admin/assigned" element={<AdminTicket />} />
         <Route path="/admin/workflow/:uuid" element={<WorkflowDetail />} />
         <Route path="/admin/profile" element={<AdminProfile />} />

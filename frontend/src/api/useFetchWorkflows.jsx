@@ -10,7 +10,7 @@ const useFetchWorkflows = () => {
   const fetchWorkflows = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/workflow/');
+      const response = await api.get('/workflows/');
       setWorkflows(response.data);
     } catch (err) {
       setError(err.response?.data || 'Failed to fetch workflows.');
