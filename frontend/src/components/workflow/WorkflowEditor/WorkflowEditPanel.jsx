@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './WorkflowEditPanel.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
-export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
+export default function WorkflowEditPanel({ workflow, onClose, onSave, readOnly = false }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -17,7 +17,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!readOnly);
 
   const { updateWorkflowDetails } = useWorkflowAPI();
 
@@ -35,8 +35,9 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
         high_sla: workflow.high_sla || '',
         urgent_sla: workflow.urgent_sla || '',
       });
+      setIsEditing(!readOnly);
     }
-  }, [workflow]);
+  }, [workflow, readOnly]);
 
   const handleChange = (e) => {
     if (!isEditing) return;
@@ -71,6 +72,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
         ...workflow,
         ...updateData,
       });
+      setIsEditing(false);
     } catch (err) {
       setError(err.message || 'Failed to update workflow');
       console.error('Error updating workflow:', err);
@@ -82,10 +84,12 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <h3>Edit Workflow</h3>
-        <button className={styles.closeBtn} onClick={onClose}>
-          ✕
-        </button>
+        <h3>{readOnly ? 'Workflow Details' : 'Edit Workflow'}</h3>
+        {onClose && (
+          <button className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
+        )}
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
@@ -102,7 +106,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter workflow name"
-              disabled={!isEditing}
+              disabled={!isEditing || readOnly}
               required
             />
           </div>
@@ -115,7 +119,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Enter workflow description"
               rows="3"
-              disabled={!isEditing}
+              disabled={!isEditing || readOnly}
             />
           </div>
         </div>
@@ -131,7 +135,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.category}
               onChange={handleChange}
               placeholder="e.g., Support, Sales, HR"
-              disabled={!isEditing}
+              disabled={!isEditing || readOnly}
             />
           </div>
 
@@ -143,7 +147,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.sub_category}
               onChange={handleChange}
               placeholder="e.g., Technical, Billing"
-              disabled={!isEditing}
+              disabled={!isEditing || readOnly}
             />
           </div>
 
@@ -155,7 +159,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.department}
               onChange={handleChange}
               placeholder="e.g., Engineering, Operations"
-              disabled={!isEditing}
+              disabled={!isEditing || readOnly}
             />
           </div>
         </div>
@@ -173,7 +177,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 48"
                 min="0"
-                disabled={!isEditing}
+                disabled={!isEditing || readOnly}
               />
             </div>
 
@@ -186,7 +190,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 24"
                 min="0"
-                disabled={!isEditing}
+                disabled={!isEditing || readOnly}
               />
             </div>
 
@@ -199,7 +203,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 12"
                 min="0"
-                disabled={!isEditing}
+                disabled={!isEditing || readOnly}
               />
             </div>
 
@@ -212,7 +216,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 4"
                 min="0"
-                disabled={!isEditing}
+                disabled={!isEditing || readOnly}
               />
             </div>
           </div>
@@ -229,13 +233,17 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Define the logic for workflow completion"
               rows="3"
-              disabled={!isEditing}
+              disabled={!isEditing || readOnly}
             />
           </div>
         </div>
 
         <div className={styles.formActions}>
-          {!isEditing ? (
+          {readOnly ? (
+            <div className={styles.readOnlyNote}>
+              <p>ℹ️ Go to the "Edit Workflow" tab to make changes</p>
+            </div>
+          ) : !isEditing ? (
             <button
               type="button"
               onClick={() => setIsEditing(true)}

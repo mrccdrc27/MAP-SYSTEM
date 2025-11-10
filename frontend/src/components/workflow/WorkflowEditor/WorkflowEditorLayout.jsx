@@ -328,69 +328,50 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
   }, [onEdgesChange, handleDeleteEdge]);
 
   return (
-    <>
-      <div className={styles.flowContainer}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={handleEdgesChange}
-          onConnect={onConnect}
-          onEdgeClick={onEdgeClickHandler}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          minZoom={0.1}
-          maxZoom={2}
-        >
-          <Background />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
-      </div>
-
-      <div className={styles.actionBar}>
-        <button
-          className={styles.addNodeBtn}
-          onClick={handleAddNode}
-        >
-          + Add Step
-        </button>
-        <button
-          className={`${styles.editModeBtn} ${isEditingGraph ? styles.active : ''}`}
-          onClick={onToggleEditMode}
-          title={isEditingGraph ? 'Click to disable node editing' : 'Click to enable node editing'}
-        >
-          {isEditingGraph ? '✏️ Editing' : '🔒 Locked'}
-        </button>
-        <button
-          className={styles.saveBtn}
-          onClick={saveChanges}
-          disabled={!unsavedChanges || loading}
-        >
-          {loading ? 'Saving...' : 'Save Changes'}
-        </button>
-      </div>
-    </>
+    <div className={styles.centerArea}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={onConnect}
+        onEdgeClick={onEdgeClickHandler}
+        nodeTypes={nodeTypes}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        minZoom={0.1}
+        maxZoom={2}
+      >
+        <Background />
+        <Controls />
+        <MiniMap />
+      </ReactFlow>
+    </div>
   );
 });
 
 export default function WorkflowEditorLayout({ workflowId }) {
   const [editingStep, setEditingStep] = useState(null);
   const [editingTransition, setEditingTransition] = useState(null);
-  const [editingWorkflow, setEditingWorkflow] = useState(false);
   const [workflowData, setWorkflowData] = useState(null);
-  const [nodesToDelete, setNodesToDelete] = useState([]);
-  const [edgesToDelete, setEdgesToDelete] = useState([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditingGraph, setIsEditingGraph] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState('steps');
+  const [activeTopTab, setActiveTopTab] = useState('manage');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedPopup, setShowUnsavedPopup] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('workflow-sidebar-width');
+    return saved ? parseInt(saved, 10) : 280;
+  });
+  const [saveStatus, setSaveStatus] = useState(null); // null, 'saving', 'success', 'error'
+  const [isResizing, setIsResizing] = useState(false);
 
   const contentRef = useRef();
-
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
   const { getWorkflowDetail } = useWorkflowAPI();
   const { roles } = useWorkflowRoles();
 
-  // Load workflow data for edit panel
   useEffect(() => {
     const loadWorkflow = async () => {
       try {
@@ -400,159 +381,375 @@ export default function WorkflowEditorLayout({ workflowId }) {
         console.error('Failed to load workflow:', err);
       }
     };
-
     loadWorkflow();
   }, [workflowId, getWorkflowDetail]);
 
-  // Handle step click
+  // Handle mouse down on resize handle
+  const handleResizeStart = useCallback((e) => {
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  // Handle mouse move for resizing
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+
+      const diff = e.clientX - startXRef.current;
+      const newWidth = Math.max(200, Math.min(500, startWidthRef.current + diff)); // Min 200px, max 500px
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+        // Save the width to localStorage
+        localStorage.setItem('workflow-sidebar-width', sidebarWidth.toString());
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing, sidebarWidth]);
+
   const onStepClick = useCallback((stepData) => {
     setEditingStep(stepData);
     setEditingTransition(null);
-    setEditingWorkflow(false);
+    setActiveSidebarTab('steps');
   }, []);
 
-  // Handle edge click
   const onEdgeClick = useCallback((edgeData) => {
     setEditingTransition(edgeData);
     setEditingStep(null);
-    setEditingWorkflow(false);
+    setActiveSidebarTab('transitions');
   }, []);
 
-  // Handle adding a new node
   const onAddNode = useCallback((newNode) => {
-    console.log('New node added:', newNode);
-  }, []);
-
-  // Handle deleting a node
-  const onDeleteNode = useCallback((nodeId) => {
-    setNodesToDelete((prev) => [...prev, nodeId]);
-    setEditingStep(null);
-  }, []);
-
-  // Handle deleting an edge
-  const onDeleteEdge = useCallback((edgeId) => {
-    setEdgesToDelete((prev) => [...prev, edgeId]);
-    setEditingTransition(null);
-  }, []);
-
-  // Handle save all changes
-  const handleSaveAll = useCallback(async () => {
-    setHasUnsavedChanges(false);
-    if (contentRef.current?.saveChanges) {
-      await contentRef.current.saveChanges();
-    }
-  }, []);
-
-  // Track when any changes are made
-  const markAsChanged = useCallback(() => {
+    setEditingStep({
+      id: newNode.id,
+      name: 'New Step',
+      role: 'User',
+      description: '',
+      instruction: '',
+    });
+    setActiveSidebarTab('steps');
     setHasUnsavedChanges(true);
   }, []);
 
+  const onDeleteNode = useCallback(() => {
+    setEditingStep(null);
+    setHasUnsavedChanges(true);
+  }, []);
+
+  const onDeleteEdge = useCallback(() => {
+    setEditingTransition(null);
+    setHasUnsavedChanges(true);
+  }, []);
+
+  const handleSaveAll = useCallback(async () => {
+    setSaveStatus('saving');
+    try {
+      if (contentRef.current?.saveChanges) {
+        await contentRef.current.saveChanges();
+        setHasUnsavedChanges(false);
+        setShowUnsavedPopup(false);
+        setSaveStatus('success');
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setSaveStatus(null);
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('Failed to save:', err);
+      setSaveStatus('error');
+      setTimeout(() => {
+        setSaveStatus(null);
+      }, 3000);
+    }
+  }, []);
+
+  const handleAddStep = useCallback(() => {
+    contentRef.current?.handleAddNode?.();
+  }, []);
+
+  if (!workflowData) {
+    return <div className={styles.centerText}>Loading workflow...</div>;
+  }
+
   return (
-    <div className={styles.container}>
-      <div className={styles.editorWrapper}>
-        <ReactFlowProvider>
-          <WorkflowEditorContent
-            ref={contentRef}
-            workflowId={workflowId}
-            onStepClick={onStepClick}
-            onEdgeClick={onEdgeClick}
-            onAddNode={onAddNode}
-            onDeleteNode={onDeleteNode}
-            onDeleteEdge={onDeleteEdge}
-            isEditingGraph={isEditingGraph}
-            onToggleEditMode={() => setIsEditingGraph(!isEditingGraph)}
-          />
-        </ReactFlowProvider>
+    <div className={styles.wrapper}>
+      {/* SAVE STATUS TOAST */}
+      {saveStatus && (
+        <div className={`${styles.saveToast} ${styles[`saveToast${saveStatus.charAt(0).toUpperCase() + saveStatus.slice(1)}`]}`}>
+          <span className={styles.toastIcon}>
+            {saveStatus === 'saving' && '⏳'}
+            {saveStatus === 'success' && '✅'}
+            {saveStatus === 'error' && '❌'}
+          </span>
+          <span className={styles.toastText}>
+            {saveStatus === 'saving' && 'Saving changes...'}
+            {saveStatus === 'success' && 'Workflow saved successfully!'}
+            {saveStatus === 'error' && 'Failed to save workflow'}
+          </span>
+        </div>
+      )}
 
-        <div className={styles.panelContainer}>
-          {editingWorkflow && workflowData && (
-            <WorkflowEditPanel
-              workflow={workflowData.workflow}
-              onClose={() => setEditingWorkflow(false)}
-              onSave={(updated) => {
-                setWorkflowData({ ...workflowData, workflow: updated });
-                markAsChanged();
-                setEditingWorkflow(false);
-              }}
-            />
-          )}
-
-          {editingStep && (
-            <StepEditPanel
-              step={editingStep}
-              roles={roles}
-              onClose={() => setEditingStep(null)}
-              onSave={(updated) => {
-                if (String(editingStep.id).startsWith('temp-')) {
-                  contentRef.current.updateNodeData(editingStep.id, {
-                    label: updated.name,
-                    role: updated.role,
-                    description: updated.description,
-                    instruction: updated.instruction,
-                    is_start: updated.is_start,
-                    is_end: updated.is_end,
-                  });
-                }
-                markAsChanged();
-                setEditingStep(null);
-              }}
-              onDelete={() => {
-                contentRef.current.deleteNode(editingStep.id);
-                markAsChanged();
-                setEditingStep(null);
-              }}
-              onChange={String(editingStep.id).startsWith('temp-') ? (updated) => contentRef.current.updateNodeData(editingStep.id, {
-                label: updated.name,
-                role: updated.role,
-                description: updated.description,
-                instruction: updated.instruction,
-                is_start: updated.is_start,
-                is_end: updated.is_end,
-              }) : undefined}
-            />
-          )}
-
-          {editingTransition && (
-            <TransitionEditPanel
-              transition={editingTransition}
-              onClose={() => setEditingTransition(null)}
-              onSave={(updated) => {
-                contentRef.current.updateEdgeData(editingTransition.id, { label: updated.label, target: updated.target });
-                markAsChanged();
-                setEditingTransition(null);
-              }}
-              onDelete={() => {
-                contentRef.current.deleteEdge(editingTransition.id);
-                markAsChanged();
-                setEditingTransition(null);
-              }}
-            />
-          )}
-
-          {!editingStep && !editingTransition && !editingWorkflow && (
-            <div className={styles.emptyPanel}>
-              <p>Click on a step or transition to edit</p>
+      {/* UNSAVED CHANGES POPUP */}
+      {showUnsavedPopup && hasUnsavedChanges && (
+        <div className={styles.unsavedPopup}>
+          <div className={styles.popupContent}>
+            <p className={styles.popupText}>⚠️ You have unsaved changes</p>
+            <div className={styles.popupActions}>
               <button
-                className={styles.editWorkflowBtn}
-                onClick={() => setEditingWorkflow(true)}
+                onClick={() => setShowUnsavedPopup(false)}
+                className={styles.popupBtnCancel}
               >
-                Edit Workflow Details
+                Dismiss
+              </button>
+              <button
+                onClick={handleSaveAll}
+                className={styles.popupBtnSave}
+              >
+                Save Now
               </button>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {hasUnsavedChanges && (
-            <button
-              className={styles.saveAllBtn}
-              onClick={handleSaveAll}
-              style={{ marginTop: '16px', width: '100%' }}
-            >
-              💾 Save All Changes
-            </button>
-          )}
+      {/* TOP RIBBON */}
+      <div className={styles.topRibbon}>
+        <div className={styles.ribbonLeft}>
+          <h2 className={styles.workflowTitle}>{workflowData.workflow?.name}</h2>
+          <span className={styles.workflowMeta}>
+            {workflowData.workflow?.category && `${workflowData.workflow.category}`}
+            {workflowData.workflow?.category && workflowData.workflow?.sub_category && ' • '}
+            {workflowData.workflow?.sub_category && `${workflowData.workflow.sub_category}`}
+          </span>
+        </div>
+
+        <nav className={styles.ribbonTabs}>
+          <button
+            onClick={() => setActiveTopTab('manage')}
+            className={activeTopTab === 'manage' ? styles.ribbonTabActive : styles.ribbonTab}
+          >
+            Manage
+          </button>
+          <button
+            onClick={() => setActiveTopTab('details')}
+            className={activeTopTab === 'details' ? styles.ribbonTabActive : styles.ribbonTab}
+          >
+            Details
+          </button>
+          <button
+            onClick={() => setActiveTopTab('edit')}
+            className={activeTopTab === 'edit' ? styles.ribbonTabActive : styles.ribbonTab}
+          >
+            Edit
+          </button>
+        </nav>
+
+        <div className={styles.ribbonRight}>
+          <button
+            className={`${styles.modeToggle} ${isEditingGraph ? styles.modeActive : ''}`}
+            onClick={() => setIsEditingGraph(!isEditingGraph)}
+          >
+            {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
+          </button>
         </div>
       </div>
+
+      {/* MANAGE TAB */}
+      {activeTopTab === 'manage' && (
+        <div className={styles.editorContainer}>
+          {/* LEFT PANEL - RESIZABLE */}
+          <aside className={styles.leftPanel} style={{ width: `${sidebarWidth}px` }}>
+            <nav className={styles.panelTabs}>
+              <button
+                onClick={() => setActiveSidebarTab('steps')}
+                className={activeSidebarTab === 'steps' ? styles.panelTabActive : styles.panelTab}
+              >
+                <span className={styles.tabIcon}>📋</span>
+                Steps
+              </button>
+              <button
+                onClick={() => setActiveSidebarTab('transitions')}
+                className={activeSidebarTab === 'transitions' ? styles.panelTabActive : styles.panelTab}
+              >
+                <span className={styles.tabIcon}>🔀</span>
+                Transitions
+              </button>
+            </nav>
+
+            <div className={styles.panelContent}>
+              {activeSidebarTab === 'steps' && (
+                <>
+                  {editingStep && (
+                    <StepEditPanel
+                      step={editingStep}
+                      roles={roles}
+                      onClose={() => setEditingStep(null)}
+                      onSave={(updated) => {
+                        if (String(editingStep.id).startsWith('temp-')) {
+                          contentRef.current?.updateNodeData(editingStep.id, {
+                            label: updated.name,
+                            role: updated.role,
+                            description: updated.description,
+                            instruction: updated.instruction,
+                            is_start: updated.is_start,
+                            is_end: updated.is_end,
+                          });
+                        }
+                        setHasUnsavedChanges(true);
+                        setEditingStep(null);
+                      }}
+                      onDelete={() => {
+                        contentRef.current?.deleteNode(editingStep.id);
+                        setHasUnsavedChanges(true);
+                        setEditingStep(null);
+                      }}
+                    />
+                  )}
+                  {!editingStep && (
+                    <div className={styles.emptyState}>
+                      <p>📋 Select a step to edit</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeSidebarTab === 'transitions' && (
+                <>
+                  {editingTransition && (
+                    <TransitionEditPanel
+                      transition={editingTransition}
+                      onClose={() => setEditingTransition(null)}
+                      onSave={(updated) => {
+                        contentRef.current?.updateEdgeData(editingTransition.id, { label: updated.label });
+                        setHasUnsavedChanges(true);
+                        setEditingTransition(null);
+                      }}
+                      onDelete={() => {
+                        contentRef.current?.deleteEdge(editingTransition.id);
+                        setHasUnsavedChanges(true);
+                        setEditingTransition(null);
+                      }}
+                    />
+                  )}
+                  {!editingTransition && (
+                    <div className={styles.emptyState}>
+                      <p>🔀 Select a transition to edit</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* RESIZE HANDLE */}
+            <div
+              className={`${styles.resizeHandle} ${isResizing ? styles.resizing : ''}`}
+              onMouseDown={handleResizeStart}
+              title="Drag to resize panel"
+            />
+          </aside>
+
+          {/* CENTER GRAPH */}
+          <main className={styles.centerArea}>
+            <ReactFlowProvider>
+              <WorkflowEditorContent
+                ref={contentRef}
+                workflowId={workflowId}
+                onStepClick={onStepClick}
+                onEdgeClick={onEdgeClick}
+                onAddNode={onAddNode}
+                onDeleteNode={onDeleteNode}
+                onDeleteEdge={onDeleteEdge}
+                isEditingGraph={isEditingGraph}
+                onToggleEditMode={() => setIsEditingGraph(!isEditingGraph)}
+              />
+            </ReactFlowProvider>
+          </main>
+
+          {/* RIGHT TOOLBAR */}
+          <aside className={styles.rightToolbar}>
+            <div className={styles.toolbarSection}>
+              <h4 className={styles.toolbarTitle}>Add</h4>
+              <button 
+                className={styles.actionBtn}
+                onClick={handleAddStep}
+                title="Add a new step to the workflow"
+              >
+                <span className={styles.btnIcon}>➕</span>
+                <span className={styles.btnText}>Step</span>
+              </button>
+            </div>
+
+            <div className={styles.toolbarSection}>
+              <h4 className={styles.toolbarTitle}>Actions</h4>
+              <button 
+                className={`${styles.actionBtn} ${styles.actionBtnPrimary} ${hasUnsavedChanges ? styles.actionBtnUnsaved : ''}`}
+                onClick={() => {
+                  if (hasUnsavedChanges) {
+                    setShowUnsavedPopup(true);
+                  }
+                  handleSaveAll();
+                }}
+                title={hasUnsavedChanges ? 'You have unsaved changes - click to save' : 'All changes saved'}
+                disabled={saveStatus === 'saving'}
+              >
+                <span className={styles.btnIcon}>{hasUnsavedChanges ? '⚠️' : '✅'}</span>
+                <span className={styles.btnText}>Save</span>
+              </button>
+            </div>
+
+            <div className={styles.toolbarSection}>
+              <h4 className={styles.toolbarTitle}>Info</h4>
+              <div className={styles.infoBox}>
+                <p className={styles.infoLabel}>Steps</p>
+                <p className={styles.infoValue}>{workflowData.graph?.nodes?.length || 0}</p>
+              </div>
+              <div className={styles.infoBox}>
+                <p className={styles.infoLabel}>Transitions</p>
+                <p className={styles.infoValue}>{workflowData.graph?.edges?.length || 0}</p>
+              </div>
+              {hasUnsavedChanges && (
+                <div className={styles.infoBox} style={{ borderColor: 'var(--color-warning)', backgroundColor: 'var(--color-warning-light)' }}>
+                  <p className={styles.infoLabel} style={{ color: 'var(--color-warning)' }}>Status</p>
+                  <p className={styles.infoValue} style={{ color: 'var(--color-warning)' }}>Unsaved</p>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* DETAILS TAB */}
+      {activeTopTab === 'details' && (
+        <div className={styles.detailsContainer}>
+          <WorkflowEditPanel workflow={workflowData.workflow} readOnly={true} />
+        </div>
+      )}
+
+      {/* EDIT TAB */}
+      {activeTopTab === 'edit' && (
+        <div className={styles.editContainer}>
+          <WorkflowEditPanel
+            workflow={workflowData.workflow}
+            onSave={(updated) => {
+              setWorkflowData({ ...workflowData, workflow: updated });
+            }}
+            readOnly={false}
+          />
+        </div>
+      )}
     </div>
   );
 }
