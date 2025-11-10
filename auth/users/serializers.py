@@ -630,17 +630,31 @@ Authentication Service Team
     '''
     
     try:
-        send_mail(
-            subject=subject,
-            message=message.strip(),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com'),
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+        # Send email asynchronously to avoid blocking the request
+        from threading import Thread
+        
+        def send_async():
+            try:
+                send_mail(
+                    subject=subject,
+                    message=message.strip(),
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com'),
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                # Log the error in production
+                print(f"Failed to send password reset email to {user.email}: {str(e)}")
+        
+        # Start the email sending in a separate thread
+        email_thread = Thread(target=send_async)
+        email_thread.daemon = True
+        email_thread.start()
+        
         return True
     except Exception as e:
         # Log the error in production
-        print(f"Failed to send password reset email to {user.email}: {str(e)}")
+        print(f"Failed to initiate password reset email to {user.email}: {str(e)}")
         return False
 
 
