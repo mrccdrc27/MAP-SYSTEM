@@ -78,6 +78,22 @@
   font-weight: 600;
 }
 
+.deletedIndicator {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deletedIndicator span {
+  color: #166534;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .form {
   display: flex;
   flex-direction: column;

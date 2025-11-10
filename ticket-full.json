@@ -13,6 +13,30 @@
         "to_delete": false
       },
       {
+        "id": "29",
+        "name": "New step",
+        "role": "Asset Manager",
+        "description": "",
+        "instruction": "",
+        "design": {
+          "x": 400,
+          "y": 450
+        },
+        "to_delete": false
+      },
+      {
+        "id": "30",
+        "name": "New Step123123",
+        "role": "Admin",
+        "description": "123",
+        "instruction": "123123",
+        "design": {
+          "x": 400,
+          "y": 50
+        },
+        "to_delete": false
+      },
+      {
         "id": "1",
         "name": "Asset Check In Workflow - Triage Ticket",
         "role": "Admin",
@@ -49,26 +73,14 @@
         "to_delete": false
       },
       {
-        "id": "temp-n1762795244274",
-        "name": "new step created 1",
+        "id": "temp-n1762796541154",
+        "name": "New Step",
         "role": "User",
         "description": "",
         "instruction": "",
         "design": {
-          "x": 383.9909255898367,
-          "y": 465.521778584392
-        },
-        "to_delete": false
-      },
-      {
-        "id": "temp-n1762795248145",
-        "name": "New Step created 2",
-        "role": "User",
-        "description": "",
-        "instruction": "",
-        "design": {
-          "x": 388.60798548094374,
-          "y": 623.6560798548094
+          "x": 389.57076566125295,
+          "y": -74.82018561484918
         },
         "to_delete": false
       }
@@ -119,9 +131,9 @@
         "to_delete": false
       },
       {
-        "id": "temp-e1762795247697",
-        "from": 3,
-        "to": null,
+        "id": "33",
+        "from": 28,
+        "to": 29,
         "name": "New Transition",
         "design": {
           "source_handle": "right",
@@ -130,13 +142,13 @@
         "to_delete": false
       },
       {
-        "id": "temp-e1762795251977",
-        "from": null,
-        "to": null,
+        "id": "34",
+        "from": 28,
+        "to": 29,
         "name": "New Transition",
         "design": {
-          "source_handle": "bottom",
-          "target_handle": "top"
+          "source_handle": "left",
+          "target_handle": "right"
         },
         "to_delete": false
       }

@@ -111,6 +111,11 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
               <span>From Step ID:</span>
               <strong>{transition?.data?.from || transition?.source}</strong>
             </div>
+            {transition?.data?.to_delete && (
+              <div className={styles.deletedIndicator}>
+                <span>✓ Marked for deletion</span>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>

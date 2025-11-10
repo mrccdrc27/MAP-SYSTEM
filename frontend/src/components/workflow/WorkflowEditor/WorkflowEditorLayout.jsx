@@ -72,6 +72,27 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
 
   const { getWorkflowDetail, updateWorkflowGraph, loading } = useWorkflowAPI();
 
+  // Handle edge deletion
+  const handleDeleteEdge = useCallback((edgeId) => {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? { ...e, data: { ...e.data, to_delete: true }, className: 'deleted-edge' }
+          : e
+      )
+    );
+    setUnsavedChanges(true);
+    onDeleteEdge(edgeId);
+  }, [setEdges, onDeleteEdge]);
+
+  // Handle node deletion
+  const handleDeleteNode = useCallback((nodeId) => {
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setUnsavedChanges(true);
+    onDeleteNode(nodeId);
+  }, [setNodes, setEdges, onDeleteNode]);
+
   useImperativeHandle(ref, () => ({
     updateNodeData: (nodeId, newData) => {
       setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
@@ -79,7 +100,13 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     updateEdgeData: (edgeId, newData) => {
       setEdges((eds) => eds.map((e) => e.id === edgeId ? { ...e, ...newData } : e));
     },
-  }), [setNodes, setEdges]);
+    deleteEdge: (edgeId) => {
+      handleDeleteEdge(edgeId);
+    },
+    setUnsavedChanges: (value) => {
+      setUnsavedChanges(value);
+    },
+  }), [setNodes, setEdges, handleDeleteEdge]);
 
   // Load workflow data
   useEffect(() => {
@@ -115,6 +142,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
             sourceHandle: normalizeHandleName(edge.design?.source_handle) || 'bottom',
             targetHandle: normalizeHandleName(edge.design?.target_handle) || 'top',
             data: edge,
+            className: edge.to_delete ? 'deleted-edge' : '',
           }));
 
         // Layout
@@ -197,20 +225,21 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     [onEdgeClick]
   );
 
-  // Handle node deletion
-  const handleDeleteNode = useCallback((nodeId) => {
-    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-    setUnsavedChanges(true);
-    onDeleteNode(nodeId);
-  }, [setNodes, setEdges, onDeleteNode]);
-
-  // Handle edge deletion
-  const handleDeleteEdge = useCallback((edgeId) => {
-    setEdges((eds) => eds.filter((e) => e.id !== edgeId));
-    setUnsavedChanges(true);
-    onDeleteEdge(edgeId);
-  }, [setEdges, onDeleteEdge]);
+  // Handle edge changes - intercept deletions to mark as to_delete instead
+  const handleEdgesChange = useCallback((changes) => {
+    const filteredChanges = changes.filter((change) => {
+      // If it's a remove action, don't let it happen
+      if (change.type === 'remove') {
+        // Instead, mark the edge for deletion
+        handleDeleteEdge(change.id);
+        return false;
+      }
+      return true;
+    });
+    
+    // Apply the filtered changes
+    onEdgesChange(filteredChanges);
+  }, [onEdgesChange, handleDeleteEdge]);
 
   // Save changes to backend
   const saveChanges = useCallback(async () => {
@@ -266,7 +295,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
           onEdgeClick={onEdgeClickHandler}
           nodeTypes={nodeTypes}
@@ -419,7 +448,10 @@ export default function WorkflowEditorLayout({ workflowId }) {
                 contentRef.current.updateEdgeData(editingTransition.id, { label: updated.label, target: updated.target });
                 setEditingTransition(null);
               }}
-              onDelete={() => onDeleteEdge(editingTransition.id)}
+              onDelete={() => {
+                contentRef.current.deleteEdge(editingTransition.id);
+                setEditingTransition(null);
+              }}
             />
           )}
 

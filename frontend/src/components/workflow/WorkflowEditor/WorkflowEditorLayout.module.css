@@ -105,3 +105,18 @@
 .editWorkflowBtn:hover {
   background: #2563eb;
 }
+
+/* Deleted edge styling */
+:global(.deleted-edge) {
+  opacity: 0.4;
+  stroke-dasharray: 5, 5;
+}
+
+:global(.deleted-edge) path {
+  stroke: #ef4444 !important;
+}
+
+:global(.deleted-edge) text {
+  fill: #ef4444 !important;
+  opacity: 0.6;
+}
