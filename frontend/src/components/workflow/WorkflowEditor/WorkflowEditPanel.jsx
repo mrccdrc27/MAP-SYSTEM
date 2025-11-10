@@ -17,6 +17,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { updateWorkflowDetails } = useWorkflowAPI();
 
@@ -38,6 +39,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
   }, [workflow]);
 
   const handleChange = (e) => {
+    if (!isEditing) return;
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -100,6 +102,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter workflow name"
+              disabled={!isEditing}
               required
             />
           </div>
@@ -112,6 +115,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Enter workflow description"
               rows="3"
+              disabled={!isEditing}
             />
           </div>
         </div>
@@ -127,6 +131,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.category}
               onChange={handleChange}
               placeholder="e.g., Support, Sales, HR"
+              disabled={!isEditing}
             />
           </div>
 
@@ -138,6 +143,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.sub_category}
               onChange={handleChange}
               placeholder="e.g., Technical, Billing"
+              disabled={!isEditing}
             />
           </div>
 
@@ -149,6 +155,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               value={formData.department}
               onChange={handleChange}
               placeholder="e.g., Engineering, Operations"
+              disabled={!isEditing}
             />
           </div>
         </div>
@@ -166,6 +173,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 48"
                 min="0"
+                disabled={!isEditing}
               />
             </div>
 
@@ -178,6 +186,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 24"
                 min="0"
+                disabled={!isEditing}
               />
             </div>
 
@@ -190,6 +199,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 12"
                 min="0"
+                disabled={!isEditing}
               />
             </div>
 
@@ -202,6 +212,7 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g., 4"
                 min="0"
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -218,17 +229,34 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Define the logic for workflow completion"
               rows="3"
+              disabled={!isEditing}
             />
           </div>
         </div>
 
         <div className={styles.formActions}>
-          <button type="button" onClick={onClose} className={styles.cancelBtn}>
-            Cancel
-          </button>
-          <button type="submit" className={styles.saveBtn} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Workflow'}
-          </button>
+          {!isEditing ? (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className={styles.editBtn}
+            >
+              ✏️ Edit
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+              <button type="submit" className={styles.saveBtn} disabled={loading}>
+                {loading ? 'Saving...' : 'Save Workflow'}
+              </button>
+            </>
+          )}
         </div>
       </form>
     </div>

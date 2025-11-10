@@ -102,7 +102,7 @@ export const useWorkflowAPI = () => {
     setError(null);
     try {
       const response = await api.put(
-        `/transition/${transitionId}/update-details/`,
+        `/workflows/transitions/${transitionId}/update-details/`,
         transitionData
       );
       return response.data;

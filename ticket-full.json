@@ -1,156 +1,339 @@
-{
-    "nodes": [
-      {
-        "id": "28",
-        "name": "1234567",
-        "role": "Admin",
-        "description": "",
-        "instruction": "",
-        "design": {
-          "x": 400,
-          "y": 250
-        },
-        "to_delete": false
-      },
-      {
-        "id": "29",
-        "name": "New step",
-        "role": "Asset Manager",
-        "description": "",
-        "instruction": "",
-        "design": {
-          "x": 400,
-          "y": 450
-        },
-        "to_delete": false
-      },
-      {
-        "id": "30",
-        "name": "New Step123123",
-        "role": "Admin",
-        "description": "123",
-        "instruction": "123123",
-        "design": {
-          "x": 400,
-          "y": 50
-        },
-        "to_delete": false
-      },
-      {
-        "id": "1",
-        "name": "Asset Check In Workflow - Triage Ticket",
-        "role": "Admin",
-        "description": "instructions23",
-        "instruction": "instructions",
-        "design": {
-          "x": 50,
-          "y": 50
-        },
-        "to_delete": false
-      },
-      {
-        "id": "2",
-        "name": "Asset Check In Workflow - Resolve Ticket",
-        "role": "Asset Manager",
-        "description": "new description",
-        "instruction": "Update the asset's status (e.g., 'In Stock', 'Assigned', 'In Repair') in the inventory system.",
-        "design": {
-          "x": 50,
-          "y": 250
-        },
-        "to_delete": false
-      },
-      {
-        "id": "3",
-        "name": "Asset Check In Workflow - Finalize Ticket",
-        "role": "Admin",
-        "description": "new description 2",
-        "instruction": "Confirm that the primary task is completed and all data has been accurately updated in the relevant systems.",
-        "design": {
-          "x": 50,
-          "y": 450
-        },
-        "to_delete": false
-      },
-      {
-        "id": "temp-n1762796541154",
-        "name": "New Step",
-        "role": "User",
-        "description": "",
-        "instruction": "",
-        "design": {
-          "x": 389.57076566125295,
-          "y": -74.82018561484918
-        },
-        "to_delete": false
+[
+    {
+      "name": "State",
+      "value": null,
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 377,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 41
       }
-    ],
-    "edges": [
-      {
-        "id": "2",
-        "from": 1,
-        "to": 2,
-        "name": "",
-        "design": {
-          "source_handle": "bottom",
-          "target_handle": "top"
-        },
-        "to_delete": false
-      },
-      {
-        "id": "3",
-        "from": 2,
-        "to": 3,
-        "name": "",
-        "design": {
-          "source_handle": "bottom",
-          "target_handle": "top"
-        },
-        "to_delete": false
-      },
-      {
-        "id": "4",
-        "from": 2,
-        "to": 1,
-        "name": "",
-        "design": {
-          "source_handle": "left",
-          "target_handle": "left"
-        },
-        "to_delete": false
-      },
-      {
-        "id": "32",
-        "from": 1,
-        "to": 28,
-        "name": "New Transition",
-        "design": {
-          "source_handle": "right",
-          "target_handle": "left"
-        },
-        "to_delete": false
-      },
-      {
-        "id": "33",
-        "from": 28,
-        "to": 29,
-        "name": "New Transition",
-        "design": {
-          "source_handle": "right",
-          "target_handle": "left"
-        },
-        "to_delete": false
-      },
-      {
-        "id": "34",
-        "from": 28,
-        "to": 29,
-        "name": "New Transition",
-        "design": {
-          "source_handle": "left",
-          "target_handle": "right"
-        },
-        "to_delete": false
+    },
+    {
+      "name": "State",
+      "value": null,
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 378,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 53
       }
-    ]
-  }
+    },
+    {
+      "name": "State",
+      "value": false,
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 379,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 49
+      }
+    },
+    {
+      "name": "State",
+      "value": {
+        "workflow": "{category: \"Asset Check In\", created_at: \"2025-11-1…}",
+        "graph": "{edges: Array(7), nodes: Array(5)}"
+      },
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 380,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 43
+      }
+    },
+    {
+      "name": "State",
+      "value": [],
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 381,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 45
+      }
+    },
+    {
+      "name": "State",
+      "value": [],
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 382,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 45
+      }
+    },
+    {
+      "name": "Ref",
+      "value": {
+        "updateNodeData": "updateNodeData() {}",
+        "updateEdgeData": "updateEdgeData() {}",
+        "deleteEdge": "deleteEdge() {}",
+        "deleteNode": "deleteNode() {}",
+        "setUnsavedChanges": "setUnsavedChanges() {}"
+      },
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 383,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 22
+      }
+    },
+    {
+      "name": "WorkflowAPI",
+      "subHooks": [
+        {
+          "name": "State",
+          "value": false,
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 7,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 33
+          }
+        },
+        {
+          "name": "State",
+          "value": null,
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 8,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 29
+          }
+        },
+        {
+          "name": "Callback",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 9,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 29
+          }
+        },
+        {
+          "name": "Callback",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 23,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 28
+          }
+        },
+        {
+          "name": "Callback",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 37,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 31
+          }
+        },
+        {
+          "name": "Callback",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 54,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 33
+          }
+        },
+        {
+          "name": "Callback",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 71,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 29
+          }
+        },
+        {
+          "name": "Callback",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 88,
+            "functionName": "useWorkflowAPI",
+            "fileName": "http://localhost:1000/src/api/useWorkflowAPI.jsx?t=1762804395029",
+            "columnNumber": 35
+          }
+        }
+      ],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 384,
+        "columnNumber": 33,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990"
+      }
+    },
+    {
+      "name": "WorkflowRoles",
+      "subHooks": [
+        {
+          "name": "State",
+          "value": [
+            "{createdAt: \"2025-11-10T19:22:12.926834Z\", descript…}",
+            "{createdAt: \"2025-11-10T19:22:12.931877Z\", descript…}",
+            "{createdAt: \"2025-11-10T19:22:12.936458Z\", descript…}"
+          ],
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 6,
+            "functionName": "useWorkflowRoles",
+            "fileName": "http://localhost:1000/src/api/useWorkflowRoles.jsx",
+            "columnNumber": 29
+          }
+        },
+        {
+          "name": "State",
+          "value": false,
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 7,
+            "functionName": "useWorkflowRoles",
+            "fileName": "http://localhost:1000/src/api/useWorkflowRoles.jsx",
+            "columnNumber": 33
+          }
+        },
+        {
+          "name": "State",
+          "value": null,
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 8,
+            "functionName": "useWorkflowRoles",
+            "fileName": "http://localhost:1000/src/api/useWorkflowRoles.jsx",
+            "columnNumber": 29
+          }
+        },
+        {
+          "name": "Effect",
+          "value": "() => {}",
+          "subHooks": [],
+          "debugInfo": null,
+          "hookSource": {
+            "lineNumber": 9,
+            "functionName": "useWorkflowRoles",
+            "fileName": "http://localhost:1000/src/api/useWorkflowRoles.jsx",
+            "columnNumber": 3
+          }
+        }
+      ],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 385,
+        "columnNumber": 21,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990"
+      }
+    },
+    {
+      "name": "Effect",
+      "value": "() => {}",
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 386,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 3
+      }
+    },
+    {
+      "name": "Callback",
+      "value": "() => {}",
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 397,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 23
+      }
+    },
+    {
+      "name": "Callback",
+      "value": "() => {}",
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 402,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 23
+      }
+    },
+    {
+      "name": "Callback",
+      "value": "() => {}",
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 407,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 21
+      }
+    },
+    {
+      "name": "Callback",
+      "value": "() => {}",
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 410,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 24
+      }
+    },
+    {
+      "name": "Callback",
+      "value": "() => {}",
+      "subHooks": [],
+      "debugInfo": null,
+      "hookSource": {
+        "lineNumber": 414,
+        "functionName": "WorkflowEditorLayout",
+        "fileName": "http://localhost:1000/src/components/workflow/WorkflowEditor/WorkflowEditorLayout.jsx?t=1762804647990",
+        "columnNumber": 24
+      }
+    }
+  ]

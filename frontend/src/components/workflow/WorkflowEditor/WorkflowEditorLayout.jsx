@@ -63,7 +63,7 @@ function getLayout(nodes, edges) {
   });
 }
 
-const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick, onAddNode, onDeleteNode, onDeleteEdge }, ref) => {
+const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick, onAddNode, onDeleteNode, onDeleteEdge, isEditingGraph, onToggleEditMode }, ref) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [workflowData, setWorkflowData] = useState(null);
@@ -98,6 +98,52 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     onDeleteNode(nodeId);
   }, [setNodes, onDeleteNode]);
 
+  // Save changes to backend
+  const saveChanges = useCallback(async () => {
+    try {
+      const graphData = {
+        nodes: nodes.map((n) => ({
+          id: n.id,
+          name: n.data.label,
+          role: n.data.role,
+          description: n.data.description || '',
+          instruction: n.data.instruction || '',
+          design: { x: n.position.x, y: n.position.y },
+          to_delete: n.data.to_delete || false,
+          is_start: n.data.is_start || false,
+          is_end: n.data.is_end || false,
+        })),
+        edges: edges.map((e) => {
+          const parseNodeId = (id) => {
+            if (String(id).startsWith('temp-')) {
+              return id;
+            }
+            const parsed = parseInt(id);
+            return isNaN(parsed) ? id : parsed;
+          };
+
+          return {
+            id: e.id,
+            from: parseNodeId(e.source),
+            to: parseNodeId(e.target),
+            name: e.label || '',
+            design: {
+              source_handle: e.sourceHandle,
+              target_handle: e.targetHandle,
+            },
+            to_delete: e.data?.to_delete || false,
+          };
+        }),
+      };
+
+      await updateWorkflowGraph(workflowId, graphData);
+      setUnsavedChanges(false);
+      console.log('Workflow saved successfully');
+    } catch (err) {
+      console.error('Failed to save workflow:', err);
+    }
+  }, [nodes, edges, workflowId, updateWorkflowGraph]);
+
   useImperativeHandle(ref, () => ({
     updateNodeData: (nodeId, newData) => {
       setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
@@ -114,7 +160,8 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     setUnsavedChanges: (value) => {
       setUnsavedChanges(value);
     },
-  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode]);
+    saveChanges,
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges]);
 
   // Load workflow data
   useEffect(() => {
@@ -137,7 +184,12 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
             onStepClick: () => onStepClick(node),
           },
           type: 'stepNode',
-          position: { x: 0, y: 0 },
+          position: {
+            x: node.design?.x || 0,
+            y: node.design?.y || 0,
+          },
+          targetPosition: 'top',
+          sourcePosition: 'bottom',
           className: node.to_delete ? 'deleted-node' : '',
         }));
 
@@ -156,9 +208,8 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
             className: edge.to_delete ? 'deleted-edge' : '',
           }));
 
-        // Layout
-        const layoutedNodes = getLayout(rnodes, redges);
-        setNodes(layoutedNodes);
+        // Use the nodes as-is with their stored positions, no layout calculation needed
+        setNodes(rnodes);
         setEdges(redges);
       } catch (err) {
         console.error('Failed to load workflow:', err);
@@ -245,12 +296,20 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
         handleDeleteNode(change.id);
         return false;
       }
+      // If it's a position change and not in edit mode, prevent it
+      if (change.type === 'position' && !isEditingGraph) {
+        return false;
+      }
+      // If it's a position change in edit mode, mark as unsaved
+      if (change.type === 'position' && isEditingGraph) {
+        setUnsavedChanges(true);
+      }
       return true;
     });
     
     // Apply the filtered changes
     onNodesChange(filteredChanges);
-  }, [onNodesChange, handleDeleteNode]);
+  }, [onNodesChange, handleDeleteNode, isEditingGraph]);
 
   // Handle edge changes - intercept deletions to mark as to_delete instead
   const handleEdgesChange = useCallback((changes) => {
@@ -267,55 +326,6 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     // Apply the filtered changes
     onEdgesChange(filteredChanges);
   }, [onEdgesChange, handleDeleteEdge]);
-
-  // Save changes to backend
-  const saveChanges = useCallback(async () => {
-    try {
-      const graphData = {
-        nodes: nodes.map((n) => ({
-          id: n.id,
-          name: n.data.label,
-          role: n.data.role,
-          description: n.data.description || '',
-          instruction: n.data.instruction || '',
-          design: { x: n.position.x, y: n.position.y },
-          to_delete: n.data.to_delete || false,
-          is_start: n.data.is_start || false,
-          is_end: n.data.is_end || false,
-        })),
-        edges: edges.map((e) => {
-          // Helper function to convert ID to appropriate format
-          const parseNodeId = (id) => {
-            // If the ID is a temporary node ID (starts with 'temp-'), keep it as string
-            if (String(id).startsWith('temp-')) {
-              return id;
-            }
-            // Otherwise, try to parse as integer
-            const parsed = parseInt(id);
-            return isNaN(parsed) ? id : parsed;
-          };
-
-          return {
-            id: e.id,
-            from: parseNodeId(e.source),
-            to: parseNodeId(e.target),
-            name: e.label || '',
-            design: {
-              source_handle: e.sourceHandle,
-              target_handle: e.targetHandle,
-            },
-            to_delete: e.data?.to_delete || false,
-          };
-        }),
-      };
-
-      await updateWorkflowGraph(workflowId, graphData);
-      setUnsavedChanges(false);
-      console.log('Workflow saved successfully');
-    } catch (err) {
-      console.error('Failed to save workflow:', err);
-    }
-  }, [nodes, edges, workflowId, updateWorkflowGraph]);
 
   return (
     <>
@@ -347,6 +357,13 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
           + Add Step
         </button>
         <button
+          className={`${styles.editModeBtn} ${isEditingGraph ? styles.active : ''}`}
+          onClick={onToggleEditMode}
+          title={isEditingGraph ? 'Click to disable node editing' : 'Click to enable node editing'}
+        >
+          {isEditingGraph ? '✏️ Editing' : '🔒 Locked'}
+        </button>
+        <button
           className={styles.saveBtn}
           onClick={saveChanges}
           disabled={!unsavedChanges || loading}
@@ -365,6 +382,8 @@ export default function WorkflowEditorLayout({ workflowId }) {
   const [workflowData, setWorkflowData] = useState(null);
   const [nodesToDelete, setNodesToDelete] = useState([]);
   const [edgesToDelete, setEdgesToDelete] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEditingGraph, setIsEditingGraph] = useState(false);
 
   const contentRef = useRef();
 
@@ -416,6 +435,19 @@ export default function WorkflowEditorLayout({ workflowId }) {
     setEditingTransition(null);
   }, []);
 
+  // Handle save all changes
+  const handleSaveAll = useCallback(async () => {
+    setHasUnsavedChanges(false);
+    if (contentRef.current?.saveChanges) {
+      await contentRef.current.saveChanges();
+    }
+  }, []);
+
+  // Track when any changes are made
+  const markAsChanged = useCallback(() => {
+    setHasUnsavedChanges(true);
+  }, []);
+
   return (
     <div className={styles.container}>
       <div className={styles.editorWrapper}>
@@ -428,6 +460,8 @@ export default function WorkflowEditorLayout({ workflowId }) {
             onAddNode={onAddNode}
             onDeleteNode={onDeleteNode}
             onDeleteEdge={onDeleteEdge}
+            isEditingGraph={isEditingGraph}
+            onToggleEditMode={() => setIsEditingGraph(!isEditingGraph)}
           />
         </ReactFlowProvider>
 
@@ -438,6 +472,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
               onClose={() => setEditingWorkflow(false)}
               onSave={(updated) => {
                 setWorkflowData({ ...workflowData, workflow: updated });
+                markAsChanged();
                 setEditingWorkflow(false);
               }}
             />
@@ -459,10 +494,12 @@ export default function WorkflowEditorLayout({ workflowId }) {
                     is_end: updated.is_end,
                   });
                 }
+                markAsChanged();
                 setEditingStep(null);
               }}
               onDelete={() => {
                 contentRef.current.deleteNode(editingStep.id);
+                markAsChanged();
                 setEditingStep(null);
               }}
               onChange={String(editingStep.id).startsWith('temp-') ? (updated) => contentRef.current.updateNodeData(editingStep.id, {
@@ -482,10 +519,12 @@ export default function WorkflowEditorLayout({ workflowId }) {
               onClose={() => setEditingTransition(null)}
               onSave={(updated) => {
                 contentRef.current.updateEdgeData(editingTransition.id, { label: updated.label, target: updated.target });
+                markAsChanged();
                 setEditingTransition(null);
               }}
               onDelete={() => {
                 contentRef.current.deleteEdge(editingTransition.id);
+                markAsChanged();
                 setEditingTransition(null);
               }}
             />
@@ -501,6 +540,16 @@ export default function WorkflowEditorLayout({ workflowId }) {
                 Edit Workflow Details
               </button>
             </div>
+          )}
+
+          {hasUnsavedChanges && (
+            <button
+              className={styles.saveAllBtn}
+              onClick={handleSaveAll}
+              style={{ marginTop: '16px', width: '100%' }}
+            >
+              💾 Save All Changes
+            </button>
           )}
         </div>
       </div>

@@ -10,6 +10,7 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { updateTransitionDetails } = useWorkflowAPI();
 
@@ -23,6 +24,7 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
   }, [transition]);
 
   const handleChange = (e) => {
+    if (!isEditing && !String(transition?.id).startsWith('temp-')) return;
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -39,7 +41,12 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
       onSave({
         ...transition,
         label: formData.name,
+        name: formData.name,
         target: formData.to,
+        data: {
+          ...transition.data,
+          to: formData.to,
+        },
       });
       return;
     }
@@ -55,6 +62,10 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
         ...transition,
         label: formData.name,
         target: formData.to,
+        data: {
+          ...transition.data,
+          to: formData.to,
+        },
         ...updateData,
       });
     } catch (err) {
@@ -127,6 +138,7 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="e.g., Approved, Rejected, Needs Revision"
+                disabled={!isEditing && !String(transition?.id).startsWith('temp-')}
               />
             </div>
 
@@ -138,16 +150,36 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
                 value={formData.to}
                 onChange={handleChange}
                 placeholder="e.g., 2, temp-n123"
+                disabled={!isEditing && !String(transition?.id).startsWith('temp-')}
               />
             </div>
 
             <div className={styles.formActions}>
-              <button type="button" onClick={onClose} className={styles.cancelBtn}>
-                Cancel
-              </button>
-              <button type="submit" className={styles.saveBtn} disabled={loading}>
-                {loading ? 'Saving...' : 'Save Transition'}
-              </button>
+              {!isEditing && !String(transition?.id).startsWith('temp-') ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className={styles.editBtn}
+                >
+                  ✏️ Edit
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      onClose();
+                    }}
+                    className={styles.cancelBtn}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.saveBtn} disabled={loading}>
+                    {loading ? 'Saving...' : 'Save Transition'}
+                  </button>
+                </>
+              )}
               {onDelete && (
                 <button
                   type="button"

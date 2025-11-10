@@ -67,6 +67,31 @@
   background: #7c3aed;
 }
 
+.editModeBtn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #ef4444;
+  color: white;
+  min-width: 100px;
+}
+
+.editModeBtn:hover {
+  background: #dc2626;
+}
+
+.editModeBtn.active {
+  background: #10b981;
+}
+
+.editModeBtn.active:hover {
+  background: #059669;
+}
+
 .saveBtn {
   padding: 10px 16px;
   border: none;
@@ -85,6 +110,27 @@
 }
 
 .saveBtn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.saveAllBtn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #ef4444;
+  color: white;
+}
+
+.saveAllBtn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.saveAllBtn:disabled {
   background: #d1d5db;
   cursor: not-allowed;
 }

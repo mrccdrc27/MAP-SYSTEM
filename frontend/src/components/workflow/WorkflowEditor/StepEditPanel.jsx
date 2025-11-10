@@ -14,6 +14,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { updateStepDetails } = useWorkflowAPI();
 
@@ -45,6 +46,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
   }, [formData, onChange, step?.id]);
 
   const handleChange = (e) => {
+    if (!isEditing && !String(step?.id).startsWith('temp-')) return;
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -143,6 +145,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter step name"
+              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
               required
             />
           </div>
@@ -153,6 +156,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
               name="role"
               value={formData.role}
               onChange={handleChange}
+              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
               required
             >
               <option key="default" value="">Select a role</option>
@@ -172,6 +176,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
               onChange={handleChange}
               placeholder="Enter step description"
               rows="3"
+              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
             />
           </div>
 
@@ -183,6 +188,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
               onChange={handleChange}
               placeholder="Enter step instruction"
               rows="3"
+              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
             />
           </div>
 
@@ -193,6 +199,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
                 name="is_start"
                 checked={formData.is_start}
                 onChange={handleChange}
+                disabled={!isEditing && !String(step?.id).startsWith('temp-')}
               />
               Is Start
             </label>
@@ -205,18 +212,38 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
                 name="is_end"
                 checked={formData.is_end}
                 onChange={handleChange}
+                disabled={!isEditing && !String(step?.id).startsWith('temp-')}
               />
               Is End
             </label>
           </div>
 
           <div className={styles.formActions}>
-            <button type="button" onClick={onClose} className={styles.cancelBtn}>
-              Cancel
-            </button>
-            <button type="submit" className={styles.saveBtn} disabled={loading}>
-              {loading ? 'Saving...' : 'Save Step'}
-            </button>
+            {!isEditing && !String(step?.id).startsWith('temp-') ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className={styles.editBtn}
+              >
+                ✏️ Edit
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    onClose();
+                  }}
+                  className={styles.cancelBtn}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className={styles.saveBtn} disabled={loading}>
+                  {loading ? 'Saving...' : 'Save Step'}
+                </button>
+              </>
+            )}
             {onDelete && (
               <button
                 type="button"

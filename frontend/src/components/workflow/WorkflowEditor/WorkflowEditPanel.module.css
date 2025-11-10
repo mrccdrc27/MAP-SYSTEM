@@ -128,6 +128,7 @@
   border-top: 1px solid #e5e7eb;
 }
 
+.editBtn,
 .cancelBtn,
 .saveBtn {
   flex: 1;
@@ -138,6 +139,15 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.editBtn {
+  background: #8b5cf6;
+  color: white;
+}
+
+.editBtn:hover {
+  background: #7c3aed;
 }
 
 .cancelBtn {

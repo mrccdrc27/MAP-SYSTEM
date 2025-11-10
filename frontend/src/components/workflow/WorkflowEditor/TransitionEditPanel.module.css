@@ -134,6 +134,7 @@
   flex-wrap: wrap;
 }
 
+.editBtn,
 .cancelBtn,
 .saveBtn,
 .deleteBtn {
@@ -144,6 +145,17 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.editBtn {
+  flex: 1;
+  min-width: 80px;
+  background: #8b5cf6;
+  color: white;
+}
+
+.editBtn:hover {
+  background: #7c3aed;
 }
 
 .cancelBtn {
