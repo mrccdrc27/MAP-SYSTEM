@@ -26,16 +26,24 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
     }
   }, [step]);
 
+  // Call onChange when formData changes for real-time updates
+  useEffect(() => {
+    if (onChange && String(step?.id).startsWith('temp-')) {
+      onChange({
+        name: formData.name,
+        role: formData.role,
+        description: formData.description,
+        instruction: formData.instruction,
+      });
+    }
+  }, [formData, onChange, step?.id]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const newData = {
-        ...prev,
-        [name]: value,
-      };
-      if (onChange) onChange(newData);
-      return newData;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -137,9 +145,9 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
               onChange={handleChange}
               required
             >
-              <option value="">Select a role</option>
+              <option key="default" value="">Select a role</option>
               {roles.map((role) => (
-                <option key={role.id} value={role.name}>
+                <option key={role.role_id} value={role.name}>
                   {role.name}
                 </option>
               ))}

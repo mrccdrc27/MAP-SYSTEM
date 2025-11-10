@@ -75,8 +75,11 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
   useImperativeHandle(ref, () => ({
     updateNodeData: (nodeId, newData) => {
       setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
-    }
-  }), [setNodes]);
+    },
+    updateEdgeData: (edgeId, newData) => {
+      setEdges((eds) => eds.map((e) => e.id === edgeId ? { ...e, ...newData } : e));
+    },
+  }), [setNodes, setEdges]);
 
   // Load workflow data
   useEffect(() => {
@@ -222,17 +225,30 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
           design: { x: n.position.x, y: n.position.y },
           to_delete: n.data.to_delete || false,
         })),
-        edges: edges.map((e) => ({
-          id: e.id,
-          from: parseInt(e.source),
-          to: parseInt(e.target),
-          name: e.label || '',
-          design: {
-            source_handle: e.sourceHandle,
-            target_handle: e.targetHandle,
-          },
-          to_delete: e.data?.to_delete || false,
-        })),
+        edges: edges.map((e) => {
+          // Helper function to convert ID to appropriate format
+          const parseNodeId = (id) => {
+            // If the ID is a temporary node ID (starts with 'temp-'), keep it as string
+            if (String(id).startsWith('temp-')) {
+              return id;
+            }
+            // Otherwise, try to parse as integer
+            const parsed = parseInt(id);
+            return isNaN(parsed) ? id : parsed;
+          };
+
+          return {
+            id: e.id,
+            from: parseNodeId(e.source),
+            to: parseNodeId(e.target),
+            name: e.label || '',
+            design: {
+              source_handle: e.sourceHandle,
+              target_handle: e.targetHandle,
+            },
+            to_delete: e.data?.to_delete || false,
+          };
+        }),
       };
 
       await updateWorkflowGraph(workflowId, graphData);
@@ -400,6 +416,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
               transition={editingTransition}
               onClose={() => setEditingTransition(null)}
               onSave={(updated) => {
+                contentRef.current.updateEdgeData(editingTransition.id, { label: updated.label, target: updated.target });
                 setEditingTransition(null);
               }}
               onDelete={() => onDeleteEdge(editingTransition.id)}

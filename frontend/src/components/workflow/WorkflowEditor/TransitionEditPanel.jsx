@@ -5,6 +5,7 @@ import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 export default function TransitionEditPanel({ transition, onClose, onSave, onDelete }) {
   const [formData, setFormData] = useState({
     name: '',
+    to: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,6 +17,7 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
     if (transition) {
       setFormData({
         name: transition.label || transition.name || '',
+        to: transition?.data?.to || transition?.target || '',
       });
     }
   }, [transition]);
@@ -33,15 +35,26 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
     setLoading(true);
     setError(null);
 
+    if (String(transition.id).startsWith('temp-')) {
+      onSave({
+        ...transition,
+        label: formData.name,
+        target: formData.to,
+      });
+      return;
+    }
+
     try {
       const updateData = {
         name: formData.name,
+        to: formData.to,
       };
 
       await updateTransitionDetails(transition.id, updateData);
       onSave({
         ...transition,
         label: formData.name,
+        target: formData.to,
         ...updateData,
       });
     } catch (err) {
@@ -98,10 +111,6 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
               <span>From Step ID:</span>
               <strong>{transition?.data?.from || transition?.source}</strong>
             </div>
-            <div className={styles.infoItem}>
-              <span>To Step ID:</span>
-              <strong>{transition?.data?.to || transition?.target}</strong>
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
@@ -113,6 +122,17 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="e.g., Approved, Rejected, Needs Revision"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>To Step ID</label>
+              <input
+                type="text"
+                name="to"
+                value={formData.to}
+                onChange={handleChange}
+                placeholder="e.g., 2, temp-n123"
               />
             </div>
 

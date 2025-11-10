@@ -1,10 +1,22 @@
 {
     "nodes": [
       {
+        "id": "28",
+        "name": "1234567",
+        "role": "Admin",
+        "description": "",
+        "instruction": "",
+        "design": {
+          "x": 400,
+          "y": 250
+        },
+        "to_delete": false
+      },
+      {
         "id": "1",
         "name": "Asset Check In Workflow - Triage Ticket",
         "role": "Admin",
-        "description": "instructions2",
+        "description": "instructions23",
         "instruction": "instructions",
         "design": {
           "x": 50,
@@ -37,14 +49,26 @@
         "to_delete": false
       },
       {
-        "id": "temp-n1762787721542",
-        "name": "New Step",
+        "id": "temp-n1762795244274",
+        "name": "new step created 1",
         "role": "User",
         "description": "",
         "instruction": "",
         "design": {
-          "x": 405.20339726349044,
-          "y": 62.59945355191259
+          "x": 383.9909255898367,
+          "y": 465.521778584392
+        },
+        "to_delete": false
+      },
+      {
+        "id": "temp-n1762795248145",
+        "name": "New Step created 2",
+        "role": "User",
+        "description": "",
+        "instruction": "",
+        "design": {
+          "x": 388.60798548094374,
+          "y": 623.6560798548094
         },
         "to_delete": false
       }
@@ -52,8 +76,8 @@
     "edges": [
       {
         "id": "2",
-        "from": "1",
-        "to": "2",
+        "from": 1,
+        "to": 2,
         "name": "",
         "design": {
           "source_handle": "bottom",
@@ -63,8 +87,8 @@
       },
       {
         "id": "3",
-        "from": "2",
-        "to": "3",
+        "from": 2,
+        "to": 3,
         "name": "",
         "design": {
           "source_handle": "bottom",
@@ -74,8 +98,8 @@
       },
       {
         "id": "4",
-        "from": "2",
-        "to": "1",
+        "from": 2,
+        "to": 1,
         "name": "",
         "design": {
           "source_handle": "left",
@@ -84,13 +108,35 @@
         "to_delete": false
       },
       {
-        "id": "temp-e1762787734774",
-        "from": null,
-        "to": "1",
+        "id": "32",
+        "from": 1,
+        "to": 28,
         "name": "New Transition",
         "design": {
-          "source_handle": "left",
-          "target_handle": "right"
+          "source_handle": "right",
+          "target_handle": "left"
+        },
+        "to_delete": false
+      },
+      {
+        "id": "temp-e1762795247697",
+        "from": 3,
+        "to": null,
+        "name": "New Transition",
+        "design": {
+          "source_handle": "right",
+          "target_handle": "left"
+        },
+        "to_delete": false
+      },
+      {
+        "id": "temp-e1762795251977",
+        "from": null,
+        "to": null,
+        "name": "New Transition",
+        "design": {
+          "source_handle": "bottom",
+          "target_handle": "top"
         },
         "to_delete": false
       }
