@@ -25,6 +25,12 @@ const nodeTypes = {
   stepNode: StepNode,
 };
 
+// Helper function to convert handle names to lowercase
+const normalizeHandleName = (handleName) => {
+  if (!handleName) return 'bottom';
+  return handleName.toLowerCase();
+};
+
 // Layout calculation
 function getLayout(nodes, edges) {
   const g = new dagre.graphlib.Graph();
@@ -94,6 +100,8 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
             target: String(edge.to),
             label: edge.name || '',
             markerEnd: { type: MarkerType.ArrowClosed },
+            sourceHandle: normalizeHandleName(edge.design?.source_handle) || 'bottom',
+            targetHandle: normalizeHandleName(edge.design?.target_handle) || 'top',
             data: edge,
           }));
 
@@ -119,6 +127,8 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
             markerEnd: { type: MarkerType.ArrowClosed },
             id: `temp-e${Date.now()}`,
             label: 'New Transition',
+            sourceHandle: normalizeHandleName(connection.sourceHandle),
+            targetHandle: normalizeHandleName(connection.targetHandle),
           },
           eds
         )
@@ -161,6 +171,10 @@ function WorkflowEditorContent({ workflowId, onStepClick, onEdgeClick }) {
           from: parseInt(e.source),
           to: parseInt(e.target),
           name: e.label || '',
+          design: {
+            source_handle: e.sourceHandle,
+            target_handle: e.targetHandle,
+          },
           to_delete: e.data?.to_delete || false,
         })),
       };

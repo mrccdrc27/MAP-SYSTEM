@@ -21,6 +21,7 @@ from .serializers import (
     TransitionSerializer,
     UpdateTransitionDetailsSerializer,
 )
+from .utils import apply_edge_handles_to_transitions
 from step.models import Steps, StepTransition
 from role.models import Roles
 from authentication import JWTCookieAuthentication
@@ -239,14 +240,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 'updated_at': updated_at,
             })
         
-        edges_data = []
-        for edge in edges:
-            edges_data.append({
-                'id': edge.transition_id,
-                'from': edge.from_step_id.step_id if edge.from_step_id else None,
-                'to': edge.to_step_id.step_id if edge.to_step_id else None,
-                'name': edge.name or ''
-            })
+        # Use utility function to calculate and apply handles to edges
+        edges_data = apply_edge_handles_to_transitions(edges, workflow.workflow_id)
         
         graph_data = {
             'nodes': nodes_data,
@@ -477,14 +472,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 'design': node.design or {}
             })
         
-        edges_data = []
-        for edge in edges:
-            edges_data.append({
-                'id': edge.transition_id,
-                'from': edge.from_step_id.step_id if edge.from_step_id else None,
-                'to': edge.to_step_id.step_id if edge.to_step_id else None,
-                'name': edge.name or ''
-            })
+        # Use utility function to calculate and apply handles to edges
+        edges_data = apply_edge_handles_to_transitions(edges, workflow.workflow_id)
         
         response_data = {
             'nodes': nodes_data,
@@ -549,14 +538,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 'updated_at': updated_at,
             })
         
-        edges_data = []
-        for edge in edges:
-            edges_data.append({
-                'id': edge.transition_id,
-                'from': edge.from_step_id.step_id if edge.from_step_id else None,
-                'to': edge.to_step_id.step_id if edge.to_step_id else None,
-                'name': edge.name or ''
-            })
+        # Use utility function to calculate and apply handles to edges
+        edges_data = apply_edge_handles_to_transitions(edges, workflow_id)
         
         graph_data = {
             'nodes': nodes_data,

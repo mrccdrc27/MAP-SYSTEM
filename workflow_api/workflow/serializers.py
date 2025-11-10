@@ -43,6 +43,7 @@ class GraphEdgeSerializer(serializers.Serializer):
     from_field = serializers.CharField(source='from')  # Can be integer or temp-id string
     to_field = serializers.CharField(source='to')  # Can be integer or temp-id string
     name = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    design = GraphNodeDesignSerializer(required=False)  # Add design field for handles
     to_delete = serializers.BooleanField(default=False, required=False)
     
     def validate_id(self, value):

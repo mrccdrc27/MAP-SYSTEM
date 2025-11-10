@@ -14,7 +14,11 @@ export default function StepNode({ data, isConnecting }) {
 
   return (
     <div className={styles.node} onClick={handleNodeClick}>
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Top} id="top" />
+      <Handle type="target" position={Position.Bottom} id="bottom" />
+      <Handle type="target" position={Position.Left} id="left" />
+      <Handle type="target" position={Position.Right} id="right" />
+      
       <div className={styles.nodeContent}>
         <div className={styles.nodeTitle}>{data.label}</div>
         <div className={styles.nodeRole}>{data.role}</div>
@@ -22,7 +26,11 @@ export default function StepNode({ data, isConnecting }) {
           {data.description || 'No description'}
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} />
+      
+      <Handle type="source" position={Position.Top} id="top" />
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      <Handle type="source" position={Position.Left} id="left" />
+      <Handle type="source" position={Position.Right} id="right" />
     </div>
   );
 }

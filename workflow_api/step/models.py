@@ -65,6 +65,11 @@ class StepTransition(models.Model):
         to_field='step_id'
     )
     name = models.CharField(max_length=64, null=True, blank=True)
+    design = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Store handles for frontend connections {source_handle, target_handle}'
+    )
     
     # timestamps
     created_at = models.DateTimeField(auto_now_add=True)
