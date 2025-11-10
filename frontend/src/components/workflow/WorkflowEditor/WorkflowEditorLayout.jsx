@@ -87,11 +87,16 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
 
   // Handle node deletion
   const handleDeleteNode = useCallback((nodeId) => {
-    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === nodeId
+          ? { ...n, data: { ...n.data, to_delete: true }, className: 'deleted-node' }
+          : n
+      )
+    );
     setUnsavedChanges(true);
     onDeleteNode(nodeId);
-  }, [setNodes, setEdges, onDeleteNode]);
+  }, [setNodes, onDeleteNode]);
 
   useImperativeHandle(ref, () => ({
     updateNodeData: (nodeId, newData) => {
@@ -103,10 +108,13 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     deleteEdge: (edgeId) => {
       handleDeleteEdge(edgeId);
     },
+    deleteNode: (nodeId) => {
+      handleDeleteNode(nodeId);
+    },
     setUnsavedChanges: (value) => {
       setUnsavedChanges(value);
     },
-  }), [setNodes, setEdges, handleDeleteEdge]);
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode]);
 
   // Load workflow data
   useEffect(() => {
@@ -128,6 +136,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
           },
           type: 'stepNode',
           position: { x: 0, y: 0 },
+          className: node.to_delete ? 'deleted-node' : '',
         }));
 
         // Filter out edges with null from/to and convert to ReactFlow format
@@ -225,6 +234,22 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     [onEdgeClick]
   );
 
+  // Handle node changes - intercept deletions to mark as to_delete instead
+  const handleNodesChange = useCallback((changes) => {
+    const filteredChanges = changes.filter((change) => {
+      // If it's a remove action, don't let it happen
+      if (change.type === 'remove') {
+        // Instead, mark the node for deletion
+        handleDeleteNode(change.id);
+        return false;
+      }
+      return true;
+    });
+    
+    // Apply the filtered changes
+    onNodesChange(filteredChanges);
+  }, [onNodesChange, handleDeleteNode]);
+
   // Handle edge changes - intercept deletions to mark as to_delete instead
   const handleEdgesChange = useCallback((changes) => {
     const filteredChanges = changes.filter((change) => {
@@ -294,7 +319,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
           onEdgeClick={onEdgeClickHandler}
@@ -430,7 +455,10 @@ export default function WorkflowEditorLayout({ workflowId }) {
                 }
                 setEditingStep(null);
               }}
-              onDelete={() => onDeleteNode(editingStep.id)}
+              onDelete={() => {
+                contentRef.current.deleteNode(editingStep.id);
+                setEditingStep(null);
+              }}
               onChange={String(editingStep.id).startsWith('temp-') ? (updated) => contentRef.current.updateNodeData(editingStep.id, {
                 label: updated.name,
                 role: updated.role,

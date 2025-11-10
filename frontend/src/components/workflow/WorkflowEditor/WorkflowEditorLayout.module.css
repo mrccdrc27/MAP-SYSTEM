@@ -120,3 +120,13 @@
   fill: #ef4444 !important;
   opacity: 0.6;
 }
+
+/* Deleted node styling */
+:global(.deleted-node) {
+  opacity: 0.4;
+}
+
+:global(.deleted-node) .react-flow__node {
+  background: #fee !important;
+  border: 2px dashed #ef4444 !important;
+}
