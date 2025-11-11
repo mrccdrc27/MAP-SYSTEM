@@ -60,9 +60,8 @@ function TicketItem({ item }) {
           {item?.status}
         </div>
       </td>
-      {/* <td>{format(new Date(item.submit_date), "MMMM dd, yyyy")}</td> */}
       <td>{item.category}</td>
-      <td>{format(new Date(item.created_at), "MMMM dd, yyyy")}</td>
+      <td>{format(new Date(item.submit_date), "MMMM dd, yyyy")}</td>
       <td>
         <button
           className={general.btn}

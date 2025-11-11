@@ -88,6 +88,7 @@ class UserTaskListSerializer(serializers.ModelSerializer):
     """
     ticket_subject = serializers.CharField(source='ticket_id.subject', read_only=True)
     ticket_description = serializers.CharField(source='ticket_id.description', read_only=True)
+    ticket_number = serializers.CharField(source='ticket_id.ticket_id', read_only=True)
     workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
     current_step_name = serializers.CharField(source='current_step.name', read_only=True)
     current_step_role = serializers.CharField(source='current_step.role_id.name', read_only=True, allow_null=True)
@@ -101,6 +102,7 @@ class UserTaskListSerializer(serializers.ModelSerializer):
             'ticket_id',
             'ticket_subject',
             'ticket_description',
+            'ticket_number',
             'workflow_id',
             'workflow_name',
             'current_step',

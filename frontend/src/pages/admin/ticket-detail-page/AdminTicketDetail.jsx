@@ -132,7 +132,21 @@ export default function AdminTicketDetail() {
         payload: {
           ticket: {
             ...stepInstance.task.ticket,
-            hasacted: stepInstance.has_acted,
+            // Map new ticket fields
+            ticket_id: stepInstance.task.ticket_id,
+            ticket_subject: stepInstance.task.ticket_subject,
+            ticket_description: stepInstance.task.ticket_description,
+            workflow_id: stepInstance.task.workflow_id,
+            workflow_name: stepInstance.task.workflow_name,
+            current_step: stepInstance.task.current_step,
+            current_step_name: stepInstance.task.current_step_name,
+            current_step_role: stepInstance.task.current_step_role,
+            status: stepInstance.task.status,
+            user_assignment: stepInstance.task.user_assignment,
+            has_acted: stepInstance.task.has_acted,
+            created_at: stepInstance.task.created_at,
+            updated_at: stepInstance.task.updated_at,
+            fetched_at: stepInstance.task.fetched_at,
           },
           action: stepInstance.available_actions || [],
           instruction: stepInstance.step.instruction,
@@ -233,7 +247,7 @@ export default function AdminTicketDetail() {
             <div className={styles.layoutSection} style={{ flex: 2 }}>
               <div className={styles.tdpTicketNoWrapper}>
                 <h2 className={styles.tdpTicketNo}>
-                  Ticket No. {state.ticket?.ticket_number}
+                  Ticket No. {state.ticket?.ticket_id}
                 </h2>
                 <div
                   className={
@@ -246,7 +260,7 @@ export default function AdminTicketDetail() {
               </div>
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
-                  <strong>Subject: {state.ticket?.subject}</strong>
+                  <strong>Subject: {state.ticket?.ticket_subject}</strong>
                 </div>
                 <div className={styles.tdpMeta}>
                   Opened On:{" "}
@@ -268,7 +282,7 @@ export default function AdminTicketDetail() {
                   <strong>Description: </strong>
                 </div>
                 <p className={styles.tdpDescription}>
-                  {state.ticket?.description}
+                  {state.ticket?.ticket_description}
                 </p>
               </div>
               <div className={styles.tdInstructions}>
@@ -286,7 +300,8 @@ export default function AdminTicketDetail() {
                 <div className={styles.tdAttached}>
                   <i className="fa fa-upload"></i>
                   <span className={styles.placeholderText}>
-                    <DocumentViewer attachments={state.ticket?.attachments} />
+                    {/* No attachments in new format */}
+                    No attachments available.
                   </span>
                   <input
                     type="file"
@@ -298,7 +313,7 @@ export default function AdminTicketDetail() {
               </div>
 
               {/* Comments section under attachments */}
-              <TicketComments ticketId={state.ticket?.ticket_number} />
+              <TicketComments ticketId={state.ticket?.ticket_id} />
             </div>
             {/* Right */}
             <div
@@ -307,14 +322,14 @@ export default function AdminTicketDetail() {
             >
               <button
                 className={
-                  state.ticket?.hasacted
+                  state.ticket?.has_acted
                     ? styles.actionButtonDisabled
                     : styles.actionButton
                 }
                 onClick={() => setOpenTicketAction(true)}
-                disabled={state.ticket?.hasacted}
+                disabled={state.ticket?.has_acted}
               >
-                {state.ticket?.hasacted
+                {state.ticket?.has_acted
                   ? "Action Already Taken"
                   : "Make an Action"}
               </button>
@@ -344,7 +359,7 @@ export default function AdminTicketDetail() {
                         className={
                           general[
                             `status-${state.ticket?.status
-                              .replace(/\s+/g, "-")
+                              ?.replace(/\s+/g, "-")
                               .toLowerCase()}`
                           ]
                         }
@@ -378,14 +393,13 @@ export default function AdminTicketDetail() {
                               Ticket Owner
                             </div>
                             <div className={styles.tdInfoValue}>
-                              {`${state.ticket?.employee.first_name} ${state.ticket?.employee.last_name}`}
+                              {state.ticket?.user_assignment?.username || state.ticket?.user_assignment?.email || "N/A"}
                             </div>
                           </div>
                           <div className={styles.tdInfoLabelValue}>
-                            <div className={styles.tdInfoLabel}>Department</div>
+                            <div className={styles.tdInfoLabel}>Role</div>
                             <div className={styles.tdInfoValue}>
-                              {" "}
-                              {`${state.ticket?.employee.department}`}
+                              {state.ticket?.user_assignment?.role || "N/A"}
                             </div>
                           </div>
                         </div>
@@ -408,7 +422,7 @@ export default function AdminTicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    <Messaging ticket_id={state.ticket?.ticket_number} />
+                    <Messaging ticket_id={state.ticket?.ticket_id} />
                   </div>
                 )}
               </div>

@@ -22,7 +22,7 @@ export const TicketsProvider = ({ children }) => {
 
     // Fetch from API if no cache
     try {
-      const response = await api.get('instances/simple/');
+      const response = await api.get('tasks/my-tasks/');
       memoryCache.set(cacheKey, response.data);
       setTickets(response.data);
     } catch (err) {
@@ -33,12 +33,12 @@ export const TicketsProvider = ({ children }) => {
   };
 
   const refreshTickets = async () => {
-    const cacheKey = 'instances/simple/';
+    const cacheKey = 'tasks/my-tasks/';
     memoryCache.delete(cacheKey);
     setLoading(true);
     
     try {
-      const response = await api.get('instances/simple/');
+      const response = await api.get('tasks/my-tasks/');
       memoryCache.set(cacheKey, response.data);
       setTickets(response.data);
     } catch (err) {
