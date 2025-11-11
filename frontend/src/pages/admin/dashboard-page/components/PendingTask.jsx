@@ -23,21 +23,21 @@ export default function PendingTask({ tickets = [] }) {
     <div>
       {visibleTickets.map((ticket) => (
         <div
-          key={ticket.ticket_no || ticket.ticket_id}
+          key={ticket.ticket_number || ticket.ticket_id}
           className={styles.pendingTask}
         >
           <div className={styles.ptWrapper}>
             <Ticket className={styles.ptIcon} />
             <div className={styles.ptDetails}>
-              <h5>Ticket No. {ticket.ticket_no || ticket.ticket_id}</h5>
-              <p>{ticket.title || ticket.subject}</p>
+              <h5>Ticket No. {ticket.ticket_number || ticket.ticket_id}</h5>
+              <p>{ticket.subject || ticket.description || "No title"}</p>
             </div>
             <div
               className={
-                general[`priority-${ticket.priority.toLowerCase()}`]
+                general[`priority-${(ticket.priority || "Medium").toLowerCase()}`]
               }
             >
-              {ticket.priority}
+              {ticket.priority || "Medium"}
             </div>
           </div>
         </div>

@@ -32,16 +32,29 @@ export default function Track() {
   const handleSearch = (e) => {
     e.preventDefault();
 
-    // === changed: adjust search to match userTickets structure
+    // === changed: adjust search to match new userTickets structure
     const match = tickets.find(
       (instance) =>
-        instance.task.ticket.ticket_id.toLowerCase() ===
+        instance.ticket_id?.toLowerCase() ===
+        searchTerm.trim().toLowerCase() ||
+        instance.ticket_number?.toLowerCase() ===
         searchTerm.trim().toLowerCase()
     );
 
     if (match) {
-      setMatchedTicket(match.task.ticket);
-      setTaskId(match.task.task_id); // === added
+      setMatchedTicket({
+        ticket_id: match.ticket_id,
+        ticket_number: match.ticket_number,
+        subject: match.ticket_subject,
+        description: match.ticket_description,
+        workflow_id: match.workflow_id,
+        workflow_name: match.workflow_name,
+        current_step: match.current_step,
+        current_step_name: match.current_step_name,
+        status: match.status,
+        created_at: match.created_at,
+      });
+      setTaskId(match.task_id); // === added
       setNotFound(false);
     } else {
       setMatchedTicket(null);

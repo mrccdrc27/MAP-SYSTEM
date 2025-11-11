@@ -27,12 +27,20 @@ export default function Dashboard() {
 
   // fetch tickets and filter those tickets that !has_acted
   const allTickets = (userTickets || [])
-    .filter((e) => e.task?.ticket && !e.has_acted)
+    .filter((e) => !e.has_acted)
     .map((e) => ({
-      ...e.task.ticket,
-      step_instance_id: e.step_instance_id,
+      ticket_id: e.ticket_id,
+      ticket_number: e.ticket_number,
+      subject: e.ticket_subject,
+      description: e.ticket_description,
+      status: e.status,
+      priority: e.priority || "Medium",
+      created_at: e.created_at,
+      updated_at: e.updated_at,
+      workflow_name: e.workflow_name,
+      current_step_name: e.current_step_name,
+      task_id: e.task_id,
       has_acted: e.has_acted,
-      agent: e.agent,
     }));
 
   const counts = {
@@ -70,7 +78,7 @@ export default function Dashboard() {
   // ticket summary
   const today = new Date().toISOString().split("T")[0];
   const resolvedTodayCount = allTickets.filter((t) => {
-    const resolvedDate = t.updated_date?.split("T")[0];
+    const resolvedDate = t.updated_at?.split("T")[0];
     return t.status === "Resolved" && resolvedDate === today;
   }).length;
 
@@ -80,7 +88,7 @@ export default function Dashboard() {
   // task ongoing
   const ongoingTasks = allTickets
     .filter((t) => t.status?.toLowerCase() === "in progress")
-    .sort((a, b) => new Date(b.update_date) - new Date(a.update_date));
+    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
   const handleKpiClick = (label) => {
     // Map card labels to ticket tab values for agent ticket list

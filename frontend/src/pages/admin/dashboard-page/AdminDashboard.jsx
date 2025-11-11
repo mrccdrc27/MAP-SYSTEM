@@ -29,12 +29,21 @@ export default function AdminDashboard() {
 
   // Only tickets that have not yet been acted
   const pendingTickets = (userTickets || [])
-    .filter((e) => e.task?.ticket && !e.has_acted)
+    .filter((e) => !e.has_acted)
     .map((e) => ({
-      ...e.task.ticket,
-      step_instance_id: e.step_instance_id,
+      ticket_id: e.ticket_id,
+      ticket_number: e.ticket_number,
+      subject: e.ticket_subject,
+      description: e.ticket_description,
+      workflow_name: e.workflow_name,
+      current_step_name: e.current_step_name,
+      status: e.status,
+      priority: e.priority || "Medium", // Default if not in new format
       has_acted: e.has_acted,
-      agent: e.agent,
+      submit_date: e.created_at,
+      task_id: e.task_id,
+      workflow_id: e.workflow_id,
+      user_assignment: e.user_assignment,
     }));
 
   const counts = {
@@ -59,7 +68,7 @@ export default function AdminDashboard() {
     const statusKey = t.status?.toLowerCase().replace(/\s+/g, "");
     const priorityKey = t.priority?.toLowerCase().replace(/\s+/g, "");
 
-    if (statusKey === "new") counts.new += 1;
+    if (statusKey === "new" || statusKey === "pending") counts.new += 1;
     if (priorityKey === "critical") counts.critical += 1;
     if (priorityKey === "high") counts.high += 1;
     if (priorityKey === "medium") counts.medium += 1;
@@ -73,10 +82,6 @@ export default function AdminDashboard() {
     if (statusKey) {
       statusCounts[statusKey] = (statusCounts[statusKey] || 0) + 1;
     }
-
-    // Acted vs Not Acted
-    if (t.has_acted === true) actedCount += 1;
-    else if (t.has_acted === false) notActedCount += 1;
 
     // Group new tickets by month
     if (t.submit_date) {
@@ -186,10 +191,10 @@ export default function AdminDashboard() {
                 "Title",
                 "Priority",
                 "Status",
-                "Submit Date",
+                "Created Date",
               ]}
               columns={[
-                { key: "ticket_id" },
+                { key: "ticket_number" },
                 { key: "subject" },
                 { key: "priority" },
                 { key: "status" },

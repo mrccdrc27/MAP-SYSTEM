@@ -21,9 +21,6 @@ const OngoingTask = ({ tasks }) => {
                 >
                   {task.status}
                 </span>
-                {task.agent && (
-                  <span className={styles.agent}>Agent: {task.agent.name}</span>
-                )}
               </div>
             </li>
           ))}
