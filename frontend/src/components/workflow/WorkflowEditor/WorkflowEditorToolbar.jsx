@@ -17,6 +17,7 @@ const WorkflowEditorToolbar = ({
         <button
           className={styles.actionBtn}
           onClick={handleAddStep}
+          disabled={!isEditingGraph}
           title="Add a new step to the workflow"
         >
           <span className={styles.btnIcon}>➕</span>
@@ -27,11 +28,11 @@ const WorkflowEditorToolbar = ({
       <div className={styles.toolbarSection}>
         <h4 className={styles.toolbarTitle}>Actions</h4>
         <button
-          className={`${styles.modeToggle} ${isEditingGraph ? styles.modeActive : ''}`}
+          className={`${styles.modeToggle} ${isEditingGraph ? styles.modeActive : styles.modeLocked}`}
           onClick={onToggleEditMode}
           title={isEditingGraph ? 'Click to lock editing' : 'Click to enable editing'}
         >
-          {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
+          {isEditingGraph ? 'Editing' : 'Locked'}
         </button>
       </div>
 
@@ -45,12 +46,6 @@ const WorkflowEditorToolbar = ({
           <p className={styles.infoLabel}>Transitions</p>
           <p className={styles.infoValue}>{workflowData.graph?.edges?.length || 0}</p>
         </div>
-        {hasUnsavedChanges && (
-          <div className={styles.infoBox} style={{ borderColor: 'var(--color-warning)', backgroundColor: 'var(--color-warning-light)' }}>
-            <p className={styles.infoLabel} style={{ color: 'var(--color-warning)' }}>Status</p>
-            <p className={styles.infoValue} style={{ color: 'var(--color-warning)' }}>Unsaved</p>
-          </div>
-        )}
       </div>
     </aside>
   );

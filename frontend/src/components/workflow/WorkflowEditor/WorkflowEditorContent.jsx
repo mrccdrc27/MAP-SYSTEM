@@ -286,6 +286,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
 
   // Handle node changes - intercept deletions to mark as to_delete instead
   const handleNodesChange = useCallback((changes) => {
+    let hasActualPositionChange = false;
     const filteredChanges = changes.filter((change) => {
       // If it's a remove action, don't let it happen
       if (change.type === 'remove') {
@@ -297,16 +298,24 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
       if (change.type === 'position' && !isEditingGraph) {
         return false;
       }
-      // If it's a position change in edit mode, mark as unsaved
+      // If it's a position change in edit mode, check if position actually changed
       if (change.type === 'position' && isEditingGraph) {
-        setUnsavedChanges(true);
+        const currentNode = nodes.find(n => n.id === change.id);
+        if (currentNode && (currentNode.position.x !== change.position.x || currentNode.position.y !== change.position.y)) {
+          hasActualPositionChange = true;
+        }
       }
       return true;
     });
     
     // Apply the filtered changes
     onNodesChange(filteredChanges);
-  }, [onNodesChange, handleDeleteNode, isEditingGraph]);
+
+    // Only set unsaved changes if position actually changed
+    if (hasActualPositionChange) {
+      setUnsavedChanges(true);
+    }
+  }, [onNodesChange, handleDeleteNode, isEditingGraph, nodes]);
 
   // Handle edge changes - intercept deletions to mark as to_delete instead
   const handleEdgesChange = useCallback((changes) => {
@@ -326,6 +335,11 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
 
   return (
     <div className={styles.centerArea}>
+      {unsavedChanges && (
+        <div className={styles.unsavedChangesIndicator}>
+          Unsaved Changes
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
