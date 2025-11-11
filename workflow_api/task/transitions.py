@@ -251,8 +251,8 @@ class TaskTransitionView(CreateAPIView):
             f"to {next_step.name} via transition {transition_id}"
         )
         
-        # Assign users for the next step using round-robin with authenticated user's full name
-        assigned_items = assign_users_for_step(task, next_step, next_step.role_id.name, current_user_full_name)
+        # Assign users for the next step using round-robin
+        assigned_items = assign_users_for_step(task, next_step, next_step.role_id.name)
         
         if not assigned_items:
             return Response(

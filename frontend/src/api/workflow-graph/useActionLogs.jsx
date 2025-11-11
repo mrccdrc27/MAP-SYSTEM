@@ -1,5 +1,5 @@
 // src/api/useFetchActionLogs.js
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import api from '../axios'; // your pre-configured axios instance
 
 const useFetchActionLogs = () => {
@@ -7,7 +7,7 @@ const useFetchActionLogs = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchActionLogs = async (ticketId) => {
+  const fetchActionLogs = useCallback(async (ticketId) => {
     if (!ticketId) return;
 
     setLoading(true);
@@ -27,7 +27,7 @@ const useFetchActionLogs = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     fetchActionLogs,
