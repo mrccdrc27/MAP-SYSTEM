@@ -35,17 +35,17 @@ function TicketHeader() {
 
 function TicketItem({ item }) {
   const navigate = useNavigate();
-  console.log("id", item);
+  // console.log("id", item);
   return (
     <tr className={general.item}>
       <td>{item.hasacted ? "Has Acted" : "Not Yet"}</td>
       <td>{item.ticket_id}</td>
       <td>{item.subject}</td>
-      {/* <td>{item.description}</td> */}
+      {/* <td className={general.descriptionCell}>{item.description}</td> */}
       <td className={general.descriptionCell} title={item.description}>
         {item.description}
       </td>
-      {/* <td>{item.priority}</td> */}
+
       <td>
         <div className={general[`priority-${item.priority.toLowerCase()}`]}>
           {item.priority}
@@ -65,7 +65,7 @@ function TicketItem({ item }) {
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/agent/ticket/${item.step_instance_id}`)}
+          onClick={() => navigate(`/agent/ticket/${item.ticket_number}`)}
         >
           👁
         </button>
@@ -131,3 +131,4 @@ export default function TicketTable({
     </div>
   );
 }
+

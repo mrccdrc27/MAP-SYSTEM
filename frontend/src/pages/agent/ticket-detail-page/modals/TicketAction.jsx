@@ -1,6 +1,6 @@
 import useTriggerAction from "../../../../api/useTriggerAction";
 import styles from "./ticket-action.module.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function TicketAction({
   closeTicketAction,
@@ -9,41 +9,52 @@ export default function TicketAction({
   instance,
 }) {
   const [selectedActionId, setSelectedActionId] = useState("");
-  const [comment, setComment] = useState("");
+  const [notes, setNotes] = useState("");
   const [triggerNow, setTriggerNow] = useState(false);
   const [errors, setErrors] = useState({});
 
   const { loading, error, response } = useTriggerAction({
-    uuid: instance,
-    action_id: selectedActionId,
+    task_id: instance,
+    transition_id: selectedActionId,
     method: "post",
-    comment,
+    notes,
     trigger: triggerNow,
   });
+
+  // Handle successful response
+  useEffect(() => {
+    if (response && !loading) {
+      console.log("✅ Action completed successfully");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    }
+  }, [response, loading]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error && !loading) {
+      console.error("❌ Action failed:", error);
+      setTriggerNow(false);
+    }
+  }, [error, loading]);
 
   const handleClick = () => {
     const newErrors = {};
     if (!selectedActionId) {
       newErrors.action = "Please select an action.";
     }
-    if (!comment.trim()) {
-      newErrors.comment = "Comment is required.";
+    if (!notes.trim()) {
+      newErrors.notes = "Notes are required.";
     }
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) return;
 
+    console.log("🔄 Triggering action...");
     setTriggerNow(true);
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
   };
-
-  // Reset the trigger after action completes
-  if (triggerNow && !loading && (error || response)) {
-    setTimeout(() => setTriggerNow(false), 500);
-  }
 
   return (
     <div className={styles.taOverlayWrapper} onClick={() => closeTicketAction(false)}>
@@ -64,10 +75,10 @@ export default function TicketAction({
 
         <div className={styles.tdValidation}>
           {response && (
-            <p style={{ color: "green" }}>Action triggered successfully!</p>
+            <p style={{ color: "green" }}>✅ Action triggered successfully!</p>
           )}
-          {error && error.comment && (
-            <p style={{ color: "red" }}>{`Comment: ${error.comment.join(", ")}`}</p>
+          {error && error.error && (
+            <p style={{ color: "red" }}>❌ {error.error}</p>
           )}
         </div>
 
@@ -83,12 +94,13 @@ export default function TicketAction({
               className={styles.actionStatus}
               value={selectedActionId}
               onChange={(e) => setSelectedActionId(e.target.value)}
+              disabled={loading}
             >
               <option value="" disabled>
                 Please select an option
               </option>
               {action?.map((a) => (
-                <option key={a.action_id} value={a.action_id}>
+                <option key={a.transition_id} value={a.transition_id}>
                   {a.name}
                 </option>
               ))}
@@ -97,14 +109,15 @@ export default function TicketAction({
           </div>
 
           <div className={styles.taCommentCont}>
-            <h3>Comment</h3>
+            <h3>Notes</h3>
             <textarea
               className={styles.actionStatus}
-              placeholder="Enter a comment..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              placeholder="Enter notes for this action..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={loading}
             />
-            {errors.comment && <p className={styles.errorText}>{errors.comment}</p>}
+            {errors.notes && <p className={styles.errorText}>{errors.notes}</p>}
           </div>
 
           <button

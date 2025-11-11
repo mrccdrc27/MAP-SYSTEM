@@ -25,7 +25,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     # Define system and role requirements for this viewset
     required_system_roles = {
-        'tts': ['Admin', 'Agent'],
+        'tts': ['Admin', 'Agent', 'Budget Manager', 'Asset Manager'],
         'hdts': ['Employee', 'Ticket Coordinator', 'Admin']
     }
 
@@ -233,7 +233,7 @@ class ReactionViewSet(viewsets.ViewSet):
     
     # Define system and role requirements for this viewset
     required_system_roles = {
-        'tts': ['Admin', 'Agent'],
+        'tts': ['Admin', 'Agent', 'Budget Manager', 'Asset Manager'],
         'hdts': ['Employee', 'Ticket Coordinator', 'Admin']
     }
 
@@ -360,7 +360,7 @@ class AttachmentViewSet(viewsets.ReadOnlyModelViewSet):
     
     # Define system and role requirements for this viewset
     required_system_roles = {
-        'tts': ['Admin', 'Agent'],
+        'tts': ['Admin', 'Agent', 'Budget Manager', 'Asset Manager'],
         'hdts': ['Employee', 'Ticket Coordinator', 'Admin']
     }
 

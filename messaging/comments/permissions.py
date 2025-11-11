@@ -16,7 +16,7 @@ class CommentPermission(BasePermission):
         
         # Define system and role requirements for comments
         required_system_roles = {
-            'tts': ['Admin', 'Agent'],
+            'tts': ['Admin', 'Agent', 'Budget Manager', 'Asset Manager'],
             'hdts': ['Employee', 'Ticket Coordinator', 'Admin']
         }
         

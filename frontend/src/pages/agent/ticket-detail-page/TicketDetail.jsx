@@ -15,22 +15,24 @@ import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLog from "../../../components/ticket/ActionLog";
+import ActionLogList from "../../../components/ticket/ActionLogList";
 import Messaging from "../../../components/messaging";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
-import ActionLogList from "../../../components/ticket/ActionLogList";
 import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
-import useUserTickets from "../../../api/useUserTickets";
+import useSecureStepInstance from "../../../api/useSecureStepInstance";
+import { useAuth } from "../../../api/AuthContext";
 
 // modal
 import TicketAction from "./modals/TicketAction";
 import { min } from "date-fns";
 
 export default function TicketDetail() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
-  const { userTickets } = useUserTickets();
+  const { stepInstance, loading: instanceLoading, error: instanceError } = useSecureStepInstance(id);
 
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,41 +111,70 @@ export default function TicketDetail() {
   }, [state.ticket?.created_at]);
 
   useEffect(() => {
-    if (!userTickets || userTickets.length === 0) return;
+    // Handle loading state
+    if (instanceLoading) {
+      setLoading(true);
+      return;
+    }
 
-    const matchedInstance = userTickets.find(
-      (instance) => instance.step_instance_id === id
-    );
-
-    if (!matchedInstance) {
-      setError("Ticket not found.");
+    // Handle error state
+    if (instanceError) {
+      setError(instanceError);
+      setLoading(false);
       dispatch({ type: "RESET" });
-    } else {
+      return;
+    }
+
+    // Handle successful data
+    if (stepInstance) {
+      // Map new ticket fields from the provided structure
+      const t = stepInstance.task.ticket;
       dispatch({
         type: "SET_TICKET",
         payload: {
           ticket: {
-            ...matchedInstance.task.ticket,
-            hasacted: matchedInstance.has_acted,
+            ...t,
+            ticket_id: t.ticket_id,
+            ticket_subject: t.subject, // new field
+            ticket_description: t.description, // new field
+            workflow_id: stepInstance.task.workflow_id,
+            workflow_name: stepInstance.step.name, // fallback to step name
+            current_step: stepInstance.step.step_id,
+            current_step_name: stepInstance.step.name,
+            current_step_role: stepInstance.step.role_id, // role_id as role
+            status: stepInstance.task.status || t.status,
+            user_assignment: t.employee || { username: t.assigned_to }, // prefer employee, fallback to assigned_to
+            has_acted: stepInstance.has_acted,
+            created_at: t.created_at || t.submit_date,
+            updated_at: t.updated_at || t.update_date,
+            fetched_at: t.fetched_at,
+            priority: t.priority,
+            attachments: t.attachments || [],
           },
-          action: matchedInstance.available_actions || [],
-          instruction: matchedInstance.step.instruction,
-          instance: matchedInstance.step_instance_id,
-          taskid: matchedInstance.task.task_id,
+          action: stepInstance.available_actions || [],
+          instruction: stepInstance.step.instruction,
+          instance: stepInstance.step_instance_id,
+          taskid: stepInstance.task.task_id,
         },
       });
       setError("");
+      setLoading(false);
+    } else if (!instanceLoading) {
+      // Only set error if not loading and no data
+      setError("Step instance not found.");
+      setLoading(false);
+      dispatch({ type: "RESET" });
     }
-    setLoading(false);
-  }, [userTickets, id]);
+  }, [stepInstance, instanceLoading, instanceError]);
+
   const { fetchActionLogs, logs } = useFetchActionLogs();
   useEffect(() => {
-    if (state.taskid) {
-      fetchActionLogs(state.taskid);
+    if (state.ticket?.ticket_id) {
+      fetchActionLogs(state.ticket.ticket_id);
     }
-  }, [state.taskid]);
+  }, [state.ticket?.ticket_id, fetchActionLogs]);
 
-  const { tracker } = useWorkflowProgress(state.taskid);
+  const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
 
   if (loading) {
     return (
@@ -232,7 +263,7 @@ export default function TicketDetail() {
               </div>
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
-                  <strong>Subject: {state.ticket?.subject}</strong>
+                  <strong>Subject: {state.ticket?.ticket_subject}</strong>
                 </div>
                 <div className={styles.tdpMeta}>
                   Opened On:{" "}
@@ -254,7 +285,7 @@ export default function TicketDetail() {
                   <strong>Description: </strong>
                 </div>
                 <p className={styles.tdpDescription}>
-                  {state.ticket?.description}
+                  {state.ticket?.ticket_description}
                 </p>
               </div>
               <div className={styles.tdInstructions}>
@@ -262,15 +293,30 @@ export default function TicketDetail() {
                   <i className="fa-solid fa-lightbulb"></i>
                   <h3>Instructions</h3>
                 </div>
-                <p>{state.instruction || "No instructions available for this step."}</p>
+                <p>
+                  {state.instruction ||
+                    "No instructions available for this step."}
+                </p>
               </div>
               <div className={styles.tdAttachment}>
                 <h3>Attachment</h3>
                 <div className={styles.tdAttached}>
                   <i className="fa fa-upload"></i>
-                  <span className={styles.placeholderText}>
-                    <DocumentViewer attachments={state.ticket?.attachments} />
-                  </span>
+                  {state.ticket?.attachments && state.ticket.attachments.length > 0 ? (
+                    <ul>
+                      {state.ticket.attachments.map((file, idx) => (
+                        <li key={idx}>
+                          <a href={file.url || file} target="_blank" rel="noopener noreferrer">
+                            {file.name || `Attachment ${idx + 1}`}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className={styles.placeholderText}>
+                      No attachments available.
+                    </span>
+                  )}
                   <input
                     type="file"
                     id="file-upload"
@@ -279,7 +325,7 @@ export default function TicketDetail() {
                   />
                 </div>
               </div>
-              
+
               {/* Comments section under attachments */}
               <TicketComments ticketId={state.ticket?.ticket_id} />
             </div>
@@ -290,14 +336,14 @@ export default function TicketDetail() {
             >
               <button
                 className={
-                  state.ticket?.hasacted
+                  state.ticket?.has_acted
                     ? styles.actionButtonDisabled
                     : styles.actionButton
                 }
                 onClick={() => setOpenTicketAction(true)}
-                disabled={state.ticket?.hasacted}
+                disabled={state.ticket?.has_acted}
               >
-                {state.ticket?.hasacted
+                {state.ticket?.has_acted
                   ? "Action Already Taken"
                   : "Make an Action"}
               </button>
@@ -327,7 +373,7 @@ export default function TicketDetail() {
                         className={
                           general[
                             `status-${state.ticket?.status
-                              .replace(/\s+/g, "-")
+                              ?.replace(/\s+/g, "-")
                               .toLowerCase()}`
                           ]
                         }
@@ -361,14 +407,15 @@ export default function TicketDetail() {
                               Ticket Owner
                             </div>
                             <div className={styles.tdInfoValue}>
-                              {`${state.ticket?.employee.first_name} ${state.ticket?.employee.last_name}`}
+                              {state.ticket?.user_assignment?.first_name
+                                ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
+                                : state.ticket?.user_assignment?.username || state.ticket?.user_assignment?.email || "N/A"}
                             </div>
                           </div>
                           <div className={styles.tdInfoLabelValue}>
-                            <div className={styles.tdInfoLabel}>Department</div>
+                            <div className={styles.tdInfoLabel}>Role</div>
                             <div className={styles.tdInfoValue}>
-                              {" "}
-                              {`${state.ticket?.employee.department}`}
+                              {state.ticket?.user_assignment?.role || "N/A"}
                             </div>
                           </div>
                         </div>
@@ -391,13 +438,7 @@ export default function TicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    {state.ticket?.ticket_id ? (
-                      <Messaging ticket_id={state.ticket.ticket_id} />
-                    ) : (
-                      <div style={{ padding: "1rem", textAlign: "center" }}>
-                        Loading messages...
-                      </div>
-                    )}
+                    <Messaging ticket_id={state.ticket?.ticket_id} />
                   </div>
                 )}
               </div>
@@ -410,7 +451,7 @@ export default function TicketDetail() {
           closeTicketAction={setOpenTicketAction}
           ticket={state.ticket}
           action={state.action}
-          instance={state.instance}
+          instance={state.taskid}
         />
       )}
     </>

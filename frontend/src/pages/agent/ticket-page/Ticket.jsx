@@ -40,10 +40,28 @@ export default function Ticket() {
   // Extract all ticket data with step_instance_id
   const allTickets = useMemo(() => {
     return (userTickets || [])
-      .filter((entry) => entry.task?.ticket)
       .map((entry) => ({
-        ...entry.task.ticket,
-        step_instance_id: entry.step_instance_id,
+        // Map fields from flat entry structure
+        ticket_id: entry.ticket_id,
+        subject: entry.ticket_subject,
+        description: entry.ticket_description,
+        status: entry.status,
+        priority: entry.priority || "Medium",
+        category: entry.category || "",
+        submit_date: entry.created_at,
+        
+        // Additional fields from endpoint
+        ticket_number: entry.ticket_number,
+        workflow_id: entry.workflow_id,
+        workflow_name: entry.workflow_name,
+        current_step: entry.current_step,
+        current_step_name: entry.current_step_name,
+        current_step_role: entry.current_step_role,
+        user_assignment: entry.user_assignment,
+        task_id: entry.task_id,
+        
+        // Metadata
+        step_instance_id: entry.task_id, // Use task_id as step_instance_id for navigation
         hasacted: entry.has_acted,
       }));
   }, [userTickets]);
@@ -60,7 +78,7 @@ export default function Ticket() {
 
     setStatusOptions([...Array.from(statusSet)]);
     setCategoryOptions([...Array.from(categorySet)]);
-  }, [userTickets]);
+  }, [allTickets]);
 
   // Sync tab to URL
   useEffect(() => {
