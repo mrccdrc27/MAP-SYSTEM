@@ -155,9 +155,14 @@ CELERY_BROKER_URL = os.getenv('DJANGO_CELERY_BROKER_URL', 'redis://localhost:637
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_ACKS_LATE = True
+CELERY_RESULT_BACKEND = None  # Disable result backend to avoid dependencies
 
 # Auth Service Configuration
 AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'http://localhost:8001')
+
+# Notification Service Configuration
+NOTIFICATION_SERVICE_URL = os.getenv('NOTIFICATION_SERVICE_URL', 'http://localhost:8001')
+NOTIFICATION_SERVICE_BROKER_URL = os.getenv('NOTIFICATION_SERVICE_BROKER_URL', 'amqp://guest:guest@localhost:5672//')
 
 # TTS (Ticket Tracking Service) Configuration for round-robin assignment
 TTS_SERVICE_URL = os.getenv('TTS_SERVICE_URL', 'http://localhost:8002')
@@ -165,10 +170,12 @@ TTS_SERVICE_URL = os.getenv('TTS_SERVICE_URL', 'http://localhost:8002')
 # Queue Configuration
 DJANGO_NOTIFICATION_QUEUE = os.getenv('DJANGO_NOTIFICATION_QUEUE', 'notification-queue-default')
 DJANGO_TICKET_STATUS_QUEUE = os.getenv('DJANGO_TICKET_STATUS_QUEUE', 'ticket_status-default')
+INAPP_NOTIFICATION_QUEUE = os.getenv('INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
 
 CELERY_TASK_DEFAULT_QUEUE = DJANGO_NOTIFICATION_QUEUE
 CELERY_TASK_ROUTES = {
-    "notifications.tasks.create_assignment_notification": {"queue": DJANGO_NOTIFICATION_QUEUE},
+    "task.send_assignment_notification": {"queue": DJANGO_NOTIFICATION_QUEUE},
+    "task.send_bulk_assignment_notifications": {"queue": DJANGO_NOTIFICATION_QUEUE},
     'send_ticket_status': {'queue': DJANGO_TICKET_STATUS_QUEUE},
 }
 

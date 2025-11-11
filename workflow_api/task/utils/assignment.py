@@ -55,12 +55,62 @@ def fetch_users_for_role(role_name):
         return []
 
 
+def send_assignment_notification(user_id, task, role_name):
+    """
+    Send an assignment notification to the notification service via Celery.
+    
+    This function queues a notification task asynchronously to avoid blocking
+    the assignment process.
+    
+    Args:
+        user_id (int): ID of the user being assigned
+        task: Task instance being assigned
+        role_name (str): Role the user is being assigned to
+    
+    Returns:
+        bool: True if notification was queued successfully, False otherwise
+    """
+    try:
+        # Import here to avoid circular imports
+        from task.tasks import send_assignment_notification as notify_task
+        
+        # Get task details
+        task_id = str(task.task_id)
+        task_title = str(task.ticket_id.subject) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
+        
+        logger.info(f"🔔 Attempting to queue notification for user {user_id}, task {task_id}")
+        
+        # Queue the notification task asynchronously
+        result = notify_task.delay(
+            user_id=user_id,
+            task_id=task_id,
+            task_title=task_title,
+            role_name=role_name
+        )
+        
+        logger.info(f"✅ Notification queued successfully! Task ID: {result.id}, User: {user_id}")
+        return True
+        
+    except ImportError as e:
+        logger.error(
+            f"❌ Import Error - Failed to import send_assignment_notification task: {str(e)}",
+            exc_info=True
+        )
+        return False
+    except Exception as e:
+        logger.error(
+            f"❌ Failed to queue assignment notification for user {user_id}: {str(e)}",
+            exc_info=True
+        )
+        return False
+
+
 def apply_round_robin_assignment(task, user_ids, role_name, max_assignments=1):
     """
     Apply round-robin logic to assign users to a task and create TaskItem records.
     
     Maintains state of which user was last assigned for a role, ensuring
-    fair distribution of tasks across users.
+    fair distribution of tasks across users. Also sends notifications to assigned users.
     
     Args:
         task: Task instance to assign users to
@@ -105,6 +155,9 @@ def apply_round_robin_assignment(task, user_ids, role_name, max_assignments=1):
     
     if created:
         logger.info(f"👤 Created TaskItem: User {user_id} assigned to Task {task.task_id} with role '{role_name}' (round-robin index: {user_index})")
+        
+        # Send assignment notification via Celery
+        send_assignment_notification(user_id, task, role_name)
     else:
         logger.info(f"⚠️ TaskItem already exists: User {user_id} for Task {task.task_id}")
 

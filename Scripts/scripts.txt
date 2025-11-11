@@ -7,3 +7,6 @@ change terminal to bash, for copy-paste
 ./Scripts/init.sh
 ./Scripts/reset.sh
 ./Scripts/start_servers.sh
+
+celery -A notification_service worker --loglevel=info -Q notification-queue,inapp-notification-queue --pool=solo
+celery -A notification_service worker --loglevel=info -Q notification-queue-default,inapp-notification-queue --pool=solo

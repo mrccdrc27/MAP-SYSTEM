@@ -218,6 +218,7 @@ NOTIFICATION_QUEUE = config('NOTIFICATION_QUEUE', default='notification-queue')
 INAPP_NOTIFICATION_QUEUE = config('INAPP_NOTIFICATION_QUEUE', default='inapp-notification-queue')
 
 CELERY_TASK_ROUTES = {
+    'task.send_assignment_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.create_inapp_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.mark_notification_read': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.bulk_create_notifications': {'queue': INAPP_NOTIFICATION_QUEUE},
