@@ -303,6 +303,7 @@ class TaskItem(models.Model):
         help_text="Status of this user's assignment"
     )
     role = models.CharField(max_length=100, blank=True, default='')
+    notes = models.TextField(blank=True, help_text="Notes provided during action transition")
     
     assigned_on = models.DateTimeField(auto_now_add=True)
     status_updated_on = models.DateTimeField(null=True, blank=True)
@@ -332,6 +333,7 @@ class TaskItem(models.Model):
             'email': self.email,
             'status': self.status,
             'role': self.role,
+            'notes': self.notes,
             'assigned_on': self.assigned_on.isoformat() if self.assigned_on else None,
             'status_updated_on': self.status_updated_on.isoformat() if self.status_updated_on else None,
             'acted_on': self.acted_on.isoformat() if self.acted_on else None,

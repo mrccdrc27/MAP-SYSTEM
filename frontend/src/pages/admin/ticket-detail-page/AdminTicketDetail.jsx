@@ -451,7 +451,7 @@ export default function AdminTicketDetail() {
           closeTicketAction={setOpenTicketAction}
           ticket={state.ticket}
           action={state.action}
-          instance={state.instance}
+          instance={state.taskid}
         />
       )}
     </>

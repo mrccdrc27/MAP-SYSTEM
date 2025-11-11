@@ -79,6 +79,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     - destroy: DELETE /tasks/{id}/ - Delete task
     - my-tasks: GET /tasks/my-tasks/ - Get user's assigned tasks
     - update-user-status: POST /tasks/{id}/update-user-status/ - Update user's task status
+    - workflow-visualization: GET /tasks/workflow-visualization/?task_id={task_id} - Get workflow visualization data
     
     Note: Task transitions are handled by a separate endpoint at POST /transitions/
     """
@@ -322,6 +323,143 @@ class TaskViewSet(viewsets.ModelViewSet):
                 'fetched_at': task.fetched_at.isoformat() if task.fetched_at else None,
             },
             'available_actions': available_actions,
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='workflow-visualization')
+    def workflow_visualization(self, request):
+        """
+        GET endpoint to retrieve workflow visualization data for a specific task.
+        
+        Returns a structured format compatible with WorkflowVisualizer2 component.
+        
+        Query Parameters:
+        - task_id: (optional) The task ID (integer or UUID)
+        - ticket_id: (optional) The ticket ID string (e.g., TX20251111322614)
+        
+        At least one of task_id or ticket_id must be provided.
+        
+        Examples:
+        - /tasks/workflow-visualization/?task_id=1
+        - /tasks/workflow-visualization/?ticket_id=TX20251111322614
+        
+        Response format:
+        {
+            "nodes": [
+                {
+                    "id": "step-1",
+                    "label": "Submit Ticket",
+                    "role": "User",
+                    "status": "done"  // "done", "active", or "pending"
+                },
+                ...
+            ],
+            "metadata": {
+                "task_id": 1,
+                "workflow_id": "uuid-string",
+                "ticket_id": "TX20251111322614",
+                "current_step_id": "2",
+                "task_status": "in_progress"
+            }
+        }
+        """
+        task_id_param = request.query_params.get('task_id')
+        ticket_id_param = request.query_params.get('ticket_id')
+        
+        # Validate that at least one identifier is provided
+        if not task_id_param and not ticket_id_param:
+            return Response(
+                {
+                    'error': 'Either task_id or ticket_id query parameter must be provided',
+                    'examples': {
+                        'by_task_id': '/tasks/workflow-visualization/?task_id=1',
+                        'by_ticket_id': '/tasks/workflow-visualization/?ticket_id=TX20251111322614'
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Fetch task based on provided identifier
+        try:
+            if task_id_param:
+                # Try to find task by task_id (integer or UUID string)
+                task = Task.objects.select_related(
+                    'workflow_id',
+                    'current_step'
+                ).get(task_id=task_id_param)
+            else:
+                # Find task by ticket_id (string like TX20251111322614)
+                # First find the ticket by ticket_id
+                ticket = WorkflowTicket.objects.get(ticket_id=ticket_id_param)
+                # Then find the task associated with this ticket
+                task = Task.objects.select_related(
+                    'workflow_id',
+                    'current_step'
+                ).get(ticket_id=ticket)
+        except WorkflowTicket.DoesNotExist:
+            return Response(
+                {
+                    'error': 'Ticket not found',
+                    'searched_by': 'ticket_id',
+                    'value': ticket_id_param
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Task.DoesNotExist:
+            return Response(
+                {
+                    'error': 'Task not found',
+                    'searched_by': 'task_id' if task_id_param else 'ticket_id',
+                    'value': task_id_param or ticket_id_param
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get all steps in the workflow, ordered by their order field
+        workflow_steps = Steps.objects.filter(
+            workflow_id=task.workflow_id
+        ).select_related('role_id').order_by('order')
+        
+        if not workflow_steps.exists():
+            return Response(
+                {
+                    'error': 'No steps found for this workflow',
+                    'workflow_id': str(task.workflow_id.workflow_id)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Build nodes list
+        nodes = []
+        current_step_id = task.current_step.step_id if task.current_step else None
+        
+        for step in workflow_steps:
+            # Determine status based on current step
+            if step.step_id == current_step_id:
+                node_status = 'active'
+            elif step.order < (task.current_step.order if task.current_step else 0):
+                node_status = 'done'
+            else:
+                node_status = 'pending'
+            
+            node = {
+                'id': f'step-{step.step_id}',
+                'label': step.name,
+                'role': step.role_id.name if step.role_id else 'Unassigned',
+                'status': node_status
+            }
+            nodes.append(node)
+        
+        response_data = {
+            'nodes': nodes,
+            'metadata': {
+                'task_id': task.task_id,
+                'workflow_id': str(task.workflow_id.workflow_id),
+                'ticket_id': task.ticket_id.ticket_id,
+                'current_step_id': str(current_step_id) if current_step_id else None,
+                'task_status': task.status
+            }
         }
         
         return Response(response_data, status=status.HTTP_200_OK)

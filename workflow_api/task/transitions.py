@@ -38,6 +38,7 @@ class TaskTransitionView(CreateAPIView):
         """Handle transition request"""
         task_id = request.data.get('task_id')
         transition_id = request.data.get('transition_id')
+        notes = request.data.get('notes', '').strip()  # Optional notes field
         
         # Validate required fields
         if not task_id:
@@ -49,6 +50,13 @@ class TaskTransitionView(CreateAPIView):
         if not transition_id:
             return Response(
                 {'error': 'transition_id field is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate notes are provided and not empty
+        if not notes:
+            return Response(
+                {'error': 'notes field is required and cannot be empty. Please provide notes for this action transition.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -125,6 +133,7 @@ class TaskTransitionView(CreateAPIView):
             user_assignment.status = 'acted'
             user_assignment.acted_on = timezone.now()
             user_assignment.acted_on_step = task.current_step
+            user_assignment.notes = notes  # Store notes
             user_assignment.save()
             logger.info(
                 f"📝 Updated user {current_user_id} TaskItem to 'acted' at step {task.current_step.name}"
@@ -256,6 +265,7 @@ class TaskTransitionView(CreateAPIView):
         user_assignment.status = 'acted'
         user_assignment.acted_on = timezone.now()
         user_assignment.acted_on_step = task.current_step
+        user_assignment.notes = notes  # Store notes
         user_assignment.save()
         logger.info(
             f"📝 Updated user {current_user_id} TaskItem to 'acted' at step {task.current_step.name}"

@@ -13,10 +13,16 @@ class TaskItemSerializer(serializers.ModelSerializer):
         model = TaskItem
         fields = [
             'task_item_id', 'user_id', 'username', 'email', 'status', 
-            'role', 'assigned_on', 'status_updated_on', 'acted_on',
+            'role', 'notes', 'assigned_on', 'status_updated_on', 'acted_on',
             'acted_on_step_id', 'acted_on_step_name'
         ]
         read_only_fields = ['task_item_id', 'assigned_on']
+    
+    def validate_notes(self, value):
+        """Ensure notes field is not empty"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Notes cannot be empty. Notes are required for action transitions.")
+        return value
 
 class TaskSerializer(serializers.ModelSerializer):
     ticket_subject = serializers.CharField(source='ticket_id.subject', read_only=True)
