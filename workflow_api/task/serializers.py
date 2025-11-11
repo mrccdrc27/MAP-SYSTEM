@@ -163,3 +163,41 @@ class UserTaskListSerializer(serializers.ModelSerializer):
                 status='acted'
             ).exists()
         return False
+
+class ActionLogSerializer(serializers.Serializer):
+    """
+    Serializer for action logs - converts TaskItem records into action log format.
+    Infers role from the acted_on_step's role_id.
+    Includes the full name of the user who performed the action.
+    """
+    id = serializers.IntegerField(source='task_item_id')
+    action = serializers.SerializerMethodField()
+    acted_on = serializers.DateTimeField()
+    # user = serializers.CharField(source='username')
+    user = serializers.CharField(source='name', allow_null=True)
+    role = serializers.SerializerMethodField()
+    comment = serializers.CharField(source='notes', allow_null=True)
+    
+    def get_action(self, obj):
+        """Infer action name from acted_on_step"""
+        if obj.acted_on_step:
+            # Try to infer action from step name
+            step_name = obj.acted_on_step.name.lower()
+            if 'create' in step_name or 'submit' in step_name:
+                action_name = 'Created'
+            elif 'review' in step_name or 'approve' in step_name:
+                action_name = 'Reviewed'
+            elif 'reject' in step_name or 'decline' in step_name:
+                action_name = 'Rejected'
+            elif 'comment' in step_name or 'note' in step_name:
+                action_name = 'Added comment'
+            else:
+                action_name = f'Updated at {obj.acted_on_step.name}'
+            return {'name': action_name}
+        return {'name': 'Unknown Action'}
+    
+    def get_role(self, obj):
+        """Get role from the acted_on_step's role_id"""
+        if obj.acted_on_step and obj.acted_on_step.role_id:
+            return obj.acted_on_step.role_id.name
+        return obj.role or None

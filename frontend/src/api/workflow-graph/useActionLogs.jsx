@@ -7,18 +7,20 @@ const useFetchActionLogs = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchActionLogs = async (taskId) => {
-    if (!taskId) return;
+  const fetchActionLogs = async (ticketId) => {
+    if (!ticketId) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get('/action-logs/action-logs/', {
-        params: { task_id: taskId },
+      const response = await api.get('/tasks/logs/', {
+        params: { ticket_id: ticketId },
       });
-      setLogs(response.data);
-      return response.data;
+      // Extract the logs array from the response object
+      const logsArray = response.data.logs || [];
+      setLogs(logsArray);
+      return logsArray;
     } catch (err) {
       setError(err.response?.data || 'An error occurred.');
       return null;

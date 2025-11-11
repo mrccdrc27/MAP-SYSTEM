@@ -34,6 +34,7 @@ class JWTCookieAuthentication(BaseAuthentication):
             user_id = payload.get('user_id')
             email = payload.get('email')
             username = payload.get('username')
+            full_name = payload.get('full_name', '')
             roles = payload.get('roles', [])
             
             if not user_id:
@@ -45,6 +46,7 @@ class JWTCookieAuthentication(BaseAuthentication):
                 'user_id': user_id,
                 'email': email,
                 'username': username,
+                'full_name': full_name,
                 'roles': roles,
                 'tts_roles': [self._extract_role_if_system(role, 'tts') for role in roles 
                              if self._extract_role_if_system(role, 'tts')]
@@ -349,6 +351,7 @@ class AuthenticatedUser:
         self.user_id = user_data.get('user_id')
         self.email = user_data.get('email')
         self.username = user_data.get('username')
+        self.full_name = user_data.get('full_name', '')
         self.roles = user_data.get('roles', [])
         self.tts_roles = user_data.get('tts_roles', [])
         self.is_authenticated = True

@@ -10,7 +10,7 @@ import logging
 import uuid
 
 from .models import Task, TaskItem
-from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer
+from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer
 from .utils.assignment import assign_users_for_step
 from authentication import JWTCookieAuthentication, MultiSystemPermission
 from step.models import Steps, StepTransition
@@ -78,6 +78,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     - partial_update: PATCH /tasks/{id}/ - Partially update task
     - destroy: DELETE /tasks/{id}/ - Delete task
     - my-tasks: GET /tasks/my-tasks/ - Get user's assigned tasks
+    - logs: GET /tasks/logs/ - Get action logs for a task
     - update-user-status: POST /tasks/{id}/update-user-status/ - Update user's task status
     - workflow-visualization: GET /tasks/workflow-visualization/?task_id={task_id} - Get workflow visualization data
     
@@ -172,6 +173,103 @@ class TaskViewSet(viewsets.ModelViewSet):
             context={**self.get_serializer_context(), 'user_id': user_id}
         )
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='logs')
+    def logs(self, request):
+        """
+        GET endpoint to retrieve action logs for a task.
+        
+        Query Parameters (at least one required):
+        - task_id: (optional) The task ID (integer)
+        - ticket_id: (optional) The ticket ID string (e.g., TX20251111322614)
+        
+        Examples:
+        - /tasks/logs/?task_id=1
+        - /tasks/logs/?ticket_id=TX20251111322614
+        
+        Response format:
+        {
+            "task_id": 1,
+            "ticket_id": "TX20251111322614",
+            "workflow_id": "uuid-string",
+            "logs": [
+                {
+                    "id": 1,
+                    "action": { "name": "Created" },
+                    "acted_on": "2025-11-11T10:30:00Z",
+                    "user": "john_doe",
+                    "role": "Initiator",
+                    "comment": "Initial ticket creation"
+                },
+                {
+                    "id": 2,
+                    "action": { "name": "Reviewed" },
+                    "acted_on": "2025-11-11T11:15:00Z",
+                    "user": "jane_smith",
+                    "role": "Reviewer",
+                    "comment": "Approved for processing"
+                }
+            ]
+        }
+        """
+        task_id_param = request.query_params.get('task_id')
+        ticket_id_param = request.query_params.get('ticket_id')
+        
+        # Validate at least one identifier is provided
+        if not task_id_param and not ticket_id_param:
+            return Response(
+                {
+                    'error': 'Either task_id or ticket_id query parameter is required',
+                    'examples': {
+                        'by_task_id': '/tasks/logs/?task_id=1',
+                        'by_ticket_id': '/tasks/logs/?ticket_id=TX20251111322614'
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Find task based on provided identifier
+        try:
+            if task_id_param:
+                task = Task.objects.select_related(
+                    'ticket_id',
+                    'workflow_id'
+                ).get(task_id=task_id_param)
+            else:
+                # Find task by ticket_id
+                ticket = WorkflowTicket.objects.get(ticket_id=ticket_id_param)
+                task = Task.objects.select_related(
+                    'ticket_id',
+                    'workflow_id'
+                ).get(ticket_id=ticket)
+        except (Task.DoesNotExist, WorkflowTicket.DoesNotExist):
+            return Response(
+                {
+                    'error': 'Task or ticket not found',
+                    'searched_by': 'task_id' if task_id_param else 'ticket_id',
+                    'value': task_id_param or ticket_id_param
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get all TaskItems with status 'acted' (completed actions), ordered by acted_on time
+        action_items = TaskItem.objects.filter(
+            task=task,
+            status='acted',
+            acted_on__isnull=False
+        ).select_related('acted_on_step', 'acted_on_step__role_id').order_by('acted_on')
+        
+        # Serialize the action logs
+        serializer = ActionLogSerializer(action_items, many=True)
+        
+        response_data = {
+            'task_id': task.task_id,
+            'ticket_id': task.ticket_id.ticket_id,
+            'workflow_id': str(task.workflow_id.workflow_id),
+            'logs': serializer.data
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'], url_path='details')
     def task_details(self, request):

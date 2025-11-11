@@ -100,6 +100,7 @@ class Task(models.Model):
             user_id=user_data['user_id'],
             username=user_data.get('username', ''),
             email=user_data.get('email', ''),
+            name=user_data.get('name', ''),
             status=user_data.get('status', 'assigned'),
             assigned_on=user_data.get('assigned_on', timezone.now()),
             role=user_data.get('role', '')
@@ -296,6 +297,7 @@ class TaskItem(models.Model):
     user_id = models.IntegerField(help_text="User ID from auth service")
     username = models.CharField(max_length=150, blank=True, default='')
     email = models.EmailField(blank=True, default='')
+    name = models.CharField(max_length=255, blank=True, default='', help_text="Full name of the assigned user")
     status = models.CharField(
         max_length=50,
         choices=TASK_ITEM_STATUS_CHOICES,
@@ -331,6 +333,7 @@ class TaskItem(models.Model):
             'user_id': self.user_id,
             'username': self.username,
             'email': self.email,
+            'name': self.name,
             'status': self.status,
             'role': self.role,
             'notes': self.notes,

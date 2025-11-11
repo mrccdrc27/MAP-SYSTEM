@@ -15,11 +15,11 @@ import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import DocumentViewer from "../../../components/ticket/DocumentViewer";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLog from "../../../components/ticket/ActionLog";
+import ActionLogList from "../../../components/ticket/ActionLogList";
 import Messaging from "../../../components/messaging";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
-import ActionLogList from "../../../components/ticket/ActionLogList";
 import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
 import useSecureStepInstance from "../../../api/useSecureStepInstance";
 import { useAuth } from "../../../api/AuthContext";
@@ -169,12 +169,12 @@ export default function AdminTicketDetail() {
 
   const { fetchActionLogs, logs } = useFetchActionLogs();
   useEffect(() => {
-    if (state.taskid) {
-      fetchActionLogs(state.taskid);
+    if (state.ticket?.ticket_id) {
+      fetchActionLogs(state.ticket.ticket_id);
     }
-  }, [state.taskid]);
+  }, [state.ticket?.ticket_id, fetchActionLogs]);
 
-  const { tracker } = useWorkflowProgress(state.taskid);
+  const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
 
   if (loading) {
     return (

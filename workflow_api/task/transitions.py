@@ -68,7 +68,8 @@ class TaskTransitionView(CreateAPIView):
             )
         
         current_user_id = request.user.user_id
-        logger.info(f"👤 User {current_user_id} attempting transition")
+        current_user_full_name = getattr(request.user, 'full_name', '')
+        logger.info(f"👤 User {current_user_id} ({current_user_full_name}) attempting transition")
         
         # Get task
         try:
@@ -130,13 +131,15 @@ class TaskTransitionView(CreateAPIView):
             )
             
             # Mark the user assignment as "acted" with the current step
+            # Log the current user's full name on the TaskItem they are acting on
+            user_assignment.name = current_user_full_name
             user_assignment.status = 'acted'
             user_assignment.acted_on = timezone.now()
             user_assignment.acted_on_step = task.current_step
             user_assignment.notes = notes  # Store notes
             user_assignment.save()
             logger.info(
-                f"📝 Updated user {current_user_id} TaskItem to 'acted' at step {task.current_step.name}"
+                f"📝 Updated user {current_user_id} ({current_user_full_name}) TaskItem to 'acted' at step {task.current_step.name}"
             )
             
             # Mark task as completed
@@ -248,8 +251,8 @@ class TaskTransitionView(CreateAPIView):
             f"to {next_step.name} via transition {transition_id}"
         )
         
-        # Assign users for the next step using round-robin
-        assigned_items = assign_users_for_step(task, next_step, next_step.role_id.name)
+        # Assign users for the next step using round-robin with authenticated user's full name
+        assigned_items = assign_users_for_step(task, next_step, next_step.role_id.name, current_user_full_name)
         
         if not assigned_items:
             return Response(
@@ -262,13 +265,15 @@ class TaskTransitionView(CreateAPIView):
             )
         
         # Mark the user assignment as "acted" before moving to next step
+        # Log the current user's full name on the TaskItem they are acting on
+        user_assignment.name = current_user_full_name
         user_assignment.status = 'acted'
         user_assignment.acted_on = timezone.now()
         user_assignment.acted_on_step = task.current_step
         user_assignment.notes = notes  # Store notes
         user_assignment.save()
         logger.info(
-            f"📝 Updated user {current_user_id} TaskItem to 'acted' at step {task.current_step.name}"
+            f"📝 Updated user {current_user_id} ({current_user_full_name}) TaskItem to 'acted' at step {task.current_step.name}"
         )
         
         # Update task
