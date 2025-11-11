@@ -7,6 +7,8 @@ const WorkflowEditorToolbar = ({
   hasUnsavedChanges,
   saveStatus,
   workflowData,
+  isEditingGraph,
+  onToggleEditMode,
 }) => {
   return (
     <aside className={styles.leftToolbar}>
@@ -25,18 +27,11 @@ const WorkflowEditorToolbar = ({
       <div className={styles.toolbarSection}>
         <h4 className={styles.toolbarTitle}>Actions</h4>
         <button
-          className={`${styles.actionBtn} ${styles.actionBtnPrimary} ${hasUnsavedChanges ? styles.actionBtnUnsaved : ''}`}
-          onClick={() => {
-            if (hasUnsavedChanges) {
-              // Logic handled in parent
-            }
-            handleSaveAll();
-          }}
-          title={hasUnsavedChanges ? 'You have unsaved changes - click to save' : 'All changes saved'}
-          disabled={saveStatus === 'saving'}
+          className={`${styles.modeToggle} ${isEditingGraph ? styles.modeActive : ''}`}
+          onClick={onToggleEditMode}
+          title={isEditingGraph ? 'Click to lock editing' : 'Click to enable editing'}
         >
-          <span className={styles.btnIcon}>{hasUnsavedChanges ? '⚠️' : '✅'}</span>
-          <span className={styles.btnText}>Save</span>
+          {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
         </button>
       </div>
 

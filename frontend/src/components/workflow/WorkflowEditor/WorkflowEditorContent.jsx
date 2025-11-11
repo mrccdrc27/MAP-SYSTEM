@@ -94,6 +94,38 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     onDeleteNode(nodeId);
   }, [setNodes, onDeleteNode]);
 
+  // Handle adding a new node
+  const handleAddNode = useCallback(() => {
+    const viewport = getViewport();
+    // Calculate approximate center position in flow coordinates
+    const centerX = -viewport.x / viewport.zoom + 200; // Offset to place in visible area
+    const centerY = -viewport.y / viewport.zoom + 100;
+    
+    const newNodeId = `temp-n${Date.now()}`;
+    const newNode = {
+      id: newNodeId,
+      data: {
+        label: 'New Step',
+        role: 'User',
+        description: '',
+        instruction: '',
+        onStepClick: () => onStepClick({
+          id: newNodeId,
+          name: 'New Step',
+          role: 'User',
+          description: '',
+          instruction: '',
+        }),
+      },
+      type: 'stepNode',
+      position: { x: centerX, y: centerY },
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    setUnsavedChanges(true);
+    onAddNode(newNode);
+  }, [getViewport, setNodes, onStepClick, onAddNode]);
+
   // Save changes to backend
   const saveChanges = useCallback(async () => {
     try {
@@ -141,6 +173,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
   }, [nodes, edges, workflowId, updateWorkflowGraph]);
 
   useImperativeHandle(ref, () => ({
+    handleAddNode,
     updateNodeData: (nodeId, newData) => {
       setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
     },
@@ -157,7 +190,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
       setUnsavedChanges(value);
     },
     saveChanges,
-  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges]);
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode]);
 
   // Load workflow data
   useEffect(() => {
@@ -214,38 +247,6 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
 
     loadWorkflow();
   }, [workflowId, getWorkflowDetail, setNodes, setEdges, onStepClick]);
-
-  // Handle adding a new node
-  const handleAddNode = useCallback(() => {
-    const viewport = getViewport();
-    // Calculate approximate center position in flow coordinates
-    const centerX = -viewport.x / viewport.zoom + 200; // Offset to place in visible area
-    const centerY = -viewport.y / viewport.zoom + 100;
-    
-    const newNodeId = `temp-n${Date.now()}`;
-    const newNode = {
-      id: newNodeId,
-      data: {
-        label: 'New Step',
-        role: 'User',
-        description: '',
-        instruction: '',
-        onStepClick: () => onStepClick({
-          id: newNodeId,
-          name: 'New Step',
-          role: 'User',
-          description: '',
-          instruction: '',
-        }),
-      },
-      type: 'stepNode',
-      position: { x: centerX, y: centerY },
-    };
-    
-    setNodes((nds) => [...nds, newNode]);
-    setUnsavedChanges(true);
-    onAddNode(newNode);
-  }, [getViewport, setNodes, onStepClick, onAddNode]);
 
   // Handle edge connection
   const onConnect = useCallback(

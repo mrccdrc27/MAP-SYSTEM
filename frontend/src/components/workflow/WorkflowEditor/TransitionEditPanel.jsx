@@ -178,6 +178,13 @@ export default function TransitionEditPanel({ transition, onClose, onSave, onDel
                   <button type="submit" className={styles.saveBtn} disabled={loading}>
                     {loading ? 'Saving...' : 'Save Transition'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className={styles.editBtn}
+                  >
+                    ✏️ Edit
+                  </button>
                 </>
               )}
               {onDelete && (

@@ -28,6 +28,8 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
         is_start: step.is_start || false,
         is_end: step.is_end || false,
       });
+      // Reset editing state when step changes
+      setIsEditing(false);
     }
   }, [step]);
 
@@ -46,7 +48,8 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
   }, [formData, onChange, step?.id]);
 
   const handleChange = (e) => {
-    if (!isEditing && !String(step?.id).startsWith('temp-')) return;
+    // Allow changes for temp steps (new steps) or when in edit mode for persistent steps
+    if (!String(step?.id).startsWith('temp-') && !isEditing) return;
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -219,7 +222,19 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
           </div>
 
           <div className={styles.formActions}>
-            {!isEditing && !String(step?.id).startsWith('temp-') ? (
+            {String(step?.id).startsWith('temp-') ? (
+              // For new steps (temp-*) - always show editable, no save button
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={styles.cancelBtn}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : !isEditing ? (
+              // For existing steps not in edit mode - show only Edit button
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
@@ -228,6 +243,7 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
                 ✏️ Edit
               </button>
             ) : (
+              // For existing steps in edit mode - show Cancel, Save, and Edit
               <>
                 <button
                   type="button"
@@ -241,6 +257,13 @@ export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, 
                 </button>
                 <button type="submit" className={styles.saveBtn} disabled={loading}>
                   {loading ? 'Saving...' : 'Save Step'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className={styles.editBtn}
+                >
+                  ✏️ Edit
                 </button>
               </>
             )}

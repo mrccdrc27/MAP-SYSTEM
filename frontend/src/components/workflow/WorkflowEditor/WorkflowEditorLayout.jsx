@@ -221,10 +221,13 @@ export default function WorkflowEditorLayout({ workflowId }) {
 
         <div className={styles.ribbonRight}>
           <button
-            className={`${styles.modeToggle} ${isEditingGraph ? styles.modeActive : ''}`}
-            onClick={() => setIsEditingGraph(!isEditingGraph)}
+            className={`${styles.actionBtn} ${styles.actionBtnPrimary} ${hasUnsavedChanges ? styles.actionBtnUnsaved : ''}`}
+            onClick={handleSaveAll}
+            title={hasUnsavedChanges ? 'You have unsaved changes - click to save' : 'All changes saved'}
+            disabled={saveStatus === 'saving'}
           >
-            {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
+            {/* <span className={styles.btnIcon}>{hasUnsavedChanges ? '⚠️' : '✅'}</span> */}
+            <span className={styles.btnText}>Save Changes</span>
           </button>
         </div>
       </div>
@@ -238,6 +241,8 @@ export default function WorkflowEditorLayout({ workflowId }) {
             hasUnsavedChanges={hasUnsavedChanges}
             saveStatus={saveStatus}
             workflowData={workflowData}
+            isEditingGraph={isEditingGraph}
+            onToggleEditMode={() => setIsEditingGraph(!isEditingGraph)}
           />
 
           {/* CENTER GRAPH */}

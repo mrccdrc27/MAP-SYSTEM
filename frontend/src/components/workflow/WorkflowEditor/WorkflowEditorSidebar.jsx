@@ -44,6 +44,19 @@ const WorkflowEditorSidebar = ({
                 step={editingStep}
                 roles={roles}
                 onClose={() => setEditingStep(null)}
+                onChange={(updatedData) => {
+                  // Real-time update for temporary steps
+                  if (String(editingStep.id).startsWith('temp-')) {
+                    contentRef.current?.updateNodeData(editingStep.id, {
+                      label: updatedData.name,
+                      role: updatedData.role,
+                      description: updatedData.description,
+                      instruction: updatedData.instruction,
+                      is_start: updatedData.is_start,
+                      is_end: updatedData.is_end,
+                    });
+                  }
+                }}
                 onSave={(updated) => {
                   if (String(editingStep.id).startsWith('temp-')) {
                     contentRef.current?.updateNodeData(editingStep.id, {
