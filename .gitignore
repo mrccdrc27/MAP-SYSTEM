@@ -7,7 +7,7 @@ env/
 
 
 # Ignore test directory
-test/
+# test/
 
 # Ignore all db.sqlite3 files anywhere
 **/db.sqlite3

@@ -87,7 +87,7 @@ export default function MainRoute() {
       </Route>
 
       {/* WORKFLOW EDITOR ROUTES - Test/development routes */}
-      <Route path="/test/workflow/:workflowId" element={<WorkflowEditorPage />} />
+      {/* <Route path="/test/workflow/:workflowId" element={<WorkflowEditorPage />} /> */}
 
       {/* TEST ROUTE - Consider protecting or removing in production */}
       <Route path="/test" element={<Test />} />
