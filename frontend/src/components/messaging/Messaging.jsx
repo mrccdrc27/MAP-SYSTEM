@@ -6,8 +6,8 @@ import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import styles from './Messaging.module.css';
 
-const Messaging = ({ ticket_id }) => {
-  console.log('🎪 Messaging component rendered with ticket_id:', ticket_id);
+const Messaging = ({ ticket_id , ticket_owner}) => {
+  // console.log('🎪 Messaging component rendered with ticket_id:', ticket_id);
   
   const { user: authUser } = useAuth();
   const [message, setMessage] = useState('');
@@ -20,7 +20,13 @@ const Messaging = ({ ticket_id }) => {
   const currentUserId = authUser?.id || authUser?.user_id;
   const currentIdentifier = authUser?.full_name || authUser?.email || 'User';
 
-  console.log('🎪 About to call useMessaging with:', { ticket_id, currentIdentifier });
+  const ownerName =
+  ticket_owner?.first_name && ticket_owner?.last_name
+    ? `${ticket_owner.first_name} ${ticket_owner.last_name}`
+    : ticket_owner?.username || ticket_owner?.email || 'Unknown User';
+
+
+  // console.log('🎪 About to call useMessaging with:', { ticket_id, currentIdentifier });
 
   const {
     messages,
@@ -135,7 +141,7 @@ const Messaging = ({ ticket_id }) => {
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
-          <h3 className={styles.title}>Messages</h3>
+          <h3 className={styles.title}>{ownerName}</h3>
           <div className={styles.statusIndicator}>
             <span className={`${styles.statusDot} ${isConnected ? styles.connected : styles.disconnected}`} />
             <span className={styles.statusText}>

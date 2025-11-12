@@ -32,7 +32,17 @@ export default function TicketDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
-  const { stepInstance, loading: instanceLoading, error: instanceError } = useSecureStepInstance(id);
+  const {
+    stepInstance,
+    loading: instanceLoading,
+    error: instanceError,
+  } = useSecureStepInstance(id);
+
+  useEffect(() => {
+    if (stepInstance) {
+      console.log("🧩 StepInstance:", JSON.stringify(stepInstance, null, 2));
+    }
+  }, [stepInstance]);
 
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
@@ -302,11 +312,16 @@ export default function TicketDetail() {
                 <h3>Attachment</h3>
                 <div className={styles.tdAttached}>
                   <i className="fa fa-upload"></i>
-                  {state.ticket?.attachments && state.ticket.attachments.length > 0 ? (
+                  {state.ticket?.attachments &&
+                  state.ticket.attachments.length > 0 ? (
                     <ul>
                       {state.ticket.attachments.map((file, idx) => (
                         <li key={idx}>
-                          <a href={file.url || file} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={file.url || file}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             {file.name || `Attachment ${idx + 1}`}
                           </a>
                         </li>
@@ -409,7 +424,9 @@ export default function TicketDetail() {
                             <div className={styles.tdInfoValue}>
                               {state.ticket?.user_assignment?.first_name
                                 ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
-                                : state.ticket?.user_assignment?.username || state.ticket?.user_assignment?.email || "N/A"}
+                                : state.ticket?.user_assignment?.username ||
+                                  state.ticket?.user_assignment?.email ||
+                                  "N/A"}
                             </div>
                           </div>
                           <div className={styles.tdInfoLabelValue}>
@@ -438,7 +455,10 @@ export default function TicketDetail() {
                 {/* Message Section */}
                 {activeTab === "Messages" && (
                   <div className={styles.messageSection}>
-                    <Messaging ticket_id={state.ticket?.ticket_id} />
+                    <Messaging
+                      ticket_id={state.ticket?.ticket_id}
+                      ticket_owner={state.ticket?.user_assignment}
+                    />
                   </div>
                 )}
               </div>

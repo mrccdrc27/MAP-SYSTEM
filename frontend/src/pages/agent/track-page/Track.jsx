@@ -2,7 +2,7 @@
 import AgentNav from "../../../components/navigation/AgentNav";
 import TrackResult from "./components/TrackResult";
 
-// === changed: use custom hook instead of env + axios
+// hooks
 import useUserTickets from "../../../api/useUserTickets";
 import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
 
@@ -10,13 +10,25 @@ import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProg
 import styles from "./track.module.css";
 
 // react
-import React, { useState } from "react"; // === changed: removed useEffect
-import { useNavigate } from "react-router-dom"; // === added if you want to redirect
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Track() {
   const { userTickets } = useUserTickets(); // === added
   const tickets = userTickets || []; // === added
   const loading = !userTickets; // === added
+
+  // ✅ Log a sample ticket once tickets are fetched
+  useEffect(() => {
+    if (tickets.length > 0) {
+      console.log(
+        "🎟️ Sample ticket structure:",
+        JSON.stringify(tickets[0], null, 2)
+      );
+    } else {
+      console.log("No tickets yet or still loading...");
+    }
+  }, [tickets]);
 
   const navigate = useNavigate(); // === added (optional)
 
@@ -32,33 +44,20 @@ export default function Track() {
   const handleSearch = (e) => {
     e.preventDefault();
 
-    // === changed: adjust search to match new userTickets structure
     const match = tickets.find(
       (instance) =>
-        instance.ticket_id?.toLowerCase() ===
-        searchTerm.trim().toLowerCase() ||
-        instance.ticket_number?.toLowerCase() ===
+        instance?.ticket_number?.toLowerCase() ===
         searchTerm.trim().toLowerCase()
     );
 
     if (match) {
-      setMatchedTicket({
-        ticket_id: match.ticket_id,
-        ticket_number: match.ticket_number,
-        subject: match.ticket_subject,
-        description: match.ticket_description,
-        workflow_id: match.workflow_id,
-        workflow_name: match.workflow_name,
-        current_step: match.current_step,
-        current_step_name: match.current_step_name,
-        status: match.status,
-        created_at: match.created_at,
-      });
-      setTaskId(match.task_id); // === added
+      console.log("🎫 Matched Ticket JSON:", JSON.stringify(match, null, 2));
+      setMatchedTicket(match);
+      setTaskId(match.task_id);
       setNotFound(false);
     } else {
       setMatchedTicket(null);
-      setTaskId(null); // === added
+      setTaskId(null);
       setNotFound(true);
     }
   };

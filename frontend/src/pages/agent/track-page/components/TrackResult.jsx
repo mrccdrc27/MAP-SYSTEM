@@ -2,9 +2,6 @@
 import styles from "./track-result.module.css";
 import general from "../../../../style/general.module.css";
 
-// hooks
-import { useWorkflowProgress } from "../../../../api/workflow-graph/useWorkflowProgress";
-
 // visual
 import WorkflowVisualizer2 from "../../../../components/ticket/WorkflowVisualizer2";
 
@@ -38,68 +35,72 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
     );
   }
 
-  // const { tracker } = useWorkflowProgress(matchedTicket);
-
   return (
     matchedTicket && (
       <div className={styles.resultsContainer}>
+        {/* Ticket Header */}
         <div className={styles.ticketHeader}>
           <div className={styles.ticketTitle}>
-            <h2>{matchedTicket.subject}</h2>
-            <div className={styles.ticketID}>{matchedTicket.ticket_id}</div>
+            <h2>{matchedTicket.ticket_subject || matchedTicket.subject}</h2>
+            <div className={styles.ticketID}>
+              {matchedTicket.ticket_number || matchedTicket.ticket_id}
+            </div>
           </div>
           <div
             className={
               general[
-                `status-${matchedTicket.status
-                  .replace(/\s+/g, "-")
-                  .toLowerCase()}`
+                `status-${matchedTicket?.status?.toLowerCase?.() || ""}`
               ]
             }
           >
-            {matchedTicket.status}
+            {matchedTicket.status || "Unknown"}
           </div>
         </div>
 
         {/* Progress Tracker */}
-        {/* <div className={styles.ticketProgress}>
-          <h3>Current Progress</h3>
-          <ProgressTracker currentStatus={matchedTicket.status} />
-          <WorkflowTracker2 workflowData={tracker} />
-        </div> */}
         <div className={styles.ticketProgress}>
           <h3>Current Progress</h3>
           <WorkflowVisualizer2 workflowData={tracker} />
         </div>
 
+        {/* Ticket Details */}
         <div className={styles.ticketDetails}>
           <div className={styles.detailCard}>
-            <h3>Priority</h3>
-            <p
-              className={
-                general[`priority-${matchedTicket.priority.toLowerCase()}`]
-              }
-            >
-              {matchedTicket.priority}
-            </p>
+            <h3>Workflow</h3>
+            <p>{matchedTicket.workflow_name || "N/A"}</p>
           </div>
           <div className={styles.detailCard}>
-            <h3>Category</h3>
-            <p>{matchedTicket.category}</p>
+            <h3>Task ID</h3>
+            <p>{matchedTicket.task_id || "N/A"}</p>
           </div>
           <div className={styles.detailCard}>
-            <h3>Department</h3>
-            <p>{matchedTicket.department}</p>
+            <h3>Status</h3>
+            <p>{matchedTicket.status || "N/A"}</p>
           </div>
           <div className={styles.detailCard}>
             <h3>Created On</h3>
-            <p>{new Date(matchedTicket.submit_date).toLocaleString()}</p>
+            <p>
+              {matchedTicket.created_at
+                ? new Date(matchedTicket.created_at).toLocaleString()
+                : "N/A"}
+            </p>
+          </div>
+          <div className={styles.detailCard}>
+            <h3>Last Updated</h3>
+            <p>
+              {matchedTicket.updated_at
+                ? new Date(matchedTicket.updated_at).toLocaleString()
+                : "N/A"}
+            </p>
           </div>
         </div>
 
+        {/* Ticket Description */}
         <div className={styles.ticketDescription}>
           <h3>Description</h3>
-          <p>{matchedTicket.description}</p>
+          <p>
+            {matchedTicket.ticket_description || matchedTicket.description || ""}
+          </p>
         </div>
       </div>
     )

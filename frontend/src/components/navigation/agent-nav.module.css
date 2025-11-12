@@ -10,7 +10,6 @@
   /* position: fixed; */
   z-index: 100;
   padding: 0px 38px;
-
   position: sticky;
   top: 0;
 }
@@ -42,6 +41,14 @@
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.logoSection .anAdminLogo {
+  color: white;
+  font-family: monospace;
+  background-color: var(--primary-color);
+  padding: 2px 5px;
+  border-radius: 8px;
 }
 
 .navLinks {
@@ -81,6 +88,7 @@
   transition: background-color 0.3s ease;
   width: 35px;
   height: 35px;
+  position: relative;
 }
 
 .notifBell i {
@@ -94,4 +102,23 @@
   border-radius: 50%;
   flex-shrink: 0;
   cursor: pointer;
+}
+
+/* Notification badge */
+.notifBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #e74c3c; /* red */
+  color: #fff;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }

@@ -8,11 +8,55 @@
 }
 
 .dpHeader h1 {
-  color: var(--heading-color);
-  font-size: 32px; /* for heading */
+  color: var(--text-color);
+  font-size: clamp(24px, 5vw, 36px);
+}
+
+.dpHeader h1 span {
+  color: var(--primary-color);
 }
 
 /* dpBody */
+.dpBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Layout Section */
+.layoutSection {
+  width: 100%;
+  background-color: var(--bg1-color);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.layoutSection h2 {
+  color: var(--heading-color);
+  font-size: var(--h2-font-size);
+  margin-bottom: 10px;
+}
+
+.layoutColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.layoutRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.flexSection {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
 
 /* dpCardSection */
 .dpCardSection {
@@ -44,6 +88,10 @@
   }
 
   .dpRight {
-    grid-template-columns: 1fr; 
+    grid-template-columns: 1fr;
+  }
+
+  .flexSection {
+    flex-direction: column;
   }
 }

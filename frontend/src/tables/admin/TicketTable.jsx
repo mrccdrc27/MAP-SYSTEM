@@ -39,7 +39,7 @@ function TicketItem({ item }) {
   return (
     <tr className={general.item}>
       <td>{item.hasacted ? "Has Acted" : "Not Yet"}</td>
-      <td>{item.ticket_id}</td>
+      <td>{item.ticket_number}</td>
       <td>{item.subject}</td>
       {/* <td className={general.descriptionCell}>{item.description}</td> */}
       <td className={general.descriptionCell} title={item.description}>
@@ -60,7 +60,7 @@ function TicketItem({ item }) {
           {item?.status}
         </div>
       </td>
-      <td>{item.category}</td>
+      <td>{item.category ? item.category : "Uncategorized"}</td>
       <td>{format(new Date(item.submit_date), "MMMM dd, yyyy")}</td>
       <td>
         <button
@@ -87,6 +87,9 @@ export default function TicketTable({
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedTickets = tickets.slice(startIndex, endIndex);
+
+  // 👇 Add this to inspect data
+  console.log("Fetched tickets:", JSON.stringify(tickets, null, 2));
 
   return (
     <div className={general.ticketTableSection}>

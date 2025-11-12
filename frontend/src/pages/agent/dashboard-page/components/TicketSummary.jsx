@@ -2,8 +2,13 @@
 import styles from "./Component.module.css";
 
 const TicketSummary = ({ inProgressCount, resolvedTodayCount }) => {
-  const summaryData = [
+  const summaryData1 = [
     { label: "In Progress", count: inProgressCount },
+    { label: "Resolved Today", count: resolvedTodayCount },
+  ];
+
+  const summaryData = [
+    { label: "Not Yet Acted", count: inProgressCount },
     { label: "Resolved Today", count: resolvedTodayCount },
   ];
 

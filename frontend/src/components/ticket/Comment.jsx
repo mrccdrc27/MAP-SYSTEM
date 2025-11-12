@@ -1,11 +1,12 @@
 // src/components/ticket/Comment.jsx
-import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
-import { format } from 'date-fns';
-import DocumentAttachment from './DocumentAttachment';
-import ImageCarousel from './ImageCarousel';
-import FileUpload from './FileUpload';
-import styles from './ticketComments.module.css';
+import React, { useState } from "react";
+import ReactDOM from "react-dom";
+import { format } from "date-fns";
+import DocumentAttachment from "./DocumentAttachment";
+import ImageCarousel from "./ImageCarousel";
+import FileUpload from "./FileUpload";
+
+import styles from "./ticketComments.module.css";
 
 const Comment = ({
   comment,
@@ -25,7 +26,7 @@ const Comment = ({
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isRatingLoading, setIsRatingLoading] = useState(false); // Prevent double clicks
-  
+
   const MAX_CONTENT_LENGTH = 200;
 
   const formatDate = (dateString) => {
@@ -39,20 +40,21 @@ const Comment = ({
 
   // Separate images from other documents
   const separateDocuments = (documents) => {
-    if (!documents || !Array.isArray(documents)) return { images: [], nonImages: [] };
-    
+    if (!documents || !Array.isArray(documents))
+      return { images: [], nonImages: [] };
+
     const images = [];
     const nonImages = [];
-    
-    documents.forEach(docAttachment => {
+
+    documents.forEach((docAttachment) => {
       const doc = docAttachment.document;
-      if (doc.is_image || doc.content_type?.startsWith('image/')) {
+      if (doc.is_image || doc.content_type?.startsWith("image/")) {
         images.push(doc);
       } else {
         nonImages.push(doc);
       }
     });
-    
+
     return { images, nonImages };
   };
 
@@ -91,9 +93,9 @@ const Comment = ({
 
   const handleLikeClick = async () => {
     if (isRatingLoading) return; // Prevent double clicks
-    
+
     setIsRatingLoading(true);
-    
+
     try {
       if (userReaction && userReaction.reaction_type === "like") {
         // User already liked, so remove the like
@@ -103,7 +105,7 @@ const Comment = ({
         await onReaction(comment.id, userReaction?.id, "like");
       }
     } catch (error) {
-      console.error('Error handling like:', error);
+      console.error("Error handling like:", error);
     } finally {
       // Add a small delay to prevent rapid clicking
       setTimeout(() => {
@@ -114,9 +116,9 @@ const Comment = ({
 
   const handleDislikeClick = async () => {
     if (isRatingLoading) return; // Prevent double clicks
-    
+
     setIsRatingLoading(true);
-    
+
     try {
       if (userReaction && userReaction.reaction_type === "dislike") {
         // User already disliked, so remove the dislike
@@ -126,7 +128,7 @@ const Comment = ({
         await onReaction(comment.id, userReaction?.id, "dislike");
       }
     } catch (error) {
-      console.error('Error handling dislike:', error);
+      console.error("Error handling dislike:", error);
     } finally {
       // Add a small delay to prevent rapid clicking
       setTimeout(() => {
@@ -174,7 +176,7 @@ const Comment = ({
               {formatDate(comment.created_at)}
             </span>
           </div>
-          
+
           <div className={styles.commentContent}>
             {isContentExpanded || comment.content.length <= MAX_CONTENT_LENGTH
               ? comment.content
@@ -192,10 +194,7 @@ const Comment = ({
           {/* Display images directly in the comment */}
           {images.length > 0 && (
             <div className={styles.imagesSection}>
-              <ImageCarousel
-                images={images}
-                onImageClick={handleImageClick}
-              />
+              <ImageCarousel images={images} onImageClick={handleImageClick} />
             </div>
           )}
 
@@ -272,21 +271,22 @@ const Comment = ({
 
         {showReplyForm && (
           <form className={styles.replyForm} onSubmit={handleReplySubmit}>
-            <textarea
-              className={styles.replyInput}
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Write a reply..."
-              rows="3"
-            />
-            
-            <FileUpload
-              onFilesSelected={setReplyFiles}
-              maxFiles={3}
-              uniqueId={`reply-file-upload-${comment.id}`}
-              clearTrigger={clearReplyFilesTrigger}
-            />
-            
+            <div className={styles.replyFormWrapper}>
+              <textarea
+                className={styles.replyInput}
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Write a reply..."
+                rows="3"
+              />
+
+              <FileUpload
+                onFilesSelected={setReplyFiles}
+                maxFiles={3}
+                uniqueId={`reply-file-upload-${comment.id}`}
+                clearTrigger={clearReplyFilesTrigger}
+              />
+            </div>
             <div className={styles.replyFormActions}>
               <button
                 type="button"
@@ -324,10 +324,17 @@ const Comment = ({
       </div>
 
       {/* Render Image Modal using React Portal for true full-screen */}
-      {showImageModal && images.length > 0 &&
+      {showImageModal &&
+        images.length > 0 &&
         ReactDOM.createPortal(
-          <div className={styles.imageModal} onClick={() => setShowImageModal(false)}>
-            <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
+          <div
+            className={styles.imageModal}
+            onClick={() => setShowImageModal(false)}
+          >
+            <div
+              className={styles.imageModalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 className={styles.closeModalButton}
                 onClick={() => setShowImageModal(false)}
@@ -353,7 +360,11 @@ const Comment = ({
                 <div className={styles.modalNavigation}>
                   <button
                     className={styles.modalNavButton}
-                    onClick={() => setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                    onClick={() =>
+                      setSelectedImageIndex(
+                        (prev) => (prev - 1 + images.length) % images.length
+                      )
+                    }
                   >
                     <i className="fas fa-chevron-left"></i>
                   </button>
@@ -362,7 +373,11 @@ const Comment = ({
                   </span>
                   <button
                     className={styles.modalNavButton}
-                    onClick={() => setSelectedImageIndex((prev) => (prev + 1) % images.length)}
+                    onClick={() =>
+                      setSelectedImageIndex(
+                        (prev) => (prev + 1) % images.length
+                      )
+                    }
                   >
                     <i className="fas fa-chevron-right"></i>
                   </button>
@@ -371,8 +386,7 @@ const Comment = ({
             </div>
           </div>,
           document.body
-        )
-      }
+        )}
     </>
   );
 };

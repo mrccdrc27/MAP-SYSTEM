@@ -72,7 +72,7 @@
 .commentActions {
   display: flex;
   gap: 16px;
-  margin-top: 8px;
+  /* margin-top: 8px; */
 }
 
 .actionButton {
@@ -109,6 +109,14 @@
 .replyForm {
   margin-top: 10px;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.replyFormWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -118,6 +126,7 @@
   border-radius: 16px;
   padding: 8px 12px;
   font-size: 13px;
+  resize: none
 }
 
 .replyButton {
@@ -855,7 +864,7 @@
   border: 1px solid #ced4da;
   border-radius: 6px;
   font-size: 0.9rem;
-  resize: vertical;
+  /* resize: vertical; */
   font-family: inherit;
 }
 
@@ -868,8 +877,9 @@
 .replyFormActions {
   display: flex;
   justify-content: flex-end;
+  /* justify-content: space-between; */
+  align-items: end;
   gap: 8px;
-  margin-top: 12px;
 }
 
 .cancelButton {

@@ -44,31 +44,17 @@ export default function Dashboard() {
     }));
 
   const counts = {
+    new: 0,
     critical: 0,
     high: 0,
     medium: 0,
     low: 0,
-    new: 0,
-    open: 0,
-    resolved: 0,
-    onHold: 0,
-    inProgress: 0,
-    rejected: 0,
   };
 
   allTickets.forEach((t) => {
     const statusKey = t.status.toLowerCase().replace(/\s+/g, "");
     const priorityKey = t.priority.toLowerCase().replace(/\s+/g, "");
-
-    if (statusKey === "new") counts.new += 1;
-    if (statusKey === "open") counts.open += 1;
-
-    if (statusKey === "inprogress") counts.open += 1;
-
-    if (statusKey === "resolved") counts.resolved += 1;
-    if (statusKey === "onhold") counts.onHold += 1;
-    if (statusKey === "inprogress") counts.inProgress += 1;
-    if (statusKey === "rejected") counts.rejected += 1;
+    if (statusKey === "new" || statusKey === "pending") counts.new += 1;
     if (priorityKey === "critical") counts.critical += 1;
     if (priorityKey === "high") counts.high += 1;
     if (priorityKey === "medium") counts.medium += 1;
@@ -77,6 +63,7 @@ export default function Dashboard() {
 
   // ticket summary
   const today = new Date().toISOString().split("T")[0];
+  
   const resolvedTodayCount = allTickets.filter((t) => {
     const resolvedDate = t.updated_at?.split("T")[0];
     return t.status === "Resolved" && resolvedDate === today;
@@ -121,7 +108,7 @@ export default function Dashboard() {
             <div className={styles.dpCardSection}>
               <div className={styles.dpLeft}>
                 <KPICard
-                  number={counts.open}
+                  number={counts.new}
                   label="New Tickets"
                   onClick={() => handleKpiClick("New Tickets")}
                 />
@@ -153,7 +140,7 @@ export default function Dashboard() {
           <div className={styles.flexSection}>
             <div className={styles.layoutSection} style={{ flex: 2 }}>
               <TicketSummary
-                inProgressCount={counts.inProgress}
+                inProgressCount={todayTasks.length}
                 resolvedTodayCount={resolvedTodayCount}
                 style={{ flex: 1 }}
               />

@@ -39,31 +39,30 @@ export default function Ticket() {
 
   // Extract all ticket data with step_instance_id
   const allTickets = useMemo(() => {
-    return (userTickets || [])
-      .map((entry) => ({
-        // Map fields from flat entry structure
-        ticket_id: entry.ticket_id,
-        subject: entry.ticket_subject,
-        description: entry.ticket_description,
-        status: entry.status,
-        priority: entry.priority || "Medium",
-        category: entry.category || "",
-        submit_date: entry.created_at,
-        
-        // Additional fields from endpoint
-        ticket_number: entry.ticket_number,
-        workflow_id: entry.workflow_id,
-        workflow_name: entry.workflow_name,
-        current_step: entry.current_step,
-        current_step_name: entry.current_step_name,
-        current_step_role: entry.current_step_role,
-        user_assignment: entry.user_assignment,
-        task_id: entry.task_id,
-        
-        // Metadata
-        step_instance_id: entry.task_id, // Use task_id as step_instance_id for navigation
-        hasacted: entry.has_acted,
-      }));
+    return (userTickets || []).map((entry) => ({
+      // Map fields from flat entry structure
+      ticket_id: String(entry.ticket_id ?? entry.ticket_number ?? ""),
+      subject: String(entry.ticket_subject ?? ""),
+      description: String(entry.ticket_description ?? ""),
+      status: entry.status,
+      priority: entry.priority || "Medium",
+      category: entry.category || "",
+      submit_date: entry.created_at,
+
+      // Additional fields from endpoint
+      ticket_number: entry.ticket_number,
+      workflow_id: entry.workflow_id,
+      workflow_name: entry.workflow_name,
+      current_step: entry.current_step,
+      current_step_name: entry.current_step_name,
+      current_step_role: entry.current_step_role,
+      user_assignment: entry.user_assignment,
+      task_id: entry.task_id,
+
+      // Metadata
+      step_instance_id: entry.task_id, // Use task_id as step_instance_id for navigation
+      hasacted: entry.has_acted,
+    }));
   }, [userTickets]);
 
   // fetch status and category
@@ -119,7 +118,8 @@ export default function Ticket() {
       if (ticket.hasacted === true) return false;
 
       if (activeTab !== "All" && ticket.priority !== activeTab) return false;
-      if (filters.category && ticket.category !== filters.category) return false;
+      if (filters.category && ticket.category !== filters.category)
+        return false;
       if (filters.status && ticket.status !== filters.status) return false;
 
       const openedDate = new Date(ticket.submit_date);
@@ -128,7 +128,7 @@ export default function Ticket() {
       if (start && openedDate < start) return false;
       if (end && openedDate > end) return false;
 
-      const search = debouncedSearch.toLowerCase();
+      const search = (debouncedSearch || "").toLowerCase();
       if (
         search &&
         !(

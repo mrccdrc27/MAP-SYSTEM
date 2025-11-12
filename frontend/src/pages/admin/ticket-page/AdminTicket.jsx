@@ -39,31 +39,31 @@ export default function AdminTicket() {
 
   // Extract all ticket data with step_instance_id
   const allTickets = useMemo(() => {
-    return (userTickets || [])
-      .map((entry) => ({
-        // Map new endpoint fields to expected format
-        ticket_id: entry.ticket_id || entry.ticket_number,
-        subject: entry.ticket_subject,
-        description: entry.ticket_description,
-        status: entry.status,
-        priority: entry.priority || "Medium", // fallback if not provided
-        category: entry.category || "", // fallback if not provided
-        submit_date: entry.created_at,
-        
-        // Additional fields from new endpoint
-        ticket_number: entry.ticket_number,
-        workflow_id: entry.workflow_id,
-        workflow_name: entry.workflow_name,
-        current_step: entry.current_step,
-        current_step_name: entry.current_step_name,
-        current_step_role: entry.current_step_role,
-        user_assignment: entry.user_assignment,
-        task_id: entry.task_id,
-        
-        // Metadata
-        step_instance_id: entry.task_id, // Use task_id as identifier
-        hasacted: entry.has_acted,
-      }));
+    return (userTickets || []).map((entry) => ({
+      // Map new endpoint fields to expected format
+      // Ensure these values are strings so callers can safely use string methods
+      ticket_id: String(entry.ticket_id ?? entry.ticket_number ?? ""),
+      subject: String(entry.ticket_subject ?? ""),
+      description: String(entry.ticket_description ?? ""),
+      status: entry.status,
+      priority: entry.priority || "Medium", // fallback if not provided
+      category: entry.category || "", // fallback if not provided
+      submit_date: entry.created_at,
+
+      // Additional fields from new endpoint
+      ticket_number: entry.ticket_number,
+      workflow_id: entry.workflow_id,
+      workflow_name: entry.workflow_name,
+      current_step: entry.current_step,
+      current_step_name: entry.current_step_name,
+      current_step_role: entry.current_step_role,
+      user_assignment: entry.user_assignment,
+      task_id: entry.task_id,
+
+      // Metadata
+      step_instance_id: entry.task_id, // Use task_id as identifier
+      hasacted: entry.has_acted,
+    }));
   }, [userTickets]);
 
   // fetch status and category
@@ -129,7 +129,7 @@ export default function AdminTicket() {
       if (start && openedDate < start) return false;
       if (end && openedDate > end) return false;
 
-      const search = debouncedSearch.toLowerCase();
+      const search = (debouncedSearch || "").toLowerCase();
       if (
         search &&
         !(
