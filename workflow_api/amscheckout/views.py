@@ -28,12 +28,12 @@ class CheckoutResolveView(APIView):
         checkout.is_resolved = is_resolved
         checkout.save()
 
-        # ✅ Update ticket status to "Resolved" if resolved
+        # ✅ Update ticket status to "Resolved" if resolved (in ticket_data)
         if is_resolved:
             try:
-                # Query using the `ticket_id` field instead of `id`
-                ticket = WorkflowTicket.objects.get(ticket_id=ticket_id)
-                ticket.status = "Resolved"  # or your enum/choice value
+                # Query using the ticket_data field
+                ticket = WorkflowTicket.objects.get(ticket_data__ticket_id=ticket_id)
+                ticket.ticket_data['status'] = "Resolved"  # or your enum/choice value
                 ticket.save()
             except WorkflowTicket.DoesNotExist:
                 return Response({"detail": "Related ticket not found"}, status=status.HTTP_404_NOT_FOUND)

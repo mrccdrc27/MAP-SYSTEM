@@ -25,7 +25,8 @@ class TaskItemSerializer(serializers.ModelSerializer):
         return value
 
 class TaskSerializer(serializers.ModelSerializer):
-    ticket_subject = serializers.CharField(source='ticket_id.subject', read_only=True)
+    ticket_subject = serializers.SerializerMethodField()
+    ticket_description = serializers.SerializerMethodField()
     workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
     current_step_name = serializers.CharField(source='current_step.name', read_only=True)
     current_step_role = serializers.CharField(source='current_step.role_id.name', read_only=True)
@@ -38,10 +39,18 @@ class TaskSerializer(serializers.ModelSerializer):
             'task_id', 'ticket_id', 'workflow_id', 'current_step',
             'status', 'created_at', 'updated_at', 'fetched_at',
             # Read-only fields for easier frontend consumption
-            'ticket_subject', 'workflow_name', 'current_step_name', 
+            'ticket_subject', 'ticket_description', 'workflow_name', 'current_step_name', 
             'current_step_role', 'assigned_users', 'assigned_users_count'
         ]
         read_only_fields = ['task_id', 'created_at', 'updated_at']
+    
+    def get_ticket_subject(self, obj):
+        """Extract subject from ticket_data"""
+        return obj.ticket_id.ticket_data.get('subject', '')
+    
+    def get_ticket_description(self, obj):
+        """Extract description from ticket_data"""
+        return obj.ticket_id.ticket_data.get('description', '')
     
     def get_assigned_users(self, obj):
         """Return all TaskItems for this task"""
@@ -92,9 +101,9 @@ class UserTaskListSerializer(serializers.ModelSerializer):
     Serializer for displaying tasks assigned to a specific user.
     Returns task details with related information for easy frontend consumption.
     """
-    ticket_subject = serializers.CharField(source='ticket_id.subject', read_only=True)
-    ticket_description = serializers.CharField(source='ticket_id.description', read_only=True)
-    ticket_number = serializers.CharField(source='ticket_id.ticket_id', read_only=True)
+    ticket_subject = serializers.SerializerMethodField()
+    ticket_description = serializers.SerializerMethodField()
+    ticket_number = serializers.SerializerMethodField()
     workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
     current_step_name = serializers.CharField(source='current_step.name', read_only=True)
     current_step_role = serializers.CharField(source='current_step.role_id.name', read_only=True, allow_null=True)
@@ -122,6 +131,18 @@ class UserTaskListSerializer(serializers.ModelSerializer):
             'fetched_at',
         ]
         read_only_fields = fields
+    
+    def get_ticket_subject(self, obj):
+        """Extract subject from ticket_data"""
+        return obj.ticket_id.ticket_data.get('subject', '')
+    
+    def get_ticket_description(self, obj):
+        """Extract description from ticket_data"""
+        return obj.ticket_id.ticket_data.get('description', '')
+    
+    def get_ticket_number(self, obj):
+        """Get ticket number"""
+        return obj.ticket_id.ticket_number
     
     def get_user_assignment(self, obj):
         """

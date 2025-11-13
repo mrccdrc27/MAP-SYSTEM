@@ -97,8 +97,9 @@ def test_automatic_task_creation():
     """Test the automatic task creation when a ticket is received"""
     print("\n🎫 Testing automatic task creation...")
     
-    # Sample ticket data
+    # Sample ticket data - now just raw JSON
     ticket_data = {
+        "ticket_number": f"TK-{datetime.now().timestamp()}",
         "subject": "Laptop not connecting to WiFi",
         "category": "IT",
         "sub_category": "Hardware",
@@ -120,11 +121,14 @@ def test_automatic_task_creation():
     print(f"📨 Ticket processing result: {result['status']}")
     
     if result['status'] == 'success':
-        ticket_id = result['ticket_id']
-        print(f"🎯 Ticket created with ID: {ticket_id}")
+        ticket_number = result['ticket_number']
+        print(f"🎯 Ticket created with number: {ticket_number}")
+        
+        # Get the ticket
+        ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
         
         # Check if task was created automatically
-        tasks = Task.objects.filter(ticket_id__ticket_id=ticket_id)
+        tasks = Task.objects.filter(ticket_id=ticket)
         if tasks.exists():
             task = tasks.first()
             print(f"✅ Task automatically created: {task.task_id}")
@@ -152,24 +156,29 @@ def test_manual_task_creation():
     """Test manual task creation for existing ticket"""
     print("\n🔧 Testing manual task creation...")
     
-    # Create a ticket without automatic task creation
+    # Create a ticket without automatic task creation (using ticket_data)
+    ticket_data = {
+        "subject": "Manual test ticket",
+        "category": "IT",
+        "sub_category": "Software",
+        "department": "IT Department",
+        "description": "Test ticket for manual task creation",
+        "priority": "low",
+        "status": "open",
+        "employee": "test@company.com",
+    }
+    
     ticket = WorkflowTicket.objects.create(
-        subject="Manual test ticket",
-        category="IT",
-        sub_category="Software",
-        department="IT Department",
-        description="Test ticket for manual task creation",
-        priority="low",
-        status="open",
-        employee="test@company.com",
+        ticket_number=f"MANUAL-{int(timezone.now().timestamp())}",
+        ticket_data=ticket_data,
         is_task_allocated=False
     )
     
-    print(f"📝 Created test ticket: {ticket.subject}")
+    print(f"📝 Created test ticket: {ticket_data['subject']}")
     
     # Manually trigger task creation
     from tickets.tasks import create_task_for_ticket
-    result = create_task_for_ticket(ticket.ticket_id)
+    result = create_task_for_ticket(ticket.id)
     
     print(f"🎯 Manual task creation result: {result.get('status')}")
     if result.get('status') == 'success':

@@ -203,7 +203,8 @@ class Task(models.Model):
             return
 
         ticket = self.ticket_id
-        attachments = ticket.attachments or []
+        ticket_data = ticket.ticket_data
+        attachments = ticket_data.get('attachments') or []
 
         if not attachments:
             print("📭 No attachments to process.")
@@ -221,9 +222,11 @@ class Task(models.Model):
                 print("✅ Extracted JSON:\n", result)
 
                 data = json.loads(result)
-                data["ticket_id"] = ticket.ticket_id
-                data["subject"] = ticket.subject
-                data["description"] = ticket.description
+                ticket_id = ticket_data.get('ticket_id') or ticket_data.get('id')
+                data["ticket_id"] = ticket_id
+                data["subject"] = ticket_data.get('subject', '')
+                data["description"] = ticket_data.get('description', '')
+                
                 # AMS Checkout JSON
                 if "asset_id" in data and "requestor" in data:
                     print("1️⃣ AMS-style JSON detected.")
@@ -311,6 +314,8 @@ class TaskItem(models.Model):
     
     assigned_on = models.DateTimeField(auto_now_add=True)
     status_updated_on = models.DateTimeField(null=True, blank=True)
+    target_resolution = models.DateTimeField(null=True, blank=True, help_text="Target date and time for task resolution")
+    resolution_time = models.DateTimeField(null=True, blank=True, help_text="Actual date and time when the task was resolved")
     acted_on = models.DateTimeField(null=True, blank=True)
     acted_on_step = models.ForeignKey(
         'step.Steps',

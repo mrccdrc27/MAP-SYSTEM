@@ -14,127 +14,44 @@ import json
 def receive_ticket(ticket_data):
     import traceback
     try:
-        # ✅ Map incoming fields to model fields
-        field_mapping = {
-            'id': 'original_ticket_id',
-            'ticket_number': 'ticket_number',
-            'sub_category': 'sub_category',
-        }
+        # ✅ Generate or get ticket_number from various possible field names
+        ticket_number = (
+            ticket_data.get('ticket_number') or 
+            ticket_data.get('ticket_id') or 
+            ticket_data.get('id') or 
+            ticket_data.get('original_ticket_id')
+        )
         
-        # Apply field mapping
-        for old_key, new_key in field_mapping.items():
-            if old_key in ticket_data:
-                ticket_data[new_key] = ticket_data.pop(old_key)
-
-        # ✅ Parse datetime fields
-        datetime_fields = ['submit_date', 'update_date', 'fetched_at']
-        for field in datetime_fields:
-            if isinstance(ticket_data.get(field), str):
-                try:
-                    dt = parse_datetime(ticket_data[field])
-                    ticket_data[field] = make_aware(dt) if dt and dt.tzinfo is None else dt
-                except Exception:
-                    ticket_data[field] = None
-
-        # ✅ Parse date fields
-        date_fields = ['scheduled_date', 'expected_return_date', 'performance_start_date', 'performance_end_date']
-        for field in date_fields:
-            if isinstance(ticket_data.get(field), str):
-                try:
-                    ticket_data[field] = datetime.fromisoformat(ticket_data[field]).date()
-                except Exception:
-                    ticket_data[field] = None
-
-        # ✅ Parse duration fields
-        for dur_field in ['response_time', 'resolution_time']:
-            if isinstance(ticket_data.get(dur_field), str):
-                try:
-                    h, m, s = map(float, ticket_data[dur_field].split(':'))
-                    ticket_data[dur_field] = timedelta(hours=h, minutes=m, seconds=s)
-                except Exception:
-                    ticket_data[dur_field] = None
-
-        # ✅ Handle decimal fields
-        if ticket_data.get('requested_budget'):
-            try:
-                ticket_data['requested_budget'] = float(ticket_data['requested_budget'])
-            except (ValueError, TypeError):
-                ticket_data['requested_budget'] = None
-
-        # ✅ Ensure JSON fields have proper defaults
-        if 'dynamic_data' not in ticket_data or ticket_data['dynamic_data'] is None:
-            ticket_data['dynamic_data'] = {}
-        if 'attachments' not in ticket_data or ticket_data['attachments'] is None:
-            ticket_data['attachments'] = []
-        if 'cost_items' not in ticket_data or ticket_data['cost_items'] is None:
-            ticket_data['cost_items'] = None
-
-        # ✅ Filter allowed fields for the updated model
-        allowed_fields = {
-            'ticket_id', 'original_ticket_id', 'ticket_number', 'source_service',
-            'employee', 'employee_cookie_id',
-            'subject', 'category', 'subcategory', 'sub_category', 'description', 
-            'scheduled_date', 'submit_date', 'update_date', 'assigned_to',
-            'priority', 'status', 'department',
-            'asset_name', 'serial_number', 'location', 'expected_return_date', 'issue_type', 'other_issue',
-            'performance_start_date', 'performance_end_date',
-            'approved_by', 'rejected_by', 'cost_items', 'requested_budget', 'fiscal_year', 'department_input',
-            'dynamic_data', 'attachments',
-            'response_time', 'resolution_time', 'time_closed', 'rejection_reason',
-            'is_task_allocated', 'fetched_at'
-        }
-        ticket_data = {k: v for k, v in ticket_data.items() if k in allowed_fields}
-
-        # ✅ Validate required fields
-        required_fields = ['subject']
-        missing = [field for field in required_fields if not ticket_data.get(field)]
-        if missing:
-            return {
-                "status": "error",
-                "type": "validation_error",
-                "errors": {field: "This field is required." for field in missing}
-            }
-
-        # ✅ Create and save - let Django handle transactions naturally
-        lookup_fields = {}
-        if ticket_data.get('original_ticket_id'):
-            lookup_fields['original_ticket_id'] = ticket_data['original_ticket_id']
-        elif ticket_data.get('ticket_number'):
-            lookup_fields['ticket_number'] = ticket_data['ticket_number']
+        # # If still no ticket_number, generate one from timestamp
+        # if not ticket_number:
+        #     import uuid
+        #     ticket_number = f"TK-{uuid.uuid4().hex[:12].upper()}"
+        #     print(f"⚠️ No ticket identifier found, generated: {ticket_number}")
         
-        if lookup_fields:
-            ticket, created = WorkflowTicket.objects.update_or_create(
-                **lookup_fields,
-                defaults=ticket_data
-            )
-            action = "created" if created else "updated"
-        else:
-            ticket = WorkflowTicket(**ticket_data)
-            ticket.full_clean()
-            ticket.save()
-            action = "created"
+        # Ensure ticket_number is in the ticket_data
+        ticket_data['ticket_number'] = ticket_number
         
-        print(f"✅ Ticket {action} with ID: {ticket.pk}")
+        # ✅ Create or update ticket with raw ticket_data
+        ticket, created = WorkflowTicket.objects.update_or_create(
+            ticket_number=ticket_number,
+            defaults={'ticket_data': ticket_data}
+        )
+        
+        action = "created" if created else "updated"
+        print(f"✅ Ticket {action} with number: {ticket_number}")
 
         # 🚀 NEW: Automatic workflow assignment and task creation
         if created:  # Only create tasks for new tickets
             try:
                 # Call the task synchronously - it will execute immediately
-                result = create_task_for_ticket(ticket.ticket_id)
+                result = create_task_for_ticket(ticket.id)
                 print(f"🎯 Task creation result: {result}")
             except Exception as e:
                 print(f"❌ Failed to create task: {e}")
                 import traceback
                 traceback.print_exc()
 
-        return {"status": "success", "ticket_id": ticket.ticket_id or ticket.original_ticket_id, "action": action}
-
-    except ValidationError as ve:
-        return {
-            "status": "error",
-            "type": "validation_error",
-            "errors": ve.message_dict
-        }
+        return {"status": "success", "ticket_number": ticket_number, "action": action}
 
     except Exception as e:
         return {
@@ -154,7 +71,6 @@ def create_task_for_ticket(ticket_id):
     3. Fetching users for that role from auth service
     4. Creating TaskItem records for assigned users using round-robin logic
     """
-    from tickets.models import WorkflowTicket
     from workflow.models import Workflows
     from step.models import Steps
     from task.models import Task
@@ -164,15 +80,16 @@ def create_task_for_ticket(ticket_id):
     
     try:
         # Get the ticket
-        ticket = WorkflowTicket.objects.get(ticket_id=ticket_id)
-        print(f"🎫 Processing ticket: {ticket.subject}")
+        ticket = WorkflowTicket.objects.get(id=ticket_id)
+        subject = ticket.ticket_data.get('subject', 'Unknown')
+        department = ticket.ticket_data.get('department')
+        category = ticket.ticket_data.get('category')
+        sub_category = ticket.ticket_data.get('sub_category') or ticket.ticket_data.get('subcategory')
+        
+        print(f"🎫 Processing ticket: {subject}")
         
         # 1. Find matching workflow based on department-category
-        matching_workflow = find_matching_workflow(
-            ticket.department, 
-            ticket.category, 
-            ticket.sub_category or ticket.subcategory
-        )
+        matching_workflow = find_matching_workflow(department, category, sub_category)
         
         if not matching_workflow:
             print(f"⚠️ No matching workflow found for ticket {ticket_id}")

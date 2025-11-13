@@ -2,34 +2,17 @@ from rest_framework import serializers
 from .models import WorkflowTicket
 
 class WorkflowTicketSerializer(serializers.ModelSerializer):
+    """Serializer for WorkflowTicket/TicketSnapshot with all fields"""
     class Meta:
         model = WorkflowTicket
-        fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'ticket_number', 'fetched_at', 'ticket_data', 'is_task_allocated', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'fetched_at']
 
 class WorkflowTicketCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating workflow tickets from ticket service"""
     class Meta:
         model = WorkflowTicket
-        fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-
-
-class WorkflowTicketSerializer(serializers.ModelSerializer):
-    """
-    Full serializer for WorkflowTicket with all fields
-    """
-    
-    class Meta:
-        model = WorkflowTicket
-        fields =  '__all__'
-        read_only_fields = [
-            'id',
-            'created_at',
-            'updated_at',
-            'is_task_allocated',
-        ]
+        fields = ['ticket_number', 'ticket_data', 'is_task_allocated']
 
 
 class WorkflowTicketListSerializer(serializers.ModelSerializer):
@@ -39,44 +22,43 @@ class WorkflowTicketListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WorkflowTicket
-        fields = '__all__'
+        fields = ['id', 'ticket_number', 'fetched_at', 'ticket_data', 'is_task_allocated']
 
 
 class WorkflowTicketDetailSerializer(serializers.ModelSerializer):
     """
-    Detailed serializer with computed fields and formatted data
+    Detailed serializer with convenience access to ticket_data fields
     """
     
-    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    days_since_opened = serializers.SerializerMethodField()
-    workflow_ticket_reference = serializers.SerializerMethodField()
+    subject = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
     
     class Meta:
         model = WorkflowTicket
-        fields =  '__all__'
+        fields = ['id', 'ticket_number', 'fetched_at', 'ticket_data', 'is_task_allocated', 
+                  'subject', 'status', 'department', 'created_at', 'updated_at']
         read_only_fields = [
             'id',
             'created_at',
             'updated_at',
             'is_task_allocated',
-            'priority_display',
-            'status_display',
-            'days_since_opened',
-            'workflow_ticket_reference',
+            'subject',
+            'status',
+            'department',
         ]
     
-    # def get_days_since_opened(self, obj):
-    #     """Calculate days since ticket was opened"""
-    #     from django.utils import timezone
-    #     if obj.opened_on:
-    #         today = timezone.now().date()
-    #         return (today - obj.opened_on).days
-    #     return None
+    def get_subject(self, obj):
+        """Extract subject from ticket_data"""
+        return obj.ticket_data.get('subject', '')
     
-    def get_workflow_ticket_reference(self, obj):
-        """Generate workflow ticket reference"""
-        return f"WF-{obj.id}"
+    def get_status(self, obj):
+        """Extract status from ticket_data"""
+        return obj.ticket_data.get('status', '')
+    
+    def get_department(self, obj):
+        """Extract department from ticket_data"""
+        return obj.ticket_data.get('department', '')
 
 # serializers.py
 

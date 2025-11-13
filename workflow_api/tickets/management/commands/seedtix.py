@@ -58,35 +58,41 @@ class Command(BaseCommand):
 
                 shutil.copy(file_path, destination_path)
                 relative_path = os.path.join(ATTACHMENT_UPLOAD_DIR, filename).replace("\\", "/")
-                attached_paths.append(relative_path)
+                attached_paths.append({"file": relative_path})
 
-            ticket = WorkflowTicket.objects.create(
-                ticket_id=f"WF-{random.randint(1000, 9999)}",
-                original_ticket_id=f"TK-{random.randint(1000, 9999)}",
-                customer={
+            # Prepare ticket_data as JSON
+            ticket_data = {
+                "ticket_id": f"WF-{random.randint(1000, 9999)}",
+                "id": f"TK-{random.randint(1000, 9999)}",
+                "customer": {
                     "id": random.randint(1, 100),
                     "name": random.choice(NAMES),
                     "company": random.choice(COMPANIES),
                 },
-                subject=f"Issue {i+1}: {random.choice(SUBCATEGORIES)}",
-                category=random.choice(CATEGORIES),
-                subcategory=random.choice(SUBCATEGORIES),
-                description="Generated ticket with actual attachment files.",
-                scheduled_date=(submit_date + timedelta(days=random.randint(1, 5))).date(),
-                submit_date=submit_date,
-                update_date=update_date,
-                assigned_to=random.choice(NAMES),
-                priority=random.choice(PRIORITIES),
-                status=random.choice(STATUSES),
-                department=random.choice(DEPARTMENTS),
-                response_time=timedelta(hours=random.randint(1, 5)),
-                resolution_time=timedelta(days=random.randint(1, 3)),
-                time_closed=update_date + timedelta(days=1),
-                rejection_reason=None if random.random() > 0.2 else "Unjustified request.",
-                attachments=attached_paths,
-                fetched_at=update_date,
+                "subject": f"Issue {i+1}: {random.choice(SUBCATEGORIES)}",
+                "category": random.choice(CATEGORIES),
+                "subcategory": random.choice(SUBCATEGORIES),
+                "description": "Generated ticket with actual attachment files.",
+                "scheduled_date": (submit_date + timedelta(days=random.randint(1, 5))).isoformat(),
+                "submit_date": submit_date.isoformat(),
+                "update_date": update_date.isoformat(),
+                "assigned_to": random.choice(NAMES),
+                "priority": random.choice(PRIORITIES),
+                "status": random.choice(STATUSES),
+                "department": random.choice(DEPARTMENTS),
+                "response_time": f"{random.randint(1, 5)}:00:00",
+                "resolution_time": f"{random.randint(1, 3)}:00:00",
+                "time_closed": (update_date + timedelta(days=1)).isoformat(),
+                "rejection_reason": None if random.random() > 0.2 else "Unjustified request.",
+                "attachments": attached_paths,
+            }
+
+            ticket = WorkflowTicket.objects.create(
+                ticket_number=f"TK-{random.randint(1000, 9999)}",
+                ticket_data=ticket_data,
             )
 
-            self.stdout.write(self.style.SUCCESS(f"✅ Created: {ticket.subject} (Attachments: {len(attached_paths)})"))
+            subject = ticket_data.get('subject', 'Unknown')
+            self.stdout.write(self.style.SUCCESS(f"✅ Created: {subject} (Attachments: {len(attached_paths)})"))
 
         self.stdout.write(self.style.SUCCESS("🎉 Done seeding WorkflowTicket with real attachments."))

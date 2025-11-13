@@ -55,10 +55,10 @@ class UpdateProjectStatusView(APIView):
         project.is_approved = new_status == "APPROVED"
         project.save()
 
-        # ✅ Update related WorkflowTicket status
+        # ✅ Update related WorkflowTicket status (in ticket_data)
         try:
-            ticket = WorkflowTicket.objects.get(ticket_id=external_system_id)
-            ticket.status = "Resolved" if new_status == "APPROVED" else "Rejected"
+            ticket = WorkflowTicket.objects.get(ticket_data__ticket_id=external_system_id)
+            ticket.ticket_data['status'] = "Resolved" if new_status == "APPROVED" else "Rejected"
             ticket.save()
         except WorkflowTicket.DoesNotExist:
             return Response(

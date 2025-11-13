@@ -6,13 +6,14 @@ from task.models import Task
 def allocate_task_for_ticket(ticket):
     """
     Create Tasks for every Workflows entry whose:
-    - department matches ticket.department (case-insensitive),
-    - category matches ticket.category (case-insensitive).
+    - department matches ticket_data.department (case-insensitive),
+    - category matches ticket_data.category (case-insensitive).
 
     Returns True if at least one Task was created (or already existed).
     """
-    dep = (ticket.department or '').strip()
-    cat = (ticket.category or '').strip()
+    ticket_data = ticket.ticket_data
+    dep = (ticket_data.get('department') or '').strip()
+    cat = (ticket_data.get('category') or '').strip()
 
     if not (dep and cat):
         return False
