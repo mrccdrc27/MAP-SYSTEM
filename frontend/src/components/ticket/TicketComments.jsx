@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 
 import { useAuth } from "../../context/AuthContext";
-import useComments from "../../api/useComments";
+import useComments from "../../api/comments/useComments";
 
 import Comment from "./Comment";
 import FileUpload from "./FileUpload";

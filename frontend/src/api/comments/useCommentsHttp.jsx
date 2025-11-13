@@ -1,7 +1,7 @@
 // src/api/useCommentsHttp.jsx
 import { useState, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from './axios';
+import { useAuth } from '../../context/AuthContext';
+import api from '../axios';
 
 // Define the API endpoint as an environment variable to avoid hardcoding
 const MESSAGING_API = import.meta.env.VITE_MESSAGING_API;
