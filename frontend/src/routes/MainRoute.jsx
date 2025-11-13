@@ -15,7 +15,6 @@ import AdminDashboard from "../pages/admin/dashboard-page/AdminDashboard";
 import Workflow from "../pages/admin/workflow-page/Workflow";
 import Agent from "../pages/admin/agent-page/Agent";
 import AdminArchive from "../pages/admin/archive-page/AdminArchive";
-import WorkflowDetail from "../pages/admin/workflow-detail-page/WorkflowDetail";
 import AdminTicket from "../pages/admin/ticket-page/AdminTicket";
 
 // reporting
@@ -77,12 +76,10 @@ export default function MainRoute() {
         <Route path="/admin/agent" element={<Agent />} />
         <Route path="/admin/archive" element={<AdminArchive />} />
         <Route path="/admin/archive/:id" element={<AdminArchiveDetail />} />
-        <Route path="/admin/workflow/detail" element={<WorkflowDetail />} />
         <Route path="/admin/ticket" element={<AdminTicket />} />
         <Route path="/admin/ticket/:id" element={<AdminTicketDetail />} />
         <Route path="/admin/workflow/:workflowId" element={<WorkflowEditorPage />} />
         <Route path="/admin/assigned" element={<AdminTicket />} />
-        <Route path="/admin/workflow/:uuid" element={<WorkflowDetail />} />
         <Route path="/admin/profile" element={<AdminProfile />} />
       </Route>
 
