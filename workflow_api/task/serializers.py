@@ -14,9 +14,9 @@ class TaskItemSerializer(serializers.ModelSerializer):
         fields = [
             'task_item_id', 'user_id', 'username', 'email', 'status', 
             'role', 'notes', 'assigned_on', 'status_updated_on', 'acted_on',
-            'acted_on_step_id', 'acted_on_step_name'
+            'acted_on_step_id', 'acted_on_step_name', 'target_resolution', 'resolution_time'
         ]
-        read_only_fields = ['task_item_id', 'assigned_on']
+        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time']
     
     def validate_notes(self, value):
         """Ensure notes field is not empty"""
@@ -38,11 +38,12 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = [
             'task_id', 'ticket_id', 'workflow_id', 'current_step',
             'status', 'created_at', 'updated_at', 'fetched_at',
+            'target_resolution', 'resolution_time',
             # Read-only fields for easier frontend consumption
             'ticket_subject', 'ticket_description', 'workflow_name', 'current_step_name', 
             'current_step_role', 'assigned_users', 'assigned_users_count'
         ]
-        read_only_fields = ['task_id', 'created_at', 'updated_at']
+        read_only_fields = ['task_id', 'created_at', 'updated_at', 'target_resolution', 'resolution_time']
     
     def get_ticket_subject(self, obj):
         """Extract subject from ticket_data"""
@@ -129,6 +130,7 @@ class UserTaskListSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'fetched_at',
+            'target_resolution',
         ]
         read_only_fields = fields
     
@@ -162,6 +164,7 @@ class UserTaskListSerializer(serializers.ModelSerializer):
                     'assigned_on': task_item.assigned_on,
                     'status_updated_on': task_item.status_updated_on,
                     'acted_on': task_item.acted_on,
+                    'target_resolution': task_item.target_resolution,
                     'acted_on_step': {
                         'step_id': task_item.acted_on_step.step_id,
                         'name': task_item.acted_on_step.name

@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from tickets.models import RoundRobin
 from task.models import TaskItem
+from task.utils.target_resolution import calculate_target_resolution
 import requests
 import logging
 
@@ -112,6 +113,11 @@ def apply_round_robin_assignment(task, user_ids, role_name, max_assignments=1):
     Maintains state of which user was last assigned for a role, ensuring
     fair distribution of tasks across users. Also sends notifications to assigned users.
     
+    Calculates target resolution time based on:
+    - Ticket priority
+    - Workflow SLA for that priority
+    - Step weight relative to total workflow weights
+    
     Args:
         task: Task instance to assign users to
         user_ids: List of user IDs [3, 6, 7, ...]
@@ -139,6 +145,20 @@ def apply_round_robin_assignment(task, user_ids, role_name, max_assignments=1):
     user_index = current_index % len(user_ids)
     user_id = user_ids[user_index]
 
+    # 🎯 Calculate target resolution time
+    target_resolution = None
+    try:
+        if task.ticket_id and task.current_step and task.workflow_id:
+            target_resolution = calculate_target_resolution(
+                ticket=task.ticket_id,
+                step=task.current_step,
+                workflow=task.workflow_id
+            )
+            if target_resolution:
+                logger.info(f"🎯 Target resolution calculated: {target_resolution}")
+    except Exception as e:
+        logger.error(f"⚠️ Failed to calculate target resolution: {e}")
+
     # Create TaskItem for the assigned user
     task_item, created = TaskItem.objects.get_or_create(
         task=task,
@@ -149,7 +169,8 @@ def apply_round_robin_assignment(task, user_ids, role_name, max_assignments=1):
             'name': '',
             'status': 'assigned',
             'assigned_on': timezone.now(),
-            'role': role_name
+            'role': role_name,
+            'target_resolution': target_resolution
         }
     )
     

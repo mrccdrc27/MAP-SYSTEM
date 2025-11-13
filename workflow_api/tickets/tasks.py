@@ -31,10 +31,14 @@ def receive_ticket(ticket_data):
         # Ensure ticket_number is in the ticket_data
         ticket_data['ticket_number'] = ticket_number
         
-        # ✅ Create or update ticket with raw ticket_data
+        # ✅ Extract priority from ticket data
+        priority = ticket_data.get('priority', 'Medium')
+        ticket_data['priority'] = priority
+        
+        # ✅ Create or update ticket with raw ticket_data and priority
         ticket, created = WorkflowTicket.objects.update_or_create(
             ticket_number=ticket_number,
-            defaults={'ticket_data': ticket_data}
+            defaults={'ticket_data': ticket_data, 'priority': priority}
         )
         
         action = "created" if created else "updated"

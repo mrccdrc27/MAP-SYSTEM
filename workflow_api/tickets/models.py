@@ -48,6 +48,12 @@ class WorkflowTicket(models.Model):
     source_service = models.CharField(max_length=50, default='ticket_service', db_index=True)
     status = models.CharField(max_length=20, default='New', db_index=True, blank=True, null=True)
     department = models.CharField(max_length=100, db_index=True, blank=True, null=True)
+    priority = models.CharField(max_length=20, default='Medium', db_index=True, blank=True, null=True, choices=[
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('High', 'High'),
+        ('Critical', 'Critical')
+    ])
     
     class Meta:
         indexes = [
