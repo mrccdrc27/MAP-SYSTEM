@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'amscheckout',
     'bmscheckout',
     'workflowmanager',
+    'audit',
 
     # Third-party apps
     'rest_framework',

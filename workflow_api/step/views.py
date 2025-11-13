@@ -6,7 +6,9 @@ from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 import logging
+from copy import deepcopy
 
+from audit.utils import log_action, compare_models
 from .models import Steps, StepTransition
 from .serializers import (
     StepDetailSerializer, 
@@ -324,11 +326,20 @@ class StepWeightManagementView(APIView):
             
             try:
                 step = Steps.objects.get(step_id=step_id, workflow_id=workflow_id)
+                old_step = deepcopy(step)
                 step.weight = weight
                 step.save()
                 updated_count += 1
                 updated_steps.append(StepWeightSerializer(step).data)
                 logger.info(f"✅ Updated weight for step {step_id} to {weight}")
+                
+                # Log audit event
+                changes = compare_models(old_step, step)
+                if changes:
+                    try:
+                        log_action(request.user, 'update_step', target=step, changes=changes, request=request)
+                    except Exception as e:
+                        logger.error(f"Failed to log audit for update_step: {e}")
             except Steps.DoesNotExist:
                 errors.append(f'Step with ID {step_id} not found in workflow {workflow_id}')
             except (ValueError, TypeError) as e:

@@ -82,6 +82,7 @@ urlpatterns = [
     path('ams-checkout/', include('amscheckout.urls')),
     path('bms-checkout/', include('bmscheckout.urls')),
     path('workflow-manager/', include('workflowmanager.urls')),
+    path('audit/', include('audit.urls')),
 
     # Documentation
     path('schema/', SpectacularAPIView.as_view(), name='schema'),

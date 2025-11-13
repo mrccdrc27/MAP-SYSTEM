@@ -5,7 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from django.db import transaction
 import logging
+from copy import deepcopy
 
+from audit.utils import log_action, compare_models
 from .models import Workflows, Category
 from .serializers import (
     WorkflowBasicSerializer,
@@ -169,6 +171,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 )
                                 logger.info(f"✅ Created edge: {edge_id} -> DB {from_id}→{to_id}")
                     
+                    # Log audit event
+                    try:
+                        log_action(request.user, 'create_workflow', target=workflow, request=request)
+                    except Exception as e:
+                        logger.error(f"Failed to log audit for create_workflow: {e}")
+                    
                     # Return the created workflow with its graph
                     return self._get_workflow_detail_response(workflow, temp_id_mapping)
             
@@ -201,6 +209,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     **serializer.validated_data
                 )
                 logger.info(f"✅ Created workflow: {workflow.name} (ID: {workflow.workflow_id})")
+                try:
+                    log_action(request.user, 'create_workflow', target=workflow, request=request)
+                except Exception as e:
+                    logger.error(f"Failed to log audit for create_workflow: {e}")
                 
                 output_serializer = WorkflowBasicSerializer(workflow)
                 return Response(output_serializer.data, status=status.HTTP_201_CREATED)
@@ -295,6 +307,19 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         edges_data = serializer.validated_data.get('edges', [])
         
         try:
+            # Save old state for audit
+            old_workflow = deepcopy(workflow)
+            
+            # Track changes for audit logging
+            graph_changes = {
+                'nodes_added': 0,
+                'nodes_updated': 0,
+                'nodes_deleted': 0,
+                'edges_added': 0,
+                'edges_updated': 0,
+                'edges_deleted': 0,
+            }
+            
             with transaction.atomic():
                 temp_id_mapping = {}  # Maps temp-ids to actual DB ids
                 
@@ -310,6 +335,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 step = Steps.objects.get(step_id=int(node_id), workflow_id=workflow_id)
                                 step.delete()
                                 logger.info(f"✅ Deleted node: {node_id}")
+                                graph_changes['nodes_deleted'] += 1
                             except Steps.DoesNotExist:
                                 logger.warning(f"⚠️ Node {node_id} not found for deletion")
                     else:
@@ -334,6 +360,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 design=node.get('design', {}),
                                 order=0
                             )
+                            graph_changes['nodes_added'] += 1
                             temp_id_mapping[node_id] = new_step.step_id
                             logger.info(f"✅ Created node: {node_id} -> DB ID {new_step.step_id}")
                         else:
@@ -361,6 +388,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 
                                 step.save()
                                 logger.info(f"✅ Updated node: {node_id}")
+                                graph_changes['nodes_updated'] += 1
                             except Steps.DoesNotExist:
                                 logger.warning(f"⚠️ Node {node_id} not found for update")
                 
@@ -387,6 +415,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 )
                                 transition.delete()
                                 logger.info(f"✅ Deleted edge: {edge_id}")
+                                graph_changes['edges_deleted'] += 1
                             except StepTransition.DoesNotExist:
                                 logger.warning(f"⚠️ Edge {edge_id} not found for deletion")
                     else:
@@ -404,6 +433,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                     name=edge.get('name', '')
                                 )
                                 logger.info(f"✅ Created edge: {edge_id} -> DB ID {new_transition.transition_id}")
+                                graph_changes['edges_added'] += 1
                             except Steps.DoesNotExist as e:
                                 return Response(
                                     {'error': f'Step not found: {str(e)}'},
@@ -445,10 +475,23 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 
                                 transition.save()
                                 logger.info(f"✅ Updated edge: {edge_id}")
+                                graph_changes['edges_updated'] += 1
                             except StepTransition.DoesNotExist:
                                 logger.warning(f"⚠️ Edge {edge_id} not found for update")
                 
-                # Return updated graph
+                # Return updated graph - log if any changes were made
+                if any(graph_changes.values()):
+                    try:
+                        log_action(
+                            request.user, 
+                            'update_workflow', 
+                            target=workflow, 
+                            changes=graph_changes, 
+                            request=request
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to log audit for update_workflow: {e}")
+                
                 return self._get_workflow_graph_response(workflow, temp_id_mapping)
         
         except Exception as e:
@@ -575,11 +618,22 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         
         try:
+            # Save old state for audit
+            old_workflow = deepcopy(workflow)
+            
             for field, value in serializer.validated_data.items():
                 setattr(workflow, field, value)
             workflow.save()
             
             logger.info(f"✅ Updated workflow: {workflow.name} (ID: {workflow.workflow_id})")
+            
+            # Log audit event
+            changes = compare_models(old_workflow, workflow)
+            if changes:
+                try:
+                    log_action(request.user, 'update_workflow', target=workflow, changes=changes, request=request)
+                except Exception as e:
+                    logger.error(f"Failed to log audit for update_workflow: {e}")
             
             output_serializer = WorkflowBasicSerializer(workflow)
             return Response(output_serializer.data, status=status.HTTP_200_OK)

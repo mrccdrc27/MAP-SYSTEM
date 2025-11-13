@@ -8,7 +8,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 import logging
 import uuid
+from copy import deepcopy
 
+from audit.utils import log_action, compare_models
 from .models import Task, TaskItem
 from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer
 from .utils.assignment import assign_users_for_step
@@ -95,6 +97,42 @@ class TaskViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'updated_at', 'status']
     ordering = ['-created_at']
     
+    def create(self, request, *args, **kwargs):
+        """Create a new task with audit logging."""
+        response = super().create(request, *args, **kwargs)
+        if response.status_code == 201:
+            # Log audit event
+            try:
+                task = Task.objects.get(task_id=response.data['task_id'])
+                log_action(request.user, 'create_task', target=task, request=request)
+            except Exception as e:
+                logger.error(f"Failed to log audit for create_task: {e}")
+        return response
+    
+    def update(self, request, *args, **kwargs):
+        """Update task with audit logging."""
+        task = self.get_object()
+        old_task = deepcopy(task)
+        response = super().update(request, *args, **kwargs)
+        if response.status_code == 200:
+            # Log audit event
+            changes = compare_models(old_task, task)
+            if changes:
+                try:
+                    log_action(request.user, 'update_task', target=task, changes=changes, request=request)
+                except Exception as e:
+                    logger.error(f"Failed to log audit for update_task: {e}")
+        return response
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete task with audit logging."""
+        task = self.get_object()
+        try:
+            log_action(request.user, 'delete_task', target=task, request=request)
+        except Exception as e:
+            logger.error(f"Failed to log audit for delete_task: {e}")
+        return super().destroy(request, *args, **kwargs)
+    
     @action(detail=False, methods=['get'], url_path='my-tasks')
     def my_tasks(self, request):
         """
@@ -160,8 +198,17 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Get or create TaskItem for this user
         try:
             task_item = TaskItem.objects.get(task=task, user_id=user_id)
+            old_task_item = deepcopy(task_item)
             task_item.status = new_status
             task_item.save()
+            
+            # Log audit event
+            changes = compare_models(old_task_item, task_item)
+            if changes:
+                try:
+                    log_action(request.user, 'update_task', target=task, changes=changes, request=request)
+                except Exception as e:
+                    logger.error(f"Failed to log audit for update_task: {e}")
         except TaskItem.DoesNotExist:
             return Response(
                 {'error': f'User {user_id} is not assigned to this task'},
