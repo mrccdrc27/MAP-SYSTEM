@@ -180,6 +180,88 @@ class UserSystemRoleViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
+        tags=['System Roles'],
+        summary="Edit user settings",
+        description="Edit settings for a user's role in a system. Only admins of the same system or superusers can edit.",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "user_id": {"type": "integer", "description": "ID of the user"},
+                    "settings": {"type": "object", "description": "JSON settings object"}
+                },
+                "required": ["user_id", "settings"]
+            }
+        }
+    )
+    @action(detail=False, methods=['post'], url_path='edit-settings')
+    def edit_settings(self, request):
+        """
+        Edit settings for a user's role assignment.
+        POST /system-roles/edit-settings/
+        
+        Request body:
+        {
+            "user_id": <int>,
+            "settings": {<json_object>}
+        }
+        """
+        user_id = request.data.get('user_id')
+        settings = request.data.get('settings')
+        
+        if user_id is None:
+            return Response(
+                {"error": "user_id is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if settings is None:
+            return Response(
+                {"error": "settings is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Get the user system role for the current user
+            admin_role = UserSystemRole.objects.get(
+                user=request.user,
+                role__name='Admin'
+            )
+            
+            # Get the target user's role assignment to edit
+            target_role = UserSystemRole.objects.get(
+                user_id=user_id,
+                system=admin_role.system
+            )
+            
+            # Check permissions: only admins of the same system or superusers
+            if not request.user.is_superuser:
+                # User must be an admin in the same system
+                if admin_role.system != target_role.system:
+                    return Response(
+                        {"error": "Access denied. You can only edit users in your system"}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            
+            # Update the settings
+            target_role.settings = settings
+            target_role.save()
+            
+            return Response({
+                "id": target_role.id,
+                "user_id": target_role.user_id,
+                "system": target_role.system.slug,
+                "role": target_role.role.name,
+                "settings": target_role.settings
+            }, status=status.HTTP_200_OK)
+        
+        except UserSystemRole.DoesNotExist:
+            return Response(
+                {"error": "User system role not found or access denied"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @extend_schema(
         parameters=[
             OpenApiParameter(
                 name='system_slug',

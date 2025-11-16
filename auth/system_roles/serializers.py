@@ -93,8 +93,9 @@ class UserSystemRoleSerializer(serializers.ModelSerializer):
             'system_slug',
             'role',
             'assigned_at',
+            'settings',
         ]
-        read_only_fields = ['id', 'assigned_at']
+        read_only_fields = ['id', 'assigned_at', 'settings']
 
     def validate(self, data):
         """
