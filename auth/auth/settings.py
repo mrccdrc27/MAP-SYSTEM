@@ -316,3 +316,20 @@ SYSTEM_TEMPLATE_URLS = {
 
 # Fallback system URL for unknown systems
 DEFAULT_SYSTEM_URL = config('DEFAULT_SYSTEM_URL', default='http://localhost:3000/dashboard')
+
+# Celery Configuration
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://admin:admin@localhost:5672/')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TASK_ACKS_LATE = True
+CELERY_RESULT_BACKEND = None  # Disable result backend to avoid dependencies
+
+# Celery Task Routes
+CELERY_TASK_ROUTES = {
+    'tts.tasks.sync_role_to_workflow_api': {'queue': 'tts.role.sync'},
+    'tts.tasks.sync_user_system_role_to_workflow_api': {'queue': 'tts.user_system_role.sync'},
+    'tts.tasks.sync_user_system_role_delete': {'queue': 'tts.user_system_role.sync'},
+}
+
+CELERY_TASK_DEFAULT_QUEUE = 'tts'
+

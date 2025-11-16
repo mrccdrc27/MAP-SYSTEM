@@ -152,11 +152,15 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Celery Configuration
-CELERY_BROKER_URL = os.getenv('DJANGO_CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_BROKER_URL = os.getenv('DJANGO_CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_ACKS_LATE = True
 CELERY_RESULT_BACKEND = None  # Disable result backend to avoid dependencies
+CELERY_TASK_ALWAYS_EAGER = False  # Run tasks asynchronously
+CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject tasks if worker lost connection
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Prefetch only 1 message at a time
+CELERY_TASK_TRACK_STARTED = True  # Track task start
 
 # Auth Service Configuration
 AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'http://localhost:8001')
@@ -178,6 +182,9 @@ CELERY_TASK_ROUTES = {
     "task.send_assignment_notification": {"queue": DJANGO_NOTIFICATION_QUEUE},
     "task.send_bulk_assignment_notifications": {"queue": DJANGO_NOTIFICATION_QUEUE},
     'send_ticket_status': {'queue': DJANGO_TICKET_STATUS_QUEUE},
+    # Role sync queues from TTS auth service
+    'role.tasks.sync_role': {'queue': 'tts.role.sync'},
+    'role.tasks.sync_user_system_role': {'queue': 'tts.user_system_role.sync'},
 }
 
 # External Services
