@@ -172,3 +172,30 @@ def sync_user_system_role_delete(user_system_role_data):
     except Exception as e:
         logger.error(f"Error syncing UserSystemRole deletion: {str(e)}")
         return {"status": "error", "error": str(e)}
+
+
+def trigger_workflow_seeding():
+    """
+    Trigger the seed_workflows2 command in workflow_api via Celery message broker.
+    This is called after successful TTS seeding (roles and users creation).
+    This is NOT a Celery task - it directly sends a message to workflow_api.
+    """
+    from celery import current_app
+    
+    try:
+        # Send task to workflow_api to seed workflows
+        current_app.send_task(
+            'workflow.seed_workflows',
+            queue='workflow_seed_queue',
+            routing_key='workflow.seed',
+        )
+        
+        logger.info("✓ Triggered workflow seeding via Celery")
+        return {
+            "status": "success",
+            "message": "Workflow seeding triggered in workflow_api",
+        }
+    
+    except Exception as e:
+        logger.error(f"✗ Error triggering workflow seeding: {str(e)}")
+        return {"status": "error", "error": str(e)}

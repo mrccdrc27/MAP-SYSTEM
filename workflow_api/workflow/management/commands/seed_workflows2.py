@@ -82,16 +82,18 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING('Starting 3-step workflow seeding process...'))
         
         with transaction.atomic():
-            # Verify required roles exist
+            # Verify required roles exist in database
             try:
                 role_map = {
                     'Admin': Roles.objects.get(name='Admin'),
                     'Asset_Manager': Roles.objects.get(name='Asset Manager'),
                     'Budget_Manager': Roles.objects.get(name='Budget Manager'),
                 }
-                self.stdout.write(self.style.SUCCESS('✓ All required roles found'))
+                self.stdout.write(self.style.SUCCESS('✓ All required roles found in database'))
+                for role_key, role_obj in role_map.items():
+                    self.stdout.write(f'  • {role_key}: {role_obj.name} (ID: {role_obj.role_id})')
             except Roles.DoesNotExist as e:
-                raise CommandError(f"Missing expected role: {e}. Please ensure seed_role is run first.")
+                raise CommandError(f"Missing expected role: {e}. Please ensure the following roles exist in the database: Admin, Asset Manager, Budget Manager")
 
             # Define the standardized 3-step configuration generator
             def create_3_step_config(resolver_role, resolver_instruction, resolve_desc):

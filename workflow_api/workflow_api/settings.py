@@ -185,6 +185,8 @@ CELERY_TASK_ROUTES = {
     # Role sync queues from TTS auth service
     'role.tasks.sync_role': {'queue': 'tts.role.sync'},
     'role.tasks.sync_user_system_role': {'queue': 'tts.user_system_role.sync'},
+    # Workflow seeding queue
+    'workflow.seed_workflows': {'queue': 'workflow_seed_queue'},
 }
 
 # External Services

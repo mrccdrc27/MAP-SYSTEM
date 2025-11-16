@@ -2,6 +2,8 @@ from celery import shared_task
 from workflow.models import Workflows
 from workflow.serializers import WorkflowDetailSerializer
 from workflow_api.celery import app  # Your Celery instance
+from django.core.management import call_command
+from django.core.management.base import CommandError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,3 +34,22 @@ def send_hello():
         kwargs={"payload": {"message": "Hello"}},
         queue="workflow_send_queue"
     )
+
+
+@shared_task(name="workflow.seed_workflows")
+def seed_workflows():
+    """
+    Celery task to run the seed_workflows2 management command.
+    This is triggered by the auth service after successful TTS seeding.
+    """
+    try:
+        logger.info("Starting seed_workflows2 command execution...")
+        call_command('seed_workflows2')
+        logger.info("✓ seed_workflows2 command completed successfully")
+        return {'status': 'success', 'message': 'Workflows seeded successfully'}
+    except CommandError as e:
+        logger.error(f"✗ seed_workflows2 command failed with error: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"✗ Unexpected error during workflow seeding: {str(e)}")
+        raise
