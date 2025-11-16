@@ -302,6 +302,7 @@
 
       const csrfToken = getCookie("csrftoken");
       let currentAgentId = null;
+      let currentAgentSystemRoleId = null;
       let agents = [];
 
       // Toast notification system
@@ -478,6 +479,11 @@
             ? agent.system_roles[0].role_name
             : "N/A"; // fallback if no role
 
+        // Get the is_active status from system role (or fallback to user is_active)
+        const isActive = agent.system_roles && agent.system_roles.length > 0
+          ? agent.system_roles[0].is_active
+          : agent.is_active;
+
         const row = document.createElement("tr");
         row.innerHTML = `
         <td>
@@ -495,9 +501,9 @@
         <td>${agent.phone_number || "N/A"}</td>
         <td>
             <span class="agentStatus ${
-              agent.is_active ? "active" : "inactive"
+              isActive ? "active" : "inactive"
             }">
-                ${agent.is_active ? "Active" : "Inactive"}
+                ${isActive ? "Active" : "Inactive"}
             </span>
         </td>
         <td>${
@@ -630,9 +636,17 @@
           document.getElementById("edit-department").value =
             agent.department || "";
 
-          document.getElementById("edit-active").value = agent.is_active
-            ? "true"
-            : "false";
+          // Store the system role info for later use in form submission
+          currentAgentSystemRoleId = agent.system_roles && agent.system_roles.length > 0 
+            ? agent.system_roles[0].id 
+            : null;
+          
+          // Set the status based on the first system role's is_active status
+          const roleStatus = agent.system_roles && agent.system_roles.length > 0
+            ? agent.system_roles[0].is_active
+            : agent.is_active;
+          
+          document.getElementById("edit-active").value = roleStatus ? "true" : "false";
 
           document.getElementById("edit-modal").classList.remove("hidden");
         } catch (error) {
@@ -652,6 +666,7 @@
       function closeEditModal() {
         document.getElementById("edit-modal").classList.add("hidden");
         currentAgentId = null;
+        currentAgentSystemRoleId = null;
       }
 
       function closeViewModal() {
@@ -678,8 +693,13 @@
             email: formData.get("email"),
             department: formData.get("department"),
             asset_department: formData.get("asset_department"),
-            is_active: formData.get("is_active") === "true",
           };
+
+          // Add system role activation/deactivation if we have a system role ID
+          if (currentAgentSystemRoleId) {
+            data.system_role_is_active = formData.get("is_active") === "true";
+            data.system_role_id = currentAgentSystemRoleId;
+          }
 
           try {
             const response = await fetch(`/api/v1/users/${currentAgentId}/`, {

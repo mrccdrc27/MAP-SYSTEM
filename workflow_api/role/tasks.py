@@ -111,14 +111,24 @@ def sync_user_system_role(user_system_role_data):
         user_system_role_id = user_system_role_data.get('user_system_role_id')
         user_id = user_system_role_data.get('user_id')
         role_id = user_system_role_data.get('role_id')
+        is_active = user_system_role_data.get('is_active', True)
         action = user_system_role_data.get('action', 'create')
+        
+        logger.info(f"===== SYNC USER_SYSTEM_ROLE START =====")
+        logger.info(f"Processing UserSystemRole sync: ID={user_system_role_id}, user_id={user_id}, role_id={role_id}, is_active={is_active}, action={action}")
+        logger.info(f"Full data received: {user_system_role_data}")
         
         # Verify role exists
         try:
             role = Roles.objects.get(role_id=role_id)
+            logger.info(f"✓ Role {role_id} found: {role.name}")
         except Roles.DoesNotExist:
-            logger.error(f"Role {role_id} not found, cannot sync UserSystemRole")
+            logger.error(f"✗ Role {role_id} not found in RoleUsers database, cannot sync UserSystemRole")
+            logger.error(f"Available roles: {list(Roles.objects.values_list('role_id', 'name'))}")
             return {"status": "error", "error": f"Role {role_id} not found"}
+        
+        # List all RoleUsers records BEFORE any operation for debugging
+        logger.info(f"All RoleUsers records in database: {[(ru.role_id.role_id, ru.user_id, ru.is_active) for ru in RoleUsers.objects.all()]}")
         
         if action == 'delete':
             # Delete the user_system_role
@@ -135,29 +145,60 @@ def sync_user_system_role(user_system_role_data):
         
         elif action == 'update':
             # Update the user_system_role
+            logger.info(f"Attempting to update RoleUsers with role_id={role.role_id}, user_id={user_id}, is_active={is_active}")
+            
+            # Check if the record exists BEFORE update
+            existing_count = RoleUsers.objects.filter(role_id=role, user_id=user_id).count()
+            logger.info(f"Existing RoleUsers records matching (role_id={role.role_id}, user_id={user_id}): {existing_count}")
+            
+            if existing_count > 0:
+                existing = RoleUsers.objects.get(role_id=role, user_id=user_id)
+                logger.info(f"Found existing record - Current is_active: {existing.is_active}, updating to: {is_active}")
+            
             role_user, created = RoleUsers.objects.update_or_create(
                 role_id=role,
                 user_id=user_id,
                 defaults={
+                    'is_active': is_active,
                     'settings': user_system_role_data.get('settings', {}),
                 }
             )
-            logger.info(f"UserSystemRole {user_system_role_id} updated successfully")
+            logger.info(f"UserSystemRole {user_system_role_id} updated: is_active={role_user.is_active}, created={created}")
+            
+            # Verify the update actually happened
+            verify = RoleUsers.objects.get(role_id=role, user_id=user_id)
+            logger.info(f"Verification after update: is_active={verify.is_active}")
+            
+            # Double check: list all RoleUsers for this role
+            all_for_role = RoleUsers.objects.filter(role_id=role)
+            logger.info(f"All RoleUsers for role {role.role_id}: {[(ru.user_id, ru.is_active) for ru in all_for_role]}")
+            
+            # List all RoleUsers records in database AFTER the update
+            logger.info(f"All RoleUsers records after update: {[(ru.role_id.role_id, ru.user_id, ru.is_active) for ru in RoleUsers.objects.all()]}")
+            logger.info(f"===== SYNC USER_SYSTEM_ROLE END (UPDATE) =====")
+            
             return {"status": "success", "user_system_role_id": user_system_role_id, "action": "update"}
         
         else:  # create
             # Create or update the user_system_role
+            logger.info(f"Attempting to create/update RoleUsers with role_id={role.role_id}, user_id={user_id}, is_active={is_active}")
             role_user, created = RoleUsers.objects.update_or_create(
                 role_id=role,
                 user_id=user_id,
                 defaults={
+                    'is_active': is_active,
                     'settings': user_system_role_data.get('settings', {}),
                 }
             )
             action_str = "created" if created else "updated"
-            logger.info(f"UserSystemRole {user_system_role_id} {action_str} successfully")
+            logger.info(f"UserSystemRole {user_system_role_id} {action_str}: is_active={role_user.is_active}")
+            
+            # Verify the creation/update actually happened
+            verify = RoleUsers.objects.get(role_id=role, user_id=user_id)
+            logger.info(f"Verification after create/update: is_active={verify.is_active}")
+            
             return {"status": "success", "user_system_role_id": user_system_role_id, "action": "create"}
     
     except Exception as e:
-        logger.error(f"Error syncing user_system_role: {str(e)}")
+        logger.error(f"Error syncing user_system_role: {str(e)}", exc_info=True)
         return {"status": "error", "error": str(e)}
