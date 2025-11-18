@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -8,8 +9,9 @@ from roles.models import Role
 from systems.models import System
 from system_roles.models import UserSystemRole
 from django.db.models import Q
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from users.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from .serializers import TTSUserWithRoleSerializer, AssignAgentToRoleSerializer
 
 # Create your views here.
 
@@ -68,7 +70,7 @@ class UserInfoByIDView(APIView):
     Returns business and non-sensitive user information only.
     Requires JWT authentication for service-to-service communication.
     """
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request, user_id):
@@ -110,7 +112,7 @@ class UsersInfoBatchView(APIView):
     Returns business and non-sensitive user information only.
     Requires JWT authentication for service-to-service communication.
     """
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
@@ -151,3 +153,132 @@ class UsersInfoBatchView(APIView):
             
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AssignAgentToRoleView(GenericAPIView):
+    """
+    API endpoint for assigning existing TTS agents to TTS roles.
+    Requires JWT authentication for service-to-service communication.
+    
+    The browsable API provides dropdown menus for:
+    - userID: Select from available users
+    - role: Select from available roles
+    
+    POST body:
+    {
+        "userID": <int>,
+        "role": <int>  # role ID
+    }
+    """
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = AssignAgentToRoleSerializer
+    
+    def post(self, request):
+        try:
+            # Validate input using serializer
+            serializer = AssignAgentToRoleSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    {"errors": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Extract validated data (both are already objects from PrimaryKeyRelatedField)
+            user = serializer.validated_data['user']  # Mapped from userID via source='user'
+            role_obj = serializer.validated_data['role']
+            
+            # Get TTS system
+            try:
+                tts_system = System.objects.get(slug='tts')
+            except System.DoesNotExist:
+                return Response(
+                    {"error": "TTS system not found in database."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Check if user already has this specific role in TTS system
+            existing_assignment = UserSystemRole.objects.filter(
+                user=user,
+                system=tts_system,
+                role=role_obj
+            ).first()
+            
+            if existing_assignment:
+                # User already has this exact role in TTS
+                return Response(
+                    {
+                        "message": "User is already assigned to this role in TTS.",
+                        "userID": user.id,
+                        "role": role_obj.name,
+                        "system": tts_system.slug
+                    },
+                    status=status.HTTP_200_OK
+                )
+            
+            # Create new role assignment (user can have multiple roles)
+            user_system_role = UserSystemRole.objects.create(
+                user=user,
+                system=tts_system,
+                role=role_obj
+            )
+            
+            return Response(
+                {
+                    "message": "User successfully assigned to TTS role.",
+                    "userID": user.id,
+                    "role": role_obj.name,
+                    "system": tts_system.slug
+                },
+                status=status.HTTP_201_CREATED
+            )
+            
+        except Exception as e:
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def get(self, request):
+        """
+        Retrieve all TTS users and their assigned roles.
+        Returns a list of users with their role information.
+        """
+        try:
+            # Get TTS system
+            try:
+                tts_system = System.objects.get(slug='tts')
+            except System.DoesNotExist:
+                return Response(
+                    {"error": "TTS system not found in database."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Fetch all user-system-role assignments for TTS
+            user_system_roles = UserSystemRole.objects.filter(
+                system=tts_system
+            ).select_related('user', 'role')
+            
+            if not user_system_roles.exists():
+                return Response(
+                    {"message": "No TTS users assigned to roles.", "users": []},
+                    status=status.HTTP_200_OK
+                )
+            
+            # Serialize the data
+            serializer = TTSUserWithRoleSerializer(user_system_roles, many=True)
+            
+            return Response(
+                {
+                    "count": len(serializer.data),
+                    "system": "tts",
+                    "users": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
