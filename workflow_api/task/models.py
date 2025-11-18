@@ -21,6 +21,8 @@ TASK_ITEM_STATUS_CHOICES = [
     ('completed', 'Completed'),
     ('on_hold', 'On Hold'),
     ('acted', 'Acted'),
+    ('escalated', 'Escalated'),
+    ('transferred', 'Transferred'),
 ]
 
 class Task(models.Model):
@@ -316,6 +318,19 @@ class TaskItem(models.Model):
     
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     role_user = models.ForeignKey('role.RoleUsers', on_delete=models.CASCADE, help_text="Link to RoleUsers for user and role info")
+    transferred_to = models.ForeignKey(
+        'role.RoleUsers',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transferred_task_items',
+        help_text="User this task was transferred to"
+    )
+    transferred_by = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="User ID of the admin who transferred this task"
+    )
     status = models.CharField(
         max_length=50,
         choices=TASK_ITEM_STATUS_CHOICES,
@@ -339,7 +354,6 @@ class TaskItem(models.Model):
     )
     
     class Meta:
-        unique_together = ('task', 'role_user')
         ordering = ['assigned_on']
     
     def __str__(self):

@@ -6,17 +6,19 @@ from rest_framework.generics import ListAPIView
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from django.utils import timezone
 import logging
 import uuid
 from copy import deepcopy
 
 from audit.utils import log_action, compare_models
 from .models import Task, TaskItem
-from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer
+from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer, TaskItemSerializer
 from .utils.assignment import assign_users_for_step
 from authentication import JWTCookieAuthentication, MultiSystemPermission
 from step.models import Steps, StepTransition
 from tickets.models import WorkflowTicket
+from role.models import RoleUsers
 
 logger = logging.getLogger(__name__)
 
@@ -674,3 +676,203 @@ class TaskViewSet(viewsets.ModelViewSet):
         }
         
         return Response(response_data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='escalate')
+    def escalate_task(self, request, pk=None):
+        """
+        POST endpoint to escalate a task to the escalate_to role.
+        
+        Request Body:
+        {
+            "reason": "Task requires higher authority approval"
+        }
+        
+        Returns the escalated task with new TaskItem assignment to escalated role.
+        The current step's escalate_to role is used for escalation.
+        """
+        task = self.get_object()
+        reason = request.data.get('reason')
+        user_id = request.user.user_id
+        
+        if not reason or not reason.strip():
+            return Response(
+                {'error': 'reason field is required and cannot be empty'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not task.current_step:
+            return Response(
+                {'error': 'Task has no current step assigned'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if step has escalate_to role configured
+        if not task.current_step.escalate_to:
+            return Response(
+                {'error': f'Step "{task.current_step.name}" has no escalation role configured'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get the current user's assignment
+        try:
+            current_assignment = TaskItem.objects.get(
+                task=task,
+                role_user__user_id=user_id
+            )
+        except TaskItem.DoesNotExist:
+            return Response(
+                {'error': f'User {user_id} is not assigned to this task'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if already escalated
+        if current_assignment.status == 'escalated':
+            return Response(
+                {'error': 'This task item has already been escalated and cannot be escalated again'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Mark current assignment as escalated with reason in notes
+        current_assignment.status = 'escalated'
+        current_assignment.notes = f"Escalated by user {user_id}: {reason}"
+        current_assignment.status_updated_on = timezone.now()
+        current_assignment.save()
+        
+        # Log audit event
+        try:
+            log_action(request.user, 'escalate_task', target=task, changes={'reason': reason}, request=request)
+        except Exception as e:
+            logger.error(f"Failed to log audit for escalate_task: {e}")
+        
+        # Create new assignment to escalated role using assignment utility
+        from task.utils.assignment import assign_users_for_escalation
+        
+        try:
+            escalated_task_items = assign_users_for_escalation(
+                task=task,
+                escalate_to_role=task.current_step.escalate_to,
+                reason=reason
+            )
+            
+            if not escalated_task_items:
+                return Response(
+                    {'error': f'No active users found for escalated role "{task.current_step.escalate_to.name}"'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            logger.error(f"Failed to escalate task: {e}")
+            return Response(
+                {'error': f'Failed to escalate task: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Return updated task with new assignments
+        serializer = TaskSerializer(task)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'], url_path='transfer')
+    def transfer_task(self, request):
+        """
+        POST endpoint to transfer a task to another user.
+        Only admins can transfer unacted, non-escalated task items.
+        
+        Request Body:
+        {
+            "user_id": 5,
+            "task_item_id": 10,
+            "notes": "Reason for transfer"
+        }
+        
+        Returns the transferred task item with new TaskItem record created.
+        Original task item status set to 'transferred'.
+        """
+        target_user_id = request.data.get('user_id')
+        task_item_id = request.data.get('task_item_id')
+        transfer_notes = request.data.get('notes', '')
+        
+        # Validate required fields
+        if not target_user_id:
+            return Response(
+                {'error': 'user_id field is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not task_item_id:
+            return Response(
+                {'error': 'task_item_id field is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get the task item to transfer
+        try:
+            task_item = TaskItem.objects.get(task_item_id=task_item_id)
+        except TaskItem.DoesNotExist:
+            return Response(
+                {'error': f'TaskItem {task_item_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Validate task item status - can only transfer unacted, non-escalated items
+        if task_item.status in ['acted', 'escalated', 'transferred', 'completed']:
+            return Response(
+                {'error': f'Cannot transfer task item with status "{task_item.status}"'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get target RoleUsers - find user with same role as current assignment
+        try:
+            target_role_user = RoleUsers.objects.get(
+                user_id=target_user_id,
+                role_id=task_item.role_user.role_id,
+                is_active=True
+            )
+        except RoleUsers.DoesNotExist:
+            return Response(
+                {'error': f'User {target_user_id} is not assigned to role "{task_item.role_user.role_id.name}"'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Mark original assignment as transferred with notes
+        task_item.status = 'transferred'
+        task_item.transferred_to = target_role_user
+        task_item.transferred_by = request.user.user_id
+        task_item.notes = transfer_notes
+        task_item.status_updated_on = timezone.now()
+        task_item.save()
+        
+        # Create new TaskItem for target user (no notes)
+        new_task_item = TaskItem.objects.create(
+            task=task_item.task,
+            role_user=target_role_user,
+            status='assigned',
+            notes='',
+            target_resolution=task_item.target_resolution
+        )
+        
+        # Log audit event
+        try:
+            log_action(
+                request.user, 
+                'transfer_task', 
+                target=task_item.task, 
+                changes={
+                    'transferred_from_user': task_item.role_user.user_id,
+                    'transferred_to_user': target_user_id,
+                    'task_item_id': task_item_id
+                }, 
+                request=request
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit for transfer_task: {e}")
+        
+        # Return the new task item
+        serializer = TaskItemSerializer(new_task_item)
+        return Response(
+            {
+                'original_task_item': TaskItemSerializer(task_item).data,
+                'new_task_item': serializer.data,
+                'message': f'Task transferred from user {task_item.role_user.user_id} to user {target_user_id}'
+            },
+            status=status.HTTP_200_OK
+        )
+

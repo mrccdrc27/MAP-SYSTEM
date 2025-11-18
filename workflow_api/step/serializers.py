@@ -15,6 +15,7 @@ class StepDetailSerializer(serializers.ModelSerializer):
     """Detailed step information including role details"""
     role_name = serializers.CharField(source='role_id.name', read_only=True)
     workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
+    escalate_to_name = serializers.CharField(source='escalate_to.name', read_only=True, allow_null=True)
     
     class Meta:
         model = Steps
@@ -24,6 +25,8 @@ class StepDetailSerializer(serializers.ModelSerializer):
             'workflow_name',
             'role_id',
             'role_name',
+            'escalate_to',
+            'escalate_to_name',
             'name',
             'description',
             'instruction',
@@ -32,7 +35,7 @@ class StepDetailSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = fields
+        read_only_fields = ['step_id', 'workflow_id', 'workflow_name', 'role_id', 'role_name', 'escalate_to_name', 'created_at', 'updated_at']
 
 
 class StepTransitionSerializer(serializers.ModelSerializer):

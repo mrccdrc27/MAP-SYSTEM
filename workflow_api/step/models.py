@@ -8,6 +8,16 @@ class Steps(models.Model):
     # foreign keys - now reference integer fields
     workflow_id = models.ForeignKey('workflow.Workflows', on_delete=models.CASCADE, to_field='workflow_id')
     role_id = models.ForeignKey(Roles, on_delete=models.PROTECT, to_field='role_id')
+    escalate_to = models.ForeignKey(
+        Roles,
+        on_delete=models.PROTECT,
+        to_field='role_id',
+        related_name='escalation_steps',
+        null=True,
+        blank=False,
+        help_text="Role to escalate to when step times out or is escalated",
+        default=None
+    )
 
     # steps details
     name = models.CharField(max_length=64)

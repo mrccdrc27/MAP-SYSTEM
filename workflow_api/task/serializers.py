@@ -11,15 +11,18 @@ class TaskItemSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source='role_user.role_id.name', read_only=True)
     acted_on_step_name = serializers.CharField(source='acted_on_step.name', read_only=True, allow_null=True)
     acted_on_step_id = serializers.IntegerField(source='acted_on_step.step_id', read_only=True, allow_null=True)
+    transferred_to_user_id = serializers.IntegerField(source='transferred_to.user_id', read_only=True, allow_null=True)
+    transferred_to_user_name = serializers.CharField(source='transferred_to.user_full_name', read_only=True, allow_null=True)
     
     class Meta:
         model = TaskItem
         fields = [
             'task_item_id', 'user_id', 'user_full_name', 'status', 
             'role', 'notes', 'assigned_on', 'status_updated_on', 'acted_on',
-            'acted_on_step_id', 'acted_on_step_name', 'target_resolution', 'resolution_time'
+            'acted_on_step_id', 'acted_on_step_name', 'target_resolution', 'resolution_time',
+            'transferred_to', 'transferred_to_user_id', 'transferred_to_user_name', 'transferred_by'
         ]
-        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time']
+        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time', 'transferred_to_user_id', 'transferred_to_user_name']
     
     def validate_notes(self, value):
         """Ensure notes field is not empty"""

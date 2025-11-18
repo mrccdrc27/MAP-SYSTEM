@@ -1,4 +1,4 @@
-#!/bin/sh
+.py #!/bin/sh
 # Apply migrations
 python manage.py flush --noinput
 python manage.py makemigrations

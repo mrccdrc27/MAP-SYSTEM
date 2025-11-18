@@ -245,6 +245,7 @@ class Command(BaseCommand):
                         defaults={
                             'description': step_cfg['description'],
                             'role_id': role_map[step_cfg['role']],
+                            'escalate_to': role_map['Admin'],
                             'instruction': instruction,
                             'order': idx + 1,
                             'is_initialized': (idx == 0),
@@ -252,6 +253,12 @@ class Command(BaseCommand):
                             'is_end': is_end
                         }
                     )
+                    
+                    # Ensure escalate_to is set even for existing steps
+                    if step.escalate_to is None:
+                        step.escalate_to = role_map['Admin']
+                        step.save()
+                    
                     step_objs.append(step)
                     
                     if step_created:

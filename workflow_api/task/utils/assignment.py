@@ -137,3 +137,84 @@ def assign_users_for_step(task, step, role_name):
         logger.warning(f"No users for role '{role_name}'")
         return []
     return apply_round_robin_assignment(task, user_ids, role_name)
+
+
+def assign_users_for_escalation(task, escalate_to_role, reason):
+    """
+    Assign users for escalation to a higher-priority role.
+    Uses round-robin to distribute escalated tasks fairly.
+    
+    Args:
+        task: Task instance
+        escalate_to_role: Roles instance (the escalated role)
+        reason: String reason for escalation
+    
+    Returns:
+        List of created TaskItem instances
+    """
+    if not escalate_to_role:
+        logger.error("❌ No escalate_to_role provided for escalation")
+        return []
+    
+    # Fetch all active users for the escalate_to role
+    role_users_qs = RoleUsers.objects.filter(
+        role_id=escalate_to_role,
+        is_active=True
+    ).select_related('role_id')
+    
+    if not role_users_qs.exists():
+        logger.warning(f"❌ No active users found for escalated role '{escalate_to_role.name}'")
+        return []
+    
+    # Get round-robin state for this escalated role
+    round_robin_state, _ = RoundRobin.objects.get_or_create(
+        role_name=escalate_to_role.name,
+        defaults={"current_index": 0}
+    )
+    
+    # Convert queryset to list for round-robin indexing
+    role_users_list = list(role_users_qs)
+    current_index = round_robin_state.current_index
+    user_index = current_index % len(role_users_list)
+    selected_role_user = role_users_list[user_index]
+    
+    # Get the most recent assignment's target resolution to inherit
+    original_target_resolution = None
+    try:
+        # Get the most recent TaskItem for this task (should be the one we're escalating from)
+        original_assignment = TaskItem.objects.filter(task=task).order_by('-assigned_on').first()
+        if original_assignment:
+            original_target_resolution = original_assignment.target_resolution
+    except Exception as e:
+        logger.error(f"Failed to get original assignment target resolution: {e}")
+    
+    # Create TaskItem for escalated assignment (force create, don't check if exists)
+    task_item = TaskItem.objects.create(
+        task=task,
+        role_user=selected_role_user,
+        status='assigned',
+        assigned_on=timezone.now(),
+        target_resolution=original_target_resolution,
+        notes=''
+    )
+    
+    logger.info(f"🚨 Escalated TaskItem created: User {selected_role_user.user_id} assigned to Task {task.task_id}")
+    # Send escalation notification via Celery
+    try:
+        notify_task.delay(
+            user_id=selected_role_user.user_id,
+            task_id=str(task.task_id),
+            task_title=str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
+            role_name=escalate_to_role.name
+        )
+    except Exception as e:
+        logger.error(f"⚠️ Failed to send escalation notification: {e}")
+    
+    # Update round-robin state for next escalation
+    round_robin_state.current_index = (current_index + 1) % len(role_users_list)
+    round_robin_state.save()
+    
+    logger.info(f"🚨 Task {task.task_id} escalated to user {selected_role_user.user_id} in role '{escalate_to_role.name}' (reason: {reason})")
+    
+    return [task_item]
+
