@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import api from "./axios";
 
-const useSecureStepInstance = (ticket_id) => {
+const useTicketDetail = (task_item_id) => {
   const [stepInstance, setStepInstance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // /tasks/details/?ticket_id=TX20251111322614
+
   useEffect(() => {
-    if (!ticket_id) {
+    if (!task_item_id) {
       setStepInstance(null);
       setLoading(false);
       return;
@@ -18,10 +18,10 @@ const useSecureStepInstance = (ticket_id) => {
       setError("");
       
       try {
-        const response = await api.get(`tasks/details/?ticket_id=${ticket_id}`);
+        const response = await api.get(`tasks/detail/${task_item_id}/`);
         setStepInstance(response.data);
       } catch (err) {
-        console.error('Failed to fetch secure step instance:', err);
+        console.error('Failed to fetch ticket detail:', err);
         
         if (err.response?.status === 403) {
           setError("No authorization to handle this ticket");
@@ -38,19 +38,19 @@ const useSecureStepInstance = (ticket_id) => {
     };
 
     fetchStepInstance();
-  }, [ticket_id]);
+  }, [task_item_id]);
 
   const refetch = () => {
-    if (ticket_id) {
+    if (task_item_id) {
       setLoading(true);
       setError("");
       
-      api.get(`instances/secure/${ticket_id}/`)
+      api.get(`tasks/detail/${task_item_id}/`)
         .then(response => {
           setStepInstance(response.data);
         })
         .catch(err => {
-          console.error('Failed to refetch secure step instance:', err);
+          console.error('Failed to refetch ticket detail:', err);
           
           if (err.response?.status === 403) {
             setError("No authorization to handle this ticket");
@@ -71,4 +71,4 @@ const useSecureStepInstance = (ticket_id) => {
   return { stepInstance, loading, error, refetch };
 };
 
-export default useSecureStepInstance;
+export default useTicketDetail;

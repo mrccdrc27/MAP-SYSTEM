@@ -40,7 +40,7 @@ export default function AdminTicket() {
   // Extract all ticket data with step_instance_id
   const allTickets = useMemo(() => {
     return (userTickets || []).map((entry) => ({
-      // Map new endpoint fields to expected format
+      // Map TaskItem fields to expected format
       // Ensure these values are strings so callers can safely use string methods
       ticket_id: String(entry.ticket_id ?? entry.ticket_number ?? ""),
       subject: String(entry.ticket_subject ?? ""),
@@ -48,21 +48,40 @@ export default function AdminTicket() {
       status: entry.status,
       priority: entry.priority || "Medium", // fallback if not provided
       category: entry.category || "", // fallback if not provided
-      submit_date: entry.created_at,
+      submit_date: entry.assigned_on,
 
-      // Additional fields from new endpoint
+      // TaskItem core fields
+      task_item_id: entry.task_item_id,
+      user_id: entry.user_id,
+      user_full_name: entry.user_full_name,
+      role: entry.role,
+      task_id: entry.task_id,
+      assigned_on: entry.assigned_on,
+      status_updated_on: entry.status_updated_on,
+      acted_on: entry.acted_on,
+      target_resolution: entry.target_resolution,
+      notes: entry.notes,
+
+      // Ticket fields
       ticket_number: entry.ticket_number,
+      
+      // Workflow fields
       workflow_id: entry.workflow_id,
       workflow_name: entry.workflow_name,
-      current_step: entry.current_step,
+
+      // Step fields
+      current_step_id: entry.current_step_id,
       current_step_name: entry.current_step_name,
       current_step_role: entry.current_step_role,
-      user_assignment: entry.user_assignment,
-      task_id: entry.task_id,
+      acted_on_step_id: entry.acted_on_step_id,
+      acted_on_step_name: entry.acted_on_step_name,
+
+      // Task status
+      task_status: entry.task_status,
 
       // Metadata
       step_instance_id: entry.task_id, // Use task_id as identifier
-      hasacted: entry.has_acted,
+      hasacted: entry.status === 'resolved' || entry.status === 'escalated',
     }));
   }, [userTickets]);
 

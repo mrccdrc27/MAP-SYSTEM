@@ -8,14 +8,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.utils import timezone
 import logging
-import uuid
 from copy import deepcopy
 
 from audit.utils import log_action, compare_models
 from .models import Task, TaskItem
 from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer, TaskItemSerializer
-from .utils.assignment import assign_users_for_step
-from authentication import JWTCookieAuthentication, MultiSystemPermission
+from authentication import JWTCookieAuthentication
 from step.models import Steps, StepTransition
 from tickets.models import WorkflowTicket
 from role.models import RoleUsers
@@ -25,45 +23,38 @@ logger = logging.getLogger(__name__)
 
 class UserTaskListView(ListAPIView):
     """
-    View to list tasks assigned to the authenticated user.
+    View to list TaskItems assigned to the authenticated user.
+    Each row represents a TaskItem with associated task and ticket data.
     """
     
     serializer_class = UserTaskListSerializer
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['status', 'workflow_id']
-    search_fields = ['ticket_id__subject', 'ticket_id__description']
-    ordering_fields = ['created_at', 'updated_at', 'status']
-    ordering = ['-created_at']
+    filterset_fields = ['status', 'task__workflow_id']
+    search_fields = ['task__ticket_id__subject', 'task__ticket_id__description']
+    ordering_fields = ['assigned_on', 'status_updated_on', 'status']
+    ordering = ['-assigned_on']
     
     def get_queryset(self):
-        """Filter tasks assigned to the current user."""
+        """Filter TaskItems assigned to the current user."""
         user_id = self.request.user.user_id
         
-        queryset = Task.objects.filter(
-            taskitem__role_user__user_id=user_id
-        ).distinct()
+        queryset = TaskItem.objects.filter(
+            role_user__user_id=user_id
+        ).select_related('task__ticket_id', 'task__workflow_id', 'task__current_step', 'role_user', 'acted_on_step')
         
         # Apply role/status filters if provided
         role = self.request.query_params.get('role')
         assignment_status = self.request.query_params.get('assignment_status')
         
         if role:
-            # Filter by role - check TaskItems for matching role
-            queryset = queryset.filter(taskitem__role_user__user_id=user_id, taskitem__role_user__role_id__name=role)
+            queryset = queryset.filter(role_user__role_id__name=role)
         
         if assignment_status:
-            # Filter by assignment status - check TaskItems for matching status
-            queryset = queryset.filter(taskitem__role_user__user_id=user_id, taskitem__status=assignment_status)
+            queryset = queryset.filter(status=assignment_status)
         
-        return queryset.select_related('ticket_id', 'workflow_id', 'current_step').distinct()
-    
-    def get_serializer_context(self):
-        """Add user_id to serializer context for extracting user-specific assignment data"""
-        context = super().get_serializer_context()
-        context['user_id'] = self.request.user.user_id
-        return context
+        return queryset
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -114,38 +105,6 @@ class TaskViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Failed to log audit for delete_task: {e}")
         return super().destroy(request, *args, **kwargs)
-    
-    @action(detail=False, methods=['get'], url_path='my-tasks')
-    def my_tasks(self, request):
-        """
-        Get all tasks assigned to the current user.
-        This is a convenience endpoint that wraps UserTaskListView functionality.
-        
-        Same query parameters as UserTaskListView apply here.
-        """
-        user_id = request.user.user_id
-        
-        # Filter tasks by user ID via TaskItems
-        filtered_tasks = Task.objects.filter(
-            taskitem__role_user__user_id=user_id
-        ).select_related('ticket_id', 'workflow_id', 'current_step').distinct()
-        
-        # Apply pagination if needed
-        page = self.paginate_queryset(filtered_tasks)
-        if page is not None:
-            serializer = UserTaskListSerializer(
-                page, 
-                many=True, 
-                context={**self.get_serializer_context(), 'user_id': user_id}
-            )
-            return self.get_paginated_response(serializer.data)
-        
-        serializer = UserTaskListSerializer(
-            filtered_tasks, 
-            many=True, 
-            context={**self.get_serializer_context(), 'user_id': user_id}
-        )
-        return Response(serializer.data)
     
     @action(detail=True, methods=['post'], url_path='update-user-status')
     def update_user_status(self, request, pk=None):
@@ -307,23 +266,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         return Response(response_data, status=status.HTTP_200_OK)
     
-    @action(detail=False, methods=['get'], url_path='details')
-    def task_details(self, request):
+    @action(detail=False, methods=['get'], url_path='detail/(?P<task_item_id>[0-9]+)')
+    def task_details(self, request, task_item_id=None):
         """
         GET endpoint to retrieve complete task details with step information and available transitions.
         
-        Query Parameters:
-        - task_id: (optional) Get task by task_id (integer or UUID)
-        - ticket_id: (optional) Get task by ticket_id string (e.g., TX20251111322614)
+        URL Path:
+        - /tasks/detail/{task_item_id}/
         
-        At least one of task_id or ticket_id must be provided.
-        
-        Examples:
-        - /tasks/details/?task_id=1
-        - /tasks/details/?ticket_id=TX20251111322614
+        Example:
+        - /tasks/detail/4/
         
         Response includes:
         - step_instance_id: UUID identifier for this task instance
+        - task_item_id: The TaskItem ID for this assignment
         - user_id: Current authenticated user ID
         - step_transition_id: UUID identifier for transitions
         - has_acted: Boolean indicating if user has acted on this task
@@ -331,87 +287,59 @@ class TaskViewSet(viewsets.ModelViewSet):
         - task: Complete task details with nested ticket information
         - available_actions: List of available transitions from current step
         """
-        task_id_param = request.query_params.get('task_id')
-        ticket_id_param = request.query_params.get('ticket_id')
-        user_id = request.user.user_id
-        
-        # Validate that at least one identifier is provided
-        if not task_id_param and not ticket_id_param:
+        if not task_item_id:
             return Response(
                 {
-                    'error': 'Either task_id or ticket_id query parameter must be provided',
-                    'examples': {
-                        'by_task_id': '/tasks/details/?task_id=1',
-                        'by_ticket_id': '/tasks/details/?ticket_id=TX20251111322614'
-                    }
+                    'error': 'task_item_id is required in URL path',
+                    'example': '/tasks/detail/4/'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Fetch task based on provided identifier
+        user_id = request.user.user_id
+        
+        # Fetch TaskItem by task_item_id
         try:
-            if task_id_param:
-                # Try to find task by task_id (integer or UUID string)
-                task = Task.objects.select_related(
-                    'ticket_id',
-                    'workflow_id',
-                    'current_step',
-                    'current_step__role_id'
-                ).get(task_id=task_id_param)
-            else:
-                # Find task by ticket_id (string like TX20251111322614)
-                # The ticket_id is now stored in ticket_data, so search by ticket_number first,
-                # or search by ticket_data__ticket_id if not a ticket_number
-                ticket = None
-                try:
-                    # Try as ticket_number (the new primary identifier)
-                    ticket = WorkflowTicket.objects.get(ticket_number=ticket_id_param)
-                except WorkflowTicket.DoesNotExist:
-                    # Try as ticket_id in ticket_data (the old format)
-                    ticket = WorkflowTicket.objects.get(ticket_data__ticket_id=ticket_id_param)
-                
-                # Then find the task associated with this ticket
-                task = Task.objects.select_related(
-                    'ticket_id',
-                    'workflow_id',
-                    'current_step',
-                    'current_step__role_id'
-                ).get(ticket_id=ticket)
-        except WorkflowTicket.DoesNotExist:
+            user_assignment = TaskItem.objects.select_related(
+                'task',
+                'task__ticket_id',
+                'task__workflow_id',
+                'task__current_step',
+                'task__current_step__role_id',
+                'role_user'
+            ).get(task_item_id=task_item_id)
+        except TaskItem.DoesNotExist:
             return Response(
                 {
-                    'error': f'Ticket not found',
-                    'searched_by': 'ticket_id',
-                    'value': ticket_id_param
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Task.DoesNotExist:
-            return Response(
-                {
-                    'error': f'Task not found',
-                    'searched_by': 'task_id' if task_id_param else 'ticket_id',
-                    'value': task_id_param or ticket_id_param
+                    'error': f'TaskItem {task_item_id} not found',
+                    'task_item_id': task_item_id
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Check if user is assigned to this task and update status to in_progress if assigned
-        user_assignment = TaskItem.objects.filter(
-            task=task,
-            role_user__user_id=user_id
-        ).first()
+        # Verify the TaskItem belongs to the current user
+        if user_assignment.role_user.user_id != user_id:
+            return Response(
+                {
+                    'error': 'You do not have permission to view this task item',
+                    'task_item_id': task_item_id
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
         
-        # ✅ Set task_item status to 'in_progress' if user is assigned (and not already resolved)
-        if user_assignment:
-            if user_assignment.status != 'resolved':
-                user_assignment.status = 'in_progress'
-                user_assignment.save()
-                logger.info(
-                    f"✅ Task {task.task_id} set to 'in_progress' for user {user_id}"
-                )
+        task = user_assignment.task
         
-        has_acted = user_assignment.status == 'resolved' if user_assignment else False
+        # ✅ Set task_item status to 'in_progress' only if status is 'new'
+        if user_assignment.status == 'new':
+            user_assignment.status = 'in_progress'
+            user_assignment.status_updated_on = timezone.now()
+            user_assignment.save()
+            logger.info(
+                f"✅ Task {task.task_id} set to 'in_progress' for user {user_id}"
+            )
+        
+        has_acted = user_assignment.status in ['resolved', 'escalated']
+        is_escalated = user_assignment.origin == 'Escalation'
         
         # Get step information
         current_step = task.current_step
@@ -461,9 +389,11 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Build response
         response_data = {
             'step_instance_id': str(task.task_id),
+            'task_item_id': int(task_item_id),
             'user_id': user_id,
             'step_transition_id': step_transition_id,
             'has_acted': has_acted,
+            'is_escalated': is_escalated,
             'step': {
                 'id': current_step.step_id,
                 'step_id': str(current_step.step_id),
@@ -733,17 +663,49 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if already escalated
+        # Check if the original assignment is already escalated
         if current_assignment.status == 'escalated':
             return Response(
                 {'error': 'This task item has already been escalated and cannot be escalated again'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Mark current assignment as escalated with reason in notes
+        escalate_to_role = task.current_step.escalate_to
+        
+        # Check if any existing task item for the CURRENT role already has escalated status
+        # This prevents escalating if the current role has already been escalated
+        current_role = current_assignment.role_user.role_id
+        escalated_in_current_role = TaskItem.objects.filter(
+            task=task,
+            role_user__role_id=current_role,
+            status='escalated'
+        ).exists()
+        
+        if escalated_in_current_role:
+            return Response(
+                {'error': f'This role "{current_role.name}" has already been escalated for this task. Cannot escalate further.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if any existing task item for the escalate_to role already has escalated status
+        escalated_in_target_role = TaskItem.objects.filter(
+            task=task,
+            role_user__role_id=escalate_to_role,
+            status='escalated'
+        ).exists()
+        
+        if escalated_in_target_role:
+            return Response(
+                {'error': f'The escalation role "{escalate_to_role.name}" has already been escalated for this task. Cannot escalate further.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Mark current assignment as escalated with reason in notes and record acted_on time
         current_assignment.status = 'escalated'
         current_assignment.notes = f"Escalated by user {user_id}: {reason}"
         current_assignment.status_updated_on = timezone.now()
+        current_assignment.acted_on = timezone.now()  # Record when the escalation action was taken
+        current_assignment.acted_on_step = task.current_step  # Record the step where escalation occurred
         current_assignment.save()
         
         # Log audit event

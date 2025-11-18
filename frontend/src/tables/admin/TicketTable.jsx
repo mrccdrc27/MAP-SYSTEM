@@ -65,7 +65,7 @@ function TicketItem({ item }) {
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/admin/ticket/${item.ticket_number}`)}
+          onClick={() => navigate(`/admin/ticket/${item.task_item_id}`)}
         >
           👁
         </button>

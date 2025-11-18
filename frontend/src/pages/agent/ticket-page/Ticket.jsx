@@ -58,6 +58,7 @@ export default function Ticket() {
       current_step_role: entry.current_step_role,
       user_assignment: entry.user_assignment,
       task_id: entry.task_id,
+      task_item_id: entry.user_assignment?.task_item_id || entry.task_item_id,
 
       // Metadata
       step_instance_id: entry.task_id, // Use task_id as step_instance_id for navigation

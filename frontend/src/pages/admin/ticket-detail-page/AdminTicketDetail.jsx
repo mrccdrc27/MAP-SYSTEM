@@ -21,22 +21,23 @@ import Messaging from "../../../components/messaging";
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
 import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
-import useSecureStepInstance from "../../../api/useSecureStepInstance";
+import useTicketDetail from "../../../api/useTicketDetail";
 import { useAuth } from "../../../context/AuthContext";
 
 // modal
 import TicketAction from "./modals/TicketAction";
+import EscalateTicket from "./modals/EscalateTicket";
 import { min } from "date-fns";
 
 export default function AdminTicketDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: taskItemId } = useParams();
   const {
     stepInstance,
     loading: instanceLoading,
     error: instanceError,
-  } = useSecureStepInstance(id);
+  } = useTicketDetail(taskItemId);
 
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,6 +75,7 @@ export default function AdminTicketDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openTicketAction, setOpenTicketAction] = useState(false);
+  const [openEscalateModal, setOpenEscalateModal] = useState(false);
   const [showTicketInfo, setShowTicketInfo] = useState(true);
 
   const toggTicketInfosVisibility = useCallback(() => {
@@ -137,26 +139,28 @@ export default function AdminTicketDetail() {
         type: "SET_TICKET",
         payload: {
           ticket: {
-            ...t,
             ticket_id: t.ticket_id,
-            ticket_subject: t.subject, // new field
-            ticket_description: t.description, // new field
+            ticket_number: t.ticket_number,
+            ticket_subject: t.subject,
+            ticket_description: t.description,
             workflow_id: stepInstance.task.workflow_id,
-            workflow_name: stepInstance.step.name, // fallback to step name
+            workflow_name: stepInstance.step.name,
             current_step: stepInstance.step.step_id,
             current_step_name: stepInstance.step.name,
-            current_step_role: stepInstance.step.role_id, // role_id as role
-            status: stepInstance.task.status || t.status,
-            user_assignment: t.employee || { username: t.assigned_to }, // prefer employee, fallback to assigned_to
+            current_step_role: stepInstance.step.role_id,
+            status: t.status,
+            user_assignment: t.employee || { username: t.assigned_to },
             has_acted: stepInstance.has_acted,
-            created_at: t.created_at || t.submit_date,
-            updated_at: t.updated_at || t.update_date,
+            is_escalated: stepInstance.is_escalated,
+            created_at: t.created_at,
+            updated_at: t.updated_at,
             fetched_at: t.fetched_at,
-            priority: t.priority,
+            priority: t.priority || "Medium",
             attachments: t.attachments || [],
+            target_resolution: t.response_time,
           },
           action: stepInstance.available_actions || [],
-          instruction: stepInstance.step.instruction,
+          instruction: stepInstance.step.instruction || "",
           instance: stepInstance.step_instance_id,
           taskid: stepInstance.task.task_id,
         },
@@ -356,6 +360,15 @@ export default function AdminTicketDetail() {
                   ? "Action Already Taken"
                   : "Make an Action"}
               </button>
+              <button
+                className={styles.escalateButton}
+                onClick={() => setOpenEscalateModal(true)}
+                disabled={state.ticket?.is_escalated}
+              >
+                {state.ticket?.is_escalated
+                  ? "Already Escalated"
+                  : "Escalate Ticket"}
+              </button>
               <div className={styles.layoutSection}>
                 <div className={styles.tdpTabs}>
                   {["Details", "Messages"].map((tab) => (
@@ -467,6 +480,13 @@ export default function AdminTicketDetail() {
           ticket={state.ticket}
           action={state.action}
           instance={state.taskid}
+        />
+      )}
+      {openEscalateModal && (
+        <EscalateTicket
+          closeEscalateModal={setOpenEscalateModal}
+          ticket={state.ticket}
+          taskItemId={taskItemId}
         />
       )}
     </>
