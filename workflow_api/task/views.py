@@ -170,7 +170,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         # Validate status
-        valid_statuses = ['assigned', 'in_progress', 'completed', 'on_hold', 'acted']
+        valid_statuses = ['new', 'in_progress', 'resolved', 'reassigned', 'escalated', 'breached']
         if new_status not in valid_statuses:
             return Response(
                 {'error': f'status must be one of: {valid_statuses}'},
@@ -288,10 +288,10 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Get all TaskItems with status 'acted' (completed actions), ordered by acted_on time
+        # Get all TaskItems with status 'resolved' (completed actions), ordered by acted_on time
         action_items = TaskItem.objects.filter(
             task=task,
-            status='acted',
+            status='resolved',
             acted_on__isnull=False
         ).select_related('acted_on_step', 'acted_on_step__role_id').order_by('acted_on')
         
@@ -402,16 +402,16 @@ class TaskViewSet(viewsets.ModelViewSet):
             role_user__user_id=user_id
         ).first()
         
-        # ✅ Set task_item status to 'in_progress' if user is assigned (and not already acted)
+        # ✅ Set task_item status to 'in_progress' if user is assigned (and not already resolved)
         if user_assignment:
-            if user_assignment.status != 'acted':
+            if user_assignment.status != 'resolved':
                 user_assignment.status = 'in_progress'
                 user_assignment.save()
                 logger.info(
                     f"✅ Task {task.task_id} set to 'in_progress' for user {user_id}"
                 )
         
-        has_acted = user_assignment.status == 'acted' if user_assignment else False
+        has_acted = user_assignment.status == 'resolved' if user_assignment else False
         
         # Get step information
         current_step = task.current_step
@@ -677,28 +677,48 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         return Response(response_data, status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['post'], url_path='escalate')
-    def escalate_task(self, request, pk=None):
+    @action(detail=False, methods=['post'], url_path='escalate')
+    def escalate_task(self, request):
         """
-        POST endpoint to escalate a task to the escalate_to role.
+        POST endpoint to escalate a task item to the escalate_to role.
         
         Request Body:
         {
+            "task_item_id": 10,
             "reason": "Task requires higher authority approval"
         }
         
         Returns the escalated task with new TaskItem assignment to escalated role.
         The current step's escalate_to role is used for escalation.
         """
-        task = self.get_object()
+        task_item_id = request.data.get('task_item_id')
         reason = request.data.get('reason')
         user_id = request.user.user_id
+        
+        # Validate required fields
+        if not task_item_id:
+            return Response(
+                {'error': 'task_item_id field is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         if not reason or not reason.strip():
             return Response(
                 {'error': 'reason field is required and cannot be empty'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Get the task item
+        try:
+            current_assignment = TaskItem.objects.get(task_item_id=task_item_id)
+        except TaskItem.DoesNotExist:
+            return Response(
+                {'error': f'TaskItem {task_item_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get the associated task
+        task = current_assignment.task
         
         if not task.current_step:
             return Response(
@@ -711,18 +731,6 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': f'Step "{task.current_step.name}" has no escalation role configured'},
                 status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Get the current user's assignment
-        try:
-            current_assignment = TaskItem.objects.get(
-                task=task,
-                role_user__user_id=user_id
-            )
-        except TaskItem.DoesNotExist:
-            return Response(
-                {'error': f'User {user_id} is not assigned to this task'},
-                status=status.HTTP_403_FORBIDDEN
             )
         
         # Check if already escalated
@@ -784,7 +792,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         }
         
         Returns the transferred task item with new TaskItem record created.
-        Original task item status set to 'transferred'.
+        Original task item status set to 'reassigned'.
         """
         target_user_id = request.data.get('user_id')
         task_item_id = request.data.get('task_item_id')
@@ -813,7 +821,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         # Validate task item status - can only transfer unacted, non-escalated items
-        if task_item.status in ['acted', 'escalated', 'transferred', 'completed']:
+        if task_item.status in ['resolved', 'escalated', 'reassigned', 'breached']:
             return Response(
                 {'error': f'Cannot transfer task item with status "{task_item.status}"'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -833,7 +841,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         # Mark original assignment as transferred with notes
-        task_item.status = 'transferred'
+        task_item.status = 'reassigned'
         task_item.transferred_to = target_role_user
         task_item.transferred_by = request.user.user_id
         task_item.notes = transfer_notes
@@ -844,7 +852,8 @@ class TaskViewSet(viewsets.ModelViewSet):
         new_task_item = TaskItem.objects.create(
             task=task_item.task,
             role_user=target_role_user,
-            status='assigned',
+            status='new',
+            origin='Transferred',
             notes='',
             target_resolution=task_item.target_resolution
         )

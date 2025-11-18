@@ -109,20 +109,20 @@ class TaskTransitionView(CreateAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Validate user is assigned to this task with "assigned" or "in_progress" status
+        # Validate user is assigned to this task with "new" or "in_progress" status
         user_assignment = None
         try:
             user_assignment = TaskItem.objects.select_related('role_user').get(
                 task=task,
                 role_user__user_id=current_user_id,
-                status__in=['assigned', 'in_progress']
+                status__in=['new', 'in_progress']
             )
         except TaskItem.DoesNotExist:
-            # User has no "assigned" or "in_progress" records - either not assigned or already acted on all assignments
+            # User has no "new" or "in_progress" records - either not assigned or already acted on all assignments
             user_records = TaskItem.objects.filter(task=task, role_user__user_id=current_user_id)
             return Response(
                 {
-                    'error': f'User {current_user_id} has no active "assigned" or "in_progress" status for task {task_id}',
+                    'error': f'User {current_user_id} has no active "new" or "in_progress" status for task {task_id}',
                     'task_id': task_id,
                     'current_user_id': current_user_id,
                     'user_records': [item.to_dict() for item in user_records],
@@ -150,13 +150,13 @@ class TaskTransitionView(CreateAPIView):
         if not transition.to_step_id:
             logger.info(f"Terminal transition detected: completing task {task_id}")
             
-            # Mark the user assignment as "acted" with the current step
-            user_assignment.status = 'acted'
+            # Mark the user assignment as "resolved" with the current step
+            user_assignment.status = 'resolved'
             user_assignment.acted_on = timezone.now()
             user_assignment.acted_on_step = task.current_step
             user_assignment.notes = notes  # Store notes
             user_assignment.save()
-            logger.info(f"User {current_user_id} marked as acted")
+            logger.info(f"User {current_user_id} marked as resolved")
             
             # Mark task as completed
             task.status = 'completed'
@@ -272,13 +272,13 @@ class TaskTransitionView(CreateAPIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
         
-        # Mark the user assignment as "acted" before moving to next step
-        user_assignment.status = 'acted'
+        # Mark the user assignment as "resolved" before moving to next step
+        user_assignment.status = 'resolved'
         user_assignment.acted_on = timezone.now()
         user_assignment.acted_on_step = task.current_step
         user_assignment.notes = notes
         user_assignment.save()
-        logger.info(f"User {current_user_id} marked as acted")
+        logger.info(f"User {current_user_id} marked as resolved")
         
         # Update task
         task.current_step = next_step

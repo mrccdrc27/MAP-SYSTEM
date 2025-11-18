@@ -16,13 +16,19 @@ TASK_STATUS_CHOICES = [
 
 # Status choices for task items (user assignments)
 TASK_ITEM_STATUS_CHOICES = [
-    ('assigned', 'Assigned'),
+    ('new', 'New'),
     ('in_progress', 'In Progress'),
-    ('completed', 'Completed'),
-    ('on_hold', 'On Hold'),
-    ('acted', 'Acted'),
+    ('resolved', 'Resolved'),
+    ('reassigned', 'Reassigned'),
     ('escalated', 'Escalated'),
-    ('transferred', 'Transferred'),
+    ('breached', 'Breached'),
+]
+
+# Origin choices for task items (where the assignment came from)
+TASK_ITEM_ORIGIN_CHOICES = [
+    ('System', 'System'),
+    ('Transferred', 'Transferred'),
+    ('Escalation', 'Escalation'),
 ]
 
 class Task(models.Model):
@@ -110,7 +116,8 @@ class Task(models.Model):
         task_item = TaskItem.objects.create(
             task=self,
             role_user=role_user,
-            status='assigned',
+            status='new',
+            origin='System',
             assigned_on=timezone.now()
         )
         
@@ -334,8 +341,14 @@ class TaskItem(models.Model):
     status = models.CharField(
         max_length=50,
         choices=TASK_ITEM_STATUS_CHOICES,
-        default='assigned',
+        default='new',
         help_text="Status of this user's assignment"
+    )
+    origin = models.CharField(
+        max_length=50,
+        choices=TASK_ITEM_ORIGIN_CHOICES,
+        default='System',
+        help_text="Origin of this assignment: System (auto-assigned), Transferred (admin transfer), or Escalation"
     )
     notes = models.TextField(blank=True, help_text="Notes provided during action transition")
     

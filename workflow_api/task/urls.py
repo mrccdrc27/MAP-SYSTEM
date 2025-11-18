@@ -9,10 +9,6 @@ router.register(r'', TaskViewSet, basename='task')
 app_name = 'task'
 
 urlpatterns = [
-    # Dedicated endpoint for getting user's tasks
-    # GET /tasks/my-tasks/
-    path('my-tasks/', UserTaskListView.as_view(), name='user-task-list'),
-    
     # Standard CRUD:
     # GET    /tasks/                           - List all tasks
     # POST   /tasks/                           - Create new task
@@ -22,7 +18,14 @@ urlpatterns = [
     # DELETE /tasks/{id}/                      - Delete task
     #
     # Custom actions:
-    # GET    /tasks/my-tasks/                  - Get user's assigned tasks
+    # POST   /tasks/escalate/                  - Escalate a task item
+    # POST   /tasks/transfer/                  - Transfer a task item
+    # POST   /tasks/{id}/visualization/        - Get task visualization
+    # GET    /tasks/{id}/action-logs/          - Get action logs
     # POST   /tasks/{id}/update-user-status/   - Update user's task status
     path('', include(router.urls)),
+    
+    # Dedicated endpoint for getting user's tasks (after router to avoid conflicts)
+    # GET /tasks/my-tasks/
+    path('my-tasks/', UserTaskListView.as_view(), name='user-task-list'),
 ]

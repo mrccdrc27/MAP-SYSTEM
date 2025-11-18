@@ -17,12 +17,12 @@ class TaskItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskItem
         fields = [
-            'task_item_id', 'user_id', 'user_full_name', 'status', 
+            'task_item_id', 'user_id', 'user_full_name', 'status', 'origin',
             'role', 'notes', 'assigned_on', 'status_updated_on', 'acted_on',
             'acted_on_step_id', 'acted_on_step_name', 'target_resolution', 'resolution_time',
             'transferred_to', 'transferred_to_user_id', 'transferred_to_user_name', 'transferred_by'
         ]
-        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time', 'transferred_to_user_id', 'transferred_to_user_name']
+        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time', 'transferred_to_user_id', 'transferred_to_user_name', 'origin']
     
     def validate_notes(self, value):
         """Ensure notes field is not empty"""
@@ -153,14 +153,14 @@ class UserTaskListSerializer(serializers.ModelSerializer):
     def get_has_acted(self, obj):
         """
         Check if the current user has already acted on this task.
-        Returns True if user has any TaskItem with status 'acted', False otherwise.
+        Returns True if user has any TaskItem with status 'resolved', False otherwise.
         """
         user_id = self.context.get('user_id')
         if user_id:
             return TaskItem.objects.filter(
                 task=obj,
                 role_user__user_id=user_id,
-                status='acted'
+                status='resolved'
             ).exists()
         return False
 

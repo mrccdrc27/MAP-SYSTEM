@@ -93,7 +93,8 @@ def apply_round_robin_assignment(task, user_ids, role_name):
         task=task,
         role_user=role_users,
         defaults={
-            'status': 'assigned',
+            'status': 'new',
+            'origin': 'System',
             'assigned_on': timezone.now(),
             'target_resolution': target_resolution
         }
@@ -192,7 +193,8 @@ def assign_users_for_escalation(task, escalate_to_role, reason):
     task_item = TaskItem.objects.create(
         task=task,
         role_user=selected_role_user,
-        status='assigned',
+        status='new',
+        origin='Escalation',
         assigned_on=timezone.now(),
         target_resolution=original_target_resolution,
         notes=''
