@@ -4,9 +4,10 @@ python-decouple==3.8
 requests==2.32.3
 PyJWT==2.8.0
 django-celery-results==2.5.1
-celery==5.3.6
+celery==5.5.3
 gunicorn==21.2.0
 whitenoise==6.6.0
 dj-database-url==2.1.0
 psycopg2-binary
 django-cors-headers==4.7.0
+kombu==5.5.4

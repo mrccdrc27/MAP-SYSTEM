@@ -189,6 +189,9 @@ CELERY_TASK_ALWAYS_EAGER = False  # Run tasks asynchronously
 CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject tasks if worker lost connection
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Prefetch only 1 message at a time
 CELERY_TASK_TRACK_STARTED = True  # Track task start
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True  # Retry connection on startup
+CELERY_BROKER_CONNECTION_RETRY = True  # Retry connection
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10  # Max retries
 
 # Auth Service Configuration
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8001')

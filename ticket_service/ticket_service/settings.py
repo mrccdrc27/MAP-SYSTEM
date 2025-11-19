@@ -182,6 +182,9 @@ CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_DEFAULT_QUEUE = os.getenv('CELERY_TASK_DEFAULT_QUEUE') or config('CELERY_TASK_DEFAULT_QUEUE', default='ticket_tasks-default')
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True  # Retry connection on startup
+CELERY_BROKER_CONNECTION_RETRY = True  # Retry connection
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10  # Max retries
 
 # Option to disable Celery tasks for local development
 CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False').lower() in ('true', '1', 't')

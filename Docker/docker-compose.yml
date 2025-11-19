@@ -7,7 +7,7 @@
 services:
   # RabbitMQ for message queueing - No sleep
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.13-management-alpine
     container_name: rabbitmq
     ports:
       - "5672:5672"       # AMQP protocol
@@ -15,8 +15,14 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_VHOST: /
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # Single PostgreSQL database instance - No sleep
   db:
@@ -38,12 +44,21 @@ services:
       context: ../workflow_api
       dockerfile: Dockerfile
     environment:
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
-      # the important thing in naming the service is to not use underscores (_)
-      # auth-service is different from auth_service
-      DJANGO_AUTH_SERVICE: "http://auth-service:8000"
       DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-worker"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "workflow_db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
+      DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8001"
       C_FORCE_ROOT: "false"
     volumes:
       - media_files:/app/media
@@ -51,8 +66,10 @@ services:
       sh -c "sleep 20 && 
              celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed"
     depends_on:
-      - rabbitmq
-      - db
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
 
   # Ticket service - 10 seconds sleep
   ticket-service:
@@ -60,18 +77,24 @@ services:
       context: ../ticket_service
       dockerfile: Dockerfile
     environment:
-      BASE_URL: "http://ticket-service:7000"
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,ticket-service"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000"
+      DJANGO_CORS_ALLOW_ALL_ORIGINS: "False"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/ticketmanagement"
       CELERY_TASK_DEFAULT_QUEUE: "TICKET_TASKS_PRODUCTION"
     ports:
       - "8004:7000"
     volumes:
       - media_files:/app/media
     depends_on:
-      - rabbitmq
-      - db
-    command: sh -c "sleep 10 && ./start.sh"
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    command: sh -c "sleep 20 && ./start.sh"
 
   # Workflow API service - 10 seconds sleep
   workflow-api:
@@ -79,18 +102,36 @@ services:
       context: ../workflow_api
       dockerfile: Dockerfile
     environment:
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
       DJANGO_ENV: "production"
-      DJANGO_AUTH_SERVICE: "http://auth-service:8000"
-      DJANGO_USER_SERVICE: "http://auth-service:8000"
-      DJANGO_NOTIFICATION_QUEUE: notification-queue-default
-      DJANGO_TICKET_STATUS_QUEUE: ticket_status-default
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "workflow_db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue-default"
+      DJANGO_TICKET_STATUS_QUEUE: "ticket_status-default"
+      DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
+      DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8001"
+      DJANGO_TTS_SERVICE_URL: "http://localhost:8002"
+      DJANGO_USER_SERVICE_URL: "http://localhost:3000"
+      DJANGO_BASE_URL: "http://localhost:8002"
+      DJANGO_FRONTEND_URL: "http://localhost:1000/register"
     ports:
       - "8002:8000"
     depends_on:
-      - rabbitmq
-      - db
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
     command: sh -c "sleep 10 && ./start.sh"
 
   # Auth service - 10 seconds sleep
@@ -99,25 +140,35 @@ services:
       context: ../auth
       dockerfile: Dockerfile
     environment:
-      # DJANGO_FRONTEND_URL: http://localhost:1000/
-      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/authservice"
+      DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
-      DJANGO_ALLOWED_HOSTS: "*"
-      # DJANGO_ENV: "production"
-      SECRET_KEY: "your-auth-service-secret-key-here"
-      EMAIL_HOST: smtp.gmail.com
-      EMAIL_PORT: 587
-      EMAIL_HOST_USER: mayuga.marccedricc@gmail.com
-      EMAIL_HOST_PASSWORD: qlit lmbg siip vvkh
-      EMAIL_USE_TLS: True
-      DEFAULT_FROM_EMAIL: gensystest@mail.com
-      ALLOWED_HOSTS: "*"
+      DJANGO_SECRET_KEY: "your-auth-service-secret-key-here"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+      DJANGO_EMAIL_HOST: "smtp.gmail.com"
+      DJANGO_EMAIL_PORT: "587"
+      DJANGO_EMAIL_HOST_USER: "your-email@gmail.com"
+      DJANGO_EMAIL_HOST_PASSWORD: "your-app-password"
+      DJANGO_EMAIL_USE_TLS: "True"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@yourdomain.com"
+      FRONTEND_URL: "http://localhost:1000"
+      COOKIE_DOMAIN: "localhost"
+      DJANGO_SESSION_COOKIE_SECURE: "False"
+      DJANGO_CSRF_COOKIE_SECURE: "False"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000"
+      TTS_SYSTEM_URL: "http://localhost:1000/"
+      AMS_SYSTEM_URL: "http://localhost:3000/ams"
+      HDTS_SYSTEM_URL: "http://localhost:3000/hdts"
+      BMS_SYSTEM_URL: "http://localhost:3000/bms"
+      DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
     ports:
       - "8003:8000"
     depends_on:
-      - rabbitmq
-      - db
+      rabbitmq:
+        condition: service_healthy
     command: sh -c "sleep 10 && ./entrypoint.sh"
     
   # Messaging service - 10 seconds sleep
@@ -126,15 +177,17 @@ services:
       context: ../messaging
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/messagingservice"
+      DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
-      DJANGO_ALLOWED_HOSTS: "*"
-      SECRET_KEY: "your-messaging-service-secret-key-here"
-      ALLOWED_HOSTS: "*"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000,http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173"
+      DJANGO_CORS_ALLOW_ALL_ORIGINS: "False"
+      DJANGO_CORS_ALLOW_CREDENTIALS: "True"
+      DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
     ports:
       - "8005:8001"
-    depends_on:
-      - db
     command: sh -c "sleep 10 && ./entrypoint.sh"
     
   # Notification service - 10 seconds sleep
@@ -143,23 +196,38 @@ services:
       context: ../notification_service
       dockerfile: Dockerfile
     environment:
-      # DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
-      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
-      NOTIFICATION_QUEUE: "notification-queue"
-      INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
-      DJANGO_ALLOWED_HOSTS: "*"
-      NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456,your-secure-api-key"
-      JWT_SHARED_SECRET_KEY: "your-auth-service-secret-key-here"
-      ALLOWED_HOSTS: "*"
-      AUTH_SERVICE_URL: "http://auth-service:8000"
-      EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
-      SECRET_KEY: "your-auth-service-secret-key-here"
       DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "notification_db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+      DJANGO_EMAIL_HOST: "smtp.gmail.com"
+      DJANGO_EMAIL_PORT: "587"
+      DJANGO_EMAIL_HOST_USER: "your-email@gmail.com"
+      DJANGO_EMAIL_HOST_PASSWORD: "your-app-password"
+      DJANGO_EMAIL_USE_TLS: "True"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@notifications.com"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CORS_ALLOW_CREDENTIALS: "True"
+      DJANGO_NOTIFICATION_SERVICE_PORT: "8001"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
+      DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456"
+      DJANGO_API_KEY: "in-app-notification-api-key-secure"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue"
+      DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
     ports:
       - "8006:8001"
     depends_on:
-      - rabbitmq
-      - db
+      rabbitmq:
+        condition: service_healthy
     command: sh -c "sleep 10 && ./entrypoint.sh"
     
   # Notification worker - 15 seconds sleep
@@ -168,13 +236,35 @@ services:
       context: ../notification_service
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
       DJANGO_ENV: "production"
-      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-worker"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "notification_db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+      DJANGO_EMAIL_HOST: "smtp.gmail.com"
+      DJANGO_EMAIL_PORT: "587"
+      DJANGO_EMAIL_HOST_USER: "your-email@gmail.com"
+      DJANGO_EMAIL_HOST_PASSWORD: "your-app-password"
+      DJANGO_EMAIL_USE_TLS: "True"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@notifications.com"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
+      DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456"
+      DJANGO_API_KEY: "in-app-notification-api-key-secure"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue"
+      DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
     depends_on:
-      - rabbitmq
-      - db
-      - notification-service
+      rabbitmq:
+        condition: service_healthy
+      notification-service:
+        condition: service_started
     command: >
       sh -c "sleep 5 && 
              celery -A notification_service worker --loglevel=info -Q notification-queue-default,inapp-notification-queue"

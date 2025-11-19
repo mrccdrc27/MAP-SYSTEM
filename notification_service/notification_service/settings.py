@@ -238,6 +238,9 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True  # Retry connection on startup
+CELERY_BROKER_CONNECTION_RETRY = True  # Retry connection
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10  # Max retries
 
 # Queues configuration for notification service
 NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-queue')

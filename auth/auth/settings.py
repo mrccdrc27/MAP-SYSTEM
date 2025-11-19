@@ -324,6 +324,9 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_ACKS_LATE = True
 CELERY_RESULT_BACKEND = None  # Disable result backend to avoid dependencies
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True  # Retry connection on startup
+CELERY_BROKER_CONNECTION_RETRY = True  # Retry connection
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10  # Max retries
 
 # Celery Task Routes
 CELERY_TASK_ROUTES = {
