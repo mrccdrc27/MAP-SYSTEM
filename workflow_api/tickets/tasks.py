@@ -35,14 +35,17 @@ def receive_ticket(ticket_data):
         priority = ticket_data.get('priority', 'Medium')
         ticket_data['priority'] = priority
         
-        # ✅ Create or update ticket with raw ticket_data and priority
+        # ✅ Extract status from incoming ticket data
+        status = ticket_data.get('status')
+        
+        # ✅ Create or update ticket with raw ticket_data, priority, and status
         ticket, created = WorkflowTicket.objects.update_or_create(
             ticket_number=ticket_number,
-            defaults={'ticket_data': ticket_data, 'priority': priority}
+            defaults={'ticket_data': ticket_data, 'priority': priority, 'status': status}
         )
         
         action = "created" if created else "updated"
-        print(f"✅ Ticket {action} with number: {ticket_number}")
+        print(f"✅ Ticket {action} with number: {ticket_number}, status: {status}")
 
         # 🚀 NEW: Automatic workflow assignment and task creation
         if created:  # Only create tasks for new tickets

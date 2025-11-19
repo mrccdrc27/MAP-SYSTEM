@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TaskViewSet, UserTaskListView
+from .views import TaskViewSet, UserTaskListView, AllTasksListView
 
 # Create a router and register the TaskViewSet
 router = DefaultRouter()
@@ -12,6 +12,10 @@ urlpatterns = [
     # Dedicated endpoint for getting user's tasks (before router to avoid conflicts)
     # GET /tasks/my-tasks/
     path('my-tasks/', UserTaskListView.as_view(), name='user-task-list'),
+    
+    # Dedicated endpoint for getting all tasks (before router to avoid conflicts)
+    # GET /tasks/all-tasks/
+    path('all-tasks/', AllTasksListView.as_view(), name='all-task-list'),
     
     # Standard CRUD:
     # GET    /tasks/                           - List all tasks

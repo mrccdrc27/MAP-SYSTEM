@@ -57,6 +57,41 @@ class UserTaskListView(ListAPIView):
         return queryset
 
 
+class AllTasksListView(ListAPIView):
+    """
+    View to list all TaskItems across all users.
+    Same as UserTaskListView but without user filtering.
+    Each row represents a TaskItem with associated task and ticket data.
+    """
+    
+    serializer_class = UserTaskListSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['status', 'task__workflow_id']
+    search_fields = ['task__ticket_id__subject', 'task__ticket_id__description']
+    ordering_fields = ['assigned_on', 'status_updated_on', 'status']
+    ordering = ['-assigned_on']
+    
+    def get_queryset(self):
+        """Return all TaskItems without user filtering."""
+        queryset = TaskItem.objects.select_related(
+            'task__ticket_id', 'task__workflow_id', 'task__current_step', 'role_user', 'acted_on_step'
+        )
+        
+        # Apply role/status filters if provided
+        role = self.request.query_params.get('role')
+        assignment_status = self.request.query_params.get('assignment_status')
+        
+        if role:
+            queryset = queryset.filter(role_user__role_id__name=role)
+        
+        if assignment_status:
+            queryset = queryset.filter(status=assignment_status)
+        
+        return queryset
+
+
 class TaskViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tasks with authentication."""
     
@@ -283,6 +318,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         - user_id: Current authenticated user ID
         - step_transition_id: UUID identifier for transitions
         - has_acted: Boolean indicating if user has acted on this task
+        - current_owner: Most recent TaskItem details (user who currently owns the task)
         - step: Detailed step information (name, description, instruction, etc.)
         - task: Complete task details with nested ticket information
         - available_actions: List of available transitions from current step
@@ -317,8 +353,10 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Verify the TaskItem belongs to the current user
-        if user_assignment.role_user.user_id != user_id:
+        # Verify the TaskItem belongs to the current user, or user is an admin
+        is_admin = request.user.has_system_role('tts', 'Admin') or request.user.has_system_role('hdts', 'Admin')
+        
+        if user_assignment.role_user.user_id != user_id and not is_admin:
             return Response(
                 {
                     'error': 'You do not have permission to view this task item',
@@ -386,6 +424,25 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Merge all ticket_data fields into the response
         ticket_response.update(ticket_data)
         
+        # Get the most recent TaskItem (current owner) for this task
+        most_recent_task_item = TaskItem.objects.filter(
+            task=task
+        ).select_related('role_user', 'role_user__role_id').order_by('-assigned_on').first()
+        
+        current_owner = None
+        if most_recent_task_item:
+            current_owner = {
+                'task_item_id': most_recent_task_item.task_item_id,
+                'user_id': most_recent_task_item.role_user.user_id,
+                'user_full_name': most_recent_task_item.role_user.user_full_name,
+                'role': most_recent_task_item.role_user.role_id.name if most_recent_task_item.role_user.role_id else None,
+                'status': most_recent_task_item.status,
+                'origin': most_recent_task_item.origin,
+                'assigned_on': most_recent_task_item.assigned_on.isoformat() if most_recent_task_item.assigned_on else None,
+                'status_updated_on': most_recent_task_item.status_updated_on.isoformat() if most_recent_task_item.status_updated_on else None,
+                'acted_on': most_recent_task_item.acted_on.isoformat() if most_recent_task_item.acted_on else None,
+            }
+        
         # Build response
         response_data = {
             'step_instance_id': str(task.task_id),
@@ -394,6 +451,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             'step_transition_id': step_transition_id,
             'has_acted': has_acted,
             'is_escalated': is_escalated,
+            'current_owner': current_owner,
             'step': {
                 'id': current_step.step_id,
                 'step_id': str(current_step.step_id),

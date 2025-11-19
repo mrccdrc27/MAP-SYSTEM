@@ -9,7 +9,7 @@ const useTicketsFetcher = () => {
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("tickets/tickets/");
+      const res = await api.get("tasks/all-tasks/");
       setTickets(res.data);
       return res.data;
     } catch (err) {

@@ -15,6 +15,7 @@ import AdminDashboard from "../pages/admin/dashboard-page/AdminDashboard";
 import Workflow from "../pages/admin/workflow-page/Workflow";
 import Agent from "../pages/admin/agent-page/Agent";
 import AdminArchive from "../pages/admin/archive-page/AdminArchive";
+import AdminArchiveDetail from "../pages/admin/archive-page/archive-detail-page/AdminArchiveDetail";
 import AdminTicket from "../pages/admin/ticket-page/AdminTicket";
 
 // reporting
@@ -33,7 +34,6 @@ import Unauthorized from "../pages/error/Unauthorized";
 // test
 import Test from "../pages/test";
 import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
-import AdminArchiveDetail from "../pages/admin/archive-page/AdminArchiveDetail";
 import ResetPassword from "../pages/auth/PasswordReset";
 import WorkflowEditorPage from "../pages/test/WorkflowEditorPage";
 

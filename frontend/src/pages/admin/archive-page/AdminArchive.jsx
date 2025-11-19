@@ -1,29 +1,20 @@
 // components
 import AdminNav from "../../../components/navigation/AdminNav";
-import FilterPanel from "../../../components/component/FilterPanel";
 
 // style
 import styles from "./admin-archive.module.css";
-import general from "../../../style/general.module.css";
 
 // react
-import { useEffect, useState } from "react";
-
-// table
-import TicketTable from "../../../tables/admin/TicketTable";
-import UnassignedTable from "../../../tables/admin/UnassignedTable"; // New table for Unassigned
-import TasksTable from "../../../tables/admin/TasksTable"; // Table for Active/Inactive
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // hook
 import useUserTickets from "../../../api/useUserTickets";
 import useTasksFetcher from "../../../api/useTasksFetcher";
 import useTicketsFetcher from "../../../api/useTicketsFetcher";
 
-// modal
-import TicketTaskAssign from "./modals/ActivateAgent";
-import AddAgent from "../agent-page/modals/AddAgent";
-
 export default function AdminArchive() {
+  const navigate = useNavigate();
   const {
     userTickets,
     loading: userTicketsLoading,
@@ -42,241 +33,590 @@ export default function AdminArchive() {
     error: tasksError,
   } = useTasksFetcher();
 
-  // Tabs
+  // State Management
   const [activeTab, setActiveTab] = useState("Active");
-  const [openAssignTicket, setOpenAssignTicket] = useState(false);
-  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [groupBy, setGroupBy] = useState("none");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [expandedRows, setExpandedRows] = useState({});
+  const [expandedTickets, setExpandedTickets] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
 
-  // console.log("openAssignTicket:", openAssignTicket);
-  // console.log("Tickets fetched by useTicketsFetcher:", tickets);
-
-
-  // Filters
-  const [filters, setFilters] = useState({
-    category: "",
-    status: "",
-    startDate: "",
-    endDate: "",
-    search: "",
-  });
-
-  // Status options
-  const [statusOptions, setStatusOptions] = useState([]);
-
-  // Fetch tickets and tasks on component mount
+  // Fetch data on mount
   useEffect(() => {
     fetchTickets();
     fetchTasks();
   }, [fetchTickets, fetchTasks]);
 
-  // Extract all ticket data with step_instance_id
-  const allTickets = (userTickets || [])
-    .filter((entry) => entry.task?.ticket)
-    .map((entry) => ({
-      ...entry.task.ticket,
-      step_instance_id: entry.step_instance_id,
-      hasacted: entry.has_acted,
-    }));
+  // Use tickets data directly - already in correct format from API
+  const allTasks = tickets || [];
 
-  // Extract status options on ticket update
-  useEffect(() => {
-    const statusSet = new Set(allTickets.map((t) => t.status).filter(Boolean));
-    setStatusOptions(["All", ...Array.from(statusSet)]);
-  }, [userTickets]);
-
-  // Handle tab click
-  const handleTabClick = (e, tab) => {
-    e.preventDefault();
-    setActiveTab(tab);
+  // Get status color based on tab and status
+  const getStatusColor = (status) => {
+    const normalizedStatus = (status || "").toLowerCase().replace(" ", "_");
+    const colorMap = {
+      new: "status-new",
+      in_progress: "status-in-progress",
+      completed: "status-completed",
+      blocked: "status-blocked",
+      pending: "status-pending",
+      open: "status-open",
+      closed: "status-closed",
+      resolved: "status-resolved",
+    };
+    return colorMap[normalizedStatus] || "status-default";
   };
 
-  // Handle filter input
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  // Get priority color
+  const getPriorityColor = (priority) => {
+    const colorMap = {
+      high: "priority-high",
+      medium: "priority-medium",
+      low: "priority-low",
+    };
+    return colorMap[priority?.toLowerCase()] || "priority-default";
   };
 
-  // Reset all filters
-  const resetFilters = () => {
-    setFilters({
-      category: "",
-      status: "",
-      startDate: "",
-      endDate: "",
-      search: "",
+  // Format date with relative display
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = date - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return "Overdue";
+    if (diffDays === 0) return "Due today";
+    if (diffDays === 1) return "Due tomorrow";
+    return date.toLocaleDateString();
+  };
+
+  // Format date and time
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  // Filter tickets for the "Unassigned" tab
-  const filteredTickets = (tickets || []).filter((ticket) => {
-    if (activeTab === "Unassigned" && ticket.is_task_allocated !== false)
-      return false;
+  // Filter data based on active tab and search
+  const getFilteredData = () => {
+    let data = [];
 
-    // Filter by category
-    if (filters.category && ticket.category !== filters.category) return false;
-
-    // Filter by status
-    if (filters.status && ticket.status !== filters.status) return false;
-
-    // Filter by date range
-    const openedDate = new Date(ticket.opened_on);
-    const start = filters.startDate ? new Date(filters.startDate) : null;
-    const end = filters.endDate ? new Date(filters.endDate) : null;
-    if (start && openedDate < start) return false;
-    if (end && openedDate > end) return false;
-
-    // Filter by search
-    const search = filters.search.toLowerCase();
-    if (
-      search &&
-      !(
-        ticket.ticket_id.toLowerCase().includes(search) ||
-        ticket.subject.toLowerCase().includes(search) ||
-        ticket.description.toLowerCase().includes(search)
-      )
-    ) {
-      return false;
+    if (activeTab === "Active") {
+      data = allTasks.filter(
+        (t) =>
+          t.task_status === "in_progress" ||
+          t.task_status === "open" ||
+          t.task_status === "pending" ||
+          t.status === "in_progress" ||
+          t.status === "open"
+      );
+    } else if (activeTab === "Inactive") {
+      data = allTasks.filter(
+        (t) =>
+          t.task_status === "closed" ||
+          t.task_status === "resolved" ||
+          t.task_status === "completed" ||
+          t.status === "closed" ||
+          t.status === "resolved"
+      );
+    } else if (activeTab === "Unassigned") {
+      data = allTasks.filter((t) => !t.user_id || t.user_id === null);
     }
 
-    return true;
-  });
-
-  // Filter tasks for the "Active" and "Inactive" tabs
-  const filteredTasks = (tasks || []).filter((task) => {
-    if (
-      activeTab === "Active" &&
-      !["Open", "In Progress"].includes(task.ticket?.status)
-    )
-      return false;
-    if (
-      activeTab === "Inactive" &&
-      !["Closed", "Resolved"].includes(task.ticket?.status)
-    )
-      return false;
-
-    // Filter by category
-    if (filters.category && task.ticket?.category !== filters.category)
-      return false;
-
-    // Filter by status
-    if (filters.status && task.ticket?.status !== filters.status) return false;
-
-    // Filter by date range
-    const openedDate = new Date(task.ticket?.opened_on);
-    const start = filters.startDate ? new Date(filters.startDate) : null;
-    const end = filters.endDate ? new Date(filters.endDate) : null;
-    if (start && openedDate < start) return false;
-    if (end && openedDate > end) return false;
-
-    // Filter by search
-    const search = filters.search.toLowerCase();
-    if (
-      search &&
-      !(
-        task.ticket?.ticket_id?.toLowerCase().includes(search) ||
-        task.ticket?.subject?.toLowerCase().includes(search) ||
-        task.ticket?.description?.toLowerCase().includes(search)
-      )
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-  console.log("Filtered Tickets:", filteredTasks);
-  const handleCloseModal = () => {
-    setOpenActivateAgent(false);
-    fetchUsers(); // refresh pendingInvite list after modal closes
+    // Apply search filter
+    return data.filter((item) => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        (item.ticket_number &&
+          item.ticket_number.toLowerCase().includes(searchLower)) ||
+        (item.ticket_subject &&
+          item.ticket_subject.toLowerCase().includes(searchLower)) ||
+        (item.user_full_name &&
+          item.user_full_name.toLowerCase().includes(searchLower)) ||
+        (item.ticket_description &&
+          item.ticket_description.toLowerCase().includes(searchLower))
+      );
+    });
   };
+
+  // Group tasks by ticket_id and get only the most recent one per ticket
+  const getMostRecentTasksPerTicket = (tasks) => {
+    const ticketMap = {};
+    tasks.forEach((task) => {
+      const ticketId = task.ticket_id;
+      if (!ticketMap[ticketId]) {
+        ticketMap[ticketId] = task;
+      } else {
+        // Keep the most recent task (by assigned_on date)
+        const existingDate = new Date(ticketMap[ticketId].assigned_on || 0);
+        const newDate = new Date(task.assigned_on || 0);
+        if (newDate > existingDate) {
+          ticketMap[ticketId] = task;
+        }
+      }
+    });
+    return Object.values(ticketMap);
+  };
+
+  // Get all tasks grouped by ticket for expanded view
+  const getAllTasksByTicket = (tasks) => {
+    const ticketMap = {};
+    tasks.forEach((task) => {
+      const ticketId = task.ticket_id;
+      if (!ticketMap[ticketId]) {
+        ticketMap[ticketId] = [];
+      }
+      ticketMap[ticketId].push(task);
+    });
+    // Sort each ticket's tasks by assigned_on date (newest first)
+    Object.keys(ticketMap).forEach((ticketId) => {
+      ticketMap[ticketId].sort(
+        (a, b) => new Date(b.assigned_on) - new Date(a.assigned_on)
+      );
+    });
+    return ticketMap;
+  };
+
+  // Group data based on groupBy selection
+  const getGroupedData = () => {
+    const filtered = getFilteredData();
+    const mostRecent = getMostRecentTasksPerTicket(filtered);
+
+    if (groupBy === "none") {
+      return { "All Items": mostRecent };
+    }
+
+    return mostRecent.reduce((acc, item) => {
+      let key;
+      switch (groupBy) {
+        case "workflow":
+          key = item.workflow_name || "Unassigned Workflow";
+          break;
+        case "status":
+          key = (item.status || "unknown").replace(/_/g, " ").toUpperCase();
+          break;
+        case "assignee":
+          key = item.user_full_name || "Unassigned";
+          break;
+        default:
+          key = "All Items";
+      }
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+  };
+
+  // Toggle group expansion
+  const toggleGroup = (groupName) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName],
+    }));
+  };
+
+  // Toggle row expansion
+  const toggleRow = (taskItemId) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [taskItemId]: !prev[taskItemId],
+    }));
+  };
+
+  // Toggle ticket expansion to show all tasks for that ticket
+  const toggleTicket = (ticketId) => {
+    setExpandedTickets((prev) => ({
+      ...prev,
+      [ticketId]: !prev[ticketId],
+    }));
+  };
+
+  // Get summary stats
+  const getSummaryStats = () => {
+    const filtered = getFilteredData();
+    return {
+      total: filtered.length,
+      active: filtered.filter(
+        (i) =>
+          i.task_status === "in_progress" ||
+          i.task_status === "pending" ||
+          i.status === "in_progress"
+      ).length,
+      pending: filtered.filter(
+        (i) => i.task_status === "pending" || i.status === "new"
+      ).length,
+      blocked: filtered.filter(
+        (i) => i.task_status === "blocked" || i.status === "blocked"
+      ).length,
+    };
+  };
+
+  const grouped = getGroupedData();
+  const stats = getSummaryStats();
+  const isLoading = userTicketsLoading || ticketsLoading || tasksLoading;
 
   return (
     <>
       <AdminNav />
       <main className={styles.ticketPage}>
+        {/* Header */}
         <section className={styles.tpHeader}>
           <h1>Tickets</h1>
         </section>
+
+        {/* Body */}
         <section className={styles.tpBody}>
-          {/* Tabs */}
+          {/* Tab Navigation */}
           <div className={styles.tpTabs}>
             {["Active", "Inactive", "Unassigned"].map((tab) => (
-              <a
+              <button
                 key={tab}
-                href=""
-                onClick={(e) => handleTabClick(e, tab)}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setExpandedGroups({});
+                  setExpandedRows({});
+                }}
                 className={`${styles.tpTabLink} ${
                   activeTab === tab ? styles.active : ""
                 }`}
               >
                 {tab}
-              </a>
+              </button>
             ))}
           </div>
 
-          {/* Filters */}
-          <div className={styles.tpFilterSection}>
-            <FilterPanel
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              statusOptions={statusOptions}
-              onResetFilters={resetFilters}
-            />
-          </div>
-
-          {/* Table */}
-
-          <div className={styles.tpTableSection}>
-            <div className={general.tpTable}>
-              {(userTicketsLoading || ticketsLoading || tasksLoading) && (
-                <div className={styles.loaderOverlay}>
-                  <div className={styles.loader}></div>
-                </div>
-              )}
-              {activeTab === "All" && (
-                <UnassignedTable
-                  tickets={filteredTickets}
-                  searchValue={filters.search}
-                  onSearchChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  error={userTicketsError || ticketsError || tasksError}
-                  activeTab={activeTab}
-                />
-              )}
-              {(activeTab === "Active" || activeTab === "Inactive") && (
-                <TasksTable
-                  tickets={filteredTasks}
-                  activeTab={activeTab}
-                  error={tasksError}
-                />
-              )}
-              {activeTab === "Unassigned" && (
-                <UnassignedTable
-                  tickets={filteredTickets}
-                  error={ticketsError}
-                  onInviteAgent={(ticket_id) => {
-                    setSelectedTicketId(ticket_id);
-                    setOpenAssignTicket(true);
+          {/* Controls Bar */}
+          <div className={styles.tpControlsBar}>
+            <div className={styles.controlsTop}>
+              <div className={styles.controlsLeft}>
+                <h2 className={styles.tableTitle}>All Tickets</h2>
+              </div>
+              <div className={styles.controlsRight}>
+                {/* Group By */}
+                <select
+                  value={groupBy}
+                  onChange={(e) => {
+                    setGroupBy(e.target.value);
+                    setExpandedGroups({});
                   }}
-                />
+                  className={styles.selectControl}
+                >
+                  <option value="none">No Grouping</option>
+                  <option value="workflow">Group by Workflow</option>
+                  <option value="status">Group by Status</option>
+                  <option value="assignee">Group by Assignee</option>
+                </select>
+
+                {/* Filters Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={styles.filterButton}
+                >
+                  Filters
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className={styles.searchContainer}>
+              <input
+                type="text"
+                placeholder="Search by ticket number, subject, or assignee..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={styles.searchInput}
+              />
+              {showFilters && (
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className={styles.statusFilter}
+                >
+                  <option value="all">All Status</option>
+                  <option value="new">New</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="pending">Pending</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="completed">Completed</option>
+                  <option value="closed">Closed</option>
+                  <option value="resolved">Resolved</option>
+                </select>
               )}
             </div>
+
+            {/* Summary Stats */}
+            <div className={styles.summaryStats}>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Total:</span>
+                <span className={styles.statValue}>{stats.total}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Active:</span>
+                <span className={`${styles.statValue} ${styles.activeCount}`}>
+                  {stats.active}
+                </span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Pending:</span>
+                <span className={`${styles.statValue} ${styles.pendingCount}`}>
+                  {stats.pending}
+                </span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Blocked:</span>
+                <span className={`${styles.statValue} ${styles.blockedCount}`}>
+                  {stats.blocked}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Section */}
+          <div className={styles.tpTableSection}>
+            {isLoading && (
+              <div className={styles.loaderOverlay}>
+                <div className={styles.loader}></div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!isLoading && getFilteredData().length === 0 && (
+              <div className={styles.emptyState}>
+                <p>No tickets found</p>
+              </div>
+            )}
+
+            {/* Table Content */}
+            {!isLoading && getFilteredData().length > 0 && (
+              <div className={styles.tableWrapper}>
+                {Object.entries(grouped).map(([groupName, items]) => (
+                  <div key={groupName} className={styles.groupContainer}>
+                    {/* Group Header */}
+                    {groupBy !== "none" && (
+                      <div
+                        onClick={() => toggleGroup(groupName)}
+                        className={styles.groupHeader}
+                      >
+                        <span className={styles.groupToggle}>
+                          {expandedGroups[groupName] ? "▼" : "▶"}
+                        </span>
+                        <span className={styles.groupName}>{groupName}</span>
+                        <span className={styles.groupCount}>({items.length})</span>
+                      </div>
+                    )}
+
+                    {/* Table */}
+                    {(groupBy === "none" || expandedGroups[groupName]) && (
+                      <table className={styles.dataTable}>
+                        <thead className={styles.tableHead}>
+                          <tr>
+                            <th className={styles.thExpand}></th>
+                            <th>Ticket #</th>
+                            <th>Subject</th>
+                            <th>Workflow</th>
+                            <th>Current Step</th>
+                            <th>Assignee</th>
+                            <th>Ticket Status</th>
+                            <th>Task Status</th>
+                            <th>Priority</th>
+                            <th>Target Date</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.length === 0 ? (
+                            <tr>
+                              <td colSpan="11" className={styles.noData}>
+                                No items in this group
+                              </td>
+                            </tr>
+                          ) : (
+                            items.map((mainTask) => {
+                              // Get all tasks for this ticket
+                              const allTasksMap = getAllTasksByTicket(getFilteredData());
+                              const allTasksForTicket = allTasksMap[mainTask.ticket_id] || [mainTask];
+                              const isTicketExpanded = expandedTickets[mainTask.ticket_id];
+
+                              return (
+                                <React.Fragment key={mainTask.task_item_id || mainTask.ticket_id}>
+                                  {/* Main Task Row (Most Recent) */}
+                                  <tr className={styles.tableRow}>
+                                    <td className={styles.expandCell}>
+                                      {allTasksForTicket.length > 1 && (
+                                        <button
+                                          onClick={() => toggleTicket(mainTask.ticket_id)}
+                                          className={styles.expandButton}
+                                          title={`Show all ${allTasksForTicket.length} tasks`}
+                                        >
+                                          {isTicketExpanded ? "▼" : "▶"}
+                                        </button>
+                                      )}
+                                    </td>
+                                    <td className={styles.ticketNumber}>
+                                      {mainTask.ticket_number || "-"}
+                                    </td>
+                                    <td className={styles.ticketSubject}>
+                                      <p className={styles.subject}>
+                                        {mainTask.ticket_subject}
+                                      </p>
+                                      <p className={styles.description}>
+                                        {mainTask.ticket_description}
+                                      </p>
+                                    </td>
+                                    <td className={styles.workflow}>
+                                      {mainTask.workflow_name || "-"}
+                                    </td>
+                                    <td className={styles.currentStep}>
+                                      <p className={styles.stepName}>
+                                        {mainTask.current_step_name || "-"}
+                                      </p>
+                                      {mainTask.current_step_role && (
+                                        <p className={styles.stepRole}>
+                                          {mainTask.current_step_role}
+                                        </p>
+                                      )}
+                                    </td>
+                                    <td className={styles.assignee}>
+                                      <p className={styles.assigneeName}>
+                                        {mainTask.user_full_name}
+                                      </p>
+                                      {mainTask.role && (
+                                        <p className={styles.assigneeRole}>
+                                          {mainTask.role}
+                                        </p>
+                                      )}
+                                    </td>
+                                    <td className={styles.status}>
+                                      <span
+                                        className={`${styles.statusBadge} ${getStatusColor(
+                                          mainTask.ticket_status
+                                        )}`}
+                                      >
+                                        {(mainTask.ticket_status || "unknown")
+                                          .replace(/_/g, " ")
+                                          .toUpperCase()}
+                                      </span>
+                                    </td>
+                                    <td className={styles.status}>
+                                      <span
+                                        className={`${styles.statusBadge} ${getStatusColor(
+                                          mainTask.task_status
+                                        )}`}
+                                      >
+                                        {(mainTask.task_status || "unknown")
+                                          .replace(/_/g, " ")
+                                          .toUpperCase()}
+                                      </span>
+                                    </td>
+                                    <td className={styles.priority}>
+                                      <span
+                                        className={`${styles.priorityBadge} ${getPriorityColor(
+                                          "medium"
+                                        )}`}
+                                      >
+                                        MEDIUM
+                                      </span>
+                                    </td>
+                                    <td className={styles.targetDate}>
+                                      {formatDate(mainTask.target_resolution)}
+                                    </td>
+                                    <td className={styles.action}>
+                                      <button 
+                                        className={styles.viewButton} 
+                                        title="View ticket details"
+                                        onClick={() => navigate(`/admin/archive/${mainTask.task_item_id}`)}
+                                      >
+                                        👁
+                                      </button>
+                                    </td>
+                                  </tr>
+
+                                  {/* Additional Tasks Row (when expanded) */}
+                                  {isTicketExpanded && allTasksForTicket.length > 1 && (
+                                    <tr className={styles.expandedRow}>
+                                      <td colSpan="11">
+                                        <div className={styles.expandedContent}>
+                                          <h4 className={styles.detailsTitle}>
+                                            All Tasks for This Ticket ({allTasksForTicket.length})
+                                          </h4>
+                                          <div className={styles.taskHistoryTable}>
+                                            <table className={styles.nestedTable}>
+                                              <thead>
+                                                <tr>
+                                                  <th>Assigned To</th>
+                                                  <th>Current Step</th>
+                                                  <th>Status</th>
+                                                  <th>Assigned On</th>
+                                                  <th>Notes</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {allTasksForTicket.map((task, idx) => (
+                                                  <tr key={`${task.task_item_id}-${idx}`}>
+                                                    <td>
+                                                      <div>
+                                                        <p className={styles.cellName}>
+                                                          {task.user_full_name}
+                                                        </p>
+                                                        <p className={styles.cellRole}>
+                                                          {task.role || "-"}
+                                                        </p>
+                                                      </div>
+                                                    </td>
+                                                    <td>
+                                                      <div>
+                                                        <p className={styles.cellName}>
+                                                          {task.current_step_name || "-"}
+                                                        </p>
+                                                      </div>
+                                                    </td>
+                                                    <td>
+                                                      <span
+                                                        className={`${styles.statusBadge} ${getStatusColor(
+                                                          task.status || task.task_status
+                                                        )}`}
+                                                      >
+                                                        {((task.status || task.task_status) || "unknown")
+                                                          .replace(/_/g, " ")
+                                                          .toUpperCase()}
+                                                      </span>
+                                                    </td>
+                                                    <td>
+                                                      {formatDateTime(task.assigned_on)}
+                                                    </td>
+                                                    <td>
+                                                      {task.notes || "-"}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>
-      {openAssignTicket && (
-        <TicketTaskAssign
-          ticket_id={selectedTicketId}
-          closeAssignTicket={() => setOpenAssignTicket(false)}
-          closeActivateAgent={handleCloseModal}
-        />
-      )}
     </>
   );
 }

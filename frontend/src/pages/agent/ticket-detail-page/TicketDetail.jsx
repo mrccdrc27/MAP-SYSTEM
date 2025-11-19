@@ -57,6 +57,7 @@ export default function TicketDetail() {
     instance: null,
     instruction: "",
     taskid: null,
+    currentOwner: null,
   };
 
   function reducer(state, action) {
@@ -69,6 +70,7 @@ export default function TicketDetail() {
           instruction: action.payload.instruction,
           instance: action.payload.instance,
           taskid: action.payload.taskid,
+          currentOwner: action.payload.currentOwner,
         };
       case "RESET":
         return initialState;
@@ -169,6 +171,7 @@ export default function TicketDetail() {
           instruction: stepInstance.step.instruction || "",
           instance: stepInstance.step_instance_id,
           taskid: stepInstance.task.task_id,
+          currentOwner: stepInstance.current_owner,
         },
       });
       setError("");
@@ -448,6 +451,46 @@ export default function TicketDetail() {
                               {state.ticket?.user_assignment?.role || "N/A"}
                             </div>
                           </div>
+                          {state.currentOwner && (
+                            <>
+                              <div className={styles.tdInfoLabelValue}>
+                                <div className={styles.tdInfoLabel}>
+                                  Current Owner
+                                </div>
+                                <div className={styles.tdInfoValue}>
+                                  {state.currentOwner.user_full_name || "N/A"}
+                                </div>
+                              </div>
+                              <div className={styles.tdInfoLabelValue}>
+                                <div className={styles.tdInfoLabel}>
+                                  Owner Role
+                                </div>
+                                <div className={styles.tdInfoValue}>
+                                  {state.currentOwner.role || "N/A"}
+                                </div>
+                              </div>
+                              <div className={styles.tdInfoLabelValue}>
+                                <div className={styles.tdInfoLabel}>
+                                  Assignment Status
+                                </div>
+                                <div className={styles.tdInfoValue}>
+                                  {state.currentOwner.status || "N/A"}
+                                </div>
+                              </div>
+                              <div className={styles.tdInfoLabelValue}>
+                                <div className={styles.tdInfoLabel}>
+                                  Assigned On
+                                </div>
+                                <div className={styles.tdInfoValue}>
+                                  {state.currentOwner.assigned_on
+                                    ? new Date(
+                                        state.currentOwner.assigned_on
+                                      ).toLocaleString()
+                                    : "N/A"}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

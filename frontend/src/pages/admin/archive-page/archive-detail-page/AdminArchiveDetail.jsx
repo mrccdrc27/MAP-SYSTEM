@@ -7,29 +7,28 @@ import { useSearchParams } from "react-router-dom";
 
 // style
 import styles from "./ticket-detail.module.css";
-import general from "../../../style/general.module.css";
+import general from "../../../../style/general.module.css";
 
 // components
-import AdminNav from "../../../components/navigation/AdminNav";
-import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
-import DocumentViewer from "../../../components/ticket/DocumentViewer";
-import TicketComments from "../../../components/ticket/TicketComments";
-import ActionLog from "../../../components/ticket/ActionLog";
-import ActionLogList from "../../../components/ticket/ActionLogList";
-import Messaging from "../../../components/messaging";
+import AdminNav from "../../../../components/navigation/AdminNav";
+import WorkflowTracker2 from "../../../../components/ticket/WorkflowVisualizer2";
+import DocumentViewer from "../../../../components/ticket/DocumentViewer";
+import TicketComments from "../../../../components/ticket/TicketComments";
+import ActionLog from "../../../../components/ticket/ActionLog";
+import ActionLogList from "../../../../components/ticket/ActionLogList";
+import Messaging from "../../../../components/messaging";
 
 // hooks
-import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
-import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProgress";
-import useTicketDetail from "../../../api/useTicketDetail";
-import { useAuth } from "../../../context/AuthContext";
+import useFetchActionLogs from "../../../../api/workflow-graph/useActionLogs";
+import { useWorkflowProgress } from "../../../../api/workflow-graph/useWorkflowProgress";
+import useTicketDetail from "../../../../api/useTicketDetail";
+import { useAuth } from "../../../../context/AuthContext";
 
 // modal
-import TicketAction from "./modals/TicketAction";
-import EscalateTicket from "./modals/EscalateTicket";
+import TransferTask from "./modals/TransferTask";
 import { min } from "date-fns";
 
-export default function AdminTicketDetail() {
+export default function AdminArchiveDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id: taskItemId } = useParams();
@@ -76,8 +75,7 @@ export default function AdminTicketDetail() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [openTicketAction, setOpenTicketAction] = useState(false);
-  const [openEscalateModal, setOpenEscalateModal] = useState(false);
+  const [openTransferModal, setOpenTransferModal] = useState(false);
   const [showTicketInfo, setShowTicketInfo] = useState(true);
 
   const toggTicketInfosVisibility = useCallback(() => {
@@ -350,28 +348,22 @@ export default function AdminTicketDetail() {
               className={styles.layoutColumn}
               style={{ flex: 1, minWidth: "300px" }}
             >
-              <button
-                className={
-                  state.ticket?.has_acted
-                    ? styles.actionButtonDisabled
-                    : styles.actionButton
-                }
-                onClick={() => setOpenTicketAction(true)}
-                disabled={state.ticket?.has_acted}
-              >
-                {state.ticket?.has_acted
-                  ? "Action Already Taken"
-                  : "Make an Action"}
-              </button>
-              <button
-                className={styles.escalateButton}
-                onClick={() => setOpenEscalateModal(true)}
-                disabled={state.ticket?.is_escalated}
-              >
-                {state.ticket?.is_escalated
-                  ? "Already Escalated"
-                  : "Escalate Ticket"}
-              </button>
+              {state.currentOwner?.user_id !== user?.user_id && (
+                <button
+                  className={styles.transferButton}
+                  onClick={() => setOpenTransferModal(true)}
+                >
+                  Transfer Task
+                </button>
+              )}
+              {state.currentOwner?.user_id === user?.user_id && (
+                <button
+                  className={styles.transferButton}
+                  onClick={() => navigate(`/admin/ticket/${taskItemId}`)}
+                >
+                  Go to Ticket
+                </button>
+              )}
               <div className={styles.layoutSection}>
                 <div className={styles.tdpTabs}>
                   {["Details", "Messages"].map((tab) => (
@@ -517,19 +509,12 @@ export default function AdminTicketDetail() {
           </div>
         </section>
       </main>
-      {openTicketAction && (
-        <TicketAction
-          closeTicketAction={setOpenTicketAction}
-          ticket={state.ticket}
-          action={state.action}
-          instance={state.taskid}
-        />
-      )}
-      {openEscalateModal && (
-        <EscalateTicket
-          closeEscalateModal={setOpenEscalateModal}
+      {openTransferModal && (
+        <TransferTask
+          closeTransferModal={setOpenTransferModal}
           ticket={state.ticket}
           taskItemId={taskItemId}
+          currentOwner={state.currentOwner}
         />
       )}
     </>

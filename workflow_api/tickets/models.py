@@ -46,7 +46,7 @@ class WorkflowTicket(models.Model):
     ticket_id = models.CharField(max_length=20, blank=True, null=True)
     original_ticket_id = models.CharField(max_length=20, db_index=True, blank=True, null=True)
     source_service = models.CharField(max_length=50, default='ticket_service', db_index=True)
-    status = models.CharField(max_length=20, default='New', db_index=True, blank=True, null=True)
+    status = models.CharField(max_length=20, db_index=True, blank=True, null=True)
     department = models.CharField(max_length=100, db_index=True, blank=True, null=True)
     priority = models.CharField(max_length=20, default='Medium', db_index=True, blank=True, null=True, choices=[
         ('Low', 'Low'),
@@ -59,7 +59,6 @@ class WorkflowTicket(models.Model):
         indexes = [
             models.Index(fields=['ticket_number']),
             models.Index(fields=['original_ticket_id']),
-            models.Index(fields=['status']),
         ]
     
     def __str__(self):
