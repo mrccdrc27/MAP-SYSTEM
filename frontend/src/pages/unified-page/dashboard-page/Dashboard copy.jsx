@@ -1,6 +1,3 @@
-// react
-import { useEffect, useMemo } from "react";
-
 // style
 import styles from "./dashboard.module.css";
 
@@ -8,7 +5,7 @@ import styles from "./dashboard.module.css";
 import Nav from "../../../components/navigation/Nav";
 import KPICard from "./components/KPICard";
 import QuickAction from "./components/QuickAction";
-import ToDoTickets from "./components/ToDoTickets";
+import PendingTask from "./components/PendingTask";
 
 // charts
 import ChartContainer from "../../../components/charts/ChartContainer";
@@ -31,52 +28,23 @@ export default function Dashboard() {
   console.log("First Ticket:", JSON.stringify(userTickets?.[0], null, 2));
 
   // Only tickets that have not yet been acted
-  const pendingTickets = useMemo(() => {
-    return (userTickets || [])
-    .filter(entry => !entry.acted_on)
-    .map((entry) => ({
-      ticket_id: String(entry.ticket_id ?? entry.ticket_number ?? ""),
-      subject: String(entry.ticket_subject ?? ""),
-      description: String(entry.ticket_description ?? ""),
-      status: entry.status,
-      priority: entry.ticket_priority,
-      category: entry.category || "Uncategorized",
-      submit_date: entry.assigned_on,
-
-      // TaskItem core fields
-      task_item_id: entry.task_item_id,
-      user_id: entry.user_id,
-      user_full_name: entry.user_full_name,
-      role: entry.role,
-      task_id: entry.task_id,
-      assigned_on: entry.assigned_on,
-      status_updated_on: entry.status_updated_on,
-      acted_on: entry.acted_on,
-      target_resolution: entry.target_resolution,
-      notes: entry.notes,
-
-      // Ticket fields
-      ticket_number: entry.ticket_number,
-
-      // Workflow fields
-      workflow_id: entry.workflow_id,
-      workflow_name: entry.workflow_name,
-
-      // Step fields
-      current_step_id: entry.current_step_id,
-      current_step_name: entry.current_step_name,
-      current_step_role: entry.current_step_role,
-      acted_on_step_id: entry.acted_on_step_id,
-      acted_on_step_name: entry.acted_on_step_name,
-
-      // Task status
-      task_status: entry.task_status,
-
-      // Metadata
-      step_instance_id: entry.task_id, // Use task_id as identifier
-      hasacted: entry.acted_on ? true : false, // <-- changed to rely on acted_on
+  const pendingTickets = (userTickets || [])
+    .filter((e) => !e.has_acted)
+    .map((e) => ({
+      ticket_id: e.ticket_id,
+      ticket_number: e.ticket_number,
+      subject: e.ticket_subject,
+      description: e.ticket_description,
+      workflow_name: e.workflow_name,
+      current_step_name: e.current_step_name,
+      status: e.status,
+      priority: e.ticket_priority || "",
+      has_acted: e.has_acted,
+      submit_date: e.assigned_on,
+      task_id: e.task_id,
+      workflow_id: e.workflow_id,
+      user_assignment: e.user_assignment,
     }));
-  }, [userTickets]);
 
   const counts = {
     new: 0,
@@ -92,7 +60,7 @@ export default function Dashboard() {
   let notActedCount = 0;
 
   (userTickets || []).forEach((e) => {
-    if (e.acted_on) actedCount += 1;
+    if (e.has_acted) actedCount += 1;
     else notActedCount += 1;
   });
 
@@ -137,7 +105,6 @@ export default function Dashboard() {
     const tab = map[label] || "All";
     navigate(`/ticket?tab=${encodeURIComponent(tab)}`);
   };
-
   return (
     <>
       <Nav />
@@ -207,8 +174,8 @@ export default function Dashboard() {
                 <QuickAction />
               </div>
               <div className={styles.layoutSection}>
-                <h2>Upcoming Tasks</h2>
-                <ToDoTickets tickets={pendingTickets} />
+                <h2>Pending Tasks</h2>
+                <PendingTask tickets={pendingTickets} />
               </div>
             </div>
           </div>

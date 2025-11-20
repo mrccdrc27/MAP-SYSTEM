@@ -56,7 +56,7 @@ export default function PendingTask({ tickets = [] }) {
             className={styles.viewAllBtn}
             type="button"
             title="Navigate to pending task"
-            onClick={() => navigate(`/admin/ticket?tab=${encodeURIComponent("All")}`)}
+            onClick={() => navigate(`/ticket?tab=${encodeURIComponent("All")}`)}
           >
             View All
           </button>

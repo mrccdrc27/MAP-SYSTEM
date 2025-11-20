@@ -17,6 +17,11 @@
   align-items: center;
 }
 
+.ptWrapper p {
+  color: var(--heading-color);
+  font-size: var(--table-font-size);
+}
+
 .ptIcon {
   color: var(--primary-color);
   font-size: var(--table-head-size);

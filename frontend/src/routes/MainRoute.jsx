@@ -3,7 +3,6 @@ import React from "react";
 import ProtectedRoute from "./ProtectedRoute";
 
 // pages > agent
-import Archive from "../pages/agent/archive-page/Archive";
 import Track from "../pages/agent/track-page/Track";
 import Profile from "../pages/auth/Profile";
 
@@ -18,6 +17,7 @@ import AdminTicket from "../pages/admin/ticket-page/AdminTicket";
 import Dashboard from "../pages/unified-page/dashboard-page/Dashboard";
 import Ticket from "../pages/unified-page/ticket-page/Ticket";
 import TicketDetail from "../pages/unified-page/ticket-detail-page/TicketDetail";
+import Archive from "../pages/unified-page/archive-page/Archive";
 
 // reporting
 import Report from "../pages/report/Report";
@@ -78,6 +78,7 @@ export default function MainRoute() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/ticket" element={<Ticket />} />
         <Route path="/ticket/:id" element={<TicketDetail />} />
+        <Route path="/archive" element={<Archive />} />
       </Route>
 
       {/* PROTECTED REGISTER - Special case that requires admin privileges */}

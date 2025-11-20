@@ -1,0 +1,171 @@
+.todoContainer {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.buckets {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.bucket {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--muted, #e5e7eb);
+  border-radius: 6px;
+  min-width: 200px;
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.bucketHeader {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--muted, #e5e7eb);
+  font-weight: 600;
+}
+
+.bucketCount {
+  background: var(--muted, #f3f4f6);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.bucketBody {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bucketEmpty {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.taskRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+
+  background-color: var(--bg1-color);
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #e8e8e8;
+  /* border-left: 4px solid var(--primary-color); */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.taskRow:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: scale(1.05) translateY(-3px);
+  box-shadow: var(--box-shadow-as);
+}
+
+.taskLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priorityDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.taskMeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.taskTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.taskSub {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.taskRight {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #374151;
+  font-size: 0.75rem
+}
+
+.dueText {
+  font-size: 0.75rem;
+}
+
+.empty {
+  color: #6b7280;
+  padding: 0.5rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tabButton {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--muted, #e5e7eb);
+  border-radius: 6px;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--table-color);
+}
+
+.tabButton:hover {
+  /* background: #f3f4f6; */
+}
+
+.activeTab {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.viewAllBtn {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.viewAllBtn:hover {
+  background-color: #2563eb;
+}

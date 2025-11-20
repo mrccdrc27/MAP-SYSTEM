@@ -24,15 +24,7 @@ export default function Ticket() {
   const urlTab = searchParams.get("tab") || "All";
   const [activeTab, setActiveTab] = useState(urlTab);
 
-  // check logs
-  useEffect(() => {
-    if (userTickets && userTickets.length > 0) {
-      console.log(
-        "First Ticket (JSON):",
-        JSON.stringify(userTickets[0], null, 2)
-      );
-    }
-  }, [userTickets]);
+  console.log("First Ticket:", JSON.stringify(userTickets?.[3], null, 2));
 
   // Filters
   const [filters, setFilters] = useState({
@@ -54,7 +46,7 @@ export default function Ticket() {
       subject: String(entry.ticket_subject ?? ""),
       description: String(entry.ticket_description ?? ""),
       status: entry.status,
-      priority: entry.priority,
+      priority: entry.ticket_priority,
       category: entry.category || "Uncategorized",
       submit_date: entry.assigned_on,
 

@@ -117,7 +117,7 @@ export default function AgentNav() {
             Track
           </NavLink>
           <NavLink
-            to="/agent/archive"
+            to="/archive"
             className={({ isActive }) =>
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }

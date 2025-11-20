@@ -73,6 +73,12 @@
   margin-bottom: 20px;
 }
 
+.layoutFlexButton {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .tdpTicketNoWrapper {
   display: flex;
   justify-content: space-between;
@@ -376,7 +382,6 @@
   font-size: var(--default-font-size);
   color: var(--heading-color);
 }
-
 
 
 /* ANIMATION */
