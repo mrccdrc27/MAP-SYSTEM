@@ -12,7 +12,7 @@ from copy import deepcopy
 
 from audit.utils import log_action, compare_models
 from .models import Task, TaskItem, TaskItemHistory
-from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer, TaskItemSerializer
+from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, TaskItemSerializer
 from authentication import JWTCookieAuthentication
 from step.models import Steps, StepTransition
 from tickets.models import WorkflowTicket
@@ -242,7 +242,9 @@ class TaskViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='logs')
     def logs(self, request):
         """
-        GET endpoint to retrieve action logs for a task.
+        GET endpoint to retrieve comprehensive action logs for a task.
+        
+        Combines task items and their history into a single logs array.
         
         Query Parameters (at least one required):
         - task_id: (optional) The task ID (integer)
@@ -259,21 +261,36 @@ class TaskViewSet(viewsets.ModelViewSet):
             "workflow_id": "uuid-string",
             "logs": [
                 {
-                    "id": 1,
-                    "action": { "name": "Created" },
-                    "acted_on": "2025-11-11T10:30:00Z",
-                    "user": "john_doe",
-                    "role": "Initiator",
-                    "comment": "Initial ticket creation"
-                },
-                {
-                    "id": 2,
-                    "action": { "name": "Reviewed" },
-                    "acted_on": "2025-11-11T11:15:00Z",
-                    "user": "jane_smith",
+                    "task_item_id": 1,
+                    "user_id": 123,
+                    "user_full_name": "John Doe",
                     "role": "Reviewer",
-                    "comment": "Approved for processing"
-                }
+                    "status": "resolved",
+                    "origin": "System",
+                    "notes": "Approved",
+                    "assigned_on": "2025-11-11T10:30:00Z",
+                    "acted_on": "2025-11-11T11:15:00Z",
+                    "assigned_on_step_id": 1,
+                    "assigned_on_step_name": "Review Step",
+                    "task_history": [
+                        {
+                            "task_item_history_id": 1,
+                            "status": "new",
+                            "created_at": "2025-11-11T10:30:00Z"
+                        },
+                        {
+                            "task_item_history_id": 2,
+                            "status": "in progress",
+                            "created_at": "2025-11-11T10:45:00Z"
+                        },
+                        {
+                            "task_item_history_id": 3,
+                            "status": "resolved",
+                            "created_at": "2025-11-11T11:15:00Z"
+                        }
+                    ]
+                },
+                ...
             ]
         }
         """
@@ -324,30 +341,24 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Get all TaskItems with acted_on (completed actions), ordered by acted_on time
+        # Get ALL task items (not just resolved ones)
         all_task_items = TaskItem.objects.filter(
-            task=task,
-            acted_on__isnull=False
+            task=task
         ).select_related(
             'assigned_on_step', 
-            'assigned_on_step__role_id'
-        ).prefetch_related('taskitemhistory_set').order_by('acted_on')
+            'assigned_on_step__role_id',
+            'role_user',
+            'role_user__role_id'
+        ).prefetch_related('taskitemhistory_set').order_by('assigned_on')
         
-        # Filter to only those with 'resolved' status from history
-        action_items = []
-        for item in all_task_items:
-            latest_history = item.taskitemhistory_set.order_by('-created_at').first()
-            if latest_history and latest_history.status == 'resolved':
-                action_items.append(item)
-        
-        # Serialize the action logs
-        serializer = ActionLogSerializer(action_items, many=True)
+        # Serialize all task items with their history into a single logs array
+        task_items_serializer = TaskItemSerializer(all_task_items, many=True)
         
         response_data = {
             'task_id': task.task_id,
             'ticket_id': task.ticket_id.ticket_id,
             'workflow_id': str(task.workflow_id.workflow_id),
-            'logs': serializer.data
+            'logs': task_items_serializer.data
         }
         
         return Response(response_data, status=status.HTTP_200_OK)

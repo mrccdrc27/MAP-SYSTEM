@@ -1,0 +1,540 @@
+.ttOverlayWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.transferTaskModal {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.ttModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ttHeaderTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.ttHeaderSubtitle {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.ttCloseButton {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.ttCloseButton:hover {
+  color: #374151;
+}
+
+/* Body */
+.ttModalBody {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Label */
+.ttLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.ttRequired {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Search Section */
+.ttSearchContainer {
+  margin-bottom: 24px;
+}
+
+.ttSearchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ttSearchWrapper i {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.ttSearchInput {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ttSearchInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* User List */
+.ttUserListContainer {
+  margin-bottom: 24px;
+}
+
+.ttLoadingState,
+.ttEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.ttLoadingState i,
+.ttEmptyState i {
+  font-size: 32px;
+  margin-bottom: 12px;
+  color: #d1d5db;
+}
+
+.ttUserList {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ttUserItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ttUserItem:last-child {
+  border-bottom: none;
+}
+
+.ttUserItem:hover {
+  background-color: #f9fafb;
+}
+
+.ttUserItemSelected {
+  background-color: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding-left: 9px;
+}
+
+.ttUserAvatar {
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.ttAvatarCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+}
+
+.ttUserInfo {
+  flex: 1;
+}
+
+.ttUserName {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.ttYouLabel {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.ttUserRole {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.ttCheckmark {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+}
+
+.ttErrorText {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* Notes Section */
+.ttNotesContainer {
+  margin-bottom: 24px;
+}
+
+.ttTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 100px;
+}
+
+.ttTextarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ttCharCount {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* Messages */
+.ttErrorMessage,
+.ttWarningMessage,
+.ttSuccessMessage {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.ttErrorMessage {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #7f1d1d;
+}
+
+.ttErrorMessage i {
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ttWarningMessage {
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #78350f;
+  align-items: flex-start;
+}
+
+.ttWarningMessage i {
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ttWarningTitle {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ttSuccessMessage {
+  background-color: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.ttSuccessMessage i {
+  color: #22c55e;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Confirmation Details */
+.ttConfirmationDetails {
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  border-left: 4px solid #3b82f6;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ttDetailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ttDetailLabel {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.ttDetailValue {
+  flex: 1;
+  text-align: right;
+}
+
+.ttDetailValueMain {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.ttDetailValueSub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.ttDetailDivider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 0;
+}
+
+/* Footer */
+.ttModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.ttCancelButton,
+.ttSubmitButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+  justify-content: center;
+}
+
+.ttCancelButton {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.ttCancelButton:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.ttCancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ttSubmitButton {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.ttSubmitButton:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.ttSubmitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .transferTaskModal {
+    max-width: 90%;
+    padding: 0;
+  }
+
+  .ttModalBody {
+    max-height: calc(90vh - 180px);
+  }
+
+  .ttHeaderTitle {
+    font-size: 18px;
+  }
+
+  .ttModalFooter {
+    flex-direction: column-reverse;
+  }
+
+  .ttCancelButton,
+  .ttSubmitButton {
+    flex: 1;
+  }
+}
+
+/* Avatar Colors */
+.bg-blue-500 {
+  background-color: #3b82f6;
+}
+
+.bg-blue-600 {
+  background-color: #2563eb;
+}
+
+.bg-purple-500 {
+  background-color: #a855f7;
+}
+
+.bg-purple-600 {
+  background-color: #9333ea;
+}
+
+.bg-pink-500 {
+  background-color: #ec4899;
+}
+
+.bg-pink-600 {
+  background-color: #db2777;
+}
+
+.bg-red-500 {
+  background-color: #ef4444;
+}
+
+.bg-red-600 {
+  background-color: #dc2626;
+}
+
+.bg-orange-500 {
+  background-color: #f97316;
+}
+
+.bg-orange-600 {
+  background-color: #ea580c;
+}
+
+.bg-amber-500 {
+  background-color: #f59e0b;
+}
+
+.bg-amber-600 {
+  background-color: #d97706;
+}
+
+.bg-yellow-500 {
+  background-color: #eab308;
+}
+
+.bg-yellow-600 {
+  background-color: #ca8a04;
+}
+
+.bg-lime-500 {
+  background-color: #84cc16;
+}
+
+.bg-lime-600 {
+  background-color: #65a30d;
+}
+
+.bg-green-500 {
+  background-color: #22c55e;
+}
+
+.bg-green-600 {
+  background-color: #16a34a;
+}
+
+.bg-emerald-500 {
+  background-color: #10b981;
+}
+
+.bg-emerald-600 {
+  background-color: #059669;
+}
+
+.bg-teal-500 {
+  background-color: #14b8a6;
+}
+
+.bg-teal-600 {
+  background-color: #0d9488;
+}
+
+.bg-cyan-500 {
+  background-color: #06b6d4;
+}
+
+.bg-cyan-600 {
+  background-color: #0891b2;
+}

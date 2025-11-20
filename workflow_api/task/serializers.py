@@ -4,6 +4,13 @@ from tickets.models import WorkflowTicket
 from workflow.models import Workflows
 from step.models import Steps
 
+class TaskItemHistorySerializer(serializers.ModelSerializer):
+    """Serializer for TaskItemHistory records"""
+    class Meta:
+        model = TaskItemHistory
+        fields = ['task_item_history_id', 'status', 'created_at']
+        read_only_fields = ['task_item_history_id', 'created_at']
+
 class TaskItemSerializer(serializers.ModelSerializer):
     """Serializer for TaskItem (user assignment in a task)"""
     user_id = serializers.IntegerField(source='role_user.user_id', read_only=True)
@@ -14,6 +21,7 @@ class TaskItemSerializer(serializers.ModelSerializer):
     transferred_to_user_id = serializers.IntegerField(source='transferred_to.user_id', read_only=True, allow_null=True)
     transferred_to_user_name = serializers.CharField(source='transferred_to.user_full_name', read_only=True, allow_null=True)
     status = serializers.SerializerMethodField()
+    task_history = serializers.SerializerMethodField()
     
     class Meta:
         model = TaskItem
@@ -21,14 +29,20 @@ class TaskItemSerializer(serializers.ModelSerializer):
             'task_item_id', 'user_id', 'user_full_name', 'status', 'origin',
             'role', 'notes', 'assigned_on', 'acted_on',
             'assigned_on_step_id', 'assigned_on_step_name', 'target_resolution', 'resolution_time',
-            'transferred_to', 'transferred_to_user_id', 'transferred_to_user_name', 'transferred_by'
+            'transferred_to', 'transferred_to_user_id', 'transferred_to_user_name', 'transferred_by',
+            'task_history'
         ]
-        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time', 'transferred_to_user_id', 'transferred_to_user_name', 'origin']
+        read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time', 'transferred_to_user_id', 'transferred_to_user_name', 'origin', 'task_history']
     
     def get_status(self, obj):
         """Get latest status from TaskItemHistory"""
         latest_history = obj.taskitemhistory_set.order_by('-created_at').first()
         return latest_history.status if latest_history else 'new'
+    
+    def get_task_history(self, obj):
+        """Get all history records for this task item"""
+        history = obj.taskitemhistory_set.order_by('created_at')
+        return TaskItemHistorySerializer(history, many=True).data
     
     def validate_notes(self, value):
         """Ensure notes field is not empty"""

@@ -59,75 +59,125 @@ export default function TicketAction({
   return (
     <div className={styles.taOverlayWrapper} onClick={() => closeTicketAction(false)}>
       <div className={styles.ticketActionModal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.taExit} onClick={() => closeTicketAction(false)}>
-          <i className="fa-solid fa-xmark"></i>
+        {/* Modal Header */}
+        <div className={styles.taModalHeader}>
+          <div>
+            <h2 className={styles.taHeaderTitle}>Make an Action</h2>
+            <p className={styles.taHeaderSubtitle}>
+              {ticket?.ticket_id} - {ticket?.ticket_subject || ticket?.subject}
+            </p>
+          </div>
+          <button
+            onClick={() => closeTicketAction(false)}
+            className={styles.taCloseButton}
+            aria-label="Close modal"
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
-        <div className={styles.taHeader}>
-          <h1>Ticket No. {ticket?.ticket_id}</h1>
-          <div className={styles.taSubject}>{ticket?.subject}</div>
-        </div>
-
-        <div className={styles.tdMetaData}>
-          <p className={styles.tdDateOpened}>Opened On: {ticket?.opened_on}</p>
-          <p className={styles.tdDateResolution}>Expected Resolution: </p>
-        </div>
-
-        <div className={styles.tdValidation}>
-          {response && (
-            <p style={{ color: "green" }}>✅ Action triggered successfully!</p>
-          )}
+        {/* Modal Body */}
+        <div className={styles.taModalBody}>
+          {/* Error Messages */}
           {error && error.error && (
-            <p style={{ color: "red" }}>❌ {error.error}</p>
+            <div className={styles.taErrorMessage}>
+              <i className="fa-solid fa-circle-exclamation"></i>
+              <p>{error.error}</p>
+            </div>
           )}
-        </div>
 
-        <div className={styles.taBody}>
+          {/* Success Messages */}
+          {response && (
+            <div className={styles.taSuccessMessage}>
+              <i className="fa-solid fa-circle-check"></i>
+              <p>✅ Action triggered successfully!</p>
+            </div>
+          )}
+
+          {/* Description Section */}
           <div className={styles.taDescriptionCont}>
             <h3>Description</h3>
             <p>{ticket?.description}</p>
           </div>
 
-          <div className={styles.taActionStatusCont}>
-            <select
-              name="ticket-action-status"
-              className={styles.actionStatus}
-              value={selectedActionId}
-              onChange={(e) => setSelectedActionId(e.target.value)}
-              disabled={loading}
-            >
-              <option value="" disabled>
-                Please select an option
-              </option>
-              {action?.map((a) => (
-                <option key={a.transition_id} value={a.transition_id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-            {errors.action && <p className={styles.errorText}>{errors.action}</p>}
+          {/* Actions Section */}
+          <div className={styles.taActionsContainer}>
+            <label className={styles.taLabel}>
+              Select Action <span className={styles.taRequired}>*</span>
+            </label>
+            <div className={styles.taActionsList}>
+              {action && action.length > 0 ? (
+                action.map((a) => (
+                  <div
+                    key={a.transition_id}
+                    onClick={() => setSelectedActionId(a.transition_id)}
+                    className={`${styles.taActionItem} ${
+                      selectedActionId === a.transition_id
+                        ? styles.taActionItemSelected
+                        : ""
+                    }`}
+                  >
+                    <div className={styles.taActionContent}>
+                      <div className={styles.taActionName}>{a.name}</div>
+                      {a.description && (
+                        <div className={styles.taActionDescription}>
+                          {a.description}
+                        </div>
+                      )}
+                    </div>
+                    {selectedActionId === a.transition_id && (
+                      <div className={styles.taCheckmark}>
+                        <i className="fa-solid fa-check"></i>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={styles.taNoActions}>No actions available</p>
+              )}
+            </div>
+            {errors.action && (
+              <p className={styles.taErrorText}>{errors.action}</p>
+            )}
           </div>
 
-          <div className={styles.taCommentCont}>
-            <h3>Notes</h3>
+          {/* Notes Section */}
+          <div className={styles.taNotesContainer}>
+            <label className={styles.taLabel}>
+              Notes <span className={styles.taRequired}>*</span>
+            </label>
             <textarea
-              className={styles.actionStatus}
-              placeholder="Enter notes for this action..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              placeholder="Enter notes for this action..."
+              rows="4"
+              className={styles.taTextarea}
               disabled={loading}
             />
-            {errors.notes && <p className={styles.errorText}>{errors.notes}</p>}
+            <p className={styles.taCharCount}>{notes.length} characters</p>
+            {errors.notes && (
+              <p className={styles.taErrorText}>{errors.notes}</p>
+            )}
           </div>
+        </div>
 
+        {/* Modal Footer */}
+        <div className={styles.taModalFooter}>
           <button
-            className={styles.taActionButton}
+            onClick={() => closeTicketAction(false)}
+            className={styles.taCancelButton}
+          >
+            Cancel
+          </button>
+          <button
             onClick={handleClick}
-            disabled={loading}
+            disabled={!selectedActionId || !notes.trim() || loading}
+            className={styles.taSubmitButton}
           >
             {loading ? (
               <>
-                <span className={styles.spinner}></span> Sending...
+                <i className="fa-solid fa-spinner fa-spin"></i>
+                <span>Sending...</span>
               </>
             ) : (
               "Push Changes"

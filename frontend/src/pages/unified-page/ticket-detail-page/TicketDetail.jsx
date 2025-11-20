@@ -25,10 +25,11 @@ import { useAuth } from "../../../context/AuthContext";
 // modal
 import TicketAction from "./modals/TicketAction";
 import EscalateTicket from "./modals/EscalateTicket";
+import TransferTask from "../../../components/modal/TransferTask";
 import { min } from "date-fns";
 
 export default function TicketDetail() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { id: taskItemId } = useParams();
   const {
@@ -76,6 +77,7 @@ export default function TicketDetail() {
   const [error, setError] = useState("");
   const [openTicketAction, setOpenTicketAction] = useState(false);
   const [openEscalateModal, setOpenEscalateModal] = useState(false);
+  const [openTransferModal, setOpenTransferModal] = useState(false);
   const [showTicketInfo, setShowTicketInfo] = useState(true);
 
   const toggTicketInfosVisibility = useCallback(() => {
@@ -379,6 +381,14 @@ export default function TicketDetail() {
                     ? "Action Already Taken"
                     : "Escalate Ticket"}
                 </button>
+                {isAdmin() && (
+                  <button
+                    className={styles.transferButton}
+                    onClick={() => setOpenTransferModal(true)}
+                  >
+                    Transfer Task
+                  </button>
+                )}
               </div>
 
               <div className={styles.layoutSection}>
@@ -500,7 +510,7 @@ export default function TicketDetail() {
                     <div className={styles.actionLogs}>
                       <h4>Action Logs</h4>
                       <ActionLogList
-                        logs={logs}
+                        logs={logs && logs.length > 0 ? [...logs].reverse() : []}
                         loading={loading}
                         error={error}
                       />
@@ -539,6 +549,14 @@ export default function TicketDetail() {
           closeEscalateModal={setOpenEscalateModal}
           ticket={state.ticket}
           taskItemId={taskItemId}
+        />
+      )}
+      {openTransferModal && (
+        <TransferTask
+          closeTransferModal={setOpenTransferModal}
+          ticket={state.ticket}
+          taskItemId={taskItemId}
+          currentOwner={state.currentOwner}
         />
       )}
     </>

@@ -53,59 +53,81 @@ export default function EscalateTicket({
             className={styles.escalateTicketModal}
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className={styles.escalateExit}
-              onClick={() => closeEscalateModal(false)}
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </div>
-
-            <div className={styles.escalateHeader}>
-              <h1>Escalate Ticket</h1>
-              <div className={styles.escalateSubtitle}>
-                Ticket No. {ticket?.ticket_id}
+            {/* Modal Header */}
+            <div className={styles.escalateModalHeader}>
+              <div>
+                <h2 className={styles.escalateHeaderTitle}>Escalate Ticket</h2>
+                <p className={styles.escalateHeaderSubtitle}>
+                  {ticket?.ticket_id} - {ticket?.ticket_subject || ticket?.ticket_number}
+                </p>
               </div>
+              <button
+                onClick={() => closeEscalateModal(false)}
+                className={styles.escalateCloseButton}
+                aria-label="Close modal"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
             </div>
 
-            <div className={styles.escalateValidation}>
-              {error && <p style={{ color: "red" }}>❌ {error}</p>}
-              {errors && <p style={{ color: "red" }}>❌ {errors}</p>}
-            </div>
+            {/* Modal Body */}
+            <div className={styles.escalateModalBody}>
+              {/* Error Messages */}
+              {(error || errors) && (
+                <div className={styles.escalateErrorMessage}>
+                  <i className="fa-solid fa-circle-exclamation"></i>
+                  <p>{error || errors}</p>
+                </div>
+              )}
 
-            <div className={styles.escalateBody}>
+              {/* Description Section */}
               <div className={styles.escalateDescriptionCont}>
                 <h3>Ticket Details</h3>
-                <p>
+                <div className={styles.escalateDetailItem}>
                   <strong>Subject:</strong> {ticket?.ticket_subject}
-                </p>
-                <p>
+                </div>
+                <div className={styles.escalateDetailItem}>
                   <strong>Description:</strong> {ticket?.ticket_description}
-                </p>
+                </div>
               </div>
 
+              {/* Reason Section */}
               <div className={styles.escalateReasonCont}>
-                <label htmlFor="escalate-reason">
-                  <h3>Reason for Escalation *</h3>
+                <label className={styles.escalateLabel}>
+                  Reason for Escalation <span className={styles.escalateRequired}>*</span>
                 </label>
                 <textarea
-                  id="escalate-reason"
-                  className={styles.escalateReason}
+                  className={styles.escalateTextarea}
                   placeholder="Explain why this ticket needs to be escalated..."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   disabled={loading}
-                  rows="5"
+                  rows="4"
                 />
+                <p className={styles.escalateCharCount}>{reason.length} characters</p>
+                {errors && (
+                  <p className={styles.escalateErrorText}>{errors}</p>
+                )}
               </div>
+            </div>
 
+            {/* Modal Footer */}
+            <div className={styles.escalateModalFooter}>
               <button
-                className={styles.escalateButton}
+                onClick={() => closeEscalateModal(false)}
+                className={styles.escalateCancelButton}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.escalateSubmitButton}
                 onClick={handleEscalate}
-                disabled={loading}
+                disabled={loading || !reason.trim()}
               >
                 {loading ? (
                   <>
-                    <span className={styles.spinner}></span> Escalating...
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>Escalating...</span>
                   </>
                 ) : (
                   "Escalate Ticket"
@@ -123,34 +145,73 @@ export default function EscalateTicket({
             className={styles.confirmModal}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={styles.confirmHeader}>
-              <i className="fa-solid fa-exclamation-triangle"></i>
-              <h2>Confirm Escalation</h2>
-            </div>
-
-            <div className={styles.confirmBody}>
-              <p>Are you sure you want to escalate this ticket?</p>
-              <p className={styles.escalationReason}>
-                <strong>Reason:</strong> {reason}
-              </p>
-            </div>
-
-            <div className={styles.confirmActions}>
+            {/* Confirmation Header */}
+            <div className={styles.confirmModalHeader}>
+              <div>
+                <h2 className={styles.confirmHeaderTitle}>Confirm Escalation</h2>
+                <p className={styles.confirmHeaderSubtitle}>Please review the details</p>
+              </div>
               <button
-                className={styles.cancelButton}
+                onClick={() => setShowConfirmation(false)}
+                className={styles.confirmCloseButton}
+                aria-label="Close modal"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Confirmation Body */}
+            <div className={styles.confirmModalBody}>
+              {/* Warning Message */}
+              <div className={styles.confirmWarningMessage}>
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  <h3 className={styles.confirmWarningTitle}>Confirm Ticket Escalation</h3>
+                  <p>Are you sure you want to escalate this ticket? This action will notify the appropriate team members.</p>
+                </div>
+              </div>
+
+              {/* Confirmation Details */}
+              <div className={styles.confirmDetails}>
+                <div className={styles.confirmDetailRow}>
+                  <span className={styles.confirmDetailLabel}>Ticket:</span>
+                  <div className={styles.confirmDetailValue}>
+                    <div className={styles.confirmDetailValueMain}>
+                      {ticket?.ticket_id}
+                    </div>
+                    <div className={styles.confirmDetailValueSub}>
+                      {ticket?.ticket_subject}
+                    </div>
+                  </div>
+                </div>
+
+                <hr className={styles.confirmDetailDivider} />
+
+                <div className={styles.confirmDetailRow}>
+                  <span className={styles.confirmDetailLabel}>Reason:</span>
+                  <p className={styles.confirmDetailValue}>{reason}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Confirmation Footer */}
+            <div className={styles.confirmModalFooter}>
+              <button
+                className={styles.confirmCancelButton}
                 onClick={() => setShowConfirmation(false)}
                 disabled={loading}
               >
-                Cancel
+                Back
               </button>
               <button
-                className={styles.confirmButton}
+                className={styles.confirmSubmitButton}
                 onClick={handleConfirm}
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <span className={styles.spinner}></span> Confirming...
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>Confirming...</span>
                   </>
                 ) : (
                   "Yes, Escalate"

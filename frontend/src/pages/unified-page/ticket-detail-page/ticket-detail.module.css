@@ -75,8 +75,9 @@
 
 .layoutFlexButton {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .tdpTicketNoWrapper {
@@ -183,50 +184,52 @@
 
 /* RIGHT */
 .actionButton {
-  /* background-color: var(--primary-color); */
   background-color: var(--success-color);
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 12px;
-  width: 100%;
-  font-size: var(--base-font-size);
+  padding: 14px 16px;
+  flex: 1 1 100%;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  margin-bottom: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.actionButtonDisabled {
-  background-color: var(--border-color);
-  color: var(--bg-color);
-  border: none;
-  border-radius: 4px;
-  padding: 12px;
-  width: 100%;
-  font-size: var(--base-font-size);
-  font-weight: bold;
-  cursor: disabled;
-  margin-bottom: 10px;
-  transition: background-color 0.3s, transform 0.5s ease-in;
+.actionButton:hover:not(:disabled) {
+  background-color: #20a76b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.actionButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.actionButton:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .escalateButton {
-  background-color: #999999;
+  background-color: #d97f7f;
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 12px;
-  width: 100%;
-  font-size: var(--base-font-size);
-  font-weight: bold;
+  padding: 10px 14px;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  margin-bottom: 10px;
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .escalateButton:hover:not(:disabled) {
-  background-color: var(--red-color);
-  transform: translateY(-2px);
+  background-color: #c96666;
+  transform: translateY(-1px);
 }
 
 .escalateButton:active:not(:disabled) {
@@ -241,17 +244,61 @@
 }
 
 .escalateButtonDisabled {
-  background-color: var(--border-color);
-  color: var(--bg-color);
+  background-color: #cccccc;
+  color: #666666;
   border: none;
   border-radius: 4px;
   padding: 12px;
-  width: 100%;
+  flex: 1;
   font-size: var(--base-font-size);
   font-weight: bold;
-  cursor: disabled;
-  margin-bottom: 10px;
-  transition: background-color 0.3s, transform 0.5s ease-in;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.transferButton {
+  background-color: #6b9dd9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 14px;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.transferButton:hover {
+  background-color: #5a87c1;
+  transform: translateY(-1px);
+}
+
+.transferButton:active {
+  transform: translateY(0);
+}
+
+.transferButton:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.transferButton:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+}
+
+.transferButton:active {
+  transform: translateY(0);
+}
+
+.transferButton:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* tabs */

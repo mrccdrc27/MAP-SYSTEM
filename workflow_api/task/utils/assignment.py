@@ -203,10 +203,10 @@ def assign_users_for_escalation(task, escalate_to_role, reason):
         notes=''
     )
     
-    # Create initial history record with 'escalated' status
+    # Create initial history record with 'new' status
     TaskItemHistory.objects.create(
         task_item=task_item,
-        status='escalated'
+        status='new'
     )
     
     logger.info(f"🚨 Escalated TaskItem created: User {selected_role_user.user_id} assigned to Task {task.task_id}")

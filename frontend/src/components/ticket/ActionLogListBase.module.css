@@ -2,6 +2,91 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.switchLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switchInput {
+  display: none;
+}
+
+.switchSlider {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 50px;
+  height: 26px;
+  background-color: var(--border-color);
+  border-radius: 13px;
+  transition: background-color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.switchSlider::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background-color: white;
+  border-radius: 50%;
+  transition: left 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switchInput:checked + .switchSlider {
+  background-color: var(--primary-color);
+}
+
+.switchInput:checked + .switchSlider::after {
+  left: 26px;
+}
+
+.switchText {
+  font-size: var(--default-font-size);
+  font-weight: 500;
+  color: var(--text-color);
+  min-width: 120px;
+}
+
+.toggleButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary-color);
+  background-color: transparent;
+  color: var(--primary-color);
+  border-radius: 0.375rem;
+  font-size: var(--default-font-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggleButton:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.toggleButton.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
 }
 
 .timeline {
@@ -18,7 +103,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #ccc;
+  background: var(--border-color);
 }
 
 .logItem {
@@ -34,44 +119,51 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #999;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px #ccc;
+  background: var(--secondary-color);
+  border: 2px solid var(--bg1-color);
+  box-shadow: 0 0 0 2px var(--border-color);
 }
 
-/* Action-specific dot colors */
-.create {
-  background-color: #28a745;
+/* Status-specific dot colors */
+.new {
+  background-color: var(--primary-color);
 }
 
-.update {
-  background-color: #007bff;
+.inProgress {
+  background-color: var(--accent-color);
 }
 
-.delete {
-  background-color: #dc3545;
+.resolved {
+  background-color: var(--success-color);
 }
 
-.comment {
-  background-color: #ffc107;
+.reassigned {
+  background-color: var(--primary-color);
+}
+
+.escalated {
+  background-color: var(--error-color);
+}
+
+.breached {
+  background-color: var(--critical-color);
 }
 
 .default {
-  background-color: #6c757d;
+  background-color: var(--secondary-color);
 }
 
 .card {
-  background-color: #fff;
-  border: 1px solid #eee;
+  background-color: var(--bg1-color);
+  border: var(--border-bottom);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
 }
 
 .header {
   display: flex;
   flex-direction: column;
-  /* align-items: flex-start; */
   gap: 1rem;
   margin-bottom: 1rem;
   justify-content: space-between;
@@ -88,45 +180,68 @@
   font-size: 1.1rem;
   font-size: var(--table-head-size);
   font-weight: 600;
-  color: #333;
+  color: var(--heading-color);
 }
 
-.actionIcon {
-  font-size: 1.2rem;
+.userRoleSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userName {
+  font-weight: 700;
+  color: var(--heading-color);
+  font-size: 1rem;
+}
+
+.role {
+  font-size: 0.85rem;
+  color: var(--muted-text-color);
+  font-weight: 500;
 }
 
 .actionType {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 4px 10px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   border-radius: 4px;
   color: white;
-  background-color: #6c757d;
+  background-color: var(--primary-color);
+}
+
+/* Status-specific actionType colors */
+.actionType.new {
+  background-color: var(--primary-color);
+}
+
+.actionType.inProgress {
+  background-color: var(--accent-color);
+  color: #333;
+}
+
+.actionType.resolved {
+  background-color: var(--success-color);
+}
+
+.actionType.reassigned {
+  background-color: var(--primary-color);
+}
+
+.actionType.escalated {
+  background-color: var(--error-color);
+}
+
+.actionType.breached {
+  background-color: var(--critical-color);
 }
 
 .actionSub {
   display: flex;
-  justify-content: space-between
-}
-
-/* Action-specific label colors */
-.create .actionType {
-  background-color: #28a745;
-}
-
-.update .actionType {
-  background-color: #007bff;
-}
-
-.delete .actionType {
-  background-color: #dc3545;
-}
-
-.comment .actionType {
-  background-color: #ffc107;
-  color: #212529;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .timestamp {
@@ -143,25 +258,10 @@
   gap: 0.75rem;
 }
 
-.resolver {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #555;
-}
-
-.resolverBadge {
-  background: #f1f1f1;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #333;
-}
-
 .comment {
-  background: #f9f9f9;
+  background: var(--bg-content-color);
   padding: 12px 14px;
-  border-left: 3px solid #ffc107;
+  border-left: 3px solid var(--accent-color);
   font-style: italic;
   line-height: 1.5;
   font-size: 0.9rem;
@@ -195,7 +295,7 @@
 
 .loadingText {
   font-size: 0.95rem;
-  color: #555;
+  color: var(--heading-color);
 }
 
 .error {
@@ -203,31 +303,156 @@
   text-align: center;
   font-weight: bold;
   font-size: 1rem;
-  color: #dc3545;
-  border: 1px solid #dc3545;
-  background: #fff5f5;
+  color: white;
+  border: 1px solid var(--error-color);
+  background: var(--error-color);
   border-radius: 6px;
 }
 
 .empty {
   text-align: center;
   padding: 4rem 2rem;
-  border: 1px dashed #ccc;
-  background: #fafafa;
+  border: 1px dashed var(--border-color);
+  background: var(--bg-content-color);
   border-radius: 6px;
-  color: #555;
-}
-
-.empty::before {
-  content: '📋';
-  display: block;
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  color: var(--muted-text-color);
 }
 
 .emptyText {
   font-size: 1rem;
   font-weight: 500;
+}
+
+/* Step Info Styles */
+.stepInfo {
+  padding: 8px 0;
+  margin-bottom: 12px;
+  border-bottom: var(--border-bottom);
+}
+
+.stepName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--heading-color);
+  display: block;
+  word-break: break-word;
+}
+
+/* History Metadata Styles */
+.historyMeta {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: var(--bg-content-color);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.historyMeta strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--heading-color);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.historyTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.historyEntry {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  position: relative;
+}
+
+.historyEntry:not(:last-child) {
+  border-bottom: var(--border-bottom);
+  padding-bottom: 12px;
+}
+
+.historyBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.historyBadge.new {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: var(--primary-color);
+}
+
+.historyBadge.inProgress {
+  background-color: rgba(255, 184, 0, 0.1);
+  color: var(--accent-color);
+}
+
+.historyBadge.resolved {
+  background-color: rgba(73, 197, 100, 0.1);
+  color: var(--success-color);
+}
+
+.historyBadge.reassigned {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: var(--primary-color);
+}
+
+.historyBadge.escalated {
+  background-color: rgba(174, 19, 27, 0.1);
+  color: var(--error-color);
+}
+
+.historyBadge.breached {
+  background-color: rgba(160, 0, 0, 0.1);
+  color: var(--critical-color);
+}
+
+.historyTime {
+  font-size: 0.75rem;
+  color: var(--muted-text-color);
+  font-weight: 500;
+}
+
+.historyArrow {
+  font-size: 0.9rem;
+  color: var(--border-color);
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.arrow {
+  color: var(--border-color);
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* Meta Tags Styles */
+.metaTags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: var(--border-bottom);
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: var(--bg-content-color);
+  color: var(--muted-text-color);
+  font-size: 0.75rem;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 /* Responsive Design */

@@ -25,7 +25,7 @@ import useTicketDetail from "../../../../api/useTicketDetail";
 import { useAuth } from "../../../../context/AuthContext";
 
 // modal
-import TransferTask from "./modals/TransferTask";
+import TransferTask from "../../../../components/modal/TransferTask";
 import { min } from "date-fns";
 
 export default function AdminArchiveDetail() {
