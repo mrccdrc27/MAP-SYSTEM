@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, TaskItem
+from .models import Task, TaskItem, TaskItemHistory
 from tickets.models import WorkflowTicket
 from workflow.models import Workflows
 from step.models import Steps
@@ -9,20 +9,26 @@ class TaskItemSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='role_user.user_id', read_only=True)
     user_full_name = serializers.CharField(source='role_user.user_full_name', read_only=True)
     role = serializers.CharField(source='role_user.role_id.name', read_only=True)
-    acted_on_step_name = serializers.CharField(source='acted_on_step.name', read_only=True, allow_null=True)
-    acted_on_step_id = serializers.IntegerField(source='acted_on_step.step_id', read_only=True, allow_null=True)
+    assigned_on_step_name = serializers.CharField(source='assigned_on_step.name', read_only=True, allow_null=True)
+    assigned_on_step_id = serializers.IntegerField(source='assigned_on_step.step_id', read_only=True, allow_null=True)
     transferred_to_user_id = serializers.IntegerField(source='transferred_to.user_id', read_only=True, allow_null=True)
     transferred_to_user_name = serializers.CharField(source='transferred_to.user_full_name', read_only=True, allow_null=True)
+    status = serializers.SerializerMethodField()
     
     class Meta:
         model = TaskItem
         fields = [
             'task_item_id', 'user_id', 'user_full_name', 'status', 'origin',
-            'role', 'notes', 'assigned_on', 'status_updated_on', 'acted_on',
-            'acted_on_step_id', 'acted_on_step_name', 'target_resolution', 'resolution_time',
+            'role', 'notes', 'assigned_on', 'acted_on',
+            'assigned_on_step_id', 'assigned_on_step_name', 'target_resolution', 'resolution_time',
             'transferred_to', 'transferred_to_user_id', 'transferred_to_user_name', 'transferred_by'
         ]
         read_only_fields = ['task_item_id', 'assigned_on', 'target_resolution', 'resolution_time', 'transferred_to_user_id', 'transferred_to_user_name', 'origin']
+    
+    def get_status(self, obj):
+        """Get latest status from TaskItemHistory"""
+        latest_history = obj.taskitemhistory_set.order_by('-created_at').first()
+        return latest_history.status if latest_history else 'new'
     
     def validate_notes(self, value):
         """Ensure notes field is not empty"""
@@ -213,10 +219,10 @@ class ActionLogSerializer(serializers.Serializer):
         return None
     
     def get_action(self, obj):
-        """Infer action name from acted_on_step"""
-        if obj.acted_on_step:
+        """Infer action name from assigned_on_step"""
+        if obj.assigned_on_step:
             # Try to infer action from step name
-            step_name = obj.acted_on_step.name.lower()
+            step_name = obj.assigned_on_step.name.lower()
             if 'create' in step_name or 'submit' in step_name:
                 action_name = 'Created'
             elif 'review' in step_name or 'approve' in step_name:
@@ -226,7 +232,7 @@ class ActionLogSerializer(serializers.Serializer):
             elif 'comment' in step_name or 'note' in step_name:
                 action_name = 'Added comment'
             else:
-                action_name = f'Updated at {obj.acted_on_step.name}'
+                action_name = f'Updated at {obj.assigned_on_step.name}'
             return {'name': action_name}
         return {'name': 'Unknown Action'}
     

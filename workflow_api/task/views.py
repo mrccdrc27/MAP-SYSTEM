@@ -11,7 +11,7 @@ import logging
 from copy import deepcopy
 
 from audit.utils import log_action, compare_models
-from .models import Task, TaskItem
+from .models import Task, TaskItem, TaskItemHistory
 from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, ActionLogSerializer, TaskItemSerializer
 from authentication import JWTCookieAuthentication
 from step.models import Steps, StepTransition
@@ -324,12 +324,21 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Get all TaskItems with status 'resolved' (completed actions), ordered by acted_on time
-        action_items = TaskItem.objects.filter(
+        # Get all TaskItems with acted_on (completed actions), ordered by acted_on time
+        all_task_items = TaskItem.objects.filter(
             task=task,
-            status='resolved',
             acted_on__isnull=False
-        ).select_related('acted_on_step', 'acted_on_step__role_id').order_by('acted_on')
+        ).select_related(
+            'assigned_on_step', 
+            'assigned_on_step__role_id'
+        ).prefetch_related('taskitemhistory_set').order_by('acted_on')
+        
+        # Filter to only those with 'resolved' status from history
+        action_items = []
+        for item in all_task_items:
+            latest_history = item.taskitemhistory_set.order_by('-created_at').first()
+            if latest_history and latest_history.status == 'resolved':
+                action_items.append(item)
         
         # Serialize the action logs
         serializer = ActionLogSerializer(action_items, many=True)
@@ -409,8 +418,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         task = user_assignment.task
         
-        # ✅ Set task_item status to 'in progress' only if status is 'new'
-        if user_assignment.taskitemhistory_set.filter(status='new').exists():
+        # ✅ Set task_item status to 'in progress' only if it hasn't already been viewed
+        # Check if there's already an 'in progress' or later status (not just 'new')
+        latest_history = user_assignment.taskitemhistory_set.order_by('-created_at').first()
+        current_status = latest_history.status if latest_history else 'new'
+        
+        if current_status == 'new':
             # Create history record for transition from 'new' to 'in progress'
             from task.models import TaskItemHistory
             TaskItemHistory.objects.create(
@@ -772,7 +785,10 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         # Check if the original assignment is already escalated
-        if current_assignment.status == 'escalated':
+        latest_history = current_assignment.taskitemhistory_set.order_by('-created_at').first()
+        current_status = latest_history.status if latest_history else 'new'
+        
+        if current_status == 'escalated':
             return Response(
                 {'error': 'This task item has already been escalated and cannot be escalated again'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -783,11 +799,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Check if any existing task item for the CURRENT role already has escalated status
         # This prevents escalating if the current role has already been escalated
         current_role = current_assignment.role_user.role_id
-        escalated_in_current_role = TaskItem.objects.filter(
-            task=task,
-            role_user__role_id=current_role,
-            status='escalated'
-        ).exists()
+        escalated_in_current_role = False
+        for item in TaskItem.objects.filter(task=task, role_user__role_id=current_role).prefetch_related('taskitemhistory_set'):
+            item_latest_history = item.taskitemhistory_set.order_by('-created_at').first()
+            if item_latest_history and item_latest_history.status == 'escalated':
+                escalated_in_current_role = True
+                break
         
         if escalated_in_current_role:
             return Response(
@@ -796,11 +813,12 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         # Check if any existing task item for the escalate_to role already has escalated status
-        escalated_in_target_role = TaskItem.objects.filter(
-            task=task,
-            role_user__role_id=escalate_to_role,
-            status='escalated'
-        ).exists()
+        escalated_in_target_role = False
+        for item in TaskItem.objects.filter(task=task, role_user__role_id=escalate_to_role).prefetch_related('taskitemhistory_set'):
+            item_latest_history = item.taskitemhistory_set.order_by('-created_at').first()
+            if item_latest_history and item_latest_history.status == 'escalated':
+                escalated_in_target_role = True
+                break
         
         if escalated_in_target_role:
             return Response(
@@ -808,12 +826,17 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Mark current assignment as escalated with reason in notes and record acted_on time
-        current_assignment.status = 'escalated'
+        # Create history record for escalated status
+        from task.models import TaskItemHistory
+        TaskItemHistory.objects.create(
+            task_item=current_assignment,
+            status='escalated'
+        )
+        
+        # Update other fields
         current_assignment.notes = f"Escalated by user {user_id}: {reason}"
-        current_assignment.status_updated_on = timezone.now()
         current_assignment.acted_on = timezone.now()  # Record when the escalation action was taken
-        current_assignment.acted_on_step = task.current_step  # Record the step where escalation occurred
+        current_assignment.assigned_on_step = task.current_step  # Record the step where escalation occurred
         current_assignment.save()
         
         # Log audit event
@@ -891,41 +914,59 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         # Validate task item status - can only transfer unacted, non-escalated items
-        if task_item.status in ['resolved', 'escalated', 'reassigned', 'breached']:
+        latest_history = task_item.taskitemhistory_set.order_by('-created_at').first()
+        current_status = latest_history.status if latest_history else 'new'
+        
+        if current_status in ['resolved', 'escalated', 'reassigned', 'breached']:
             return Response(
-                {'error': f'Cannot transfer task item with status "{task_item.status}"'},
+                {'error': f'Cannot transfer task item with status \"{current_status}\"'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Get target RoleUsers - find user with same role as current assignment
+        # Get target RoleUsers - user can be in any role
         try:
             target_role_user = RoleUsers.objects.get(
                 user_id=target_user_id,
-                role_id=task_item.role_user.role_id,
                 is_active=True
             )
         except RoleUsers.DoesNotExist:
             return Response(
-                {'error': f'User {target_user_id} is not assigned to role "{task_item.role_user.role_id.name}"'},
+                {'error': f'User {target_user_id} is not active or does not exist'},
                 status=status.HTTP_404_NOT_FOUND
             )
+        except RoleUsers.MultipleObjectsReturned:
+            # If user has multiple roles, use the first one
+            target_role_user = RoleUsers.objects.filter(
+                user_id=target_user_id,
+                is_active=True
+            ).first()
         
         # Mark original assignment as transferred with notes
-        task_item.status = 'reassigned'
         task_item.transferred_to = target_role_user
         task_item.transferred_by = request.user.user_id
         task_item.notes = transfer_notes
-        task_item.status_updated_on = timezone.now()
+        task_item.acted_on = timezone.now()
         task_item.save()
+        
+        # Create history record for reassignment
+        TaskItemHistory.objects.create(
+            task_item=task_item,
+            status='reassigned'
+        )
         
         # Create new TaskItem for target user (no notes)
         new_task_item = TaskItem.objects.create(
             task=task_item.task,
             role_user=target_role_user,
-            status='new',
             origin='Transferred',
             notes='',
             target_resolution=task_item.target_resolution
+        )
+        
+        # Create history record for new assignment
+        TaskItemHistory.objects.create(
+            task_item=new_task_item,
+            status='new'
         )
         
         # Log audit event

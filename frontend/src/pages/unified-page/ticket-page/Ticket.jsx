@@ -81,7 +81,7 @@ export default function Ticket() {
 
       // Metadata
       step_instance_id: entry.task_id, // Use task_id as identifier
-      hasacted: entry.status === "resolved" || entry.status === "escalated",
+      hasacted: entry.status === "resolved" || entry.status === "escalated" || entry.status === "reassigned",
     }));
   }, [userTickets]);
 
