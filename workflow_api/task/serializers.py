@@ -94,6 +94,7 @@ class UserTaskListSerializer(serializers.ModelSerializer):
     ticket_subject = serializers.SerializerMethodField()
     ticket_description = serializers.SerializerMethodField()
     ticket_status = serializers.CharField(source='task.ticket_id.status', read_only=True, allow_null=True)
+    ticket_priority = serializers.CharField(source='task.ticket_id.priority', read_only=True, allow_null=True)
     
     # Workflow fields
     workflow_id = serializers.IntegerField(source='task.workflow_id.workflow_id', read_only=True)
@@ -133,6 +134,7 @@ class UserTaskListSerializer(serializers.ModelSerializer):
             'ticket_subject',
             'ticket_description',
             'ticket_status',
+            'ticket_priority',
             'workflow_id',
             'workflow_name',
             'current_step_id',
