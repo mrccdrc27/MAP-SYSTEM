@@ -35,6 +35,7 @@ class APIRootSerializer(serializers.Serializer):
     ams_checkout = serializers.URLField()
     bms_checkout = serializers.URLField()
     workflow_manager = serializers.URLField()
+    analytics = serializers.URLField()
     schema = serializers.URLField()
     docs = serializers.URLField()
     admin = serializers.URLField()
@@ -60,6 +61,7 @@ def api_root(request, format=None):
         'ams-checkout': request.build_absolute_uri('ams-checkout/'),
         'bms-checkout': request.build_absolute_uri('bms-checkout/'),
         'workflow-manager': request.build_absolute_uri('workflow-manager/'),
+        'analytics': request.build_absolute_uri('analytics/'),
         'schema': reverse('schema', request=request, format=format),
         'docs': reverse('swagger-ui', request=request, format=format),
         'admin': reverse('admin:index', request=request, format=format),
@@ -83,6 +85,7 @@ urlpatterns = [
     path('bms-checkout/', include('bmscheckout.urls')),
     path('workflow-manager/', include('workflowmanager.urls')),
     path('audit/', include('audit.urls')),
+    path('analytics/', include('reporting.urls')),
 
     # Documentation
     path('schema/', SpectacularAPIView.as_view(), name='schema'),

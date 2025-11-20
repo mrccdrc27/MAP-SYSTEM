@@ -1,0 +1,446 @@
+{
+  "generated_at": "2025-11-20T21:26:45.046199",
+  "total_endpoints": 12,
+  "endpoints": {
+    "analytics_root": {
+      "description": "Analytics API root with all available endpoints",
+      "data": {
+        "error": "Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.",
+        "type": "DisallowedHost"
+      }
+    },
+    "dashboard": {
+      "description": "Dashboard summary with overall system metrics",
+      "data": {
+        "total_tickets": 60,
+        "completed_tickets": 0,
+        "pending_tickets": 60,
+        "in_progress_tickets": 0,
+        "sla_compliance_rate": 0.0,
+        "avg_resolution_time_hours": null,
+        "total_users": 4,
+        "total_workflows": 5,
+        "escalation_rate": 3.17
+      }
+    },
+    "status_summary": {
+      "description": "Task status distribution",
+      "data": [
+        {
+          "status": "pending",
+          "count": 60,
+          "percentage": 100.0
+        }
+      ]
+    },
+    "sla_compliance": {
+      "description": "SLA compliance metrics by priority",
+      "data": [
+        {
+          "priority": "Critical",
+          "total_tasks": 15,
+          "sla_met": 15,
+          "sla_breached": 0,
+          "compliance_rate": 100.0,
+          "avg_resolution_hours": null
+        },
+        {
+          "priority": "High",
+          "total_tasks": 14,
+          "sla_met": 14,
+          "sla_breached": 0,
+          "compliance_rate": 100.0,
+          "avg_resolution_hours": null
+        },
+        {
+          "priority": "Low",
+          "total_tasks": 16,
+          "sla_met": 16,
+          "sla_breached": 0,
+          "compliance_rate": 100.0,
+          "avg_resolution_hours": null
+        },
+        {
+          "priority": "Medium",
+          "total_tasks": 15,
+          "sla_met": 15,
+          "sla_breached": 0,
+          "compliance_rate": 100.0,
+          "avg_resolution_hours": null
+        }
+      ]
+    },
+    "team_performance": {
+      "description": "Team/User performance metrics",
+      "data": [
+        {
+          "user_id": 8,
+          "total_tasks": 1,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 0
+        },
+        {
+          "user_id": 3,
+          "total_tasks": 21,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 0
+        },
+        {
+          "user_id": 6,
+          "total_tasks": 20,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 2
+        },
+        {
+          "user_id": 7,
+          "total_tasks": 20,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 0
+        }
+      ]
+    },
+    "workflow_metrics": {
+      "description": "Workflow performance metrics",
+      "data": [
+        {
+          "workflow_id": 1,
+          "workflow_name": "Asset Check In Workflow",
+          "total_tasks": 14,
+          "completed_tasks": 0,
+          "pending_tasks": 14,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_completion_hours": null,
+          "department": "Asset Department",
+          "category": "Asset Check In"
+        },
+        {
+          "workflow_id": 2,
+          "workflow_name": "Asset Check Out Workflow",
+          "total_tasks": 14,
+          "completed_tasks": 0,
+          "pending_tasks": 14,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_completion_hours": null,
+          "department": "Asset Department",
+          "category": "Asset Check Out"
+        },
+        {
+          "workflow_id": 3,
+          "workflow_name": "New Budget Proposal Workflow",
+          "total_tasks": 9,
+          "completed_tasks": 0,
+          "pending_tasks": 9,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_completion_hours": null,
+          "department": "Budget Department",
+          "category": "New Budget Proposal"
+        },
+        {
+          "workflow_id": 4,
+          "workflow_name": "IT Support Access Request Workflow",
+          "total_tasks": 15,
+          "completed_tasks": 0,
+          "pending_tasks": 15,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_completion_hours": null,
+          "department": "IT Department",
+          "category": "IT Support"
+        },
+        {
+          "workflow_id": 5,
+          "workflow_name": "IT Support Software Installation Workflow",
+          "total_tasks": 8,
+          "completed_tasks": 0,
+          "pending_tasks": 8,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_completion_hours": null,
+          "department": "IT Department",
+          "category": "Others"
+        }
+      ]
+    },
+    "step_performance": {
+      "description": "Step-level performance metrics",
+      "data": [
+        {
+          "step_id": 1,
+          "step_name": "Asset Check In Workflow - Triage Ticket",
+          "workflow_id": 1,
+          "total_tasks": 14,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 4,
+          "step_name": "Asset Check Out Workflow - Triage Ticket",
+          "workflow_id": 2,
+          "total_tasks": 13,
+          "completed_tasks": 0,
+          "escalated_tasks": 1,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 7,
+          "step_name": "New Budget Proposal Workflow - Triage Ticket",
+          "workflow_id": 3,
+          "total_tasks": 9,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 10,
+          "step_name": "IT Support Access Request Workflow - Triage Ticket",
+          "workflow_id": 4,
+          "total_tasks": 15,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 13,
+          "step_name": "IT Support Software Installation Workflow - Triage Ticket",
+          "workflow_id": 5,
+          "total_tasks": 8,
+          "completed_tasks": 0,
+          "escalated_tasks": 1,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 2,
+          "step_name": "Asset Check In Workflow - Resolve Ticket",
+          "workflow_id": 1,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Asset Manager"
+        },
+        {
+          "step_id": 5,
+          "step_name": "Asset Check Out Workflow - Resolve Ticket",
+          "workflow_id": 2,
+          "total_tasks": 1,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Asset Manager"
+        },
+        {
+          "step_id": 8,
+          "step_name": "New Budget Proposal Workflow - Resolve Ticket",
+          "workflow_id": 3,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Budget Manager"
+        },
+        {
+          "step_id": 11,
+          "step_name": "IT Support Access Request Workflow - Resolve Ticket",
+          "workflow_id": 4,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Asset Manager"
+        },
+        {
+          "step_id": 14,
+          "step_name": "IT Support Software Installation Workflow - Resolve Ticket",
+          "workflow_id": 5,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Asset Manager"
+        },
+        {
+          "step_id": 3,
+          "step_name": "Asset Check In Workflow - Finalize Ticket",
+          "workflow_id": 1,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 6,
+          "step_name": "Asset Check Out Workflow - Finalize Ticket",
+          "workflow_id": 2,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 9,
+          "step_name": "New Budget Proposal Workflow - Finalize Ticket",
+          "workflow_id": 3,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 12,
+          "step_name": "IT Support Access Request Workflow - Finalize Ticket",
+          "workflow_id": 4,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        },
+        {
+          "step_id": 15,
+          "step_name": "IT Support Software Installation Workflow - Finalize Ticket",
+          "workflow_id": 5,
+          "total_tasks": 0,
+          "completed_tasks": 0,
+          "escalated_tasks": 0,
+          "avg_time_hours": null,
+          "role_name": "Admin"
+        }
+      ]
+    },
+    "department_analytics": {
+      "description": "Department-level analytics",
+      "data": [
+        {
+          "department": "Asset Department",
+          "total_tickets": 28,
+          "completed_tickets": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null
+        },
+        {
+          "department": "Budget Department",
+          "total_tickets": 9,
+          "completed_tickets": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null
+        },
+        {
+          "department": "IT Department",
+          "total_tickets": 23,
+          "completed_tickets": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null
+        }
+      ]
+    },
+    "priority_distribution": {
+      "description": "Priority distribution and metrics",
+      "data": [
+        {
+          "priority": "Critical",
+          "count": 15,
+          "percentage": 25.0,
+          "avg_resolution_hours": null
+        },
+        {
+          "priority": "High",
+          "count": 14,
+          "percentage": 23.33,
+          "avg_resolution_hours": null
+        },
+        {
+          "priority": "Low",
+          "count": 16,
+          "percentage": 26.67,
+          "avg_resolution_hours": null
+        },
+        {
+          "priority": "Medium",
+          "count": 15,
+          "percentage": 25.0,
+          "avg_resolution_hours": null
+        }
+      ]
+    },
+    "ticket_age": {
+      "description": "Analyze ticket age/aging tickets",
+      "data": [
+        {
+          "age_bucket": "0-1 days",
+          "count": 30,
+          "percentage": 50.0
+        },
+        {
+          "age_bucket": "1-7 days",
+          "count": 30,
+          "percentage": 50.0
+        },
+        {
+          "age_bucket": "7-30 days",
+          "count": 0,
+          "percentage": 0.0
+        },
+        {
+          "age_bucket": "30-90 days",
+          "count": 0,
+          "percentage": 0.0
+        },
+        {
+          "age_bucket": "90+ days",
+          "count": 0,
+          "percentage": 0.0
+        }
+      ]
+    },
+    "assignment_analytics": {
+      "description": "Task assignment analytics by role",
+      "data": [
+        {
+          "role_name": "Admin",
+          "total_assignments": 62,
+          "avg_assignments_per_user": 20.67,
+          "total_users_in_role": 3,
+          "reassignment_count": 0
+        },
+        {
+          "role_name": "Asset Manager",
+          "total_assignments": 1,
+          "avg_assignments_per_user": 1.0,
+          "total_users_in_role": 1,
+          "reassignment_count": 0
+        }
+      ]
+    },
+    "audit_activity": {
+      "description": "User and system audit activity (last 30 days)",
+      "data": {
+        "error": "memoryview: a bytes-like object is required, not 'dict'",
+        "type": "TypeError"
+      }
+    }
+  }
+}

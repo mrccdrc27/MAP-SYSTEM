@@ -41,13 +41,14 @@ export default function TicketTab({ timeFilter }) {
   // call fetchTickets once on mount
   useEffect(() => {
     fetchTickets();
-  }, [fetchTickets]);
+  }, []);
 
   const filteredTickets = useMemo(() => {
     const { startDate, endDate } = timeFilter || {};
     if (!startDate && !endDate) return tickets;
 
     return tickets.filter((t) => {
+      if (!t || !t.created_at) return false;
       const created = new Date(t.created_at);
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
@@ -60,8 +61,12 @@ export default function TicketTab({ timeFilter }) {
   }, [tickets, timeFilter]);
 
   if (ticketsLoading) return <div>Loading...</div>;
-  if (ticketsError) return <div>Error: {ticketsError}</div>;
-  if (!tickets || tickets.length === 0) return <div>No data available.</div>;
+  if (ticketsError) {
+    return <div style={{ color: "red", padding: "20px" }}>Error: {ticketsError}</div>;
+  }
+  if (!tickets || !Array.isArray(tickets) || tickets.length === 0) {
+    return <div>No data available.</div>;
+  }
 
   // console.log("tickets:", tickets);
 
@@ -77,14 +82,18 @@ export default function TicketTab({ timeFilter }) {
   const activeTickets = totalTickets - archivedTickets;
 
   // Average resolution time (in hours) from created_at to time_closed (for closed tickets)
-  const closedWithResolutionTime = filteredTickets.filter((t) => t.time_closed);
+  const closedWithResolutionTime = filteredTickets.filter((t) => t.time_closed && t.created_at);
   const avgResolutionTime =
     closedWithResolutionTime.length > 0
       ? Math.round(
           closedWithResolutionTime.reduce((acc, t) => {
-            const created = new Date(t.created_at);
-            const closed = new Date(t.time_closed);
-            return acc + (closed - created) / (1000 * 60 * 60);
+            try {
+              const created = new Date(t.created_at);
+              const closed = new Date(t.time_closed);
+              return acc + (closed - created) / (1000 * 60 * 60);
+            } catch (e) {
+              return acc;
+            }
           }, 0) / closedWithResolutionTime.length
         )
       : 0;
@@ -123,19 +132,22 @@ export default function TicketTab({ timeFilter }) {
   ];
 
   // Unique categories (from filtered tickets)
-  const categoryLabels = [...new Set(filteredTickets.map((t) => t.category))];
+  const categoryLabels = [...new Set(filteredTickets.map((t) => t.category).filter(Boolean))];
   const categoryDataPoints = categoryLabels.map(
     (cat) => filteredTickets.filter((t) => t.category === cat).length
   );
 
   // Tickets sorted by created_at for timeline charts (from filtered tickets)
-  const ticketsSortedByDate = [...filteredTickets].sort(
-    (a, b) => new Date(a.created_at) - new Date(b.created_at)
-  );
+  const ticketsSortedByDate = [...filteredTickets]
+    .filter((t) => t.created_at)
+    .sort(
+      (a, b) => new Date(a.created_at) - new Date(b.created_at)
+    );
 
   // = Tickets Over Time labels and cumulative counts
   // Group tickets by created_at date
   const ticketsByDate = filteredTickets.reduce((acc, t) => {
+    if (!t || !t.created_at) return acc;
     const date = format(new Date(t.created_at), "yyyy-MM-dd");
     acc[date] = (acc[date] || 0) + 1;
     return acc;
@@ -153,14 +165,18 @@ export default function TicketTab({ timeFilter }) {
   });
 
   // Resolution Time Trends - bars show resolution times for closed tickets (from filtered tickets)
-  const resolvedTickets = filteredTickets.filter((t) => t.time_closed);
+  const resolvedTickets = filteredTickets.filter((t) => t.time_closed && t.created_at);
   const resolutionLabels = resolvedTickets.map((t) =>
-    t.created_at.slice(0, 10)
+    t.created_at ? t.created_at.slice(0, 10) : ""
   );
   const resolutionDurations = resolvedTickets.map((t) => {
-    const created = new Date(t.created_at);
-    const closed = new Date(t.time_closed);
-    return Math.round((closed - created) / (1000 * 60 * 60));
+    try {
+      const created = new Date(t.created_at);
+      const closed = new Date(t.time_closed);
+      return Math.round((closed - created) / (1000 * 60 * 60));
+    } catch (e) {
+      return 0;
+    }
   });
 
   // const resolutionDurations = resolvedTickets.map((t) => {
@@ -329,7 +345,7 @@ export default function TicketTab({ timeFilter }) {
                 { key: "status" },
                 {
                   key: "submit_date",
-                  format: (d) => (d ? format(new Date(d), "yyyy-MM-dd") : ""),
+                  format: (d) => (d ? format(new Date(d), "yyyy-MM-dd") : "N/A"),
                 },
               ]}
             />

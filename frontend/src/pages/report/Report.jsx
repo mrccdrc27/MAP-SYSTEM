@@ -3,6 +3,7 @@ import { useState } from "react";
 // components
 import AdminNav from "../../components/navigation/AdminNav";
 import TimeFilter from "../../components/component/TimeFilter";
+import ErrorBoundary from "../../components/ErrorBoundary";
 import TicketTab from "./tabs/TicketTab";
 import WorkflowTab from "./tabs/WorkflowTab";
 import AgentTab from "./tabs/AgentTab";
@@ -70,7 +71,9 @@ export default function Report() {
           </div>
 
           {/* Render Active Tab */}
-          {renderActiveTab()}
+          <ErrorBoundary>
+            {renderActiveTab()}
+          </ErrorBoundary>
         </section>
       </main>
     </>
