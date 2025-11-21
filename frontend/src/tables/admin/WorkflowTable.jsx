@@ -59,6 +59,7 @@ export default function WorkflowTable({
   onSearchChange,
   onAddWorkflow,
 }) {
+  const navigate = useNavigate();
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -73,8 +74,8 @@ export default function WorkflowTable({
         <h2>Workflow</h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          <button className={general.addButton} onClick={onAddWorkflow}>
-            Create Workflow
+          <button className={general.addButton} onClick={() => navigate('/admin/workflows/create')}>
+            + Create Workflow
           </button>
         </div>
       </div>

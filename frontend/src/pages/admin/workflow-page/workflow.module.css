@@ -10,6 +10,7 @@
 .wpHeader h1 {
   color: var(--heading-color);
   font-size: var(--h1-font-size);
+  margin: 0;
 }
 
 /* tpBody */
