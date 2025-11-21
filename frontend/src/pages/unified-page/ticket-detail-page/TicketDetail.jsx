@@ -247,7 +247,11 @@ export default function TicketDetail() {
       {/* Page-level toast (shows outside modals) */}
       {toast && (
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
-          <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />
+          <Toast
+            type={toast.type}
+            message={toast.message}
+            onClose={() => setToast(null)}
+          />
         </div>
       )}
       <main className={styles.ticketDetailPage}>
@@ -366,8 +370,8 @@ export default function TicketDetail() {
                 <button
                   className={
                     state.ticket?.has_acted
-                      ? styles.actionButtonDisabled
-                      : styles.actionButton
+                      ? styles.ticketActionButtonDisabled
+                      : styles.ticketActionButton
                   }
                   onClick={() => setOpenTicketAction(true)}
                   disabled={state.ticket?.has_acted}
@@ -395,10 +399,21 @@ export default function TicketDetail() {
                 </button>
                 {isAdmin() && (
                   <button
-                    className={styles.transferButton}
+                    className={
+                      state.ticket?.has_acted || state.ticket?.is_escalated
+                        ? styles.transferButtonDisabled
+                        : styles.transferButton
+                    }
                     onClick={() => setOpenTransferModal(true)}
+                    disabled={
+                      state.ticket?.has_acted || state.ticket?.is_escalated
+                    }
                   >
-                    Transfer Task
+                    {state.ticket?.is_escalated
+                      ? "Cannot Transfer After Escalation"
+                      : state.ticket?.has_acted
+                      ? "Cannot Transfer After Action"
+                      : "Transfer Task"}
                   </button>
                 )}
               </div>
@@ -522,7 +537,9 @@ export default function TicketDetail() {
                     <div className={styles.actionLogs}>
                       <h4>Action Logs</h4>
                       <ActionLogList
-                        logs={logs && logs.length > 0 ? [...logs].reverse() : []}
+                        logs={
+                          logs && logs.length > 0 ? [...logs].reverse() : []
+                        }
                         loading={loading}
                         error={error}
                       />

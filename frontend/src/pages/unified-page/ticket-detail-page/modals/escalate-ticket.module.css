@@ -161,7 +161,8 @@
   color: var(--text-color);
   font-family: inherit;
   font-size: 14px;
-  resize: vertical;
+
+  resize: none;
   transition: all 0.2s ease;
   line-height: 1.5;
 }

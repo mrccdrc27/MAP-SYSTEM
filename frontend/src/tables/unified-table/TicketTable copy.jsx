@@ -100,26 +100,11 @@ function TicketItem({ item }) {
   );
 }
 
-function SkeletonRow({ columns }) {
-  return (
-    <tr className={general.item}>
-      {Array.from({ length: columns }).map((_, i) => (
-        <td key={i} className={general.skeletonCell}>
-          <div
-            className={`${general.skeleton} ${i === 1 ? general.skeletonSmall : ""}`}
-          />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
 export default function TicketTable({
   tickets = [],
   searchValue = "",
   onSearchChange,
   activeTab,
-  loading = false,
 }) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -149,11 +134,7 @@ export default function TicketTable({
             <TicketHeader />
           </thead>
           <tbody>
-            {loading ? (
-              Array.from({ length: pageSize }).map((_, idx) => (
-                <SkeletonRow key={idx} columns={ticketHeaders.length} />
-              ))
-            ) : tickets.length > 0 ? (
+            {tickets.length > 0 ? (
               paginatedTickets.map((ticket) => (
                 <TicketItem key={ticket.id} item={ticket} />
               ))

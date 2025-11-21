@@ -31,9 +31,9 @@ const formatTimeAgo = (dateString) => {
   const nowYear = now.getFullYear();
   const dateYear = date.getFullYear();
   if (dateYear === nowYear) {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   } else {
-    return date.toLocaleDateString('en-US');
+    return date.toLocaleDateString("en-US");
   }
 };
 
@@ -54,7 +54,9 @@ const SimpleActionLogCard = ({ log }) => {
             </div>
           </div>
           <div className={styles.actionSub}>
-            <div className={`${styles.actionType} ${styles[statusColor]}`}>{log.status}</div>
+            <div className={`${styles.actionType} ${styles[statusColor]}`}>
+              {log.status}
+            </div>
             <div className={styles.timestamp}>
               {log.acted_on
                 ? formatTimeAgo(log.acted_on)
@@ -84,7 +86,9 @@ const ActionLogCard = ({ log }) => {
             </div>
           </div>
           <div className={styles.actionSub}>
-            <div className={`${styles.actionType} ${styles[statusColor]}`}>{log.status}</div>
+            <div className={`${styles.actionType} ${styles[statusColor]}`}>
+              {log.status}
+            </div>
             <div className={styles.timestamp}>
               {log.acted_on
                 ? formatTimeAgo(log.acted_on)
@@ -109,8 +113,15 @@ const ActionLogCard = ({ log }) => {
               <strong>Status Progression:</strong>
               <div className={styles.historyTimeline}>
                 {[...log.task_history].reverse().map((history, idx) => (
-                  <div key={history.task_item_history_id} className={styles.historyEntry}>
-                    <div className={`${styles.historyBadge} ${styles[getStatusColor(history.status)]}`}>
+                  <div
+                    key={history.task_item_history_id}
+                    className={styles.historyEntry}
+                  >
+                    <div
+                      className={`${styles.historyBadge} ${
+                        styles[getStatusColor(history.status)]
+                      }`}
+                    >
                       {history.status}
                     </div>
                     <div className={styles.historyTime}>
@@ -176,21 +187,21 @@ const ActionLogList = ({ logs, loading, error }) => {
 
   return (
     <div className={styles.container}>
-          <div className={styles.viewToggle}>
-            <label className={styles.switchLabel}>
-              {/* Switch "on" now represents Detailed View; default is Simple View (off) */}
-              <input
-                type="checkbox"
-                checked={!simpleView}
-                onChange={(e) => setSimpleView(!e.target.checked)}
-                className={styles.switchInput}
-              />
-              <span className={styles.switchSlider}></span>
-              <span className={styles.switchText}>
-                {simpleView ? "Simple View" : "Detailed View"}
-              </span>
-            </label>
-          </div>
+      <div className={styles.viewToggle}>
+        <label className={styles.switchLabel}>
+          {/* Switch "on" now represents Detailed View; default is Simple View (off) */}
+          <input
+            type="checkbox"
+            checked={!simpleView}
+            onChange={(e) => setSimpleView(!e.target.checked)}
+            className={styles.switchInput}
+          />
+          <span className={styles.switchSlider}></span>
+          <span className={styles.switchText}>
+            {simpleView ? "Simple View" : "Detailed View"}
+          </span>
+        </label>
+      </div>
       <ul className={styles.timeline}>
         {logs.map((log) =>
           simpleView ? (
