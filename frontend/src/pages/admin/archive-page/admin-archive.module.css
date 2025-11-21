@@ -327,6 +327,9 @@
 
 .tableHead {
   background-color: #f0f1f2;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .tableHead th {
@@ -337,6 +340,7 @@
   color: var(--table-color);
   border-top: 1px solid #cccccc;
   border-bottom: 1px solid #cccccc;
+  background-color: #f0f1f2;
 }
 
 .sortableHeader {
@@ -351,6 +355,7 @@
   border-top: 1px solid #cccccc;
   border-bottom: 1px solid #cccccc;
   white-space: nowrap;
+  background-color: #f0f1f2;
 }
 
 .sortableHeader:hover {
@@ -568,6 +573,56 @@
   margin: 4px 0 0 0;
   font-size: 12px;
   color: var(--muted-text-color);
+}
+
+/* ============ LOAD MORE BUTTON ============ */
+
+.loadMoreContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  background-color: #ffffff;
+  border-top: 1px solid #cccccc;
+}
+
+.loadMoreButton {
+  padding: 12px 32px;
+  background-color: #0d6efd;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--base-font-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.2);
+}
+
+.loadMoreButton:hover {
+  background-color: #0b5ed7;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  transform: translateY(-2px);
+}
+
+.loadMoreButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.loadMoreButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.loadMoreText {
+  margin: 0;
+  font-size: var(--default-font-size);
+  color: var(--muted-text-color);
+  font-weight: 500;
 }
 
 /* ============ RESPONSIVE ============ */

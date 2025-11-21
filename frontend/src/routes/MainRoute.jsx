@@ -8,6 +8,7 @@ import Profile from "../pages/auth/Profile";
 
 // pages > admin
 import Workflow from "../pages/admin/workflow-page/Workflow";
+import CreateWorkflowPage from "../pages/admin/workflow-page/CreateWorkflowPage";
 import Agent from "../pages/admin/agent-page/Agent";
 import AdminArchive from "../pages/admin/archive-page/AdminArchive";
 import AdminArchiveDetail from "../pages/admin/archive-page/archive-detail-page/AdminArchiveDetail";
@@ -62,6 +63,9 @@ export default function MainRoute() {
       {/* PROTECTED ADMIN ROUTES - Only available to users with TTS Admin role */}
       <Route element={<ProtectedRoute requireAdmin={true} />}>
         <Route path="/admin/workflow" element={<Workflow />} />
+        <Route path="/admin/workflows" element={<Workflow />} />
+        <Route path="/admin/workflows/create" element={<CreateWorkflowPage />} />
+        <Route path="/admin/workflows/:workflowId/edit" element={<WorkflowEditorPage />} />
         <Route path="/admin/agent" element={<Agent />} />
         <Route path="/admin/archive" element={<AdminArchive />} />
         <Route path="/admin/archive/:id" element={<AdminArchiveDetail />} />

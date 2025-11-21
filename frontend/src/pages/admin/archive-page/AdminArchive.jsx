@@ -44,6 +44,8 @@ export default function AdminArchive() {
   const [expandedTickets, setExpandedTickets] = useState({});
   const [showFilters, setShowFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [itemsPerPage] = useState(10); // Items to load per click
+  const [displayedCount, setDisplayedCount] = useState(10); // Total items currently displayed
 
   // Fetch data on mount
   useEffect(() => {
@@ -186,14 +188,17 @@ export default function AdminArchive() {
   const getGroupedData = () => {
     const filtered = getFilteredData();
     const mostRecent = getMostRecentTasksPerTicket(filtered);
+    
+    // Apply load more limit
+    const limitedItems = mostRecent.slice(0, displayedCount);
 
     if (groupBy === "none") {
-      const sorted = sortItems(mostRecent);
+      const sorted = sortItems(limitedItems);
       return { "All Items": sorted };
     }
 
     // First group, then sort within each group
-    const grouped = mostRecent.reduce((acc, item) => {
+    const grouped = limitedItems.reduce((acc, item) => {
       let key;
       switch (groupBy) {
         case "workflow":
@@ -316,6 +321,15 @@ export default function AdminArchive() {
   const stats = getSummaryStats();
   const isLoading = userTicketsLoading || ticketsLoading || tasksLoading;
 
+  // Handle load more
+  const handleLoadMore = () => {
+    setDisplayedCount((prev) => prev + itemsPerPage);
+  };
+
+  // Get total filtered count to determine if load more should be shown
+  const totalFilteredCount = getFilteredData().length;
+  const hasMoreItems = displayedCount < totalFilteredCount;
+
   return (
     <>
       <AdminNav />
@@ -336,6 +350,7 @@ export default function AdminArchive() {
                   setActiveTab(tab);
                   setExpandedGroups({});
                   setExpandedRows({});
+                  setDisplayedCount(10);
                 }}
                 className={`${styles.tpTabLink} ${
                   activeTab === tab ? styles.active : ""
@@ -359,6 +374,7 @@ export default function AdminArchive() {
                   onChange={(e) => {
                     setGroupBy(e.target.value);
                     setExpandedGroups({});
+                    setDisplayedCount(10);
                   }}
                   className={styles.selectControl}
                 >
@@ -385,7 +401,10 @@ export default function AdminArchive() {
                 type="text"
                 placeholder="Search by ticket number, subject, or assignee..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setDisplayedCount(10);
+                }}
                 className={styles.searchInput}
               />
               {showFilters && (
@@ -711,6 +730,21 @@ export default function AdminArchive() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {/* Load More Button */}
+            {!isLoading && getFilteredData().length > 0 && hasMoreItems && (
+              <div className={styles.loadMoreContainer}>
+                <button 
+                  onClick={handleLoadMore}
+                  className={styles.loadMoreButton}
+                >
+                  Load More
+                </button>
+                <p className={styles.loadMoreText}>
+                  Showing {displayedCount} of {totalFilteredCount} items
+                </p>
               </div>
             )}
           </div>
