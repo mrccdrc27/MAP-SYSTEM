@@ -11,7 +11,7 @@ const useTriggerAction = ({ task_id, transition_id, method = "post", trigger = f
   const { user } = useAuth(); // ✅ Get user from context
 
   useEffect(() => {
-    if (trigger && task_id && transition_id && user) {
+    if (trigger && task_id && transition_id !== undefined && user) {
       const sendAction = async () => {
         setLoading(true);
         setError(null);

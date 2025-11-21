@@ -16,18 +16,26 @@ import {
 import styles from "../report.module.css";
 
 export default function TicketTab({ timeFilter, analyticsData = {}, loading, error }) {
-  const { dashboard, statusSummary, priorityDistribution, ticketAge } = analyticsData;
+  const ticketsReport = analyticsData || {};
 
   if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
   if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
-  if (!dashboard) return <div style={{ padding: "20px" }}>No data available</div>;
+  if (!ticketsReport.dashboard) return <div style={{ padding: "20px" }}>No data available</div>;
+
+  // Extract analytics data from aggregated response
+  const dashboard = ticketsReport.dashboard || {};
+  const statusSummary = ticketsReport.status_summary || [];
+  const priorityDistribution = ticketsReport.priority_distribution || [];
+  const ticketAge = ticketsReport.ticket_age || [];
 
   // Storage used (fallback if not available)
-  // Extract analytics data
   const totalTickets = dashboard?.total_tickets || 0;
-  const openTickets = dashboard?.open_tickets || 0;
-  const closedTickets = dashboard?.closed_tickets || 0;
-  const avgResolutionTime = Math.round(dashboard?.avg_resolution_time || 0);
+  const completedTickets = dashboard?.completed_tickets || 0;
+  const pendingTickets = dashboard?.pending_tickets || 0;
+  const inProgressTickets = dashboard?.in_progress_tickets || 0;
+  const avgResolutionTime = dashboard?.avg_resolution_time_hours || 0;
+  const slaCompliance = dashboard?.sla_compliance_rate || 0;
+  const escalationRate = dashboard?.escalation_rate || 0;
 
   const kpiCardData = [
     {
@@ -36,18 +44,18 @@ export default function TicketTab({ timeFilter, analyticsData = {}, loading, err
       icon: <Ticket size={28} color="#4a90e2" />,
     },
     {
-      title: "Open Tickets",
-      value: openTickets,
-      icon: <FolderOpen size={28} color="#f5a623" />,
-    },
-    {
-      title: "Closed Tickets",
-      value: closedTickets,
+      title: "Completed Tickets",
+      value: completedTickets,
       icon: <CheckCircle size={28} color="#7ed321" />,
     },
     {
-      title: "Avg. Resolution Time (hrs)",
-      value: avgResolutionTime,
+      title: "Pending Tickets",
+      value: pendingTickets,
+      icon: <FolderOpen size={28} color="#f5a623" />,
+    },
+    {
+      title: "In Progress Tickets",
+      value: inProgressTickets,
       icon: <Clock size={28} color="#50e3c2" />,
     },
     {

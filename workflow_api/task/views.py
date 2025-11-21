@@ -475,6 +475,16 @@ class TaskViewSet(viewsets.ModelViewSet):
             }
             available_actions.append(action_data)
         
+        # If no transitions exist from this step, add default "Finalize Step" action
+        if not available_transitions.exists():
+            default_action = {
+                'transition_id': None,
+                'id': None,
+                'name': f'Finalize Step {current_step.name}',
+                'description': current_step.description or f'Complete {current_step.name}',
+            }
+            available_actions.append(default_action)
+        
         # Get first step transition for step_transition_id (use from_step outgoing transitions)
         step_transition_id = None
         if available_transitions.exists():

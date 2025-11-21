@@ -87,8 +87,130 @@ def calculate_step_weight_percentage(step, workflow):
     return step_percentage
 
 
+def calculate_target_resolution_for_task(ticket, workflow):
+    """
+    Calculate the target resolution time for a TASK using FULL SLA (not weighted).
+    
+    Formula:
+        target_resolution = now + SLA
+    
+    Where:
+        - SLA is the full SLA duration based on ticket priority (from workflow config)
+        - NO step weighting is applied (applies to entire task, all steps combined)
+    
+    Args:
+        ticket: WorkflowTicket model instance (contains priority)
+        workflow: Workflows model instance (contains SLA per priority)
+    
+    Returns:
+        datetime: Target resolution datetime, or None if calculation fails
+    
+    Example:
+        >>> ticket = WorkflowTicket.objects.get(id=1)  # priority='High'
+        >>> workflow = Workflows.objects.get(workflow_id=1)
+        >>> # workflow.high_sla = timedelta(hours=8)
+        >>> target = calculate_target_resolution_for_task(ticket, workflow)
+        >>> # Returns: now + 8 hours
+    """
+    try:
+        # Get ticket priority
+        priority = ticket.priority or 'Medium'
+        logger.info(f"🎫 Calculating TASK target resolution for ticket {ticket.ticket_number}, priority: {priority}")
+        
+        # Get FULL SLA for this priority (no weighting)
+        sla = get_sla_for_priority(workflow, priority)
+        if not sla:
+            logger.warning(f"⚠️ Cannot calculate target resolution: no SLA for priority '{priority}'")
+            return None
+        
+        # Calculate target resolution using full SLA (no step weight applied)
+        now = timezone.now()
+        target_resolution = now + sla
+        
+        logger.info(
+            f"✅ TASK Target resolution calculated:\n"
+            f"   Ticket: {ticket.ticket_number}\n"
+            f"   Priority: {priority}\n"
+            f"   Full SLA: {sla}\n"
+            f"   Target: {target_resolution}"
+        )
+        
+        return target_resolution
+        
+    except Exception as e:
+        logger.error(f"❌ Error calculating TASK target resolution: {e}", exc_info=True)
+        return None
+
+
+def calculate_target_resolution_for_task_item(ticket, step, workflow):
+    """
+    Calculate the target resolution time for a TASK ITEM using WEIGHTED SLA.
+    
+    Formula:
+        target_resolution = now + (SLA * step_weight_percentage)
+    
+    Where:
+        - SLA is based on ticket priority (from workflow config)
+        - step_weight_percentage is calculated relative to total workflow weights
+    
+    Args:
+        ticket: WorkflowTicket model instance (contains priority)
+        step: Steps model instance (contains weight)
+        workflow: Workflows model instance (contains SLA per priority)
+    
+    Returns:
+        datetime: Target resolution datetime, or None if calculation fails
+    
+    Example:
+        >>> ticket = WorkflowTicket.objects.get(id=1)  # priority='High'
+        >>> step = Steps.objects.get(step_id=1)  # weight=2.0
+        >>> workflow = Workflows.objects.get(workflow_id=1)
+        >>> # workflow.high_sla = timedelta(hours=8)
+        >>> # total_steps_weight = 10, so step_percentage = 0.2 (20%)
+        >>> target = calculate_target_resolution_for_task_item(ticket, step, workflow)
+        >>> # Returns: now + (8 hours * 0.2) = now + 1.6 hours
+    """
+    try:
+        # Get ticket priority
+        priority = ticket.priority or 'Medium'
+        logger.info(f"🎫 Calculating TASK ITEM target resolution for ticket {ticket.ticket_number}, priority: {priority}")
+        
+        # Get SLA for this priority
+        sla = get_sla_for_priority(workflow, priority)
+        if not sla:
+            logger.warning(f"⚠️ Cannot calculate target resolution: no SLA for priority '{priority}'")
+            return None
+        
+        # Calculate step weight percentage
+        step_percentage = calculate_step_weight_percentage(step, workflow)
+        
+        # Calculate time allocation for this step (weighted)
+        step_sla = sla * step_percentage
+        
+        # Calculate target resolution
+        now = timezone.now()
+        target_resolution = now + step_sla
+        
+        logger.info(
+            f"✅ TASK ITEM Target resolution calculated:\n"
+            f"   Priority: {priority}\n"
+            f"   Full SLA: {sla}\n"
+            f"   Step weight: {step.weight} ({step_percentage:.2%})\n"
+            f"   Weighted allocation: {step_sla}\n"
+            f"   Target: {target_resolution}"
+        )
+        
+        return target_resolution
+        
+    except Exception as e:
+        logger.error(f"❌ Error calculating TASK ITEM target resolution: {e}", exc_info=True)
+        return None
+
+
 def calculate_target_resolution(ticket, step, workflow):
     """
+    DEPRECATED: Use calculate_target_resolution_for_task_item() instead.
+    
     Calculate the target resolution time for a task at a specific step.
     
     Formula:
@@ -115,41 +237,8 @@ def calculate_target_resolution(ticket, step, workflow):
         >>> target = calculate_target_resolution(ticket, step, workflow)
         >>> # Returns: now + (8 hours * 0.2) = now + 1.6 hours
     """
-    try:
-        # Get ticket priority
-        priority = ticket.priority or 'Medium'
-        logger.info(f"🎫 Calculating target resolution for ticket {ticket.ticket_number}, priority: {priority}")
-        
-        # Get SLA for this priority
-        sla = get_sla_for_priority(workflow, priority)
-        if not sla:
-            logger.warning(f"⚠️ Cannot calculate target resolution: no SLA for priority '{priority}'")
-            return None
-        
-        # Calculate step weight percentage
-        step_percentage = calculate_step_weight_percentage(step, workflow)
-        
-        # Calculate time allocation for this step
-        step_sla = sla * step_percentage
-        
-        # Calculate target resolution
-        now = timezone.now()
-        target_resolution = now + step_sla
-        
-        logger.info(
-            f"✅ Target resolution calculated:\n"
-            f"   Priority: {priority}\n"
-            f"   SLA: {sla}\n"
-            f"   Step weight: {step.weight} ({step_percentage:.2%})\n"
-            f"   Step allocation: {step_sla}\n"
-            f"   Target: {target_resolution}"
-        )
-        
-        return target_resolution
-        
-    except Exception as e:
-        logger.error(f"❌ Error calculating target resolution: {e}", exc_info=True)
-        return None
+    # Delegate to the new function
+    return calculate_target_resolution_for_task_item(ticket, step, workflow)
 
 
 def calculate_step_sla_summary(workflow):

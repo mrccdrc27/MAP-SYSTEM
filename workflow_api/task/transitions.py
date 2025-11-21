@@ -54,20 +54,18 @@ class TaskTransitionView(CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if not transition_id:
-            return Response(
-                {'error': 'transition_id field is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # transition_id can be None (finalize step action) or an integer (normal transition)
+        is_finalize_action = transition_id is None
         
-        # Validate and convert transition_id to integer
-        try:
-            transition_id = int(transition_id)
-        except (ValueError, TypeError):
-            return Response(
-                {'error': f'transition_id must be an integer'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Validate and convert transition_id to integer if not None
+        if not is_finalize_action:
+            try:
+                transition_id = int(transition_id)
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': f'transition_id must be an integer or null for finalize action'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         
         # Validate and convert task_id to integer
         try:
@@ -141,7 +139,78 @@ class TaskTransitionView(CreateAPIView):
         
         logger.info(f"User {current_user_id} validated for transition")
         
-        # Get transition
+        # Handle finalize action (transition_id is None)
+        if is_finalize_action:
+            current_step = task.current_step
+            
+            if not current_step:
+                return Response(
+                    {
+                        'error': 'Task has no current step assigned',
+                        'task_id': task_id
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if this step is referenced as a from_step in any transition
+            # If it is NOT referenced, this is an end step
+            step_has_outgoing_transitions = StepTransition.objects.filter(
+                from_step_id=current_step
+            ).exists()
+            
+            if step_has_outgoing_transitions:
+                return Response(
+                    {
+                        'error': f'Cannot finalize step {current_step.name}: this step has available transitions',
+                        'step_id': current_step.step_id,
+                        'step_name': current_step.name,
+                        'message': 'Use a proper transition action instead of finalize'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            logger.info(f"Finalize action detected on end step {current_step.name}")
+            
+            # Create history record for 'resolved' status
+            from task.models import TaskItemHistory
+            TaskItemHistory.objects.create(
+                task_item=user_assignment,
+                status='resolved'
+            )
+            
+            # Update user assignment fields
+            user_assignment.acted_on = timezone.now()
+            user_assignment.assigned_on_step = current_step
+            user_assignment.notes = notes  # Store notes
+            user_assignment.save()
+            logger.info(f"User {current_user_id} marked as resolved on final step")
+            
+            # Mark task as completed
+            task.status = 'completed'
+            task.save()
+            
+            logger.info(f"Task {task_id} completed via finalize action")
+            
+            # Return completion response
+            serializer = TaskSerializer(task)
+            
+            return Response({
+                'status': 'success',
+                'message': 'Task completed successfully (finalized on end step)',
+                'task_id': task_id,
+                'workflow_status': 'completed',
+                'current_user_id': current_user_id,
+                'user_status': 'acted',
+                'acted_on_step': {
+                    'step_id': current_step.step_id,
+                    'name': current_step.name
+                },
+                'transition_id': None,
+                'is_finalize_action': True,
+                'task_details': serializer.data,
+            }, status=status.HTTP_200_OK)
+        
+        # Get transition for normal (non-finalize) action
         try:
             transition = StepTransition.objects.select_related(
                 'from_step_id',

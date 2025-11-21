@@ -1,0 +1,348 @@
+{
+  "generated_at": "2025-11-21T17:10:29.593580",
+  "filters": {
+    "start_date": "all time",
+    "end_date": "all time"
+  },
+  "reports": {
+    "tickets": {
+      "date_range": {
+        "start_date": "all time",
+        "end_date": "all time"
+      },
+      "dashboard": {
+        "total_tickets": 60,
+        "completed_tickets": 0,
+        "pending_tickets": 60,
+        "in_progress_tickets": 0,
+        "sla_compliance_rate": 0.0,
+        "total_users": 2,
+        "total_workflows": 5,
+        "escalation_rate": 5.0
+      },
+      "status_summary": [
+        {
+          "status": "pending",
+          "count": 60
+        }
+      ],
+      "sla_compliance": [
+        {
+          "priority": "Medium",
+          "total_tasks": 19,
+          "sla_met": 19,
+          "sla_breached": 0,
+          "compliance_rate": 100.0
+        },
+        {
+          "priority": "High",
+          "total_tasks": 16,
+          "sla_met": 16,
+          "sla_breached": 0,
+          "compliance_rate": 100.0
+        },
+        {
+          "priority": "Low",
+          "total_tasks": 14,
+          "sla_met": 14,
+          "sla_breached": 0,
+          "compliance_rate": 100.0
+        },
+        {
+          "priority": "Critical",
+          "total_tasks": 11,
+          "sla_met": 11,
+          "sla_breached": 0,
+          "compliance_rate": 100.0
+        }
+      ],
+      "priority_distribution": [
+        {
+          "priority": "Medium",
+          "count": 19,
+          "percentage": 31.666666666666664
+        },
+        {
+          "priority": "High",
+          "count": 16,
+          "percentage": 26.666666666666668
+        },
+        {
+          "priority": "Low",
+          "count": 14,
+          "percentage": 23.333333333333332
+        },
+        {
+          "priority": "Critical",
+          "count": 11,
+          "percentage": 18.333333333333332
+        }
+      ],
+      "ticket_age": [
+        {
+          "age_bucket": "0-1 days",
+          "count": 60,
+          "percentage": 100.0
+        },
+        {
+          "age_bucket": "1-7 days",
+          "count": 0,
+          "percentage": 0.0
+        },
+        {
+          "age_bucket": "7-30 days",
+          "count": 0,
+          "percentage": 0.0
+        },
+        {
+          "age_bucket": "30-90 days",
+          "count": 0,
+          "percentage": 0.0
+        },
+        {
+          "age_bucket": "90+ days",
+          "count": 0,
+          "percentage": 0.0
+        }
+      ]
+    },
+    "workflows": {
+      "date_range": {
+        "start_date": "all time",
+        "end_date": "all time"
+      },
+      "workflow_metrics": [
+        {
+          "workflow_id": 3,
+          "workflow_name": "New Budget Proposal Workflow",
+          "total_tasks": 17,
+          "completed_tasks": 0,
+          "pending_tasks": 17,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0
+        },
+        {
+          "workflow_id": 4,
+          "workflow_name": "IT Support Access Request Workflow",
+          "total_tasks": 13,
+          "completed_tasks": 0,
+          "pending_tasks": 13,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0
+        },
+        {
+          "workflow_id": 5,
+          "workflow_name": "IT Support Software Installation Workflow",
+          "total_tasks": 12,
+          "completed_tasks": 0,
+          "pending_tasks": 12,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0
+        },
+        {
+          "workflow_id": 1,
+          "workflow_name": "Asset Check In Workflow",
+          "total_tasks": 11,
+          "completed_tasks": 0,
+          "pending_tasks": 11,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0
+        },
+        {
+          "workflow_id": 2,
+          "workflow_name": "Asset Check Out Workflow",
+          "total_tasks": 7,
+          "completed_tasks": 0,
+          "pending_tasks": 7,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0
+        }
+      ],
+      "department_analytics": [
+        {
+          "department": "IT Department",
+          "total_tickets": 25,
+          "completed_tickets": 0,
+          "completion_rate": 0.0
+        },
+        {
+          "department": "Asset Department",
+          "total_tickets": 18,
+          "completed_tickets": 0,
+          "completion_rate": 0.0
+        },
+        {
+          "department": "Budget Department",
+          "total_tickets": 17,
+          "completed_tickets": 0,
+          "completion_rate": 0.0
+        }
+      ],
+      "step_performance": [
+        {
+          "step_id": 7,
+          "step_name": "New Budget Proposal Workflow - Triage Ticket",
+          "workflow_id": 3,
+          "total_tasks": 17,
+          "completed_tasks": 0
+        },
+        {
+          "step_id": 10,
+          "step_name": "IT Support Access Request Workflow - Triage Ticket",
+          "workflow_id": 4,
+          "total_tasks": 13,
+          "completed_tasks": 0
+        },
+        {
+          "step_id": 13,
+          "step_name": "IT Support Software Installation Workflow - Triage Ticket",
+          "workflow_id": 5,
+          "total_tasks": 12,
+          "completed_tasks": 0
+        },
+        {
+          "step_id": 1,
+          "step_name": "Asset Check In Workflow - Triage Ticket",
+          "workflow_id": 1,
+          "total_tasks": 11,
+          "completed_tasks": 0
+        },
+        {
+          "step_id": 4,
+          "step_name": "Asset Check Out Workflow - Triage Ticket",
+          "workflow_id": 2,
+          "total_tasks": 7,
+          "completed_tasks": 0
+        }
+      ]
+    },
+    "tasks": {
+      "date_range": {
+        "start_date": "all time",
+        "end_date": "all time"
+      },
+      "summary": {
+        "total_task_items": 63
+      },
+      "status_distribution": [
+        {
+          "status": "new",
+          "count": 60,
+          "percentage": 95.23809523809523
+        },
+        {
+          "status": "escalated",
+          "count": 3,
+          "percentage": 4.761904761904762
+        }
+      ],
+      "origin_distribution": [
+        {
+          "origin": "System",
+          "count": 60,
+          "percentage": 95.23809523809523
+        },
+        {
+          "origin": "Escalation",
+          "count": 3,
+          "percentage": 4.761904761904762
+        }
+      ],
+      "performance": {
+        "time_to_action_hours": {
+          "average": 0.005987281666666667,
+          "minimum": 0.0033998258333333333,
+          "maximum": 0.008627658333333333
+        },
+        "resolution_time_hours": {
+          "average": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "sla_compliance": {
+          "summary": {
+            "total_tasks_with_sla": 63,
+            "tasks_on_track": 63,
+            "tasks_breached": 0,
+            "current_compliance_rate_percent": 100.0
+          },
+          "by_current_status": {
+            "new": {
+              "total": 60,
+              "on_track": 60,
+              "breached": 0
+            },
+            "escalated": {
+              "total": 3,
+              "met_sla": 3,
+              "missed_sla": 0
+            },
+            "in progress": {
+              "total": 0,
+              "on_track": 0,
+              "breached": 0
+            },
+            "resolved": {
+              "total": 0,
+              "met_sla": 0,
+              "missed_sla": 0
+            },
+            "reassigned": {
+              "total": 0,
+              "met_sla": 0,
+              "missed_sla": 0
+            }
+          }
+        },
+        "active_items": 60,
+        "overdue_items": 0
+      },
+      "user_performance": [
+        {
+          "user_id": 6,
+          "user_name": "Marc Cedric Mayuga",
+          "total_items": 32,
+          "new": 29,
+          "in_progress": 0,
+          "resolved": 0,
+          "reassigned": 0,
+          "escalated": 3,
+          "breached": 0,
+          "resolution_rate": 0.0,
+          "escalation_rate": 9.375,
+          "breach_rate": 0.0
+        },
+        {
+          "user_id": 7,
+          "user_name": "John Doe",
+          "total_items": 31,
+          "new": 31,
+          "in_progress": 0,
+          "resolved": 0,
+          "reassigned": 0,
+          "escalated": 0,
+          "breached": 0,
+          "resolution_rate": 0.0,
+          "escalation_rate": 0.0,
+          "breach_rate": 0.0
+        }
+      ],
+      "transfer_analytics": {
+        "total_transfers": 0,
+        "top_transferrers": [],
+        "top_transfer_recipients": [],
+        "total_escalations": 3,
+        "escalations_by_step": [
+          {
+            "assigned_on_step__name": "New Budget Proposal Workflow - Triage Ticket",
+            "escalation_count": 2
+          },
+          {
+            "assigned_on_step__name": "IT Support Access Request Workflow - Triage Ticket",
+            "escalation_count": 1
+          }
+        ]
+      }
+    }
+  }
+}

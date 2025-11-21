@@ -8,6 +8,7 @@ import TicketTab from "./tabs/TicketTab";
 import WorkflowTab from "./tabs/WorkflowTab";
 import AgentTab from "./tabs/AgentTab";
 import IntegrationTab from "./tabs/IntegrationTab";
+import TaskItemTab from "./tabs/TaskItemTab";
 
 // hooks
 import useReportingAnalytics from "../../api/useReportingAnalytics";
@@ -23,17 +24,9 @@ export default function Report() {
   const {
     loading,
     error,
-    dashboard,
-    statusSummary,
-    slaCompliance,
-    teamPerformance,
-    workflowMetrics,
-    stepPerformance,
-    departmentAnalytics,
-    priorityDistribution,
-    ticketAge,
-    assignmentAnalytics,
-    auditActivity,
+    ticketsReport,
+    workflowsReport,
+    tasksReport,
     fetchAllAnalytics,
   } = useReportingAnalytics();
 
@@ -50,15 +43,17 @@ export default function Report() {
   const renderActiveTab = () => {
     switch (activeTab) {
       case "ticket":
-        return <TicketTab timeFilter={timeFilter} analyticsData={{ dashboard, statusSummary, priorityDistribution, ticketAge }} loading={loading} error={error} />;
+        return <TicketTab timeFilter={timeFilter} analyticsData={ticketsReport} loading={loading} error={error} />;
       case "workflow":
-        return <WorkflowTab timeFilter={timeFilter} analyticsData={{ workflowMetrics, departmentAnalytics, stepPerformance }} loading={loading} error={error} />;
+        return <WorkflowTab timeFilter={timeFilter} analyticsData={workflowsReport} loading={loading} error={error} />;
       case "agent":
-        return <AgentTab timeFilter={timeFilter} analyticsData={{ teamPerformance, slaCompliance, assignmentAnalytics }} loading={loading} error={error} />;
+        return <AgentTab timeFilter={timeFilter} analyticsData={ticketsReport} loading={loading} error={error} />;
+      case "taskitem":
+        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} loading={loading} error={error} />;
       case "integration":
-        return <IntegrationTab analyticsData={{ auditActivity }} loading={loading} error={error} />;
+        return <IntegrationTab analyticsData={ticketsReport} loading={loading} error={error} />;
       default:
-        return <TicketTab timeFilter={timeFilter} analyticsData={{ dashboard, statusSummary, priorityDistribution, ticketAge }} loading={loading} error={error} />;
+        return <TicketTab timeFilter={timeFilter} analyticsData={ticketsReport} loading={loading} error={error} />;
     }
   };
 
@@ -90,7 +85,7 @@ export default function Report() {
         <section className={styles.rpBody}>
           {/* Tabs */}
           <div className={styles.rpTabs}>
-            {["ticket", "workflow", "agent", "integration"].map((tab) => (
+            {["ticket", "workflow", "agent", "taskitem", "integration"].map((tab) => (
               <a
                 key={tab}
                 href="#"

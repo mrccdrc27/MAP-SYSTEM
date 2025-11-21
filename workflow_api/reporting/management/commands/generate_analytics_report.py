@@ -24,6 +24,12 @@ from reporting.views import (
     TicketAgeAnalyticsView,
     AssignmentAnalyticsView,
     AuditActivityView,
+    TaskItemStatusAnalyticsView,
+    TaskItemAssignmentOriginAnalyticsView,
+    TaskItemPerformanceAnalyticsView,
+    TaskItemUserPerformanceAnalyticsView,
+    TaskItemHistoryTrendAnalyticsView,
+    TaskItemTransferAnalyticsView,
 )
 
 
@@ -152,6 +158,36 @@ class Command(BaseCommand):
                 'view': AuditActivityView,
                 'params': {'days': '30'},
                 'description': 'User and system audit activity (last 30 days)',
+            },
+            'task_item_status': {
+                'view': TaskItemStatusAnalyticsView,
+                'params': None,
+                'description': 'Task item status distribution and breakdown',
+            },
+            'task_item_assignment_origin': {
+                'view': TaskItemAssignmentOriginAnalyticsView,
+                'params': None,
+                'description': 'Task item assignment origin analytics (System/Transferred/Escalation)',
+            },
+            'task_item_performance': {
+                'view': TaskItemPerformanceAnalyticsView,
+                'params': None,
+                'description': 'Task item performance metrics (time-to-action, resolution time, SLA)',
+            },
+            'task_item_user_performance': {
+                'view': TaskItemUserPerformanceAnalyticsView,
+                'params': None,
+                'description': 'Per-user task item performance analytics',
+            },
+            'task_item_history_trends': {
+                'view': TaskItemHistoryTrendAnalyticsView,
+                'params': {'days': '30'},
+                'description': 'Task item status trends over time (last 30 days)',
+            },
+            'task_item_transfer_analytics': {
+                'view': TaskItemTransferAnalyticsView,
+                'params': None,
+                'description': 'Task item transfer and escalation analytics',
             },
         }
 

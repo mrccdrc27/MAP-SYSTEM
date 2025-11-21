@@ -13,6 +13,15 @@ from .views import (
     TicketAgeAnalyticsView,
     AssignmentAnalyticsView,
     AuditActivityView,
+    TaskItemStatusAnalyticsView,
+    TaskItemAssignmentOriginAnalyticsView,
+    TaskItemPerformanceAnalyticsView,
+    TaskItemUserPerformanceAnalyticsView,
+    TaskItemHistoryTrendAnalyticsView,
+    TaskItemTransferAnalyticsView,
+    AggregatedTicketsReportView,
+    AggregatedWorkflowsReportView,
+    AggregatedTasksReportView,
 )
 
 app_name = 'reporting'
@@ -36,6 +45,19 @@ urlpatterns = [
     path('ticket-age/', TicketAgeAnalyticsView.as_view(), name='ticket-age'),
     path('assignment-analytics/', AssignmentAnalyticsView.as_view(), name='assignment-analytics'),
     path('audit-activity/', AuditActivityView.as_view(), name='audit-activity'),
+    
+    # Task Item Analytics endpoints
+    path('task-item-status/', TaskItemStatusAnalyticsView.as_view(), name='task-item-status'),
+    path('task-item-origin/', TaskItemAssignmentOriginAnalyticsView.as_view(), name='task-item-origin'),
+    path('task-item-performance/', TaskItemPerformanceAnalyticsView.as_view(), name='task-item-performance'),
+    path('task-item-user-performance/', TaskItemUserPerformanceAnalyticsView.as_view(), name='task-item-user-performance'),
+    path('task-item-history-trends/', TaskItemHistoryTrendAnalyticsView.as_view(), name='task-item-history-trends'),
+    path('task-item-transfer/', TaskItemTransferAnalyticsView.as_view(), name='task-item-transfer'),
+    
+    # Aggregated endpoints (NEW)
+    path('reports/tickets/', AggregatedTicketsReportView.as_view(), name='aggregated-tickets'),
+    path('reports/workflows/', AggregatedWorkflowsReportView.as_view(), name='aggregated-workflows'),
+    path('reports/tasks/', AggregatedTasksReportView.as_view(), name='aggregated-tasks'),
     
     # Include router URLs
     path('', include(router.urls)),

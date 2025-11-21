@@ -10,12 +10,15 @@ export default function TicketAction({
   instance,
   showToast,
 }) {
-  const [selectedActionId, setSelectedActionId] = useState("");
+  const [selectedActionIndex, setSelectedActionIndex] = useState(-1); // -1 means no selection
   const [notes, setNotes] = useState("");
   const [triggerNow, setTriggerNow] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState("");
   const [errors, setErrors] = useState({});
+
+  // Get the actual transition_id from the selected index
+  const selectedActionId = selectedActionIndex >= 0 ? action?.[selectedActionIndex]?.transition_id : undefined;
 
   const { loading, error, response } = useTriggerAction({
     task_id: instance,
@@ -52,7 +55,8 @@ export default function TicketAction({
 
   const handleClick = () => {
     const newErrors = {};
-    if (!selectedActionId) {
+    // Check if an action was actually selected (selectedActionIndex >= 0)
+    if (selectedActionIndex < 0) {
       newErrors.action = "Please select an action.";
     }
     if (!notes.trim()) {
@@ -69,7 +73,7 @@ export default function TicketAction({
     }
 
     // Open confirm modal instead of triggering directly
-    const selectedAction = action?.find((a) => a.transition_id === selectedActionId);
+    const selectedAction = action?.[selectedActionIndex];
     const actionName = selectedAction?.name || "the selected action";
     const message = `You are about to: ${actionName}.\nNotes: ${notes}`;
     setConfirmMessage(message);
@@ -136,12 +140,12 @@ export default function TicketAction({
             </label>
             <div className={styles.taActionsList}>
               {action && action.length > 0 ? (
-                action.map((a) => (
+                action.map((a, index) => (
                   <div
-                    key={a.transition_id}
-                    onClick={() => setSelectedActionId(a.transition_id)}
+                    key={`action-${index}`}
+                    onClick={() => setSelectedActionIndex(index)}
                     className={`${styles.taActionItem} ${
-                      selectedActionId === a.transition_id
+                      selectedActionIndex === index
                         ? styles.taActionItemSelected
                         : ""
                     }`}
@@ -154,7 +158,7 @@ export default function TicketAction({
                         </div>
                       )}
                     </div>
-                    {selectedActionId === a.transition_id && (
+                    {selectedActionIndex === index && (
                       <div className={styles.taCheckmark}>
                         <i className="fa-solid fa-check"></i>
                       </div>
@@ -200,7 +204,7 @@ export default function TicketAction({
           </button>
           <button
             onClick={handleClick}
-            disabled={!selectedActionId || !notes.trim() || loading}
+            disabled={selectedActionIndex < 0 || !notes.trim() || loading}
             className={styles.taSubmitButton}
           >
             {loading ? (

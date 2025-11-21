@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "total_tasks_with_sla": 63,
+    "tasks_on_track": 60,
+    "tasks_breached": 3,
+    "current_compliance_rate_percent": 95.2
+  },
+  "by_current_status": {
+    "new": {
+      "total": 60,
+      "on_track": 57,
+      "breached": 3
+    },
+    "in_progress": {
+      "total": 0,
+      "on_track": 0,
+      "breached": 0
+    },
+    "resolved": {
+      "total": 3,
+      "met_sla": 3,
+      "missed_sla": 0
+    },
+    "escalated": {
+      "total": 0,
+      "on_track": 0,
+      "breached": 0
+    },
+    "transferred": {
+      "total": 0,
+      "on_track": 0,
+      "breached": 0
+    }
+  }
+}

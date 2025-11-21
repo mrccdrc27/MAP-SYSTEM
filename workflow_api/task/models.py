@@ -135,16 +135,16 @@ class Task(models.Model):
     
     def save(self, *args, **kwargs):
         # 🎯 Calculate target resolution if not already set
-        if not self.target_resolution and self.ticket_id and self.current_step and self.workflow_id:
+        # Task uses FULL SLA (not weighted by step)
+        if not self.target_resolution and self.ticket_id and self.workflow_id:
             try:
-                from task.utils.target_resolution import calculate_target_resolution
-                self.target_resolution = calculate_target_resolution(
+                from task.utils.target_resolution import calculate_target_resolution_for_task
+                self.target_resolution = calculate_target_resolution_for_task(
                     ticket=self.ticket_id,
-                    step=self.current_step,
                     workflow=self.workflow_id
                 )
             except Exception as e:
-                print(f"⚠️ Failed to calculate target resolution: {e}")
+                print(f"⚠️ Failed to calculate task target resolution: {e}")
         
         super().save(*args, **kwargs)
 

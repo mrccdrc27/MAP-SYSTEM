@@ -161,24 +161,58 @@ class Command(BaseCommand):
                     "category": "IT Support",
                     "sub_category": "Access Request",
                     "department": "IT Department",
-                    "description": "Workflow for requesting access to systems or applications. (Triage -> Resolve -> Finalize)",
-                    "steps_config": create_3_step_config(
-                        resolver_role='Asset_Manager',
-                        resolver_instruction='resolve_it',
-                        resolve_desc='IT Reviewer verifies security policy, checks authorization, and provisions the requested system access.'
-                    )
+                    "description": "Workflow for requesting access to systems or applications. (Single Step)",
+                    "steps_config": [
+                        {
+                            'label': 'Process Access Request',
+                            'role': 'Asset_Manager',
+                            'description': 'IT Reviewer verifies security policy, checks authorization, and provisions the requested system access.',
+                            'instruction_type': 'resolve_it'
+                        },
+                    ]
                 },
                 {
                     "name": "IT Support Software Installation Workflow",
                     "category": "Others",
                     "sub_category": "Software Installation",
                     "department": "IT Department",
-                    "description": "Workflow for requesting software installation. (Triage -> Resolve -> Finalize)",
-                    "steps_config": create_3_step_config(
-                        resolver_role='Asset_Manager',
-                        resolver_instruction='resolve_it',
-                        resolve_desc='IT Reviewer verifies license compliance, checks for security risks, and deploys the software.'
-                    )
+                    "description": "Workflow for requesting software installation. (Single Step)",
+                    "steps_config": [
+                        {
+                            'label': 'Process Software Installation',
+                            'role': 'Asset_Manager',
+                            'description': 'IT Reviewer verifies license compliance, checks for security risks, and deploys the software.',
+                            'instruction_type': 'resolve_it'
+                        },
+                    ]
+                },
+                {
+                    "name": "BROKEN TEST Workflow",
+                    "category": "Test",
+                    "sub_category": "Broken Path",
+                    "department": "Test Department",
+                    "description": "Intentionally broken workflow to test validation logic.",
+                    "steps_config": [
+                        {
+                            'label': 'Step 1 (Start)',
+                            'role': 'Admin',
+                            'description': 'Start step with no outgoing transition - creates deadend',
+                            'instruction_type': 'triage_generic'
+                        },
+                        {
+                            'label': 'Step 2 (Orphaned)',
+                            'role': 'Admin',
+                            'description': 'Orphaned step - not reachable from start',
+                            'instruction_type': 'triage_generic'
+                        },
+                        {
+                            'label': 'Step 3 (End)',
+                            'role': 'Admin',
+                            'description': 'End step - unreachable from start',
+                            'instruction_type': 'finalize_generic'
+                        },
+                    ],
+                    "broken_type": "deadend_and_orphan"
                 },
             ]
 
@@ -206,8 +240,6 @@ class Command(BaseCommand):
                         'description': wf_data.get("description", f'{wf_data["name"]} workflow'),
                         'category': wf_data["category"],
                         'sub_category': wf_data["sub_category"],
-                        'status': 'deployed',
-                        'is_published': True,
                         'end_logic': end_logic,
                         'department': wf_data["department"],
                         'urgent_sla': timedelta(hours=4),
@@ -263,29 +295,49 @@ class Command(BaseCommand):
                     
                     if step_created:
                         total_steps += 1
-                        self.stdout.write(f'  	✓ Created step: {step_cfg["label"]} (Role: {role_map[step_cfg["role"]].name})')
+                        step_type = "START" if is_start else "END" if is_end else "REGULAR"
+                        self.stdout.write(f'  	✓ Created step: {step_cfg["label"]} [{step_type}] (Role: {role_map[step_cfg["role"]].name})')
 
-                # Create transitions (no actions field)
+                # Create transitions between steps
                 for idx, step_cfg in enumerate(steps_cfg):
                     step = step_objs[idx]
+                    num_steps = len(steps_cfg)
+                    
+                    # Check if this is a broken workflow
+                    is_broken = wf_data.get('broken_type') is not None
                     
                     # Determine transitions based on step position
                     transitions = []
                     
-                    if idx == 0:  # Triage step
-                        transitions = [
-                            (None, step),  # start
-                            (step, step_objs[idx + 1])  # submit -> Resolve
-                        ]
-                    elif idx == 1:  # Resolve step
-                        transitions = [
-                            (step, step_objs[idx + 1]),  # approve -> Finalize
-                            (step, step_objs[idx - 1])   # reject -> Triage
-                        ]
-                    elif idx == 2:  # Finalize step
-                        transitions = [
-                            (step, None)  # complete -> End
-                        ]
+                    if is_broken and wf_data.get('broken_type') == 'deadend_and_orphan':
+                        # BROKEN workflow: Create transitions that cause deadend and orphaned steps
+                        # Step 0 (start) has no outgoing transitions -> DEADEND
+                        # Step 1 and 2 are unreachable from start -> ORPHANED
+                        
+                        if idx == 0:
+                            self.stdout.write(self.style.WARNING(
+                                f'  ⚠ Creating BROKEN workflow: Step 0 is deadend, Steps 1-2 are orphaned'
+                            ))
+                            # No transitions from start step
+                        elif idx == 1:
+                            # Create a transition between orphaned steps (disconnected from start)
+                            if idx + 1 < num_steps:
+                                transitions = [(step, step_objs[idx + 1])]
+                    else:
+                        # NORMAL workflow: Flexible transitions based on step count
+                        if idx == 0:  # First step
+                            transitions = [(None, step)]  # start
+                            if num_steps > 1:  # Only add outgoing transition if there are more steps
+                                transitions.append((step, step_objs[idx + 1]))
+                        elif idx == num_steps - 1:  # Last step
+                            transitions = [(step, None)]  # complete -> End
+                            if num_steps > 1 and idx > 0:  # Add reject transition if not single step and not first
+                                transitions.append((step, step_objs[idx - 1]))
+                        else:  # Middle steps
+                            transitions = [
+                                (step, step_objs[idx + 1]),  # approve -> Next
+                                (step, step_objs[idx - 1])   # reject -> Previous
+                            ]
                     
                     for frm, to in transitions:
                         try:
@@ -311,13 +363,13 @@ class Command(BaseCommand):
             self.stdout.write(f'{self.style.MIGRATE_LABEL("Total Steps Created:")} {total_steps} ({total_workflows} workflows * 3 steps each)')
             self.stdout.write(f'{self.style.MIGRATE_LABEL("Total Transitions Created:")} {total_transitions}')
             
-            self.stdout.write('\n' + self.style.MIGRATE_HEADING('Standardized 3-Step Workflow Summary:'))
+            self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflow Structure Summary:'))
             self.stdout.write('  • Asset Department (end_logic: asset)')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
             self.stdout.write('  • Budget Department (end_logic: budget)')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin)')
             self.stdout.write('  • IT Department (end_logic: notification)')
-            self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
+            self.stdout.write(f'    - Process (Asset Manager) [Single Step]')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflows Created:'))
             self.stdout.write('  1. Asset Check In Workflow (Asset Management -> Check In)')
@@ -325,6 +377,8 @@ class Command(BaseCommand):
             self.stdout.write('  3. New Budget Proposal Workflow (Budget Management -> Budget Approval)')
             self.stdout.write('  4. IT Support Access Request Workflow (IT Support -> Access Request)')
             self.stdout.write('  5. IT Support Software Installation Workflow (IT Support -> Software Installation)')
+            self.stdout.write('  6. ⚠ BROKEN TEST Workflow (Test -> Broken Path) - Intentionally broken for validation testing')
+            self.stdout.write('     └─ Tests detection of: deadend steps + orphaned/unreachable steps')
             self.stdout.write('\n' + '='*70)
 
             if dry_run:

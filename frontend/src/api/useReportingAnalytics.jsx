@@ -2,103 +2,66 @@ import { useState, useCallback } from "react";
 import api from "./axios";
 
 /**
- * Unified hook for all reporting and analytics endpoints
+ * Unified hook for aggregated reporting analytics
  * 
- * Provides access to:
- * - dashboard: Overall system metrics
- * - statusSummary: Task status distribution
- * - slaCompliance: SLA compliance by priority
- * - teamPerformance: User/agent performance metrics
- * - workflowMetrics: Workflow performance analytics
- * - stepPerformance: Step-level performance metrics
- * - departmentAnalytics: Department-level analytics
- * - priorityDistribution: Priority breakdown and metrics
- * - ticketAge: Ticket age/aging analysis
- * - assignmentAnalytics: Task assignment analytics by role
- * - auditActivity: User and system audit activity
+ * Provides access to 3 aggregated endpoints:
+ * - ticketsReport: Tickets analytics (dashboard, status, SLA, priority, age)
+ * - workflowsReport: Workflows analytics (metrics, departments, steps)
+ * - tasksReport: Task items analytics (status, origin, performance, transfers)
+ * 
+ * Supports time filtering via query parameters:
+ * - start_date: ISO 8601 date string (YYYY-MM-DD)
+ * - end_date: ISO 8601 date string (YYYY-MM-DD)
  */
 const useReportingAnalytics = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // State for each endpoint
-  const [dashboard, setDashboard] = useState(null);
-  const [statusSummary, setStatusSummary] = useState(null);
-  const [slaCompliance, setSlaCompliance] = useState(null);
-  const [teamPerformance, setTeamPerformance] = useState(null);
-  const [workflowMetrics, setWorkflowMetrics] = useState(null);
-  const [stepPerformance, setStepPerformance] = useState(null);
-  const [departmentAnalytics, setDepartmentAnalytics] = useState(null);
-  const [priorityDistribution, setPriorityDistribution] = useState(null);
-  const [ticketAge, setTicketAge] = useState(null);
-  const [assignmentAnalytics, setAssignmentAnalytics] = useState(null);
-  const [auditActivity, setAuditActivity] = useState(null);
+  // State for aggregated endpoints
+  const [ticketsReport, setTicketsReport] = useState(null);
+  const [workflowsReport, setWorkflowsReport] = useState(null);
+  const [tasksReport, setTasksReport] = useState(null);
 
   /**
-   * Fetch all analytics endpoints
+   * Fetch all analytics in parallel
+   * Optional: pass dateRange object with start_date and end_date
    */
-  const fetchAllAnalytics = useCallback(async () => {
+  const fetchAllAnalytics = useCallback(async (dateRange = null) => {
     setLoading(true);
     setError(null);
     
     try {
-      const endpoints = [
-        { name: 'dashboard', url: 'analytics/dashboard/', setter: setDashboard },
-        { name: 'statusSummary', url: 'analytics/status-summary/', setter: setStatusSummary },
-        { name: 'slaCompliance', url: 'analytics/sla-compliance/', setter: setSlaCompliance },
-        { name: 'teamPerformance', url: 'analytics/team-performance/', setter: setTeamPerformance },
-        { name: 'workflowMetrics', url: 'analytics/workflow-metrics/', setter: setWorkflowMetrics },
-        { name: 'stepPerformance', url: 'analytics/step-performance/', setter: setStepPerformance },
-        { name: 'departmentAnalytics', url: 'analytics/department-analytics/', setter: setDepartmentAnalytics },
-        { name: 'priorityDistribution', url: 'analytics/priority-distribution/', setter: setPriorityDistribution },
-        { name: 'ticketAge', url: 'analytics/ticket-age/', setter: setTicketAge },
-        { name: 'assignmentAnalytics', url: 'analytics/assignment-analytics/', setter: setAssignmentAnalytics },
-        { name: 'auditActivity', url: 'analytics/audit-activity/', setter: setAuditActivity },
-      ];
+      // Build query parameters
+      let queryParams = new URLSearchParams();
+      if (dateRange?.start_date) {
+        queryParams.append('start_date', dateRange.start_date);
+      }
+      if (dateRange?.end_date) {
+        queryParams.append('end_date', dateRange.end_date);
+      }
+      const queryString = queryParams.toString();
+      const qPrefix = queryString ? '?' : '';
 
-      // Fetch all endpoints in parallel
-      const promises = endpoints.map(({ url, setter }) =>
-        api.get(url)
-          .then(res => ({ setter, data: res.data }))
-          .catch(err => {
-            console.error(`Error fetching ${url}:`, err);
-            return { setter, data: null, error: err };
-          })
-      );
+      // Fetch all 3 endpoints in parallel
+      const [ticketsRes, workflowsRes, tasksRes] = await Promise.all([
+        api.get(`analytics/reports/tickets/${qPrefix}${queryString}`),
+        api.get(`analytics/reports/workflows/${qPrefix}${queryString}`),
+        api.get(`analytics/reports/tasks/${qPrefix}${queryString}`),
+      ]);
 
-      const results = await Promise.all(promises);
+      setTicketsReport(ticketsRes.data);
+      setWorkflowsReport(workflowsRes.data);
+      setTasksReport(tasksRes.data);
 
-      // Update state for each endpoint
-      results.forEach(({ setter, data, error: err }) => {
-        if (err) {
-          setError(`Failed to fetch analytics data: ${err.message}`);
-        } else {
-          setter(data);
-        }
-      });
-
-      return results;
+      return {
+        ticketsReport: ticketsRes.data,
+        workflowsReport: workflowsRes.data,
+        tasksReport: tasksRes.data,
+      };
     } catch (err) {
-      setError(err.message || 'Failed to fetch analytics data');
+      const errorMsg = err.response?.data?.error || 'Failed to fetch analytics';
+      setError(errorMsg);
       console.error('Analytics fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch dashboard metrics
-   */
-  const fetchDashboard = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get('analytics/dashboard/');
-      setDashboard(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch dashboard metrics');
-      console.error('Dashboard fetch error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -106,18 +69,30 @@ const useReportingAnalytics = () => {
   }, []);
 
   /**
-   * Fetch status summary
+   * Fetch only tickets report
+   * Optional: pass dateRange object with start_date and end_date
    */
-  const fetchStatusSummary = useCallback(async () => {
+  const fetchTicketsReport = useCallback(async (dateRange = null) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('analytics/status-summary/');
-      setStatusSummary(res.data);
+      let queryParams = new URLSearchParams();
+      if (dateRange?.start_date) {
+        queryParams.append('start_date', dateRange.start_date);
+      }
+      if (dateRange?.end_date) {
+        queryParams.append('end_date', dateRange.end_date);
+      }
+      const queryString = queryParams.toString();
+      const qPrefix = queryString ? '?' : '';
+
+      const res = await api.get(`analytics/reports/tickets/${qPrefix}${queryString}`);
+      setTicketsReport(res.data);
       return res.data;
     } catch (err) {
-      setError('Failed to fetch status summary');
-      console.error('Status summary fetch error:', err);
+      const errorMsg = err.response?.data?.error || 'Failed to fetch tickets report';
+      setError(errorMsg);
+      console.error('Tickets report fetch error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -125,19 +100,30 @@ const useReportingAnalytics = () => {
   }, []);
 
   /**
-   * Fetch SLA compliance with optional priority filter
+   * Fetch only workflows report
+   * Optional: pass dateRange object with start_date and end_date
    */
-  const fetchSlaCompliance = useCallback(async (priority = null) => {
+  const fetchWorkflowsReport = useCallback(async (dateRange = null) => {
     setLoading(true);
     setError(null);
     try {
-      const params = priority ? `?priority=${priority}` : '';
-      const res = await api.get(`analytics/sla-compliance/${params}`);
-      setSlaCompliance(res.data);
+      let queryParams = new URLSearchParams();
+      if (dateRange?.start_date) {
+        queryParams.append('start_date', dateRange.start_date);
+      }
+      if (dateRange?.end_date) {
+        queryParams.append('end_date', dateRange.end_date);
+      }
+      const queryString = queryParams.toString();
+      const qPrefix = queryString ? '?' : '';
+
+      const res = await api.get(`analytics/reports/workflows/${qPrefix}${queryString}`);
+      setWorkflowsReport(res.data);
       return res.data;
     } catch (err) {
-      setError('Failed to fetch SLA compliance');
-      console.error('SLA compliance fetch error:', err);
+      const errorMsg = err.response?.data?.error || 'Failed to fetch workflows report';
+      setError(errorMsg);
+      console.error('Workflows report fetch error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -145,157 +131,30 @@ const useReportingAnalytics = () => {
   }, []);
 
   /**
-   * Fetch team performance metrics
+   * Fetch only tasks report
+   * Optional: pass dateRange object with start_date and end_date
    */
-  const fetchTeamPerformance = useCallback(async (role = null) => {
+  const fetchTasksReport = useCallback(async (dateRange = null) => {
     setLoading(true);
     setError(null);
     try {
-      const params = role ? `?role=${role}` : '';
-      const res = await api.get(`analytics/team-performance/${params}`);
-      setTeamPerformance(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch team performance');
-      console.error('Team performance fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      let queryParams = new URLSearchParams();
+      if (dateRange?.start_date) {
+        queryParams.append('start_date', dateRange.start_date);
+      }
+      if (dateRange?.end_date) {
+        queryParams.append('end_date', dateRange.end_date);
+      }
+      const queryString = queryParams.toString();
+      const qPrefix = queryString ? '?' : '';
 
-  /**
-   * Fetch workflow metrics with optional filters
-   */
-  const fetchWorkflowMetrics = useCallback(async (department = null, workflowId = null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (department) params.append('department', department);
-      if (workflowId) params.append('workflow_id', workflowId);
-      const queryString = params.toString() ? `?${params.toString()}` : '';
-      const res = await api.get(`analytics/workflow-metrics/${queryString}`);
-      setWorkflowMetrics(res.data);
+      const res = await api.get(`analytics/reports/tasks/${qPrefix}${queryString}`);
+      setTasksReport(res.data);
       return res.data;
     } catch (err) {
-      setError('Failed to fetch workflow metrics');
-      console.error('Workflow metrics fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch step performance metrics
-   */
-  const fetchStepPerformance = useCallback(async (workflowId = null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = workflowId ? `?workflow_id=${workflowId}` : '';
-      const res = await api.get(`analytics/step-performance/${params}`);
-      setStepPerformance(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch step performance');
-      console.error('Step performance fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch department analytics
-   */
-  const fetchDepartmentAnalytics = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get('analytics/department-analytics/');
-      setDepartmentAnalytics(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch department analytics');
-      console.error('Department analytics fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch priority distribution
-   */
-  const fetchPriorityDistribution = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get('analytics/priority-distribution/');
-      setPriorityDistribution(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch priority distribution');
-      console.error('Priority distribution fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch ticket age analytics
-   */
-  const fetchTicketAge = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get('analytics/ticket-age/');
-      setTicketAge(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch ticket age analytics');
-      console.error('Ticket age fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch assignment analytics
-   */
-  const fetchAssignmentAnalytics = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get('analytics/assignment-analytics/');
-      setAssignmentAnalytics(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch assignment analytics');
-      console.error('Assignment analytics fetch error:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch audit activity
-   */
-  const fetchAuditActivity = useCallback(async (days = 30) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get(`analytics/audit-activity/?days=${days}`);
-      setAuditActivity(res.data);
-      return res.data;
-    } catch (err) {
-      setError('Failed to fetch audit activity');
-      console.error('Audit activity fetch error:', err);
+      const errorMsg = err.response?.data?.error || 'Failed to fetch tasks report';
+      setError(errorMsg);
+      console.error('Tasks report fetch error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -306,32 +165,17 @@ const useReportingAnalytics = () => {
     // State
     loading,
     error,
-    dashboard,
-    statusSummary,
-    slaCompliance,
-    teamPerformance,
-    workflowMetrics,
-    stepPerformance,
-    departmentAnalytics,
-    priorityDistribution,
-    ticketAge,
-    assignmentAnalytics,
-    auditActivity,
+    ticketsReport,
+    workflowsReport,
+    tasksReport,
     
     // Methods
     fetchAllAnalytics,
-    fetchDashboard,
-    fetchStatusSummary,
-    fetchSlaCompliance,
-    fetchTeamPerformance,
-    fetchWorkflowMetrics,
-    fetchStepPerformance,
-    fetchDepartmentAnalytics,
-    fetchPriorityDistribution,
-    fetchTicketAge,
-    fetchAssignmentAnalytics,
-    fetchAuditActivity,
+    fetchTicketsReport,
+    fetchWorkflowsReport,
+    fetchTasksReport,
   };
 };
 
 export default useReportingAnalytics;
+

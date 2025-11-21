@@ -7,6 +7,44 @@ logger = logging.getLogger(__name__)
 
 # Utility functions to check the initialization status of workflows, steps, and transitions.
 
+def calculate_default_node_design(step_order, total_steps, base_x=-2.0):
+    """
+    Calculate standardized design coordinates for workflow steps.
+    
+    Uses a vertical layout with consistent spacing based on the number of steps.
+    The interval between steps is 202 pixels (standardized for visual clarity).
+    
+    Args:
+        step_order: The order/position of the step (0-indexed, 1-indexed order converted)
+        total_steps: Total number of steps in the workflow
+        base_x: Base x-coordinate for all nodes (default: -2.0)
+    
+    Returns:
+        Dict with 'x' and 'y' coordinates for the node design
+    
+    Example:
+        For 3 steps:
+        - Step 0: y = -164.82
+        - Step 1: y = 37.49
+        - Step 2: y = 246.26
+        Interval: ~202 pixels
+    """
+    # Calculate vertical spacing: 202 pixels per step
+    # Start position centers the workflow around y=0
+    VERTICAL_INTERVAL = 202.0
+    
+    # Calculate starting y position to center the workflow
+    total_height = (total_steps - 1) * VERTICAL_INTERVAL
+    start_y = -(total_height / 2) - 40  # Slight offset for visual centering
+    
+    # Calculate y position for this step
+    y_position = start_y + (step_order * VERTICAL_INTERVAL)
+    
+    return {
+        "x": round(base_x, 2),
+        "y": round(y_position, 2)
+    }
+
 def is_transition_initialized(transition):
     """
     A transition is considered initialized if:

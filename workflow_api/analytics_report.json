@@ -1,6 +1,6 @@
 {
-  "generated_at": "2025-11-20T21:26:45.046199",
-  "total_endpoints": 12,
+  "generated_at": "2025-11-21T16:45:37.851302",
+  "total_endpoints": 18,
   "endpoints": {
     "analytics_root": {
       "description": "Analytics API root with all available endpoints",
@@ -18,9 +18,9 @@
         "in_progress_tickets": 0,
         "sla_compliance_rate": 0.0,
         "avg_resolution_time_hours": null,
-        "total_users": 4,
+        "total_users": 6,
         "total_workflows": 5,
-        "escalation_rate": 3.17
+        "escalation_rate": 8.86
       }
     },
     "status_summary": {
@@ -38,14 +38,6 @@
       "data": [
         {
           "priority": "Critical",
-          "total_tasks": 15,
-          "sla_met": 15,
-          "sla_breached": 0,
-          "compliance_rate": 100.0,
-          "avg_resolution_hours": null
-        },
-        {
-          "priority": "High",
           "total_tasks": 14,
           "sla_met": 14,
           "sla_breached": 0,
@@ -53,9 +45,17 @@
           "avg_resolution_hours": null
         },
         {
+          "priority": "High",
+          "total_tasks": 17,
+          "sla_met": 17,
+          "sla_breached": 0,
+          "compliance_rate": 100.0,
+          "avg_resolution_hours": null
+        },
+        {
           "priority": "Low",
-          "total_tasks": 16,
-          "sla_met": 16,
+          "total_tasks": 14,
+          "sla_met": 14,
           "sla_breached": 0,
           "compliance_rate": 100.0,
           "avg_resolution_hours": null
@@ -74,7 +74,48 @@
       "description": "Team/User performance metrics",
       "data": [
         {
+          "user_id": 3,
+          "user_name": "Admin Ticket Tracking System",
+          "total_tasks": 22,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 1
+        },
+        {
+          "user_id": 6,
+          "user_name": "Marc Cedric Mayuga",
+          "total_tasks": 20,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 6
+        },
+        {
+          "user_id": 7,
+          "user_name": "John Doe",
+          "total_tasks": 24,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 0
+        },
+        {
           "user_id": 8,
+          "user_name": "Jane Smith",
+          "total_tasks": 5,
+          "completed_tasks": 0,
+          "in_progress_tasks": 0,
+          "completion_rate": 0.0,
+          "avg_resolution_hours": null,
+          "escalation_count": 0
+        },
+        {
+          "user_id": 9,
+          "user_name": "Bob Johnson",
           "total_tasks": 1,
           "completed_tasks": 0,
           "in_progress_tasks": 0,
@@ -83,26 +124,9 @@
           "escalation_count": 0
         },
         {
-          "user_id": 3,
-          "total_tasks": 21,
-          "completed_tasks": 0,
-          "in_progress_tasks": 0,
-          "completion_rate": 0.0,
-          "avg_resolution_hours": null,
-          "escalation_count": 0
-        },
-        {
-          "user_id": 6,
-          "total_tasks": 20,
-          "completed_tasks": 0,
-          "in_progress_tasks": 0,
-          "completion_rate": 0.0,
-          "avg_resolution_hours": null,
-          "escalation_count": 2
-        },
-        {
-          "user_id": 7,
-          "total_tasks": 20,
+          "user_id": 10,
+          "user_name": "Alice Williams",
+          "total_tasks": 5,
           "completed_tasks": 0,
           "in_progress_tasks": 0,
           "completion_rate": 0.0,
@@ -117,9 +141,9 @@
         {
           "workflow_id": 1,
           "workflow_name": "Asset Check In Workflow",
-          "total_tasks": 14,
+          "total_tasks": 16,
           "completed_tasks": 0,
-          "pending_tasks": 14,
+          "pending_tasks": 16,
           "in_progress_tasks": 0,
           "completion_rate": 0.0,
           "avg_completion_hours": null,
@@ -129,9 +153,9 @@
         {
           "workflow_id": 2,
           "workflow_name": "Asset Check Out Workflow",
-          "total_tasks": 14,
+          "total_tasks": 8,
           "completed_tasks": 0,
-          "pending_tasks": 14,
+          "pending_tasks": 8,
           "in_progress_tasks": 0,
           "completion_rate": 0.0,
           "avg_completion_hours": null,
@@ -141,9 +165,9 @@
         {
           "workflow_id": 3,
           "workflow_name": "New Budget Proposal Workflow",
-          "total_tasks": 9,
+          "total_tasks": 13,
           "completed_tasks": 0,
-          "pending_tasks": 9,
+          "pending_tasks": 13,
           "in_progress_tasks": 0,
           "completion_rate": 0.0,
           "avg_completion_hours": null,
@@ -153,9 +177,9 @@
         {
           "workflow_id": 4,
           "workflow_name": "IT Support Access Request Workflow",
-          "total_tasks": 15,
+          "total_tasks": 11,
           "completed_tasks": 0,
-          "pending_tasks": 15,
+          "pending_tasks": 11,
           "in_progress_tasks": 0,
           "completion_rate": 0.0,
           "avg_completion_hours": null,
@@ -165,9 +189,9 @@
         {
           "workflow_id": 5,
           "workflow_name": "IT Support Software Installation Workflow",
-          "total_tasks": 8,
+          "total_tasks": 12,
           "completed_tasks": 0,
-          "pending_tasks": 8,
+          "pending_tasks": 12,
           "in_progress_tasks": 0,
           "completion_rate": 0.0,
           "avg_completion_hours": null,
@@ -183,9 +207,9 @@
           "step_id": 1,
           "step_name": "Asset Check In Workflow - Triage Ticket",
           "workflow_id": 1,
-          "total_tasks": 14,
+          "total_tasks": 13,
           "completed_tasks": 0,
-          "escalated_tasks": 0,
+          "escalated_tasks": 4,
           "avg_time_hours": null,
           "role_name": "Admin"
         },
@@ -193,9 +217,9 @@
           "step_id": 4,
           "step_name": "Asset Check Out Workflow - Triage Ticket",
           "workflow_id": 2,
-          "total_tasks": 13,
+          "total_tasks": 5,
           "completed_tasks": 0,
-          "escalated_tasks": 1,
+          "escalated_tasks": 0,
           "avg_time_hours": null,
           "role_name": "Admin"
         },
@@ -203,7 +227,7 @@
           "step_id": 7,
           "step_name": "New Budget Proposal Workflow - Triage Ticket",
           "workflow_id": 3,
-          "total_tasks": 9,
+          "total_tasks": 13,
           "completed_tasks": 0,
           "escalated_tasks": 0,
           "avg_time_hours": null,
@@ -213,9 +237,9 @@
           "step_id": 10,
           "step_name": "IT Support Access Request Workflow - Triage Ticket",
           "workflow_id": 4,
-          "total_tasks": 15,
+          "total_tasks": 10,
           "completed_tasks": 0,
-          "escalated_tasks": 0,
+          "escalated_tasks": 2,
           "avg_time_hours": null,
           "role_name": "Admin"
         },
@@ -223,7 +247,7 @@
           "step_id": 13,
           "step_name": "IT Support Software Installation Workflow - Triage Ticket",
           "workflow_id": 5,
-          "total_tasks": 8,
+          "total_tasks": 9,
           "completed_tasks": 0,
           "escalated_tasks": 1,
           "avg_time_hours": null,
@@ -233,7 +257,7 @@
           "step_id": 2,
           "step_name": "Asset Check In Workflow - Resolve Ticket",
           "workflow_id": 1,
-          "total_tasks": 0,
+          "total_tasks": 3,
           "completed_tasks": 0,
           "escalated_tasks": 0,
           "avg_time_hours": null,
@@ -243,7 +267,7 @@
           "step_id": 5,
           "step_name": "Asset Check Out Workflow - Resolve Ticket",
           "workflow_id": 2,
-          "total_tasks": 1,
+          "total_tasks": 3,
           "completed_tasks": 0,
           "escalated_tasks": 0,
           "avg_time_hours": null,
@@ -263,7 +287,7 @@
           "step_id": 11,
           "step_name": "IT Support Access Request Workflow - Resolve Ticket",
           "workflow_id": 4,
-          "total_tasks": 0,
+          "total_tasks": 1,
           "completed_tasks": 0,
           "escalated_tasks": 0,
           "avg_time_hours": null,
@@ -273,7 +297,7 @@
           "step_id": 14,
           "step_name": "IT Support Software Installation Workflow - Resolve Ticket",
           "workflow_id": 5,
-          "total_tasks": 0,
+          "total_tasks": 3,
           "completed_tasks": 0,
           "escalated_tasks": 0,
           "avg_time_hours": null,
@@ -336,14 +360,14 @@
       "data": [
         {
           "department": "Asset Department",
-          "total_tickets": 28,
+          "total_tickets": 24,
           "completed_tickets": 0,
           "completion_rate": 0.0,
           "avg_resolution_hours": null
         },
         {
           "department": "Budget Department",
-          "total_tickets": 9,
+          "total_tickets": 13,
           "completed_tickets": 0,
           "completion_rate": 0.0,
           "avg_resolution_hours": null
@@ -362,20 +386,20 @@
       "data": [
         {
           "priority": "Critical",
-          "count": 15,
-          "percentage": 25.0,
-          "avg_resolution_hours": null
-        },
-        {
-          "priority": "High",
           "count": 14,
           "percentage": 23.33,
           "avg_resolution_hours": null
         },
         {
+          "priority": "High",
+          "count": 17,
+          "percentage": 28.33,
+          "avg_resolution_hours": null
+        },
+        {
           "priority": "Low",
-          "count": 16,
-          "percentage": 26.67,
+          "count": 14,
+          "percentage": 23.33,
           "avg_resolution_hours": null
         },
         {
@@ -391,13 +415,13 @@
       "data": [
         {
           "age_bucket": "0-1 days",
-          "count": 30,
-          "percentage": 50.0
+          "count": 60,
+          "percentage": 100.0
         },
         {
           "age_bucket": "1-7 days",
-          "count": 30,
-          "percentage": 50.0
+          "count": 0,
+          "percentage": 0.0
         },
         {
           "age_bucket": "7-30 days",
@@ -421,13 +445,20 @@
       "data": [
         {
           "role_name": "Admin",
-          "total_assignments": 62,
-          "avg_assignments_per_user": 20.67,
+          "total_assignments": 68,
+          "avg_assignments_per_user": 22.67,
           "total_users_in_role": 3,
-          "reassignment_count": 0
+          "reassignment_count": 2
         },
         {
           "role_name": "Asset Manager",
+          "total_assignments": 10,
+          "avg_assignments_per_user": 5.0,
+          "total_users_in_role": 2,
+          "reassignment_count": 0
+        },
+        {
+          "role_name": "Budget Manager",
           "total_assignments": 1,
           "avg_assignments_per_user": 1.0,
           "total_users_in_role": 1,
@@ -440,6 +471,222 @@
       "data": {
         "error": "memoryview: a bytes-like object is required, not 'dict'",
         "type": "TypeError"
+      }
+    },
+    "task_item_status": {
+      "description": "Task item status distribution and breakdown",
+      "data": {
+        "total_task_items": 79,
+        "status_distribution": [
+          {
+            "status": "escalated",
+            "count": 7,
+            "percentage": 8.86
+          },
+          {
+            "status": "in progress",
+            "count": 24,
+            "percentage": 30.38
+          },
+          {
+            "status": "new",
+            "count": 77,
+            "percentage": 97.47
+          },
+          {
+            "status": "reassigned",
+            "count": 2,
+            "percentage": 2.53
+          },
+          {
+            "status": "resolved",
+            "count": 12,
+            "percentage": 15.19
+          }
+        ]
+      }
+    },
+    "task_item_assignment_origin": {
+      "description": "Task item assignment origin analytics (System/Transferred/Escalation)",
+      "data": {
+        "total_assignments": 79,
+        "origin_distribution": [
+          {
+            "origin": "Escalation",
+            "count": 5,
+            "percentage": 6.33
+          },
+          {
+            "origin": "System",
+            "count": 72,
+            "percentage": 91.14
+          },
+          {
+            "origin": "Transferred",
+            "count": 2,
+            "percentage": 2.53
+          }
+        ]
+      }
+    },
+    "task_item_performance": {
+      "description": "Task item performance metrics (time-to-action, resolution time, SLA)",
+      "data": {
+        "time_to_action_hours": {
+          "average": 5.24,
+          "minimum": 0.03,
+          "maximum": 14.04
+        },
+        "resolution_time_hours": {
+          "average": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "sla_compliance": {
+          "total_with_sla": 79,
+          "sla_met": 0,
+          "sla_breached": 79,
+          "compliance_rate": 0.0
+        },
+        "active_items": 77,
+        "overdue_items": 42
+      }
+    },
+    "task_item_user_performance": {
+      "description": "Per-user task item performance analytics",
+      "data": [
+        {
+          "user_id": 7,
+          "user_name": "John Doe",
+          "total_items": 24,
+          "new": 22,
+          "in_progress": 2,
+          "resolved": 0,
+          "reassigned": 0,
+          "escalated": 0,
+          "breached": 15,
+          "resolution_rate": 0.0,
+          "escalation_rate": 0.0,
+          "breach_rate": 62.5,
+          "avg_action_time_hours": null
+        },
+        {
+          "user_id": 3,
+          "user_name": "Admin Ticket Tracking System",
+          "total_items": 22,
+          "new": 20,
+          "in_progress": 1,
+          "resolved": 0,
+          "reassigned": 0,
+          "escalated": 1,
+          "breached": 9,
+          "resolution_rate": 0.0,
+          "escalation_rate": 4.55,
+          "breach_rate": 40.91,
+          "avg_action_time_hours": null
+        },
+        {
+          "user_id": 6,
+          "user_name": "Marc Cedric Mayuga",
+          "total_items": 22,
+          "new": 1,
+          "in_progress": 2,
+          "resolved": 11,
+          "reassigned": 2,
+          "escalated": 6,
+          "breached": 1,
+          "resolution_rate": 50.0,
+          "escalation_rate": 27.27,
+          "breach_rate": 4.55,
+          "avg_action_time_hours": 5.54
+        },
+        {
+          "user_id": 8,
+          "user_name": "Jane Smith",
+          "total_items": 5,
+          "new": 5,
+          "in_progress": 0,
+          "resolved": 0,
+          "reassigned": 0,
+          "escalated": 0,
+          "breached": 3,
+          "resolution_rate": 0.0,
+          "escalation_rate": 0.0,
+          "breach_rate": 60.0,
+          "avg_action_time_hours": null
+        },
+        {
+          "user_id": 10,
+          "user_name": "Alice Williams",
+          "total_items": 5,
+          "new": 5,
+          "in_progress": 0,
+          "resolved": 0,
+          "reassigned": 0,
+          "escalated": 0,
+          "breached": 2,
+          "resolution_rate": 0.0,
+          "escalation_rate": 0.0,
+          "breach_rate": 40.0,
+          "avg_action_time_hours": null
+        },
+        {
+          "user_id": 9,
+          "user_name": "Bob Johnson",
+          "total_items": 1,
+          "new": 0,
+          "in_progress": 0,
+          "resolved": 1,
+          "reassigned": 0,
+          "escalated": 0,
+          "breached": 0,
+          "resolution_rate": 100.0,
+          "escalation_rate": 0.0,
+          "breach_rate": 0.0,
+          "avg_action_time_hours": 0.22
+        }
+      ]
+    },
+    "task_item_history_trends": {
+      "description": "Task item status trends over time (last 30 days)",
+      "data": {
+        "error": "memoryview: a bytes-like object is required, not 'dict'",
+        "type": "TypeError"
+      }
+    },
+    "task_item_transfer_analytics": {
+      "description": "Task item transfer and escalation analytics",
+      "data": {
+        "total_transfers": 2,
+        "top_transferrers": [
+          {
+            "role_user__user_id": 6,
+            "role_user__user_full_name": "Marc Cedric Mayuga",
+            "transfer_count": 2
+          }
+        ],
+        "top_transfer_recipients": [
+          {
+            "transferred_to__user_id": 7,
+            "transferred_to__user_full_name": "John Doe",
+            "received_count": 2
+          }
+        ],
+        "total_escalations": 5,
+        "escalations_by_step": [
+          {
+            "assigned_on_step__name": "Asset Check In Workflow - Triage Ticket",
+            "escalation_count": 3
+          },
+          {
+            "assigned_on_step__name": "IT Support Software Installation Workflow - Triage Ticket",
+            "escalation_count": 1
+          },
+          {
+            "assigned_on_step__name": "IT Support Access Request Workflow - Triage Ticket",
+            "escalation_count": 1
+          }
+        ]
       }
     }
   }

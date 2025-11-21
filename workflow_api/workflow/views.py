@@ -23,7 +23,7 @@ from .serializers import (
     TransitionSerializer,
     UpdateTransitionDetailsSerializer,
 )
-from .utils import apply_edge_handles_to_transitions
+from .utils import apply_edge_handles_to_transitions, calculate_default_node_design
 from step.models import Steps, StepTransition
 from role.models import Roles
 from authentication import JWTCookieAuthentication
@@ -506,15 +506,28 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         nodes = Steps.objects.filter(workflow_id=workflow.workflow_id)
         edges = StepTransition.objects.filter(workflow_id=workflow.workflow_id)
         
+        # Get total step count for design calculations
+        total_steps = nodes.count()
+        
         nodes_data = []
         for node in nodes:
+            # Use existing design or calculate default if missing
+            design = node.design if node.design else {}
+            if not design or (not design.get('x') and not design.get('y')):
+                # Calculate default design based on step order and total steps
+                # node.order is 1-indexed, so convert to 0-indexed for calculation
+                design = calculate_default_node_design(
+                    step_order=node.order - 1 if node.order > 0 else 0,
+                    total_steps=total_steps
+                )
+            
             nodes_data.append({
                 'id': node.step_id,
                 'name': node.name,
                 'role': node.role_id.name if node.role_id else '',
                 'description': node.description or '',
                 'instruction': node.instruction or '',
-                'design': node.design or {},
+                'design': design,
                 'is_start': node.is_start,
                 'is_end': node.is_end,
             })
@@ -564,6 +577,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         nodes = Steps.objects.filter(workflow_id=workflow_id)
         edges = StepTransition.objects.filter(workflow_id=workflow_id)
         
+        # Get total step count for design calculations
+        total_steps = nodes.count()
+        
         nodes_data = []
         for node in nodes:
             # Convert datetime to ISO format string
@@ -574,13 +590,23 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if hasattr(updated_at, 'isoformat'):
                 updated_at = updated_at.isoformat()
             
+            # Use existing design or calculate default if missing
+            design = node.design if node.design else {}
+            if not design or (not design.get('x') and not design.get('y')):
+                # Calculate default design based on step order and total steps
+                # node.order is 1-indexed, so convert to 0-indexed for calculation
+                design = calculate_default_node_design(
+                    step_order=node.order - 1 if node.order > 0 else 0,
+                    total_steps=total_steps
+                )
+            
             nodes_data.append({
                 'id': node.step_id,
                 'name': node.name,
                 'role': node.role_id.name if node.role_id else '',
                 'description': node.description or '',
                 'instruction': node.instruction or '',
-                'design': node.design or {},
+                'design': design,
                 'created_at': created_at,
                 'updated_at': updated_at,
                 'is_start': node.is_start,

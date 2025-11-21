@@ -19,12 +19,17 @@ const countByField = (data, field) => {
 };
 
 export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, error }) {
-  const { workflowMetrics, departmentAnalytics, stepPerformance } = analyticsData;
+  const workflowsReport = analyticsData || {};
 
   if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
   if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
-  if (!workflowMetrics && !departmentAnalytics && !stepPerformance)
+  if (!workflowsReport.workflow_metrics && !workflowsReport.department_analytics && !workflowsReport.step_performance)
     return <div style={{ padding: "20px" }}>No workflow data available</div>;
+
+  // Extract data from aggregated response
+  const workflowMetrics = workflowsReport.workflow_metrics || [];
+  const departmentAnalytics = workflowsReport.department_analytics || [];
+  const stepPerformance = workflowsReport.step_performance || [];
 
   // Extract data from analytics
   const workflowLabels = workflowMetrics?.map(w => w.workflow_name) || [];

@@ -6,7 +6,6 @@ These functions are used across tasks, steps, and transitions.
 from django.utils import timezone
 from tickets.models import RoundRobin
 from task.models import TaskItem, TaskItemHistory
-from task.utils.target_resolution import calculate_target_resolution
 from role.models import Roles, RoleUsers
 from task.tasks import send_assignment_notification as notify_task
 import logging
@@ -65,17 +64,26 @@ def apply_round_robin_assignment(task, user_ids, role_name):
     user_index = current_index % len(user_ids)
     user_id = user_ids[user_index]
 
-    # Calculate target resolution
+    # Calculate target resolution for TaskItem using WEIGHTED SLA
+    # TaskItem target = now + (SLA * step_weight_percentage)
     target_resolution = None
     try:
-        if task.ticket_id and task.current_step and task.workflow_id:
-            target_resolution = calculate_target_resolution(
+        if task.ticket_id and task.workflow_id and task.current_step:
+            from task.utils.target_resolution import calculate_target_resolution_for_task_item
+            target_resolution = calculate_target_resolution_for_task_item(
                 ticket=task.ticket_id,
                 step=task.current_step,
                 workflow=task.workflow_id
             )
+            if target_resolution:
+                logger.info(f"✅ Calculated TASK ITEM target resolution: {target_resolution}")
+            else:
+                logger.warning(f"⚠️ Failed to calculate TaskItem target resolution")
+        else:
+            logger.warning(f"⚠️ Missing required fields for target resolution calculation (ticket_id, workflow_id, or current_step)")
+
     except Exception as e:
-        logger.error(f"Failed to calculate target resolution: {e}")
+        logger.error(f"❌ Failed to calculate TaskItem target resolution: {e}", exc_info=True)
 
     # Get RoleUsers record for this user and role
     try:

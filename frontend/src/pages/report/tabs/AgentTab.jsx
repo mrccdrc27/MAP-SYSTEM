@@ -10,44 +10,47 @@ import ChartContainer from "../../../components/charts/ChartContainer";
 import styles from "../report.module.css";
 
 export default function AgentTab({ timeFilter, analyticsData = {}, loading, error }) {
-  const { teamPerformance, slaCompliance, assignmentAnalytics } = analyticsData;
+  const ticketsReport = analyticsData || {};
 
   if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
   if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
-  if (!teamPerformance && !slaCompliance && !assignmentAnalytics)
+  if (!ticketsReport.sla_compliance && !ticketsReport.dashboard)
     return <div style={{ padding: "20px" }}>No agent data available</div>;
 
-  // Extract data from analytics - use user_name from backend
-  const teamLabels = teamPerformance?.map(t => t.user_name || `User ${t.user_id}`) || [];
-  const teamTicketsHandled = teamPerformance?.map(t => t.total_tasks) || [];
-  const teamAvgTime = teamPerformance?.map(t => Math.round(t.avg_resolution_hours || 0)) || [];
+  // Extract data from aggregated response
+  const slaCompliance = ticketsReport.sla_compliance || [];
+  const dashboard = ticketsReport.dashboard || {};
 
-  // SLA compliance is by priority, not by agent - use priority labels
+  // SLA compliance is by priority
   const slaLabels = slaCompliance?.map(s => s.priority) || [];
   const slaCompliances = slaCompliance?.map(s => Math.round(s.compliance_rate || 0)) || [];
+  const slaMetCounts = slaCompliance?.map(s => s.sla_met) || [];
+  const slaBreachedCounts = slaCompliance?.map(s => s.sla_breached) || [];
 
-  // Assignment analytics by role
-  const assignmentLabels = assignmentAnalytics?.map(a => a.role_name) || [];
-  const assignmentCounts = assignmentAnalytics?.map(a => a.total_assignments) || [];
+  // Dashboard metrics for KPI
+  const slaComplianceRate = dashboard?.sla_compliance_rate || 0;
+  const totalUsers = dashboard?.total_users || 0;
+  const escalationRate = dashboard?.escalation_rate || 0;
+  const avgResolutionTime = dashboard?.avg_resolution_time_hours || 0;
 
   return (
     <div className={styles.chartsGrid}>
       {/* Agent Performance */}
       <div className={styles.chartSection}>
-        <h2>Agent Performance</h2>
+        <h2>Agent & SLA Performance</h2>
         <div className={styles.chartRow}>
-          <ChartContainer title="Tickets Handled per Agent">
+          <ChartContainer title="SLA Compliance by Priority">
             <DoughnutChart
-              labels={teamLabels}
-              values={teamTicketsHandled}
-              chartTitle="Tickets Handled per Agent"
-              chartLabel="Tickets"
+              labels={slaLabels}
+              values={slaCompliances}
+              chartTitle="SLA Compliance Rate (%)"
+              chartLabel="Compliance %"
             />
           </ChartContainer>
 
-          <ChartContainer title="Average Response Time by Agent">
+          <ChartContainer title="SLA Met vs Breached">
             <BarChart
-              labels={teamLabels}
+              labels={slaLabels}
               dataPoints={teamAvgTime}
               chartTitle="Avg Response Time (mins)"
               chartLabel="Minutes"
