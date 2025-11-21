@@ -9,12 +9,14 @@ import FileUpload from "./FileUpload";
 import Pagination from "./Pagination";
 import { LoadingSpinner, EmptyState, ErrorState } from "./CommentUtilities";
 import styles from "./ticketComments.module.css";
+import ConfirmModal from "../modal/ConfirmModal";
 
 const TicketComments = ({ ticketId }) => {
   const { user, isAdmin } = useAuth();
   const [newComment, setNewComment] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState([]);
-  const [clearAttachmentFilesTrigger, setClearAttachmentFilesTrigger] = useState(0);
+  const [clearAttachmentFilesTrigger, setClearAttachmentFilesTrigger] =
+    useState(0);
 
   const {
     comments,
@@ -31,42 +33,58 @@ const TicketComments = ({ ticketId }) => {
     fetchComments,
   } = useComments(ticketId);
 
-  const handleDelete = async (commentId) => {
-    if (!commentId) return;
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this comment? This cannot be undone."
-    );
-    if (!confirmed) return;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState({
+    title: "",
+    message: "",
+    id: null,
+  });
 
-    const success = await deleteComment(commentId);
+  const handleDelete = (commentId) => {
+    if (!commentId) return;
+    setConfirmData({
+      title: "Delete comment",
+      message:
+        "Are you sure you want to delete this comment? This cannot be undone.",
+      id: commentId,
+    });
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setConfirmOpen(false);
+    if (!confirmData.id) return;
+
+    const success = await deleteComment(confirmData.id);
     if (!success) {
-      console.error("Failed to delete comment", commentId);
+      console.error("Failed to delete comment", confirmData.id);
     }
+    setConfirmData({ title: "", message: "", id: null });
   };
 
   const handleSendComment = async (e) => {
     e.preventDefault();
     if (newComment.trim()) {
-      console.log('Sending comment with files:', attachmentFiles);
+      console.log("Sending comment with files:", attachmentFiles);
       const result = await addComment(newComment, attachmentFiles);
       if (result) {
         setNewComment("");
         setAttachmentFiles([]);
         setClearAttachmentFilesTrigger((prev) => prev + 1);
-        console.log('Comment sent successfully');
+        console.log("Comment sent successfully");
       } else {
-        console.error('Failed to send comment');
+        console.error("Failed to send comment");
       }
     }
   };
 
   const handleReply = async (parentId, content, files = []) => {
-    console.log('Sending reply with files:', files);
+    console.log("Sending reply with files:", files);
     const result = await addReply(parentId, content, files);
     if (result) {
-      console.log('Reply sent successfully');
+      console.log("Reply sent successfully");
     } else {
-      console.error('Failed to send reply');
+      console.error("Failed to send reply");
     }
   };
 
@@ -146,7 +164,7 @@ const TicketComments = ({ ticketId }) => {
         <h3>Comments</h3>
         {pagination.count > 0 && (
           <span className={styles.commentsCount}>
-            {pagination.count} comment{pagination.count !== 1 ? 's' : ''}
+            {pagination.count} comment{pagination.count !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -175,7 +193,7 @@ const TicketComments = ({ ticketId }) => {
                 currentUserId={user?.id}
               />
             ))}
-            
+
             <Pagination
               pagination={pagination}
               onPageChange={handlePageChange}
@@ -194,20 +212,21 @@ const TicketComments = ({ ticketId }) => {
           disabled={loading}
           rows="4"
         />
-        
+
         <FileUpload
           onFilesSelected={setAttachmentFiles}
           maxFiles={5}
           uniqueId="comment-file-upload"
           clearTrigger={clearAttachmentFilesTrigger}
         />
-        
+
         <div className={styles.commentFormActions}>
           <div className={styles.attachmentInfo}>
             {attachmentFiles.length > 0 && (
               <span className={styles.fileCount}>
                 <i className="fas fa-paperclip"></i>
-                {attachmentFiles.length} file{attachmentFiles.length !== 1 ? 's' : ''} selected
+                {attachmentFiles.length} file
+                {attachmentFiles.length !== 1 ? "s" : ""} selected
               </span>
             )}
           </div>
@@ -220,6 +239,13 @@ const TicketComments = ({ ticketId }) => {
           </button>
         </div>
       </form>
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title={confirmData.title}
+        message={confirmData.message}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 };

@@ -1,74 +1,95 @@
-/* Toast container */
+/* Toast container wrapper (for stacking multiple toasts) */
+.container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+}
+
+/* Toast box */
 .toast {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 
-  width: 35vw;
-  padding: 12px 18px;
+  min-width: 240px;
+  max-width: 420px;
+  padding: 12px 16px;
   border-radius: 10px;
-  margin-bottom: 10px;
 
-  position: absolute;
-  top: 100px;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 2;
-
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: #FCFCFC;
+
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
 
   animation: fadeSlide 5s ease-in-out forwards;
 }
 
-/* Toast type styles */
+/* Side layout */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+/* Icon */
+.toastIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: rgba(255,255,255,0.95);
+}
+
+/* Message text */
+.toastMessage {
+  flex: 1;
+  line-height: 1.2;
+  color: #FFFFFF;
+}
+
+/* Close button */
+.toastClose {
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+/* Toast type colors */
 .success { background-color: #039855; }
 .error   { background-color: #D92D20; }
 .info    { background-color: #175CD3; }
 .warning { background-color: #FDB022; }
 
-/* Close Button */
-
-/* Toast icon */
-.toastIcon {
-  font-size: 1.3rem;
-  margin-right: 8px;
-}
-
-/* Toast message */
-.toastMessage {
-  flex: 1;
-}
-
-/* Close Button */
-.toastClose {
-  background: transparent;
-  border: none;
-  color: #FCFCFC;
-  font-size: 1.2rem;
-  margin-left: auto;
-  cursor: pointer;
-}
-
-/* Animation */
+/* Appear + disappear animation */
 @keyframes fadeSlide {
   0% {
     opacity: 0;
-    transform: translate(-50%, -70%);
+    transform: translateY(-8px) scale(0.98);
   }
   10% {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translateY(0) scale(1);
   }
   90% {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translateY(0) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -30%);
+    transform: translateY(-6px) scale(0.98);
   }
 }

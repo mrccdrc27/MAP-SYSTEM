@@ -1,26 +1,43 @@
 import React, { useEffect } from 'react';
 import styles from './toast.module.css';
+import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
 
-const ICONS = {
-  success: <span>✅</span>,
-  error: <span>❌</span>,
-  info: <span>ℹ️</span>,
-  warning: <span>⚠️</span>,
+const ICON_MAP = {
+  success: CheckCircle,
+  error: XCircle,
+  info: Info,
+  warning: AlertTriangle,
 };
 
-const Toast = ({ type = 'info', message, onClose }) => {
+const Toast = ({ type = 'info', message, onClose = () => {}, duration = 5000 }) => {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 5000);
+    const timer = setTimeout(() => onClose(), duration);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, duration]);
+
+  const Icon = ICON_MAP[type] || ICON_MAP.info;
 
   return (
-    <div className={`${styles.toast} ${styles[type]}`}>
-      <span className={styles.toastIcon}>{ICONS[type] || ICONS.info}</span>
-      <span className={styles.toastMessage}>{message}</span>
-      <button className={styles.toastClose} onClick={onClose}>×</button>
+    <div
+      className={`${styles.toast} ${styles[type]}`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <div className={styles.left}>
+        <span className={styles.toastIcon} aria-hidden>
+          <Icon size={20} />
+        </span>
+        <div className={styles.toastMessage}>{message}</div>
+      </div>
+
+      <button
+        className={styles.toastClose}
+        onClick={onClose}
+        aria-label="Close notification"
+      >
+        <X size={16} />
+      </button>
     </div>
   );
 };
