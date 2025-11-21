@@ -43,6 +43,7 @@ export default function AdminArchive() {
   const [expandedRows, setExpandedRows] = useState({});
   const [expandedTickets, setExpandedTickets] = useState({});
   const [showFilters, setShowFilters] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   // Fetch data on mount
   useEffect(() => {
@@ -187,10 +188,12 @@ export default function AdminArchive() {
     const mostRecent = getMostRecentTasksPerTicket(filtered);
 
     if (groupBy === "none") {
-      return { "All Items": mostRecent };
+      const sorted = sortItems(mostRecent);
+      return { "All Items": sorted };
     }
 
-    return mostRecent.reduce((acc, item) => {
+    // First group, then sort within each group
+    const grouped = mostRecent.reduce((acc, item) => {
       let key;
       switch (groupBy) {
         case "workflow":
@@ -198,6 +201,9 @@ export default function AdminArchive() {
           break;
         case "status":
           key = (item.status || "unknown").replace(/_/g, " ").toUpperCase();
+          break;
+        case "priority":
+          key = item.ticket_priority || "Medium";
           break;
         case "assignee":
           key = item.user_full_name || "Unassigned";
@@ -209,6 +215,13 @@ export default function AdminArchive() {
       acc[key].push(item);
       return acc;
     }, {});
+
+    // Sort items within each group
+    Object.keys(grouped).forEach((key) => {
+      grouped[key] = sortItems(grouped[key]);
+    });
+
+    return grouped;
   };
 
   // Toggle group expansion
@@ -253,6 +266,50 @@ export default function AdminArchive() {
         (i) => i.task_status === "blocked" || i.status === "blocked"
       ).length,
     };
+  };
+
+  // Handle column sorting
+  const handleSort = (key, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Sort items based on current sort config
+  const sortItems = (items) => {
+    if (!sortConfig.key) return items;
+
+    return [...items].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle null/undefined
+      if (aValue == null) aValue = "";
+      if (bValue == null) bValue = "";
+
+      // Handle numeric values
+      if (!isNaN(aValue) && !isNaN(bValue) && aValue !== "" && bValue !== "") {
+        aValue = Number(aValue);
+        bValue = Number(bValue);
+      } else {
+        // Convert to lowercase for string comparison
+        aValue = String(aValue).toLowerCase();
+        bValue = String(bValue).toLowerCase();
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
   };
 
   const grouped = getGroupedData();
@@ -308,6 +365,7 @@ export default function AdminArchive() {
                   <option value="none">No Grouping</option>
                   <option value="workflow">Group by Workflow</option>
                   <option value="status">Group by Status</option>
+                  <option value="priority">Group by Priority</option>
                   <option value="assignee">Group by Assignee</option>
                 </select>
 
@@ -415,15 +473,55 @@ export default function AdminArchive() {
                         <thead className={styles.tableHead}>
                           <tr>
                             <th className={styles.thExpand}></th>
-                            <th>Ticket #</th>
-                            <th>Subject</th>
-                            <th>Workflow</th>
-                            <th>Current Step</th>
-                            <th>Assignee</th>
-                            {/* <th>Ticket Status</th> */}
-                            {/* <th>Task Status</th> */}
-                            <th>Priority</th>
-                            <th>Target Date</th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("ticket_number", e)}>
+                              Ticket # {sortConfig.key === "ticket_number" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("ticket_subject", e)}>
+                              Subject {sortConfig.key === "ticket_subject" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("workflow_name", e)}>
+                              Workflow {sortConfig.key === "workflow_name" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("current_step_name", e)}>
+                              Current Step {sortConfig.key === "current_step_name" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("user_full_name", e)}>
+                              Assignee {sortConfig.key === "user_full_name" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("ticket_priority", e)}>
+                              Priority {sortConfig.key === "ticket_priority" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
+                            <th className={styles.sortableHeader} onClick={(e) => handleSort("target_resolution", e)}>
+                              Target Date {sortConfig.key === "target_resolution" && (
+                                <span className={styles.sortIndicator}>
+                                  {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                </span>
+                              )}
+                            </th>
                             <th>Action</th>
                           </tr>
                         </thead>
@@ -528,7 +626,7 @@ export default function AdminArchive() {
                                     </td>
                                     <td className={styles.action}>
                                       <button 
-                                        className={styles.viewButton} 
+                                        className={styles.btn} 
                                         title="View ticket details"
                                         onClick={() => navigate(`/admin/archive/${mainTask.task_item_id}`)}
                                       >
