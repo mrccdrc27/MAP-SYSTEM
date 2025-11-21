@@ -1,3 +1,4 @@
+/* PAGE BASE */
 .ticketDetailPage {
   margin: var(--margin-size-min);
   animation: fadeInUp 0.6s ease both;
@@ -36,32 +37,30 @@
 
 .tdpHeaderTitle h1 {
   margin: 0;
-  /* font-size: var(--h1-font-size); */
   color: var(--text-color);
 }
 
-/* tdpBody */
+/* BODY */
 .tdpBody {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-/* LEFT */
+/* LEFT PANEL */
 .layoutSection {
   width: 100%;
   background-color: var(--bg1-color);
   border-radius: 16px;
   padding: 20px;
-  transition: all 0.3s ease;
   border: 1px solid #e8e8e8;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
 }
 
 .layoutColumn {
   display: flex;
   flex-direction: column;
-  /* gap: 1.5rem; */
   gap: 1rem;
 }
 
@@ -69,7 +68,6 @@
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  /* align-items: center; */
   margin-bottom: 20px;
 }
 
@@ -97,7 +95,6 @@
 
 .tdpSection {
   margin-bottom: 20px;
-
   background-color: var(--bg1-color);
   border: 1px solid #e8e8e8;
   border-radius: 12px;
@@ -116,14 +113,13 @@
 
 .tdpDescription {
   overflow-x: auto;
-  /* font-size: var(--table-head-size); */
   font-size: var(--default-font-size);
   color: var(--text-color);
   line-height: 1.6;
-  white-space: pre-line; /* This preserves newlines in the description */
+  white-space: pre-line;
 }
 
-/* Instructions */
+/* INSTRUCTIONS */
 .tdInstructions {
   background-color: #f4f8ff;
   border-left: 5px solid var(--primary-color);
@@ -147,7 +143,6 @@
 .iHeaderWrapper h3 {
   font-size: var(--base-font-size);
   color: var(--primary-color);
-  border-radius: 8px;
   line-height: 1.6;
 }
 
@@ -157,7 +152,7 @@
   line-height: 1.6;
 }
 
-/* tdAttachment */
+/* ATTACHMENT */
 .tdAttachment {
   color: var(--text-color);
 }
@@ -182,49 +177,37 @@
   color: var(--secondary-color);
 }
 
-/* RIGHT */
-.actionButton {
-  background-color: var(--success-color);
-  color: white;
+/* BUTTONS (RIGHT PANEL) */
+.ticketActionButton,
+.escalateButton,
+.transferButton {
   border: none;
   border-radius: 4px;
-  padding: 14px 16px;
-  flex: 1 1 100%;
-  font-size: 16px;
-  font-weight: bold;
+  padding: 12px 14px;
+  flex: 1;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.actionButton:hover:not(:disabled) {
+/* Action Button */
+.ticketActionButton {
+  background-color: var(--success-color);
+  color: white;
+  font-size: 13px;
+}
+
+.ticketActionButton:hover:not(:disabled) {
   background-color: #20a76b;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.actionButton:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.actionButton:disabled {
-  background-color: #cccccc;
-  color: #666666;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
+/* Escalate Button */
 .escalateButton {
   background-color: #d97f7f;
   color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 14px;
-  flex: 1;
   font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .escalateButton:hover:not(:disabled) {
@@ -232,82 +215,44 @@
   transform: translateY(-1px);
 }
 
-.escalateButton:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.escalateButton:disabled {
-  background-color: #cccccc;
-  color: #666666;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.escalateButtonDisabled {
-  background-color: #cccccc;
-  color: #666666;
-  border: none;
-  border-radius: 4px;
-  padding: 12px;
-  flex: 1;
-  font-size: var(--base-font-size);
-  font-weight: bold;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
+/* Transfer Button */
 .transferButton {
   background-color: #6b9dd9;
   color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 14px;
-  flex: 1;
   font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.transferButton:hover {
+.transferButton:hover:not(:disabled) {
   background-color: #5a87c1;
   transform: translateY(-1px);
 }
 
-.transferButton:active {
-  transform: translateY(0);
-}
-
-.transferButton:disabled {
-  background-color: #cccccc;
-  color: #666666;
+/* DISABLED STATE (Shared) */
+.ticketActionButton:disabled,
+.escalateButton:disabled,
+.transferButton:disabled,
+.transferButtonDisabled,
+.escalateButtonDisabled,
+.ticketActionButtonDisabled {
+  background-color: #cccccc !important;
+  color: #666666 !important;
   cursor: not-allowed;
   opacity: 0.6;
+  transform: none !important;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 14px;
+  flex: 1;
+  /* font-weight: 600; */
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.transferButton:hover {
-  background-color: #2563eb;
-  transform: translateY(-2px);
-}
-
-.transferButton:active {
-  transform: translateY(0);
-}
-
-.transferButton:disabled {
-  background-color: #cccccc;
-  color: #666666;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* tabs */
+/* TABS */
 .tdpTabs {
   display: flex;
   gap: 32px;
   margin-bottom: 32px;
   border-bottom: 1px solid #e5e7eb;
-  /* justify-content: space-between; */
 }
 
 .tdpTabLink {
@@ -315,10 +260,9 @@
   background: none;
   padding: 12px 10px;
   color: var(--muted-text-color);
-  text-decoration: none;
   font-size: var(--base-font-size);
-  position: relative;
   cursor: pointer;
+  position: relative;
 }
 
 .tdpTabLink.active {
@@ -336,6 +280,7 @@
   background-color: #0d6efd;
 }
 
+/* STATUS */
 .tdStatusCard {
   display: flex;
   justify-content: space-between;
@@ -350,7 +295,7 @@
   font-weight: bold;
 }
 
-/* tracking visual */
+/* TRACKING */
 .tdProgressTrack {
   margin-bottom: 20px;
   position: relative;
@@ -358,8 +303,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 20px;
-  animation: fadeInUp 0.6s ease both;
+  padding: 20px;
 }
 
 .progressBar {
@@ -370,7 +314,6 @@
   width: 100%;
   background-color: #ddd;
   transform: translateY(-50%);
-  z-index: 1;
 }
 
 .progressStep {
@@ -386,7 +329,7 @@
   border: 3px solid #ccc;
 }
 
-/* info */
+/* INFO */
 .tdInfoHeader {
   display: flex;
   justify-content: space-between;
@@ -425,11 +368,11 @@
   color: var(--heading-color);
 }
 
+/* ACTION LOGS */
 .actionLogs {
   font-size: var(--default-font-size);
   color: var(--heading-color);
 }
-
 
 /* ANIMATION */
 @keyframes fadeInUp {
@@ -444,10 +387,9 @@
   }
 }
 
-/* MEDIA QUERIES */
+/* RESPONSIVE */
 @media screen and (max-width: 768px) {
   .layoutFlex {
     flex-direction: column;
-    /* align-items: flex-start; */
   }
 }
