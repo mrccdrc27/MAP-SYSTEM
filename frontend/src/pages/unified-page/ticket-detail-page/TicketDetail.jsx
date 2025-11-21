@@ -11,6 +11,7 @@ import general from "../../../style/general.module.css";
 
 // components
 import Nav from "../../../components/navigation/Nav";
+import Toast from "../../../components/modal/Toast";
 import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLogList from "../../../components/ticket/ActionLogList";
@@ -79,6 +80,11 @@ export default function TicketDetail() {
   const [openEscalateModal, setOpenEscalateModal] = useState(false);
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [showTicketInfo, setShowTicketInfo] = useState(true);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+  };
 
   const toggTicketInfosVisibility = useCallback(() => {
     setShowTicketInfo((prev) => !prev);
@@ -238,6 +244,12 @@ export default function TicketDetail() {
   return (
     <>
       <Nav />
+      {/* Page-level toast (shows outside modals) */}
+      {toast && (
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
+          <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />
+        </div>
+      )}
       <main className={styles.ticketDetailPage}>
         <section className={styles.tdpHeader}>
           <div>
@@ -378,7 +390,7 @@ export default function TicketDetail() {
                   {state.ticket?.is_escalated
                     ? "Already Escalated"
                     : state.ticket?.has_acted
-                    ? "Action Already Taken"
+                    ? "Can't Escalate After Action"
                     : "Escalate Ticket"}
                 </button>
                 {isAdmin() && (
@@ -542,6 +554,7 @@ export default function TicketDetail() {
           ticket={state.ticket}
           action={state.action}
           instance={state.taskid}
+          showToast={showToast}
         />
       )}
       {openEscalateModal && (
