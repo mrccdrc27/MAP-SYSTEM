@@ -29,12 +29,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy entrypoint script first and make executable
-COPY entrypoint.sh .
-RUN chmod +x /app/entrypoint.sh
-
-# Copy project files - done last to leverage Docker layer caching
+# Copy project files
 COPY . .
+
+# Make entrypoint script executable - done after copy to ensure permissions stick
+RUN chmod +x /app/entrypoint.sh
 
 # Specify port for clarity
 EXPOSE 8001
