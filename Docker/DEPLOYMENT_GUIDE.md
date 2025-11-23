@@ -18,9 +18,9 @@
 ## Pre-Deployment Setup
 
 ### Requirements Checklist
-- [ ] Registered domain name
+- [/] Registeed domain name
 - [ ] DigitalOcean account with billing set up
-- [ ] SSH key pair generated locally
+- [/] SSH key pair generated locally
 - [ ] All environment variables prepared in `.env` file
 - [ ] Git repository access (if using private repo)
 

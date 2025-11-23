@@ -266,8 +266,9 @@ class Command(BaseCommand):
                 # Create steps with role-specific and workflow-specific details
                 step_objs = []
                 for idx, step_cfg in enumerate(steps_cfg):
-                    # Step names are namespaced by workflow but use the clean labels
-                    step_name = f"{wf.name} - {step_cfg['label']}"
+                    # Step names limited to 64 chars max to fit database field
+                    # Use simple naming: label only (max 64 chars)
+                    step_name = step_cfg['label']
                     instruction = random.choice(instructions_pool[step_cfg['instruction_type']])
 
                     is_start = (idx == 0)
