@@ -266,10 +266,10 @@ CELERY_TASK_ROUTES = {
 }
 
 # CORS configuration
-# Allow the frontend dev server origin by default; can be overridden via env var CORS_ALLOWED_ORIGINS
+# Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000' if not IS_PRODUCTION else 'https://yourdomain.com',
+    default='http://localhost:1000,http://127.0.0.1:1000',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 CORS_ALLOW_CREDENTIALS = config('DJANGO_CORS_ALLOW_CREDENTIALS', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes'))

@@ -1,0 +1,32 @@
+VITE_VALUE_TEST=Test
+VITE_AGENTS_API=http://localhost:8004/agents
+VITE_ARCHIVE_API=http://localhost:8004/archive
+
+VITE_TICKET_API=http://localhost:8004/tickets
+VITE_ADMINTICKET_API=http://localhost:8004/adminTicket
+VITE_ARCHIVE_TICKETS_API=http://localhost:8004/archived_tickets
+VITE_UPCOMING_TICKETS_API=http://localhost:8004/upcoming_tickets
+VITE_LOGIN_API=http://localhost:8001/auth/login/
+VITE_VERIFY_API=http://localhost:8001/auth/verify/
+VITE_VERIFY_OTP_API=http://localhost:8001/auth/login/verify-otp/
+
+
+VITE_LOGOUT_API=http://localhost:8001/auth/logout/
+VITE_PASSWORD_RESET_API=http://localhost:8001/password/reset/
+VITE_VALIDATE_RESET_TOKEN_API=http://localhost:8001/password/reset/validate-token/
+VITE_CONFIRM_RESET_API=http://localhost:8001/password/reset/confirm/
+
+# auth
+VITE_AUTH_URL=http://localhost:8003/auth/
+
+# workflow
+VITE_WORKFLOW_API=http://localhost:8002/workflow
+VITE_BACKEND_API=http://localhost:8002/workflow
+
+# messaging
+VITE_MESSAGING_API=http://localhost:8005
+VITE_MESSAGING_WS=http://localhost:8005
+# notification
+VITE_NOTIFICATION_API=http://localhost:8006
+
+VITE_USER_SERVER_API=http://localhost:8003/auth/

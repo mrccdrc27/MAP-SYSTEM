@@ -175,10 +175,12 @@ SIMPLE_JWT = {
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:1000",
-    "http://127.0.0.1:1000",
-]
+# Always use environment variable if provided; defaults to localhost origins
+CORS_ALLOWED_ORIGINS = config(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    default='http://localhost:1000,http://127.0.0.1:1000',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
 
 # Celery Configuration
 CELERY_BROKER_URL = config('DJANGO_CELERY_BROKER_URL', default='amqp://admin:admin@localhost:5672/')

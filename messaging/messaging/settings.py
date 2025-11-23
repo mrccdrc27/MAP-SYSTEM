@@ -194,6 +194,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # CORS settings
+# Always use environment variable if provided; defaults to common localhost origins
 _env_origins = config('DJANGO_CORS_ALLOWED_ORIGINS', default='')
 if _env_origins:
     CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _env_origins.split(',') if origin.strip()]
@@ -207,7 +208,7 @@ else:
         "http://127.0.0.1:1000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-    ] if not IS_PRODUCTION else ["https://yourdomain.com"]
+    ]
 
 # IMPORTANT: When the frontend sends credentialed requests (withCredentials / credentials: 'include'),
 # the backend must return an explicit Access-Control-Allow-Origin header (not '*'). Therefore default CORS_ALLOW_ALL_ORIGINS is False. Use CORS_ALLOWED_ORIGINS or set

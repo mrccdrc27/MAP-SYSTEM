@@ -276,9 +276,10 @@ CSRF_TRUSTED_ORIGINS = config(
 )
 
 # CORS Configuration - Allow frontend to access backend
+# Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000' if not IS_PRODUCTION else 'https://yourdomain.com',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 

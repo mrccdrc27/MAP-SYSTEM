@@ -1,4 +1,5 @@
 change terminal to bash, for copy-paste
+ssh -i "$env:USERPROFILE\.ssh\digitalocean" root@<droplet-ip>
 
 
 ./Scripts/docker.sh
