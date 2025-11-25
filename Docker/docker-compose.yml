@@ -94,7 +94,7 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_started
-    command: sh -c "sleep 20 && ./start.sh"
+    command: sh -c "sleep 30 && ./start.sh"
 
   # Workflow API service - 10 seconds sleep
   workflow-api:
