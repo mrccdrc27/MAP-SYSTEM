@@ -1,5 +1,6 @@
 """
 OTP (One-Time Password) and 2FA views - handles two-factor authentication.
+Handles requesting OTP, enabling/disabling 2FA, and OTP verification.
 """
 
 from rest_framework import generics, status
