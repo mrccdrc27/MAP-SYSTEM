@@ -20,7 +20,7 @@ from ..serializers import (
     UserProfileUpdateSerializer,
     AdminUserProfileUpdateSerializer,
 )
-from permissions import IsSystemAdminOrSuperUser, filter_users_by_system_access
+from auth.permissions import IsSystemAdminOrSuperUser, filter_users_by_system_access
 from system_roles.models import UserSystemRole
 from systems.models import System
 from roles.models import Role

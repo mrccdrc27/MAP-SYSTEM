@@ -6,7 +6,7 @@ from drf_spectacular.utils import extend_schema_view, extend_schema
 from .models import *
 from .serializers import *
 from django.contrib.auth import get_user_model
-from permissions import IsSystemAdminOrSuperUser, filter_queryset_by_system_access, CanCreateForSystem
+from auth.permissions import IsSystemAdminOrSuperUser, filter_queryset_by_system_access, CanCreateForSystem
 from systems.models import System
 User = get_user_model()
 

@@ -64,7 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'middleware.JWTAuthenticationMiddleware',  # Add JWT authentication middleware for cookies
+    'auth.middleware.JWTAuthenticationMiddleware',  # Add JWT authentication middleware for cookies
     'users.authentication_middleware.AuthenticationRoutingMiddleware',  # Centralized auth & routing
 ]
 
