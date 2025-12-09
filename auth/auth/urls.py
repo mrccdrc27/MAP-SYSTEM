@@ -20,8 +20,6 @@ from users.views import (
     CustomTokenObtainPairView,
     UILogoutView,
     StaffNotAuthenticatedMixin,
-    StaffLoginRequiredMixin,
-    StaffEmployeeBlockerMixin,
 )
 from tts.views import assign_agent_to_role_form
 from hdts import views as hdts_views
@@ -133,7 +131,6 @@ urlpatterns = [
     path('verify-otp/', EmployeeVerifyOTPView.as_view(), name='employee-verify-otp-shortcut'),
     path('profile-settings/', EmployeeProfileSettingsView.as_view(), name='employee-profile-settings-shortcut'),
     path('change-password/', EmployeeChangePasswordView.as_view(), name='employee-change-password-shortcut'),
-    
     path('reset-password/', EmployeeResetPasswordUIView.as_view(), name='employee-reset-password-shortcut'),
     
     # API shortcut for current user profile (works for both staff and employees)
