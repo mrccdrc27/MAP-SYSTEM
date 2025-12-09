@@ -8,7 +8,6 @@ This package organizes views into logical modules:
 - password_views: Password reset and change flows
 - user_management_views: User CRUD operations and agent management
 - login_views: Login flow, OTP for login, and system welcome
-- captcha_views: CAPTCHA generation, verification, and requirement checks
 - role_management_views: Role creation, viewing, and assignment management
 - staff_routing_mixins: Protective routing mixins for staff portal pages
 """
@@ -62,15 +61,6 @@ from .login_views import (
     VerifyOTPLoginView,
 )
 
-# CAPTCHA
-from .captcha_views import (
-    CaptchaGenerateView,
-    CaptchaVerifyView,
-    captcha_required_view,
-    CaptchaGenerateSerializer,
-    CaptchaVerifySerializer,
-)
-
 # Role Management
 from .role_management_views import (
     CreateRoleView,
@@ -119,12 +109,6 @@ __all__ = [
     'request_otp_for_login',
     'SystemWelcomeView',
     'VerifyOTPLoginView',
-    # CAPTCHA
-    'CaptchaGenerateView',
-    'CaptchaVerifyView',
-    'captcha_required_view',
-    'CaptchaGenerateSerializer',
-    'CaptchaVerifySerializer',
     # Role Management
     'CreateRoleView',
     'UpdateAssignmentView',
