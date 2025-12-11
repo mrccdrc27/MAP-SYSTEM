@@ -19,6 +19,9 @@ from .views import (
     TaskItemUserPerformanceAnalyticsView,
     TaskItemHistoryTrendAnalyticsView,
     TaskItemTransferAnalyticsView,
+    TicketTrendAnalyticsView,
+    TaskItemTrendAnalyticsView,
+    TicketCategoryAnalyticsView,
     AggregatedTicketsReportView,
     AggregatedWorkflowsReportView,
     AggregatedTasksReportView,
@@ -65,6 +68,11 @@ urlpatterns = [
     path('task-item-user-performance/', TaskItemUserPerformanceAnalyticsView.as_view(), name='task-item-user-performance'),
     path('task-item-history-trends/', TaskItemHistoryTrendAnalyticsView.as_view(), name='task-item-history-trends'),
     path('task-item-transfer/', TaskItemTransferAnalyticsView.as_view(), name='task-item-transfer'),
+    
+    # Trend Analytics endpoints
+    path('ticket-trends/', TicketTrendAnalyticsView.as_view(), name='ticket-trends'),
+    path('task-item-trends/', TaskItemTrendAnalyticsView.as_view(), name='task-item-trends'),
+    path('ticket-categories/', TicketCategoryAnalyticsView.as_view(), name='ticket-categories'),
     
     # Aggregated endpoints (NEW)
     path('reports/tickets/', AggregatedTicketsReportView.as_view(), name='aggregated-tickets'),

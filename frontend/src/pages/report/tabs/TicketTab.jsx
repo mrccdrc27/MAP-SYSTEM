@@ -1,6 +1,8 @@
 // charts
 import PieChart from "../../../components/charts/PieChart";
 import BarChart from "../../../components/charts/BarChart";
+import LineChart from "../../../components/charts/LineChart";
+import DoughnutChart from "../../../components/charts/DoughnutChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
 
 // components
@@ -16,6 +18,7 @@ import {
   CheckCircle,
   Clock,
   HardDrive,
+  TrendingUp,
 } from "lucide-react";
 
 // react
@@ -24,8 +27,14 @@ import { useState } from "react";
 // styles
 import styles from "../report.module.css";
 
-export default function TicketTab({ displayStyle = "charts", timeFilter, analyticsData = {}, loading, error }) {
+export default function TicketTab({ timeFilter, analyticsData = {}, trendData = {}, categoryData = {}, loading, error }) {
   const ticketsReport = analyticsData || {};
+  const ticketTrends = trendData || {};
+  const categoryAnalytics = categoryData || {};
+  
+  // Debug log to check category data
+  console.log('TicketTab categoryData:', categoryData);
+  console.log('TicketTab categoryAnalytics:', categoryAnalytics);
   
   // Drilldown state
   const [drilldownOpen, setDrilldownOpen] = useState(false);
@@ -161,180 +170,34 @@ export default function TicketTab({ displayStyle = "charts", timeFilter, analyti
   const ageLabels = ticketAge?.map(t => t.age_bucket) || [];
   const ageDataPoints = ticketAge?.map(t => t.count) || [];
 
-  // Render different views based on displayStyle
-  if (displayStyle === "list") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        {/* Drilldown Modal */}
-        <DrilldownModal
-          isOpen={drilldownOpen}
-          onClose={handleCloseDrilldown}
-          title={drilldownTitle}
-          data={drilldownData}
-          columns={drilldownColumns}
-          onPageChange={handleDrilldownPageChange}
-          loading={drilldownLoading}
-        />
-        
-        {/* KPI as List */}
-        <div className={styles.chartSection}>
-          <h2>Ticket KPI</h2>
-          <div className={styles.listView}>
-            {kpiCardData.map((card, index) => (
-              <div key={index} className={styles.listItem}>
-                <div className={styles.listItemContent}>
-                  <span className={styles.listLabel}>{card.title}</span>
-                  <span className={styles.listValue}>{card.value}</span>
-                </div>
-                <div className={styles.listIcon}>{card.icon}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+  // Ticket trend data (created vs resolved)
+  const trendLabels = ticketTrends?.trends?.map(t => t.date) || [];
+  const trendDatasets = [
+    {
+      label: 'Created',
+      data: ticketTrends?.trends?.map(t => t.created) || [],
+      borderColor: '#4a90e2',
+    },
+    {
+      label: 'Resolved',
+      data: ticketTrends?.trends?.map(t => t.resolved) || [],
+      borderColor: '#7ed321',
+    },
+  ];
 
-        {/* Analytics as List */}
-        <div className={styles.chartSection}>
-          <h2>Ticket Analytics</h2>
-          <div className={styles.listView}>
-            <div className={styles.analyticsSection}>
-              <h3>By Status <span className={styles.clickHint}>(click to drill down)</span></h3>
-              {statusLabels.map((label, idx) => (
-                <div 
-                  key={idx} 
-                  className={`${styles.listItem} ${styles.clickable}`}
-                  onClick={() => handleStatusClick(label)}
-                >
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{statusDataPoints[idx]}</span>
-                </div>
-              ))}
-            </div>
-            <div className={styles.analyticsSection}>
-              <h3>By Priority <span className={styles.clickHint}>(click to drill down)</span></h3>
-              {priorityLabels.map((label, idx) => (
-                <div 
-                  key={idx} 
-                  className={`${styles.listItem} ${styles.clickable}`}
-                  onClick={() => handlePriorityClick(label)}
-                >
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{priorityDataPoints[idx]}</span>
-                </div>
-              ))}
-            </div>
-            <div className={styles.analyticsSection}>
-              <h3>By Age <span className={styles.clickHint}>(click to drill down)</span></h3>
-              {ageLabels.map((label, idx) => (
-                <div 
-                  key={idx} 
-                  className={`${styles.listItem} ${styles.clickable}`}
-                  onClick={() => handleAgeClick(label)}
-                >
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{ageDataPoints[idx]}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Category analytics data
+  const categoryDistribution = categoryAnalytics?.by_category || [];
+  const subCategoryDistribution = categoryAnalytics?.by_sub_category || [];
+  const departmentDistribution = categoryAnalytics?.by_department || [];
 
-  if (displayStyle === "grid") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        {/* Drilldown Modal */}
-        <DrilldownModal
-          isOpen={drilldownOpen}
-          onClose={handleCloseDrilldown}
-          title={drilldownTitle}
-          data={drilldownData}
-          columns={drilldownColumns}
-          onPageChange={handleDrilldownPageChange}
-          loading={drilldownLoading}
-        />
-        
-        {/* KPI as Grid Table */}
-        <div className={styles.chartSection}>
-          <h2>Ticket KPI</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Metric</div>
-              <div>Value</div>
-            </div>
-            {kpiCardData.map((card, index) => (
-              <div key={index} className={styles.gridRow}>
-                <div>{card.title}</div>
-                <div>{card.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Analytics as Grid Tables */}
-        <div className={styles.chartSection}>
-          <h2>Ticket Analytics - Status <span className={styles.clickHint}>(click row to drill down)</span></h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Status</div>
-              <div>Count</div>
-            </div>
-            {statusLabels.map((label, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.gridRow} ${styles.clickable}`}
-                onClick={() => handleStatusClick(label)}
-              >
-                <div>{label}</div>
-                <div>{statusDataPoints[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Ticket Analytics - Priority <span className={styles.clickHint}>(click row to drill down)</span></h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Priority</div>
-              <div>Count</div>
-            </div>
-            {priorityLabels.map((label, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.gridRow} ${styles.clickable}`}
-                onClick={() => handlePriorityClick(label)}
-              >
-                <div>{label}</div>
-                <div>{priorityDataPoints[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Ticket Analytics - Age <span className={styles.clickHint}>(click row to drill down)</span></h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Age Bucket</div>
-              <div>Count</div>
-            </div>
-            {ageLabels.map((label, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.gridRow} ${styles.clickable}`}
-                onClick={() => handleAgeClick(label)}
-              >
-                <div>{label}</div>
-                <div>{ageDataPoints[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const categoryLabels = categoryDistribution.map(c => c.category || 'Unspecified');
+  const categoryDataPoints = categoryDistribution.map(c => c.count);
+  
+  const subCategoryLabels = subCategoryDistribution.map(s => s.sub_category || 'Unspecified');
+  const subCategoryDataPoints = subCategoryDistribution.map(s => s.count);
+  
+  const departmentLabels = departmentDistribution.map(d => d.department || 'Unspecified');
+  const departmentDataPoints = departmentDistribution.map(d => d.count);
 
   return (
     <div className={styles.rpTicketTabSection}>
@@ -369,6 +232,43 @@ export default function TicketTab({ displayStyle = "charts", timeFilter, analyti
 
       {/* chartsGrid - Ticket*/}
       <div className={styles.chartsGrid}>
+        {/* Ticket Trend Section */}
+        <div className={styles.chartSection}>
+          <h2>Ticket Trends (Last 30 Days)</h2>
+          <div className={styles.chartRow}>
+            <ChartContainer title="Ticket Creation vs Resolution Trend">
+              <LineChart
+                labels={trendLabels}
+                dataPoints={trendDatasets}
+                chartTitle="Ticket Trends Over Time"
+                chartLabel="Tickets"
+              />
+            </ChartContainer>
+          </div>
+          {ticketTrends?.summary && (
+            <div className={styles.kpiGrid} style={{ marginTop: '1rem' }}>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>Total Created (30 days)</p>
+                  <h2>{ticketTrends.summary.total_created || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><Ticket size={28} color="#4a90e2" /></span>
+                </div>
+              </div>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>Total Resolved (30 days)</p>
+                  <h2>{ticketTrends.summary.total_resolved || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><CheckCircle size={28} color="#7ed321" /></span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Ticket Analytics Section */}
         <div className={styles.chartSection}>
           <h2>Ticket Analytics <span className={styles.clickHint}>(click chart segments to drill down)</span></h2>
@@ -402,6 +302,39 @@ export default function TicketTab({ displayStyle = "charts", timeFilter, analyti
             </ChartContainer>
           </div>
         </div>
+
+        {/* Category Analytics Section */}
+        {(categoryLabels.length > 0 || subCategoryLabels.length > 0 || departmentLabels.length > 0) && (
+          <div className={styles.chartSection}>
+            <h2>Ticket Category Analytics</h2>
+            <div className={styles.chartRow}>
+              <ChartContainer title="Tickets by Category">
+                <PieChart
+                  labels={categoryLabels}
+                  dataPoints={categoryDataPoints}
+                  chartTitle="Tickets by Category"
+                  chartLabel="Category"
+                />
+              </ChartContainer>
+              <ChartContainer title="Tickets by Sub-Category">
+                <BarChart
+                  labels={subCategoryLabels}
+                  dataPoints={subCategoryDataPoints}
+                  chartTitle="Tickets by Sub-Category"
+                  chartLabel="Count"
+                />
+              </ChartContainer>
+              <ChartContainer title="Tickets by Department">
+                <DoughnutChart
+                  labels={departmentLabels}
+                  values={departmentDataPoints}
+                  chartTitle="Tickets by Department"
+                  chartLabel="Department"
+                />
+              </ChartContainer>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { BarChart3, Grid3X3, List } from "lucide-react";
 
 // components
 import AdminNav from "../../components/navigation/AdminNav";
@@ -23,7 +22,6 @@ export default function Report() {
   const tabFromUrl = searchParams.get("tab") || "taskitem";
   const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [timeFilter, setTimeFilter] = useState({ startDate: null, endDate: null });
-  const [displayStyle, setDisplayStyle] = useState("charts"); // "charts", "grid", "list"
   
   // Unified reporting analytics hook
   const {
@@ -32,6 +30,9 @@ export default function Report() {
     ticketsReport,
     workflowsReport,
     tasksReport,
+    ticketTrends,
+    taskItemTrends,
+    ticketCategories,
     fetchAllAnalytics,
   } = useReportingAnalytics();
 
@@ -72,17 +73,17 @@ export default function Report() {
 
     switch (activeTab) {
       case "taskitem":
-        return <TaskItemTab displayStyle={displayStyle} timeFilter={timeFilter} analyticsData={tasksReport} loading={loading} error={error} />;
+        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} trendData={taskItemTrends} loading={loading} error={error} />;
       case "agent":
-        return <AgentTab displayStyle={displayStyle} timeFilter={timeFilter} analyticsData={agentData} loading={loading} error={error} />;
+        return <AgentTab timeFilter={timeFilter} analyticsData={agentData} loading={loading} error={error} />;
       case "ticket":
-        return <TicketTab displayStyle={displayStyle} timeFilter={timeFilter} analyticsData={ticketsReport} loading={loading} error={error} />;
+        return <TicketTab timeFilter={timeFilter} analyticsData={ticketsReport} trendData={ticketTrends} categoryData={ticketCategories} loading={loading} error={error} />;
       case "workflow":
-        return <WorkflowTab displayStyle={displayStyle} timeFilter={timeFilter} analyticsData={workflowsReport} loading={loading} error={error} />;
+        return <WorkflowTab timeFilter={timeFilter} analyticsData={workflowsReport} loading={loading} error={error} />;
       case "integration":
-        return <IntegrationTab displayStyle={displayStyle} analyticsData={ticketsReport} loading={loading} error={error} />;
+        return <IntegrationTab analyticsData={ticketsReport} loading={loading} error={error} />;
       default:
-        return <TaskItemTab displayStyle={displayStyle} timeFilter={timeFilter} analyticsData={tasksReport} loading={loading} error={error} />;
+        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} trendData={taskItemTrends} loading={loading} error={error} />;
     }
   };
 
@@ -112,61 +113,29 @@ export default function Report() {
         </section>
 
         <section className={styles.rpBody}>
-          {/* Controls Row - Tabs and Display Styles */}
-          <div className={styles.controlsRow}>
-            {/* Tabs */}
-            <div className={styles.rpTabs}>
-              {["taskitem", "agent", "ticket", "workflow", "integration"].map((tab) => {
-                const tabLabels = {
-                  taskitem: "Tasks",
-                  agent: "Agent",
-                  ticket: "Ticket",
-                  workflow: "Workflow",
-                  integration: "Integration"
-                };
-                return (
-                  <a
-                    key={tab}
-                    href="#"
-                    onClick={(e) => handleTabClick(e, tab)}
-                    className={`${styles.rpTabLink} ${
-                      activeTab === tab ? styles.active : ""
-                    }`}
-                  >
-                    {tabLabels[tab]}
-                  </a>
-                );
-              })}
-            </div>
-
-            {/* Display Style Controls */}
-            <div className={styles.displayControls}>
-              <span className={styles.displayLabel}>Display:</span>
-              <button
-                onClick={() => setDisplayStyle("charts")}
-                className={`${styles.displayBtn} ${displayStyle === "charts" ? styles.active : ""}`}
-                title="Charts View"
-              >
-                <BarChart3 size={18} />
-                Charts
-              </button>
-              <button
-                onClick={() => setDisplayStyle("grid")}
-                className={`${styles.displayBtn} ${displayStyle === "grid" ? styles.active : ""}`}
-                title="Grid View"
-              >
-                <Grid3X3 size={18} />
-                Grid
-              </button>
-              <button
-                onClick={() => setDisplayStyle("list")}
-                className={`${styles.displayBtn} ${displayStyle === "list" ? styles.active : ""}`}
-                title="List View"
-              >
-                <List size={18} />
-                List
-              </button>
-            </div>
+          {/* Tabs */}
+          <div className={styles.rpTabs}>
+            {["taskitem", "agent", "ticket", "workflow", "integration"].map((tab) => {
+              const tabLabels = {
+                taskitem: "Tasks",
+                agent: "Agent",
+                ticket: "Ticket",
+                workflow: "Workflow",
+                integration: "Integration"
+              };
+              return (
+                <a
+                  key={tab}
+                  href="#"
+                  onClick={(e) => handleTabClick(e, tab)}
+                  className={`${styles.rpTabLink} ${
+                    activeTab === tab ? styles.active : ""
+                  }`}
+                >
+                  {tabLabels[tab]}
+                </a>
+              );
+            })}
           </div>
 
           {/* Time Filter */}

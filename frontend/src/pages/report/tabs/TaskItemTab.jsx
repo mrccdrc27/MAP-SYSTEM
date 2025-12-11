@@ -2,6 +2,7 @@
 import PieChart from "../../../components/charts/PieChart";
 import BarChart from "../../../components/charts/BarChart";
 import DoughnutChart from "../../../components/charts/DoughnutChart";
+import LineChart from "../../../components/charts/LineChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
 
 // components
@@ -11,7 +12,7 @@ import DrilldownModal, { DRILLDOWN_COLUMNS } from "../components/DrilldownModal"
 import useDrilldownAnalytics from "../../../api/useDrilldownAnalytics";
 
 // icons
-import { AlertTriangle, GitBranch, Clock, Users, TrendingUp } from "lucide-react";
+import { AlertTriangle, GitBranch, Clock, Users, TrendingUp, Activity, ArrowUpRight, CheckCircle } from "lucide-react";
 
 // react
 import { useState } from "react";
@@ -20,13 +21,14 @@ import { useState } from "react";
 import styles from "../report.module.css";
 
 export default function TaskItemTab({
-  displayStyle = "charts",
   timeFilter,
   analyticsData = {},
+  trendData = {},
   loading,
   error,
 }) {
   const tasksReport = analyticsData || {};
+  const taskItemTrends = trendData || {};
 
   // Drilldown state
   const [drilldownOpen, setDrilldownOpen] = useState(false);
@@ -199,194 +201,35 @@ export default function TaskItemTab({
     },
   ];
 
-  // Render different views based on displayStyle
-  if (displayStyle === "list") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        {/* Drilldown Modal */}
-        <DrilldownModal
-          isOpen={drilldownOpen}
-          onClose={handleCloseDrilldown}
-          title={drilldownTitle}
-          data={drilldownData}
-          columns={drilldownColumns}
-          onPageChange={handleDrilldownPageChange}
-          loading={drilldownLoading}
-        />
-        
-        <div className={styles.chartSection}>
-          <h2>Task Item KPI</h2>
-          <div className={styles.listView}>
-            {kpiData.map((card, idx) => (
-              <div key={idx} className={styles.listItem}>
-                <div className={styles.listItemContent}>
-                  <span className={styles.listLabel}>{card.title}</span>
-                  <span className={styles.listValue}>{card.value}</span>
-                </div>
-                <div className={styles.listIcon}>{card.icon}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Status & Origin Distribution</h2>
-          <div className={styles.listView}>
-            <div className={styles.analyticsSection}>
-              <h3>Task Status <span className={styles.clickHint}>(click to drill down)</span></h3>
-              {statusLabels.map((label, idx) => (
-                <div 
-                  key={idx} 
-                  className={`${styles.listItem} ${styles.clickable}`}
-                  onClick={() => handleStatusClick(label)}
-                >
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{statusCounts[idx]}</span>
-                </div>
-              ))}
-            </div>
-            <div className={styles.analyticsSection}>
-              <h3>Origin Distribution <span className={styles.clickHint}>(click to drill down)</span></h3>
-              {originLabels.map((label, idx) => (
-                <div 
-                  key={idx} 
-                  className={`${styles.listItem} ${styles.clickable}`}
-                  onClick={() => handleOriginClick(label)}
-                >
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{originCounts[idx]}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>User Performance <span className={styles.clickHint}>(click user to drill down)</span></h2>
-          <div className={styles.listView}>
-            {userPerf.map((user, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.analyticsSection} ${styles.clickable}`}
-                onClick={() => handleUserClick(user.user_id, user.user_name)}
-              >
-                <h3>{user.user_name || `User ${user.user_id}`}</h3>
-                <div className={styles.listItem}>
-                  <span className={styles.listLabel}>Resolved</span>
-                  <span className={styles.listValue}>{user.resolved}</span>
-                </div>
-                <div className={styles.listItem}>
-                  <span className={styles.listLabel}>Escalated</span>
-                  <span className={styles.listValue}>{user.escalated}</span>
-                </div>
-                <div className={styles.listItem}>
-                  <span className={styles.listLabel}>Breached</span>
-                  <span className={styles.listValue}>{user.breached}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (displayStyle === "grid") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        {/* Drilldown Modal */}
-        <DrilldownModal
-          isOpen={drilldownOpen}
-          onClose={handleCloseDrilldown}
-          title={drilldownTitle}
-          data={drilldownData}
-          columns={drilldownColumns}
-          onPageChange={handleDrilldownPageChange}
-          loading={drilldownLoading}
-        />
-        
-        <div className={styles.chartSection}>
-          <h2>Task Item KPI</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Metric</div>
-              <div>Value</div>
-            </div>
-            {kpiData.map((card, idx) => (
-              <div key={idx} className={styles.gridRow}>
-                <div>{card.title}</div>
-                <div>{card.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Task Status Distribution <span className={styles.clickHint}>(click to drill down)</span></h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Status</div>
-              <div>Count</div>
-            </div>
-            {statusLabels.map((label, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.gridRow} ${styles.clickable}`}
-                onClick={() => handleStatusClick(label)}
-              >
-                <div>{label}</div>
-                <div>{statusCounts[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Assignment Origin Distribution <span className={styles.clickHint}>(click to drill down)</span></h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Origin</div>
-              <div>Count</div>
-            </div>
-            {originLabels.map((label, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.gridRow} ${styles.clickable}`}
-                onClick={() => handleOriginClick(label)}
-              >
-                <div>{label}</div>
-                <div>{originCounts[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>User Performance Details <span className={styles.clickHint}>(click user to drill down)</span></h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>User</div>
-              <div>Resolved</div>
-              <div>Escalated</div>
-              <div>Breached</div>
-            </div>
-            {userPerf.map((user, idx) => (
-              <div 
-                key={idx} 
-                className={`${styles.gridRow} ${styles.clickable}`}
-                onClick={() => handleUserClick(user.user_id, user.user_name)}
-              >
-                <div>{user.user_name || `User ${user.user_id}`}</div>
-                <div>{user.resolved}</div>
-                <div>{user.escalated}</div>
-                <div>{user.breached}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Task Item Trend data
+  const trendLabels = taskItemTrends?.trends?.map(t => t.date) || [];
+  const trendDatasets = [
+    {
+      label: 'New',
+      data: taskItemTrends?.trends?.map(t => t.new) || [],
+      borderColor: '#4a90e2',
+    },
+    {
+      label: 'In Progress',
+      data: taskItemTrends?.trends?.map(t => t.in_progress) || [],
+      borderColor: '#f5a623',
+    },
+    {
+      label: 'Escalated',
+      data: taskItemTrends?.trends?.map(t => t.escalated) || [],
+      borderColor: '#e74c3c',
+    },
+    {
+      label: 'Transferred',
+      data: taskItemTrends?.trends?.map(t => t.transferred) || [],
+      borderColor: '#50e3c2',
+    },
+    {
+      label: 'Resolved',
+      data: taskItemTrends?.trends?.map(t => t.resolved) || [],
+      borderColor: '#7ed321',
+    },
+  ];
 
   return (
     <div className={styles.rpTicketTabSection}>
@@ -421,6 +264,70 @@ export default function TaskItemTab({
 
       {/* Task Item Status & Origin */}
       <div className={styles.chartsGrid}>
+        {/* Task Item Trend Section */}
+        <div className={styles.chartSection}>
+          <h2>Task Item Trends (Last 30 Days)</h2>
+          <div className={styles.chartRow}>
+            <ChartContainer title="Task Item Status Trends Over Time">
+              <LineChart
+                labels={trendLabels}
+                dataPoints={trendDatasets}
+                chartTitle="Task Item Status Trends"
+                chartLabel="Count"
+              />
+            </ChartContainer>
+          </div>
+          {taskItemTrends?.summary && (
+            <div className={styles.kpiGrid} style={{ marginTop: '1rem' }}>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>New (30 days)</p>
+                  <h2>{taskItemTrends.summary.new || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><Activity size={28} color="#4a90e2" /></span>
+                </div>
+              </div>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>In Progress (30 days)</p>
+                  <h2>{taskItemTrends.summary.in_progress || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><Clock size={28} color="#f5a623" /></span>
+                </div>
+              </div>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>Escalated (30 days)</p>
+                  <h2>{taskItemTrends.summary.escalated || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><ArrowUpRight size={28} color="#e74c3c" /></span>
+                </div>
+              </div>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>Transferred (30 days)</p>
+                  <h2>{taskItemTrends.summary.transferred || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><GitBranch size={28} color="#50e3c2" /></span>
+                </div>
+              </div>
+              <div className={styles.kpiCard}>
+                <div>
+                  <p>Resolved (30 days)</p>
+                  <h2>{taskItemTrends.summary.resolved || 0}</h2>
+                </div>
+                <div>
+                  <span className={styles.kpiIcon}><CheckCircle size={28} color="#7ed321" /></span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className={styles.chartSection}>
           <h2>Task Item Status Distribution <span className={styles.clickHint}>(click to drill down)</span></h2>
           <div className={styles.chartRow}>
@@ -474,6 +381,64 @@ export default function TaskItemTab({
           </div>
         </div>
       </div>
+
+      {/* User Performance Section */}
+      {userPerf.length > 0 && (
+        <div className={styles.chartsGrid}>
+          <div className={styles.chartSection}>
+            <h2>User Performance Overview</h2>
+            <div className={styles.userPerformanceTable}>
+              <table className={styles.performanceTable}>
+                <thead>
+                  <tr>
+                    <th>Agent</th>
+                    <th>Total</th>
+                    <th style={{ color: '#7ed321' }}>Resolved</th>
+                    <th style={{ color: '#e74c3c' }}>Escalated</th>
+                    <th style={{ color: '#f5a623' }}>Breached</th>
+                    <th>Resolution Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userPerf.slice(0, 10).map((user, idx) => (
+                    <tr key={idx} onClick={() => handleUserClick(user.user_id, user.user_name)}>
+                      <td className={styles.userName}>{user.user_name || `User ${user.user_id}`}</td>
+                      <td>{user.total_items}</td>
+                      <td>
+                        <span className={styles.statBadge} style={{ backgroundColor: '#7ed32120', color: '#7ed321' }}>
+                          {user.resolved}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.statBadge} style={{ backgroundColor: '#e74c3c20', color: '#e74c3c' }}>
+                          {user.escalated}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.statBadge} style={{ backgroundColor: '#f5a62320', color: '#f5a623' }}>
+                          {user.breached}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.progressBarContainer}>
+                          <div 
+                            className={styles.progressBar} 
+                            style={{ 
+                              width: `${user.resolution_rate || 0}%`,
+                              backgroundColor: user.resolution_rate >= 80 ? '#7ed321' : user.resolution_rate >= 50 ? '#f5a623' : '#e74c3c'
+                            }}
+                          />
+                          <span className={styles.progressText}>{(user.resolution_rate || 0).toFixed(1)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

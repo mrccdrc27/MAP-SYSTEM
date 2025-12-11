@@ -72,6 +72,8 @@ class AnalyticsRootView(APIView):
                 'task_item_user_performance': reverse('reporting:task-item-user-performance', request=request),
                 'task_item_history_trends': reverse('reporting:task-item-history-trends', request=request),
                 'task_item_transfer_analytics': reverse('reporting:task-item-transfer', request=request),
+                'ticket_trends': reverse('reporting:ticket-trends', request=request),
+                'task_item_trends': reverse('reporting:task-item-trends', request=request),
             }
         }, status=status.HTTP_200_OK)
 
@@ -994,10 +996,17 @@ class TaskItemHistoryTrendAnalyticsView(APIView):
             days = int(request.query_params.get('days', 30))
             cutoff_date = timezone.now() - timedelta(days=days)
             
+            # Optional: Filter by specific statuses
+            statuses_param = request.query_params.get('statuses')  # comma-separated: new,in progress,resolved,escalated,reassigned
+            
             # Group by date and status using TruncDate
-            trends = TaskItemHistory.objects.filter(
-                created_at__gte=cutoff_date
-            ).annotate(
+            queryset = TaskItemHistory.objects.filter(created_at__gte=cutoff_date)
+            
+            if statuses_param:
+                status_list = [s.strip() for s in statuses_param.split(',')]
+                queryset = queryset.filter(status__in=status_list)
+            
+            trends = queryset.annotate(
                 date=TruncDate('created_at')
             ).values('date', 'status').annotate(
                 count=Count('task_item_history_id')
@@ -1022,6 +1031,248 @@ class TaskItemHistoryTrendAnalyticsView(APIView):
             return Response({
                 'time_period_days': days,
                 'trends': data,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TicketTrendAnalyticsView(APIView):
+    """
+    Ticket Trends Over Time - based on Task statuses
+    Shows ticket creation and resolution trends grouped by date
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get('days', 30))
+            cutoff_date = timezone.now() - timedelta(days=days)
+            
+            # Get created tickets trend (by created_at)
+            created_trends = Task.objects.filter(
+                created_at__gte=cutoff_date
+            ).annotate(
+                date=TruncDate('created_at')
+            ).values('date').annotate(
+                count=Count('task_id')
+            ).order_by('date')
+            
+            # Get resolved tickets trend (by resolution_time)
+            resolved_trends = Task.objects.filter(
+                status='completed',
+                resolution_time__gte=cutoff_date
+            ).annotate(
+                date=TruncDate('resolution_time')
+            ).values('date').annotate(
+                count=Count('task_id')
+            ).order_by('date')
+            
+            # Organize data by date
+            data_by_date = {}
+            
+            for trend in created_trends:
+                date_str = str(trend['date'])
+                if date_str not in data_by_date:
+                    data_by_date[date_str] = {'created': 0, 'resolved': 0}
+                data_by_date[date_str]['created'] = trend['count']
+            
+            for trend in resolved_trends:
+                date_str = str(trend['date'])
+                if date_str not in data_by_date:
+                    data_by_date[date_str] = {'created': 0, 'resolved': 0}
+                data_by_date[date_str]['resolved'] = trend['count']
+            
+            # Convert to list format sorted by date
+            data = []
+            for date, values in sorted(data_by_date.items()):
+                data.append({
+                    'date': date,
+                    'created': values['created'],
+                    'resolved': values['resolved'],
+                })
+            
+            # Calculate summary
+            total_created = sum(d['created'] for d in data)
+            total_resolved = sum(d['resolved'] for d in data)
+            
+            return Response({
+                'time_period_days': days,
+                'summary': {
+                    'total_created': total_created,
+                    'total_resolved': total_resolved,
+                },
+                'trends': data,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TaskItemTrendAnalyticsView(APIView):
+    """
+    Task Item Status Trends Over Time - filtered view
+    Shows task item status changes over time for: new, in progress, escalated, transferred, resolved
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get('days', 30))
+            cutoff_date = timezone.now() - timedelta(days=days)
+            
+            # Define statuses to track
+            tracked_statuses = ['new', 'in progress', 'escalated', 'reassigned', 'resolved']
+            
+            # Group by date and status using TruncDate
+            trends = TaskItemHistory.objects.filter(
+                created_at__gte=cutoff_date,
+                status__in=tracked_statuses
+            ).annotate(
+                date=TruncDate('created_at')
+            ).values('date', 'status').annotate(
+                count=Count('task_item_history_id')
+            ).order_by('date', 'status')
+            
+            # Organize by date with all statuses initialized
+            data_by_date = {}
+            for trend in trends:
+                date_str = str(trend['date'])
+                if date_str not in data_by_date:
+                    data_by_date[date_str] = {s: 0 for s in tracked_statuses}
+                data_by_date[date_str][trend['status']] = trend['count']
+            
+            # Convert to list format with consistent structure
+            data = []
+            for date, statuses in sorted(data_by_date.items()):
+                data.append({
+                    'date': date,
+                    'new': statuses.get('new', 0),
+                    'in_progress': statuses.get('in progress', 0),
+                    'escalated': statuses.get('escalated', 0),
+                    'transferred': statuses.get('reassigned', 0),  # reassigned = transferred
+                    'resolved': statuses.get('resolved', 0),
+                })
+            
+            # Calculate summary totals
+            summary = {s.replace(' ', '_'): 0 for s in tracked_statuses}
+            summary['transferred'] = 0  # Add transferred alias
+            for d in data:
+                summary['new'] += d['new']
+                summary['in_progress'] += d['in_progress']
+                summary['escalated'] += d['escalated']
+                summary['transferred'] += d['transferred']
+                summary['resolved'] += d['resolved']
+            
+            return Response({
+                'time_period_days': days,
+                'summary': summary,
+                'trends': data,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TicketCategoryAnalyticsView(APIView):
+    """
+    Ticket Category, Sub-Category, and Department Analytics
+    Extracts data from ticket_data JSON field
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Get all tickets with their task data
+            from tickets.models import WorkflowTicket
+            
+            # Parse date filters
+            start_date_str = request.query_params.get('start_date')
+            end_date_str = request.query_params.get('end_date')
+            
+            queryset = WorkflowTicket.objects.all()
+            
+            if start_date_str:
+                try:
+                    start_dt = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                    start_aware = timezone.make_aware(datetime.combine(start_dt, datetime.min.time()))
+                    queryset = queryset.filter(created_at__gte=start_aware)
+                except ValueError:
+                    pass
+            
+            if end_date_str:
+                try:
+                    end_dt = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                    end_aware = timezone.make_aware(datetime.combine(end_dt, datetime.max.time()))
+                    queryset = queryset.filter(created_at__lte=end_aware)
+                except ValueError:
+                    pass
+            
+            # Aggregate by category, sub_category, department from ticket_data
+            category_counts = {}
+            sub_category_counts = {}
+            department_counts = {}
+            category_sub_category_map = {}  # For hierarchical view
+            
+            total_tickets = 0
+            for ticket in queryset:
+                ticket_data = ticket.ticket_data or {}
+                total_tickets += 1
+                
+                # Extract fields from ticket_data
+                category = ticket_data.get('category') or ticket_data.get('Category') or 'Uncategorized'
+                sub_category = ticket_data.get('sub_category') or ticket_data.get('subcategory') or ticket_data.get('SubCategory') or 'Uncategorized'
+                department = ticket_data.get('department') or ticket_data.get('Department') or ticket.department or 'Unassigned'
+                
+                # Count categories
+                category_counts[category] = category_counts.get(category, 0) + 1
+                
+                # Count sub-categories
+                sub_category_counts[sub_category] = sub_category_counts.get(sub_category, 0) + 1
+                
+                # Count departments
+                department_counts[department] = department_counts.get(department, 0) + 1
+                
+                # Build hierarchical map
+                if category not in category_sub_category_map:
+                    category_sub_category_map[category] = {}
+                category_sub_category_map[category][sub_category] = category_sub_category_map[category].get(sub_category, 0) + 1
+            
+            # Convert to sorted lists
+            category_data = [
+                {'category': k, 'count': v, 'percentage': round(v / total_tickets * 100, 1) if total_tickets > 0 else 0}
+                for k, v in sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
+            ]
+            
+            sub_category_data = [
+                {'sub_category': k, 'count': v, 'percentage': round(v / total_tickets * 100, 1) if total_tickets > 0 else 0}
+                for k, v in sorted(sub_category_counts.items(), key=lambda x: x[1], reverse=True)
+            ]
+            
+            department_data = [
+                {'department': k, 'count': v, 'percentage': round(v / total_tickets * 100, 1) if total_tickets > 0 else 0}
+                for k, v in sorted(department_counts.items(), key=lambda x: x[1], reverse=True)
+            ]
+            
+            # Build hierarchical data
+            hierarchical_data = []
+            for category, sub_cats in sorted(category_sub_category_map.items(), key=lambda x: sum(x[1].values()), reverse=True):
+                cat_total = sum(sub_cats.values())
+                hierarchical_data.append({
+                    'category': category,
+                    'total': cat_total,
+                    'sub_categories': [
+                        {'name': sc, 'count': cnt}
+                        for sc, cnt in sorted(sub_cats.items(), key=lambda x: x[1], reverse=True)
+                    ]
+                })
+            
+            return Response({
+                'total_tickets': total_tickets,
+                'by_category': category_data,
+                'by_sub_category': sub_category_data,
+                'by_department': department_data,
+                'hierarchical': hierarchical_data,
             }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

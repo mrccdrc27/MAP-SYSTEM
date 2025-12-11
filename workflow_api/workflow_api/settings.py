@@ -132,6 +132,12 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# # Time Offset Configuration (for testing/simulation purposes)
+# # Positive values = simulate future dates, Negative values = simulate past dates
+# # Example: TIME_OFFSET_DAYS=7 makes the system behave as if it's 7 days in the future
+# # Example: TIME_OFFSET_DAYS=-3 makes the system behave as if it's 3 days in the past
+# TIME_OFFSET_DAYS = config('TIME_OFFSET_DAYS', default=1, cast=int)
+
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

@@ -18,7 +18,7 @@ const countByField = (data, field) => {
   }, {});
 };
 
-export default function WorkflowTab({ displayStyle = "charts", timeFilter, analyticsData = {}, loading, error }) {
+export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, error }) {
   const workflowsReport = analyticsData || {};
 
   if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
@@ -42,102 +42,6 @@ export default function WorkflowTab({ displayStyle = "charts", timeFilter, analy
 
   const stepLabels = stepPerformance?.map(s => s.step_name?.split(' - ')[1] || s.step_name) || [];
   const stepDataPoints = stepPerformance?.map(s => s.total_tasks) || [];
-
-  // Render different views based on displayStyle
-  if (displayStyle === "list") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        <div className={styles.chartSection}>
-          <h2>Workflow Analytics</h2>
-          <div className={styles.listView}>
-            <div className={styles.analyticsSection}>
-              <h3>Workflows by Execution Count</h3>
-              {workflowLabels.map((label, idx) => (
-                <div key={idx} className={styles.listItem}>
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{workflowDataPoints[idx]}</span>
-                </div>
-              ))}
-            </div>
-            <div className={styles.analyticsSection}>
-              <h3>Workflows by Department</h3>
-              {deptLabels.map((label, idx) => (
-                <div key={idx} className={styles.listItem}>
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{deptDataPoints[idx]}</span>
-                </div>
-              ))}
-            </div>
-            <div className={styles.analyticsSection}>
-              <h3>Workflow Completion Rates</h3>
-              {workflowLabels.map((label, idx) => (
-                <div key={idx} className={styles.listItem}>
-                  <span className={styles.listLabel}>{label}</span>
-                  <span className={styles.listValue}>{workflowCompletionRates[idx]}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (displayStyle === "grid") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        <div className={styles.chartSection}>
-          <h2>Workflows by Execution Count</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Workflow Name</div>
-              <div>Total Tasks</div>
-            </div>
-            {workflowLabels.map((label, idx) => (
-              <div key={idx} className={styles.gridRow}>
-                <div>{label}</div>
-                <div>{workflowDataPoints[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Workflows by Department</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Department</div>
-              <div>Total Tickets</div>
-              <div>Completion Rate %</div>
-            </div>
-            {deptLabels.map((label, idx) => (
-              <div key={idx} className={styles.gridRow}>
-                <div>{label}</div>
-                <div>{deptDataPoints[idx]}</div>
-                <div>{deptCompletionRates[idx]}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.chartSection}>
-          <h2>Workflow Completion Rates</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Workflow</div>
-              <div>Completion Rate %</div>
-            </div>
-            {workflowLabels.map((label, idx) => (
-              <div key={idx} className={styles.gridRow}>
-                <div>{label}</div>
-                <div>{workflowCompletionRates[idx]}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.chartsGrid}>
