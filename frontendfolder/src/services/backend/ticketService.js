@@ -109,6 +109,7 @@ export const backendTicketService = {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
+      handleAuthError(response);
       if (!response.ok) {
         throw new Error('Failed to fetch ticket by number');
       }
@@ -117,6 +118,34 @@ export const backendTicketService = {
     } catch (error) {
       console.error('Error fetching ticket by number:', error);
       throw error;
+    }
+  },
+
+  /**
+   * Get full ticket details from helpdesk for the owned ticket view.
+   * This fetches attachments, comments, employee info, and all ticket fields.
+   * @param {string} ticketNumber - The ticket number to fetch
+   * @returns {Promise<Object>} The full ticket data from helpdesk
+   */
+  async getHelpdeskTicketByNumber(ticketNumber) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/number/${encodeURIComponent(ticketNumber)}/`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      handleAuthError(response);
+      if (!response.ok) {
+        if (response.status === 403) {
+          console.warn('Permission denied for helpdesk ticket - user may not have access');
+          return null;
+        }
+        throw new Error(`Failed to fetch helpdesk ticket: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching helpdesk ticket by number:', error);
+      return null; // Return null on error so we can still show task data
     }
   },
 

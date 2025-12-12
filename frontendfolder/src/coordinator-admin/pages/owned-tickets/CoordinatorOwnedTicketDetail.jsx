@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaEdit, FaSave, FaTimes, FaPaperclip, FaDownload, FaFile } from 'react-icons/fa';
 import styles from './CoordinatorOwnedTicketDetail.module.css';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import { useAuth } from '../../../context/AuthContext';
 import { mockOwnedTickets, coordinatorTicketActions, coordinatorMessages, requesterMessages as mockRequesterMessages } from '../../../mock-data/ownedTickets';
 import Breadcrumb from '../../../shared/components/Breadcrumb';
 import Skeleton from '../../../shared/components/Skeleton/Skeleton';
+import { API_CONFIG } from '../../../config/environment';
 
 const CoordinatorOwnedTicketDetail = () => {
   const { ticketNumber } = useParams();
@@ -14,6 +15,7 @@ const CoordinatorOwnedTicketDetail = () => {
   const { user: currentUser } = useAuth();
 
   const [ticket, setTicket] = useState(null);
+  const [helpdeskTicket, setHelpdeskTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
   const [mainTab, setMainTab] = useState('ticket');
@@ -43,10 +45,28 @@ const CoordinatorOwnedTicketDetail = () => {
       try {
         setIsLoading(true);
         let taskData = null;
+        let helpdeskData = null;
         
+        // Fetch both task data from workflow_api AND full ticket from helpdesk in parallel
         try {
-          // Use the new getOwnedTicketByNumber endpoint from workflow_api
-          taskData = await backendTicketService.getOwnedTicketByNumber(ticketNumber);
+          const [taskResponse, helpdeskResponse] = await Promise.all([
+            backendTicketService.getOwnedTicketByNumber(ticketNumber).catch(err => {
+              console.warn('Failed to fetch task data:', err);
+              return null;
+            }),
+            backendTicketService.getHelpdeskTicketByNumber(ticketNumber).catch(err => {
+              console.warn('Failed to fetch helpdesk ticket:', err);
+              return null;
+            })
+          ]);
+          
+          taskData = taskResponse;
+          helpdeskData = helpdeskResponse;
+          
+          // Store helpdesk data separately for attachments, comments, etc.
+          if (helpdeskData) {
+            setHelpdeskTicket(helpdeskData);
+          }
         } catch (err) {
           console.warn('Backend unavailable, using mock data:', err);
           // Fallback to mock data
@@ -59,65 +79,143 @@ const CoordinatorOwnedTicketDetail = () => {
           }
         }
 
-        if (taskData) {
-          // Map task data from the workflow_api response
-          setTicket({
-            id: taskData.ticket_number || taskData.ticket_id || taskData.ticketNumber || ticketNumber,
-            taskId: taskData.task_id,
-            subject: taskData.ticket_subject || taskData.subject || 'N/A',
-            description: taskData.ticket_description || taskData.description || '',
-            status: taskData.status || 'pending',
-            priority: taskData.priority || taskData.priorityLevel || 'Medium',
-            category: taskData.category || 'N/A',
-            subCategory: taskData.sub_category || taskData.subCategory || 'N/A',
-            createdDate: taskData.created_at || taskData.submit_date || taskData.dateCreated || new Date().toISOString(),
-            assignedTo: taskData.ticket_owner_name || taskData.assigned_to || taskData.assignedTo || currentUser?.first_name || 'N/A',
-            ticketOwnerId: taskData.ticket_owner_id,
-            ticketOwnerName: taskData.ticket_owner_name,
-            ticketOwnerRole: taskData.ticket_owner_role,
-            requester: taskData.requester_name || taskData.requester || 'N/A',
-            department: taskData.department || 'N/A',
-            workflowName: taskData.workflow_name || 'N/A',
-            currentStepName: taskData.current_step_name || 'N/A',
-            currentStepRole: taskData.current_step_role || 'N/A',
-            targetResolution: taskData.target_resolution,
-            assignedUsers: taskData.assigned_users || [],
+        if (taskData || helpdeskData) {
+          // Merge task data (workflow info) with helpdesk data (full ticket details)
+          const mergedData = {
+            // Task/workflow info (from workflow_api)
+            taskId: taskData?.task_id,
+            ticketOwnerId: taskData?.ticket_owner_id,
+            ticketOwnerName: taskData?.ticket_owner_name,
+            ticketOwnerRole: taskData?.ticket_owner_role,
+            workflowName: taskData?.workflow_name || 'N/A',
+            currentStepName: taskData?.current_step_name || 'N/A',
+            currentStepRole: taskData?.current_step_role || 'N/A',
+            targetResolution: taskData?.target_resolution,
+            assignedUsers: taskData?.assigned_users || [],
+            taskStatus: taskData?.status,
+            
+            // Full ticket details (from helpdesk - prefer this data)
+            id: helpdeskData?.ticket_number || taskData?.ticket_number || ticketNumber,
+            ticketId: helpdeskData?.id || taskData?.ticket_id,
+            subject: helpdeskData?.subject || taskData?.ticket_subject || taskData?.subject || 'N/A',
+            description: helpdeskData?.description || taskData?.ticket_description || taskData?.description || '',
+            status: helpdeskData?.status || taskData?.status || 'pending',
+            priority: helpdeskData?.priority || helpdeskData?.priorityLevel || taskData?.priority || 'Medium',
+            category: helpdeskData?.category || taskData?.category || 'N/A',
+            subCategory: helpdeskData?.sub_category || taskData?.sub_category || taskData?.subCategory || 'N/A',
+            department: helpdeskData?.department || taskData?.department || 'N/A',
+            createdDate: helpdeskData?.submit_date || taskData?.created_at || taskData?.submit_date || new Date().toISOString(),
+            updateDate: helpdeskData?.update_date,
+            
+            // Employee/requester info (from helpdesk)
+            employee: helpdeskData?.employee || null,
+            requester: helpdeskData?.employee 
+              ? `${helpdeskData.employee.first_name || ''} ${helpdeskData.employee.last_name || ''}`.trim() || 'N/A'
+              : taskData?.requester_name || taskData?.requester || 'N/A',
+            requesterEmail: helpdeskData?.employee?.email || 'N/A',
+            requesterDepartment: helpdeskData?.employee?.department || helpdeskData?.department || 'N/A',
+            
+            // Assigned to (from helpdesk)
+            assignedTo: helpdeskData?.assigned_to 
+              ? `${helpdeskData.assigned_to.first_name || ''} ${helpdeskData.assigned_to.last_name || ''}`.trim()
+              : taskData?.ticket_owner_name || taskData?.assigned_to || 'N/A',
+            
+            // Attachments (from helpdesk)
+            attachments: helpdeskData?.attachments || [],
+            
+            // Comments (from helpdesk)
+            comments: helpdeskData?.comments || [],
+            
+            // Additional ticket fields (from helpdesk)
+            assetName: helpdeskData?.asset_name,
+            serialNumber: helpdeskData?.serial_number,
+            location: helpdeskData?.location,
+            expectedReturnDate: helpdeskData?.expected_return_date,
+            issueType: helpdeskData?.issue_type,
+            otherIssue: helpdeskData?.other_issue,
+            performanceStartDate: helpdeskData?.performance_start_date,
+            performanceEndDate: helpdeskData?.performance_end_date,
+            costItems: helpdeskData?.cost_items,
+            requestedBudget: helpdeskData?.requested_budget,
+            approvedBy: helpdeskData?.approved_by,
+            rejectedBy: helpdeskData?.rejected_by,
+            dateCompleted: helpdeskData?.date_completed,
+            csatRating: helpdeskData?.csat_rating,
+            dynamicData: helpdeskData?.dynamic_data,
+            
+            // Spread any additional data
             ...taskData
-          });
+          };
+          
+          setTicket(mergedData);
+          setSubject(mergedData.subject);
+          setDescription(mergedData.description);
+          setTicketStatus(mergedData.priority || 'LOW');
+          setLifecycle(mergedData.currentStepName || 'Triage Ticket');
 
-          setSubject(taskData.ticket_subject || taskData.subject || '');
-          setDescription(taskData.ticket_description || taskData.description || '');
-          setTicketStatus(taskData.priority || taskData.priorityLevel || 'LOW');
-          setLifecycle(taskData.current_step_name || 'Triage Ticket');
-
-          // Initialize mock messages
-          setMessages([
-            {
+          // Use real comments from helpdesk if available
+          if (helpdeskData?.comments && helpdeskData.comments.length > 0) {
+            const formattedComments = helpdeskData.comments.map(comment => ({
+              id: comment.id,
+              sender: comment.user 
+                ? `${comment.user.first_name || ''} ${comment.user.last_name || ''}`.trim() || 'Unknown'
+                : 'Unknown',
+              role: comment.user?.role || 'Employee',
+              timestamp: new Date(comment.created_at).toLocaleDateString(),
+              time: new Date(comment.created_at).toLocaleTimeString(),
+              content: comment.comment,
+              isInternal: comment.is_internal,
+              isOwn: comment.user?.id === currentUser?.id
+            }));
+            
+            // Split into internal (TTS agent) messages and requester messages
+            const internalComments = formattedComments.filter(c => c.isInternal);
+            const publicComments = formattedComments.filter(c => !c.isInternal);
+            
+            setMessages(internalComments.length > 0 ? internalComments : [{
               id: '1',
               sender: 'Support Team',
               role: 'TTS Agent',
               timestamp: new Date().toLocaleDateString(),
               time: new Date().toLocaleTimeString(),
               content: 'Ticket acknowledged. Working on resolution.'
-            }
-          ]);
-
-          setRequesterMessages([
-            {
+            }]);
+            
+            setRequesterMessages(publicComments.length > 0 ? publicComments : [{
               id: '1',
-              sender: taskData.requester_name || taskData.requester || 'Requester',
+              sender: mergedData.requester || 'Requester',
               role: 'Requester',
-              timestamp: new Date(taskData.created_at || taskData.submit_date || taskData.dateCreated || new Date()).toLocaleDateString(),
-              time: new Date(taskData.created_at || taskData.submit_date || taskData.dateCreated || new Date()).toLocaleTimeString(),
-              content: taskData.ticket_description || taskData.description || 'No description provided',
+              timestamp: new Date(mergedData.createdDate).toLocaleDateString(),
+              time: new Date(mergedData.createdDate).toLocaleTimeString(),
+              content: mergedData.description || 'No description provided',
               isOwn: false
-            }
-          ]);
+            }]);
+          } else {
+            // Initialize with default messages
+            setMessages([{
+              id: '1',
+              sender: 'Support Team',
+              role: 'TTS Agent',
+              timestamp: new Date().toLocaleDateString(),
+              time: new Date().toLocaleTimeString(),
+              content: 'Ticket acknowledged. Working on resolution.'
+            }]);
+
+            setRequesterMessages([{
+              id: '1',
+              sender: mergedData.requester || 'Requester',
+              role: 'Requester',
+              timestamp: new Date(mergedData.createdDate).toLocaleDateString(),
+              time: new Date(mergedData.createdDate).toLocaleTimeString(),
+              content: mergedData.description || 'No description provided',
+              isOwn: false
+            }]);
+          }
 
           // Initialize action log with task history if available
           const logEntries = [];
-          if (taskData.assigned_users && taskData.assigned_users.length > 0) {
-            taskData.assigned_users.forEach((user, index) => {
+          if (mergedData.assignedUsers && mergedData.assignedUsers.length > 0) {
+            mergedData.assignedUsers.forEach((user, index) => {
               logEntries.push({
                 id: `assigned-${index}`,
                 user: user.user_full_name || 'System',
@@ -132,10 +230,10 @@ const CoordinatorOwnedTicketDetail = () => {
           if (logEntries.length === 0) {
             logEntries.push({
               id: '1',
-              user: taskData.ticket_owner_name || currentUser?.first_name || 'You',
-              role: taskData.ticket_owner_role || 'Coordinator',
+              user: mergedData.ticketOwnerName || currentUser?.first_name || 'You',
+              role: mergedData.ticketOwnerRole || 'Coordinator',
               action: 'Assigned as Ticket Owner',
-              timestamp: new Date(taskData.created_at || new Date()).toLocaleDateString(),
+              timestamp: new Date(mergedData.createdDate || new Date()).toLocaleDateString(),
               badge: 'ASSIGNED'
             });
           }
@@ -319,6 +417,12 @@ const CoordinatorOwnedTicketDetail = () => {
               Ticket Details
             </button>
             <button
+              className={`${styles['tab']} ${mainTab === 'attachments' ? styles['active'] : ''}`}
+              onClick={() => setMainTab('attachments')}
+            >
+              Attachments {ticket.attachments?.length > 0 && `(${ticket.attachments.length})`}
+            </button>
+            <button
               className={`${styles['tab']} ${mainTab === 'requester' ? styles['active'] : ''}`}
               onClick={() => setMainTab('requester')}
             >
@@ -437,6 +541,104 @@ const CoordinatorOwnedTicketDetail = () => {
                     <p>{new Date(ticket.createdDate).toLocaleString()}</p>
                   </div>
                 </div>
+
+                {/* Additional Ticket Fields from Helpdesk */}
+                {(ticket.assetName || ticket.serialNumber || ticket.location || ticket.issueType) && (
+                  <div className={styles['info-grid']} style={{ marginTop: '1rem' }}>
+                    {ticket.assetName && (
+                      <div>
+                        <label>Asset Name:</label>
+                        <p>{ticket.assetName}</p>
+                      </div>
+                    )}
+                    {ticket.serialNumber && (
+                      <div>
+                        <label>Serial Number:</label>
+                        <p>{ticket.serialNumber}</p>
+                      </div>
+                    )}
+                    {ticket.location && (
+                      <div>
+                        <label>Location:</label>
+                        <p>{ticket.location}</p>
+                      </div>
+                    )}
+                    {ticket.issueType && (
+                      <div>
+                        <label>Issue Type:</label>
+                        <p>{ticket.issueType}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Requester Info */}
+                {ticket.employee && (
+                  <div className={styles['info-section']} style={{ marginTop: '1rem' }}>
+                    <h4>Requester Information</h4>
+                    <div className={styles['info-grid']}>
+                      <div>
+                        <label>Name:</label>
+                        <p>{`${ticket.employee.first_name || ''} ${ticket.employee.last_name || ''}`.trim() || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label>Email:</label>
+                        <p>{ticket.employee.email || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label>Company ID:</label>
+                        <p>{ticket.employee.company_id || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label>Department:</label>
+                        <p>{ticket.employee.department || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : mainTab === 'attachments' ? (
+              <div className={styles['attachments-section']}>
+                <h3><FaPaperclip /> Attachments</h3>
+                {ticket.attachments && ticket.attachments.length > 0 ? (
+                  <div className={styles['attachments-list']}>
+                    {ticket.attachments.map((attachment, index) => {
+                      const fileName = attachment.file_name || attachment.file?.split('/').pop() || `Attachment ${index + 1}`;
+                      const fileUrl = attachment.file?.startsWith('http') 
+                        ? attachment.file 
+                        : `${API_CONFIG.BACKEND.BASE_URL}${attachment.file}`;
+                      
+                      return (
+                        <div key={attachment.id || index} className={styles['attachment-item']}>
+                          <div className={styles['attachment-info']}>
+                            <FaFile className={styles['file-icon']} />
+                            <div className={styles['attachment-details']}>
+                              <span className={styles['attachment-name']}>{fileName}</span>
+                              {attachment.uploaded_at && (
+                                <span className={styles['attachment-date']}>
+                                  Uploaded: {new Date(attachment.uploaded_at).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <a 
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles['download-btn']}
+                          >
+                            <FaDownload /> Download
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={styles['no-attachments']}>
+                    <FaPaperclip />
+                    <p>No attachments for this ticket</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className={styles['requester-comms']}>
