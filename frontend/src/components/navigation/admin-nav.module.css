@@ -12,6 +12,13 @@
   padding: 0px 38px;
   position: sticky;
   top: 0;
+
+  /* smooth hide/show transition */
+  transition: transform 0.35s ease-in-out;
+}
+
+.hide {
+  transform: translateY(-100%);
 }
 
 .logoSection {
@@ -112,7 +119,8 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: #e74c3c; /* red */
+  background: #e74c3c;
+  /* red */
   color: #fff;
   border-radius: 999px;
   display: inline-flex;
@@ -120,5 +128,5 @@
   justify-content: center;
   font-size: 11px;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
