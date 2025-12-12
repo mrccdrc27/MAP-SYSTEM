@@ -12,7 +12,7 @@ import CreateWorkflowPage from "../pages/admin/workflow-page/CreateWorkflowPage"
 import Agent from "../pages/admin/agent-page/Agent";
 import AdminArchive from "../pages/admin/archive-page/AdminArchive";
 import AdminArchiveDetail from "../pages/admin/archive-page/archive-detail-page/AdminArchiveDetail";
-import AdminTicket from "../pages/admin/ticket-page/AdminTicket";
+// import AdminTicket from "../pages/admin/ticket-page/AdminTicket";
 
 // unified pages
 import Dashboard from "../pages/unified-page/dashboard-page/Dashboard";
@@ -35,7 +35,7 @@ import Unauthorized from "../pages/error/Unauthorized";
 
 // test
 import Test from "../pages/test";
-import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
+// import AdminTicketDetail from "../pages/admin/ticket-detail-page/AdminTicketDetail";
 import ResetPassword from "../pages/auth/PasswordReset";
 import WorkflowEditorPage from "../pages/test/WorkflowEditorPage";
 import AuthContextTest from "../pages/test/AuthContextTest";
@@ -73,7 +73,7 @@ export default function MainRoute() {
           path="/admin/workflow/:workflowId"
           element={<WorkflowEditorPage />}
         />
-        <Route path="/admin/assigned" element={<AdminTicket />} />
+        {/* <Route path="/admin/assigned" element={<AdminTicket />} /> */}
         <Route path="/admin/profile" element={<AdminProfile />} />
       </Route>
 

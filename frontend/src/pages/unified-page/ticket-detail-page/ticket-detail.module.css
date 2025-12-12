@@ -38,6 +38,7 @@
 .tdpHeaderTitle h1 {
   margin: 0;
   color: var(--text-color);
+  font-size: var(--h1-font-size);
 }
 
 /* BODY */
@@ -95,7 +96,7 @@
 
 .tdpSection {
   margin-bottom: 20px;
-  background-color: var(--bg1-color);
+  background-color: var(--bg-color);
   border: 1px solid #e8e8e8;
   border-radius: 12px;
   padding: 15px;
@@ -109,6 +110,28 @@
 .tdpMeta {
   font-size: var(--table-head-size);
   color: var(--table-color);
+}
+
+/* Owner Description */
+.tdpOwnerDescWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.tdpODWItem {
+  display: flex;
+  justify-content: space-between;
+}
+
+.tdpODWLabel {
+  font-weight: 600;
+  color: #444;
+  font-size: 0.9rem;
+}
+
+.tdpODWValue {
+  font-size: 0.9rem;
+  color: #222;
 }
 
 .tdpDescription {
@@ -182,49 +205,27 @@
 .escalateButton,
 .transferButton {
   border: none;
-  border-radius: 4px;
+  border-radius: 20px;
   padding: 12px 14px;
-  flex: 1;
+  /* flex: 1; */
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
-}
 
-/* Action Button */
-.ticketActionButton {
-  background-color: var(--success-color);
-  color: white;
+  background-color: var(--bg-color);
+  color: var(--text-color);
   font-size: 13px;
+  border: 1px solid var(--border-color);
+  transition: all 0.25s ease;
 }
 
-.ticketActionButton:hover:not(:disabled) {
-  background-color: #20a76b;
+.ticketActionButton:hover:not(:disabled),
+.escalateButton:hover:not(:disabled),
+.transferButton:hover:not(:disabled) {
+  background-color: var(--primary-color);
+  color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Escalate Button */
-.escalateButton {
-  background-color: #d97f7f;
-  color: white;
-  font-size: 13px;
-}
-
-.escalateButton:hover:not(:disabled) {
-  background-color: #c96666;
-  transform: translateY(-1px);
-}
-
-/* Transfer Button */
-.transferButton {
-  background-color: #6b9dd9;
-  color: white;
-  font-size: 13px;
-}
-
-.transferButton:hover:not(:disabled) {
-  background-color: #5a87c1;
-  transform: translateY(-1px);
 }
 
 /* DISABLED STATE (Shared) */
@@ -240,11 +241,21 @@
   opacity: 0.6;
   transform: none !important;
   border: none;
-  border-radius: 4px;
+  border-radius: 20px;
   padding: 12px 14px;
-  flex: 1;
-  /* font-weight: 600; */
+  /* flex: 1; */
   transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.iconTextWrapper {
+  display: flex;
+  /* align-items: center; */
+  gap: 8px;
+}
+
+.iconTextWrapper i {
+  /* color: var(--table-color); */
+  font-size: 16px;
 }
 
 /* TABS */

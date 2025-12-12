@@ -19,6 +19,27 @@ export default function AgentNav() {
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const [openNotifModal, setOpenNotifModal] = useState(false);
   const { notifications, fetchNotifications } = useNotifications();
+  // nav hide on scroll
+  const [hideNav, setHideNav] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const hadleScroll = () => {
+      const currentScroll = window.scrollY;
+
+      if (currentScroll > lastScrollY && currentScroll > 80) {
+        setHideNav(true);
+      } else {
+        setHideNav(false);
+      }
+      setLastScrollY(currentScroll);
+    };
+
+    window.addEventListener("scroll", hadleScroll);
+    return () => {
+      window.removeEventListener("scroll", hadleScroll);
+    };
+  }, [lastScrollY]);
 
   const unreadCount = Array.isArray(notifications?.unread)
     ? notifications.unread.length
@@ -72,7 +93,7 @@ export default function AgentNav() {
 
   return (
     <>
-      <nav className={styles.navBar}>
+      <nav className={`${styles.navBar} ${hideNav ? styles.hide : ""}`}>
         {/* logo */}
         <div className={styles.logoSection}>
           <div className={styles.logoImg}>

@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import useDebounce from "../../../utils/useDebounce";
+import TableSkeleton from "../../../components/skeleton/TableSkeleton";
 
 // components
 import Nav from "../../../components/navigation/Nav";
@@ -18,13 +19,16 @@ import TicketTable from "../../../tables/unified-table/TicketTable";
 import useUserTickets from "../../../api/useUserTickets";
 
 export default function Ticket() {
-  const { userTickets, loading, error } = useUserTickets();
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") || "All";
   const [activeTab, setActiveTab] = useState(urlTab);
 
-  console.log("First Ticket:", JSON.stringify(userTickets?.[3], null, 2));
+  const debouncedActiveTab = useDebounce(activeTab, 500);
+  const { userTickets, loading, error } = useUserTickets(debouncedActiveTab);
+
+  // log first ticket for debugging
+  // console.log("First Ticket:", JSON.stringify(userTickets?.[0], null, 2));
 
   // Filters
   const [filters, setFilters] = useState({
@@ -209,23 +213,23 @@ export default function Ticket() {
                   <p>Error loading tickets. Please try again.</p>
                 </div>
               )}
-              {loading && (
-                <div className={styles.loaderOverlay}>
-                  <div className={styles.loader}></div>
-                </div>
+
+              {loading ? (
+                <TableSkeleton rows={8} columns={6} />
+              ) : (
+                <TicketTable
+                  tickets={filteredTickets}
+                  searchValue={filters.search}
+                  onSearchChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      search: e.target.value,
+                    }))
+                  }
+                  error={error}
+                  activeTab={activeTab}
+                />
               )}
-              <TicketTable
-                tickets={filteredTickets}
-                searchValue={filters.search}
-                onSearchChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    search: e.target.value,
-                  }))
-                }
-                error={error}
-                activeTab={activeTab}
-              />
             </div>
           </div>
         </section>

@@ -185,11 +185,14 @@ export default function TicketDetail() {
   }, [stepInstance, instanceLoading, instanceError]);
 
   const { fetchActionLogs, logs } = useFetchActionLogs();
+
   useEffect(() => {
     if (state.ticket?.ticket_id) {
       fetchActionLogs(state.ticket.ticket_id);
     }
   }, [state.ticket?.ticket_id, fetchActionLogs]);
+  // check ticket data
+  console.log("ticket data", JSON.stringify(state.ticket, null, 2));
 
   const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
 
@@ -307,6 +310,52 @@ export default function TicketDetail() {
                   </span>
                 </div>
               </div>
+              {/* Ticket Owner */}
+              <div className={styles.tdpSection}>
+                <div className={styles.tdpTitle}>
+                  <strong>Owner Description:</strong>
+                </div>
+                <div className={styles.tdpOwnerDescWrapper}>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Name:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.first_name
+                        ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Email:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.email || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Company ID:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.company_id || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Department:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.department || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Role:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.role || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Current Owner:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.currentOwner?.user_full_name || "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
                   <strong>Description: </strong>
@@ -367,6 +416,7 @@ export default function TicketDetail() {
               style={{ flex: 1, minWidth: "300px" }}
             >
               <div className={styles.layoutFlexButton}>
+                {/* Make an Action */}
                 <button
                   className={
                     state.ticket?.has_acted
@@ -374,12 +424,22 @@ export default function TicketDetail() {
                       : styles.ticketActionButton
                   }
                   onClick={() => setOpenTicketAction(true)}
-                  disabled={state.ticket?.has_acted}
+                  // disabled={state.ticket?.has_acted}
+                  disabled={
+                    state.ticket?.has_acted || state.ticket?.is_escalated
+                  }
                 >
-                  {state.ticket?.has_acted
-                    ? "Action Already Taken"
-                    : "Make an Action"}
+                  <span className={styles.iconTextWrapper}>
+                    <i className="fa fa-check-circle"></i>
+                    {state.ticket?.has_acted
+                      ? "Cannot Make Action After Escalation"
+                      : state.ticket?.has_acted
+                      ? "Action Already Taken"
+                      : "Make an Action"}
+                  </span>
                 </button>
+
+                {/* Escalate */}
                 <button
                   className={
                     state.ticket?.has_acted || state.ticket?.is_escalated
@@ -391,12 +451,17 @@ export default function TicketDetail() {
                     state.ticket?.has_acted || state.ticket?.is_escalated
                   }
                 >
-                  {state.ticket?.is_escalated
-                    ? "Already Escalated"
-                    : state.ticket?.has_acted
-                    ? "Can't Escalate After Action"
-                    : "Escalate Ticket"}
+                  <span className={styles.iconTextWrapper}>
+                    <i className="fa fa-arrow-up"></i>
+                    {state.ticket?.is_escalated
+                      ? "Already Escalated"
+                      : state.ticket?.has_acted
+                      ? "Can't Escalate After Action"
+                      : "Escalate"}
+                  </span>
                 </button>
+
+                {/* Transfer (Admin only) */}
                 {isAdmin() && (
                   <button
                     className={
@@ -409,11 +474,14 @@ export default function TicketDetail() {
                       state.ticket?.has_acted || state.ticket?.is_escalated
                     }
                   >
-                    {state.ticket?.is_escalated
-                      ? "Cannot Transfer After Escalation"
-                      : state.ticket?.has_acted
-                      ? "Cannot Transfer After Action"
-                      : "Transfer Task"}
+                    <span className={styles.iconTextWrapper}>
+                      <i className="fa fa-exchange"></i>
+                      {state.ticket?.is_escalated
+                        ? "Cannot Transfer After Escalation"
+                        : state.ticket?.has_acted
+                        ? "Cannot Transfer After Action"
+                        : "Transfer"}
+                    </span>
                   </button>
                 )}
               </div>
@@ -453,7 +521,7 @@ export default function TicketDetail() {
                       </div>
                     </div>
                     <WorkflowTracker2 workflowData={tracker} />
-                    <div className={styles.tdInfoWrapper}>
+                    {/* <div className={styles.tdInfoWrapper}>
                       <div className={styles.tdInfoHeader}>
                         <h3>Details</h3>
                         <button
@@ -533,7 +601,7 @@ export default function TicketDetail() {
                           )}
                         </div>
                       )}
-                    </div>
+                    </div> */}
                     <div className={styles.actionLogs}>
                       <h4>Action Logs</h4>
                       <ActionLogList

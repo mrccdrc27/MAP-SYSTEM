@@ -82,9 +82,14 @@ function TicketItem({ item }) {
           : "—"}
       </td>
 
-      <td>
+      {/* <td>
         {item.target_resolution && !isNaN(new Date(item.target_resolution))
           ? format(new Date(item.target_resolution), "MMMM dd, yyyy")
+          : "—"}
+      </td> */}
+      <td>
+        {item.target_resolution && !isNaN(new Date(item.target_resolution))
+          ? format(new Date(item.target_resolution), "EEEE, MMM d")
           : "—"}
       </td>
 
@@ -106,7 +111,9 @@ function SkeletonRow({ columns }) {
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className={general.skeletonCell}>
           <div
-            className={`${general.skeleton} ${i === 1 ? general.skeletonSmall : ""}`}
+            className={`${general.skeleton} ${
+              i === 1 ? general.skeletonSmall : ""
+            }`}
           />
         </td>
       ))}
