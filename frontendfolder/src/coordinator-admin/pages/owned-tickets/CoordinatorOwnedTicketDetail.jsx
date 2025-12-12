@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaEdit, FaSave, FaTimes, FaPaperclip, FaDownload, FaFile, FaCircle } from 'react-icons/fa';
+import { FaPaperclip, FaDownload, FaFile, FaCircle } from 'react-icons/fa';
 import styles from './CoordinatorOwnedTicketDetail.module.css';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import { useAuth } from '../../../context/AuthContext';
@@ -20,12 +20,6 @@ const CoordinatorOwnedTicketDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
   const [mainTab, setMainTab] = useState('ticket');
-
-  // Edit states
-  const [isEditingSubject, setIsEditingSubject] = useState(false);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const [subject, setSubject] = useState('');
-  const [description, setDescription] = useState('');
 
   // Local message states (for requester communication)
   const [requesterMessages, setRequesterMessages] = useState([]);
@@ -182,8 +176,6 @@ const CoordinatorOwnedTicketDetail = () => {
           };
           
           setTicket(mergedData);
-          setSubject(mergedData.subject);
-          setDescription(mergedData.description);
           setTicketStatus(mergedData.priority || 'LOW');
           setLifecycle(mergedData.currentStepName || 'Triage Ticket');
 
@@ -264,20 +256,6 @@ const CoordinatorOwnedTicketDetail = () => {
 
     loadTicket();
   }, [ticketNumber, currentUser]);
-
-  const handleSaveSubject = () => {
-    if (ticket) {
-      setTicket({ ...ticket, subject });
-      setIsEditingSubject(false);
-    }
-  };
-
-  const handleSaveDescription = () => {
-    if (ticket) {
-      setTicket({ ...ticket, description });
-      setIsEditingDescription(false);
-    }
-  };
 
   // Send message to TTS agents via real-time WebSocket
   const handleSendAgentMessage = async () => {
@@ -389,19 +367,22 @@ const CoordinatorOwnedTicketDetail = () => {
 
   return (
     <div className={styles['detail-container']}>
-      {/* Header */}
-      <div className={styles['detail-header']}>
-        <div className={styles['header-content']}>
-          <h1>Ticket #{ticket.id}</h1>
-          <div className={styles['header-badges']}>
-            <span className={`${styles['status-badge']} ${getStatusColor(ticket.status)}`}>
-              {ticket.status}
-            </span>
-            <span className={`${styles['priority-badge']} ${getPriorityColor(ticketStatus)}`}>
-              {ticketStatus}
-            </span>
-          </div>
-        </div>
+      {/* Breadcrumb Header */}
+      <Breadcrumb
+        root="Owned Tickets"
+        currentPage="Ticket Details"
+        rootNavigatePage="/admin/owned-tickets"
+        title={`Ticket No. ${ticket.id}`}
+      />
+
+      {/* Status and Priority Badges */}
+      <div className={styles['header-badges']}>
+        <span className={`${styles['status-badge']} ${getStatusColor(ticket.status)}`}>
+          {ticket.status}
+        </span>
+        <span className={`${styles['priority-badge']} ${getPriorityColor(ticketStatus)}`}>
+          {ticketStatus}
+        </span>
       </div>
 
       {/* Main Content */}
@@ -450,90 +431,14 @@ const CoordinatorOwnedTicketDetail = () => {
               <div className={styles['ticket-details']}>
                 {/* Subject */}
                 <div className={styles['field-group']}>
-                  <div className={styles['field-header']}>
-                    <label>Subject:</label>
-                    {!isEditingSubject && (
-                      <button
-                        className={styles['edit-btn']}
-                        onClick={() => setIsEditingSubject(true)}
-                      >
-                        <FaEdit /> Edit
-                      </button>
-                    )}
-                  </div>
-                  {isEditingSubject ? (
-                    <div className={styles['edit-form']}>
-                      <input
-                        type="text"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        className={styles['edit-input']}
-                      />
-                      <div className={styles['edit-actions']}>
-                        <button
-                          className={styles['save-btn']}
-                          onClick={handleSaveSubject}
-                        >
-                          <FaSave /> Save
-                        </button>
-                        <button
-                          className={styles['cancel-btn']}
-                          onClick={() => {
-                            setSubject(ticket.subject);
-                            setIsEditingSubject(false);
-                          }}
-                        >
-                          <FaTimes /> Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={styles['field-value']}>{ticket.subject}</p>
-                  )}
+                  <label>Subject:</label>
+                  <p className={styles['field-value']}>{ticket.subject}</p>
                 </div>
 
                 {/* Description */}
                 <div className={styles['field-group']}>
-                  <div className={styles['field-header']}>
-                    <label>Description:</label>
-                    {!isEditingDescription && (
-                      <button
-                        className={styles['edit-btn']}
-                        onClick={() => setIsEditingDescription(true)}
-                      >
-                        <FaEdit /> Edit
-                      </button>
-                    )}
-                  </div>
-                  {isEditingDescription ? (
-                    <div className={styles['edit-form']}>
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className={styles['edit-textarea']}
-                        rows="4"
-                      />
-                      <div className={styles['edit-actions']}>
-                        <button
-                          className={styles['save-btn']}
-                          onClick={handleSaveDescription}
-                        >
-                          <FaSave /> Save
-                        </button>
-                        <button
-                          className={styles['cancel-btn']}
-                          onClick={() => {
-                            setDescription(ticket.description);
-                            setIsEditingDescription(false);
-                          }}
-                        >
-                          <FaTimes /> Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={styles['field-value']}>{ticket.description}</p>
-                  )}
+                  <label>Description:</label>
+                  <p className={styles['field-value']}>{ticket.description}</p>
                 </div>
 
                 {/* Additional Info */}
