@@ -14,7 +14,7 @@ from copy import deepcopy
 from audit.utils import log_action, compare_models
 from .models import Task, TaskItem, TaskItemHistory
 from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, TaskItemSerializer
-from authentication import JWTCookieAuthentication
+from authentication import JWTCookieAuthentication, SystemRolePermission
 from step.models import Steps, StepTransition
 from tickets.models import WorkflowTicket
 from role.models import RoleUsers
@@ -170,6 +170,74 @@ class AllTasksListView(ListAPIView):
                 if status == assignment_status:
                     filtered_list.append(item.id)
             queryset = queryset.filter(id__in=filtered_list)
+        
+        return queryset
+
+
+class OwnedTicketsListView(ListAPIView):
+    """
+    View to list Tasks owned by the authenticated user (Ticket Coordinator).
+    Returns tasks where the current user is assigned as ticket_owner.
+    
+    Permission: Requires HDTS Ticket Coordinator role.
+    
+    Query Parameters:
+        - tab: 'active', 'inactive' - filters by task status
+        - search: search term for ticket subject/description/number
+        - page: page number
+        - page_size: items per page (default 10, max 100)
+    """
+    serializer_class = TaskSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    filter_backends = [OrderingFilter]
+    ordering_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
+    pagination_class = TaskPagination
+    
+    # SystemRolePermission configuration - require HDTS Ticket Coordinator
+    required_system_roles = {
+        'hdts': ['Ticket Coordinator']
+    }
+    
+    def get_queryset(self):
+        """Return Tasks owned by the current user."""
+        user_id = self.request.user.user_id
+        
+        # Get tasks where current user is the ticket owner
+        queryset = Task.objects.filter(
+            ticket_owner__user_id=user_id
+        ).select_related(
+            'ticket_id', 
+            'workflow_id', 
+            'workflow_version',
+            'current_step',
+            'current_step__role_id',
+            'ticket_owner',
+            'ticket_owner__role_id'
+        )
+        
+        # Apply tab filter (active, inactive)
+        tab = self.request.query_params.get('tab', '').lower()
+        if tab == 'active':
+            queryset = queryset.filter(
+                Q(status__in=['in progress', 'open', 'pending', 'in_progress']) |
+                Q(ticket_id__status__in=['in progress', 'open', 'pending', 'in_progress'])
+            )
+        elif tab == 'inactive':
+            queryset = queryset.filter(
+                Q(status__in=['closed', 'resolved', 'completed']) |
+                Q(ticket_id__status__in=['closed', 'resolved', 'completed'])
+            )
+        
+        # Apply custom search filter
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(ticket_id__ticket_number__icontains=search) |
+                Q(ticket_id__ticket_data__subject__icontains=search) |
+                Q(ticket_id__ticket_data__description__icontains=search)
+            )
         
         return queryset
 
