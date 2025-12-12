@@ -313,15 +313,72 @@ def send_ticket_to_workflow(sender, instance, created, **kwargs):
         # to crash the request/DB transaction (e.g., when RabbitMQ is down).
         try:
             from .tasks import push_ticket_to_workflow  # Import here!
-            from .serializers import TicketSerializer   # Import here!
-            # Instead of serializing the entire ticket (which may include
-            # file-related objects that are not pickle-friendly), enqueue a
-            # minimal payload (ticket_number). The worker can re-fetch the
-            # full ticket from the DB when processing the job. This avoids
-            # errors like "cannot pickle 'BufferedRandom' instances".
-            minimal_payload = {'ticket_number': instance.ticket_number}
+            
+            # Build ticket data dictionary manually to ensure JSON serialization
+            # and avoid issues with file objects or request context
+            ticket_data = {
+                'id': instance.id,
+                'ticket_number': instance.ticket_number,
+                'subject': instance.subject,
+                'category': instance.category,
+                'sub_category': instance.sub_category,
+                'description': instance.description,
+                'scheduled_date': str(instance.scheduled_date) if instance.scheduled_date else None,
+                'priority': instance.priority,
+                'department': instance.department,
+                'asset_name': instance.asset_name,
+                'serial_number': instance.serial_number,
+                'location': instance.location,
+                'expected_return_date': str(instance.expected_return_date) if instance.expected_return_date else None,
+                'issue_type': instance.issue_type,
+                'other_issue': instance.other_issue,
+                'performance_start_date': str(instance.performance_start_date) if instance.performance_start_date else None,
+                'performance_end_date': str(instance.performance_end_date) if instance.performance_end_date else None,
+                'approved_by': instance.approved_by,
+                'rejected_by': instance.rejected_by,
+                'cost_items': instance.cost_items,
+                'requested_budget': str(instance.requested_budget) if instance.requested_budget else None,
+                'fiscal_year': instance.fiscal_year,
+                'department_input': instance.department_input,
+                'dynamic_data': instance.dynamic_data,
+                'status': instance.status,
+                'submit_date': instance.submit_date.isoformat() if instance.submit_date else None,
+                'update_date': instance.update_date.isoformat() if instance.update_date else None,
+                'rejection_reason': instance.rejection_reason,
+                'date_completed': instance.date_completed.isoformat() if instance.date_completed else None,
+                'csat_rating': instance.csat_rating,
+                'feedback': instance.feedback,
+            }
+            
+            # Add employee info if available (for assignment context)
+            if instance.employee:
+                ticket_data['employee_id'] = instance.employee.id
+                ticket_data['employee_company_id'] = instance.employee.company_id
+                ticket_data['employee_email'] = instance.employee.email
+                ticket_data['employee'] = {
+                    'first_name': instance.employee.first_name,
+                    'last_name': instance.employee.last_name,
+                    'email': instance.employee.email,
+                    'company_id': instance.employee.company_id,
+                    'department': instance.employee.department,
+                }
+            elif instance.employee_cookie_id:
+                ticket_data['employee_cookie_id'] = instance.employee_cookie_id
+            
+            # Add attachment info (just metadata, not file contents)
+            attachments = []
+            for att in instance.attachments.all():
+                attachments.append({
+                    'id': att.id,
+                    'file_name': att.file_name,
+                    'file_type': att.file_type,
+                    'file_size': att.file_size,
+                    'file_path': att.file.name if att.file else None,
+                })
+            ticket_data['attachments'] = attachments
+            
             try:
-                push_ticket_to_workflow.delay(minimal_payload)
+                push_ticket_to_workflow.delay(ticket_data)
                 print(f"[send_ticket_to_workflow] enqueued workflow job for ticket {instance.ticket_number}")
             except Exception as enqueue_err:
                 # Log the enqueue failure and continue — do not re-raise

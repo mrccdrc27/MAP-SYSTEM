@@ -227,6 +227,9 @@ CELERY_TASK_ROUTES = {
     'role.tasks.sync_user_system_role': {'queue': 'tts.user_system_role.sync'},
     # Workflow seeding queue
     'workflow.seed_workflows': {'queue': 'workflow_seed_queue'},
+    # Ticket receive queue - tickets from helpdesk
+    'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    'tickets.tasks.create_task_for_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
 }
 
 # External Services

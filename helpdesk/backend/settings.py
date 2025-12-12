@@ -218,9 +218,11 @@ CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'amqp://admin:admin@loca
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'rpc://')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_TASK_DEFAULT_QUEUE = 'ticket_tasks2'  # Only if you plan to run worker here
+CELERY_TASK_DEFAULT_QUEUE = 'TICKET_TASKS_PRODUCTION'
 
 # Celery Task Routes - Backend listens to these queues
 CELERY_TASK_ROUTES = {
     'hdts.tasks.sync_hdts_user': {'queue': 'hdts.user.sync'},
+    # Route ticket workflow task to the workflow_api worker queue
+    'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
 }
