@@ -11,6 +11,7 @@ import ReactFlow, {
   BackgroundVariant,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import styles from './WorkflowEditorLayout.module.css';
 import StepNode from './StepNode';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
@@ -321,7 +322,7 @@ const WorkflowEditorContent = forwardRef(({
   }, [onEdgesChange, handleDeleteEdge]);
 
   return (
-    <div className="h-full bg-gray-50 relative">
+    <div className={styles.canvasWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

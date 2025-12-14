@@ -1,6 +1,7 @@
 change terminal to bash, for copy-paste
 ssh -i "$env:USERPROFILE\.ssh\digitalocean" root@<droplet-ip>
-
+ssh -i "rivo" root@152.42.185.245
+ssh -i "rivo_rsa" root@152.42.185.245
 
 ./Scripts/docker.sh
 ./Scripts/dos2unix.sh

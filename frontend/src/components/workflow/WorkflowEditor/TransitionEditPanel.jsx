@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
+import styles from './WorkflowEditorLayout.module.css';
 
 export default function TransitionEditPanel({ transition, onUpdate, onDelete }) {
   const [formData, setFormData] = useState({
@@ -28,36 +29,33 @@ export default function TransitionEditPanel({ transition, onUpdate, onDelete }) 
   if (!transition) return null;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm text-gray-700 mb-1">Transition Label</label>
+    <div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>Transition Label</label>
         <input
           type="text"
           value={formData.label}
           onChange={(e) => handleChange('label', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className={styles.formInput}
           placeholder="e.g., Approved, Rejected, Submit"
         />
       </div>
 
-      <div className="pt-4 border-t border-gray-200 space-y-2">
-        <div className="text-sm">
-          <span className="text-gray-600">From:</span>
-          <span className="ml-2 text-gray-900">Step {transition.source}</span>
+      <div className={styles.transitionInfo}>
+        <div className={styles.transitionInfoItem}>
+          <span className={styles.transitionInfoLabel}>From:</span>
+          <span className={styles.transitionInfoValue}>Step {transition.source}</span>
         </div>
-        <div className="text-sm">
-          <span className="text-gray-600">To:</span>
-          <span className="ml-2 text-gray-900">Step {transition.target}</span>
+        <div className={styles.transitionInfoItem}>
+          <span className={styles.transitionInfoLabel}>To:</span>
+          <span className={styles.transitionInfoValue}>Step {transition.target}</span>
         </div>
       </div>
 
       {onDelete && (
-        <div className="pt-4 border-t border-gray-200">
-          <button
-            onClick={onDelete}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
+        <div className={styles.formDivider}>
+          <button onClick={onDelete} className={styles.btnDelete}>
+            <Trash2 className={styles.btnDeleteIcon} />
             Delete Transition
           </button>
         </div>

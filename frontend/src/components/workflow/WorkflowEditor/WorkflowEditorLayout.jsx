@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import 'reactflow/dist/style.css';
+import styles from './WorkflowEditorLayout.module.css';
 import WorkflowEditorContent from './WorkflowEditorContent';
 import WorkflowEditorSidebar from './WorkflowEditorSidebar';
 import WorkflowEditorToolbar from './WorkflowEditorToolbar';
@@ -211,10 +212,10 @@ export default function WorkflowEditorLayout({ workflowId }) {
 
   if (!workflowData) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
-          <p className="text-gray-600">Loading workflow...</p>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <RefreshCw className={styles.loadingSpinner} />
+          <p className={styles.loadingText}>Loading workflow...</p>
         </div>
       </div>
     );
@@ -224,31 +225,28 @@ export default function WorkflowEditorLayout({ workflowId }) {
   const transitionCount = workflowData.graph?.edges?.length || 0;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className={styles.pageWrapper}>
       <AdminNav />
       
       {/* Unsaved Changes Warning */}
       {hasUnsavedChanges && (
-        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-yellow-800">
-            <AlertCircle className="w-4 h-4" />
+        <div className={styles.unsavedWarning}>
+          <div className={styles.warningContent}>
+            <AlertCircle className={styles.warningIcon} />
             <span>You have unsaved changes</span>
           </div>
-          <button
-            onClick={handleSave}
-            className="text-sm text-yellow-800 hover:text-yellow-900 underline"
-          >
+          <button onClick={handleSave} className={styles.saveNowBtn}>
             Save now
           </button>
         </div>
       )}
 
       {/* Top Ribbon */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className={styles.ribbon}>
+        <div className={styles.ribbonInfo}>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">{workflowData.workflow?.name}</h2>
-            <span className="text-sm text-gray-500">
+            <h2 className={styles.ribbonTitle}>{workflowData.workflow?.name}</h2>
+            <span className={styles.ribbonSubtitle}>
               {workflowData.workflow?.category && `${workflowData.workflow.category}`}
               {workflowData.workflow?.category && workflowData.workflow?.sub_category && ' • '}
               {workflowData.workflow?.sub_category && `${workflowData.workflow.sub_category}`}
@@ -256,71 +254,67 @@ export default function WorkflowEditorLayout({ workflowId }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={styles.ribbonActions}>
           <button
             onClick={handleSave}
             disabled={isSaving || !hasUnsavedChanges}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className={styles.btnPrimary}
           >
             {isSaving ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <RefreshCw className={styles.loadingSpinner} style={{ width: '16px', height: '16px', margin: 0 }} />
             ) : (
-              <Save className="w-4 h-4" />
+              <Save style={{ width: '16px', height: '16px' }} />
             )}
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
           
-          <div className="h-6 w-px bg-gray-300 mx-1" />
+          <div className={styles.divider} />
           
           <button
             onClick={handleUndo}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
-            className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={styles.btnIcon}
           >
-            <Undo className="w-4 h-4 text-gray-700" />
+            <Undo />
           </button>
           <button
             onClick={handleRedo}
             disabled={!canRedo}
             title="Redo (Ctrl+Y)"
-            className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={styles.btnIcon}
           >
-            <Redo className="w-4 h-4 text-gray-700" />
+            <Redo />
           </button>
 
-          <div className="h-6 w-px bg-gray-300 mx-1" />
+          <div className={styles.divider} />
 
           <button
             onClick={() => setShowSLAModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className={styles.btnSecondary}
           >
-            <Settings className="w-4 h-4" />
+            <Settings style={{ width: '16px', height: '16px' }} />
             Manage SLA
           </button>
 
           <button
             onClick={() => setIsEditingGraph(!isEditingGraph)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              isEditingGraph
-                ? 'bg-green-100 text-green-700 border border-green-300'
-                : 'bg-gray-100 text-gray-700 border border-gray-300'
-            }`}
+            className={`${styles.btnToggle} ${isEditingGraph ? styles.btnToggleActive : styles.btnToggleInactive}`}
           >
             {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
           </button>
         </div>
 
-        <div className="text-sm text-gray-600">
+        <div className={styles.ribbonStats}>
           {stepCount} steps • {transitionCount} transitions
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className={styles.mainContent}>
         {/* Toolbar */}
         {!toolbarCollapsed ? (
-          <div className="relative">
+          <div className={styles.relativeContainer}>
             <WorkflowEditorToolbar
               onAddStep={handleAddStep}
               stepCount={stepCount}
@@ -329,24 +323,24 @@ export default function WorkflowEditorLayout({ workflowId }) {
             />
             <button
               onClick={() => setToolbarCollapsed(true)}
-              className="absolute top-2 -right-3 p-1 bg-white border border-gray-200 rounded shadow-sm hover:bg-gray-50 transition-colors z-10"
+              className={`${styles.collapseBtn} ${styles.collapseBtnLeft}`}
               title="Hide toolbar"
             >
-              <ChevronLeft className="w-3 h-3 text-gray-600" />
+              <ChevronLeft />
             </button>
           </div>
         ) : (
           <button
             onClick={() => setToolbarCollapsed(false)}
-            className="w-8 bg-white border-r border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center"
+            className={`${styles.expandBtn} ${styles.expandBtnLeft}`}
             title="Show toolbar"
           >
-            <ChevronRight className="w-4 h-4 text-gray-600" />
+            <ChevronRight />
           </button>
         )}
 
         {/* Canvas */}
-        <div className="flex-1">
+        <div className={styles.canvasArea}>
           <ReactFlowProvider>
             <WorkflowEditorContent
               ref={contentRef}
@@ -363,7 +357,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
 
         {/* Sidebar */}
         {!sidebarCollapsed ? (
-          <div className="relative">
+          <div className={styles.relativeContainer}>
             <WorkflowEditorSidebar
               selectedElement={selectedElement}
               workflowData={workflowData}
@@ -376,19 +370,19 @@ export default function WorkflowEditorLayout({ workflowId }) {
             />
             <button
               onClick={() => setSidebarCollapsed(true)}
-              className="absolute top-2 -left-3 p-1 bg-white border border-gray-200 rounded shadow-sm hover:bg-gray-50 transition-colors z-10"
+              className={`${styles.collapseBtn} ${styles.collapseBtnRight}`}
               title="Hide sidebar"
             >
-              <ChevronRight className="w-3 h-3 text-gray-600" />
+              <ChevronRight />
             </button>
           </div>
         ) : (
           <button
             onClick={() => setSidebarCollapsed(false)}
-            className="w-8 bg-white border-l border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center"
+            className={`${styles.expandBtn} ${styles.expandBtnRight}`}
             title="Show sidebar"
           >
-            <ChevronLeft className="w-4 h-4 text-gray-600" />
+            <ChevronLeft />
           </button>
         )}
       </div>
