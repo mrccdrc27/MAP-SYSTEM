@@ -6,14 +6,14 @@ This guide explains how to control test output verbosity using Django's `--verbo
 
 Each test is logged in a single-line format:
 ```
-TEST_NUMBER. test_method_name - STATUS
+N. test_method_name                              ● PASS/FAIL
 ```
 
 Example:
 ```
-1. test_task_creation - ✅ PASS
-2. test_task_status_choices - ✅ PASS
-10. test_task_item_history_creation - ✅ PASS
+ 1. test_task_creation                           ● PASS
+ 2. test_task_status_choices                     ● PASS
+10. test_task_item_history_creation              ● PASS
 ```
 
 ## Verbosity Levels
@@ -35,9 +35,9 @@ python manage.py test tests.unit.task.test_models --verbosity=1
 # or simply:
 python manage.py test tests.unit.task.test_models
 ```
-- Single-line test results: `N. test_name - ✅ PASS`
-- Suppresses workflow initialization logs
-- Suppresses SLA calculation logs
+- Single-line test results: `N. test_name ● PASS`
+- Suppresses all logging output (workflow, SLA, assignments)
+- Suppresses print() statements from application code
 - Clean output for quick test validation
 - **Best for local development**
 
@@ -108,8 +108,8 @@ python manage.py test tests.integration --verbosity=2
 
 ## Test Result Symbols
 
-- ✅ PASS - Test passed successfully
-- ❌ FAIL - Test failed (assertion error or exception)
+- ● PASS - Test passed successfully
+- ● FAIL - Test failed (assertion error or exception)
 
 ## Configuration
 
@@ -139,7 +139,13 @@ class MyTransactionTests(BaseTransactionTestCase):
 
 Logging levels are automatically adjusted based on the `--verbosity` flag:
 - Verbosity 0: `logging.CRITICAL`
-- Verbosity 1: `logging.ERROR` (except test results)
+- Verbosity 1: `logging.CRITICAL` (suppresses all app logging)
 - Verbosity 2: `logging.WARNING`
 - Verbosity 3: `logging.DEBUG`
+
+## Note on Integration Tests
+
+Integration tests that test error handling (4xx/5xx responses) may still show
+some Django request logging at verbosity=1. This is expected behavior as these
+tests intentionally trigger errors to verify error handling works correctly.
 

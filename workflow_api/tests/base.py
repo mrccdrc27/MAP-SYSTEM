@@ -47,6 +47,28 @@ def reset_test_counter():
     _test_counter['count'] = 0
 
 
+def _get_verbosity():
+    """Get the current test verbosity level."""
+    try:
+        from workflow_api.test_runner import get_test_verbosity
+        return get_test_verbosity()
+    except (ImportError, AttributeError):
+        return 1  # Default to verbosity 1
+
+
+def _test_print(*args, **kwargs):
+    """Print test output using the original stdout (bypasses SuppressedStdout)."""
+    try:
+        from workflow_api.test_runner import Python313CompatibleTestRunner
+        original_stdout = Python313CompatibleTestRunner._original_stdout
+        if original_stdout is not None:
+            print(*args, file=original_stdout, **kwargs)
+        else:
+            print(*args, **kwargs)
+    except (ImportError, AttributeError):
+        print(*args, **kwargs)
+
+
 class BaseTestCase(TestCase):
     """
     Base test case with one-line test logging.
@@ -78,16 +100,46 @@ class BaseTestCase(TestCase):
         # Run the test
         super().run(result)
         
-        # Determine status
-        if result and result.errors and any(test_method in str(e[0]) for e in result.errors):
-            status = "● FAIL"
-        elif result and result.failures and any(test_method in str(f[0]) for f in result.failures):
-            status = "● FAIL"
-        else:
-            status = "● PASS"
-        
-        # Log result with aligned formatting
-        logger.info(f"{self.test_number:2}. {test_name:<{self.TEST_NAME_WIDTH}} {status}")
+        # Only output at verbosity >= 1
+        if _get_verbosity() >= 1:
+            # Determine status
+            if result and result.errors and any(test_method in str(e[0]) for e in result.errors):
+                status = "● FAIL"
+            elif result and result.failures and any(test_method in str(f[0]) for f in result.failures):
+                status = "● FAIL"
+            else:
+                status = "● PASS"
+            
+            # Print result with aligned formatting (using original stdout)
+            _test_print(f"{self.test_number:2}. {test_name:<{self.TEST_NAME_WIDTH}} {status}")
+
+
+def suppress_request_warnings(original_method):
+    """
+    Decorator to suppress Django request logging during error tests.
+    
+    Use this decorator on test methods that intentionally trigger HTTP errors
+    (400, 403, 404, 500) to suppress the verbose Django logging.
+    
+    Example:
+        @suppress_request_warnings
+        def test_invalid_request(self):
+            response = self.client.post('/api/', {})
+            self.assertEqual(response.status_code, 400)
+    """
+    import functools
+    import logging
+    
+    @functools.wraps(original_method)
+    def wrapper(*args, **kwargs):
+        django_request_logger = logging.getLogger('django.request')
+        original_level = django_request_logger.level
+        django_request_logger.setLevel(logging.CRITICAL)
+        try:
+            return original_method(*args, **kwargs)
+        finally:
+            django_request_logger.setLevel(original_level)
+    return wrapper
 
 
 class BaseTransactionTestCase(TransactionTestCase):
@@ -115,13 +167,15 @@ class BaseTransactionTestCase(TransactionTestCase):
         # Run the test
         super().run(result)
         
-        # Determine status
-        if result and result.errors and any(test_method in str(e[0]) for e in result.errors):
-            status = "● FAIL"
-        elif result and result.failures and any(test_method in str(f[0]) for f in result.failures):
-            status = "● FAIL"
-        else:
-            status = "● PASS"
-        
-        # Log result with aligned formatting
-        logger.info(f"{self.test_number:2}. {test_name:<{self.TEST_NAME_WIDTH}} {status}")
+        # Only output at verbosity >= 1
+        if _get_verbosity() >= 1:
+            # Determine status
+            if result and result.errors and any(test_method in str(e[0]) for e in result.errors):
+                status = "● FAIL"
+            elif result and result.failures and any(test_method in str(f[0]) for f in result.failures):
+                status = "● FAIL"
+            else:
+                status = "● PASS"
+            
+            # Print result with aligned formatting (using original stdout)
+            _test_print(f"{self.test_number:2}. {test_name:<{self.TEST_NAME_WIDTH}} {status}")

@@ -29,7 +29,7 @@ from datetime import timedelta
 from unittest.mock import patch, MagicMock
 
 # Import all models
-from tests.base import BaseTestCase
+from tests.base import BaseTestCase, suppress_request_warnings
 from workflow.models import Workflows, WorkflowVersion
 from step.models import Steps, StepTransition
 from role.models import Roles, RoleUsers
