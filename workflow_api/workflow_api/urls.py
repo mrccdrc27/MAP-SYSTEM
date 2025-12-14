@@ -33,7 +33,6 @@ class APIRootSerializer(serializers.Serializer):
     roles = serializers.URLField()
     steps = serializers.URLField()
 
-    workflow_manager = serializers.URLField()
     analytics = serializers.URLField()
     schema = serializers.URLField()
     docs = serializers.URLField()
@@ -58,7 +57,6 @@ def api_root(request, format=None):
         'roles': request.build_absolute_uri('roles/'),
         'steps': request.build_absolute_uri('steps/'),
 
-        'workflow-manager': request.build_absolute_uri('workflow-manager/'),
         'analytics': request.build_absolute_uri('analytics/'),
         'schema': reverse('schema', request=request, format=format),
         'docs': reverse('swagger-ui', request=request, format=format),
@@ -80,7 +78,6 @@ urlpatterns = [
     path('roles/', include('role.urls')),
     path('steps/', include('step.urls')),
 
-    path('workflow-manager/', include('workflowmanager.urls')),
     path('audit/', include('audit.urls')),
     path('analytics/', include('reporting.urls')),
 

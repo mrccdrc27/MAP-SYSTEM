@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'task',
     'tickets',
 
-    'workflowmanager',
     'audit',
     'reporting',
 
