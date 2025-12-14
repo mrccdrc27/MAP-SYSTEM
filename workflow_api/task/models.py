@@ -84,7 +84,7 @@ class Task(models.Model):
 
     def get_assigned_user_ids(self):
         """Get list of user IDs assigned to this task"""
-        return list(self.taskitem_set.values_list('user_id', flat=True).distinct())
+        return list(self.taskitem_set.values_list('role_user__user_id', flat=True).distinct())
     
     def get_assigned_users_by_status(self, status=None):
         """Get TaskItem instances filtered by their assignment status"""

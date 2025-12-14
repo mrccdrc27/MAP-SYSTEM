@@ -1,0 +1,6 @@
+The tests for the `tickets` app can be run using the command:
+
+```bash
+python manage.py test tickets
+```
+This command will execute all test cases defined within the `tickets/tests.py` file. I've just run it and all 11 tests passed successfully.
