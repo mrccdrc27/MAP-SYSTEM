@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, TaskItem, TaskItemHistory
+from .models import Task, TaskItem, TaskItemHistory, FailedNotification
 from tickets.models import WorkflowTicket
 from workflow.models import Workflows
 from step.models import Steps
@@ -268,3 +268,29 @@ class ActionLogSerializer(serializers.Serializer):
         if obj.role_user and obj.role_user.role_id:
             return obj.role_user.role_id.name
         return None
+
+class FailedNotificationSerializer(serializers.ModelSerializer):
+    """Serializer for FailedNotification records"""
+    
+    class Meta:
+        model = FailedNotification
+        fields = [
+            'failed_notification_id',
+            'user_id',
+            'task_id',
+            'task_title',
+            'role_name',
+            'status',
+            'error_message',
+            'retry_count',
+            'max_retries',
+            'created_at',
+            'last_retry_at',
+            'succeeded_at'
+        ]
+        read_only_fields = [
+            'failed_notification_id',
+            'created_at',
+            'last_retry_at',
+            'succeeded_at'
+        ]

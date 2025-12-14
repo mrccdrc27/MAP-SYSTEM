@@ -1153,3 +1153,153 @@ class TaskViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+
+class FailedNotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for viewing and retrying failed notifications.
+    Read-only operations (list/retrieve) plus custom retry action.
+    """
+    from .models import FailedNotification
+    from .serializers import FailedNotificationSerializer
+    
+    queryset = FailedNotification.objects.all()
+    serializer_class = FailedNotificationSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['status', 'user_id', 'role_name']
+    search_fields = ['task_id', 'task_title', 'error_message']
+    ordering_fields = ['created_at', 'last_retry_at', 'retry_count']
+    ordering = ['-created_at']
+    pagination_class = TaskPagination
+    
+    @action(detail=True, methods=['post'])
+    def retry(self, request, pk=None):
+        """
+        Retry a specific failed notification.
+        POST /failed-notifications/{id}/retry/
+        """
+        from .tasks import send_assignment_notification as notify_task
+        
+        notification = self.get_object()
+        
+        # Check if already succeeded
+        if notification.status == 'success':
+            return Response(
+                {'error': 'Notification already succeeded'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check max retries
+        if notification.retry_count >= notification.max_retries:
+            return Response(
+                {'error': f'Max retries ({notification.max_retries}) already reached'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Update retry tracking
+            notification.status = 'retrying'
+            notification.retry_count += 1
+            notification.last_retry_at = timezone.now()
+            notification.save()
+            
+            # Attempt to send notification
+            notify_task.delay(
+                user_id=notification.user_id,
+                task_id=notification.task_id,
+                task_title=notification.task_title,
+                role_name=notification.role_name
+            )
+            
+            # Mark as success
+            notification.status = 'success'
+            notification.succeeded_at = timezone.now()
+            notification.save()
+            
+            serializer = self.get_serializer(notification)
+            return Response(
+                {
+                    'message': 'Notification sent successfully',
+                    'notification': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            # Update error details
+            notification.error_message = str(e)
+            
+            # Check if max retries reached
+            if notification.retry_count >= notification.max_retries:
+                notification.status = 'failed'
+            else:
+                notification.status = 'pending'
+            
+            notification.save()
+            
+            return Response(
+                {
+                    'error': f'Failed to send notification: {str(e)}',
+                    'notification': self.get_serializer(notification).data
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+    
+    @action(detail=False, methods=['post'])
+    def retry_all(self, request):
+        """
+        Retry all pending failed notifications.
+        POST /failed-notifications/retry_all/
+        """
+        from .tasks import send_assignment_notification as notify_task
+        
+        # Get pending notifications
+        notifications = self.queryset.filter(status='pending')
+        
+        # Apply max_retries filter
+        from django.db.models import F
+        notifications = notifications.filter(retry_count__lt=F('max_retries'))
+        
+        total_count = notifications.count()
+        success_count = 0
+        failed_count = 0
+        
+        for notification in notifications:
+            try:
+                notification.status = 'retrying'
+                notification.retry_count += 1
+                notification.last_retry_at = timezone.now()
+                notification.save()
+                
+                notify_task.delay(
+                    user_id=notification.user_id,
+                    task_id=notification.task_id,
+                    task_title=notification.task_title,
+                    role_name=notification.role_name
+                )
+                
+                notification.status = 'success'
+                notification.succeeded_at = timezone.now()
+                notification.save()
+                success_count += 1
+                
+            except Exception as e:
+                notification.error_message = str(e)
+                if notification.retry_count >= notification.max_retries:
+                    notification.status = 'failed'
+                else:
+                    notification.status = 'pending'
+                notification.save()
+                failed_count += 1
+        
+        return Response(
+            {
+                'message': f'Retry completed',
+                'total': total_count,
+                'success': success_count,
+                'failed': failed_count,
+                'remaining_pending': self.queryset.filter(status='pending').count()
+            },
+            status=status.HTTP_200_OK
+        )
