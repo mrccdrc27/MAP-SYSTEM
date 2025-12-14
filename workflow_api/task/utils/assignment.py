@@ -152,7 +152,7 @@ def assign_users_for_step(task, step, role_name):
     return apply_round_robin_assignment(task, user_ids, role_name)
 
 
-def assign_users_for_escalation(task, escalate_to_role, reason):
+def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=None, from_user_role=None, escalated_by_id=None, escalated_by_name=None):
     """
     Assign users for escalation to a higher-priority role.
     Uses round-robin to distribute escalated tasks fairly.
@@ -161,6 +161,10 @@ def assign_users_for_escalation(task, escalate_to_role, reason):
         task: Task instance
         escalate_to_role: Roles instance (the escalated role)
         reason: String reason for escalation
+        from_user_id: User ID of the original assignee (for notification)
+        from_user_role: Role name of the original assignee
+        escalated_by_id: User ID who initiated the escalation
+        escalated_by_name: Name of user who initiated the escalation
     
     Returns:
         List of created TaskItem instances
@@ -218,14 +222,32 @@ def assign_users_for_escalation(task, escalate_to_role, reason):
     )
     
     logger.info(f"🚨 Escalated TaskItem created: User {selected_role_user.user_id} assigned to Task {task.task_id}")
-    # Send escalation notification via Celery
+    
+    # Send escalation notification directly to notification_service via Celery
     try:
-        notify_task.delay(
-            user_id=selected_role_user.user_id,
-            task_id=str(task.task_id),
-            task_title=str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
-            role_name=escalate_to_role.name
+        from celery import current_app
+        from django.conf import settings
+        
+        inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
+        # Use the passed from_user_role, fallback to step's role if not provided
+        original_role = from_user_role or (task.current_step.role_id.name if task.current_step and task.current_step.role_id else 'Unknown')
+        
+        current_app.send_task(
+            'notifications.send_escalation_notification',
+            kwargs={
+                'from_user_id': from_user_id,
+                'to_user_id': selected_role_user.user_id,
+                'task_id': str(task.task_id),
+                'task_title': str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
+                'escalated_from_role': original_role,
+                'escalated_to_role': escalate_to_role.name,
+                'escalation_reason': reason,
+                'escalated_by_id': escalated_by_id,
+                'escalated_by_name': escalated_by_name
+            },
+            queue=inapp_queue
         )
+        logger.info(f"📧 Escalation notification queued: task {task.task_id} from user {from_user_id} to user {selected_role_user.user_id}")
     except Exception as e:
         logger.error(f"⚠️ Failed to send escalation notification: {e}")
     

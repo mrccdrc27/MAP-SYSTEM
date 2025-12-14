@@ -252,10 +252,27 @@ NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-q
 INAPP_NOTIFICATION_QUEUE = config('DJANGO_INAPP_NOTIFICATION_QUEUE', default='inapp-notification-queue')
 
 CELERY_TASK_ROUTES = {
+    # In-app notification tasks
     'task.send_assignment_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.create_inapp_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.mark_notification_read': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.bulk_create_notifications': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # Task transfer notifications
+    'notifications.send_task_transfer_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # Task escalation notifications
+    'notifications.send_escalation_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # Task completion notifications
+    'notifications.send_task_completed_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # Workflow step change notifications
+    'notifications.send_workflow_step_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # SLA notifications
+    'notifications.send_sla_warning_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    'notifications.send_sla_breach_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # Ticket status notifications
+    'notifications.send_ticket_status_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    # Comment notifications
+    'notifications.send_comment_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
+    'notifications.send_mention_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     # Gmail API email tasks (sent from auth service)
     'notifications.send_email_via_gmail': {'queue': 'NOTIFICATION_TASKS'},
     'notifications.send_email_with_headers': {'queue': 'NOTIFICATION_TASKS'},

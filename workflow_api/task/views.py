@@ -981,7 +981,11 @@ class TaskViewSet(viewsets.ModelViewSet):
             escalated_task_items = assign_users_for_escalation(
                 task=task,
                 escalate_to_role=task.current_step.escalate_to,
-                reason=reason
+                reason=reason,
+                from_user_id=current_assignment.role_user.user_id,
+                from_user_role=current_assignment.role_user.role_id.name,
+                escalated_by_id=request.user.user_id,
+                escalated_by_name=getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'User {request.user.user_id}')
             )
             
             if not escalated_task_items:
@@ -1113,6 +1117,30 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             logger.error(f"Failed to log audit for transfer_task: {e}")
+        
+        # Send transfer notifications to both users via notification_service
+        try:
+            from celery import current_app
+            from django.conf import settings
+            
+            task_title = str(task_item.task.ticket_id.ticket_number) if hasattr(task_item.task, 'ticket_id') else f"Task {task_item.task.task_id}"
+            inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
+            
+            current_app.send_task(
+                'notifications.send_task_transfer_notification',
+                args=(
+                    task_item.role_user.user_id,
+                    target_user_id,
+                    str(task_item.task.task_id),
+                    task_title,
+                    request.user.user_id,
+                    getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'User {request.user.user_id}'),
+                    transfer_notes
+                ),
+                queue=inapp_queue
+            )
+        except Exception as e:
+            logger.error(f"Failed to send transfer notification: {e}")
         
         # Return the new task item
         serializer = TaskItemSerializer(new_task_item)

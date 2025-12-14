@@ -219,8 +219,12 @@ INAPP_NOTIFICATION_QUEUE = config('DJANGO_INAPP_NOTIFICATION_QUEUE', default='in
 
 CELERY_TASK_DEFAULT_QUEUE = DJANGO_NOTIFICATION_QUEUE
 CELERY_TASK_ROUTES = {
-    "task.send_assignment_notification": {"queue": DJANGO_NOTIFICATION_QUEUE},
-    "task.send_bulk_assignment_notifications": {"queue": DJANGO_NOTIFICATION_QUEUE},
+    # NOTE: Do NOT route task.send_*_notification tasks to inapp-notification-queue
+    # These are @shared_tasks in workflow_api that internally call current_app.send_task()
+    # They need to run in workflow_api's worker, not notification_service's worker
+    # The tasks they delegate to (notifications.*) will be routed to inapp-notification-queue
+    # by notification_service's settings.py
+    # Ticket status queue
     'send_ticket_status': {'queue': DJANGO_TICKET_STATUS_QUEUE},
     # Role sync queues from TTS auth service
     'role.tasks.sync_role': {'queue': 'tts.role.sync'},

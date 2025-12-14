@@ -1,10 +1,12 @@
 from rest_framework import serializers
-from .models import InAppNotification
+from .models import InAppNotification, NOTIFICATION_TYPE_CHOICES
 
 class InAppNotificationSerializer(serializers.ModelSerializer):
     """
     Serializer for InAppNotification model
     """
+    notification_type_display = serializers.CharField(source='get_notification_type_display', read_only=True)
+    
     class Meta:
         model = InAppNotification
         fields = '__all__'
@@ -16,7 +18,7 @@ class InAppNotificationCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = InAppNotification
-        fields = ['user_id', 'subject', 'message']
+        fields = ['user_id', 'subject', 'message', 'notification_type', 'related_task_id', 'related_ticket_number', 'metadata']
         
 class InAppNotificationUpdateSerializer(serializers.ModelSerializer):
     """
@@ -34,3 +36,10 @@ class MarkNotificationAsReadSerializer(serializers.Serializer):
         required=True,
         help_text="UUID of the notification to mark as read"
     )
+
+class NotificationTypeSerializer(serializers.Serializer):
+    """
+    Serializer for listing available notification types
+    """
+    value = serializers.CharField()
+    display = serializers.CharField()

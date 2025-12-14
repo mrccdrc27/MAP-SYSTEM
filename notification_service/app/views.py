@@ -53,6 +53,10 @@ class MyNotificationsListView(generics.ListAPIView):
     
     Uses JWT authentication from cookie to identify the user.
     No query parameters needed - user is identified from JWT token.
+    
+    Query Parameters (optional):
+    - notification_type: Filter by notification type (e.g., 'task_assignment', 'task_transfer_in')
+    - related_task_id: Filter by related task ID
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -60,7 +64,19 @@ class MyNotificationsListView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        return InAppNotification.objects.filter(user_id=user_id).order_by('-created_at')
+        queryset = InAppNotification.objects.filter(user_id=user_id).order_by('-created_at')
+        
+        # Optional filtering by notification type
+        notification_type = self.request.query_params.get('notification_type')
+        if notification_type:
+            queryset = queryset.filter(notification_type=notification_type)
+        
+        # Optional filtering by related task ID
+        related_task_id = self.request.query_params.get('related_task_id')
+        if related_task_id:
+            queryset = queryset.filter(related_task_id=related_task_id)
+        
+        return queryset
 
 
 class MyUnreadNotificationsListView(generics.ListAPIView):
@@ -69,6 +85,9 @@ class MyUnreadNotificationsListView(generics.ListAPIView):
     
     Uses JWT authentication from cookie to identify the user.
     No query parameters needed - user is identified from JWT token.
+    
+    Query Parameters (optional):
+    - notification_type: Filter by notification type (e.g., 'task_assignment', 'task_transfer_in')
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -76,10 +95,17 @@ class MyUnreadNotificationsListView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        return InAppNotification.objects.filter(
+        queryset = InAppNotification.objects.filter(
             user_id=user_id,
             is_read=False
         ).order_by('-created_at')
+        
+        # Optional filtering by notification type
+        notification_type = self.request.query_params.get('notification_type')
+        if notification_type:
+            queryset = queryset.filter(notification_type=notification_type)
+        
+        return queryset
 
 
 class MyReadNotificationsListView(generics.ListAPIView):
@@ -88,6 +114,9 @@ class MyReadNotificationsListView(generics.ListAPIView):
     
     Uses JWT authentication from cookie to identify the user.
     No query parameters needed - user is identified from JWT token.
+    
+    Query Parameters (optional):
+    - notification_type: Filter by notification type (e.g., 'task_assignment', 'task_transfer_in')
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -95,10 +124,17 @@ class MyReadNotificationsListView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        return InAppNotification.objects.filter(
+        queryset = InAppNotification.objects.filter(
             user_id=user_id,
             is_read=True
         ).order_by('-created_at')
+        
+        # Optional filtering by notification type
+        notification_type = self.request.query_params.get('notification_type')
+        if notification_type:
+            queryset = queryset.filter(notification_type=notification_type)
+        
+        return queryset
 
 
 class MyNotificationDetailView(APIView):
@@ -419,6 +455,10 @@ class CreateNotificationView(generics.CreateAPIView):
     - user_id: The ID of the user to create the notification for (required)
     - subject: The notification subject/title (required)
     - message: The notification message content (required)
+    - notification_type: Type of notification (optional, default: 'system')
+    - related_task_id: Related task ID for navigation (optional)
+    - related_ticket_number: Related ticket number for navigation (optional)
+    - metadata: Additional metadata (optional)
     
     Authentication:
     - Requires valid API key in X-API-Key header
@@ -426,3 +466,46 @@ class CreateNotificationView(generics.CreateAPIView):
     serializer_class = InAppNotificationCreateSerializer
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [RequireAPIKey]  # Require API key
+
+
+class NotificationTypesView(APIView):
+    """
+    Get list of available notification types.
+    
+    Returns all notification type choices that can be used for filtering.
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import NOTIFICATION_TYPE_CHOICES
+        
+        notification_types = [
+            {'value': choice[0], 'display': choice[1]} 
+            for choice in NOTIFICATION_TYPE_CHOICES
+        ]
+        
+        return Response({
+            'notification_types': notification_types,
+            'count': len(notification_types)
+        })
+
+
+class MyNotificationsByTaskView(generics.ListAPIView):
+    """
+    List all notifications for the authenticated user related to a specific task.
+    
+    Path Parameters:
+    - task_id: The task ID to filter notifications by
+    """
+    serializer_class = InAppNotificationSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user_id = self.request.user.id
+        task_id = self.kwargs.get('task_id')
+        return InAppNotification.objects.filter(
+            user_id=user_id,
+            related_task_id=task_id
+        ).order_by('-created_at')
