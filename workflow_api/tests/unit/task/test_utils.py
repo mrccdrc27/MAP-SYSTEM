@@ -2,6 +2,7 @@
 Unit tests for task utility functions.
 Tests assignment logic, SLA calculations, and escalation behavior.
 """
+import logging
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
@@ -20,8 +21,41 @@ from step.models import Steps, StepTransition
 from role.models import Roles, RoleUsers
 from tickets.models import WorkflowTicket, RoundRobin
 
+logger = logging.getLogger(__name__)
 
-class RoundRobinAssignmentTests(TestCase):
+# Global test counter
+_test_counter = {'count': 0}
+
+
+class BaseTestCase(TestCase):
+    """Base test case with one-line test logging"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _test_counter['count'] += 1
+        self.test_number = _test_counter['count']
+    
+    def run(self, result=None):
+        """Run test and log result in one-line format"""
+        # Get test method name
+        test_method = str(self).split()[0]
+        test_name = test_method.split('.')[-1]
+        
+        # Run the test
+        super().run(result)
+        
+        # Log result with aligned dots
+        if result and result.errors and any(test_method in str(e[0]) for e in result.errors):
+            status = "● FAIL"
+        elif result and result.failures and any(test_method in str(f[0]) for f in result.failures):
+            status = "● FAIL"
+        else:
+            status = "● PASS"
+        
+        logger.info(f"{self.test_number:2}. {test_name:<45} {status}")
+
+
+class RoundRobinAssignmentTests(BaseTestCase):
     """Test round-robin assignment logic with multiple users"""
 
     def setUp(self):
@@ -255,7 +289,7 @@ class RoundRobinAssignmentTests(TestCase):
                 self.assertEqual(task_items[0].role_user.user_id, 1)
 
 
-class SLACalculationTests(TestCase):
+class SLACalculationTests(BaseTestCase):
     """Test SLA-based target resolution time calculations"""
 
     def setUp(self):
@@ -532,7 +566,7 @@ class SLACalculationTests(TestCase):
         self.assertAlmostEqual(percentage_2, 0.5)
 
 
-class EscalationLogicTests(TestCase):
+class EscalationLogicTests(BaseTestCase):
     """Test escalation behavior and SLA breach handling"""
 
     def setUp(self):

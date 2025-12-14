@@ -1,14 +1,19 @@
 """
-Custom Test Runner for Python 3.13 Compatibility
+Custom Test Runner for Python 3.13 Compatibility and Verbosity Control
 
-This custom test runner fixes the 'ValueError: I/O operation on closed file' error
-that occurs when running Django tests with Python 3.13+.
+This custom test runner:
+1. Fixes the 'ValueError: I/O operation on closed file' error in Python 3.13+
+2. Provides verbosity-based logging control for cleaner test output
 
-The issue is caused by Django's test runner attempting to write to stdout/stderr
-after they have been closed during test discovery and database setup.
+Verbosity Levels:
+- 0: Silent (no output except final results)
+- 1: Minimal (test names and pass/fail only)
+- 2: Normal (test headers, warnings, and errors)
+- 3: Verbose (all debug logs including workflow initialization)
 """
 import sys
 import io
+import logging
 from django.test.runner import DiscoverRunner
 from django.core.management import color, base
 
@@ -57,10 +62,17 @@ base.OutputWrapper = SafeOutputWrapper
 
 class Python313CompatibleTestRunner(DiscoverRunner):
     """
-    Custom test runner that prevents stdout/stderr closure issues in Python 3.13+.
+    Custom test runner that prevents stdout/stderr closure issues in Python 3.13+
+    and provides verbosity-based logging control.
     
     This runner ensures stdout/stderr remain open throughout the entire test lifecycle,
     preventing ValueError exceptions when Django tries to write to these streams.
+    
+    Verbosity Levels:
+    - 0: Silent (no output except final results)
+    - 1: Minimal (test names and pass/fail only) - DEFAULT
+    - 2: Normal (test headers, warnings, and errors)
+    - 3: Verbose (all debug logs including workflow initialization)
     """
     
     def __init__(self, *args, **kwargs):
@@ -68,6 +80,38 @@ class Python313CompatibleTestRunner(DiscoverRunner):
         # Ensure stdout/stderr are not closed before initialization
         self._ensure_open_streams()
         super().__init__(*args, **kwargs)
+        
+        # Configure logging based on verbosity
+        self._configure_logging()
+    
+    def _configure_logging(self):
+        """Configure logging levels based on test verbosity."""
+        verbosity = self.verbosity
+        
+        # Get root logger and workflow-related loggers
+        root_logger = logging.getLogger()
+        workflow_logger = logging.getLogger('workflow')
+        step_logger = logging.getLogger('step')
+        task_logger = logging.getLogger('task')
+        
+        if verbosity == 0:
+            # Silent: Only critical errors
+            root_logger.setLevel(logging.CRITICAL)
+        elif verbosity == 1:
+            # Minimal: Suppress info/debug from workflow initialization
+            # Only show test case headers and errors
+            root_logger.setLevel(logging.ERROR)
+            # Allow test loggers to show INFO for test headers
+            test_logger = logging.getLogger('tests')
+            test_logger.setLevel(logging.INFO)
+        elif verbosity == 2:
+            # Normal: Show warnings and errors, test headers
+            root_logger.setLevel(logging.WARNING)
+            test_logger = logging.getLogger('tests')
+            test_logger.setLevel(logging.INFO)
+        else:  # verbosity >= 3
+            # Verbose: Show everything including debug logs
+            root_logger.setLevel(logging.DEBUG)
     
     def _ensure_open_streams(self):
         """Ensure stdout and stderr are open and available."""

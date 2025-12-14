@@ -58,27 +58,38 @@ def is_transition_initialized(transition):
 
 
 def is_step_initialized(step):
+    """
+    Check if a step is fully initialized.
+    
+    Returns:
+        tuple: (bool, str) - (is_initialized, failure_reason)
+               If initialized: (True, "")
+               If not: (False, "specific reason for failure")
+    """
     logger.debug(f"Checking step: {step.step_id}")
 
     if not step.role_id:
-        logger.warning(f"Step {step.step_id} has no role assigned.")
-        return False
+        reason = f"Step {step.step_id} failed initialization: no role assigned"
+        logger.warning(reason)
+        return False, reason
 
     transitions = StepTransition.objects.filter(
         Q(from_step_id=step.step_id) | Q(to_step_id=step.step_id)
     )
 
     if not transitions.exists():
-        logger.warning(f"Step {step.step_id} has no transitions at all.")
-        return False
+        reason = f"Step {step.step_id} failed initialization: no transitions found (step must have at least one incoming or outgoing transition)"
+        logger.warning(reason)
+        return False, reason
 
     for t in transitions:
         if not is_transition_initialized(t):
-            logger.warning(f"Step {step.step_id} has uninitialized transition {getattr(t, 'transition_id', t)}.")
-            return False
+            reason = f"Step {step.step_id} failed initialization: has uninitialized transition {getattr(t, 'transition_id', t)} (transition must have from_step_id or to_step_id)"
+            logger.warning(reason)
+            return False, reason
 
     logger.debug(f"Step {step.step_id} is fully initialized.")
-    return True
+    return True, ""
 
 
 def is_workflow_initialized(workflow):
@@ -86,17 +97,18 @@ def is_workflow_initialized(workflow):
     logger.debug(f"Category: {workflow.category}, Sub-category: {workflow.sub_category}")
 
     if not workflow.category or not workflow.sub_category:
-        logger.warning("Missing category or subcategory.")
+        logger.warning(f"Workflow '{workflow.name}' failed initialization: missing category or subcategory.")
         return False
 
     steps = Steps.objects.filter(workflow_id=workflow.workflow_id)
     if not steps.exists():
-        logger.warning("No steps found.")
+        logger.warning(f"Workflow '{workflow.name}' failed initialization: no steps found.")
         return False
 
     for step in steps:
-        if not is_step_initialized(step):
-            logger.warning(f"Step {step.step_id} failed initialization check.")
+        is_initialized, failure_reason = is_step_initialized(step)
+        if not is_initialized:
+            # Specific reason already logged by is_step_initialized
             return False
 
     logger.info(f"Workflow '{workflow.name}' is initialized.")
