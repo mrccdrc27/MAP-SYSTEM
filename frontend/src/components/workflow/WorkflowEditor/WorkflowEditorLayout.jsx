@@ -25,10 +25,9 @@ export default function WorkflowEditorLayout({ workflowId }) {
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
-  // History management for undo/redo
-  const [history, setHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [savedHistoryIndex, setSavedHistoryIndex] = useState(-1);
+  // Undo/Redo state - managed via contentRef
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   const contentRef = useRef();
   const { getWorkflowDetail } = useWorkflowAPI();
@@ -40,21 +39,12 @@ export default function WorkflowEditorLayout({ workflowId }) {
       try {
         const data = await getWorkflowDetail(workflowId);
         setWorkflowData(data);
-        // Initialize history with loaded data
-        setHistory([data]);
-        setHistoryIndex(0);
-        setSavedHistoryIndex(0);
       } catch (err) {
         console.error('Failed to load workflow:', err);
       }
     };
     loadWorkflow();
   }, [workflowId, getWorkflowDetail]);
-
-  // Track unsaved changes
-  useEffect(() => {
-    setHasUnsavedChanges(historyIndex !== savedHistoryIndex);
-  }, [historyIndex, savedHistoryIndex]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -68,9 +58,49 @@ export default function WorkflowEditorLayout({ workflowId }) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    if (contentRef.current?.undo) {
+      contentRef.current.undo();
+    }
+  }, []);
+
+  // Redo handler
+  const handleRedo = useCallback(() => {
+    if (contentRef.current?.redo) {
+      contentRef.current.redo();
+    }
+  }, []);
+
+  // Save handler
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      if (contentRef.current?.saveChanges) {
+        await contentRef.current.saveChanges();
+        setHasUnsavedChanges(false);
+        triggerRefresh();
+      }
+    } catch (err) {
+      console.error('Failed to save:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [triggerRefresh]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        // Only allow Ctrl+S for save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          handleSave();
+        }
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
@@ -86,57 +116,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyIndex, history]);
-
-  // addToHistory can be used for future undo/redo feature enhancements
-  // eslint-disable-next-line no-unused-vars
-  const addToHistory = useCallback((newData) => {
-    setHistory((prev) => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(newData);
-      if (newHistory.length > 50) {
-        return newHistory.slice(-50);
-      }
-      return newHistory;
-    });
-    setHistoryIndex((prev) => {
-      const newIndex = prev + 1;
-      return newIndex >= 50 ? 49 : newIndex;
-    });
-  }, [historyIndex]);
-
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setWorkflowData(history[newIndex]);
-    }
-  }, [historyIndex, history]);
-
-  const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setWorkflowData(history[newIndex]);
-    }
-  }, [historyIndex, history]);
-
-  const handleSave = useCallback(async () => {
-    setIsSaving(true);
-    try {
-      if (contentRef.current?.saveChanges) {
-        await contentRef.current.saveChanges();
-        setSavedHistoryIndex(historyIndex);
-        setHasUnsavedChanges(false);
-        triggerRefresh();
-      }
-    } catch (err) {
-      console.error('Failed to save:', err);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [historyIndex, triggerRefresh]);
+  }, [handleUndo, handleRedo, handleSave]);
 
   const handleAddStep = useCallback((label = 'New Step') => {
     contentRef.current?.handleAddNode?.(label);
@@ -207,8 +187,11 @@ export default function WorkflowEditorLayout({ workflowId }) {
     setConfirmDialog(null);
   }, [confirmDialog]);
 
-  const canUndo = historyIndex > 0;
-  const canRedo = historyIndex < history.length - 1;
+  // Update undo/redo state from content ref
+  const handleHistoryChange = useCallback((canUndoVal, canRedoVal) => {
+    setCanUndo(canUndoVal);
+    setCanRedo(canRedoVal);
+  }, []);
 
   if (!workflowData) {
     return (
@@ -351,6 +334,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
               onPaneClick={onPaneClick}
               isEditingGraph={isEditingGraph}
               setHasUnsavedChanges={setHasUnsavedChanges}
+              onHistoryChange={handleHistoryChange}
             />
           </ReactFlowProvider>
         </div>

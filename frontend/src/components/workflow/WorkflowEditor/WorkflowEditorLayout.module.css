@@ -1009,7 +1009,7 @@
 /* Collapse buttons */
 .collapseBtn {
   position: absolute;
-  top: 8px;
+  top: 60px;
   padding: 4px;
   background-color: #ffffff;
   border: 1px solid #e5e7eb;

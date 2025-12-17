@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -33,16 +33,94 @@ const WorkflowEditorContent = forwardRef(({
   onPaneClick,
   isEditingGraph,
   setHasUnsavedChanges,
+  onHistoryChange,
 }, ref) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const { getViewport } = useReactFlow();
 
+  // History management for undo/redo
+  const historyRef = useRef({
+    past: [],
+    present: null,
+    future: [],
+  });
+  const isUndoRedoRef = useRef(false);
+
   const { updateWorkflowGraph } = useWorkflowAPI();
+
+  // Save current state to history
+  const saveToHistory = useCallback(() => {
+    if (isUndoRedoRef.current) {
+      isUndoRedoRef.current = false;
+      return;
+    }
+    
+    const currentState = {
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    };
+    
+    if (historyRef.current.present) {
+      historyRef.current.past.push(historyRef.current.present);
+      // Limit history to 50 items
+      if (historyRef.current.past.length > 50) {
+        historyRef.current.past.shift();
+      }
+    }
+    historyRef.current.present = currentState;
+    historyRef.current.future = []; // Clear redo stack on new change
+    
+    // Notify parent of history state
+    if (onHistoryChange) {
+      onHistoryChange(historyRef.current.past.length > 0, false);
+    }
+  }, [nodes, edges, onHistoryChange]);
+
+  // Undo function
+  const undo = useCallback(() => {
+    if (historyRef.current.past.length === 0) return;
+    
+    isUndoRedoRef.current = true;
+    
+    const previous = historyRef.current.past.pop();
+    if (historyRef.current.present) {
+      historyRef.current.future.unshift(historyRef.current.present);
+    }
+    historyRef.current.present = previous;
+    
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+    
+    if (onHistoryChange) {
+      onHistoryChange(historyRef.current.past.length > 0, historyRef.current.future.length > 0);
+    }
+  }, [setNodes, setEdges, onHistoryChange]);
+
+  // Redo function
+  const redo = useCallback(() => {
+    if (historyRef.current.future.length === 0) return;
+    
+    isUndoRedoRef.current = true;
+    
+    const next = historyRef.current.future.shift();
+    if (historyRef.current.present) {
+      historyRef.current.past.push(historyRef.current.present);
+    }
+    historyRef.current.present = next;
+    
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    
+    if (onHistoryChange) {
+      onHistoryChange(historyRef.current.past.length > 0, historyRef.current.future.length > 0);
+    }
+  }, [setNodes, setEdges, onHistoryChange]);
 
   // Handle edge deletion
   const handleDeleteEdge = useCallback((edgeId) => {
+    saveToHistory();
     setEdges((eds) =>
       eds.map((e) =>
         e.id === edgeId
@@ -51,10 +129,11 @@ const WorkflowEditorContent = forwardRef(({
       )
     );
     setUnsavedChanges(true);
-  }, [setEdges]);
+  }, [setEdges, saveToHistory]);
 
   // Handle node deletion
   const handleDeleteNode = useCallback((nodeId) => {
+    saveToHistory();
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId
@@ -63,10 +142,11 @@ const WorkflowEditorContent = forwardRef(({
       )
     );
     setUnsavedChanges(true);
-  }, [setNodes]);
+  }, [setNodes, saveToHistory]);
 
   // Handle adding a new node
   const handleAddNode = useCallback((label = 'New Step') => {
+    saveToHistory();
     const viewport = getViewport();
     const centerX = -viewport.x / viewport.zoom + 200;
     const centerY = -viewport.y / viewport.zoom + 100;
@@ -98,7 +178,7 @@ const WorkflowEditorContent = forwardRef(({
     
     setNodes((nds) => [...nds, newNode]);
     setUnsavedChanges(true);
-  }, [getViewport, setNodes, onStepClick]);
+  }, [getViewport, setNodes, onStepClick, saveToHistory]);
 
   // Save changes to backend
   const saveChanges = useCallback(async () => {
@@ -140,20 +220,34 @@ const WorkflowEditorContent = forwardRef(({
 
       await updateWorkflowGraph(workflowId, graphData);
       setUnsavedChanges(false);
+      // Clear history after successful save - new baseline
+      historyRef.current = {
+        past: [],
+        present: {
+          nodes: JSON.parse(JSON.stringify(nodes)),
+          edges: JSON.parse(JSON.stringify(edges)),
+        },
+        future: [],
+      };
+      if (onHistoryChange) {
+        onHistoryChange(false, false);
+      }
       console.log('Workflow saved successfully');
     } catch (err) {
       console.error('Failed to save workflow:', err);
       throw err;
     }
-  }, [nodes, edges, workflowId, updateWorkflowGraph]);
+  }, [nodes, edges, workflowId, updateWorkflowGraph, onHistoryChange]);
 
   useImperativeHandle(ref, () => ({
     handleAddNode,
     updateNodeData: (nodeId, newData) => {
+      saveToHistory();
       setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
       setUnsavedChanges(true);
     },
     updateEdgeData: (edgeId, newData) => {
+      saveToHistory();
       setEdges((eds) => eds.map((e) => e.id === edgeId ? { ...e, ...newData } : e));
       setUnsavedChanges(true);
     },
@@ -167,7 +261,9 @@ const WorkflowEditorContent = forwardRef(({
       setUnsavedChanges(value);
     },
     saveChanges,
-  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode]);
+    undo,
+    redo,
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode, saveToHistory, undo, redo]);
 
   // Convert workflow data to ReactFlow format
   useEffect(() => {
@@ -216,11 +312,25 @@ const WorkflowEditorContent = forwardRef(({
 
     setNodes(rnodes);
     setEdges(redges);
-  }, [workflowData, setNodes, setEdges, onStepClick]);
+    
+    // Initialize history with loaded state
+    historyRef.current = {
+      past: [],
+      present: {
+        nodes: JSON.parse(JSON.stringify(rnodes)),
+        edges: JSON.parse(JSON.stringify(redges)),
+      },
+      future: [],
+    };
+    if (onHistoryChange) {
+      onHistoryChange(false, false);
+    }
+  }, [workflowData, setNodes, setEdges, onStepClick, onHistoryChange]);
 
   // Handle edge connection
   const onConnect = useCallback(
     (connection) => {
+      saveToHistory();
       setEdges((eds) =>
         addEdge(
           {
@@ -240,7 +350,7 @@ const WorkflowEditorContent = forwardRef(({
       setUnsavedChanges(true);
       if (setHasUnsavedChanges) setHasUnsavedChanges(true);
     },
-    [setEdges, setHasUnsavedChanges]
+    [setEdges, setHasUnsavedChanges, saveToHistory]
   );
 
   // Handle node click
@@ -280,9 +390,25 @@ const WorkflowEditorContent = forwardRef(({
     if (onPaneClick) onPaneClick();
   }, [onPaneClick]);
 
+  // Track if we're currently dragging to save history once at drag start
+  const isDraggingRef = useRef(false);
+  const shouldSaveHistoryRef = useRef(false);
+
+  // Save to history when nodes/edges change after drag
+  useEffect(() => {
+    if (shouldSaveHistoryRef.current) {
+      shouldSaveHistoryRef.current = false;
+      // Use setTimeout to ensure state is fully updated
+      setTimeout(() => {
+        saveToHistory();
+      }, 0);
+    }
+  }, [nodes, edges, saveToHistory]);
+
   // Handle node changes - intercept deletions to mark as to_delete instead
   const handleNodesChange = useCallback((changes) => {
     let hasActualPositionChange = false;
+    
     const filteredChanges = changes.filter((change) => {
       if (change.type === 'remove') {
         handleDeleteNode(change.id);
@@ -295,6 +421,15 @@ const WorkflowEditorContent = forwardRef(({
         const currentNode = nodes.find(n => n.id === change.id);
         if (currentNode && change.position && (currentNode.position.x !== change.position.x || currentNode.position.y !== change.position.y)) {
           hasActualPositionChange = true;
+          // Track drag start
+          if (!isDraggingRef.current && change.dragging) {
+            isDraggingRef.current = true;
+          }
+          // Flag to save history when drag ends
+          if (isDraggingRef.current && !change.dragging) {
+            isDraggingRef.current = false;
+            shouldSaveHistoryRef.current = true;
+          }
         }
       }
       return true;

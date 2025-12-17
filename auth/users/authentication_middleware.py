@@ -81,7 +81,12 @@ class AuthenticationRoutingMiddleware:
             # Public paths - no routing rules
             return self.get_response(request)
 
-        # If not authenticated, redirect to login with error
+        # Check if authenticated via employee (set by JWTAuthenticationMiddleware)
+        if hasattr(request, 'employee') and request.employee:
+            # Employee is authenticated, allow access
+            return self.get_response(request)
+
+        # If not authenticated via user_type or employee, redirect to login
         if not hasattr(request, 'user_type'):
             return self._redirect_to_login(request, 'Session expired. Please log in.')
 
@@ -152,6 +157,7 @@ class AuthenticationRoutingMiddleware:
                         '/api/v1/users/password/reset/', # With trailing slash
                         '/api/v1/users/password/reset',  # Without trailing slash
                         '/api/v1/users/login/verify-otp/',
+                        '/api/me/',  # Allow authenticated users to check their profile
                     }
                     if path in public_api_paths:
                         return True

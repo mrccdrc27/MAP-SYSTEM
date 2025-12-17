@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
           if (import.meta.env.DEV) console.debug('AuthContext: Employee user, role set to Employee');
         } else if (userType === 'user') {
           // User (staff) type: extract from system_roles
-          if (Array.isArray(profileData.system_roles)) {
+          if (profileData && Array.isArray(profileData.system_roles)) {
             if (import.meta.env.DEV) console.debug('AuthContext: System roles:', profileData.system_roles);
             const hdts = profileData.system_roles.find(r => r.system_slug === "hdts");
             if (hdts) {
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }) => {
             } else {
               console.warn('AuthContext: No HDTS system role found in:', profileData.system_roles);
             }
-          } else {
+          } else if (profileData && profileData.system_roles !== undefined) {
             console.warn('AuthContext: system_roles is not an array:', profileData.system_roles);
           }
         }
@@ -172,7 +172,7 @@ export const AuthProvider = ({ children }) => {
     if (user.userType === 'employee') return false;
     
     // For staff users, check system_roles
-    if (!Array.isArray(user.system_roles)) return false;
+    if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
   
     return user.system_roles.some(
       (r) =>
@@ -188,7 +188,7 @@ export const AuthProvider = ({ children }) => {
     if (user.userType === 'employee') return false;
     
     // For staff users, check system_roles
-    if (!Array.isArray(user.system_roles)) return false;
+    if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
   
     return user.system_roles.some(
       (r) =>
@@ -205,7 +205,7 @@ export const AuthProvider = ({ children }) => {
     if (user.userType === 'employee') return true;
     
     // Staff user: check system_roles for Employee role
-    if (!Array.isArray(user.system_roles)) return false;
+    if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
   
     return user.system_roles.some(
       (r) =>
@@ -222,7 +222,7 @@ export const AuthProvider = ({ children }) => {
     if (user.userType === 'employee') return true;
     
     // Staff user: check for any HDTS system role
-    if (!Array.isArray(user.system_roles)) return false;
+    if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
   
     return user.system_roles.some(
       (r) => r.system_slug === "hdts"

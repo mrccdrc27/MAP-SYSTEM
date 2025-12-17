@@ -154,31 +154,42 @@ class EmployeeTokenObtainPairSerializer(serializers.Serializer):
         employee.save(update_fields=['last_login'])
 
         # Manually create JWT tokens without RefreshToken model dependency
+        import uuid
         now = timezone.now()
         access_exp = now + timedelta(minutes=15)
         refresh_exp = now + timedelta(days=7)
         
+        # Build full name
+        full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
+        
         access_payload = {
-            'employee_id': employee.id,
-            'user_id': employee.id,  # For compatibility with middleware
-            'email': employee.email,
-            'first_name': employee.first_name,
-            'last_name': employee.last_name,
-            'company_id': employee.company_id,
             'token_type': 'access',
-            'user_type': 'employee',  # Mark as employee user
-            'exp': access_exp.timestamp(),
-            'iat': now.timestamp(),
+            'exp': int(access_exp.timestamp()),
+            'iat': int(now.timestamp()),
+            'jti': uuid.uuid4().hex,
+            'user_id': employee.id,
+            'employee_id': employee.id,  # Keep for backward compatibility
+            'email': employee.email,
+            'username': employee.username or employee.email.split('@')[0],
+            'full_name': full_name,
+            'user_type': 'staff',
+            'roles': [
+                {
+                    'system': 'hdts',
+                    'role': 'Employee'
+                }
+            ]
         }
         
         refresh_payload = {
-            'employee_id': employee.id,
-            'user_id': employee.id,  # For compatibility with middleware
-            'email': employee.email,
             'token_type': 'refresh',
-            'user_type': 'employee',  # Mark as employee user
-            'exp': refresh_exp.timestamp(),
-            'iat': now.timestamp(),
+            'exp': int(refresh_exp.timestamp()),
+            'iat': int(now.timestamp()),
+            'jti': uuid.uuid4().hex,
+            'user_id': employee.id,
+            'employee_id': employee.id,  # Keep for backward compatibility
+            'email': employee.email,
+            'user_type': 'staff',
         }
         
         algorithm = getattr(settings, 'SIMPLE_JWT', {}).get('ALGORITHM', 'HS256')
@@ -286,31 +297,42 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
         employee.save(update_fields=['last_login'])
 
         # Manually create JWT tokens
+        import uuid
         now = timezone.now()
         access_exp = now + timedelta(minutes=15)
         refresh_exp = now + timedelta(days=7)
         
+        # Build full name
+        full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
+        
         access_payload = {
-            'employee_id': employee.id,
-            'user_id': employee.id,  # For compatibility with middleware
-            'email': employee.email,
-            'first_name': employee.first_name,
-            'last_name': employee.last_name,
-            'company_id': employee.company_id,
             'token_type': 'access',
-            'user_type': 'employee',  # Mark as employee user
-            'exp': access_exp.timestamp(),
-            'iat': now.timestamp(),
+            'exp': int(access_exp.timestamp()),
+            'iat': int(now.timestamp()),
+            'jti': uuid.uuid4().hex,
+            'user_id': employee.id,
+            'employee_id': employee.id,  # Keep for backward compatibility
+            'email': employee.email,
+            'username': employee.username or employee.email.split('@')[0],
+            'full_name': full_name,
+            'user_type': 'staff',
+            'roles': [
+                {
+                    'system': 'hdts',
+                    'role': 'Employee'
+                }
+            ]
         }
         
         refresh_payload = {
-            'employee_id': employee.id,
-            'user_id': employee.id,  # For compatibility with middleware
-            'email': employee.email,
             'token_type': 'refresh',
-            'user_type': 'employee',  # Mark as employee user
-            'exp': refresh_exp.timestamp(),
-            'iat': now.timestamp(),
+            'exp': int(refresh_exp.timestamp()),
+            'iat': int(now.timestamp()),
+            'jti': uuid.uuid4().hex,
+            'user_id': employee.id,
+            'employee_id': employee.id,  # Keep for backward compatibility
+            'email': employee.email,
+            'user_type': 'staff',
         }
         
         algorithm = getattr(settings, 'SIMPLE_JWT', {}).get('ALGORITHM', 'HS256')
