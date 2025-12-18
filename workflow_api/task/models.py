@@ -1,5 +1,4 @@
 from django.db import models
-from django.core.exceptions import ValidationError
 
 
 # Status choices for tasks
@@ -72,68 +71,9 @@ class Task(models.Model):
     target_resolution = models.DateTimeField(null=True, blank=True, help_text="Target date and time for task resolution")
     resolution_time = models.DateTimeField(null=True, blank=True, help_text="Actual date and time when the task was resolved")
 
-    def get_workflow(self):
-        # Optional: only if you need to reference it somewhere dynamically
-        from workflow.models import Workflows
-        return Workflows.objects.first()
-    
-    def get_ticket(self):
-        # Optional: only if you need to reference it somewhere dynamically
-        from tickets.models import WorkflowTicket
-        return WorkflowTicket.objects.first()
-
     def get_assigned_user_ids(self):
         """Get list of user IDs assigned to this task"""
         return list(self.taskitem_set.values_list('role_user__user_id', flat=True).distinct())
-    
-    def get_assigned_users_by_status(self, status=None):
-        """Get TaskItem instances filtered by their assignment status"""
-        if status:
-            return self.taskitem_set.filter(status=status)
-        return self.taskitem_set.all()
-    
-    def update_user_status(self, user_id, new_status):
-        """Update the status of a specific assigned user"""
-        from django.utils import timezone
-        
-        try:
-            task_item = self.taskitem_set.get(role_user__user_id=user_id)
-            
-            # Create history record for the status change
-            TaskItemHistory.objects.create(
-                task_item=task_item,
-                status=new_status
-            )
-            return True
-        except TaskItem.DoesNotExist:
-            return False
-    
-    def add_user_assignment(self, role_user):
-        """Add a new user assignment to the task"""
-        from django.utils import timezone
-        
-        # Ensure required fields
-        if not role_user:
-            raise ValueError("role_user is required for user assignment")
-        
-        # Check if user is already assigned to this task
-        if self.taskitem_set.filter(role_user=role_user).exists():
-            return False  # User already assigned
-        
-        # Create TaskItem
-        task_item = TaskItem.objects.create(
-            task=self,
-            role_user=role_user,
-            origin='System'
-        )
-        
-        # Create initial history record
-        TaskItemHistory.objects.create(
-            task_item=task_item,
-            status='new'
-        )
-        
-        return True
 
     def __str__(self):
         return f'Task {self.task_id} for Ticket ID: {self.ticket_id}'
@@ -159,50 +99,12 @@ class Task(models.Model):
         self.save()
 
     def move_to_next_step(self):
-        """Move task to the next step in the workflow"""
-        from step.models import StepTransition
-        from django.utils import timezone
-        
-        if not self.current_step:
-            print("⚠️ No current step set for this task")
-            return False
-        
-        # Find next step through transitions
-        transition = StepTransition.objects.filter(
-            from_step_id=self.current_step,
-            workflow_id=self.workflow_id
-        ).first()
-        
-        if not transition:
-            print(f"⚠️ No transition found from step {self.current_step.name}")
-            return False
-        
-        # Move to next step
-        next_step = transition.to_step_id
-        self.current_step = next_step
-        
-        # Reset user assignments for new step
-        if next_step and next_step.role_id:
-            # Fetch new users for the next step's role
-            from tickets.tasks import fetch_users_for_role, apply_round_robin_assignment
-            
-            users_for_role = fetch_users_for_role(next_step.role_id.role_id)
-            if users_for_role:
-                # Append new users instead of overwriting
-                new_assignments = apply_round_robin_assignment(
-                    users_for_role, 
-                    next_step.role_id.name
-                )
-                # Add new TaskItems
-                for assignment in new_assignments:
-                    self.add_user_assignment(assignment)
-            # If no users, keep existing assignments (don't clear)
-        
-        self.status = 'pending'
-        self.save()
-        
-        print(f"✅ Task moved to step: {next_step.name}")
-        return True
+        """
+        Move task to the next step in the workflow.
+        Delegates logic to TaskService to keep model thin.
+        """
+        from task.services import TaskService
+        return TaskService.move_task_to_next_step(self)
 
 
 class TaskItem(models.Model):
