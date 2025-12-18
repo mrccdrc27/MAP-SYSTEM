@@ -20,6 +20,21 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "logout: marks tests for logout functionality"
     )
+    config.addinivalue_line(
+        "markers", "profile: marks tests for profile functionality"
+    )
+    config.addinivalue_line(
+        "markers", "staff: marks tests specific to staff accounts"
+    )
+    config.addinivalue_line(
+        "markers", "employee: marks tests specific to employee (HDTS) accounts"
+    )
+    config.addinivalue_line(
+        "markers", "admin: marks tests requiring admin privileges"
+    )
+    config.addinivalue_line(
+        "markers", "superuser: marks tests requiring superuser privileges"
+    )
 
 
 @pytest.fixture(scope="session")
@@ -73,6 +88,31 @@ def authenticated_page(page: Page) -> Page:
 
 
 @pytest.fixture
+def staff_authenticated_page(page: Page) -> Page:
+    """Fixture that provides an authenticated staff page"""
+    import os
+    
+    base_url = os.environ.get("AUTH_BASE_URL", "http://localhost:8000")
+    test_email = os.environ.get("TEST_USER_EMAIL", "admin@test.com")
+    test_password = os.environ.get("TEST_USER_PASSWORD", "admin123")
+    
+    # Navigate to staff login
+    page.goto(f"{base_url}/staff/login/")
+    
+    # Fill credentials (staff login uses #email, #password)
+    page.fill("#email", test_email)
+    page.fill("#password", test_password)
+    
+    # Submit
+    page.locator("#loginButton").click()
+    
+    # Wait for login to complete
+    page.wait_for_timeout(3000)
+    
+    yield page
+
+
+@pytest.fixture
 def hdts_authenticated_page(page: Page) -> Page:
     """Fixture that provides an authenticated HDTS employee page"""
     import os
@@ -82,9 +122,9 @@ def hdts_authenticated_page(page: Page) -> Page:
     test_password = os.environ.get("HDTS_TEST_PASSWORD", "employee123")
     
     # Navigate to HDTS login
-    page.goto(f"{base_url}/hdts/login/")
+    page.goto(f"{base_url}/login/")
     
-    # Fill credentials
+    # Fill credentials (HDTS uses #id_email, #id_password)
     page.fill("#id_email", test_email)
     page.fill("#id_password", test_password)
     
@@ -95,3 +135,77 @@ def hdts_authenticated_page(page: Page) -> Page:
     page.wait_for_timeout(3000)
     
     yield page
+
+
+@pytest.fixture
+def staff_admin_page(page: Page) -> Page:
+    """Fixture that provides an authenticated staff admin page (is_staff=True)"""
+    import os
+    
+    base_url = os.environ.get("AUTH_BASE_URL", "http://localhost:8000")
+    test_email = os.environ.get("STAFF_ADMIN_EMAIL", "staff_admin@test.com")
+    test_password = os.environ.get("STAFF_ADMIN_PASSWORD", "staff123")
+    
+    # Navigate to staff login
+    page.goto(f"{base_url}/staff/login/")
+    
+    # Fill credentials
+    page.fill("#email", test_email)
+    page.fill("#password", test_password)
+    
+    # Submit
+    page.locator("#loginButton").click()
+    
+    # Wait for login to complete
+    page.wait_for_timeout(3000)
+    
+    yield page
+
+
+@pytest.fixture
+def superuser_page(page: Page) -> Page:
+    """Fixture that provides an authenticated superuser page (is_superuser=True)"""
+    import os
+    
+    base_url = os.environ.get("AUTH_BASE_URL", "http://localhost:8000")
+    test_email = os.environ.get("SUPERUSER_EMAIL", "superuser@test.com")
+    test_password = os.environ.get("SUPERUSER_PASSWORD", "super123")
+    
+    # Navigate to staff login
+    page.goto(f"{base_url}/staff/login/")
+    
+    # Fill credentials
+    page.fill("#email", test_email)
+    page.fill("#password", test_password)
+    
+    # Submit
+    page.locator("#loginButton").click()
+    
+    # Wait for login to complete
+    page.wait_for_timeout(3000)
+    
+    yield page
+
+
+@pytest.fixture
+def staff_profile_page(staff_authenticated_page: Page) -> Page:
+    """Fixture that provides a staff page already on the profile settings page"""
+    import os
+    
+    base_url = os.environ.get("AUTH_BASE_URL", "http://localhost:8000")
+    staff_authenticated_page.goto(f"{base_url}/staff/settings/profile/")
+    staff_authenticated_page.wait_for_timeout(2000)
+    
+    yield staff_authenticated_page
+
+
+@pytest.fixture
+def employee_profile_page(hdts_authenticated_page: Page) -> Page:
+    """Fixture that provides an employee page already on the profile settings page"""
+    import os
+    
+    base_url = os.environ.get("AUTH_BASE_URL", "http://localhost:8000")
+    hdts_authenticated_page.goto(f"{base_url}/profile-settings/")
+    hdts_authenticated_page.wait_for_timeout(2000)
+    
+    yield hdts_authenticated_page
