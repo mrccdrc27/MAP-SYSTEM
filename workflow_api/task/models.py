@@ -298,3 +298,49 @@ class TaskItemHistory(models.Model):
     def __str__(self):
         return f'TaskItemHistory {self.task_item_history_id}: TaskItem {self.task_item_id} - Status {self.status}'
 
+
+class FailedNotification(models.Model):
+    """
+    Stores failed notification attempts for later retry.
+    When RabbitMQ or Celery is unavailable, notifications are stored here.
+    """
+    NOTIFICATION_STATUS_CHOICES = [
+        ('pending', 'Pending Retry'),
+        ('retrying', 'Retrying'),
+        ('failed', 'Failed'),
+        ('success', 'Success'),
+    ]
+    
+    failed_notification_id = models.AutoField(primary_key=True)
+    
+    # Notification details
+    user_id = models.IntegerField(help_text="User ID to notify")
+    task_id = models.CharField(max_length=50, help_text="Task ID")
+    task_title = models.CharField(max_length=255, help_text="Task title/subject")
+    role_name = models.CharField(max_length=100, help_text="Role name")
+    
+    # Tracking
+    status = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_STATUS_CHOICES,
+        default='pending',
+        help_text="Current status of this notification"
+    )
+    error_message = models.TextField(blank=True, help_text="Error details from failed attempt")
+    retry_count = models.IntegerField(default=0, help_text="Number of retry attempts")
+    max_retries = models.IntegerField(default=3, help_text="Maximum retry attempts")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, help_text="When notification first failed")
+    last_retry_at = models.DateTimeField(null=True, blank=True, help_text="Last retry attempt")
+    succeeded_at = models.DateTimeField(null=True, blank=True, help_text="When notification finally succeeded")
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['user_id', 'task_id']),
+        ]
+    
+    def __str__(self):
+        return f'FailedNotification {self.failed_notification_id}: User {self.user_id} - Task {self.task_id} ({self.status})'

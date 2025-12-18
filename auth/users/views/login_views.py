@@ -142,6 +142,8 @@ class LoginView(FormView):
             'register_url': reverse_lazy('user-register'),
             'page_title': 'Sign In',
             'systems_count': System.objects.count(),
+            'recaptcha_enabled': getattr(settings, 'RECAPTCHA_ENABLED', True),
+            'recaptcha_site_key': getattr(settings, 'RECAPTCHA_SITE_KEY', ''),
         })
         return context
     

@@ -1,7 +1,6 @@
 # workflow/models.py
 from django.db import models
 from django.core.exceptions import ValidationError
-import uuid
 
 STATUS_CHOICES = [
     ("draft", "Draft"),
@@ -31,9 +30,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
 
 
 class Workflows(models.Model):

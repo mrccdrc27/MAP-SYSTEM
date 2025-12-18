@@ -349,6 +349,8 @@ CELERY_TASK_DEFAULT_QUEUE = 'default'
 RECAPTCHA_SITE_KEY = config('RECAPTCHA_SITE_KEY', default='6LdbGyMsAAAAAKv5tivNNE-g-fVz1a5Pc7EueLZT')
 RECAPTCHA_SECRET_KEY = config('RECAPTCHA_SECRET_KEY', default='6LdbGyMsAAAAAMcf9a4PKGAWL0E4NtF9cdjInlth')
 RECAPTCHA_VERSION = '2'  # v2 uses checkbox verification
+# Set to False to bypass reCAPTCHA validation (useful for development/testing)
+RECAPTCHA_ENABLED = config('RECAPTCHA_ENABLED', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
 
 # SendGrid Email Configuration
 SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')

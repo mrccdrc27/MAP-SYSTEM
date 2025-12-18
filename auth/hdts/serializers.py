@@ -209,11 +209,12 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
     """
     Custom token serializer for employee login using email with reCAPTCHA v2 verification.
     Includes reCAPTCHA validation before authentication.
+    reCAPTCHA can be bypassed by setting RECAPTCHA_ENABLED=False in environment.
     """
     
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-    g_recaptcha_response = serializers.CharField(required=True, write_only=True)
+    g_recaptcha_response = serializers.CharField(required=False, write_only=True, allow_blank=True)
 
     def validate(self, attrs):
         """Authenticate employee using email and password after reCAPTCHA verification."""
@@ -223,29 +224,33 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
         password = attrs.get('password')
         recaptcha_response = attrs.get('g_recaptcha_response')
 
-        # Verify reCAPTCHA v2 response first (MANDATORY)
-        if recaptcha_response:
-            verify_url = 'https://www.google.com/recaptcha/api/siteverify'
-            secret_key = settings.RECAPTCHA_SECRET_KEY
-            
-            try:
-                response = requests.post(
-                    verify_url,
-                    data={'secret': secret_key, 'response': recaptcha_response},
-                    timeout=5
-                )
-                response.raise_for_status()
-                result = response.json()
+        # Check if reCAPTCHA is enabled
+        recaptcha_enabled = getattr(settings, 'RECAPTCHA_ENABLED', True)
+
+        # Verify reCAPTCHA v2 response only if enabled
+        if recaptcha_enabled:
+            if recaptcha_response:
+                verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+                secret_key = settings.RECAPTCHA_SECRET_KEY
                 
-                is_valid = result.get('success', False)
-                
-                if not is_valid:
-                    raise serializers.ValidationError('reCAPTCHA verification failed.')
+                try:
+                    response = requests.post(
+                        verify_url,
+                        data={'secret': secret_key, 'response': recaptcha_response},
+                        timeout=5
+                    )
+                    response.raise_for_status()
+                    result = response.json()
                     
-            except requests.RequestException as e:
-                raise serializers.ValidationError('Failed to verify reCAPTCHA. Please try again.')
-        else:
-            raise serializers.ValidationError('reCAPTCHA verification is required.')
+                    is_valid = result.get('success', False)
+                    
+                    if not is_valid:
+                        raise serializers.ValidationError('reCAPTCHA verification failed.')
+                        
+                except requests.RequestException as e:
+                    raise serializers.ValidationError('Failed to verify reCAPTCHA. Please try again.')
+            else:
+                raise serializers.ValidationError('reCAPTCHA verification is required.')
 
         # Validate email and password are provided
         if not email or not password:

@@ -4,7 +4,6 @@ from .models import Workflows
 from step.models import Steps, StepTransition
 from role.models import Roles
 import logging
-import uuid
 
 logger = logging.getLogger(__name__)
 

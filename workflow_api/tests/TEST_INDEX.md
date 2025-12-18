@@ -58,6 +58,8 @@ coverage report
 # coverage html
 ```
 
-python manage.py test tests.unit.task.test_models
-python manage.py test tests.unit.task.test_utils
-python manage.py test tests.integration.test_task_transitions
+python manage.py test tests.unit.task.test_models --verbosity=1
+python manage.py test tests.unit.task.test_utils --verbosity=1
+python manage.py test tests.unit.tickets.test_tickets --verbosity=1
+python manage.py test tests.unit.workflow.test_workflow_versioning --verbosity=1
+python manage.py test tests.integration.test_task_transitions --verbosity=1

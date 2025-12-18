@@ -1,10 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TaskViewSet, UserTaskListView, AllTasksListView, OwnedTicketsListView
+from .views import TaskViewSet, UserTaskListView, AllTasksListView, OwnedTicketsListView, FailedNotificationViewSet
 
 # Create a router and register the TaskViewSet
 router = DefaultRouter()
 router.register(r'', TaskViewSet, basename='task')
+router.register(r'failed-notifications', FailedNotificationViewSet, basename='failed-notification')
 
 app_name = 'task'
 

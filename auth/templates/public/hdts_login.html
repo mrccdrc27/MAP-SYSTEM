@@ -13,8 +13,16 @@
         <!-- Font Awesome for icons -->
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
         
-        <!-- Google reCAPTCHA v2 -->
+        <!-- Google reCAPTCHA v2 (only load if enabled) -->
+        {% if recaptcha_enabled %}
         <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+        {% endif %}
+        
+        <!-- Pass recaptcha settings to JavaScript -->
+        <script>
+            window.RECAPTCHA_ENABLED = {{ recaptcha_enabled|yesno:"true,false" }};
+            window.RECAPTCHA_SITE_KEY = "{{ recaptcha_site_key|default:'' }}";
+        </script>
         
         <style>
             .formMode {
@@ -134,8 +142,10 @@
                         </div>
                     </fieldset>
 
-                    <!-- reCAPTCHA v2 Checkbox -->
-                    <div class="g-recaptcha" data-sitekey="6LdbGyMsAAAAAKv5tivNNE-g-fVz1a5Pc7EueLZT"></div>
+                    <!-- reCAPTCHA v2 Checkbox (only show if enabled) -->
+                    {% if recaptcha_enabled %}
+                    <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    {% endif %}
 
                     <!-- Submit Button -->
                     <button type="submit" class="logInButton" id="loginButton" data-original-text="Sign In">
@@ -289,8 +299,8 @@
                     loginMode.classList.add('active');
                     document.getElementById('otp_code').value = '';
                     document.getElementById('id_email').focus();
-                    // Reset reCAPTCHA for retry
-                    if (typeof grecaptcha !== 'undefined') {
+                    // Reset reCAPTCHA for retry if enabled
+                    if (window.RECAPTCHA_ENABLED && typeof grecaptcha !== 'undefined') {
                         grecaptcha.reset();
                     }
                 });
@@ -365,19 +375,23 @@
                     return false;
                 }
                 
-                // Check if grecaptcha is available
-                if (typeof grecaptcha === 'undefined') {
-                    console.error('reCAPTCHA not loaded');
-                    ToastNotification.error('Security Error', 'Security verification failed to load. Please refresh the page.');
-                    return false;
-                }
-                
-                // Get reCAPTCHA response from the checkbox widget
-                const recaptchaResponse = grecaptcha.getResponse();
-                
-                if (!recaptchaResponse) {
-                    ToastNotification.warning('reCAPTCHA Required', 'Please complete the reCAPTCHA verification.');
-                    return false;
+                // Check reCAPTCHA only if enabled
+                let recaptchaResponse = '';
+                if (window.RECAPTCHA_ENABLED) {
+                    // Check if grecaptcha is available
+                    if (typeof grecaptcha === 'undefined') {
+                        console.error('reCAPTCHA not loaded');
+                        ToastNotification.error('Security Error', 'Security verification failed to load. Please refresh the page.');
+                        return false;
+                    }
+                    
+                    // Get reCAPTCHA response from the checkbox widget
+                    recaptchaResponse = grecaptcha.getResponse();
+                    
+                    if (!recaptchaResponse) {
+                        ToastNotification.warning('reCAPTCHA Required', 'Please complete the reCAPTCHA verification.');
+                        return false;
+                    }
                 }
                 
                 const isTwoFactor = loginForm.getAttribute('data-two-factor') === 'True';
@@ -471,15 +485,15 @@
                         const errorMsg = errorMessages.length > 0 ? errorMessages[0] : 'Login failed. Please try again.';
                         ToastNotification.error('Login Failed', errorMsg);
                         
-                        // Reset reCAPTCHA for retry
-                        if (typeof grecaptcha !== 'undefined') {
+                        // Reset reCAPTCHA for retry if enabled
+                        if (window.RECAPTCHA_ENABLED && typeof grecaptcha !== 'undefined') {
                             grecaptcha.reset();
                         }
                     } else {
                         ToastNotification.error('Error', data.detail || data.message || 'Login failed. Please try again.');
                         
-                        // Reset reCAPTCHA for retry
-                        if (typeof grecaptcha !== 'undefined') {
+                        // Reset reCAPTCHA for retry if enabled
+                        if (window.RECAPTCHA_ENABLED && typeof grecaptcha !== 'undefined') {
                             grecaptcha.reset();
                         }
                     }
@@ -488,8 +502,8 @@
                     console.error('Error:', error);
                     ToastNotification.error('Error', 'An error occurred. Please try again.');
                     
-                    // Reset reCAPTCHA for retry
-                    if (typeof grecaptcha !== 'undefined') {
+                    // Reset reCAPTCHA for retry if enabled
+                    if (window.RECAPTCHA_ENABLED && typeof grecaptcha !== 'undefined') {
                         grecaptcha.reset();
                     }
                 })

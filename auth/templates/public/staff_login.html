@@ -13,8 +13,16 @@
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Google reCAPTCHA v2 -->
+    <!-- Google reCAPTCHA v2 (only load if enabled) -->
+    {% if recaptcha_enabled %}
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
+    
+    <!-- Pass recaptcha settings to JavaScript -->
+    <script>
+        window.RECAPTCHA_ENABLED = {{ recaptcha_enabled|yesno:"true,false" }};
+        window.RECAPTCHA_SITE_KEY = "{{ recaptcha_site_key|default:'' }}";
+    </script>
     
     <style>
         .formMode {
@@ -202,8 +210,10 @@
                         <label for="rememberMe">Remember me</label>
                     </div>
 
-                    <!-- reCAPTCHA v2 Checkbox -->
-                    <div class="g-recaptcha" data-sitekey="6LdbGyMsAAAAAKv5tivNNE-g-fVz1a5Pc7EueLZT"></div>
+                    <!-- reCAPTCHA v2 Checkbox (only show if enabled) -->
+                    {% if recaptcha_enabled %}
+                    <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    {% endif %}
 
                     <!-- Submit Button -->
                     <button type="submit" class="logInButton" id="loginButton">
@@ -478,16 +488,19 @@
                     return;
                 }
 
-                // Check reCAPTCHA
-                if (typeof grecaptcha === 'undefined') {
-                    ToastNotification.error('Security Error', 'reCAPTCHA failed to load. Please refresh and try again.');
-                    return;
-                }
+                // Check reCAPTCHA only if enabled
+                let recaptchaResponse = '';
+                if (window.RECAPTCHA_ENABLED) {
+                    if (typeof grecaptcha === 'undefined') {
+                        ToastNotification.error('Security Error', 'reCAPTCHA failed to load. Please refresh and try again.');
+                        return;
+                    }
 
-                const recaptchaResponse = grecaptcha.getResponse();
-                if (!recaptchaResponse) {
-                    ToastNotification.warning('reCAPTCHA Required', 'Please complete the reCAPTCHA verification before logging in.');
-                    return;
+                    recaptchaResponse = grecaptcha.getResponse();
+                    if (!recaptchaResponse) {
+                        ToastNotification.warning('reCAPTCHA Required', 'Please complete the reCAPTCHA verification before logging in.');
+                        return;
+                    }
                 }
 
                 // Show loading state
@@ -556,8 +569,8 @@
                         
                         ToastNotification.error('Login Failed', errorMsg);
                         
-                        // Reset reCAPTCHA
-                        if (typeof grecaptcha !== 'undefined') {
+                        // Reset reCAPTCHA if enabled
+                        if (window.RECAPTCHA_ENABLED && typeof grecaptcha !== 'undefined') {
                             grecaptcha.reset();
                         }
                     }

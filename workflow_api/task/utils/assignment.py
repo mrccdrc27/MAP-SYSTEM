@@ -5,7 +5,7 @@ These functions are used across tasks, steps, and transitions.
 
 from django.utils import timezone
 from tickets.models import RoundRobin
-from task.models import TaskItem, TaskItemHistory
+from task.models import TaskItem, TaskItemHistory, FailedNotification
 from role.models import Roles, RoleUsers
 from task.tasks import send_assignment_notification as notify_task
 import logging
@@ -115,12 +115,27 @@ def apply_round_robin_assignment(task, user_ids, role_name):
         )
         logger.info(f"👤 Created TaskItem: User {user_id} assigned to Task {task.task_id}")
         # Send assignment notification via Celery
-        notify_task.delay(
-            user_id=user_id,
-            task_id=str(task.task_id),
-            task_title=str(task.ticket_id.subject) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
-            role_name=role_name
-        )
+        task_title = str(task.ticket_id.subject) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
+        try:
+            notify_task.delay(
+                user_id=user_id,
+                task_id=str(task.task_id),
+                task_title=task_title,
+                role_name=role_name
+            )
+        except Exception as e:
+            # Store failed notification for later retry
+            # (e.g., RabbitMQ is not running or connection issues)
+            logger.warning(f"⚠️ Failed to send assignment notification: {e}")
+            FailedNotification.objects.create(
+                user_id=user_id,
+                task_id=str(task.task_id),
+                task_title=task_title,
+                role_name=role_name,
+                error_message=str(e),
+                status='pending'
+            )
+            logger.info("✅ Task assignment succeeded, notification queued for retry")
     else:
         logger.info(f"⚠️ TaskItem already exists: User {user_id} for Task {task.task_id}")
 
@@ -315,15 +330,25 @@ def assign_ticket_owner(task):
         logger.info(f"👑 Ticket owner assigned: User {selected_owner.user_id} ({selected_owner.user_full_name}) for Task {task.task_id}")
         
         # Send notification to ticket owner
+        task_title = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
         try:
             notify_task.delay(
                 user_id=selected_owner.user_id,
                 task_id=str(task.task_id),
-                task_title=str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
+                task_title=task_title,
                 role_name=TICKET_COORDINATOR_ROLE
             )
         except Exception as e:
-            logger.error(f"⚠️ Failed to send ticket owner notification: {e}")
+            logger.warning(f"⚠️ Failed to send ticket owner notification: {e}")
+            FailedNotification.objects.create(
+                user_id=selected_owner.user_id,
+                task_id=str(task.task_id),
+                task_title=task_title,
+                role_name=TICKET_COORDINATOR_ROLE,
+                error_message=str(e),
+                status='pending'
+            )
+            logger.info("✅ Ticket owner notification queued for retry")
         
         return selected_owner
         
