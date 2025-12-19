@@ -1,0 +1,201 @@
+/* === User Action Modal Styles === */
+.modalContent {
+  padding: 0;
+  width: 100%;
+  max-width: 450px;
+}
+
+.headerSection {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.approveIcon {
+  background-color: #dcfce7;
+  color: #16a34a;
+  font-size: 24px;
+}
+
+.rejectIcon {
+  background-color: #fee2e2;
+  color: #dc2626;
+  font-size: 24px;
+}
+
+.headerText h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.headerText p {
+  margin: 4px 0 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.bodySection {
+  padding: 24px;
+}
+
+.userInfo {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid #3b82f6;
+}
+
+.userInfo h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+.userDetails {
+  display: grid;
+  gap: 8px;
+}
+
+.userDetail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9375rem;
+}
+
+.detailLabel {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detailValue {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.message {
+  font-size: 0.9375rem;
+  color: #374151;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.warning {
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.warning p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #92400e;
+}
+
+.footerSection {
+  padding: 16px 24px;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.button {
+  padding: 10px 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #ffffff;
+  color: #374151;
+}
+
+.button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.button:active {
+  background-color: #e5e7eb;
+}
+
+.buttonPrimary {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  font-weight: 600;
+}
+
+.buttonPrimary:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.buttonPrimary:active {
+  background-color: #1d4ed8;
+}
+
+.buttonDanger {
+  background-color: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  font-weight: 600;
+}
+
+.buttonDanger:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.buttonDanger:active {
+  background-color: #b91c1c;
+}
+
+.loadingSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.buttonDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonDisabled:hover {
+  background-color: inherit;
+}

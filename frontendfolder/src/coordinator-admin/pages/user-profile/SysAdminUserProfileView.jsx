@@ -180,7 +180,7 @@ export default function CoordinatorAdminUserProfileView() {
       department: e.department || e.dept || '',
       profileImage: picture,
       status: e.status || e.account_status || '',
-      phone: e.phone || e.contact_number || '',
+      phone: e.phone_number || e.phone || e.contact_number || '',
     };
   };
 
@@ -359,10 +359,6 @@ export default function CoordinatorAdminUserProfileView() {
                 <div className={styles.detailItem}>
                   <div className={styles.detailLabel}>Phone</div>
                   <div className={styles.detailValue}>{user.phone || '—'}</div>
-                </div>
-                <div className={styles.detailItem}>
-                  <div className={styles.detailLabel}>Address</div>
-                  <div className={styles.detailValue}>{user.address || '—'}</div>
                 </div>
               </div>
             </div>

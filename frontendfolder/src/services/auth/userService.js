@@ -25,7 +25,7 @@ const getAuthHeaders = () => {
 export const authUserService = {
   /**
    * Get all HDTS users from auth service
-   * Returns all users with roles in the HDTS system
+   * Returns all users with roles in the HDTS system, combined from both users_user and hdts_employees tables
    */
   async getAllHdtsUsers() {
     try {
@@ -42,8 +42,9 @@ export const authUserService = {
       const data = await response.json();
       console.log('📋 Auth Service - Fetched HDTS users:', data);
       
-      // The response has structure: { count: X, users: [...] }
-      return data.users || [];
+      // The response has structure: { count: X, users: [...], all_users: [...] }
+      // all_users combines both system users and employees from hdts_employees table
+      return data.all_users || data.users || [];
     } catch (error) {
       console.error('Error fetching HDTS users from auth service:', error);
       throw error;

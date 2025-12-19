@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema
 
 # Import directly from individual modules
 from .views.auth_views import RegisterView, CustomTokenObtainPairView, CookieTokenRefreshView, CookieLogoutView, ValidateTokenView, UILogoutView
-from .views.profile_views import ProfileView, profile_settings_view
+from .views.profile_views import ProfileView, profile_settings_view, UserByCompanyIdView
 from .views.otp_views import RequestOTPView, Enable2FAView, Disable2FAView, request_otp_authenticated_view, verify_disable_otp_view
 from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordUIView, ChangePasswordView, VerifyPasswordView
 from .views.user_management_views import UserViewSet, agent_management_view, invite_agent_view, UserByIdView
@@ -88,6 +88,7 @@ urlpatterns = [
     
     # User profile endpoints
     path('profile/', ProfileView.as_view(), name='user-profile-api'),
+    path('profile/by-company/<str:company_id>/', UserByCompanyIdView.as_view(), name='user-profile-by-company'),
     path('profile/reset-password/', ProfilePasswordResetView.as_view(), name='profile-password-reset'),
     
     # Template-based Profile Settings and Agent Management URLs removed

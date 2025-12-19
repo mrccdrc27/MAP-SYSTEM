@@ -306,6 +306,99 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
   const getUserStatus = (u) => (u.status || u.account_status || u.state || '').toString();
   const getUserJoinedDate = (u) => (u.date_joined || u.dateJoined || u.created_at || u.created || null);
 
+  // Aggregates user data into time-based buckets based on range parameter
+  const aggregateUserData = (usersList, range = 'month') => {
+    const now = new Date();
+    
+    if (range === 'days') {
+      // Create 7 day-level data points
+      const days = Array.from({ length: 7 }).map((_, i) => {
+        const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
+        day.setHours(0, 0, 0, 0);
+        return day;
+      });
+      
+      return days.map(d => {
+        const next = new Date(d);
+        next.setDate(d.getDate() + 1);
+        const joined = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= d && uj < next;
+        }).length;
+        const active = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= d && uj < next && /approved|active/i.test(getUserStatus(u));
+        }).length;
+        const label = `${String(d.getDate()).padStart(2, '0')} ${d.toLocaleString(undefined, { month: 'short' })}`;
+        return { month: label, dataset1: joined, dataset2: active };
+      });
+    }
+    
+    if (range === 'week') {
+      // Create 4 week-level data points
+      const weeks = [];
+      const curr = new Date(now);
+      const dayOfWeek = (curr.getDay() + 6) % 7;
+      const startOfThisWeek = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate() - dayOfWeek);
+      
+      for (let i = 3; i >= 0; i--) {
+        const start = new Date(startOfThisWeek);
+        start.setDate(start.getDate() - (i * 7));
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        weeks.push({ start, end });
+      }
+      
+      return weeks.map((w, idx) => {
+        const joined = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= w.start && uj < w.end;
+        }).length;
+        const active = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= w.start && uj < w.end && /approved|active/i.test(getUserStatus(u));
+        }).length;
+        return { month: `W${idx + 1}`, dataset1: joined, dataset2: active };
+      });
+    }
+    
+    // For 'month' and 'yearly' ranges
+    const monthsCount = range === 'yearly' ? 12 : 6;
+    const months = Array.from({ length: monthsCount }).map((_, i) => {
+      const m = new Date(now.getFullYear(), now.getMonth() - (monthsCount - 1 - i), 1);
+      return m;
+    });
+    
+    return months.map(m => {
+      const start = new Date(m.getFullYear(), m.getMonth(), 1);
+      const end = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+      const joined = usersList.filter(u => {
+        const dj = getUserJoinedDate(u);
+        if (!dj) return false;
+        const uj = new Date(dj);
+        return uj >= start && uj < end;
+      }).length;
+      const active = usersList.filter(u => {
+        const dj = getUserJoinedDate(u);
+        if (!dj) return false;
+        const uj = new Date(dj);
+        return uj >= start && uj < end && /approved|active/i.test(getUserStatus(u));
+      }).length;
+      const label = range === 'yearly' ? String(m.getFullYear()) : m.toLocaleString('default', { month: 'short' });
+      return { month: label, dataset1: joined, dataset2: active };
+    });
+  };
+
+
   useEffect(() => {
     // Fetch once on mount. Avoid depending on a freshly-parsed currentUser object
     // (authService.getCurrentUser() returns a new object each call), which caused
@@ -427,27 +520,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       { name: 'Rejected', value: rejectedCount, fill: '#EF4444' },
       { name: 'Inactive', value: inactiveCount, fill: '#9CA3AF' }
     ],
-    lineData: (function buildLineData() {
-      // Simple monthly buckets for the last 6 months as fallback
-      const now = new Date();
-      const months = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const label = d.toLocaleString('default', { month: 'short' });
-        months.push({ label, start: new Date(d.getFullYear(), d.getMonth(), 1), end: new Date(d.getFullYear(), d.getMonth() + 1, 1) });
-      }
-
-      return months.map(m => {
-        const inBucket = users.filter(u => {
-          const dj = getUserJoinedDate(u);
-          if (!dj) return false;
-          const d = new Date(dj);
-          return d >= m.start && d < m.end;
-        });
-        const activeInBucket = inBucket.filter(u => /approved|active/i.test(getUserStatus(u))).length;
-        return { month: m.label, dataset1: inBucket.length, dataset2: activeInBucket };
-      });
-    })()
+    lineData: aggregateUserData(users, chartRange)
   };
 
   const userActivityTimeline = rawUsers
@@ -521,12 +594,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
             onBrowse={() => navigate('/admin/user-access/all-users')}
           />
           <TrendLineChart
-            data={(() => {
-              const source = userData.lineData;
-              if (chartRange === 'days') return source.slice(-7);
-              if (chartRange === 'week') return source.slice(-4);
-              return source;
-            })()}
+            data={userData.lineData}
             title="Users per Period"
             isTicketChart={false}
           />

@@ -218,3 +218,32 @@ def profile_settings_view(request):
         'user': user,
     }
     return render(request, 'users/profile_settings.html', context)
+
+
+class UserByCompanyIdView(generics.RetrieveAPIView):
+    """
+    API view to retrieve a user's profile by their company ID.
+    
+    GET: Returns the user's profile information matching the company_id
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+    lookup_field = 'company_id'
+    lookup_value_regex = r'[A-Za-z0-9\-_]+'
+
+    def get_queryset(self):
+        # Return users filtered by company_id
+        return User.objects.filter(company_id=self.kwargs.get('company_id'))
+
+    def get_object(self):
+        """Get the user by company_id."""
+        queryset = self.get_queryset()
+        obj = queryset.first()
+        
+        if not obj:
+            from rest_framework.exceptions import NotFound
+            raise NotFound(f"User with company_id {self.kwargs.get('company_id')} not found.")
+        
+        # Check object permissions
+        self.check_object_permissions(self.request, obj)
+        return obj
