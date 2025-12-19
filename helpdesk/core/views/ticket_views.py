@@ -254,6 +254,9 @@ def get_ticket_detail(request, ticket_id):
         else:
             comments = ticket.comments.filter(is_internal=False).order_by('-created_at')
 
+        # Short-circuit heavy lookups for these statuses to speed up loading
+        short_circuit = getattr(ticket, 'status', '') in ('Open', 'Withdrawn', 'Closed', 'Rejected')
+
         ticket_data = {
             'id': ticket.id,
             'ticket_number': ticket.ticket_number,
@@ -268,13 +271,55 @@ def get_ticket_detail(request, ticket_id):
             'department': ticket.department,
             'submit_date': ticket.submit_date,
             'update_date': ticket.update_date,
-            'assigned_to': {
-                'id': ticket.assigned_to.id,
-                'first_name': ticket.assigned_to.first_name,
-                'last_name': ticket.assigned_to.last_name,
-            } if ticket.assigned_to else None,
+            'assigned_to': (
+                {'id': ticket.assigned_to.id} if short_circuit else {
+                    'id': ticket.assigned_to.id,
+                    'first_name': ticket.assigned_to.first_name,
+                    'last_name': ticket.assigned_to.last_name,
+                }
+            ) if ticket.assigned_to else None,
         }
-        
+
+        # Batch-resolve external profiles to avoid per-comment remote calls.
+        try:
+            from ..models import ExternalEmployee
+        except Exception:
+            ExternalEmployee = None
+
+        external_ids = set()
+        if getattr(ticket, 'employee_cookie_id', None):
+            external_ids.add(ticket.employee_cookie_id)
+        for c in comments:
+            if not c.user and getattr(c, 'user_cookie_id', None):
+                external_ids.add(c.user_cookie_id)
+
+        cache_map = {}
+        if ExternalEmployee and external_ids:
+            try:
+                from django.db.models import Q
+                ids_list = list(external_ids)
+                # Query by both external_user_id and external_employee_id to find cached records
+                qs = ExternalEmployee.objects.filter(
+                    Q(external_user_id__in=ids_list) | Q(external_employee_id__in=ids_list)
+                )
+                for e in qs:
+                    profile = {
+                        'first_name': e.first_name,
+                        'last_name': e.last_name,
+                        'company_id': e.company_id,
+                        'department': e.department,
+                        'email': e.email,
+                    }
+                    if e.external_user_id:
+                        cache_map[int(e.external_user_id)] = profile
+                    if e.external_employee_id:
+                        cache_map[int(e.external_employee_id)] = profile
+            except Exception:
+                cache_map = {}
+
+        # short_circuit already computed above
+
+        # Build employee payload using cache_map; avoid remote HTTP lookups when short_circuit=True
         employee_data = None
         if ticket.employee:
             employee_data = {
@@ -287,16 +332,41 @@ def get_ticket_detail(request, ticket_id):
                 'employee_cookie_id': getattr(ticket, 'employee_cookie_id', None)
             }
         elif getattr(ticket, 'employee_cookie_id', None):
-            profile = get_external_employee_data(ticket.employee_cookie_id)
-            employee_data = {
-                'id': ticket.employee_cookie_id,
-                'first_name': profile.get('first_name'),
-                'last_name': profile.get('last_name'),
-                'company_id': profile.get('company_id'),
-                'department': profile.get('department'),
-                'email': profile.get('email'),
-                'employee_cookie_id': ticket.employee_cookie_id
-            }
+            cid = ticket.employee_cookie_id
+            prof = cache_map.get(int(cid)) if cid is not None else None
+            if prof:
+                employee_data = {
+                    'id': cid,
+                    'first_name': prof.get('first_name'),
+                    'last_name': prof.get('last_name'),
+                    'company_id': prof.get('company_id'),
+                    'department': prof.get('department'),
+                    'email': prof.get('email'),
+                    'employee_cookie_id': cid
+                }
+            else:
+                if short_circuit:
+                    # Provide minimal placeholder quickly
+                    employee_data = {
+                        'id': cid,
+                        'first_name': None,
+                        'last_name': None,
+                        'company_id': None,
+                        'department': None,
+                        'email': None,
+                        'employee_cookie_id': cid
+                    }
+                else:
+                    profile = get_external_employee_data(cid)
+                    employee_data = {
+                        'id': cid,
+                        'first_name': profile.get('first_name'),
+                        'last_name': profile.get('last_name'),
+                        'company_id': profile.get('company_id'),
+                        'department': profile.get('department'),
+                        'email': profile.get('email'),
+                        'employee_cookie_id': cid
+                    }
         else:
             employee_data = {
                 'id': None,
@@ -307,6 +377,25 @@ def get_ticket_detail(request, ticket_id):
                 'email': None,
                 'employee_cookie_id': None
             }
+
+        # If we short-circuited and we have missing external IDs, enqueue async prefetch
+        try:
+            missing = []
+            for eid in external_ids:
+                if eid is None:
+                    continue
+                if int(eid) not in cache_map:
+                    missing.append(int(eid))
+
+            if short_circuit and missing:
+                try:
+                    from ..tasks import prefetch_external_profiles
+                    prefetch_external_profiles.delay(missing)
+                except Exception:
+                    # Ignore prefetch failures; don't block the request
+                    pass
+        except Exception:
+            pass
         
         ticket_data['employee'] = employee_data
         ticket_data['approved_by'] = ticket.approved_by if hasattr(ticket, 'approved_by') else None
@@ -318,7 +407,6 @@ def get_ticket_detail(request, ticket_id):
                 'last_name': '',
                 'role': 'Employee'
             }
-
             if comment.user:
                 user_payload['first_name'] = getattr(comment.user, 'first_name', '') or ''
                 user_payload['last_name'] = getattr(comment.user, 'last_name', '') or ''
@@ -332,9 +420,9 @@ def get_ticket_detail(request, ticket_id):
                     user_payload['last_name'] = ''
                     user_payload['role'] = 'Support'
                 else:
-                    profile = get_external_employee_data(comment.user_cookie_id)
-                    user_payload['first_name'] = profile.get('first_name') or ''
-                    user_payload['last_name'] = profile.get('last_name') or ''
+                    # Employee comments - anonymize to just "Employee"
+                    user_payload['first_name'] = 'Employee'
+                    user_payload['last_name'] = ''
                     user_payload['role'] = 'Employee'
 
             ticket_data['comments'].append({
@@ -438,6 +526,45 @@ def get_ticket_by_number(request, ticket_number):
                 'last_name': ticket.assigned_to.last_name,
             } if ticket.assigned_to else None,
         }
+
+        # Batch-resolve external profiles to avoid per-comment remote calls (same as get_ticket_detail)
+        try:
+            from ..models import ExternalEmployee
+            from django.db.models import Q
+        except Exception:
+            ExternalEmployee = None
+
+        external_ids = set()
+        if getattr(ticket, 'employee_cookie_id', None):
+            external_ids.add(ticket.employee_cookie_id)
+        for c in comments:
+            if not c.user and getattr(c, 'user_cookie_id', None):
+                external_ids.add(c.user_cookie_id)
+
+        cache_map = {}
+        if ExternalEmployee and external_ids:
+            try:
+                ids_list = list(external_ids)
+                qs = ExternalEmployee.objects.filter(
+                    Q(external_user_id__in=ids_list) | Q(external_employee_id__in=ids_list)
+                )
+                for e in qs:
+                    profile = {
+                        'first_name': e.first_name,
+                        'last_name': e.last_name,
+                        'company_id': e.company_id,
+                        'department': e.department,
+                        'email': e.email,
+                    }
+                    if e.external_user_id:
+                        cache_map[int(e.external_user_id)] = profile
+                    if e.external_employee_id:
+                        cache_map[int(e.external_employee_id)] = profile
+            except Exception:
+                cache_map = {}
+
+        # Short-circuit remote HTTP lookups for these statuses to speed up loading
+        short_circuit = getattr(ticket, 'status', '') in ('Open', 'Withdrawn', 'Closed', 'Rejected')
         
         employee_data = None
         if ticket.employee:
@@ -451,16 +578,39 @@ def get_ticket_by_number(request, ticket_number):
                 'employee_cookie_id': getattr(ticket, 'employee_cookie_id', None)
             }
         elif getattr(ticket, 'employee_cookie_id', None):
-            profile = get_external_employee_data(ticket.employee_cookie_id)
-            employee_data = {
-                'id': ticket.employee_cookie_id,
-                'first_name': profile.get('first_name'),
-                'last_name': profile.get('last_name'),
-                'company_id': profile.get('company_id'),
-                'department': profile.get('department'),
-                'email': profile.get('email'),
-                'employee_cookie_id': ticket.employee_cookie_id
-            }
+            cid = ticket.employee_cookie_id
+            prof = cache_map.get(int(cid)) if cid is not None else None
+            if prof:
+                employee_data = {
+                    'id': cid,
+                    'first_name': prof.get('first_name'),
+                    'last_name': prof.get('last_name'),
+                    'company_id': prof.get('company_id'),
+                    'department': prof.get('department'),
+                    'email': prof.get('email'),
+                    'employee_cookie_id': cid
+                }
+            elif short_circuit:
+                employee_data = {
+                    'id': cid,
+                    'first_name': None,
+                    'last_name': None,
+                    'company_id': None,
+                    'department': None,
+                    'email': None,
+                    'employee_cookie_id': cid
+                }
+            else:
+                profile = get_external_employee_data(cid)
+                employee_data = {
+                    'id': cid,
+                    'first_name': profile.get('first_name'),
+                    'last_name': profile.get('last_name'),
+                    'company_id': profile.get('company_id'),
+                    'department': profile.get('department'),
+                    'email': profile.get('email'),
+                    'employee_cookie_id': cid
+                }
         
         ticket_data['employee'] = employee_data
         ticket_data['comments'] = []
@@ -477,9 +627,9 @@ def get_ticket_by_number(request, ticket_number):
                 user_payload['last_name'] = getattr(comment.user, 'last_name', '') or ''
                 user_payload['role'] = getattr(comment.user, 'role', 'Employee')
             else:
-                profile = get_external_employee_data(comment.user_cookie_id)
-                user_payload['first_name'] = profile.get('first_name') or ''
-                user_payload['last_name'] = profile.get('last_name') or ''
+                # Employee comments - anonymize to just "Employee"
+                user_payload['first_name'] = 'Employee'
+                user_payload['last_name'] = ''
                 user_payload['role'] = 'Employee'
 
             ticket_data['comments'].append({

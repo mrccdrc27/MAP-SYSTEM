@@ -3,7 +3,6 @@ import { FiInbox, FiCheckCircle, FiClock, FiXCircle, FiAlertCircle } from 'react
 import baseStyles from '../../../employee/pages/ticket-tracker/EmployeeTicketTracker.module.css';
 import Loading from '../../../shared/components/Loading/Loading';
 import styles from './CoordinatorAdminTicketDetails.module.css';
-import { getEmployeeUserById } from '../../../utilities/storages/employeeUserStorage';
 import { backendEmployeeService } from '../../../services/backend/employeeService';
 import authService from '../../../utilities/service/authService';
 import { convertToSecureUrl, getAccessToken, isSecureUrl } from '../../../utilities/secureMedia';
@@ -85,10 +84,13 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
   const isTicketCoordinator = userRole === 'Ticket Coordinator';
   const isSystemAdmin = userRole === 'System Admin';
 
-  // Resolve user profile images using the stored users fixture
-  const employeeUser = ticket?.employeeId ? getEmployeeUserById(Number(ticket.employeeId)) : null;
+  // Use embedded employee data from ticket or resolved remoteEmployee state
   const [remoteEmployee, setRemoteEmployee] = useState(null);
-  const rawEmployeeImage = (remoteEmployee && (remoteEmployee.image || remoteEmployee.profile_image)) || employeeUser?.profileImage || ticket?.employeeProfileImage || DEFAULT_AVATAR;
+  // Derive employee image from embedded ticket data, not mock storage
+  const rawEmployeeImage = (remoteEmployee && (remoteEmployee.image || remoteEmployee.profile_image || remoteEmployee.profile_picture))
+    || ticket?.employeeProfileImage
+    || (ticket?.employee && (ticket.employee.image || ticket.employee.profile_image || ticket.employee.profile_picture))
+    || DEFAULT_AVATAR;
   const absoluteFallback = (img) => {
     if (!img) return null;
     if (img.startsWith('http')) return img;
@@ -142,17 +144,16 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
     return () => { mounted = false; };
   }, [ticket]);
 
+  // Coordinator info from ticket payload (no mock fallback)
   const coordinatorId = ticket?.coordinatorReview?.coordinatorId || ticket?.assignedTo || null;
-  const coordinatorUser = coordinatorId ? getEmployeeUserById(Number(coordinatorId)) : null;
-  const rawCoordinatorImage = coordinatorUser?.profileImage || ticket?.coordinatorReview?.coordinatorProfileImage || DEFAULT_AVATAR;
+  const rawCoordinatorImage = ticket?.coordinatorReview?.coordinatorProfileImage || DEFAULT_AVATAR;
   const coordinatorImage = resolveImage(rawCoordinatorImage);
 
-  // Get the agent/assignee info if ticket is assigned
+  // Get the agent/assignee info from ticket payload (no mock fallback)
   const agentId = ticket?.assignedTo;
-  const agentUser = agentId ? getEmployeeUserById(Number(agentId)) : null;
-  const rawAgentImage = agentUser?.profileImage || DEFAULT_AVATAR;
+  const rawAgentImage = ticket?.assignedAgentImage || ticket?.assignedAgentProfileImage || DEFAULT_AVATAR;
   const agentImage = resolveImage(rawAgentImage);
-  const agentName = agentUser ? `${agentUser.firstName} ${agentUser.lastName}` : ticket?.assignedAgent || 'None';
+  const agentName = ticket?.assignedAgentName || ticket?.assignedAgent || (ticket?.assigned_to_name) || 'None';
 
   // Determine ticket stage
   const ticketStage = getTicketStage(ticket?.status);
@@ -301,26 +302,24 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
               <div className={styles.userInfo}>
                 <div className={styles.userName}>
                   {
-                    // Prefer remote employee names, then local fixture, then ticket fields
+                    // Prefer remote employee names (embedded in ticket), then normalized ticket fields
                     (remoteEmployee && ((remoteEmployee.first_name || remoteEmployee.firstName || '') + ' ' + (remoteEmployee.last_name || remoteEmployee.lastName || '')).trim())
-                    || (employeeUser && `${employeeUser.firstName || ''} ${employeeUser.lastName || ''}`.trim())
                     || ticket?.employeeName
                     || 'None'
                   }
                 </div>
                 <div className={styles.userMeta}>
                   {
-                    // department
+                    // department from embedded employee or ticket fields
                     (remoteEmployee && (remoteEmployee.department || remoteEmployee.dept))
                     || ticket?.employeeDepartment
-                    || (employeeUser && employeeUser.department)
                     || 'None'
                   }
                   <br />
                   Employee ID: {
-                    (remoteEmployee && (remoteEmployee.company_id || remoteEmployee.companyId || remoteEmployee.employee_id))
-                    || ticket?.employeeCompanyId || ticket?.employeeId
-                    || (employeeUser && (employeeUser.employeeId || employeeUser.id))
+                    // Only show company_id (MA#### format), not the numeric database ID
+                    (remoteEmployee && (remoteEmployee.company_id || remoteEmployee.companyId))
+                    || ticket?.employeeCompanyId
                     || 'None'
                   }
                 </div>
@@ -347,9 +346,9 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
                   />
                 </div>
                 <div className={styles.userInfo}>
-                  <div className={styles.userName}>{ticket?.coordinatorReview?.coordinatorName || (coordinatorUser ? `${coordinatorUser.firstName} ${coordinatorUser.lastName}` : 'None')}</div>
+                  <div className={styles.userName}>{ticket?.coordinatorReview?.coordinatorName || 'None'}</div>
                   <div className={styles.userMeta}>
-                    {coordinatorUser?.department || ticket?.department || 'None'}<br />
+                    {ticket?.coordinatorReview?.coordinatorDepartment || ticket?.department || 'None'}<br />
                     Date Reviewed: {formatDate ? formatDate(ticket?.coordinatorReview?.dateReviewed) : ticket?.coordinatorReview?.dateReviewed || 'None'}
                   </div>
                 </div>
@@ -409,7 +408,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
                   <div className={styles.userInfo}>
                     <div className={styles.userName}>{agentName}</div>
                     <div className={styles.userMeta}>
-                      {agentUser?.department || 'None'}<br />
+                      {ticket?.assignedAgentDepartment || ticket?.assigned_agent_department || 'None'}<br />
                       Date Assigned: {formatDate ? formatDate(ticket?.dateAssigned) : ticket?.dateAssigned || 'None'}
                     </div>
                   </div>

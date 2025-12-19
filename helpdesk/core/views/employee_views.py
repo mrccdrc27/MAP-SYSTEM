@@ -214,78 +214,214 @@ def verify_password(request):
     current_password = request.data.get('current_password')
     if not current_password:
         return Response({'detail': 'current_password required'}, status=status.HTTP_400_BAD_REQUEST)
+    
     user = request.user
+    
     # Handle ExternalUser (token-authenticated users from external auth service)
     if isinstance(user, ExternalUser):
         try:
-            # The auth service exposes a login endpoint at /api/v1/users/login/ which issues tokens on success.
-            url = 'http://localhost:8003/api/v1/users/login/'
-            payload = {
-                'email': getattr(user, 'email', None),
-                'password': current_password
+            # The auth service exposes a verify-password endpoint for authenticated users
+            url = 'http://localhost:8003/api/v1/users/verify-password/'
+            payload = {'current_password': current_password}
+            auth_token = str(request.auth) if request.auth else ''
+            headers = {
+                'Authorization': f'Bearer {auth_token}',
+                'Content-Type': 'application/json'
             }
-            # Use a short timeout to avoid blocking the request pipeline
-            resp = requests.post(url, json=payload, timeout=5)
+            resp = requests.post(url, json=payload, headers=headers, timeout=5)
             if resp.status_code == 200:
-                return Response({'detail': 'Password verified.'})
-            # Treat any non-200 as failed verification
-            return Response({'detail': 'Incorrect password.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'Password verified.'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'detail': 'Incorrect password.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"[verify_password] Error verifying against external auth service: {e}")
-            return Response({'detail': 'Failed to verify password with external auth service.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'detail': 'Failed to verify password.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Local/Django user path
-    try:
-        if user.check_password(current_password):
-            return Response({'detail': 'Password verified.'})
-        return Response({'detail': 'Incorrect password.'}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        print(f"[verify_password] Error checking password on local user: {e}")
-        return Response({'detail': 'Failed to verify password.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if hasattr(user, 'check_password') and callable(user.check_password):
+        try:
+            if user.check_password(current_password):
+                return Response({'detail': 'Password verified.'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'detail': 'Incorrect password.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'detail': 'Failed to verify password.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response({'detail': 'Cannot verify password for this user.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def upload_profile_image(request):
+    print("\n" + "="*80)
+    print("[UPLOAD_PROFILE_IMAGE] START - New request received")
+    print("="*80)
+    
     user = request.user
-    print(f"Upload request from user: {user.email} (ID: {user.id})")
+    print(f"[AUTH] User authenticated: {user}")
+    print(f"[AUTH] User type: {type(user)}")
+    print(f"[AUTH] User email: {getattr(user, 'email', 'NO EMAIL')}")
+    print(f"[AUTH] User ID: {getattr(user, 'id', 'NO ID')}")
+    print(f"[AUTH] User instance check: Is Employee? {isinstance(user, Employee)}")
+    
+    print(f"\n[REQUEST] Method: {request.method}")
+    print(f"[REQUEST] Content-Type: {request.META.get('CONTENT_TYPE', 'N/A')}")
+    print(f"[REQUEST] Authorization header: {request.META.get('HTTP_AUTHORIZATION', 'NO AUTH HEADER')[:50]}...")
+    
+    print(f"\n[FILES] Request.FILES keys: {list(request.FILES.keys())}")
+    print(f"[FILES] Request.FILES: {request.FILES}")
     
     image_file = request.FILES.get('image')
+    print(f"\n[FILE_CHECK] Image file from request: {image_file}")
+    
     if not image_file:
+        print("[FILE_CHECK] ERROR: No image file provided in request.FILES")
+        print("="*80 + "\n")
         return Response({'error': 'No image file provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-    print(f"Received image: {image_file.name}, size: {image_file.size}, type: {image_file.content_type}")
+    print(f"[FILE_INFO] File name: {image_file.name}")
+    print(f"[FILE_INFO] File size: {image_file.size} bytes")
+    print(f"[FILE_INFO] File content type: {image_file.content_type}")
+    print(f"[FILE_INFO] File object: {image_file}")
 
     # Validate file type
-    if not image_file.content_type in ['image/png', 'image/jpeg', 'image/jpg']:
+    print(f"\n[VALIDATION] Checking file type...")
+    if image_file.content_type not in ['image/png', 'image/jpeg', 'image/jpg']:
+        print(f"[VALIDATION] ERROR: Invalid file type: {image_file.content_type}")
+        print("="*80 + "\n")
         return Response({'error': 'Only PNG and JPEG images are allowed'}, status=status.HTTP_400_BAD_REQUEST)
+    print(f"[VALIDATION] File type OK: {image_file.content_type}")
 
     # Validate file size (max 2MB)
+    print(f"\n[VALIDATION] Checking file size...")
     if image_file.size > 2 * 1024 * 1024:
+        print(f"[VALIDATION] ERROR: File size {image_file.size} exceeds 2MB limit")
+        print("="*80 + "\n")
         return Response({'error': 'File size exceeds 2MB limit'}, status=status.HTTP_400_BAD_REQUEST)
+    print(f"[VALIDATION] File size OK: {image_file.size} bytes")
 
     # Delete old image if it exists and is not the default
-    if user.image and not user.image.name.endswith('default-profile.png'):
-        try:
-            user.image.delete()
-        except Exception as e:
-            print(f"Error deleting old image: {e}")
+    print(f"\n[CLEANUP] Checking for old image...")
+    print(f"[CLEANUP] user.image value: {user.image}")
+    if user.image:
+        print(f"[CLEANUP] user.image.name: {user.image.name}")
+        if not user.image.name.endswith('default-profile.png'):
+            try:
+                print(f"[CLEANUP] Deleting old image: {user.image.name}")
+                user.image.delete()
+                print(f"[CLEANUP] Old image deleted successfully")
+            except Exception as e:
+                print(f"[CLEANUP] ERROR deleting old image: {e}")
+        else:
+            print(f"[CLEANUP] Skipping delete - image is default")
+    else:
+        print(f"[CLEANUP] No existing image to delete")
 
     # Resize image to 1024x1024
+    print(f"\n[PROCESSING] Starting image resize...")
     try:
+        print(f"[PROCESSING] Opening image with PIL...")
         img = Image.open(image_file)
+        print(f"[PROCESSING] Image opened successfully")
+        print(f"[PROCESSING] Original image size: {img.size}")
+        
+        print(f"[PROCESSING] Resizing image to 1024x1024...")
         img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+        print(f"[PROCESSING] Resized image size: {img.size}")
+        
+        print(f"[PROCESSING] Converting to JPEG...")
         img_io = BytesIO()
         img.save(img_io, format='JPEG')
+        print(f"[PROCESSING] JPEG saved to BytesIO, size: {img_io.tell()} bytes")
         img_io.seek(0)
+        print(f"[PROCESSING] BytesIO pointer reset to 0")
         
-        user.image.save(f"{user.id}_profile.jpg", ContentFile(img_io.getvalue()), save=True)
+        print(f"\n[DATABASE] Saving image to Employee.image field...")
+        filename = f"{user.id}_profile.jpg"
+        print(f"[DATABASE] Filename: {filename}")
+        print(f"[DATABASE] User object before save: {user}")
+        print(f"[DATABASE] User.image field before save: {user.image}")
+        
+        user.image.save(filename, ContentFile(img_io.getvalue()), save=True)
+        print(f"[DATABASE] Image saved successfully!")
+        print(f"[DATABASE] User.image field after save: {user.image}")
+        print(f"[DATABASE] User.image.url: {user.image.url}")
+        
+        # Verify save in database
+        print(f"\n[VERIFICATION] Refreshing user from database...")
+        user.refresh_from_db()
+        print(f"[VERIFICATION] User refreshed from DB")
+        print(f"[VERIFICATION] User.image after refresh: {user.image}")
+        print(f"[VERIFICATION] User.image.url after refresh: {user.image.url}")
+        
+        image_url = user.image.url
+        print(f"[DATABASE] Final image URL: {image_url}")
+        
+        # Also sync the profile picture to the auth service
+        print(f"\n[AUTH_SYNC] Starting auth service sync...")
+        try:
+            from django.conf import settings
+            auth_service_url = getattr(settings, 'DJANGO_AUTH_SERVICE', 'http://auth-service:8003')
+            print(f"[AUTH_SYNC] Auth service URL: {auth_service_url}")
+            
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            print(f"[AUTH_SYNC] Authorization header (full): {auth_header}")
+            
+            auth_token = auth_header.replace('Bearer ', '')
+            print(f"[AUTH_SYNC] Extracted token (first 50 chars): {auth_token[:50] if auth_token else 'EMPTY'}...")
+            
+            if auth_token:
+                print(f"[AUTH_SYNC] Token present, proceeding with auth service update...")
+                
+                # Prepare the image for multipart upload to auth service
+                print(f"[AUTH_SYNC] Resetting image_file pointer...")
+                image_file.seek(0)
+                print(f"[AUTH_SYNC] Image file pointer reset")
+                
+                files = {'profile_picture': image_file}
+                headers = {'Authorization': f'Bearer {auth_token}'}
+                
+                print(f"[AUTH_SYNC] Preparing multipart request:")
+                print(f"[AUTH_SYNC]   - URL: {auth_service_url}/api/v1/users/profile/")
+                print(f"[AUTH_SYNC]   - Files: {list(files.keys())}")
+                print(f"[AUTH_SYNC]   - Headers: Authorization: Bearer {auth_token[:50]}...")
+                
+                # Call auth service to update profile picture
+                print(f"[AUTH_SYNC] Sending PATCH request to auth service...")
+                auth_response = requests.patch(
+                    f'{auth_service_url}/api/v1/users/profile/',
+                    files=files,
+                    headers=headers,
+                    timeout=10
+                )
+                
+                print(f"[AUTH_SYNC] Auth service response status: {auth_response.status_code}")
+                print(f"[AUTH_SYNC] Auth service response headers: {dict(auth_response.headers)}")
+                print(f"[AUTH_SYNC] Auth service response body: {auth_response.text[:500]}")
+                
+                if auth_response.status_code not in [200, 201]:
+                    print(f"[AUTH_SYNC] WARNING: Failed to sync profile picture to auth service")
+                    print(f"[AUTH_SYNC] Status code: {auth_response.status_code}")
+                    print(f"[AUTH_SYNC] Response: {auth_response.text}")
+                else:
+                    print(f"[AUTH_SYNC] SUCCESS: Profile picture synced to auth service!")
+            else:
+                print(f"[AUTH_SYNC] WARNING: No auth token found in Authorization header")
+        except Exception as e:
+            print(f"[AUTH_SYNC] ERROR: Exception during auth sync: {type(e).__name__}: {e}")
+            import traceback
+            print(f"[AUTH_SYNC] Traceback: {traceback.format_exc()}")
+        
+        print(f"\n[SUCCESS] Upload completed successfully!")
+        print("="*80 + "\n")
         
         return Response({
             'message': 'Image uploaded successfully',
-            'image_url': user.image.url
+            'image_url': image_url
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"Error processing image: {e}")
+        print(f"\n[ERROR] Exception during image processing: {type(e).__name__}: {e}")
+        import traceback
+        print(f"[ERROR] Full traceback:\n{traceback.format_exc()}")
+        print("="*80 + "\n")
         return Response({'error': 'Error processing image'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

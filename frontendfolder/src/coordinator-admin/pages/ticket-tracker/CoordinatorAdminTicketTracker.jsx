@@ -75,9 +75,18 @@ const generateLogs = (ticket) => {
   if (Array.isArray(statusHistory) && statusHistory.length > 0) {
     statusHistory.forEach((s) => {
       const at = s.at || s.timestamp || s.date || s.createdAt || s.created_at || null;
+      // Anonymize employee names - use 'Employee' for privacy, but keep coordinator/admin labels
+      let userLabel = 'Employee';
+      const rawBy = s.by || s.user || s.performedBy || s.performed_by || '';
+      if (typeof rawBy === 'string') {
+        const lower = rawBy.toLowerCase();
+        if (lower.includes('coordinator') || lower.includes('support') || lower.includes('admin') || lower === 'system') {
+          userLabel = rawBy;
+        }
+      }
       logs.push({
           id: logs.length + 1,
-          user: s.by || s.user || s.performedBy || s.performed_by || 'System',
+          user: userLabel,
           action: 'Status Change',
           timestamp: at ? formatDate(at) : null,
           text: at ? `Status changed to ${s.status || s.to || s.newStatus || 'Unknown'} on ${formatDate(at)}.` : `Status changed to ${s.status || s.to || s.newStatus || 'Unknown'}.`,
@@ -90,16 +99,21 @@ const generateLogs = (ticket) => {
   if (Array.isArray(activity) && activity.length > 0) {
     activity.forEach((a) => {
       const whoRaw = a.user || a.performedBy || a.performed_by || a.requester || a.by || 'User';
-      let who = 'User';
-      if (typeof whoRaw === 'string') who = whoRaw;
-      else if (whoRaw && typeof whoRaw === 'object') {
-        const first = whoRaw.first_name || whoRaw.firstName || whoRaw.first || '';
-        const last = whoRaw.last_name || whoRaw.lastName || whoRaw.last || '';
-        const full = `${first} ${last}`.trim();
-        if (full) who = full;
-        else if (whoRaw.name) who = whoRaw.name;
-        else if (whoRaw.role) who = whoRaw.role;
-        else if (whoRaw.id) who = `User ${whoRaw.id}`;
+      let who = 'Employee';
+      // Check if this is a coordinator/admin based on role
+      if (whoRaw && typeof whoRaw === 'object') {
+        const role = whoRaw.role || '';
+        if (role === 'Support' || role === 'Coordinator' || role === 'Admin' || role === 'System Admin' || role === 'Ticket Coordinator') {
+          who = whoRaw.first_name || 'Coordinator';
+        }
+        // Otherwise keep as 'Employee' for privacy
+      } else if (typeof whoRaw === 'string') {
+        // If it's already a string like 'Coordinator' or 'Support Team', use it
+        const lower = whoRaw.toLowerCase();
+        if (lower.includes('coordinator') || lower.includes('support') || lower.includes('admin') || lower === 'system') {
+          who = whoRaw;
+        }
+        // Otherwise keep as 'Employee'
       }
 
       const whenRaw = a.timestamp || a.date || a.createdAt || a.created_at || null;
@@ -121,20 +135,8 @@ const generateLogs = (ticket) => {
   if (logs.length === 0) {
     const created = ticket.createdAt || ticket.dateCreated || ticket.created_at || ticket.submit_date || null;
     if (created) {
-      // Convert employee to string if it's an object
-      let employeeName = 'System';
-      const emp = ticket.employeeName || ticket.employee;
-      if (typeof emp === 'string') {
-        employeeName = emp;
-      } else if (emp && typeof emp === 'object') {
-        const first = emp.first_name || emp.firstName || emp.first || '';
-        const last = emp.last_name || emp.lastName || emp.last || '';
-        const full = `${first} ${last}`.trim();
-        if (full) employeeName = full;
-        else if (emp.name) employeeName = emp.name;
-        else if (emp.username) employeeName = emp.username;
-        else if (emp.id) employeeName = `Employee ${emp.id}`;
-      }
+      // Always show "Employee" instead of the actual employee name for privacy
+      const employeeName = 'Employee';
       
       logs.push({
         id: 1,

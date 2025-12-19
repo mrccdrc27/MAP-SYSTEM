@@ -29,6 +29,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
+# Service URLs for inter-service communication
+DJANGO_AUTH_SERVICE = os.environ.get('DJANGO_AUTH_SERVICE', 'http://localhost:8003')
 
 # Application definition
 

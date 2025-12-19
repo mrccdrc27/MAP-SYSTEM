@@ -116,9 +116,10 @@ const generateLogs = (ticket) => {
 
   // 1. Ticket Created — prefer actual creation timestamp and avoid
   // defaulting to "now" when the field is missing.
+  // Always use 'Employee' for privacy - don't show actual employee name
   logs.push({
     id: logs.length + 1,
-    user: ticket.requesterName || ticket.requestedBy || 'Employee',
+    user: 'Employee',
     action: 'Ticket Created',
     timestamp: createdAt ? formatDate(createdAt) : null,
     source: 'Web Form',

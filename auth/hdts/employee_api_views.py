@@ -708,3 +708,25 @@ class MeView(APIView):
         except Exception:
             pass
         return None
+
+
+class EmployeeByIdView(generics.RetrieveAPIView):
+    """
+    Internal API endpoint to look up an employee by their ID.
+    Used by helpdesk backend to resolve employee data for tickets.
+    No authentication required - this is an internal service-to-service endpoint.
+    """
+    authentication_classes = []  # No authentication required
+    permission_classes = [AllowAny]
+    serializer_class = EmployeeProfileSerializer
+    
+    def get(self, request, employee_id):
+        try:
+            employee = Employees.objects.get(id=employee_id)
+            serializer = self.serializer_class(employee, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Employees.DoesNotExist:
+            return Response(
+                {'error': 'Employee not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )

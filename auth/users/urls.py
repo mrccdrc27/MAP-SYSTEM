@@ -9,8 +9,8 @@ from drf_spectacular.utils import extend_schema
 from .views.auth_views import RegisterView, CustomTokenObtainPairView, CookieTokenRefreshView, CookieLogoutView, ValidateTokenView, UILogoutView
 from .views.profile_views import ProfileView, profile_settings_view
 from .views.otp_views import RequestOTPView, Enable2FAView, Disable2FAView, request_otp_authenticated_view, verify_disable_otp_view
-from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordUIView
-from .views.user_management_views import UserViewSet, agent_management_view, invite_agent_view
+from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordUIView, ChangePasswordView, VerifyPasswordView
+from .views.user_management_views import UserViewSet, agent_management_view, invite_agent_view, UserByIdView
 from .views.login_views import LoginView, request_otp_for_login, SystemWelcomeView, LoginAPIView, VerifyOTPLoginView
 
 class PasswordResetSerializer(serializers.Serializer):
@@ -106,12 +106,17 @@ urlpatterns = [
     path('password/reset/', ResetPasswordView.as_view(), name='reset-password'),
     path('password/change/', ProfilePasswordResetView.as_view(), name='change-password'),
     path('password/change/ui/', ChangePasswordUIView.as_view(), name='change-password-ui'),
+    path('change-password/', ChangePasswordView.as_view(), name='api-change-password'),
+    path('verify-password/', VerifyPasswordView.as_view(), name='api-verify-password'),
     
     # Invite agent endpoint (must come before router to have priority)
     path('invite-agent/', UserViewSet.as_view({'get': 'invite_agent', 'post': 'invite_agent'}), name='api-invite-agent'),
     
     # User listing endpoint
     path('list/', UserViewSet.as_view({'get': 'list'}), name='user-list'),
+    
+    # Internal endpoint for service-to-service lookups (no auth required)
+    path('internal/<int:user_id>/', UserByIdView.as_view(), name='user-internal-by-id'),
     
     # Agent management endpoint
     path('agents/', UserViewSet.as_view({'get': 'list'}), name='user-agents'),

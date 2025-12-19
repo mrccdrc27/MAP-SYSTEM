@@ -599,3 +599,31 @@ def invite_agent_view(request):
         'current_system': current_system_slug,
     }
     return render(request, 'management/invite_agent.html', context)
+
+
+# Internal endpoint for service-to-service lookups (no auth required)
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+
+class UserByIdView(APIView):
+    """
+    Internal endpoint for service-to-service lookups.
+    Returns basic user info (first_name, last_name, email) by user ID.
+    No authentication required - for internal use only.
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(pk=user_id)
+            return Response({
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'full_name': f"{user.first_name} {user.last_name}".strip(),
+            })
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

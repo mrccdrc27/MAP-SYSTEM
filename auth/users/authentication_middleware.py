@@ -157,9 +157,16 @@ class AuthenticationRoutingMiddleware:
                         '/api/v1/users/password/reset/', # With trailing slash
                         '/api/v1/users/password/reset',  # Without trailing slash
                         '/api/v1/users/login/verify-otp/',
+                        '/api/v1/users/verify-password/',  # Allow authenticated users to verify password
+                        '/api/v1/users/change-password/',  # Allow authenticated users to change password
                         '/api/me/',  # Allow authenticated users to check their profile
                     }
                     if path in public_api_paths:
+                        return True
+                    # Allow internal service-to-service endpoints
+                    if path.startswith('/api/v1/hdts/employees/internal/'):
+                        return True
+                    if path.startswith('/api/v1/users/internal/'):
                         return True
 
         return False

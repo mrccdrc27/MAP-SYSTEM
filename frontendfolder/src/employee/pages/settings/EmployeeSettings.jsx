@@ -217,41 +217,50 @@ export default function EmployeeSettings({ editingUserId = null }) {
     }
   };
 
-  // Verify current password with backend (debounced on input)
+  // Verify current password with backend (debounced to avoid excessive API calls)
   const verifyCurrentPassword = (pwd) => {
     if (verifyTimerRef.current) clearTimeout(verifyTimerRef.current);
-    // reset state
+    // Always reset verification state immediately on any password change
     setIsPasswordVerified(false);
     setPasswordError('');
-    if (!pwd || pwd.length === 0) return;
+    if (!pwd || pwd.length === 0) {
+      setVerifyingPassword(false);
+      return;
+    }
     setVerifyingPassword(true);
+    // Debounce the actual API call
     verifyTimerRef.current = setTimeout(async () => {
       try {
-        await backendEmployeeService.verifyCurrentPassword(pwd);
-        setIsPasswordVerified(true);
-        setPasswordError('');
+        const result = await backendEmployeeService.verifyCurrentPassword(pwd);
+        // Only set verified if we got a successful response
+        if (result) {
+          setIsPasswordVerified(true);
+          setPasswordError('');
+        }
       } catch (err) {
         setIsPasswordVerified(false);
         setPasswordError('Incorrect current password');
       } finally {
         setVerifyingPassword(false);
       }
-    }, 500); // 500ms debounce
+    }, 600);
   };
 
   const handleCurrentPasswordChange = (e) => {
     const v = e.target.value;
     setCurrentPassword(v);
-    // reset new/confirm on change
+    // reset new/confirm on change - ALWAYS
     setNewPassword('');
     setConfirmPassword('');
+    // Reset verification state immediately
     setIsPasswordVerified(false);
     setPasswordError('');
+    setVerifyingPassword(true); // Show loading immediately
     verifyCurrentPassword(v);
   };
 
   const canSaveNewPassword = () => {
-    return isPasswordVerified && newPassword.length >= 8 && newPassword === confirmPassword;
+    return isPasswordVerified && newPassword.length >= 8 && newPassword === confirmPassword && !verifyingPassword;
   };
 
   const handleClearPasswords = () => {
@@ -447,7 +456,7 @@ export default function EmployeeSettings({ editingUserId = null }) {
 
                   <div className={styles.formGroup}>
                     <label>New Password</label>
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={!isPasswordVerified} placeholder={isPasswordVerified ? 'Enter new password' : ''} />
+                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={!isPasswordVerified || verifyingPassword} placeholder={isPasswordVerified ? 'Enter new password' : ''} />
                     {/* Validation message for new password */}
                     {/* Show error only when user starts typing; no positive message */}
                     {newPassword.length > 0 && (() => {
@@ -458,7 +467,7 @@ export default function EmployeeSettings({ editingUserId = null }) {
 
                   <div className={styles.formGroup}>
                     <label>Confirm Password</label>
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={!isPasswordVerified} placeholder={isPasswordVerified ? 'Confirm new password' : ''} />
+                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={!isPasswordVerified || verifyingPassword} placeholder={isPasswordVerified ? 'Confirm new password' : ''} />
                     {confirmPassword && confirmPassword !== newPassword && <small style={{ color: 'red' }}>Password did not match.</small>}
                   </div>
 
