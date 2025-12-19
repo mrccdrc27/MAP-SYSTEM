@@ -245,6 +245,7 @@
 
             // --- 2. Edit Mode Toggle ---
             function setEditMode(enabled) {
+                console.log('setEditMode:', enabled);
                 // Fields that are always allowed to be edited by user
                 const editableIds = [
                     'id_first_name', 'id_middle_name', 'id_last_name', 'id_suffix',
@@ -261,6 +262,18 @@
 
                 // Profile picture handling
                 if (profilePicInput) profilePicInput.disabled = !enabled;
+                
+                const profileMenu = document.querySelector('.profileImageMenu');
+                if (profileMenu) {
+                    if (enabled) profileMenu.classList.remove('hidden');
+                    else profileMenu.classList.add('hidden');
+                }
+
+                const profileOverlay = document.querySelector('.profileImageOverlay');
+                if (profileOverlay) {
+                    profileOverlay.style.cursor = enabled ? 'pointer' : 'default';
+                }
+
                 const changeLabel = document.querySelector('.changeImageBtn');
                 if (changeLabel) changeLabel.style.pointerEvents = enabled ? 'auto' : 'none';
 
@@ -271,6 +284,17 @@
             }
 
             editBtn.addEventListener('click', () => setEditMode(true));
+            
+            // Allow clicking the overlay to trigger file input in edit mode
+            const profileOverlay = document.querySelector('.profileImageOverlay');
+            if (profileOverlay) {
+                profileOverlay.addEventListener('click', () => {
+                    // Check if we are in edit mode (save button is visible)
+                    if (!saveBtn.classList.contains('hidden')) {
+                        if (profilePicInput) profilePicInput.click();
+                    }
+                });
+            }
             
             cancelBtn.addEventListener('click', () => {
                 setEditMode(false);
@@ -374,6 +398,9 @@
             }
 
             // --- Profile Image Preview ---
+            // Note: The change listener is handled by the ImageCropper component (image_cropper_modal.html)
+            // to allow cropping before setting the preview.
+            /*
             profilePicInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
                     const reader = new FileReader();
@@ -384,6 +411,7 @@
                     reader.readAsDataURL(this.files[0]);
                 }
             });
+            */
 
             // Initialize
             setEditMode(false);

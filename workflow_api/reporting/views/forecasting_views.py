@@ -9,7 +9,7 @@ Provides machine learning-based predictions for:
 - Workload forecasting
 """
 
-from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
+from django.db.models import Count, Avg
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, ExtractHour, ExtractWeekDay
 from django.utils import timezone
 from datetime import timedelta
@@ -456,17 +456,6 @@ class SLABreachRiskForecastView(BaseReportingView):
                 status__in=['pending', 'in progress']
             ).select_related('ticket_id', 'workflow_id', 'current_step')
             
-            # Calculate historical breach patterns for risk modeling
-            historical_breaches = Task.objects.filter(
-                status='completed',
-                target_resolution__isnull=False
-            ).annotate(
-                breached=ExpressionWrapper(
-                    F('resolution_time') > F('target_resolution'),
-                    output_field=DurationField()
-                )
-            )
-            
             # Risk assessments for each open task
             risk_assessments = []
             high_risk_count = 0
@@ -476,6 +465,7 @@ class SLABreachRiskForecastView(BaseReportingView):
             for task in open_tasks:
                 risk_score = 0
                 risk_factors = []
+                time_remaining = None  # Initialize time_remaining
                 
                 if task.target_resolution:
                     time_remaining = (task.target_resolution - now).total_seconds() / 3600
