@@ -464,7 +464,7 @@ export default function AdminArchive() {
           <div className={styles.tpTableSection}>
             {isLoading && (
               <div className={styles.skeletonWrapper}>
-                <div>Loading...</div>
+                <TableSkeleton rows={5} columns={8} />
               </div>
             )}
 
