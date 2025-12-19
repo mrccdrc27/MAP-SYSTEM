@@ -458,10 +458,10 @@
                             localStorage.setItem('refresh_token', data.refresh);
                         }
                         ToastNotification.success('Success', 'Logged in successfully!');
-                        // Redirect to HDTS system with system parameter
-                        const hdtsUrl = "{{ hdts_system_url }}" || 'http://localhost:3000/hdts';
+                        // Redirect to frontend - let the frontend handle routing based on JWT
+                        const frontendUrl = 'http://localhost:5173';
                         setTimeout(() => {
-                            window.location.href = hdtsUrl + '?system=hdts';
+                            window.location.href = frontendUrl;
                         }, 1500);
                     } else if (data.requires_otp) {
                         // 2FA required - store email and switch to OTP mode

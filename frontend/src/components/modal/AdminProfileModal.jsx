@@ -47,7 +47,7 @@ export default function AdminProfileModal({ closeProfileAction }) {
               closeProfileAction(false);
               // construct external URL from Vite env var and endpoint
               const base = import.meta.env.VITE_AUTH_URL || '';
-              const url = `${base.replace(/\/$/, '')}/settings/profile/`;
+              const url = `${base.replace(/\/$/, '')}/staff/settings/profile/`;
               // open in a new browser window/tab safely
               window.open(url, '_blank', 'noopener,noreferrer');
             }}
@@ -61,7 +61,7 @@ export default function AdminProfileModal({ closeProfileAction }) {
               closeProfileAction(false);
               // construct external URL from Vite env var and endpoint
               const base = import.meta.env.VITE_AUTH_URL || '';
-              const url = `${base.replace(/\/$/, '')}/agent-management/`;  
+              const url = `${base.replace(/\/$/, '')}/staff/agent-management/`;
                 // open in a new browser window/tab safely
               window.open(url, '_blank', 'noopener,noreferrer');
             }}

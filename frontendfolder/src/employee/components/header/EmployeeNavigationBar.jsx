@@ -106,8 +106,8 @@ const EmployeeNavBar = () => {
           }
 
           // Try agent-management list for render-ready entries
-          try {
-            const listResp = await fetch(`${AUTH_BASE}/api/v1/users/agent-management/`, { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } });
+            try {
+            const listResp = await fetch(`${AUTH_BASE}/api/v1/users/agents/`, { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } });
             if (listResp && listResp.ok) {
               const list = await listResp.json();
               if (Array.isArray(list) && list.length) {
@@ -125,7 +125,7 @@ const EmployeeNavBar = () => {
 
           // As a last-resort, try the settings/profile endpoint which may be present in some deployments
           try {
-            const respSettings = await fetch(`${AUTH_BASE}/api/v1/users/settings/profile/`, { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } });
+            const respSettings = await fetch(`${AUTH_BASE}/api/v1/users/profile/`, { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } });
             const ct = respSettings ? (respSettings.headers.get('content-type') || '') : '';
             if (respSettings && respSettings.ok && ct.includes('application/json')) {
               try {
@@ -147,7 +147,7 @@ const EmployeeNavBar = () => {
 
         if (token) {
           try {
-            const resp = await fetch(`${AUTH_BASE}/api/v1/users/settings/profile/`, {
+            const resp = await fetch(`${AUTH_BASE}/api/v1/users/profile/`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -232,21 +232,7 @@ const EmployeeNavBar = () => {
   };
 
   const handleLogout = async () => {
-    // Try to call the auth service logout endpoint (server should clear HttpOnly cookies)
-    try {
-      const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
-      const LOGOUT_URL = `${AUTH_BASE}/api/v1/token/logout/`;
-      try {
-        await fetch(LOGOUT_URL, { method: 'POST', credentials: 'include' });
-        if (import.meta.env.DEV) console.debug('[EmployeeNavigationBar] Called auth logout endpoint');
-      } catch (err) {
-        if (import.meta.env.DEV) console.debug('[EmployeeNavigationBar] Auth logout endpoint call failed:', err);
-      }
-    } catch (e) {
-      if (import.meta.env.DEV) console.debug('[EmployeeNavigationBar] Logout: failed to compute auth logout URL', e);
-    }
-
-    // Clear all auth-related localStorage items
+    // Clear all auth-related localStorage items first
     try {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
@@ -286,18 +272,12 @@ const EmployeeNavBar = () => {
     setShowProfileMenu(false);
     setIsMobileMenuOpen(false);
 
-    // Redirect to auth service login page (use configured AUTH base; defaults to localhost:8003)
+    // Redirect to auth service logout endpoint which clears cookies and redirects to login
     try {
       const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
-      // Give the auth service a short moment to clear server cookies, then force a full navigation.
-      setTimeout(() => {
-        try {
-          window.location.replace(`${AUTH_BASE}/login`);
-        } catch (err) {
-          try { window.location.href = `${AUTH_BASE}/login`; } catch (e) { navigate('/', { state: { fromLogout: true } }); }
-        }
-      }, 250);
+      window.location.href = `${AUTH_BASE}/logout/`;
     } catch (e) {
+      if (import.meta.env.DEV) console.debug('[EmployeeNavigationBar] Logout redirect failed', e);
       // Fallback: navigate to root of frontend
       navigate('/', { state: { fromLogout: true } });
     }
@@ -421,7 +401,7 @@ const EmployeeNavBar = () => {
         // If no explicit image provided, prefer cookie-based fetch from auth service
         const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
 
-        fetch(`${AUTH_BASE}/api/v1/users/settings/profile/`, {
+        fetch(`${AUTH_BASE}/api/v1/users/profile/`, {
           method: 'GET',
           credentials: 'include',
         })

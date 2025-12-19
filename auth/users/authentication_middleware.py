@@ -39,6 +39,7 @@ class AuthenticationRoutingMiddleware:
         '/api/v1/users/register/',
         '/api/v1/hdts/employees/api/login/',
         '/api/v1/hdts/employees/api/register/',
+        '/api/v1/token/logout/',
         '/token/',
         '/admin/',
         '/api/schema/',
@@ -63,7 +64,6 @@ class AuthenticationRoutingMiddleware:
 
     # Employee-only endpoints
     EMPLOYEE_ENDPOINTS = {
-        '/login/',  # Employee login portal
         '/profile-settings/',
         '/change-password/',
         '/api/v1/hdts/employees/',
