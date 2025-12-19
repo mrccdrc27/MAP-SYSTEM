@@ -1,10 +1,9 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
-from .models import Workflows, Category
+from .models import Workflows
 from step.models import Steps, StepTransition
 from role.models import Roles
 import logging
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -107,24 +106,6 @@ class UpdateWorkflowGraphSerializer(serializers.Serializer):
         return data
 
 
-class WorkflowGraphResponseSerializer(serializers.Serializer):
-    """Serializer for returning complete workflow graph"""
-    nodes = GraphNodeSerializer(many=True)
-    edges = GraphEdgeSerializer(many=True)
-    temp_id_mapping = serializers.DictField(
-        child=serializers.IntegerField(),
-        required=False,
-        help_text="Mapping of temporary IDs to database IDs"
-    )
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    """Serializer for workflow categories"""
-    class Meta:
-        model = Category
-        fields = ['category_id', 'name', 'parent']
-
-
 class WorkflowBasicSerializer(serializers.ModelSerializer):
     """Basic serializer for workflow list views"""
     class Meta:
@@ -173,11 +154,6 @@ class UpdateWorkflowDetailsSerializer(serializers.Serializer):
     medium_sla = serializers.DurationField(required=False)
     high_sla = serializers.DurationField(required=False)
     urgent_sla = serializers.DurationField(required=False)
-
-
-class UpdateWorkflowGraphSerializerV2(serializers.Serializer):
-    """Alternative version of graph update serializer (for compatibility)"""
-    graph = UpdateWorkflowGraphSerializer(required=False)
 
 
 class WorkflowDetailSerializer(serializers.ModelSerializer):

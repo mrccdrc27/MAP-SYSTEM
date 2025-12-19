@@ -1,283 +1,139 @@
 import React, { useState, useEffect } from 'react';
-import styles from './StepEditPanel.module.css';
-import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
+import { Trash2 } from 'lucide-react';
+import styles from './WorkflowEditorLayout.module.css';
 
-export default function StepEditPanel({ step, roles, onClose, onSave, onDelete, onChange }) {
+export default function StepEditPanel({ step, roles = [], onUpdate, onDelete }) {
   const [formData, setFormData] = useState({
-    name: '',
+    label: '',
+    role: '',
     description: '',
     instruction: '',
-    role: '',
     is_start: false,
     is_end: false,
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  const { updateStepDetails } = useWorkflowAPI();
 
   useEffect(() => {
     if (step) {
       setFormData({
-        name: step.label || step.name || '',
+        label: step.label || step.name || '',
+        role: step.role || '',
         description: step.description || '',
         instruction: step.instruction || '',
-        role: step.role || '',
-        is_start: step.is_start || false,
-        is_end: step.is_end || false,
+        is_start: step.is_start || step.isStart || false,
+        is_end: step.is_end || step.isEnd || false,
       });
-      // Reset editing state when step changes
-      setIsEditing(false);
     }
   }, [step]);
 
-  // Call onChange when formData changes for real-time updates
-  useEffect(() => {
-    if (onChange && String(step?.id).startsWith('temp-')) {
-      onChange({
-        name: formData.name,
-        role: formData.role,
-        description: formData.description,
-        instruction: formData.instruction,
-        is_start: formData.is_start,
-        is_end: formData.is_end,
+  const handleChange = (field, value) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    if (onUpdate) {
+      onUpdate({
+        name: newFormData.label,
+        label: newFormData.label,
+        role: newFormData.role,
+        description: newFormData.description,
+        instruction: newFormData.instruction,
+        is_start: newFormData.is_start,
+        is_end: newFormData.is_end,
       });
     }
-  }, [formData, onChange, step?.id]);
-
-  const handleChange = (e) => {
-    // Allow changes for temp steps (new steps) or when in edit mode for persistent steps
-    if (!String(step?.id).startsWith('temp-') && !isEditing) return;
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    if (String(step.id).startsWith('temp-')) {
-      onSave({
-        ...step,
-        name: formData.name,
-        role: formData.role,
-        description: formData.description,
-        instruction: formData.instruction,
-        is_start: formData.is_start,
-        is_end: formData.is_end,
-      });
-      return;
-    }
-
-    try {
-      const updateData = {
-        name: formData.name,
-        description: formData.description,
-        instruction: formData.instruction,
-        role: formData.role,
-        is_start: formData.is_start,
-        is_end: formData.is_end,
-      };
-
-      await updateStepDetails(step.id, updateData);
-      onSave({
-        ...step,
-        label: formData.name,
-        ...updateData,
-      });
-    } catch (err) {
-      setError(err.message || 'Failed to update step');
-      console.error('Error updating step:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = () => {
-    onDelete();
-    onClose();
-  };
+  if (!step) return null;
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <h3>Edit Step</h3>
-        <button className={styles.closeBtn} onClick={onClose}>
-          ✕
-        </button>
+    <div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>Step Name</label>
+        <input
+          type="text"
+          value={formData.label}
+          onChange={(e) => handleChange('label', e.target.value)}
+          className={styles.formInput}
+        />
       </div>
 
-      {error && <div className={styles.error}>{error}</div>}
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>Assigned Role</label>
+        {roles.length > 0 ? (
+          <select
+            value={formData.role}
+            onChange={(e) => handleChange('role', e.target.value)}
+            className={styles.formSelect}
+          >
+            <option value="">Select a role</option>
+            {roles.map((role) => (
+              <option key={role.role_id || role.id} value={role.name}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={formData.role}
+            onChange={(e) => handleChange('role', e.target.value)}
+            className={styles.formInput}
+            placeholder="e.g., Admin, Manager, Customer"
+          />
+        )}
+      </div>
 
-      {showDeleteConfirm ? (
-        <div className={styles.deleteConfirmation}>
-          <p>Are you sure you want to delete this step?</p>
-          <p className={styles.warning}>This action cannot be undone.</p>
-          <div className={styles.confirmActions}>
-            <button
-              className={styles.cancelBtn}
-              onClick={() => setShowDeleteConfirm(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className={styles.deleteConfirmBtn}
-              onClick={confirmDelete}
-            >
-              Delete Step
-            </button>
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label>Step Name</label>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => handleChange('description', e.target.value)}
+          rows={3}
+          className={styles.formTextarea}
+          placeholder="Enter step description"
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>Instruction</label>
+        <textarea
+          value={formData.instruction}
+          onChange={(e) => handleChange('instruction', e.target.value)}
+          rows={3}
+          className={styles.formTextarea}
+          placeholder="Enter step instruction"
+        />
+      </div>
+
+      <div className={styles.formDivider}>
+        <div className={styles.formCheckboxGroup}>
+          <label className={styles.formCheckboxLabel}>
             <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter step name"
-              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
-              required
+              type="checkbox"
+              checked={formData.is_start}
+              onChange={(e) => handleChange('is_start', e.target.checked)}
+              className={styles.formCheckbox}
             />
-          </div>
+            <span className={styles.formCheckboxText}>Mark as START step</span>
+          </label>
 
-          <div className={styles.formGroup}>
-            <label>Role</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
-              required
-            >
-              <option key="default" value="">Select a role</option>
-              {roles.map((role) => (
-                <option key={role.role_id} value={role.name}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Enter step description"
-              rows="3"
-              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
+          <label className={styles.formCheckboxLabel}>
+            <input
+              type="checkbox"
+              checked={formData.is_end}
+              onChange={(e) => handleChange('is_end', e.target.checked)}
+              className={styles.formCheckbox}
             />
-          </div>
+            <span className={styles.formCheckboxText}>Mark as END step</span>
+          </label>
+        </div>
+      </div>
 
-          <div className={styles.formGroup}>
-            <label>Instruction</label>
-            <textarea
-              name="instruction"
-              value={formData.instruction}
-              onChange={handleChange}
-              placeholder="Enter step instruction"
-              rows="3"
-              disabled={!isEditing && !String(step?.id).startsWith('temp-')}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>
-              <input
-                type="checkbox"
-                name="is_start"
-                checked={formData.is_start}
-                onChange={handleChange}
-                disabled={!isEditing && !String(step?.id).startsWith('temp-')}
-              />
-              Is Start
-            </label>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>
-              <input
-                type="checkbox"
-                name="is_end"
-                checked={formData.is_end}
-                onChange={handleChange}
-                disabled={!isEditing && !String(step?.id).startsWith('temp-')}
-              />
-              Is End
-            </label>
-          </div>
-
-          <div className={styles.formActions}>
-            {String(step?.id).startsWith('temp-') ? (
-              // For new steps (temp-*) - always show editable, no save button
-              <>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className={styles.cancelBtn}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : !isEditing ? (
-              // For existing steps not in edit mode - show only Edit button
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className={styles.editBtn}
-              >
-                ✏️ Edit
-              </button>
-            ) : (
-              // For existing steps in edit mode - show Cancel, Save, and Edit
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    onClose();
-                  }}
-                  className={styles.cancelBtn}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className={styles.saveBtn} disabled={loading}>
-                  {loading ? 'Saving...' : 'Save Step'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className={styles.editBtn}
-                >
-                  ✏️ Edit
-                </button>
-              </>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className={styles.deleteBtn}
-              >
-                Delete Step
-              </button>
-            )}
-          </div>
-        </form>
+      {onDelete && !formData.is_start && !formData.is_end && (
+        <div className={styles.formDivider}>
+          <button onClick={onDelete} className={styles.btnDelete}>
+            <Trash2 className={styles.btnDeleteIcon} />
+            Delete Step
+          </button>
+        </div>
       )}
     </div>
   );

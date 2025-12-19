@@ -1,0 +1,912 @@
+/* Dynamic Details Grid for consistent spacing in dynamic sections */
+.dynamicDetailsGrid {
+  display: grid;
+  gap: 12px;
+}
+
+/* Main Container */
+.employeeTicketTrackerPage {
+  background-color: var(--bg-color);
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+}
+
+/* Two-column layout: fixed - REMOVED height: 100% and align-items: stretch */
+.contentGrid {
+  display: grid;
+  /* Use a flexible main column and a constrained sidebar to avoid percent-sum overflow
+     This prevents the left column from being wider than available space when paddings/gutters are present. */
+  grid-template-columns: minmax(0, 60%) minmax(300px, 40%);
+  gap: 12px;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* keep overflow-x hidden as a safety clamp; the sizing above prevents horizontal overflow in normal cases */
+  overflow-x: hidden;
+  align-items: stretch;
+}
+
+/* Left Column - REMOVED height: 100% */
+.leftColumn {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 28px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Ticket Card */
+.ticketCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Ticket Header */
+.ticketHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Compact meta row beneath header (dates, small info) */
+.ticketMeta {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  align-items: center;
+  padding: 6px 0;
+  background: transparent;
+  flex-wrap: wrap;
+}
+
+.ticketMetaItem {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.ticketMetaLabel {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.ticketMetaValue {
+  font-size: 0.7rem;
+  color: #374151;
+  font-weight: 500;
+  margin: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ticketNumber {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+/* Subject shown in header (replaces ticket number + priority) */
+.ticketSubject {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Priority Badge */
+.priorityBadge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.priorityLow {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.priorityMedium {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.priorityHigh {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.priorityCritical {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+.priorityNotSet {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.statusPending {
+  color: #b38f00;
+  background-color: #fff9cc;
+}
+
+.statusNew {
+  color: #1E90FF;
+  background-color: #DBEAFE;
+}
+
+.statusInProgress {
+  color: #7c3aed;
+  background-color: #e9d5ff;
+}
+
+.statusOnHold {
+  color: #b35000;
+  background-color: #ffe5b4;
+}
+
+.statusResolved {
+  color: #059669;
+  background-color: #bbf7d0;
+}
+
+.statusClosed {
+  color: #16a34a;
+  background-color: #dcfce7;
+}
+
+.statusRejected {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+.statusWithdrawn {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.statusOpen {
+  color: #0284c7;
+  background-color: #bae6fd;
+}
+
+/* Small badge variant for compact items like 'None' subcategory */
+.statusSmall {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Subject Section (container) */
+.subjectSection {
+  padding-bottom: 8px;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Subject meta grid (top summary row) */
+.subjectMeta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  align-items: start;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metaLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.metaValue {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.descriptionLabel {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+/* Details Grid */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Single-column group used for Description, Attachments, Schedule Request */
+.singleColumnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  grid-column: 1 / -1;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.detailItem {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: start;
+  gap: 6px 16px;
+  width: 100%;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailValue {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #111827;
+  display: block;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* For single-column group values (Description/Attachments/Schedule) make the value stack as a column */
+.singleColumnGroup .detailItem {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 6px;
+}
+.singleColumnGroup .detailLabel {
+  margin: 0;
+  white-space: nowrap;
+}
+.singleColumnGroup .detailValue {
+  width: 100%;
+  word-break: break-word;
+  white-space: normal;
+  padding-left: 0;
+}
+
+/* Utility to truncate a single-line value with ellipsis */
+.truncateSingleLine {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+}
+
+/* Attachments row: place the value below the label and span full width */
+.singleColumnGroup .attachmentsRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 6px;
+}
+.singleColumnGroup .attachmentsRow .detailValue {
+  padding-left: 0;
+}
+
+/* Section Label */
+.sectionLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+/* Description Section */
+.descriptionSection {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.descriptionBox {
+  background-color: #f9fafb;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.descriptionText {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* Section divider to match reference horizontal separators */
+.sectionDivider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02));
+  margin: 8px 0;
+  width: 100%;
+}
+
+/* Small adjustments to spacing to mimic the reference */
+.metaValue {
+  margin-top: 4px;
+}
+
+/* keep small spacing adjustments below subject */
+.subjectSection + .sectionDivider {
+  margin-top: 18px;
+}
+
+/* Unified IT Support Section styling */
+.itSupportSection {
+  margin-top: 6px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Attachment Section */
+.attachmentSection {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.attachmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.attachmentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.attachmentItem:hover {
+  border-color: #3b82f6;
+  background-color: #f0f9ff;
+}
+
+/* IT Support grouping - unified card look and vertical stacking */
+.itGroups {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 0;
+  width: 100%;
+}
+
+.itGroup {
+  background: transparent;
+  border-radius: 8px;
+  padding: 0;
+  width: 100%;
+}
+
+.itGroupTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itGroupGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Make fieldsets inside IT groups match the inline detailItem layout */
+.itGroupGrid fieldset {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 0;
+  border: none;
+  width: 100%;
+}
+
+.itGroupGrid fieldset label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.itGroupGrid fieldset p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+/* DetailField styling */
+fieldset {
+  margin: 0;
+  padding: 0 0 12px 0;
+  border: none;
+  border-left: 2px solid transparent;
+  width: 100%;
+}
+
+fieldset label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+fieldset p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.attachmentIcon {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.attachmentIcon svg {
+  color: #666;
+}
+
+.attachmentIcon svg[data-icon="file-image"] {
+  color: #e74c3c;
+}
+
+.attachmentIcon svg[data-icon="file-pdf"] {
+  color: #e74c3c;
+}
+
+.attachmentIcon svg[data-icon="file-word"] {
+  color: #2b579a;
+}
+
+.attachmentIcon svg[data-icon="file-excel"] {
+  color: #217346;
+}
+
+.attachmentIcon svg[data-icon="file-csv"] {
+  color: #217346;
+}
+
+.attachmentDownload {
+  display: flex;
+  align-items: center;
+  color: #0066cc;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.attachmentDownload:hover {
+  color: #004499;
+}
+
+.attachmentDetails {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.attachmentName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  text-decoration: underline;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.categoryDivider {
+  border-top: 1px solid rgba(16,24,40,0.06);
+  padding-top: 12px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.downloadButton:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.categoryDetails {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.4;
+  max-width: 100%;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px 0;
+}
+
+/* Right Column - REMOVED height: 100% */
+.rightColumn {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  /* keep the column participating in the grid flow so rows can stretch */
+  position: static;
+  box-sizing: border-box;
+}
+
+/* innerSticky: make only an inner element sticky so the grid cell can stretch to equal height */
+.innerSticky {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+/* Ticket Action Button Base Styles */
+.ticketActionButton {
+  width: 100% !important;
+  padding: 14px 20px !important;
+  border-radius: 8px !important;
+  text-transform: capitalize !important;
+  transition: all 0.2s ease !important;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.ticketActionButtonRow {
+  width: auto !important;
+  flex: 1 1 0;
+  margin-bottom: 0 !important;
+}
+
+/* Withdraw Button - Using withdrawn gray colors */
+.withdrawButton {
+  background-color: var(--withdrawn-text) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.withdrawButton:hover:not(:disabled) {
+  background-color: #6B7280 !important;
+}
+
+/* Close Button - Green */
+.closeButton {
+  background-color: var(--success-color) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.closeButton:hover:not(:disabled) {
+  background-color: var(--success-hover) !important;
+}
+
+/* Reject Button - Red */
+.rejectButton {
+  background-color: var(--error-color) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.rejectButton:hover:not(:disabled) {
+  background-color: var(--error-hover) !important;
+}
+
+/* Not Found Message */
+.notFound {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin: 2rem 0;
+  padding: 40px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Page Header */
+.pageHeader {
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* Single container wrapper used across ticket activity: tabs above, content below */
+.tabsContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.04);
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px 0 12px;
+  border-bottom: 1px solid rgba(15,23,42,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+}
+
+.activeTab {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.tabContent {
+  padding: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 650px;
+  max-height: 720px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* utility: force an element to span entire detailsGrid */
+.fullWidth {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+/* when the dynamic section is placed inside detailsGrid, avoid nested cards */
+.detailsGrid .fullWidth .itSupportSection {
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .rightColumn {
+    position: static;
+  }
+
+  .attachmentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .leftColumn,
+  .rightColumn {
+    padding: 20px;
+  }
+
+  .detailsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 12px;
+  }
+
+  .ticketNumber {
+    font-size: 1.5rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.25rem;
+  }
+
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .ticketHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .detailItem {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .itGroupGrid fieldset {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 576px) {
+  .leftColumn {
+    padding: 16px;
+  }
+
+  .rightColumn {
+    padding: 16px;
+  }
+
+  .pageTitle {
+    font-size: 1.5rem;
+  }
+
+  .attachmentDetails {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .downloadButton {
+    align-self: stretch;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .attachmentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticketMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .attachmentItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

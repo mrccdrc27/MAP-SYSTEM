@@ -1,4 +1,4 @@
-import { Bar } from "react-chartjs-2";
+import { Bar, getElementAtEvent } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useRef } from "react";
 
 // style
 import styles from "./chart.module.css";
@@ -27,7 +28,10 @@ export default function BarChart({
   dataPoints = [],
   chartLabel = "Data",
   chartTitle = "Bar Chart",
+  onClick,
 }) {
+  const chartRef = useRef(null);
+
   const data = {
     labels,
     datasets: [
@@ -50,10 +54,27 @@ export default function BarChart({
     scales: { y: { beginAtZero: true } },
   };
 
+  const handleClick = (event) => {
+    if (!onClick || !chartRef.current) return;
+    
+    const elements = getElementAtEvent(chartRef.current, event);
+    if (elements.length > 0) {
+      const { index } = elements[0];
+      const label = labels[index];
+      const value = dataPoints[index];
+      onClick({ label, value, index });
+    }
+  };
+
   return (
-    <div className={styles.chartCardCont}>
+    <div className={`${styles.chartCardCont} ${onClick ? styles.clickable : ''}`}>
       {labels.length && dataPoints.length ? (
-        <Bar data={data} options={options} />
+        <Bar 
+          ref={chartRef}
+          data={data} 
+          options={options} 
+          onClick={handleClick}
+        />
       ) : (
         <div className={styles.noDataText}>No data available for this chart.</div>
       )}

@@ -129,7 +129,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         responses={200: MessageSerializer(many=True)},
         tags=['Messages']
     )
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='by-ticket')
     def by_ticket(self, request):
         """Get messages by ticket ID"""
         ticket_id = request.query_params.get('ticket_id')

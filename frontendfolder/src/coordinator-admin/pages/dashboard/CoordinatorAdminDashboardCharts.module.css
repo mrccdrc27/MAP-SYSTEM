@@ -1,0 +1,189 @@
+/* === Charts Grid === */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr; /* ✅ Mobile: single column */
+  gap: 24px; /* ✅ consistent vertical spacing */
+}
+
+@media (min-width: 1024px) {
+  .chartsGrid {
+    grid-template-columns: 2fr 1fr; /* ✅ main chart + side chart/feed */
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+/* === Chart Container === */
+.chartContainer {
+  background-color: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* === Chart Title === */
+.chartTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+}
+
+/* Header row to hold title and optional select beside it */
+.chartHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0.5rem; /* keep title and chart spacing consistent */
+}
+
+.headerYRangeSelect {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 0.9rem;
+  min-width: 96px; /* slightly smaller */
+  max-width: 160px;
+}
+
+/* === Chart Content: Pie + Timeline Side-by-Side === */
+.chartContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 1rem 0;
+  position: relative;
+}
+
+/* === Chart Content Row === */
+.chartContentRow {
+  display: flex;
+  flex-direction: row; /* side-by-side for desktop */
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Left status column (single column list) */
+.statusColumn {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+.statusSwatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Timeline list styling */
+.timelineList {
+  width: 100%; /* full width on mobile */
+  max-height: 200px; /* scrollable if too many items */
+  overflow-y: auto;
+  padding-left: 0;
+  list-style: none;
+  margin: 0;
+}
+
+.timelineItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.timelineTime {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.timelineAction {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+/* === Browse Button === */
+.browseButton {
+  align-self: flex-start; /* ✅ button doesn’t stretch full width */
+  margin-top: 1rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px; /* ✅ pill button */
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.browseButton:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* Full width variant to be used with shared Button component */
+.browseButtonFull {
+  width: 100%;
+  display: block;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px; /* less pill to match shared button style */
+  text-align: center;
+}
+
+/* === Responsive Adjustments === */
+@media (max-width: 1024px) {
+  .chartContent {
+    flex-direction: column; /* stack pie chart + timeline on smaller screens */
+    gap: 1rem;
+  }
+
+  .timelineList {
+    width: 100%; /* timeline full width on mobile */
+    max-height: none;
+  }
+}
+
+/* === Desktop & Tablet: side-by-side === */
+@media (min-width: 768px) {
+  .chartContentRow {
+    flex-direction: row; /* row for tablet & desktop */
+    align-items: flex-start;
+    gap: 2rem;
+  }
+
+  .timelineList {
+    width: 40%; /* takes the right side */
+    max-height: none; /* let it expand */
+  }
+
+  .chartContentRow > .recharts-wrapper {
+    width: 60%; /* Pie chart takes left side */
+  }
+}

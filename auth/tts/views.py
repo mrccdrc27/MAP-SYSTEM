@@ -386,7 +386,7 @@ def assign_agent_to_role_form(request):
         'user': user,
         'unread_count': 0,
     }
-    return render(request, 'tts/assign_agent_to_role.html', context)
+    return render(request, 'management/tts/assign_agent_to_role.html', context)
 
 
 @jwt_cookie_required
@@ -402,5 +402,5 @@ def role_assignments_view(request):
         'user': user,
         'unread_count': 0,
     }
-    return render(request, 'tts/role_management_assignments.html', context)
+    return render(request, 'management/tts/role_management_assignments.html', context)
 

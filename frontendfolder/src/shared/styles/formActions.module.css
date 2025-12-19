@@ -1,0 +1,20 @@
+/* Shared form action button sizing used across forms */
+.formAction {
+  height: 40px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.actionContainer {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.actionFlexChild {
+  flex: 1;
+}

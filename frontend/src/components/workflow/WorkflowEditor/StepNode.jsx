@@ -1,40 +1,66 @@
 import React, { useCallback } from 'react';
-import { Handle, Position, useReactFlow } from 'reactflow';
-import styles from './StepNode.module.css';
+import { Handle, Position } from 'reactflow';
+import { Circle, Flag } from 'lucide-react';
+import styles from './WorkflowEditorLayout.module.css';
 
-export default function StepNode({ data, isConnecting }) {
-  const { getNode } = useReactFlow();
+export default function StepNode({ data, selected }) {
 
   const handleNodeClick = useCallback(() => {
-    const node = getNode(data.id);
     if (data.onStepClick) {
       data.onStepClick(data);
     }
-  }, [data, getNode]);
+  }, [data]);
+
+  const nodeClasses = [
+    styles.stepNode,
+    selected && styles.stepNodeSelected,
+    data.is_start && styles.stepNodeStart,
+    data.is_end && styles.stepNodeEnd,
+  ].filter(Boolean).join(' ');
 
   return (
-    <div className={`${styles.node} ${data.is_start ? styles.startNode : ''} ${data.is_end ? styles.endNode : ''}`} onClick={handleNodeClick}>
-      <Handle type="target" position={Position.Top} id="top" />
-      <Handle type="target" position={Position.Bottom} id="bottom" />
-      <Handle type="target" position={Position.Left} id="left" />
-      <Handle type="target" position={Position.Right} id="right" />
+    <div className={nodeClasses} onClick={handleNodeClick}>
+      {!data.is_start && (
+        <>
+          <Handle type="target" position={Position.Top} id="top" className={styles.stepNodeHandle} />
+          <Handle type="target" position={Position.Left} id="left" className={styles.stepNodeHandle} />
+          <Handle type="target" position={Position.Right} id="right" className={styles.stepNodeHandle} />
+        </>
+      )}
       
-      <div className={styles.nodeContent}>
-        <div className={styles.nodeBadges}>
-          {data.is_start && <span className={styles.startBadge}>START</span>}
-          {data.is_end && <span className={styles.endBadge}>END</span>}
-        </div>
-        <div className={styles.nodeTitle}>{data.label}</div>
-        <div className={styles.nodeRole}>{data.role}</div>
-        <div className={styles.nodeDescription}>
-          {data.description || 'No description'}
+      <div className={styles.stepNodeContent}>
+        <div className={styles.stepNodeBody}>
+          <div className={styles.stepNodeHeader}>
+            <span className={styles.stepNodeLabel}>{data.label}</span>
+            {data.is_start && (
+              <span className={`${styles.stepNodeBadge} ${styles.stepNodeBadgeStart}`}>
+                <Circle className={styles.stepNodeBadgeIcon} />
+                START
+              </span>
+            )}
+            {data.is_end && (
+              <span className={`${styles.stepNodeBadge} ${styles.stepNodeBadgeEnd}`}>
+                <Flag className={styles.stepNodeBadgeIcon} />
+                END
+              </span>
+            )}
+          </div>
+          {data.role && (
+            <div className={styles.stepNodeRole}>{data.role}</div>
+          )}
+          {data.description && (
+            <div className={styles.stepNodeDescription}>{data.description}</div>
+          )}
         </div>
       </div>
-      
-      <Handle type="source" position={Position.Top} id="top" />
-      <Handle type="source" position={Position.Bottom} id="bottom" />
-      <Handle type="source" position={Position.Left} id="left" />
-      <Handle type="source" position={Position.Right} id="right" />
+
+      {!data.is_end && (
+        <>
+          <Handle type="source" position={Position.Bottom} id="bottom" className={styles.stepNodeHandle} />
+          <Handle type="source" position={Position.Left} id="left" className={styles.stepNodeHandle} />
+          <Handle type="source" position={Position.Right} id="right" className={styles.stepNodeHandle} />
+        </>
+      )}
     </div>
   );
 }

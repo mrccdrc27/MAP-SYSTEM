@@ -12,26 +12,20 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import QueryDict
 
 from reporting.views import (
-    AnalyticsRootView,
-    DashboardSummaryView,
-    StatusSummaryView,
-    SLAComplianceView,
-    TeamPerformanceView,
+    TicketDashboardView,
+    TicketStatusSummaryView,
+    TicketSLAComplianceView,
+    UserPerformanceView,
     WorkflowMetricsView,
     StepPerformanceView,
     DepartmentAnalyticsView,
-    PriorityDistributionView,
-    TicketAgeAnalyticsView,
-    AssignmentAnalyticsView,
-    AuditActivityView,
-    TaskItemStatusAnalyticsView,
-    TaskItemAssignmentOriginAnalyticsView,
-    TaskItemPerformanceAnalyticsView,
-    TaskItemUserPerformanceAnalyticsView,
-    TaskItemHistoryTrendAnalyticsView,
-    TaskItemTransferAnalyticsView,
+    TicketPriorityDistributionView,
+    TicketAgeDistributionView,
+    TaskItemStatusDistributionView,
+    TaskItemOriginDistributionView,
+    TaskItemPerformanceView,
+    TransferAnalyticsView,
 )
-
 
 class Command(BaseCommand):
     help = 'Generate analytics reports and save to JSON file'
@@ -99,30 +93,25 @@ class Command(BaseCommand):
 
         # Define all endpoints
         endpoints = {
-            'analytics_root': {
-                'view': AnalyticsRootView,
-                'params': None,
-                'description': 'Analytics API root with all available endpoints',
-            },
             'dashboard': {
-                'view': DashboardSummaryView,
+                'view': TicketDashboardView,
                 'params': None,
                 'description': 'Dashboard summary with overall system metrics',
             },
             'status_summary': {
-                'view': StatusSummaryView,
+                'view': TicketStatusSummaryView,
                 'params': None,
-                'description': 'Task status distribution',
+                'description': 'Ticket status distribution',
             },
             'sla_compliance': {
-                'view': SLAComplianceView,
+                'view': TicketSLAComplianceView,
                 'params': None,
                 'description': 'SLA compliance metrics by priority',
             },
-            'team_performance': {
-                'view': TeamPerformanceView,
+            'user_performance': {
+                'view': UserPerformanceView,
                 'params': None,
-                'description': 'Team/User performance metrics',
+                'description': 'User performance metrics',
             },
             'workflow_metrics': {
                 'view': WorkflowMetricsView,
@@ -140,52 +129,32 @@ class Command(BaseCommand):
                 'description': 'Department-level analytics',
             },
             'priority_distribution': {
-                'view': PriorityDistributionView,
+                'view': TicketPriorityDistributionView,
                 'params': None,
                 'description': 'Priority distribution and metrics',
             },
             'ticket_age': {
-                'view': TicketAgeAnalyticsView,
+                'view': TicketAgeDistributionView,
                 'params': None,
                 'description': 'Analyze ticket age/aging tickets',
             },
-            'assignment_analytics': {
-                'view': AssignmentAnalyticsView,
-                'params': None,
-                'description': 'Task assignment analytics by role',
-            },
-            'audit_activity': {
-                'view': AuditActivityView,
-                'params': {'days': '30'},
-                'description': 'User and system audit activity (last 30 days)',
-            },
             'task_item_status': {
-                'view': TaskItemStatusAnalyticsView,
+                'view': TaskItemStatusDistributionView,
                 'params': None,
                 'description': 'Task item status distribution and breakdown',
             },
-            'task_item_assignment_origin': {
-                'view': TaskItemAssignmentOriginAnalyticsView,
+            'task_item_origin': {
+                'view': TaskItemOriginDistributionView,
                 'params': None,
-                'description': 'Task item assignment origin analytics (System/Transferred/Escalation)',
+                'description': 'Task item assignment origin analytics',
             },
             'task_item_performance': {
-                'view': TaskItemPerformanceAnalyticsView,
+                'view': TaskItemPerformanceView,
                 'params': None,
-                'description': 'Task item performance metrics (time-to-action, resolution time, SLA)',
+                'description': 'Task item performance metrics',
             },
-            'task_item_user_performance': {
-                'view': TaskItemUserPerformanceAnalyticsView,
-                'params': None,
-                'description': 'Per-user task item performance analytics',
-            },
-            'task_item_history_trends': {
-                'view': TaskItemHistoryTrendAnalyticsView,
-                'params': {'days': '30'},
-                'description': 'Task item status trends over time (last 30 days)',
-            },
-            'task_item_transfer_analytics': {
-                'view': TaskItemTransferAnalyticsView,
+            'transfer_analytics': {
+                'view': TransferAnalyticsView,
                 'params': None,
                 'description': 'Task item transfer and escalation analytics',
             },
@@ -226,11 +195,14 @@ class Command(BaseCommand):
             json.dump(report, f, indent=indent, default=str)
 
         # Success message
-        file_size = os.path.getsize(output_file)
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'\n✓ Report generated successfully!'
-                f'\n  File: {output_file}'
-                f'\n  Size: {file_size:,} bytes'
+        if os.path.exists(output_file):
+            file_size = os.path.getsize(output_file)
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'\n✓ Report generated successfully!'
+                    f'\n  File: {output_file}'
+                    f'\n  Size: {file_size:,} bytes'
+                )
             )
-        )
+        else:
+            self.stdout.write(self.style.ERROR(f'\n✗ Failed to create report file: {output_file}'))

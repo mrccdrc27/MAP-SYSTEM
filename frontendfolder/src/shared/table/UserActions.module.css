@@ -1,0 +1,31 @@
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  color: #333333;
+  border-color: #999999;
+}
+
+.action-btn:hover:not(:disabled) .action-icon {
+  color: #333333;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-icon {
+  font-size: 0.75rem; /* 12px */
+  color: #555555;
+}

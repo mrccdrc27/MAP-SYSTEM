@@ -1,0 +1,26 @@
+/* ===== VIEW CARD COMPONENT ===== */
+
+/* Outer container - matches breadcrumb divider width with same side padding */
+.viewContainer {
+  padding: 0 38px; /* Same side padding as breadcrumb (38px) to align with divider */
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Inner white card - full width within container */
+.viewCard {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .viewContainer{
+    padding: 0 20px; /* Match breadcrumb mobile padding */
+  }
+
+  .viewCard {
+    padding: 20px; /* Slightly reduce inner padding on mobile */
+  }
+}

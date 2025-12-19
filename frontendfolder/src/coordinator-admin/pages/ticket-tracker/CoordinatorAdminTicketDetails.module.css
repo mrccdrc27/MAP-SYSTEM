@@ -1,0 +1,370 @@
+.detailsPanel {
+  gap: 12px;
+}
+.peopleRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.personCard {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  grid-template-rows: auto auto; /* avatar spans two rows, name + meta are stacked */
+  gap: 8px 12px;
+  align-items: center;
+  flex: 1 1 50%;
+}
+.avatarWrap {
+  grid-row: 1 / span 2;
+}
+.personInfo {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+}
+.detailsPanel {
+  gap: 16px;
+}
+.section {
+  margin-bottom: 24px;
+}
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+  margin-bottom: 12px;
+}
+.userCardWrap {
+  display: block;
+}
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatarImageInner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.userInfo {
+  flex: 1;
+}
+.userName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 4px;
+}
+.userMeta {
+  font-size: 14px;
+  color: #6c757d;
+  line-height: 1.6;
+}
+/* Timeline styles (replaces action card) */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.timelineItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.timelineDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.timelineContent {
+  background: var(--white);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+}
+.timelineUser {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.timelineAction {
+  color: var(--text-secondary);
+}
+.timelineTimestamp {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.noLogs {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Horizontal timeline */
+.horizontalTimelineWrap {
+  position: relative;
+  padding: 32px 0 20px 0;
+  margin-bottom: 16px;
+}
+
+.timelineSteps {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 2;
+}
+
+.timelineStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  position: relative;
+}
+
+/* Progressive connecting line - only appears after completed steps */
+.timelineStep::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 28px;
+  width: 100%;
+  height: 2px;
+  background: #cbd5e1;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.timelineStep:not(:first-child)::before {
+  left: -50%;
+}
+
+/* Show line for completed and active steps (not future steps) */
+.timelineStep:not(:first-child).stepCompleted::before,
+.timelineStep:not(:first-child).stepActive::before {
+  opacity: 1;
+  background: #667eea;
+}
+
+.stepIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.stepIcon svg {
+  stroke-width: 2;
+}
+
+.stepIconCompleted {
+  background: #667eea;
+  border-color: #667eea;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.stepIconActive {
+  background: #ffffff;
+  border-color: #667eea;
+  border-width: 3px;
+  color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+}
+
+.stepIconRejected {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.stepLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  .horizontalTimelineWrap {
+    padding: 24px 0 16px 0;
+  }
+  
+  .timelineStep::before {
+    top: 24px;
+  }
+  
+  .stepIcon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+  
+  .stepLabel {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .timelineStep::before {
+    top: 21px;
+  }
+  
+  .stepIcon {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+  
+  .stepLabel {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 600px) {
+  .section {
+    margin-bottom: 20px;
+  }
+}
+
+/* Panel root to ensure Details and Logs share same dynamic height */
+.panelRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.panelContent {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 8px; /* small padding to avoid scrollbar overlap */
+}
+
+/* Coordinator-specific override to make the right column fill and allow
+   inner panels (Details / Logs) to stretch and scroll. We avoid changing
+   the global Employee styles and scope this to the coordinator pages. */
+.rightColumnFill {
+  position: static !important; /* remove sticky behavior so the column can size normally */
+  /* Stretch to match the grid row height (the taller column). We avoid
+     forcing a viewport height here so the grid naturally sizes to the
+     taller column and the right column matches it. */
+  align-self: stretch !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important; /* match the grid row's computed height */
+  min-height: 0 !important; /* allow children with overflow to work */
+}
+
+/* Optional: small helper if we need to target the Tabs container from here.
+   We'll leave it available for future tweaks. */
+.tabsFill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Coordinator Actions Info */
+.coordinatorActionsCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.monitoringCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resolutionCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+}
+
+.fieldValue {
+  font-size: 14px;
+  color: #212529;
+  font-weight: 400;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* SLA Status Colors */
+.sla-overdue {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.sla-due-soon {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.sla-on-time {
+  color: #10b981;
+  font-weight: 600;
+}
+

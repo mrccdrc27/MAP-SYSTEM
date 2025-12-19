@@ -1,0 +1,103 @@
+/* === Modal Overlay === */
+.modal-overlay {
+  position: fixed;
+  inset: 0; /* shorthand for top, right, bottom, left = 0 */
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.3); /* spec: rgba(0,0,0,0.3) */
+  z-index: 9999; /* keep very high to cover everything */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem; /* small padding to avoid edge collision on mobile */
+  overflow-y: auto;
+}
+
+/* === Modal Content Box === */
+.modal-content {
+  position: relative;
+  z-index: 10000; /* sits above the overlay */
+  width: 100%;
+  max-width: 450px; /* spec: 400–450px fixed width */
+  background-color: #ffffff; /* spec: white background */
+  border: 1px solid #d3d3d3; /* spec: 1px light border */
+  border-radius: 25px; /* spec: 25px */
+  padding: 24px; /* spec: 24px inside */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* spec: softer shadow */
+  animation: fadeIn 0.25s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* spec: 20px gap between stacked elements */
+}
+
+/* === Title & Message === */
+.modal-title {
+  font-size: 18px;
+  font-weight: 600; /* semi-bold */
+  margin: 0;
+}
+
+.modal-message {
+  font-size: 14px;
+  font-weight: 400;
+  margin: 0;
+  color: #212529;
+}
+
+/* === Button Row === */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+/* Cancel Button */
+.modal-btn-cancel {
+  background: #f8f9fa;
+  border: 1px solid #d3d3d3;
+  color: #212529;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Confirm Button (contextual colors) */
+.modal-btn-confirm {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+}
+.modal-btn-confirm.delete { background-color: #dc3545; }
+.modal-btn-confirm.activate { background-color: #28a745; }
+.modal-btn-confirm.confirm { background-color: #007bff; }
+
+/* === Animation === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Responsive Modal Adjustments === */
+@media (max-width: 768px) {
+  .modal-content {
+    max-width: 90%; /* spec: nearly full-width on mobile */
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .modal-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .modal-btn-cancel,
+  .modal-btn-confirm {
+    width: 100%; /* bigger touch targets */
+  }
+}

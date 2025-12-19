@@ -1,0 +1,144 @@
+.floatingMenu {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1500;
+}
+
+/* Buttons above the main toggle */
+.floatingOptions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.3s ease;
+}
+
+.floatingOptions.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.floatButton,
+.mainButton {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  font-size: 24px;
+}
+
+/* Icon styling for primary background buttons */
+.floatButton svg,
+.mainButton svg {
+  color: white !important;
+  fill: white !important;
+  stroke: white !important;
+}
+
+.floatButton:hover,
+.mainButton:hover {
+  background-color: var(--primary-color-hover);
+  transform: scale(1.05);
+}
+
+.floatButton:hover svg,
+.mainButton:hover svg {
+  color: white !important;
+  fill: white !important;
+  stroke: white !important;
+}
+
+/* If needed, scale the icon for emphasis (without rotating the button) */
+.mainButtonIcon {
+  transition: transform 0.3s ease;
+}
+
+.mainButton.expanded {
+  background-color: #f1f5f9; /* Light neutral */
+  color: var(--primary-color); /* Blue icon */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Icons in expanded state should match the primary color */
+.mainButton.expanded svg {
+  color: var(--primary-color) !important;
+  fill: var(--primary-color) !important;
+  stroke: var(--primary-color) !important;
+}
+
+/* Ensure icons take proper colors */
+.icon {
+  color: inherit;
+}
+
+/* Animation: Show */
+@keyframes popJump {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) translateY(-10px);
+  }
+  70% {
+    transform: scale(0.9) translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.floatingOptions.showing .floatButton {
+  animation: popJump 0.4s ease forwards;
+}
+
+.floatingOptions.showing .floatButton:nth-child(1) {
+  animation-delay: 0.2s;
+}
+.floatingOptions.showing .floatButton:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+/* Animation: Hide */
+@keyframes popJumpOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  30% {
+    transform: scale(1.2) translateY(-10px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+}
+
+.floatingOptions.closing .floatButton {
+  animation: popJumpOut 0.4s ease forwards;
+}
+
+.floatingOptions.closing .floatButton:nth-child(1) {
+  animation-delay: 0s;
+}
+.floatingOptions.closing .floatButton:nth-child(2) {
+  animation-delay: 0.1s;
+}

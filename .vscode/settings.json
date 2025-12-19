@@ -1,0 +1,70 @@
+{
+    "terminal.integrated.profiles.windows": {
+        "1. RabbitMQ": {
+            "source": "PowerShell",
+            "icon": "server",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_rabbitmq.ps1"]
+        },
+        "2. Auth Service": {
+            "source": "PowerShell",
+            "icon": "shield",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_auth.ps1"]
+        },
+        "3. Ticket Service": {
+            "source": "PowerShell",
+            "icon": "tag",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_ticket.ps1"]
+        },
+        "4. Workflow API": {
+            "source": "PowerShell",
+            "icon": "git-branch",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_workflow.ps1"]
+        },
+        "5. Workflow Worker": {
+            "source": "PowerShell",
+            "icon": "tools",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_workflow_worker.ps1"]
+        },
+        "6. Notification Service": {
+            "source": "PowerShell",
+            "icon": "bell",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_notification.ps1"]
+        },
+        "7. Notification Worker": {
+            "source": "PowerShell",
+            "icon": "mail",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_notification_worker.ps1"]
+        },
+        "8. Messaging Service": {
+            "source": "PowerShell",
+            "icon": "comment-discussion",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_messaging.ps1"]
+        },
+        "9. Frontend": {
+            "source": "PowerShell",
+            "icon": "browser",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_frontend.ps1"]
+        },
+        "10. Helpdesk Backend": {
+            "source": "PowerShell",
+            "icon": "server",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_helpdesk_backend.ps1"]
+        },
+        "11. Helpdesk Frontend": {
+            "source": "PowerShell",
+            "icon": "browser",
+            "overrideName": true,
+            "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/start_helpdesk_frontend.ps1"]
+        }
+    }
+}

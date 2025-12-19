@@ -1,0 +1,120 @@
+/* === Title === */
+.heading {
+  font-size: 18px;          /* spec */
+  font-weight: 600;         /* semi-bold */
+  margin: 0;                /* rely on modal spacing */
+  color: #212529;           /* consistent neutral text */
+}
+
+/* === Field Wrapper === */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;                 /* spacing between label & textarea */
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-size: 14px;          /* spec */
+  font-weight: 400;
+  color: #212529;
+}
+
+.required {
+  color: #dc3545;           /* spec: danger red */
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+/* === Textarea === */
+.textarea {
+  padding: 8px;
+  resize: none;
+  width: 100%;
+  font-family: inherit;
+  border-radius: 8px;       /* spec */
+  border: 1px solid #d3d3d3;/* spec */
+  font-size: 14px;
+  line-height: 1.4;
+  color: #212529;
+  transition: border-color 0.2s;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #007bff;    /* spec: primary blue highlight */
+}
+
+/* === Actions (Button Row) === */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;                /* spec */
+  margin-top: 24px;
+}
+
+/* === Cancel Button === */
+.cancel {
+  padding: 8px 16px;
+  background-color: #f8f9fa;   /* spec */
+  border: 1px solid #d3d3d3;
+  border-radius: 8px;
+  color: #212529;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel:hover {
+  background-color: #e9ecef;   /* subtle hover */
+}
+
+.cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === Confirm Button === */
+.confirm {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+/* Contextual states */
+.confirm.close,
+.confirm.confirm {
+  background-color: #007bff;   /* Blue for confirm/close */
+}
+.confirm.delete {
+  background-color: #dc3545;   /* Red for delete/deactivate */
+}
+.confirm.activate {
+  background-color: #28a745;   /* Green for activate */
+}
+
+.confirm:hover {
+  filter: brightness(0.9);     /* subtle darken */
+}
+
+.confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === Responsive Adjustments === */
+@media (max-width: 768px) {
+  .actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cancel,
+  .confirm {
+    width: 100%;               /* bigger touch targets */
+  }
+}

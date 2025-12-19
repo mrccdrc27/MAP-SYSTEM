@@ -16,6 +16,34 @@ from systems.models import System
 from system_roles.models import UserSystemRole
 
 
+def get_or_set_default_system(request):
+    """
+    Helper function to get the current system from session,
+    or auto-select one if not set.
+    
+    Returns: system slug if found, None otherwise
+    """
+    current_system_slug = request.session.get('last_selected_system')
+    
+    # If system is already set, return it
+    if current_system_slug:
+        return current_system_slug
+    
+    # Otherwise, try to auto-select the first system the user has access to
+    user_systems = System.objects.filter(
+        user_roles__user=request.user,
+        user_roles__is_active=True
+    ).distinct().order_by('name')
+    
+    if user_systems.exists():
+        system = user_systems.first()
+        request.session['last_selected_system'] = system.slug
+        request.session.modified = True
+        return system.slug
+    
+    return None
+
+
 class CreateRoleView(APIView):
     """
     API endpoint for creating new roles and retrieving roles in the current system.
@@ -262,14 +290,15 @@ class UpdateAssignmentView(APIView):
 def role_management_view(request):
     """
     Render the role management page for managing roles (create and view) in the current system.
+    Automatically selects a system if one isn't already selected.
     """
     user = request.user
     
-    # Get current system from session
-    current_system_slug = request.session.get('last_selected_system', '')
+    # Get or set the current system from session
+    current_system_slug = get_or_set_default_system(request)
     
     if not current_system_slug:
-        messages.error(request, 'Please select a system first.')
+        messages.error(request, 'No systems are assigned to your account. Please contact support.')
         return redirect('profile-settings')
     
     # Check if user has permission to manage roles in the current system
@@ -289,4 +318,4 @@ def role_management_view(request):
         'unread_count': 0,
         'current_system': current_system_slug,
     }
-    return render(request, 'admins/manage_roles.html', context)
+    return render(request, 'management/manage_roles.html', context)

@@ -1,0 +1,114 @@
+.heading {
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.input,
+.textarea {
+  padding: 8px;
+  font-size: 14px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.required {
+  color: red;
+}
+
+.error {
+  margin-top: 4px;
+  color: red;
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cancel,
+.submit {
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+}
+
+.cancel {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.submit {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.submit:disabled,
+.cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.assetTableWrap {
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fff;
+}
+
+.assetTableHeader {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.assetTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assetTable th,
+.assetTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  text-align: left;
+  font-size: 13px;
+}
+
+.selectAssetBtn {
+  padding: 6px 10px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.selectedRow {
+  background: #f1f5f9;
+}
+
+.selectedAssetSummary {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #111827;
+}

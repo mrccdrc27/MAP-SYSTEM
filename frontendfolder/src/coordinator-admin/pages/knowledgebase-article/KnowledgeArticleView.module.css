@@ -1,0 +1,337 @@
+/* ============================================================================
+   KnowledgeArticleView - Article-Specific Overrides
+   Base styles inherited from EmployeeTicketTracker.module.css
+   ============================================================================ */
+
+/* Loading State */
+.loadingContainer {
+  padding: 48px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+/* Not Found State */
+.notFoundContainer {
+  padding: 60px 24px;
+  text-align: center;
+  color: #6b7280;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.notFoundText {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 24px;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 20px;
+  background: #f3f4f6;
+  color: #1f2937;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background: #e5e7eb;
+}
+
+/* ============================================================================
+   Action Buttons Container (Right Column Top)
+   ============================================================================ */
+
+.actionButtonsContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  flex: 1;
+  min-width: 0;
+  color: var(--text-light, #FFFFFF) !important; /* Ensure button text uses the light token (fallback white) */
+}
+
+.actionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Ensure icons inside action buttons are white so they contrast with button backgrounds */
+.actionButton svg {
+  color: var(--text-light, #FFFFFF) !important;
+  fill: var(--text-light, #FFFFFF) !important;
+  stroke: var(--text-light, #FFFFFF) !important;
+}
+
+/* Ensure the buttonText span also inherits the light color */
+.actionButton .buttonText {
+  color: var(--text-light, #FFFFFF) !important;
+}
+
+.buttonText {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Current Version Badge */
+.currentBadge {
+  display: inline-block;
+  background: #10b981;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* Neutral action (used for Edit and Archive) */
+.actionButton.neutralButton {
+  /* Use the same withdraw/neutral color as EmployeeTicketTracker */
+  background: var(--withdrawn-text, #9CA3AF) !important;
+  color: #FFFFFF !important;
+}
+.actionButton.neutralButton:hover:not(:disabled) {
+  background: #6B7280 !important; /* match Withdraw hover exactly */
+}
+
+/* Danger action (used for Delete) */
+.dangerButton {
+  background: #ef4444;
+  color: #FFFFFF;
+}
+.dangerButton:hover {
+  background: #dc2626;
+}
+
+/* ============================================================================
+   Feedback Stats (Left Column - Details Grid)
+   ============================================================================ */
+
+.feedbackStats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Feedback summary for article view */
+/* (Removed aggregated feedback summary styles — using existing feedbackStats and metadata styles) */
+
+.feedbackLikes,
+.feedbackDislikes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.feedbackLikes {
+  color: #10b981;
+  background: #ecfdf5;
+  border: 1px solid #d1fae5;
+}
+
+.feedbackDislikes {
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+}
+
+/* ============================================================================
+   Feedback Section (Tab Content)
+   ============================================================================ */
+
+.feedbackContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+
+.emptyState {
+  color: #9CA3AF;
+  font-size: 13px;
+  padding: 24px 16px;
+  text-align: center;
+  font-style: italic;
+}
+
+.feedbackList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedbackItem {
+  padding: 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.feedbackItem:hover {
+  background: #f3f4f6;
+  border-left-color: #667eea;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.feedbackItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.feedbackDate {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.feedbackStatus {
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.feedbackStatus.statusHelpful {
+  color: #10b981;
+  background: #ecfdf5;
+  border: 1px solid #d1fae5;
+}
+
+.feedbackStatus.statusNotHelpful {
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+}
+
+.feedbackComment {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* ============================================================================
+   Info Tab Content
+   ============================================================================ */
+
+.infoTab {
+  padding: 16px;
+  font-size: 13px;
+  color: #6B7280;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoItem strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .actionButtonsContainer {
+    gap: 6px;
+  }
+
+  .actionButton {
+    padding: 10px 10px;
+    font-size: 0.9rem;
+  }
+
+  .buttonText {
+    font-size: 0.8rem;
+  }
+
+  .feedbackStats {
+    gap: 12px;
+  }
+
+  .feedbackLikes,
+  .feedbackDislikes {
+    font-size: 0.85rem;
+    padding: 3px 8px;
+  }
+
+  .feedbackList {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .feedbackStatus {
+    font-size: 0.7rem;
+  }
+
+  .actionButton {
+    padding: 8px 8px;
+    font-size: 0.85rem;
+    gap: 4px;
+  }
+
+  .buttonText {
+    font-size: 0.75rem;
+  }
+
+  .feedbackStats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .feedbackLikes,
+  .feedbackDislikes {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+  }
+}

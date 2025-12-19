@@ -1,0 +1,63 @@
+.logEntry {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  overflow: hidden;
+  /* reduced outer margin and padding for a more compact, near edge-to-edge appearance */
+  margin: 4px 0;
+  padding: 10px 12px;
+  background-color: var(--bg-color);
+  border: 1px solid rgba(15,23,42,0.04);
+  border-radius: 10px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.logAvatar {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem; /* keep initials readable */
+}
+
+/* Ensure svg icons inside avatar are white and sized appropriately */
+.logAvatar svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-light);
+  fill: none; /* prefer stroke-only icons */
+  stroke: var(--text-light);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.logBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.logText {
+  color: var(--text-primary);
+  font-weight: 400;
+  font-size: 0.8125rem; /* ~13px - match coordinator */
+  line-height: 1.3;
+  margin: 0;
+}
+
+/* Ensure highlighted token in the log sentence remains emphasized */
+.logText strong {
+  font-weight: var(--font-semibold);
+}
+
+.logTimestamp {
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  color: var(--text-muted);
+}
+

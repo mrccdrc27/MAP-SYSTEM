@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -8,16 +8,12 @@ import ReactFlow, {
   useEdgesState,
   MarkerType,
   useReactFlow,
-  ReactFlowProvider,
+  BackgroundVariant,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import dagre from 'dagre';
 import styles from './WorkflowEditorLayout.module.css';
 import StepNode from './StepNode';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
-
-const nodeWidth = 200;
-const nodeHeight = 80;
 
 const nodeTypes = {
   stepNode: StepNode,
@@ -29,47 +25,102 @@ const normalizeHandleName = (handleName) => {
   return handleName.toLowerCase();
 };
 
-// Layout calculation
-function getLayout(nodes, edges) {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({
-    rankdir: 'TB',
-    nodesep: 150,
-    ranksep: 120,
-    marginx: 50,
-    marginy: 50,
-    align: 'UL',
-  });
-
-  nodes.forEach((n) =>
-    g.setNode(n.id, { width: nodeWidth, height: nodeHeight })
-  );
-  edges.forEach((e) => g.setEdge(e.source, e.target));
-  dagre.layout(g);
-
-  return nodes.map((n) => {
-    const pos = g.node(n.id);
-    return {
-      ...n,
-      position: { x: pos.x - nodeWidth / 2, y: pos.y - nodeHeight / 2 },
-      targetPosition: 'top',
-      sourcePosition: 'bottom',
-    };
-  });
-}
-
-const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick, onAddNode, onDeleteNode, onDeleteEdge, isEditingGraph, onToggleEditMode }, ref) => {
+const WorkflowEditorContent = forwardRef(({ 
+  workflowId, 
+  workflowData,
+  onStepClick, 
+  onEdgeClick,
+  onPaneClick,
+  isEditingGraph,
+  setHasUnsavedChanges,
+  onHistoryChange,
+}, ref) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [workflowData, setWorkflowData] = useState(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const { getViewport } = useReactFlow();
 
-  const { getWorkflowDetail, updateWorkflowGraph, loading } = useWorkflowAPI();
+  // History management for undo/redo
+  const historyRef = useRef({
+    past: [],
+    present: null,
+    future: [],
+  });
+  const isUndoRedoRef = useRef(false);
+
+  const { updateWorkflowGraph } = useWorkflowAPI();
+
+  // Save current state to history
+  const saveToHistory = useCallback(() => {
+    if (isUndoRedoRef.current) {
+      isUndoRedoRef.current = false;
+      return;
+    }
+    
+    const currentState = {
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    };
+    
+    if (historyRef.current.present) {
+      historyRef.current.past.push(historyRef.current.present);
+      // Limit history to 50 items
+      if (historyRef.current.past.length > 50) {
+        historyRef.current.past.shift();
+      }
+    }
+    historyRef.current.present = currentState;
+    historyRef.current.future = []; // Clear redo stack on new change
+    
+    // Notify parent of history state
+    if (onHistoryChange) {
+      onHistoryChange(historyRef.current.past.length > 0, false);
+    }
+  }, [nodes, edges, onHistoryChange]);
+
+  // Undo function
+  const undo = useCallback(() => {
+    if (historyRef.current.past.length === 0) return;
+    
+    isUndoRedoRef.current = true;
+    
+    const previous = historyRef.current.past.pop();
+    if (historyRef.current.present) {
+      historyRef.current.future.unshift(historyRef.current.present);
+    }
+    historyRef.current.present = previous;
+    
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+    
+    if (onHistoryChange) {
+      onHistoryChange(historyRef.current.past.length > 0, historyRef.current.future.length > 0);
+    }
+  }, [setNodes, setEdges, onHistoryChange]);
+
+  // Redo function
+  const redo = useCallback(() => {
+    if (historyRef.current.future.length === 0) return;
+    
+    isUndoRedoRef.current = true;
+    
+    const next = historyRef.current.future.shift();
+    if (historyRef.current.present) {
+      historyRef.current.past.push(historyRef.current.present);
+    }
+    historyRef.current.present = next;
+    
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    
+    if (onHistoryChange) {
+      onHistoryChange(historyRef.current.past.length > 0, historyRef.current.future.length > 0);
+    }
+  }, [setNodes, setEdges, onHistoryChange]);
 
   // Handle edge deletion
   const handleDeleteEdge = useCallback((edgeId) => {
+    saveToHistory();
     setEdges((eds) =>
       eds.map((e) =>
         e.id === edgeId
@@ -78,11 +129,11 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
       )
     );
     setUnsavedChanges(true);
-    onDeleteEdge(edgeId);
-  }, [setEdges, onDeleteEdge]);
+  }, [setEdges, saveToHistory]);
 
   // Handle node deletion
   const handleDeleteNode = useCallback((nodeId) => {
+    saveToHistory();
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId
@@ -91,30 +142,34 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
       )
     );
     setUnsavedChanges(true);
-    onDeleteNode(nodeId);
-  }, [setNodes, onDeleteNode]);
+  }, [setNodes, saveToHistory]);
 
   // Handle adding a new node
-  const handleAddNode = useCallback(() => {
+  const handleAddNode = useCallback((label = 'New Step') => {
+    saveToHistory();
     const viewport = getViewport();
-    // Calculate approximate center position in flow coordinates
-    const centerX = -viewport.x / viewport.zoom + 200; // Offset to place in visible area
+    const centerX = -viewport.x / viewport.zoom + 200;
     const centerY = -viewport.y / viewport.zoom + 100;
     
     const newNodeId = `temp-n${Date.now()}`;
     const newNode = {
       id: newNodeId,
       data: {
-        label: 'New Step',
-        role: 'User',
+        label: label,
+        role: 'Unassigned',
         description: '',
         instruction: '',
+        is_start: false,
+        is_end: false,
+        id: newNodeId,
         onStepClick: () => onStepClick({
           id: newNodeId,
-          name: 'New Step',
-          role: 'User',
+          name: label,
+          role: 'Unassigned',
           description: '',
           instruction: '',
+          is_start: false,
+          is_end: false,
         }),
       },
       type: 'stepNode',
@@ -123,8 +178,7 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     
     setNodes((nds) => [...nds, newNode]);
     setUnsavedChanges(true);
-    onAddNode(newNode);
-  }, [getViewport, setNodes, onStepClick, onAddNode]);
+  }, [getViewport, setNodes, onStepClick, saveToHistory]);
 
   // Save changes to backend
   const saveChanges = useCallback(async () => {
@@ -166,19 +220,36 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
 
       await updateWorkflowGraph(workflowId, graphData);
       setUnsavedChanges(false);
+      // Clear history after successful save - new baseline
+      historyRef.current = {
+        past: [],
+        present: {
+          nodes: JSON.parse(JSON.stringify(nodes)),
+          edges: JSON.parse(JSON.stringify(edges)),
+        },
+        future: [],
+      };
+      if (onHistoryChange) {
+        onHistoryChange(false, false);
+      }
       console.log('Workflow saved successfully');
     } catch (err) {
       console.error('Failed to save workflow:', err);
+      throw err;
     }
-  }, [nodes, edges, workflowId, updateWorkflowGraph]);
+  }, [nodes, edges, workflowId, updateWorkflowGraph, onHistoryChange]);
 
   useImperativeHandle(ref, () => ({
     handleAddNode,
     updateNodeData: (nodeId, newData) => {
+      saveToHistory();
       setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n));
+      setUnsavedChanges(true);
     },
     updateEdgeData: (edgeId, newData) => {
+      saveToHistory();
       setEdges((eds) => eds.map((e) => e.id === edgeId ? { ...e, ...newData } : e));
+      setUnsavedChanges(true);
     },
     deleteEdge: (edgeId) => {
       handleDeleteEdge(edgeId);
@@ -190,67 +261,76 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
       setUnsavedChanges(value);
     },
     saveChanges,
-  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode]);
+    undo,
+    redo,
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode, saveToHistory, undo, redo]);
 
-  // Load workflow data
+  // Convert workflow data to ReactFlow format
   useEffect(() => {
-    const loadWorkflow = async () => {
-      try {
-        const data = await getWorkflowDetail(workflowId);
-        setWorkflowData(data);
+    if (!workflowData?.graph) return;
 
-        // Convert to ReactFlow format
-        const rnodes = (data.graph?.nodes || []).map((node) => ({
-          id: node.id.toString(),
-          data: {
-            label: node.name,
-            role: node.role,
-            description: node.description,
-            instruction: node.instruction,
-            is_start: node.is_start || false,
-            is_end: node.is_end || false,
-            id: node.id,
-            onStepClick: () => onStepClick(node),
-          },
-          type: 'stepNode',
-          position: {
-            x: node.design?.x || 0,
-            y: node.design?.y || 0,
-          },
-          targetPosition: 'top',
-          sourcePosition: 'bottom',
-          className: node.to_delete ? 'deleted-node' : '',
-        }));
+    const rnodes = (workflowData.graph?.nodes || []).map((node) => ({
+      id: node.id.toString(),
+      data: {
+        label: node.name,
+        role: node.role,
+        description: node.description,
+        instruction: node.instruction,
+        is_start: node.is_start || false,
+        is_end: node.is_end || false,
+        id: node.id,
+        onStepClick: () => onStepClick(node),
+      },
+      type: 'stepNode',
+      position: {
+        x: node.design?.x || 0,
+        y: node.design?.y || 0,
+      },
+      targetPosition: 'top',
+      sourcePosition: 'bottom',
+      className: node.to_delete ? 'deleted-node' : '',
+    }));
 
-        // Filter out edges with null from/to and convert to ReactFlow format
-        const redges = (data.graph?.edges || [])
-          .filter((edge) => edge.from != null && edge.to != null) // Only include valid edges
-          .map((edge) => ({
-            id: edge.id.toString(),
-            source: String(edge.from),
-            target: String(edge.to),
-            label: edge.name || '',
-            markerEnd: { type: MarkerType.ArrowClosed },
-            sourceHandle: normalizeHandleName(edge.design?.source_handle) || 'bottom',
-            targetHandle: normalizeHandleName(edge.design?.target_handle) || 'top',
-            data: edge,
-            className: edge.to_delete ? 'deleted-edge' : '',
-          }));
+    const redges = (workflowData.graph?.edges || [])
+      .filter((edge) => edge.from != null && edge.to != null)
+      .map((edge) => ({
+        id: edge.id.toString(),
+        source: String(edge.from),
+        target: String(edge.to),
+        label: edge.name || '',
+        markerEnd: { type: MarkerType.ArrowClosed },
+        sourceHandle: normalizeHandleName(edge.design?.source_handle) || 'bottom',
+        targetHandle: normalizeHandleName(edge.design?.target_handle) || 'top',
+        data: edge,
+        type: 'smoothstep',
+        animated: true,
+        style: { stroke: '#3b82f6', strokeWidth: 2 },
+        labelStyle: { fill: '#1f2937' },
+        labelBgStyle: { fill: '#ffffff' },
+        className: edge.to_delete ? 'deleted-edge' : '',
+      }));
 
-        // Use the nodes as-is with their stored positions, no layout calculation needed
-        setNodes(rnodes);
-        setEdges(redges);
-      } catch (err) {
-        console.error('Failed to load workflow:', err);
-      }
+    setNodes(rnodes);
+    setEdges(redges);
+    
+    // Initialize history with loaded state
+    historyRef.current = {
+      past: [],
+      present: {
+        nodes: JSON.parse(JSON.stringify(rnodes)),
+        edges: JSON.parse(JSON.stringify(redges)),
+      },
+      future: [],
     };
-
-    loadWorkflow();
-  }, [workflowId, getWorkflowDetail, setNodes, setEdges, onStepClick]);
+    if (onHistoryChange) {
+      onHistoryChange(false, false);
+    }
+  }, [workflowData, setNodes, setEdges, onStepClick, onHistoryChange]);
 
   // Handle edge connection
   const onConnect = useCallback(
     (connection) => {
+      saveToHistory();
       setEdges((eds) =>
         addEdge(
           {
@@ -260,13 +340,34 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
             label: 'New Transition',
             sourceHandle: normalizeHandleName(connection.sourceHandle) || 'bottom',
             targetHandle: normalizeHandleName(connection.targetHandle) || 'top',
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: '#3b82f6', strokeWidth: 2 },
           },
           eds
         )
       );
       setUnsavedChanges(true);
+      if (setHasUnsavedChanges) setHasUnsavedChanges(true);
     },
-    [setEdges]
+    [setEdges, setHasUnsavedChanges, saveToHistory]
+  );
+
+  // Handle node click
+  const onNodeClickHandler = useCallback(
+    (event, node) => {
+      event.stopPropagation();
+      onStepClick({
+        id: node.id,
+        name: node.data.label,
+        role: node.data.role,
+        description: node.data.description,
+        instruction: node.data.instruction,
+        is_start: node.data.is_start,
+        is_end: node.data.is_end,
+      });
+    },
+    [onStepClick]
   );
 
   // Handle edge click
@@ -284,79 +385,115 @@ const WorkflowEditorContent = forwardRef(({ workflowId, onStepClick, onEdgeClick
     [onEdgeClick]
   );
 
+  // Handle pane click
+  const onPaneClickHandler = useCallback(() => {
+    if (onPaneClick) onPaneClick();
+  }, [onPaneClick]);
+
+  // Track if we're currently dragging to save history once at drag start
+  const isDraggingRef = useRef(false);
+  const shouldSaveHistoryRef = useRef(false);
+
+  // Save to history when nodes/edges change after drag
+  useEffect(() => {
+    if (shouldSaveHistoryRef.current) {
+      shouldSaveHistoryRef.current = false;
+      // Use setTimeout to ensure state is fully updated
+      setTimeout(() => {
+        saveToHistory();
+      }, 0);
+    }
+  }, [nodes, edges, saveToHistory]);
+
   // Handle node changes - intercept deletions to mark as to_delete instead
   const handleNodesChange = useCallback((changes) => {
     let hasActualPositionChange = false;
+    
     const filteredChanges = changes.filter((change) => {
-      // If it's a remove action, don't let it happen
       if (change.type === 'remove') {
-        // Instead, mark the node for deletion
         handleDeleteNode(change.id);
         return false;
       }
-      // If it's a position change and not in edit mode, prevent it
       if (change.type === 'position' && !isEditingGraph) {
         return false;
       }
-      // If it's a position change in edit mode, check if position actually changed
       if (change.type === 'position' && isEditingGraph) {
         const currentNode = nodes.find(n => n.id === change.id);
-        if (currentNode && (currentNode.position.x !== change.position.x || currentNode.position.y !== change.position.y)) {
+        if (currentNode && change.position && (currentNode.position.x !== change.position.x || currentNode.position.y !== change.position.y)) {
           hasActualPositionChange = true;
+          // Track drag start
+          if (!isDraggingRef.current && change.dragging) {
+            isDraggingRef.current = true;
+          }
+          // Flag to save history when drag ends
+          if (isDraggingRef.current && !change.dragging) {
+            isDraggingRef.current = false;
+            shouldSaveHistoryRef.current = true;
+          }
         }
       }
       return true;
     });
     
-    // Apply the filtered changes
     onNodesChange(filteredChanges);
 
-    // Only set unsaved changes if position actually changed
     if (hasActualPositionChange) {
       setUnsavedChanges(true);
+      if (setHasUnsavedChanges) setHasUnsavedChanges(true);
     }
-  }, [onNodesChange, handleDeleteNode, isEditingGraph, nodes]);
+  }, [onNodesChange, handleDeleteNode, isEditingGraph, nodes, setHasUnsavedChanges]);
 
-  // Handle edge changes - intercept deletions to mark as to_delete instead
+  // Handle edge changes
   const handleEdgesChange = useCallback((changes) => {
     const filteredChanges = changes.filter((change) => {
-      // If it's a remove action, don't let it happen
       if (change.type === 'remove') {
-        // Instead, mark the edge for deletion
         handleDeleteEdge(change.id);
         return false;
       }
       return true;
     });
     
-    // Apply the filtered changes
     onEdgesChange(filteredChanges);
   }, [onEdgesChange, handleDeleteEdge]);
 
   return (
-    <div className={styles.centerArea}>
-      {unsavedChanges && (
-        <div className={styles.unsavedChangesIndicator}>
-          Unsaved Changes
-        </div>
-      )}
+    <div className={styles.canvasWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClickHandler}
         onEdgeClick={onEdgeClickHandler}
+        onPaneClick={onPaneClickHandler}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
         maxZoom={2}
+        attributionPosition="bottom-left"
       >
-        <Background />
-        <Controls />
-        <MiniMap />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#d1d5db" />
+        <Controls className="bg-white border border-gray-200 rounded-lg shadow-sm" />
+        <MiniMap
+          className="bg-white border border-gray-200 rounded-lg shadow-sm"
+          nodeColor="#3b82f6"
+          maskColor="rgba(0, 0, 0, 0.1)"
+        />
       </ReactFlow>
+      
+      {/* Helper text */}
+      <div className="absolute bottom-4 left-4 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 text-xs text-gray-600 max-w-xs">
+        <p><strong>Tip:</strong> Click nodes to edit, drag to reposition, or connect handles to create transitions.</p>
+      </div>
+
+      {/* Unsaved Changes Indicator */}
+      {unsavedChanges && (
+        <div className="absolute top-4 right-4 bg-yellow-100 border border-yellow-300 rounded-lg px-3 py-2 text-sm text-yellow-800">
+          Unsaved Changes
+        </div>
+      )}
     </div>
   );
 });

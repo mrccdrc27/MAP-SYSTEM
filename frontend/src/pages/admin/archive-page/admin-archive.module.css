@@ -575,7 +575,18 @@
   color: var(--muted-text-color);
 }
 
-/* ============ LOAD MORE BUTTON ============ */
+/* ============ PAGINATION ============ */
+
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: #ffffff;
+  border-top: 1px solid #cccccc;
+}
+
+/* ============ LOAD MORE BUTTON (DEPRECATED) ============ */
 
 .loadMoreContainer {
   display: flex;

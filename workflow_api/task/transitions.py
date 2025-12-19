@@ -227,6 +227,17 @@ class TaskTransitionView(CreateAPIView):
         if not transition.to_step_id:
             logger.info(f"Terminal transition detected: completing task {task_id}")
             
+            # Validate task has a current step before terminal transition
+            if not task.current_step:
+                return Response(
+                    {
+                        'error': 'Task has no current step assigned. Cannot execute terminal transition.',
+                        'task_id': task_id,
+                        'transition_id': transition_id
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             # Create history record for 'resolved' status
             from task.models import TaskItemHistory
             TaskItemHistory.objects.create(

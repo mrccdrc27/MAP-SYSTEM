@@ -1,0 +1,27 @@
+.aem-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
+  z-index: 2000;
+}
+
+.aem-modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.aem-modal h2 { margin: 0 0 8px 0; }
+.aem-modal p { margin: 0 0 12px 0; color: #334155; }
+.aem-actions { display:flex; justify-content:flex-end; }
+.aem-btn { background: #0ea5e9; color: white; border: none; padding: 8px 14px; border-radius:6px; cursor:pointer; }
+.aem-btn:hover { opacity: 0.95; }
+
+/* Blur class should be applied to root container when modal open */
+.aem-blur { filter: blur(4px) saturate(0.95); pointer-events:none; user-select:none; }

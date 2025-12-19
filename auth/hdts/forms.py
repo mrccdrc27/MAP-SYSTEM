@@ -3,6 +3,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from users.models import User, SUFFIX_CHOICES, DEPARTMENT_CHOICES
+from hdts.models import Employees
 
 class UserRegistrationForm(forms.ModelForm):
     # Define choices based on the User model
@@ -88,3 +89,54 @@ class UserRegistrationForm(forms.ModelForm):
             profile_picture=self.cleaned_data.get('profile_picture')
         )
         return user
+
+
+class EmployeeProfileForm(forms.ModelForm):
+    """Form for updating employee profile settings."""
+    
+    suffix = forms.ChoiceField(
+        choices=[('', '-- Select --'), ('Jr.', 'Jr.'), ('Sr.', 'Sr.'), ('II', 'II'), ('III', 'III'), ('IV', 'IV'), ('V', 'V')],
+        required=False
+    )
+    department = forms.ChoiceField(
+        choices=[('', '-- Select --'), ('IT Department', 'IT Department'), ('Asset Department', 'Asset Department'), ('Budget Department', 'Budget Department')],
+        required=False
+    )
+
+    class Meta:
+        model = Employees
+        fields = [
+            'first_name',
+            'middle_name', 
+            'last_name',
+            'suffix',
+            'phone_number',
+            'department',
+            'profile_picture',
+        ]
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-input', 'required': True}),
+            'middle_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-input', 'required': True}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+63'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Add CSS classes to form fields
+        for field_name, field in self.fields.items():
+            if field_name not in ['profile_picture', 'suffix', 'department']:
+                field.widget.attrs.update({'class': 'form-input'})
+            elif field_name in ['suffix', 'department']:
+                field.widget.attrs.update({'class': 'form-input'})
+            else:
+                field.widget.attrs.update({'class': 'form-input'})
+        
+        # Make middle_name optional
+        self.fields['middle_name'].required = False
+        self.fields['suffix'].required = False
+        self.fields['phone_number'].required = False
+        self.fields['department'].required = False
+        self.fields['profile_picture'].required = False

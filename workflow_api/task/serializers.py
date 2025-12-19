@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, TaskItem, TaskItemHistory
+from .models import Task, TaskItem, TaskItemHistory, FailedNotification
 from tickets.models import WorkflowTicket
 from workflow.models import Workflows
 from step.models import Steps
@@ -51,6 +51,7 @@ class TaskItemSerializer(serializers.ModelSerializer):
         return value
 
 class TaskSerializer(serializers.ModelSerializer):
+    ticket_number = serializers.CharField(source='ticket_id.ticket_number', read_only=True)
     ticket_subject = serializers.SerializerMethodField()
     ticket_description = serializers.SerializerMethodField()
     workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
@@ -58,18 +59,22 @@ class TaskSerializer(serializers.ModelSerializer):
     current_step_role = serializers.CharField(source='current_step.role_id.name', read_only=True)
     assigned_users = serializers.SerializerMethodField()
     assigned_users_count = serializers.SerializerMethodField()
+    ticket_owner_id = serializers.IntegerField(source='ticket_owner.user_id', read_only=True, allow_null=True)
+    ticket_owner_name = serializers.CharField(source='ticket_owner.user_full_name', read_only=True, allow_null=True)
+    ticket_owner_role = serializers.CharField(source='ticket_owner.role_id.name', read_only=True, allow_null=True)
     
     class Meta:
         model = Task
         fields = [
-            'task_id', 'ticket_id', 'workflow_id', 'current_step',
+            'task_id', 'ticket_id', 'ticket_number', 'workflow_id', 'current_step',
             'status', 'created_at', 'updated_at', 'fetched_at',
             'target_resolution', 'resolution_time',
+            'ticket_owner', 'ticket_owner_id', 'ticket_owner_name', 'ticket_owner_role',
             # Read-only fields for easier frontend consumption
             'ticket_subject', 'ticket_description', 'workflow_name', 'current_step_name', 
             'current_step_role', 'assigned_users', 'assigned_users_count'
         ]
-        read_only_fields = ['task_id', 'created_at', 'updated_at', 'target_resolution', 'resolution_time']
+        read_only_fields = ['task_id', 'created_at', 'updated_at', 'target_resolution', 'resolution_time', 'ticket_owner_id', 'ticket_owner_name', 'ticket_owner_role', 'ticket_number']
     
     def get_ticket_subject(self, obj):
         """Extract subject from ticket_data"""
@@ -132,6 +137,11 @@ class UserTaskListSerializer(serializers.ModelSerializer):
     # Task status
     task_status = serializers.CharField(source='task.status', read_only=True)
     
+    # Ticket owner fields
+    ticket_owner_id = serializers.IntegerField(source='task.ticket_owner.user_id', read_only=True, allow_null=True)
+    ticket_owner_name = serializers.CharField(source='task.ticket_owner.user_full_name', read_only=True, allow_null=True)
+    ticket_owner_role = serializers.CharField(source='task.ticket_owner.role_id.name', read_only=True, allow_null=True)
+    
     # Status and history - from latest TaskItemHistory
     status = serializers.SerializerMethodField()
     status_updated_on = serializers.SerializerMethodField()
@@ -167,6 +177,9 @@ class UserTaskListSerializer(serializers.ModelSerializer):
             'assigned_on_step_id',
             'assigned_on_step_name',
             'task_status',
+            'ticket_owner_id',
+            'ticket_owner_name',
+            'ticket_owner_role',
             'assigned_on',
             'status_updated_on',
             'acted_on',
@@ -255,3 +268,29 @@ class ActionLogSerializer(serializers.Serializer):
         if obj.role_user and obj.role_user.role_id:
             return obj.role_user.role_id.name
         return None
+
+class FailedNotificationSerializer(serializers.ModelSerializer):
+    """Serializer for FailedNotification records"""
+    
+    class Meta:
+        model = FailedNotification
+        fields = [
+            'failed_notification_id',
+            'user_id',
+            'task_id',
+            'task_title',
+            'role_name',
+            'status',
+            'error_message',
+            'retry_count',
+            'max_retries',
+            'created_at',
+            'last_retry_at',
+            'succeeded_at'
+        ]
+        read_only_fields = [
+            'failed_notification_id',
+            'created_at',
+            'last_retry_at',
+            'succeeded_at'
+        ]

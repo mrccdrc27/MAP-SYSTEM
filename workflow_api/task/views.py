@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.utils import timezone
@@ -13,12 +14,18 @@ from copy import deepcopy
 from audit.utils import log_action, compare_models
 from .models import Task, TaskItem, TaskItemHistory
 from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, TaskItemSerializer
-from authentication import JWTCookieAuthentication
+from authentication import JWTCookieAuthentication, SystemRolePermission
 from step.models import Steps, StepTransition
 from tickets.models import WorkflowTicket
 from role.models import RoleUsers
 
 logger = logging.getLogger(__name__)
+
+
+class TaskPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class UserTaskListView(ListAPIView):
@@ -84,17 +91,23 @@ class AllTasksListView(ListAPIView):
     View to list all TaskItems across all users.
     Same as UserTaskListView but without user filtering.
     Each row represents a TaskItem with associated task and ticket data.
+    
+    Query Parameters:
+        - tab: 'active', 'inactive', 'unassigned' - filters by task status
+        - search: search term for ticket subject/description/number or assignee name
+        - page: page number
+        - page_size: items per page (default 10, max 100)
     """
     serializer_class = UserTaskListSerializer
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
-    filter_backends = [SearchFilter, OrderingFilter]
-    search_fields = ['task__ticket_id__subject', 'task__ticket_id__description']
+    filter_backends = [OrderingFilter]  # Removed SearchFilter - using custom search
     ordering_fields = ['assigned_on']
     ordering = ['-assigned_on']
+    pagination_class = TaskPagination
     
     def get_queryset(self):
-        """Return all TaskItems without user filtering."""
+        """Return all TaskItems with tab-based filtering and search."""
         queryset = TaskItem.objects.select_related(
             'task__ticket_id', 
             'task__workflow_id', 
@@ -107,6 +120,33 @@ class AllTasksListView(ListAPIView):
         role = self.request.query_params.get('role')
         if role:
             queryset = queryset.filter(role_user__role_id__name=role)
+        
+        # Apply tab filter (active, inactive, unassigned)
+        tab = self.request.query_params.get('tab', '').lower()
+        if tab == 'active':
+            queryset = queryset.filter(
+                Q(task__status__in=['in progress', 'open', 'pending', 'in_progress']) |
+                Q(task__ticket_id__status__in=['in progress', 'open', 'pending', 'in_progress'])
+            )
+        elif tab == 'inactive':
+            queryset = queryset.filter(
+                Q(task__status__in=['closed', 'resolved', 'completed']) |
+                Q(task__ticket_id__status__in=['closed', 'resolved', 'completed'])
+            )
+        elif tab == 'unassigned':
+            queryset = queryset.filter(
+                Q(role_user__user_id__isnull=True) | Q(role_user__isnull=True)
+            )
+        
+        # Apply custom search filter (searches in JSONField ticket_data)
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(task__ticket_id__ticket_number__icontains=search) |
+                Q(task__ticket_id__ticket_data__subject__icontains=search) |
+                Q(task__ticket_id__ticket_data__description__icontains=search) |
+                Q(role_user__user_full_name__icontains=search)
+            )
         
         return queryset
     
@@ -130,6 +170,74 @@ class AllTasksListView(ListAPIView):
                 if status == assignment_status:
                     filtered_list.append(item.id)
             queryset = queryset.filter(id__in=filtered_list)
+        
+        return queryset
+
+
+class OwnedTicketsListView(ListAPIView):
+    """
+    View to list Tasks owned by the authenticated user (Ticket Coordinator).
+    Returns tasks where the current user is assigned as ticket_owner.
+    
+    Permission: Requires HDTS Ticket Coordinator role.
+    
+    Query Parameters:
+        - tab: 'active', 'inactive' - filters by task status
+        - search: search term for ticket subject/description/number
+        - page: page number
+        - page_size: items per page (default 10, max 100)
+    """
+    serializer_class = TaskSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    filter_backends = [OrderingFilter]
+    ordering_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
+    pagination_class = TaskPagination
+    
+    # SystemRolePermission configuration - require HDTS Ticket Coordinator
+    required_system_roles = {
+        'hdts': ['Ticket Coordinator']
+    }
+    
+    def get_queryset(self):
+        """Return Tasks owned by the current user."""
+        user_id = self.request.user.user_id
+        
+        # Get tasks where current user is the ticket owner
+        queryset = Task.objects.filter(
+            ticket_owner__user_id=user_id
+        ).select_related(
+            'ticket_id', 
+            'workflow_id', 
+            'workflow_version',
+            'current_step',
+            'current_step__role_id',
+            'ticket_owner',
+            'ticket_owner__role_id'
+        )
+        
+        # Apply tab filter (active, inactive)
+        tab = self.request.query_params.get('tab', '').lower()
+        if tab == 'active':
+            queryset = queryset.filter(
+                Q(status__in=['in progress', 'open', 'pending', 'in_progress']) |
+                Q(ticket_id__status__in=['in progress', 'open', 'pending', 'in_progress'])
+            )
+        elif tab == 'inactive':
+            queryset = queryset.filter(
+                Q(status__in=['closed', 'resolved', 'completed']) |
+                Q(ticket_id__status__in=['closed', 'resolved', 'completed'])
+            )
+        
+        # Apply custom search filter
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(ticket_id__ticket_number__icontains=search) |
+                Q(ticket_id__ticket_data__subject__icontains=search) |
+                Q(ticket_id__ticket_data__description__icontains=search)
+            )
         
         return queryset
 
@@ -873,7 +981,11 @@ class TaskViewSet(viewsets.ModelViewSet):
             escalated_task_items = assign_users_for_escalation(
                 task=task,
                 escalate_to_role=task.current_step.escalate_to,
-                reason=reason
+                reason=reason,
+                from_user_id=current_assignment.role_user.user_id,
+                from_user_role=current_assignment.role_user.role_id.name,
+                escalated_by_id=request.user.user_id,
+                escalated_by_name=getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'User {request.user.user_id}')
             )
             
             if not escalated_task_items:
@@ -1006,6 +1118,30 @@ class TaskViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Failed to log audit for transfer_task: {e}")
         
+        # Send transfer notifications to both users via notification_service
+        try:
+            from celery import current_app
+            from django.conf import settings
+            
+            task_title = str(task_item.task.ticket_id.ticket_number) if hasattr(task_item.task, 'ticket_id') else f"Task {task_item.task.task_id}"
+            inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
+            
+            current_app.send_task(
+                'notifications.send_task_transfer_notification',
+                args=(
+                    task_item.role_user.user_id,
+                    target_user_id,
+                    str(task_item.task.task_id),
+                    task_title,
+                    request.user.user_id,
+                    getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'User {request.user.user_id}'),
+                    transfer_notes
+                ),
+                queue=inapp_queue
+            )
+        except Exception as e:
+            logger.error(f"Failed to send transfer notification: {e}")
+        
         # Return the new task item
         serializer = TaskItemSerializer(new_task_item)
         return Response(
@@ -1017,3 +1153,153 @@ class TaskViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+
+class FailedNotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for viewing and retrying failed notifications.
+    Read-only operations (list/retrieve) plus custom retry action.
+    """
+    from .models import FailedNotification
+    from .serializers import FailedNotificationSerializer
+    
+    queryset = FailedNotification.objects.all()
+    serializer_class = FailedNotificationSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['status', 'user_id', 'role_name']
+    search_fields = ['task_id', 'task_title', 'error_message']
+    ordering_fields = ['created_at', 'last_retry_at', 'retry_count']
+    ordering = ['-created_at']
+    pagination_class = TaskPagination
+    
+    @action(detail=True, methods=['post'])
+    def retry(self, request, pk=None):
+        """
+        Retry a specific failed notification.
+        POST /failed-notifications/{id}/retry/
+        """
+        from .tasks import send_assignment_notification as notify_task
+        
+        notification = self.get_object()
+        
+        # Check if already succeeded
+        if notification.status == 'success':
+            return Response(
+                {'error': 'Notification already succeeded'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check max retries
+        if notification.retry_count >= notification.max_retries:
+            return Response(
+                {'error': f'Max retries ({notification.max_retries}) already reached'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Update retry tracking
+            notification.status = 'retrying'
+            notification.retry_count += 1
+            notification.last_retry_at = timezone.now()
+            notification.save()
+            
+            # Attempt to send notification
+            notify_task.delay(
+                user_id=notification.user_id,
+                task_id=notification.task_id,
+                task_title=notification.task_title,
+                role_name=notification.role_name
+            )
+            
+            # Mark as success
+            notification.status = 'success'
+            notification.succeeded_at = timezone.now()
+            notification.save()
+            
+            serializer = self.get_serializer(notification)
+            return Response(
+                {
+                    'message': 'Notification sent successfully',
+                    'notification': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            # Update error details
+            notification.error_message = str(e)
+            
+            # Check if max retries reached
+            if notification.retry_count >= notification.max_retries:
+                notification.status = 'failed'
+            else:
+                notification.status = 'pending'
+            
+            notification.save()
+            
+            return Response(
+                {
+                    'error': f'Failed to send notification: {str(e)}',
+                    'notification': self.get_serializer(notification).data
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+    
+    @action(detail=False, methods=['post'])
+    def retry_all(self, request):
+        """
+        Retry all pending failed notifications.
+        POST /failed-notifications/retry_all/
+        """
+        from .tasks import send_assignment_notification as notify_task
+        
+        # Get pending notifications
+        notifications = self.queryset.filter(status='pending')
+        
+        # Apply max_retries filter
+        from django.db.models import F
+        notifications = notifications.filter(retry_count__lt=F('max_retries'))
+        
+        total_count = notifications.count()
+        success_count = 0
+        failed_count = 0
+        
+        for notification in notifications:
+            try:
+                notification.status = 'retrying'
+                notification.retry_count += 1
+                notification.last_retry_at = timezone.now()
+                notification.save()
+                
+                notify_task.delay(
+                    user_id=notification.user_id,
+                    task_id=notification.task_id,
+                    task_title=notification.task_title,
+                    role_name=notification.role_name
+                )
+                
+                notification.status = 'success'
+                notification.succeeded_at = timezone.now()
+                notification.save()
+                success_count += 1
+                
+            except Exception as e:
+                notification.error_message = str(e)
+                if notification.retry_count >= notification.max_retries:
+                    notification.status = 'failed'
+                else:
+                    notification.status = 'pending'
+                notification.save()
+                failed_count += 1
+        
+        return Response(
+            {
+                'message': f'Retry completed',
+                'total': total_count,
+                'success': success_count,
+                'failed': failed_count,
+                'remaining_pending': self.queryset.filter(status='pending').count()
+            },
+            status=status.HTTP_200_OK
+        )

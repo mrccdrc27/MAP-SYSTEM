@@ -1,126 +1,105 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import styles from './WorkflowEditorLayout.module.css';
 import StepEditPanel from './StepEditPanel';
 import TransitionEditPanel from './TransitionEditPanel';
+import WorkflowEditPanel from './WorkflowEditPanel';
 
-const WorkflowEditorSidebar = ({
-  activeSidebarTab,
-  setActiveSidebarTab,
-  editingStep,
-  setEditingStep,
-  editingTransition,
-  setEditingTransition,
+export default function WorkflowEditorSidebar({
+  selectedElement,
+  workflowData,
   roles,
-  contentRef,
-  setHasUnsavedChanges,
-  sidebarWidth,
-  isResizing,
-  handleResizeStart,
-}) => {
+  onUpdateStep,
+  onUpdateTransition,
+  onDeleteStep,
+  onDeleteTransition,
+  onClose,
+}) {
+  // No selection state
+  if (!selectedElement) {
+    return (
+      <div className={styles.sidebarEmpty}>
+        <div className={styles.sidebarEmptyContent}>
+          <div className={styles.sidebarEmptyIcon}>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+            </svg>
+          </div>
+          <p className={styles.sidebarEmptyTitle}>No selection</p>
+          <p className={styles.sidebarEmptySubtitle}>Click on a step, transition, or the canvas to edit properties</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Get selected step or transition data
+  const getStepData = () => {
+    if (selectedElement.type !== 'step') return null;
+    const step = workflowData?.graph?.nodes?.find((s) => String(s.id) === String(selectedElement.id));
+    if (!step) return selectedElement.data || null;
+    return {
+      id: step.id,
+      label: step.name,
+      role: step.role,
+      description: step.description,
+      instruction: step.instruction,
+      is_start: step.is_start,
+      is_end: step.is_end,
+      ...selectedElement.data,
+    };
+  };
+
+  const getTransitionData = () => {
+    if (selectedElement.type !== 'transition') return null;
+    const transition = workflowData?.graph?.edges?.find((t) => String(t.id) === String(selectedElement.id));
+    if (!transition) return selectedElement.data || null;
+    return {
+      id: transition.id,
+      label: transition.name,
+      source: transition.from,
+      target: transition.to,
+      ...selectedElement.data,
+    };
+  };
+
   return (
-    <aside className={styles.rightPanel} style={{ width: `${sidebarWidth}px` }}>
-      <nav className={styles.panelTabs}>
-        <button
-          onClick={() => setActiveSidebarTab('steps')}
-          className={activeSidebarTab === 'steps' ? styles.panelTabActive : styles.panelTab}
-        >
-          <span className={styles.tabIcon}>📋</span>
-          Steps
+    <div className={styles.sidebar}>
+      <div className={styles.sidebarHeader}>
+        <h3 className={styles.sidebarTitle}>
+          {selectedElement.type === 'step' && 'Edit Step'}
+          {selectedElement.type === 'transition' && 'Edit Transition'}
+          {selectedElement.type === 'workflow' && 'Workflow Properties'}
+        </h3>
+        <button onClick={onClose} className={styles.sidebarCloseBtn} title="Close panel">
+          <X />
         </button>
-        <button
-          onClick={() => setActiveSidebarTab('transitions')}
-          className={activeSidebarTab === 'transitions' ? styles.panelTabActive : styles.panelTab}
-        >
-          <span className={styles.tabIcon}>🔀</span>
-          Transitions
-        </button>
-      </nav>
-
-      <div className={styles.panelContent}>
-        {activeSidebarTab === 'steps' && (
-          <>
-            {editingStep && (
-              <StepEditPanel
-                step={editingStep}
-                roles={roles}
-                onClose={() => setEditingStep(null)}
-                onChange={(updatedData) => {
-                  // Real-time update for temporary steps
-                  if (String(editingStep.id).startsWith('temp-')) {
-                    contentRef.current?.updateNodeData(editingStep.id, {
-                      label: updatedData.name,
-                      role: updatedData.role,
-                      description: updatedData.description,
-                      instruction: updatedData.instruction,
-                      is_start: updatedData.is_start,
-                      is_end: updatedData.is_end,
-                    });
-                  }
-                }}
-                onSave={(updated) => {
-                  if (String(editingStep.id).startsWith('temp-')) {
-                    contentRef.current?.updateNodeData(editingStep.id, {
-                      label: updated.name,
-                      role: updated.role,
-                      description: updated.description,
-                      instruction: updated.instruction,
-                      is_start: updated.is_start,
-                      is_end: updated.is_end,
-                    });
-                  }
-                  setHasUnsavedChanges(true);
-                  setEditingStep(null);
-                }}
-                onDelete={() => {
-                  contentRef.current?.deleteNode(editingStep.id);
-                  setHasUnsavedChanges(true);
-                  setEditingStep(null);
-                }}
-              />
-            )}
-            {!editingStep && (
-              <div className={styles.emptyState}>
-                <p>📋 Select a step to edit</p>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeSidebarTab === 'transitions' && (
-          <>
-            {editingTransition && (
-              <TransitionEditPanel
-                transition={editingTransition}
-                onClose={() => setEditingTransition(null)}
-                onSave={(updated) => {
-                  contentRef.current?.updateEdgeData(editingTransition.id, { label: updated.label });
-                  setHasUnsavedChanges(true);
-                  setEditingTransition(null);
-                }}
-                onDelete={() => {
-                  contentRef.current?.deleteEdge(editingTransition.id);
-                  setHasUnsavedChanges(true);
-                  setEditingTransition(null);
-                }}
-              />
-            )}
-            {!editingTransition && (
-              <div className={styles.emptyState}>
-                <p>🔀 Select a transition to edit</p>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
-      {/* RESIZE HANDLE */}
-      <div
-        className={`${styles.resizeHandle} ${isResizing ? styles.resizing : ''}`}
-        onMouseDown={handleResizeStart}
-        title="Drag to resize panel"
-      />
-    </aside>
-  );
-};
+      <div className={styles.sidebarContent}>
+        {selectedElement.type === 'step' && selectedElement.id && (
+          <StepEditPanel
+            step={getStepData()}
+            roles={roles}
+            onUpdate={(updates) => onUpdateStep(selectedElement.id, updates)}
+            onDelete={onDeleteStep ? () => onDeleteStep(selectedElement.id) : undefined}
+          />
+        )}
 
-export default WorkflowEditorSidebar;
+        {selectedElement.type === 'transition' && selectedElement.id && (
+          <TransitionEditPanel
+            transition={getTransitionData()}
+            onUpdate={(updates) => onUpdateTransition(selectedElement.id, updates)}
+            onDelete={onDeleteTransition ? () => onDeleteTransition(selectedElement.id) : undefined}
+          />
+        )}
+
+        {selectedElement.type === 'workflow' && (
+          <WorkflowEditPanel
+            workflow={workflowData?.workflow}
+            readOnly={true}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

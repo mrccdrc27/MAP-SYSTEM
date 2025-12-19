@@ -9,10 +9,9 @@ from drf_spectacular.utils import extend_schema
 from .views.auth_views import RegisterView, CustomTokenObtainPairView, CookieTokenRefreshView, CookieLogoutView, ValidateTokenView, UILogoutView
 from .views.profile_views import ProfileView, profile_settings_view
 from .views.otp_views import RequestOTPView, Enable2FAView, Disable2FAView, request_otp_authenticated_view, verify_disable_otp_view
-from .views.password_views import ForgotPasswordView, ForgotPasswordUIView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordUIView
+from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordUIView
 from .views.user_management_views import UserViewSet, agent_management_view, invite_agent_view
-from .views.login_views import LoginView, request_otp_for_login, SystemWelcomeView
-from .views.captcha_views import CaptchaGenerateView, CaptchaVerifyView, captcha_required_view
+from .views.login_views import LoginView, request_otp_for_login, SystemWelcomeView, LoginAPIView, VerifyOTPLoginView
 
 class PasswordResetSerializer(serializers.Serializer):
     forgot = serializers.URLField()
@@ -77,8 +76,10 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
     path('login/ui/', LoginView.as_view(), name='auth_login'),
+    path('login/api/', LoginAPIView.as_view(), name='login-api'),
+    path('login/verify-otp/', VerifyOTPLoginView.as_view(), name='verify-otp-login'),
     path('login/request-otp/', request_otp_for_login, name='auth_request_otp'),
-    path('forgot-password/', ForgotPasswordUIView.as_view(), name='forgot-password-ui'),
+    
     path('welcome/', SystemWelcomeView.as_view(), name='system-welcome'),
     path('token/refresh/', CookieTokenRefreshView.as_view(), name='cookie-token-refresh'),
     path('token/validate/', ValidateTokenView.as_view(), name='validate-token'),
@@ -106,10 +107,8 @@ urlpatterns = [
     path('password/change/', ProfilePasswordResetView.as_view(), name='change-password'),
     path('password/change/ui/', ChangePasswordUIView.as_view(), name='change-password-ui'),
     
-    # CAPTCHA endpoints
-    path('captcha/generate/', CaptchaGenerateView.as_view(), name='captcha-generate'),
-    path('captcha/verify/', CaptchaVerifyView.as_view(), name='captcha-verify'),
-    path('captcha/required/', captcha_required_view, name='captcha-required'),
+    # Invite agent endpoint (must come before router to have priority)
+    path('invite-agent/', UserViewSet.as_view({'get': 'invite_agent', 'post': 'invite_agent'}), name='api-invite-agent'),
     
     # User listing endpoint
     path('list/', UserViewSet.as_view({'get': 'list'}), name='user-list'),

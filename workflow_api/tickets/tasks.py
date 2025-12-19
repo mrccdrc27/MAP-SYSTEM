@@ -9,6 +9,7 @@ import requests
 from urllib.parse import urlparse, urljoin
 import os
 import json
+from workflow_api.safe_logging import safe_print as print  # Use safe print for Python 3.13 compatibility
 
 @shared_task(name='tickets.tasks.receive_ticket')
 def receive_ticket(ticket_data):
@@ -153,7 +154,15 @@ def create_task_for_ticket(ticket_id):
             fetched_at=timezone.now()
         )
         
-        # 4. Assign users for the first step using round-robin (creates TaskItem records)
+        # 4. Assign ticket owner (Ticket Coordinator) using round-robin
+        from task.utils.assignment import assign_ticket_owner
+        ticket_owner = assign_ticket_owner(task)
+        if ticket_owner:
+            print(f"👑 Ticket owner assigned: {ticket_owner.user_full_name} (User ID: {ticket_owner.user_id})")
+        else:
+            print(f"⚠️ No ticket owner assigned (Ticket Coordinator role may not exist or have no users)")
+        
+        # 5. Assign users for the first step using round-robin (creates TaskItem records)
         assigned_items = assign_users_for_step(task, first_step, first_step.role_id.name)
         
         if not assigned_items:
@@ -172,7 +181,12 @@ def create_task_for_ticket(ticket_id):
             "task_id": task.task_id,
             "workflow": matching_workflow.name,
             "step": first_step.name,
-            "assigned_users": [item.to_dict() for item in assigned_items]
+            "assigned_users": [item.to_dict() for item in assigned_items],
+            "ticket_owner": {
+                "user_id": ticket_owner.user_id,
+                "user_full_name": ticket_owner.user_full_name,
+                "role": ticket_owner.role_id.name
+            } if ticket_owner else None
         }
         
     except WorkflowTicket.DoesNotExist:

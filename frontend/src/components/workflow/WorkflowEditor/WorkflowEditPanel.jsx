@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import styles from './WorkflowEditPanel.module.css';
+import styles from './WorkflowEditorLayout.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
-export default function WorkflowEditPanel({ workflow, onClose, onSave, readOnly = false }) {
+export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -68,10 +68,12 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave, readOnly 
       };
 
       await updateWorkflowDetails(workflow.workflow_id, updateData);
-      onSave({
-        ...workflow,
-        ...updateData,
-      });
+      if (onSave) {
+        onSave({
+          ...workflow,
+          ...updateData,
+        });
+      }
       setIsEditing(false);
     } catch (err) {
       setError(err.message || 'Failed to update workflow');
@@ -81,191 +83,182 @@ export default function WorkflowEditPanel({ workflow, onClose, onSave, readOnly 
     }
   };
 
-  return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <h3>{readOnly ? 'Workflow Details' : 'Edit Workflow'}</h3>
-        {onClose && (
-          <button className={styles.closeBtn} onClick={onClose}>
-            ✕
-          </button>
-        )}
+  if (!workflow) {
+    return (
+      <div className={styles.workflowPanelEmpty}>
+        <p>Click on the canvas to view workflow properties</p>
       </div>
+    );
+  }
 
-      {error && <div className={styles.error}>{error}</div>}
+  return (
+    <div>
+      {error && (
+        <div className={styles.workflowPanelError}>
+          {error}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.section}>
-          <h4>Basic Information</h4>
-          
-          <div className={styles.formGroup}>
-            <label>Workflow Name</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter workflow name"
-              disabled={!isEditing || readOnly}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Enter workflow description"
-              rows="3"
-              disabled={!isEditing || readOnly}
-            />
-          </div>
+      <form onSubmit={handleSubmit} className={styles.workflowPanelForm}>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Workflow Name</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className={styles.formInput}
+          />
         </div>
 
-        <div className={styles.section}>
-          <h4>Classification</h4>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            disabled={!isEditing}
+            rows={3}
+            className={styles.formTextarea}
+          />
+        </div>
 
+        <div className={styles.workflowPanelGrid}>
           <div className={styles.formGroup}>
-            <label>Category</label>
+            <label className={styles.formLabel}>Category</label>
             <input
               type="text"
               name="category"
               value={formData.category}
               onChange={handleChange}
-              placeholder="e.g., Support, Sales, HR"
-              disabled={!isEditing || readOnly}
+              disabled={!isEditing}
+              className={styles.formInput}
             />
           </div>
-
           <div className={styles.formGroup}>
-            <label>Sub-Category</label>
+            <label className={styles.formLabel}>Sub-Category</label>
             <input
               type="text"
               name="sub_category"
               value={formData.sub_category}
               onChange={handleChange}
-              placeholder="e.g., Technical, Billing"
-              disabled={!isEditing || readOnly}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Department</label>
-            <input
-              type="text"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              placeholder="e.g., Engineering, Operations"
-              disabled={!isEditing || readOnly}
+              disabled={!isEditing}
+              className={styles.formInput}
             />
           </div>
         </div>
 
-        <div className={styles.section}>
-          <h4>SLA Times (in hours)</h4>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Department</label>
+          <input
+            type="text"
+            name="department"
+            value={formData.department}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className={styles.formInput}
+          />
+        </div>
 
-          <div className={styles.slaGrid}>
+        {/* SLA Section */}
+        <div className={styles.workflowPanelSlaSection}>
+          <h4 className={styles.workflowPanelSlaTitle}>SLA Settings (seconds)</h4>
+          <div className={styles.workflowPanelGrid}>
             <div className={styles.formGroup}>
-              <label>Low Priority</label>
-              <input
-                type="number"
-                name="low_sla"
-                value={formData.low_sla}
-                onChange={handleChange}
-                placeholder="e.g., 48"
-                min="0"
-                disabled={!isEditing || readOnly}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Medium Priority</label>
-              <input
-                type="number"
-                name="medium_sla"
-                value={formData.medium_sla}
-                onChange={handleChange}
-                placeholder="e.g., 24"
-                min="0"
-                disabled={!isEditing || readOnly}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>High Priority</label>
-              <input
-                type="number"
-                name="high_sla"
-                value={formData.high_sla}
-                onChange={handleChange}
-                placeholder="e.g., 12"
-                min="0"
-                disabled={!isEditing || readOnly}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Urgent Priority</label>
+              <label className={styles.formLabel}>Urgent SLA</label>
               <input
                 type="number"
                 name="urgent_sla"
                 value={formData.urgent_sla}
                 onChange={handleChange}
-                placeholder="e.g., 4"
-                min="0"
-                disabled={!isEditing || readOnly}
+                disabled={!isEditing}
+                className={styles.formInput}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>High SLA</label>
+              <input
+                type="number"
+                name="high_sla"
+                value={formData.high_sla}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={styles.formInput}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Medium SLA</label>
+              <input
+                type="number"
+                name="medium_sla"
+                value={formData.medium_sla}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={styles.formInput}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Low SLA</label>
+              <input
+                type="number"
+                name="low_sla"
+                value={formData.low_sla}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={styles.formInput}
               />
             </div>
           </div>
         </div>
 
-        <div className={styles.section}>
-          <h4>End Logic</h4>
-
-          <div className={styles.formGroup}>
-            <label>End Logic (Optional)</label>
-            <textarea
-              name="end_logic"
-              value={formData.end_logic}
-              onChange={handleChange}
-              placeholder="Define the logic for workflow completion"
-              rows="3"
-              disabled={!isEditing || readOnly}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formActions}>
-          {readOnly ? (
-            <div className={styles.readOnlyNote}>
-              <p>ℹ️ Go to the "Edit Workflow" tab to make changes</p>
-            </div>
-          ) : !isEditing ? (
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className={styles.editBtn}
-            >
-              ✏️ Edit
-            </button>
-          ) : (
-            <>
+        {!readOnly && (
+          <div className={styles.workflowPanelActions}>
+            {!isEditing ? (
               <button
                 type="button"
-                onClick={() => setIsEditing(false)}
-                className={styles.cancelBtn}
+                onClick={() => setIsEditing(true)}
+                className={styles.btnPrimary}
               >
-                Cancel
+                Edit
               </button>
-              <button type="submit" className={styles.saveBtn} disabled={loading}>
-                {loading ? 'Saving...' : 'Save Workflow'}
-              </button>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    // Reset form data
+                    if (workflow) {
+                      setFormData({
+                        name: workflow.name || '',
+                        description: workflow.description || '',
+                        category: workflow.category || '',
+                        sub_category: workflow.sub_category || '',
+                        department: workflow.department || '',
+                        end_logic: workflow.end_logic || '',
+                        low_sla: workflow.low_sla || '',
+                        medium_sla: workflow.medium_sla || '',
+                        high_sla: workflow.high_sla || '',
+                        urgent_sla: workflow.urgent_sla || '',
+                      });
+                    }
+                  }}
+                  className={styles.btnSecondary}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={styles.btnPrimary}
+                >
+                  {loading ? 'Saving...' : 'Save'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </form>
     </div>
   );

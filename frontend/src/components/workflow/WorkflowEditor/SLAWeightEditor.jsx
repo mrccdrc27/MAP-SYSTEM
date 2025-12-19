@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import styles from './SLAWeightEditor.module.css';
+import { X, Info } from 'lucide-react';
+import styles from './WorkflowEditorLayout.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 export default function SLAWeightEditor({ workflowId, onClose }) {
@@ -53,7 +54,6 @@ export default function SLAWeightEditor({ workflowId, onClose }) {
     
     if (totalWeight === 0) return 'N/A';
 
-    // Parse duration string (e.g., "432000.0" seconds)
     const seconds = parseFloat(slaValue);
     const stepSeconds = (seconds * stepWeight) / totalWeight;
 
@@ -89,7 +89,8 @@ export default function SLAWeightEditor({ workflowId, onClose }) {
       setSaveStatus('success');
       setTimeout(() => {
         setSaveStatus(null);
-      }, 2000);
+        onClose();
+      }, 1000);
     } catch (err) {
       console.error('Error saving weights:', err);
       setSaveStatus('error');
@@ -97,26 +98,28 @@ export default function SLAWeightEditor({ workflowId, onClose }) {
     } finally {
       setIsSaving(false);
     }
-  }, [weights, workflowId, updateStepWeights]);
+  }, [weights, workflowId, updateStepWeights, onClose]);
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loadingSpinner}>
-          <div className={styles.spinner}></div>
-          <p>Loading weight management data...</p>
+      <div className={styles.slaModal}>
+        <div className={styles.slaModalContent} style={{ padding: '32px' }}>
+          <div className={styles.loadingContent}>
+            <div className={styles.loadingSpinner}></div>
+            <p className={styles.loadingText}>Loading weight management data...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !workflowData) {
     return (
-      <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorIcon}>⚠️</div>
-          <p className={styles.errorMessage}>{error}</p>
-          <button className={styles.closeBtn} onClick={onClose}>
+      <div className={styles.slaModal}>
+        <div className={styles.slaModalContent} style={{ padding: '32px', textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <p style={{ color: '#dc2626', marginBottom: '16px' }}>{error}</p>
+          <button onClick={onClose} className={styles.btnSecondary}>
             Close
           </button>
         </div>
@@ -124,118 +127,126 @@ export default function SLAWeightEditor({ workflowId, onClose }) {
     );
   }
 
+  const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <h2 className={styles.title}>Weight Management</h2>
-          <p className={styles.subtitle}>{workflowData?.workflow_name}</p>
+    <div className={styles.slaModal}>
+      <div className={styles.slaModalContent}>
+        <div className={styles.slaModalHeader}>
+          <div className={styles.slaModalHeaderInfo}>
+            <h2>SLA Time Distribution</h2>
+            <p>{workflowData?.workflow_name}</p>
+          </div>
+          <button onClick={onClose} className={styles.slaModalCloseBtn}>
+            <X />
+          </button>
         </div>
-        <button className={styles.headerCloseBtn} onClick={onClose}>
-          ✕
-        </button>
-      </div>
 
-      <div className={styles.content}>
-        {/* Steps List */}
-        <div className={styles.stepsSection}>
-          <h3 className={styles.sectionTitle}>Step Weights</h3>
-          <div className={styles.stepsList}>
-            {workflowData?.steps.map((step) => (
-              <div key={step.step_id} className={styles.stepCard}>
-                <div className={styles.stepHeader}>
-                  <div className={styles.stepInfo}>
-                    <div className={styles.stepName}>{step.name}</div>
-                    <div className={styles.stepMeta}>{step.role_name} • Step {step.order}</div>
-                  </div>
-                  <div className={styles.stepWeight}>{(parseFloat(weights[step.step_id]) || 0.5).toFixed(2)}</div>
+        <div className={styles.slaModalBody}>
+          <div className={styles.slaInfoBox}>
+            <Info className={styles.slaInfoIcon} />
+            <div className={styles.slaInfoText}>
+              <p>Weights determine the relative time allocation for each step.</p>
+              <p>Higher weights = more time allocated to that step.</p>
+            </div>
+          </div>
+
+          {/* SLA Reference */}
+          <div className={styles.slaSummary}>
+            <h3 className={styles.slaSummaryTitle}>Total SLAs by Priority</h3>
+            <div className={styles.slaSummaryGrid}>
+              {[
+                { label: 'Urgent', value: workflowData?.slas?.urgent_sla },
+                { label: 'High', value: workflowData?.slas?.high_sla },
+                { label: 'Medium', value: workflowData?.slas?.medium_sla },
+                { label: 'Low', value: workflowData?.slas?.low_sla },
+              ].map((sla) => (
+                <div key={sla.label} className={styles.slaSummaryCard}>
+                  <div className={styles.slaSummaryLabel}>{sla.label}</div>
+                  <div className={styles.slaSummaryValue}>{formatDuration(parseFloat(sla.value))}</div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <div className={styles.sliderContainer}>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="1"
-                    step="0.01"
-                    value={parseFloat(weights[step.step_id]) || 0.5}
-                    onChange={(e) =>
-                      handleWeightChange(step.step_id, parseFloat(e.target.value))
-                    }
-                    className={styles.slider}
-                  />
-                </div>
+          {/* Steps List */}
+          <div className={styles.slaStepsList}>
+            {workflowData?.steps?.map((step) => {
+              const stepWeight = weights[step.step_id] || 0;
+              const percentage = totalWeight > 0 ? (stepWeight / totalWeight) * 100 : 0;
 
-                {/* SLA Breakdown */}
-                <div className={styles.slaBreakdown}>
-                  {[
-                    { label: 'Urgent', value: workflowData?.slas.urgent_sla },
-                    { label: 'High', value: workflowData?.slas.high_sla },
-                    { label: 'Medium', value: workflowData?.slas.medium_sla },
-                    { label: 'Low', value: workflowData?.slas.low_sla },
-                  ].map((sla) => (
-                    <div key={sla.label} className={styles.slaItem}>
-                      <span className={styles.slaLabel}>{sla.label}</span>
-                      <span className={styles.slaValue}>
-                        {calculateStepSLA(step.step_id, sla.value)}
-                      </span>
+              return (
+                <div key={step.step_id} className={styles.slaStepCard}>
+                  <div className={styles.slaStepHeader}>
+                    <div>
+                      <div className={styles.slaStepName}>{step.name}</div>
+                      <div className={styles.slaStepMeta}>{step.role_name} • Step {step.order}</div>
                     </div>
-                  ))}
+                    <div className={styles.slaStepWeight}>
+                      <div className={styles.slaStepWeightValue}>{(stepWeight * 100).toFixed(0)}%</div>
+                      <div className={styles.slaStepWeightPercent}>{percentage.toFixed(1)}% of total</div>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.slaStepControls}>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1"
+                      step="0.01"
+                      value={stepWeight}
+                      onChange={(e) => handleWeightChange(step.step_id, parseFloat(e.target.value))}
+                      className={styles.slaStepSlider}
+                    />
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="1"
+                      step="0.01"
+                      value={stepWeight}
+                      onChange={(e) => handleWeightChange(step.step_id, parseFloat(e.target.value) || 0.1)}
+                      className={styles.slaStepInput}
+                    />
+                  </div>
+
+                  {/* SLA Breakdown for this step */}
+                  <div className={styles.slaStepBreakdown}>
+                    {[
+                      { label: 'Urgent', value: workflowData?.slas?.urgent_sla },
+                      { label: 'High', value: workflowData?.slas?.high_sla },
+                      { label: 'Medium', value: workflowData?.slas?.medium_sla },
+                      { label: 'Low', value: workflowData?.slas?.low_sla },
+                    ].map((sla) => (
+                      <div key={sla.label} className={styles.slaStepBreakdownItem}>
+                        <div className={styles.slaStepBreakdownLabel}>{sla.label}</div>
+                        <div className={styles.slaStepBreakdownValue}>{calculateStepSLA(step.step_id, sla.value)}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* SLA Reference */}
-        <div className={styles.referenceSection}>
-          <h3 className={styles.sectionTitle}>Total SLAs</h3>
-          <div className={styles.slaGrid}>
-            {[
-              { label: 'Urgent', value: workflowData?.slas.urgent_sla },
-              { label: 'High', value: workflowData?.slas.high_sla },
-              { label: 'Medium', value: workflowData?.slas.medium_sla },
-              { label: 'Low', value: workflowData?.slas.low_sla },
-            ].map((sla) => (
-              <div key={sla.label} className={styles.slaCard}>
-                <div className={styles.slaCardLabel}>{sla.label}</div>
-                <div className={styles.slaCardValue}>{formatDuration(parseFloat(sla.value))}</div>
-              </div>
-            ))}
+        <div className={styles.slaModalFooter}>
+          <div className={styles.slaModalFooterInfo}>
+            {workflowData?.steps?.length || 0} steps
+            {saveStatus === 'success' && (
+              <span className={styles.slaModalFooterSuccess}>✓ Saved successfully</span>
+            )}
+            {saveStatus === 'error' && (
+              <span className={styles.slaModalFooterError}>✕ Error saving</span>
+            )}
           </div>
-        </div>
-      </div>
-
-      <div className={styles.footer}>
-        <div className={styles.saveStatus}>
-          {saveStatus === 'saving' && (
-            <span className={styles.savingText}>
-              <span className={styles.spinner}></span>
-              Saving...
-            </span>
-          )}
-          {saveStatus === 'success' && (
-            <span className={styles.successText}>✓ Saved successfully</span>
-          )}
-          {saveStatus === 'error' && (
-            <span className={styles.errorText}>✕ Error saving weights</span>
-          )}
-        </div>
-
-        <div className={styles.actions}>
-          <button
-            className={styles.cancelBtn}
-            onClick={onClose}
-            disabled={isSaving}
-          >
-            Cancel
-          </button>
-          <button
-            className={styles.saveBtn}
-            onClick={handleSaveWeights}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save Weights'}
-          </button>
+          <div className={styles.slaModalFooterActions}>
+            <button onClick={onClose} disabled={isSaving} className={styles.btnSecondary}>
+              Cancel
+            </button>
+            <button onClick={handleSaveWeights} disabled={isSaving} className={styles.btnPrimary}>
+              {isSaving ? 'Saving...' : 'Save Weights'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

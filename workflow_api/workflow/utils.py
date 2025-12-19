@@ -5,7 +5,11 @@ from workflow.models import Workflows
 
 logger = logging.getLogger(__name__)
 
-# Utility functions to check the initialization status of workflows, steps, and transitions.
+# =============================================================================
+# Utility functions to check the initialization status of workflows, steps, 
+# and transitions. Consolidated from utils.py and utils/status.py
+# =============================================================================
+
 
 def calculate_default_node_design(step_order, total_steps, base_x=-2.0):
     """
@@ -29,8 +33,6 @@ def calculate_default_node_design(step_order, total_steps, base_x=-2.0):
         - Step 2: y = 246.26
         Interval: ~202 pixels
     """
-    # Calculate vertical spacing: 202 pixels per step
-    # Start position centers the workflow around y=0
     VERTICAL_INTERVAL = 202.0
     
     # Calculate starting y position to center the workflow
@@ -45,81 +47,194 @@ def calculate_default_node_design(step_order, total_steps, base_x=-2.0):
         "y": round(y_position, 2)
     }
 
+
 def is_transition_initialized(transition):
     """
-    A transition is considered initialized if:
-      - At least one of from_step_id or to_step_id is non-null
+    A transition is initialized when both source and destination steps exist.
+    Both from_step_id and to_step_id must be set for a valid transition.
     """
     result = (
-        transition.from_step_id_id is not None or transition.to_step_id_id is not None
+        transition.from_step_id is not None and transition.to_step_id is not None
     )
     logger.debug(f"Transition {getattr(transition, 'transition_id', transition)} initialized: {result}")
     return result
 
 
 def is_step_initialized(step):
+    """
+    Check if a step is fully initialized.
+    A step is initialized if it has a role assigned.
+    
+    Returns:
+        tuple: (bool, str) - (is_initialized, failure_reason)
+               If initialized: (True, "")
+               If not: (False, "specific reason for failure")
+    """
     logger.debug(f"Checking step: {step.step_id}")
 
     if not step.role_id:
-        logger.warning(f"Step {step.step_id} has no role assigned.")
+        reason = f"Step {step.step_id} failed initialization: no role assigned"
+        logger.warning(reason)
+        return False, reason
+
+    logger.debug(f"Step {step.step_id} is initialized.")
+    return True, ""
+
+
+def has_valid_workflow_path(workflow):
+    """
+    Check if the workflow has a valid path from start to end without deadends.
+    
+    A workflow is valid if:
+    1. There is exactly one step marked as is_start
+    2. There is at least one step marked as is_end
+    3. All steps are reachable from the start step
+    4. The start step can reach at least one end step
+    5. No step is a deadend (except end steps)
+    """
+    steps = Steps.objects.filter(workflow_id=workflow.workflow_id)
+    transitions = StepTransition.objects.filter(workflow_id=workflow.workflow_id)
+    
+    if not steps.exists():
         return False
-
-    transitions = StepTransition.objects.filter(
-        Q(from_step_id=step.step_id) | Q(to_step_id=step.step_id)
-    )
-
-    if not transitions.exists():
-        logger.warning(f"Step {step.step_id} has no transitions at all.")
+    
+    # Find start and end steps
+    start_steps = list(steps.filter(is_start=True))
+    end_steps = list(steps.filter(is_end=True))
+    
+    # Must have exactly one start step
+    if len(start_steps) != 1:
+        logger.warning(f"Workflow '{workflow.name}' must have exactly one start step, found {len(start_steps)}")
         return False
-
-    for t in transitions:
-        if not is_transition_initialized(t):
-            logger.warning(f"Step {step.step_id} has uninitialized transition {getattr(t, 'transition_id', t)}.")
+    
+    # Must have at least one end step
+    if len(end_steps) == 0:
+        logger.warning(f"Workflow '{workflow.name}' must have at least one end step")
+        return False
+    
+    start_step = start_steps[0]
+    end_step_ids = {step.step_id for step in end_steps}
+    
+    # Build adjacency list for all transitions
+    graph = {}
+    for step in steps:
+        graph[step.step_id] = []
+    
+    for transition in transitions:
+        if transition.from_step_id and transition.to_step_id:
+            graph[transition.from_step_id.step_id].append(transition.to_step_id.step_id)
+    
+    # DFS from start to find all reachable steps
+    reachable_from_start = set()
+    stack = [start_step.step_id]
+    
+    while stack:
+        current = stack.pop()
+        if current in reachable_from_start:
+            continue
+        reachable_from_start.add(current)
+        stack.extend(graph.get(current, []))
+    
+    # All steps must be reachable from start
+    for step in steps:
+        if step.step_id not in reachable_from_start:
+            logger.warning(f"Step {step.step_id} is not reachable from start")
             return False
-
-    logger.debug(f"Step {step.step_id} is fully initialized.")
+    
+    # Check if start can reach at least one end step
+    can_reach_end = any(end_id in reachable_from_start for end_id in end_step_ids)
+    if not can_reach_end:
+        logger.warning(f"Workflow '{workflow.name}' cannot reach any end step from start")
+        return False
+    
+    # Check for deadends: no step (except end steps) should be a dead-end
+    for step in steps:
+        if step.step_id in end_step_ids:
+            continue  # End steps can have no outgoing transitions
+        
+        # Non-end steps must have at least one outgoing transition
+        if not graph.get(step.step_id):
+            logger.warning(f"Step {step.step_id} is a deadend (no outgoing transitions)")
+            return False
+    
     return True
 
 
 def is_workflow_initialized(workflow):
+    """
+    A workflow is initialized (published) when:
+    1. It has category and sub_category set
+    2. It has valid metadata (name)
+    3. It has steps
+    4. All steps have required fields (role_id)
+    5. All transitions are properly formed (both from and to steps set)
+    6. It has a valid path from start to end (no deadends)
+    """
     logger.info(f"Evaluating workflow '{workflow.name}' ({workflow.workflow_id})")
-    logger.debug(f"Category: {workflow.category}, Sub-category: {workflow.sub_category}")
-
+    
+    # Basic metadata checks
     if not workflow.category or not workflow.sub_category:
-        logger.warning("Missing category or subcategory.")
+        logger.warning(f"Workflow '{workflow.name}' failed initialization: missing category or subcategory.")
+        return False
+    
+    if not workflow.name:
+        logger.warning(f"Workflow '{workflow.workflow_id}' failed initialization: missing name.")
         return False
 
     steps = Steps.objects.filter(workflow_id=workflow.workflow_id)
     if not steps.exists():
-        logger.warning("No steps found.")
+        logger.warning(f"Workflow '{workflow.name}' failed initialization: no steps found.")
         return False
 
+    # All steps must have a role
     for step in steps:
-        if not is_step_initialized(step):
-            logger.warning(f"Step {step.step_id} failed initialization check.")
+        is_initialized, failure_reason = is_step_initialized(step)
+        if not is_initialized:
             return False
+    
+    # All transitions must be properly formed
+    transitions = StepTransition.objects.filter(workflow_id=workflow.workflow_id)
+    for t in transitions:
+        if not is_transition_initialized(t):
+            logger.warning(f"Transition {t.transition_id} is not properly initialized")
+            return False
+    
+    # Must have a valid path from start to end
+    if not has_valid_workflow_path(workflow):
+        return False
 
     logger.info(f"Workflow '{workflow.name}' is initialized.")
     return True
 
 
-from workflow.tasks import send_hello, send_to_consumer  # Import the Celery task
-
 def compute_workflow_status(workflow_id):
-    logger.info(f">>> Computing status for workflow_id: {workflow_id}")
-    try:
-        workflow = Workflows.objects.get(workflow_id=workflow_id)
-    except Workflows.DoesNotExist:
-        logger.error("Workflow not found.")
-        return
+    """
+    Update workflow status based on initialization checks.
+    
+    Args:
+        workflow_id: Can be an int (workflow_id) or a Workflows object
+    """
+    # Handle both workflow_id (int) and workflow object for backward compatibility
+    if isinstance(workflow_id, Workflows):
+        workflow = workflow_id
+    else:
+        logger.info(f">>> Computing status for workflow_id: {workflow_id}")
+        try:
+            workflow = Workflows.objects.get(workflow_id=workflow_id)
+        except Workflows.DoesNotExist:
+            logger.error(f"Workflow {workflow_id} not found.")
+            return
 
     initialized = is_workflow_initialized(workflow)
     new_status = "initialized" if initialized else "draft"
+    new_is_published = (new_status == "initialized")
+    
     logger.info(f"Setting workflow '{workflow.name}' status to: {new_status}")
 
-    if workflow.status != new_status:  # Prevent unnecessary updates
+    if workflow.status != new_status or workflow.is_published != new_is_published:
         workflow.status = new_status
-        workflow.save(update_fields=["status"])
+        workflow.is_published = new_is_published
+        workflow.save(update_fields=["status", "is_published"])
 
 
 def calculate_edge_handles(workflow_id):
@@ -165,8 +280,13 @@ def calculate_edge_handles(workflow_id):
         if transition.to_step_id:
             to_steps.add(transition.to_step_id.step_id)
     
-    # Find start nodes: appear as to_step but never as from_step
-    start_nodes = to_steps - from_steps
+    # Find start nodes: nodes marked as is_start, or nodes that appear as from_step but never as to_step
+    start_steps = steps.filter(is_start=True)
+    if start_steps.exists():
+        start_nodes = {s.step_id for s in start_steps}
+    else:
+        # Fallback: nodes that have outgoing but no incoming transitions
+        start_nodes = from_steps - to_steps
     
     # If no start node found (e.g., circular graph), pick any node
     if not start_nodes:
@@ -267,12 +387,12 @@ def apply_edge_handles_to_transitions(transitions_queryset, workflow_id):
     for edge in transitions_queryset:
         design = edge.design or {}
         
-        # Get calculated handles or use defaults
+        # Get calculated handles or use defaults (lowercase for consistency)
         if edge.transition_id in handles_map:
             design.update(handles_map[edge.transition_id])
         else:
-            design.setdefault("source_handle", "Bottom")
-            design.setdefault("target_handle", "Top")
+            design.setdefault("source_handle", "bottom")
+            design.setdefault("target_handle", "top")
         
         transition_data = {
             'id': edge.transition_id,

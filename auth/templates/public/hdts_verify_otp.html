@@ -1,0 +1,214 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - HDTS Employee</title>
+
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+        }
+
+        .otpPage {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .otpContainer {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .otpHeader {
+            margin-bottom: 2rem;
+        }
+
+        .otpHeader h1 {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .otpHeader p {
+            color: #666;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .toastContainer {
+            margin-bottom: 1.5rem;
+        }
+
+        .toast {
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .toast.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .toast.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .otpForm {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .formGroup {
+            margin: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+            text-align: left;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button[type="submit"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.9;
+        }
+
+        .otpInfo {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 1rem;
+        }
+
+        .backLink {
+            margin-top: 1rem;
+        }
+
+        .backLink a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .backLink a:hover {
+            text-decoration: underline;
+        }
+
+        .errorMsg {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="otpPage">
+        <div class="otpContainer">
+            <header class="otpHeader">
+                <h1>Verify Your Identity</h1>
+                <p>Enter the 6-digit code sent to your email</p>
+            </header>
+
+            {% if messages %}
+                <div class="toastContainer">
+                    {% for message in messages %}
+                        <div class="toast {% if message.tags %}{{ message.tags }}{% else %}error{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- OTP Form -->
+            <form method="post" novalidate class="otpForm" id="otpForm">
+                {% csrf_token %}
+
+                <div class="formGroup">
+                    <label for="id_otp_code">OTP Code:</label>
+                    <input type="text" id="id_otp_code" name="otp_code" placeholder="000000" maxlength="6" pattern="\d{6}" required autofocus>
+                </div>
+
+                <button type="submit">Verify OTP</button>
+            </form>
+
+            <div class="otpInfo">
+                <p>This code will expire in 5 minutes.</p>
+            </div>
+
+            <div class="backLink">
+                <a href="{% url 'employee-login-shortcut' %}">Back to Login</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Allow only numbers in OTP input
+        const otpInput = document.getElementById('id_otp_code');
+        otpInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        // Auto-submit if 6 digits entered
+        otpInput.addEventListener('input', function() {
+            if (this.value.length === 6) {
+                // Optional: Auto-submit form when 6 digits are entered
+                // Uncomment the line below to enable auto-submit
+                // document.getElementById('otpForm').submit();
+            }
+        });
+    </script>
+</body>
+
+</html>

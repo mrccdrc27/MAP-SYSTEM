@@ -32,9 +32,7 @@ class APIRootSerializer(serializers.Serializer):
     transitions = serializers.URLField()
     roles = serializers.URLField()
     steps = serializers.URLField()
-    ams_checkout = serializers.URLField()
-    bms_checkout = serializers.URLField()
-    workflow_manager = serializers.URLField()
+
     analytics = serializers.URLField()
     schema = serializers.URLField()
     docs = serializers.URLField()
@@ -58,9 +56,7 @@ def api_root(request, format=None):
         'transitions': request.build_absolute_uri('transitions/'),
         'roles': request.build_absolute_uri('roles/'),
         'steps': request.build_absolute_uri('steps/'),
-        'ams-checkout': request.build_absolute_uri('ams-checkout/'),
-        'bms-checkout': request.build_absolute_uri('bms-checkout/'),
-        'workflow-manager': request.build_absolute_uri('workflow-manager/'),
+
         'analytics': request.build_absolute_uri('analytics/'),
         'schema': reverse('schema', request=request, format=format),
         'docs': reverse('swagger-ui', request=request, format=format),
@@ -81,9 +77,7 @@ urlpatterns = [
     path('transitions/', include('task.transitions_urls')),
     path('roles/', include('role.urls')),
     path('steps/', include('step.urls')),
-    path('ams-checkout/', include('amscheckout.urls')),
-    path('bms-checkout/', include('bmscheckout.urls')),
-    path('workflow-manager/', include('workflowmanager.urls')),
+
     path('audit/', include('audit.urls')),
     path('analytics/', include('reporting.urls')),
 

@@ -1,0 +1,8 @@
+.notification-styles-deprecated {
+    /* NOTE: Notification styles were moved to shared NotificationWrapper.module.css
+	    The component now imports styles directly from the shared module.
+	    This file remains as a placeholder to avoid breaking imports that
+	    may reference it during a gradual migration. Remove when all
+	    references are updated. */
+	display: none;
+}

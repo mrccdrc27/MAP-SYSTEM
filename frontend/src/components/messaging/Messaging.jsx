@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useMessaging } from '../../hooks/useMessaging';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
@@ -7,8 +7,6 @@ import MessageInput from './MessageInput';
 import styles from './Messaging.module.css';
 
 const Messaging = ({ ticket_id , ticket_owner}) => {
-  // console.log('🎪 Messaging component rendered with ticket_id:', ticket_id);
-  
   const { user: authUser } = useAuth();
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -18,15 +16,20 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
   const containerRef = useRef(null);
 
   const currentUserId = authUser?.id || authUser?.user_id;
-  const currentIdentifier = authUser?.full_name || authUser?.email || 'User';
+  // Build user's display name from available fields
+  const currentIdentifier = authUser?.full_name || 
+    (authUser?.first_name && authUser?.last_name 
+      ? `${authUser.first_name} ${authUser.last_name}` 
+      : authUser?.first_name || authUser?.username || authUser?.email || 'User');
+
+  // Debug: log authUser to see available fields
+  console.log('[Messaging] authUser:', authUser);
+  console.log('[Messaging] currentIdentifier:', currentIdentifier);
 
   const ownerName =
   ticket_owner?.first_name && ticket_owner?.last_name
     ? `${ticket_owner.first_name} ${ticket_owner.last_name}`
     : ticket_owner?.username || ticket_owner?.email || 'Unknown User';
-
-
-  // console.log('🎪 About to call useMessaging with:', { ticket_id, currentIdentifier });
 
   const {
     messages,
@@ -45,17 +48,8 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
     stopTyping,
   } = useMessaging(ticket_id, currentIdentifier);
 
-  console.log('🎪 useMessaging returned:', { messagesCount: messages.length, isConnected, isLoading, error });
-
   // Use auto-scroll hook
   useAutoScroll(messages, containerRef);
-
-  // Fetch messages on mount and when ticket_id changes
-  useEffect(() => {
-    if (ticket_id) {
-      fetchMessages();
-    }
-  }, [ticket_id, fetchMessages]);
 
   // Send message
   const handleSendMessage = async () => {
@@ -99,36 +93,20 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
     try {
       const msg = messages.find(m => m.message_id === messageId);
       
-      console.log('=== Reaction Debug ===');
-      console.log('Current User:', authUser);
-      console.log('Message reactions:', msg?.reactions);
-      console.log('Looking for emoji:', emoji);
-      
-      // The API returns reactions with 'user' and 'user_full_name' fields, NOT 'user_id'
+      // The API returns reactions with 'user' and 'user_full_name' fields
       // We need to match based on the user's full name
       const currentUserFullName = authUser?.full_name || `${authUser?.first_name} ${authUser?.last_name}`.trim();
       
       // Check if user has already reacted with this emoji
       const userReaction = msg?.reactions?.find(r => {
-        console.log('Checking reaction:', r);
-        console.log('Reaction user:', r.user, 'Current user full name:', currentUserFullName);
-        
         // Match by full name since the API doesn't return user_id in reactions
-        const matches = (r.user === currentUserFullName || r.user_full_name === currentUserFullName) 
+        return (r.user === currentUserFullName || r.user_full_name === currentUserFullName) 
           && r.reaction === emoji;
-        
-        console.log('Match:', matches);
-        return matches;
       });
 
-      console.log('User reaction found:', userReaction);
-      console.log('===================');
-
       if (userReaction) {
-        console.log('Removing reaction...');
         await removeReaction(messageId, emoji);
       } else {
-        console.log('Adding reaction...');
         await addReaction(messageId, emoji);
       }
     } catch (error) {

@@ -1,0 +1,102 @@
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, action
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.decorators import permission_classes
+
+from ..authentication import CookieJWTAuthentication, ExternalUser
+from ..models import KnowledgeArticle, KnowledgeArticleVersion, ARTICLE_CATEGORY_CHOICES
+from ..serializers import KnowledgeArticleSerializer
+from .permissions import IsAdminOrSystemAdmin
+
+
+class KnowledgeArticleViewSet(viewsets.ModelViewSet):
+    serializer_class = KnowledgeArticleSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+
+    def get_permissions(self):
+        """Allow safe (read-only) methods to be accessible without Admin permission.
+        Unsafe methods (create/update/delete) still require IsAuthenticated and IsAdminOrSystemAdmin.
+        """
+        if self.request.method in ['GET', 'HEAD', 'OPTIONS']:
+            return [AllowAny()]
+        return [perm() for perm in self.permission_classes]
+
+    def get_queryset(self):
+        """Return all articles for listing; filtering happens in the view layer"""
+        return KnowledgeArticle.objects.all().order_by('-created_at')
+
+    def perform_create(self, serializer):
+        """Set the created_by field to the current user.
+
+        If the request user is an ExternalUser (token-authenticated user from
+        the separate auth service) we cannot assign it directly to the
+        ForeignKey (which expects an Employee instance). The `created_by`
+        field is nullable so we store `None` in that case.
+        """
+        user = self.request.user
+        if isinstance(user, ExternalUser):
+            article = serializer.save(created_by=None)
+        else:
+            article = serializer.save(created_by=user)
+        # Create initial version entry
+        try:
+            KnowledgeArticleVersion.objects.create(
+                article=article,
+                version_number='1',
+                editor=None if isinstance(user, ExternalUser) else user,
+                changes='Created article',
+                metadata={'subject': article.subject}
+            )
+        except Exception:
+            pass
+
+    
+    @action(detail=True, methods=['post'], url_path='archive')
+    def archive(self, request, pk=None):
+        """Archive an article"""
+        article = self.get_object()
+        article.is_archived = True
+        article.save()
+        return Response({'detail': 'Article archived successfully.'}, status=status.HTTP_200_OK)
+
+    def perform_update(self, serializer):
+        """Override update to record a simple version entry for each edit."""
+        request = getattr(self, 'request', None)
+        user = request.user if request is not None else None
+        # Capture previous state for metadata if needed
+        try:
+            article_before = self.get_object()
+        except Exception:
+            article_before = None
+
+        article = serializer.save()
+        try:
+            # Determine next version number (simple increment based on count)
+            count = article.versions.count() if hasattr(article, 'versions') else 0
+            version_number = str(count + 1)
+            KnowledgeArticleVersion.objects.create(
+                article=article,
+                version_number=version_number,
+                editor=None if isinstance(user, ExternalUser) else user,
+                changes=request.data.get('summary') or 'Updated article',
+                metadata={'before': None, 'after': None}
+            )
+        except Exception:
+            pass
+    
+    @action(detail=True, methods=['post'], url_path='restore')
+    def restore(self, request, pk=None):
+        """Restore an archived article"""
+        article = self.get_object()
+        article.is_archived = False
+        article.save()
+        return Response({'detail': 'Article restored successfully.'}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='choices', permission_classes=[AllowAny])
+    def choices(self, request):
+        """Return available category choices for knowledge articles"""
+        return Response({
+            'categories': [{'value': choice[0], 'label': choice[1]} for choice in ARTICLE_CATEGORY_CHOICES]
+        }, status=status.HTTP_200_OK)

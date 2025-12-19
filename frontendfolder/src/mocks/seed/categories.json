@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "IT Support", "parent": null, "visibility": "employee" },
+  { "id": 2, "name": "HR & Payroll", "parent": null, "visibility": "employee" },
+  { "id": 3, "name": "System Administration", "parent": null, "visibility": "admin" },
+  { "id": 4, "name": "General Company Info", "parent": null, "visibility": "employee" },
+  { "id": 5, "name": "Account Access", "parent": 1, "visibility": "employee" }
+]

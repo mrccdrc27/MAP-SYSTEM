@@ -44,9 +44,7 @@ INSTALLED_APPS = [
     'role',
     'task',
     'tickets',
-    'amscheckout',
-    'bmscheckout',
-    'workflowmanager',
+
     'audit',
     'reporting',
 
@@ -132,6 +130,12 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# # Time Offset Configuration (for testing/simulation purposes)
+# # Positive values = simulate future dates, Negative values = simulate past dates
+# # Example: TIME_OFFSET_DAYS=7 makes the system behave as if it's 7 days in the future
+# # Example: TIME_OFFSET_DAYS=-3 makes the system behave as if it's 3 days in the past
+# TIME_OFFSET_DAYS = config('TIME_OFFSET_DAYS', default=1, cast=int)
+
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -213,17 +217,40 @@ INAPP_NOTIFICATION_QUEUE = config('DJANGO_INAPP_NOTIFICATION_QUEUE', default='in
 
 CELERY_TASK_DEFAULT_QUEUE = DJANGO_NOTIFICATION_QUEUE
 CELERY_TASK_ROUTES = {
-    "task.send_assignment_notification": {"queue": DJANGO_NOTIFICATION_QUEUE},
-    "task.send_bulk_assignment_notifications": {"queue": DJANGO_NOTIFICATION_QUEUE},
+    # NOTE: Do NOT route task.send_*_notification tasks to inapp-notification-queue
+    # These are @shared_tasks in workflow_api that internally call current_app.send_task()
+    # They need to run in workflow_api's worker, not notification_service's worker
+    # The tasks they delegate to (notifications.*) will be routed to inapp-notification-queue
+    # by notification_service's settings.py
+    # Ticket status queue
     'send_ticket_status': {'queue': DJANGO_TICKET_STATUS_QUEUE},
     # Role sync queues from TTS auth service
     'role.tasks.sync_role': {'queue': 'tts.role.sync'},
     'role.tasks.sync_user_system_role': {'queue': 'tts.user_system_role.sync'},
     # Workflow seeding queue
     'workflow.seed_workflows': {'queue': 'workflow_seed_queue'},
+    # Ticket receive queue - tickets from helpdesk
+    'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    'tickets.tasks.create_task_for_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
 }
 
 # External Services
 USER_SERVICE_URL = config('DJANGO_USER_SERVICE_URL', default='http://localhost:8000')
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8000')
 BASE_URL = config('DJANGO_BASE_URL', default='http://localhost:8000')
+
+# Test Runner Configuration (Python 3.13 compatibility)
+TEST_RUNNER = 'workflow_api.test_runner.Python313CompatibleTestRunner'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}

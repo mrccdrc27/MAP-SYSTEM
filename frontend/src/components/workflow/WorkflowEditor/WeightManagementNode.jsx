@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import styles from './WeightManagementNode.module.css';
 
-export default function WeightManagementNode({ data, isConnecting }) {
+export default function WeightManagementNode({ data }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempWeight, setTempWeight] = useState(data.weight);
 
@@ -25,7 +25,7 @@ export default function WeightManagementNode({ data, isConnecting }) {
     setIsEditing(false);
   }, [data.weight]);
 
-  const handleNodeClick = useCallback((e) => {
+  const handleNodeClick = useCallback(() => {
     if (!isEditing) {
       setIsEditing(true);
     }

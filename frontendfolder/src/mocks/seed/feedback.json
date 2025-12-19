@@ -1,0 +1,42 @@
+[
+  { 
+    "id": 1, 
+    "articleId": 101, 
+    "userId": 201, 
+    "helpful": true, 
+    "comment": "Super helpful! The step-by-step instructions made it really easy to reset my password.",
+    "date": "2025-10-05T14:30:00Z"
+  },
+  { 
+    "id": 2, 
+    "articleId": 102, 
+    "userId": 202, 
+    "helpful": false, 
+    "comment": "Missing steps about approval workflow. How long does the approval usually take?",
+    "date": "2025-09-22T09:15:00Z"
+  },
+  { 
+    "id": 3, 
+    "articleId": 101, 
+    "userId": 203, 
+    "helpful": true, 
+    "comment": "Worked perfectly. Thanks!",
+    "date": "2025-10-08T11:20:00Z"
+  },
+  { 
+    "id": 4, 
+    "articleId": 104, 
+    "userId": 204, 
+    "helpful": true, 
+    "comment": "Clear guidelines. Appreciate the equipment list.",
+    "date": "2025-09-28T16:45:00Z"
+  },
+  { 
+    "id": 5, 
+    "articleId": 105, 
+    "userId": 205, 
+    "helpful": true, 
+    "comment": "Good to have all holidays in one place!",
+    "date": "2025-08-25T10:00:00Z"
+  }
+]

@@ -1,0 +1,76 @@
+.inputFieldContainer {
+  margin-bottom: 16px;
+  width: 100%; /* Full width within container */
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: red;
+}
+
+.input {
+  width: 100%; /* Full width within container */
+  min-height: 40px; /* Use min-height so input can match selects/textareas */
+  padding: 13px 16px; /* Padding: H: 13px | W: 16px */
+  border: 1px solid #E0E0E0; /* Border: Gray 300 #E0E0E0 */
+  border-radius: 25px; /* Border-radius: 25px */
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #F8F8F8; /* Background: Light #F8F8F8 */
+  color: #0C0C0C; /* Text: Base #0C0C0C */
+  outline: none;
+  transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+
+/* Placeholder styling for contrast */
+.input::placeholder {
+  color: #9ca3af; /* Muted gray for better contrast */
+  opacity: 1;
+}
+
+/* Focus state - border-primary blue */
+.input:focus {
+  border-color: #2563EB; /* Primary blue */
+  background-color: #ffffff; /* White background on focus */
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+}
+
+/* Error state */
+.inputError {
+  border-color: #DC2626 !important;
+  background-color: #FEF2F2; /* Light red background for errors */
+}
+
+.inputError:focus {
+  border-color: #DC2626 !important;
+  background-color: #FEF2F2;
+}
+
+/* Disabled state - gray border and muted text */
+.inputDisabled {
+  background-color: #f3f4f6; /* Gray background */
+  border-color: #d1d5db; /* Gray border */
+  cursor: not-allowed;
+  color: #9ca3af; /* Muted text */
+}
+
+.errorMessage {
+  color: #DC2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}

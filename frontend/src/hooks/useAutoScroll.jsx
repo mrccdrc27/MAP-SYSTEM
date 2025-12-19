@@ -1,38 +1,60 @@
 import { useEffect, useRef } from 'react';
 
-export const useAutoScroll = (messages, containerRef) => {
-  const shouldAutoScrollRef = useRef(true);
+/**
+ * Hook to auto-scroll a container when new items are added
+ * 
+ * @param {Array} dependencies - Array of values that trigger scroll when changed
+ * @param {React.RefObject} containerRef - Ref to the scrollable container
+ * @param {Object} options - Configuration options
+ */
+export const useAutoScroll = (dependencies, containerRef, options = {}) => {
+  const { 
+    behavior = 'smooth', 
+    threshold = 100,  // Distance from bottom to trigger auto-scroll
+    enabled = true 
+  } = options;
+  
+  const prevDepsLengthRef = useRef(0);
+  const isUserScrolledRef = useRef(false);
 
-  // Detect whether user manually scrolled away from bottom
-  const handleScroll = () => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const isNearBottom = scrollHeight - clientHeight - scrollTop < 100;
-
-    shouldAutoScrollRef.current = isNearBottom;
-  };
-
-  // Attach scroll listener once
   useEffect(() => {
+    if (!enabled || !containerRef?.current) return;
+
     const container = containerRef.current;
-    if (!container) return;
+    
+    // Check if user has scrolled up (not at bottom)
+    const checkScrollPosition = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      isUserScrolledRef.current = distanceFromBottom > threshold;
+    };
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
+    // Add scroll listener
+    container.addEventListener('scroll', checkScrollPosition);
 
-  // Scroll when messages change
+    return () => {
+      container.removeEventListener('scroll', checkScrollPosition);
+    };
+  }, [containerRef, threshold, enabled]);
+
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !shouldAutoScrollRef.current) return;
+    if (!enabled || !containerRef?.current) return;
 
-    // Wait for DOM paint to ensure messages are fully rendered
-    const timeout = setTimeout(() => {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-    }, 50);
+    const depsLength = Array.isArray(dependencies) ? dependencies.length : 0;
+    
+    // Only auto-scroll if new items were added and user hasn't scrolled up
+    if (depsLength > prevDepsLengthRef.current && !isUserScrolledRef.current) {
+      const container = containerRef.current;
+      
+      // Scroll to bottom
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    }
 
-    return () => clearTimeout(timeout);
-  }, [messages]);
+    prevDepsLengthRef.current = depsLength;
+  }, [dependencies, containerRef, behavior, enabled]);
 };
+
+export default useAutoScroll;

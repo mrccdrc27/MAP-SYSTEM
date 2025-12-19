@@ -1,0 +1,348 @@
+<!-- Toast Notification Component
+     Usage: Include this component in your template, then use JavaScript to show/hide toasts
+     
+     Example JavaScript:
+     ToastNotification.success('Operation successful!');
+     ToastNotification.error('Something went wrong!');
+     ToastNotification.warning('Please be careful!');
+     ToastNotification.info('Information message');
+-->
+
+<div id="toast-container" class="toast-container"></div>
+
+<style>
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    pointer-events: none;
+  }
+
+  .toast {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out forwards;
+    pointer-events: auto;
+    position: relative;
+    min-width: 320px;
+    border-left: 4px solid;
+  }
+
+  .toast.success {
+    border-left-color: #10b981;
+    background-color: #f0fdf4;
+  }
+
+  .toast.error {
+    border-left-color: #ef4444;
+    background-color: #fef2f2;
+  }
+
+  .toast.warning {
+    border-left-color: #f59e0b;
+    background-color: #fffbeb;
+  }
+
+  .toast.info {
+    border-left-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+
+  .toast-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-top: 2px;
+  }
+
+  .toast.success .toast-icon {
+    color: #10b981;
+  }
+
+  .toast.error .toast-icon {
+    color: #ef4444;
+  }
+
+  .toast.warning .toast-icon {
+    color: #f59e0b;
+  }
+
+  .toast.info .toast-icon {
+    color: #3b82f6;
+  }
+
+  .toast-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .toast-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .toast.success .toast-title {
+    color: #047857;
+  }
+
+  .toast.error .toast-title {
+    color: #dc2626;
+  }
+
+  .toast.warning .toast-title {
+    color: #d97706;
+  }
+
+  .toast.info .toast-title {
+    color: #1d4ed8;
+  }
+
+  .toast-message {
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .toast.success .toast-message {
+    color: #065f46;
+  }
+
+  .toast.error .toast-message {
+    color: #7f1d1d;
+  }
+
+  .toast.warning .toast-message {
+    color: #78350f;
+  }
+
+  .toast.info .toast-message {
+    color: #1e3a8a;
+  }
+
+  .toast-close {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: color 0.2s;
+    margin-top: 2px;
+  }
+
+  .toast-close:hover {
+    color: #374151;
+  }
+
+  .toast.success .toast-close:hover {
+    color: #047857;
+  }
+
+  .toast.error .toast-close:hover {
+    color: #dc2626;
+  }
+
+  .toast.warning .toast-close:hover {
+    color: #d97706;
+  }
+
+  .toast.info .toast-close:hover {
+    color: #1d4ed8;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+  }
+
+  .toast.removing {
+    animation: slideOut 0.3s ease-out forwards;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 480px) {
+    .toast-container {
+      left: 10px;
+      right: 10px;
+      top: 10px;
+      max-width: none;
+    }
+
+    .toast {
+      min-width: auto;
+    }
+  }
+</style>
+
+<script>
+  const ToastNotification = {
+    /**
+     * Show a toast notification
+     * @param {string} type - Type of toast: 'success', 'error', 'warning', or 'info'
+     * @param {string} title - Title of the toast
+     * @param {string} message - Message content (optional)
+     * @param {number} duration - Auto-hide duration in ms (default: 3000, 0 = no auto-hide)
+     */
+    show: function(type, title, message = '', duration = 3000) {
+      const container = document.getElementById('toast-container');
+      if (!container) {
+        console.error('Toast container not found');
+        return;
+      }
+
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      // Icon mapping
+      const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+      };
+
+      // Build HTML
+      toast.innerHTML = `
+        <div class="toast-icon">${icons[type]}</div>
+        <div class="toast-content">
+          <p class="toast-title">${this.escapeHtml(title)}</p>
+          ${message ? `<p class="toast-message">${this.escapeHtml(message)}</p>` : ''}
+        </div>
+        <button class="toast-close" aria-label="Close notification">×</button>
+      `;
+
+      // Add to container
+      container.appendChild(toast);
+
+      // Close button handler
+      const closeBtn = toast.querySelector('.toast-close');
+      closeBtn.addEventListener('click', () => this.remove(toast));
+
+      // Auto-hide handler
+      if (duration > 0) {
+        setTimeout(() => this.remove(toast), duration);
+      }
+
+      return toast;
+    },
+
+    /**
+     * Remove a toast
+     * @param {Element} toast - The toast element to remove
+     */
+    remove: function(toast) {
+      toast.classList.add('removing');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    },
+
+    /**
+     * Clear all toasts
+     */
+    clearAll: function() {
+      const container = document.getElementById('toast-container');
+      if (container) {
+        const toasts = container.querySelectorAll('.toast');
+        toasts.forEach(toast => this.remove(toast));
+      }
+    },
+
+    /**
+     * Show success toast
+     * @param {string} title - Title of the notification
+     * @param {string} message - Optional message
+     * @param {number} duration - Auto-hide duration (default: 3000)
+     */
+    success: function(title, message = '', duration = 3000) {
+      return this.show('success', title, message, duration);
+    },
+
+    /**
+     * Show error toast
+     * @param {string} title - Title of the notification
+     * @param {string} message - Optional message
+     * @param {number} duration - Auto-hide duration (default: 3000)
+     */
+    error: function(title, message = '', duration = 3000) {
+      return this.show('error', title, message, duration);
+    },
+
+    /**
+     * Show warning toast
+     * @param {string} title - Title of the notification
+     * @param {string} message - Optional message
+     * @param {number} duration - Auto-hide duration (default: 3000)
+     */
+    warning: function(title, message = '', duration = 3000) {
+      return this.show('warning', title, message, duration);
+    },
+
+    /**
+     * Show info toast
+     * @param {string} title - Title of the notification
+     * @param {string} message - Optional message
+     * @param {number} duration - Auto-hide duration (default: 3000)
+     */
+    info: function(title, message = '', duration = 3000) {
+      return this.show('info', title, message, duration);
+    },
+
+    /**
+     * Escape HTML special characters to prevent XSS
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    escapeHtml: function(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+  };
+</script>

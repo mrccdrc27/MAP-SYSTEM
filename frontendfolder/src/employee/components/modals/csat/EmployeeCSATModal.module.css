@@ -1,0 +1,256 @@
+/* CSAT Modal Container */
+.csatModalWrapper {
+  max-width: 540px;
+  padding: 0;
+}
+
+/* Rating Step */
+.csatContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 40px;
+  text-align: center;
+}
+
+.ticketIcon {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.ticketInfo {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 32px 0;
+}
+
+.starRating {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.star {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star:hover {
+  transform: scale(1.15);
+}
+
+.star:active {
+  transform: scale(0.95);
+}
+
+.star svg {
+  display: block;
+  transition: all 0.2s ease;
+}
+
+.star.filled svg {
+  filter: drop-shadow(0 2px 4px rgba(252, 211, 77, 0.3));
+  /* Ensure filled stars use yellow for fill and stroke */
+  fill: #FCD34D;
+  stroke: #FCD34D;
+  color: #FCD34D;
+}
+.star.filled svg * {
+  /* Target inner shapes to ensure consistent color across icon variants */
+  fill: #FCD34D !important;
+  stroke: #FCD34D !important;
+  color: #FCD34D !important;
+}
+
+/* Thank You Step */
+.thankYouContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 40px;
+  text-align: center;
+}
+
+.thumbsUpIcon {
+  margin-bottom: 24px;
+  animation: scaleIn 0.5s ease;
+}
+
+.thumbsUpCircle {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #d1fae5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.thankYouHeading {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.thankYouSubtext {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 32px 0;
+}
+
+/* Quick Feedback Section */
+.quickFeedback {
+  width: 100%;
+  background: #eff6ff;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.quickFeedbackLabel {
+  font-size: 14px;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  text-align: left;
+}
+
+.quickFeedbackLabel strong {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.feedbackButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.feedbackButton {
+  padding: 8px 16px;
+  border: 1px solid #2563eb;
+  background: #ffffff;
+  color: #2563eb;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.feedbackButton:hover {
+  background: #dbeafe;
+  border-color: #1d4ed8;
+}
+
+.feedbackButton.selected {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* Close Button */
+.closeButton {
+  width: 100%;
+  padding: 14px 24px;
+  background: #1f2937;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.closeButton:hover {
+  background: #111827;
+}
+
+.closeButton:active {
+  transform: scale(0.98);
+}
+
+/* Auto-close Text */
+.autoCloseText {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .csatContent,
+  .thankYouContent {
+    padding: 32px 24px;
+  }
+
+  .heading {
+    font-size: 24px;
+  }
+
+  .thankYouHeading {
+    font-size: 28px;
+  }
+
+  .star svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .starRating {
+    gap: 8px;
+  }
+
+  .thumbsUpCircle {
+    width: 80px;
+    height: 80px;
+  }
+
+  .thumbsUpCircle svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .quickFeedback {
+    padding: 20px 16px;
+  }
+
+  .feedbackButton {
+    font-size: 13px;
+    padding: 6px 14px;
+  }
+}

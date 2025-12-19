@@ -370,3 +370,501 @@
   width: 100%;
   padding: 16px 0 0 0;
 }
+
+/* Clickable Elements for Drilldown */
+.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.clickable:hover {
+  background-color: var(--primary-color-light, rgba(74, 144, 226, 0.1));
+  transform: translateX(2px);
+}
+
+.clickable:active {
+  transform: translateX(0);
+}
+
+.gridRow.clickable:hover {
+  background-color: var(--primary-color-light, rgba(74, 144, 226, 0.15));
+  box-shadow: inset 3px 0 0 var(--primary-color, #4a90e2);
+}
+
+.clickHint {
+  font-size: 11px;
+  color: var(--secondary-color);
+  opacity: 0.6;
+  margin-left: 8px;
+  font-style: italic;
+}
+
+.clickable:hover .clickHint {
+  opacity: 1;
+  color: var(--primary-color, #4a90e2);
+}
+
+/* Chart Container Clickable */
+.chartClickable {
+  cursor: pointer;
+}
+
+.chartClickable canvas {
+  cursor: pointer;
+}
+
+/* Stat Card Clickable */
+.statCard.clickable:hover {
+  border-color: var(--primary-color, #4a90e2);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+}
+
+/* List Item Clickable */
+.analyticsSection li.clickable {
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+
+.analyticsSection li.clickable:hover {
+  border-color: var(--primary-color, #4a90e2);
+  background-color: var(--primary-color-light, rgba(74, 144, 226, 0.08));
+}
+
+/* User Performance Table */
+.userPerformanceTable {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.performanceTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--default-font-size);
+}
+
+.performanceTable th,
+.performanceTable td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.performanceTable th {
+  background-color: var(--bg-color-secondary, #f8f9fa);
+  font-weight: 600;
+  color: var(--heading-color);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.performanceTable tbody tr {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.performanceTable tbody tr:hover {
+  background-color: var(--primary-color-light, rgba(74, 144, 226, 0.08));
+}
+
+.performanceTable .userName {
+  font-weight: 500;
+  color: var(--heading-color);
+}
+
+.statBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.progressBarContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.progressBar {
+  height: 8px;
+  border-radius: 4px;
+  flex: 1;
+  max-width: 80px;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+  min-width: 45px;
+}
+
+/* ==================== OPERATIONAL INSIGHTS STYLES ==================== */
+
+/* Insights Header */
+.insightsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: var(--default-font-size);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.refreshButton:hover {
+  background-color: var(--primary-hover-color, #3a7bc8);
+  transform: translateY(-1px);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Health Score */
+.healthOverviewGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .healthOverviewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.healthScoreCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 32px;
+  background-color: var(--bg-content-color);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  min-width: 180px;
+}
+
+.healthScoreCircle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 8px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg1-color);
+}
+
+.healthScoreValue {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.healthScoreLabel {
+  font-size: 14px;
+  color: var(--secondary-color);
+}
+
+.healthScoreStatus {
+  text-align: center;
+}
+
+.healthStatusText {
+  font-size: 18px;
+  font-weight: 600;
+  display: block;
+}
+
+.healthStatusSubtext {
+  font-size: 12px;
+  color: var(--secondary-color);
+}
+
+/* Alert Cards */
+.alertsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.alertCard {
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  transition: var(--transition);
+}
+
+.alertCard:hover {
+  transform: translateX(4px);
+}
+
+.alertHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.alertIconGroup {
+  display: flex;
+  align-items: center;
+}
+
+.alertSeverityBadge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alertTitle {
+  font-size: var(--base-font-size);
+  font-weight: 600;
+  color: var(--heading-color);
+  margin: 0 0 8px 0;
+}
+
+.alertMessage {
+  font-size: var(--default-font-size);
+  color: var(--secondary-color);
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.alertRecommendation {
+  font-size: 13px;
+  color: var(--heading-color);
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.alertAffectedTasks {
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.alertAffectedTasks ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.alertAffectedTasks li {
+  margin: 4px 0;
+  color: var(--secondary-color);
+}
+
+/* SLA Risk Section */
+.slaRiskGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.slaRiskSection {
+  background-color: var(--bg-content-color);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.slaRiskSection h3 {
+  margin: 0 0 16px 0;
+  font-size: var(--base-font-size);
+  font-weight: 600;
+}
+
+.slaRiskList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.slaRiskItem {
+  padding: 12px;
+  background-color: var(--bg1-color);
+  border-radius: 6px;
+  border-left: 3px solid;
+}
+
+.slaRiskHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.slaRiskTicket {
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.slaRiskBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  font-weight: 600;
+}
+
+.slaRiskSubject {
+  font-size: 13px;
+  color: var(--secondary-color);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.slaRiskMeta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted-text-color);
+}
+
+/* Workload Section */
+.workloadSummary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background-color: var(--bg-content-color);
+  border-radius: 8px;
+  font-size: var(--default-font-size);
+  color: var(--secondary-color);
+}
+
+.workloadBarsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workloadBarContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workloadBarInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.workloadUserName {
+  font-weight: 500;
+  color: var(--heading-color);
+  font-size: var(--default-font-size);
+}
+
+.workloadTaskCount {
+  font-size: 13px;
+  color: var(--secondary-color);
+}
+
+.workloadBarTrack {
+  height: 8px;
+  background-color: var(--bg-content-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.workloadBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Anomalies Card */
+.anomaliesCard {
+  background-color: var(--bg1-color);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.anomaliesCard h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  font-size: var(--base-font-size);
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.anomaliesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.anomalyItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background-color: var(--bg-content-color);
+  border-radius: 6px;
+  font-size: var(--default-font-size);
+  color: var(--secondary-color);
+  line-height: 1.4;
+}
+
+.anomalyItem svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--secondary-color);
+  font-size: var(--default-font-size);
+}

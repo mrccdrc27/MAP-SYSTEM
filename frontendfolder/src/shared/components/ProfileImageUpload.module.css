@@ -1,0 +1,77 @@
+/* Profile Image Upload Styling */
+.uploadWrapper {
+  margin-bottom: 12px;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+
+
+.fileInfo {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Preview Container */
+.previewContainer {
+  position: relative;
+  display: inline-block;
+  width: 130px;
+  height: 130px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #E0E0E0;
+}
+
+.imagePreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.removeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #EF4444;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.removeButton:hover {
+  background-color: #DC2626;
+  transform: scale(1.1);
+}
+
+/* Error Message */
+.errorMessage {
+  color: #DC2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Match employee ticket upload button sizing/behavior */
+.uploadFileBtn {
+  width: fit-content;
+}
+
+.uploadFileBtn:hover {
+  background-color: var(--primary-color-hover);
+  color: white !important;
+}

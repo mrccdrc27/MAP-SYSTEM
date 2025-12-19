@@ -1,0 +1,245 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border: none;
+  color: var(--text-color);
+  font-family: poppins, sans-serif;
+}
+
+.login-page {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-color);
+}
+
+.login-page section:not(.logo) {
+  display: flex;
+  height: 100vh;
+  width: 50vw;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-page .left-panel {
+  background-color: white;
+}
+
+.login-page .left-panel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-page .right-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-page form,
+.resend-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 70%;
+  gap: 20px;
+}
+
+.login-page form fieldset {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  width: 100%;
+  gap: 8px;
+}
+
+.login-page form fieldset input {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  padding: 18px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  background-color: var(--bg-color);
+}
+
+.login-page input:focus {
+  outline: 2px solid var(--primary-color);
+}
+
+.login-page .password-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  position: relative;
+}
+
+.login-page input[type="password"],
+.login-page input[type="text"]:nth-child(1) {
+  padding-right: 40px;
+}
+
+.show-password {
+  height: 20px;
+  width: 20px;
+  position: absolute;
+  right: 16px;
+  top: 53%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+input[type="password"]::-ms-reveal {
+  display: none;
+}
+
+.login-page button {
+  width: 100%;
+  padding: 12px 32px;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: ease 0.5s;
+  cursor: pointer;
+}
+
+.login-page button:disabled {
+  cursor: not-allowed;
+  background-color: #d3d3d3;
+}
+
+.resend-button {
+  margin-bottom: 1rem;
+}
+
+.login-page button:hover:not(button:disabled) {
+  background-color: rgba(0, 123, 255, 0.8);
+}
+
+.login-page a {
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.login-page a:hover {
+  color: rgba(0, 123, 255, 0.8);
+}
+
+.login-page p {
+  color: var(--text-color);
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.login-page p.resend-label {
+  text-align: left;
+  width: 100%;
+}
+
+.form-btn {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.form-header .logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+
+  margin-bottom: 1rem;
+
+  gap: 10px;
+}
+
+.form-header .logo img {
+  height: 5.8rem;
+  width: 5.8rem;
+
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.form-header .logo-text {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.form-header {
+  width: 70%;
+  text-align: center;
+  margin-bottom: 2rem;
+
+  /* background-color: red; */
+}
+
+.form-header h1 {
+  font-size: 1.5rem;
+}
+
+.form-header p {
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.right-panel form span:not(.show) {
+  font-size: 0.875rem;
+  color: red;
+}
+
+.error-msg {
+  color: var(--warning-text);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.password-requirements {
+  margin-top: 10px;
+}
+
+.password-requirements .error-msg {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.create-account-link {
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.create-account-link:hover {
+  color: var(--primary-color-hover);
+}
+
+/* --- Version Info at the Bottom --- */
+.version-info {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #888;
+  padding: 10px 0;
+  background: transparent;
+  letter-spacing: 0.5px;
+}
+
+/* --- Responsive Styles --- */

@@ -1,0 +1,233 @@
+.modalContent {
+  max-width: 1200px;
+  width: 98vw;
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.versionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.versionTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.authorInfo {
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.navigationButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.navButton {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.navButton:hover:not(:disabled) {
+  background: var(--gray-300);
+  border-color: var(--neutral-gray);
+}
+
+.navButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.closeButton {
+  background: var(--error-color);
+  color: var(--white);
+  border: none;
+}
+
+/* Stronger specificity for close button to override shared Button styles if needed */
+.navButton.closeButton,
+.closeButton.navButton {
+  background: var(--error-color) !important;
+  color: var(--white) !important;
+}
+.navButton.closeButton:hover,
+.closeButton.navButton:hover,
+.closeButton:hover {
+  background: var(--error-hover) !important;
+  color: var(--white) !important;
+}
+
+.contentArea {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: flex-start;
+}
+
+.previewSection {
+  flex: 1;
+}
+
+.previewLabel {
+  font-size: 16px;
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.previewContent {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  white-space: pre-wrap;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.changesSection {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.changesTitle {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.changesList {
+  margin: 0;
+  padding-left: 20px;
+  color: #374151;
+}
+
+.changesList li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.noChanges {
+  color: #9ca3af;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footerActions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto; /* push actions to the right */
+}
+
+.actionButton {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.neutralAction {
+  background: var(--white);
+  color: var(--text-secondary);
+  border: 1px solid var(--gray-300);
+}
+
+.neutralAction:hover {
+  background: var(--gray-300);
+  border-color: var(--neutral-gray);
+}
+
+.primaryAction {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+.primaryAction:hover:not(:disabled) {
+  background: var(--primary-color-hover);
+}
+
+.primaryAction:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .modalContent {
+    width: 95vw;
+    padding: 16px;
+  }
+  
+  .contentArea {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .changesSection {
+    width: 100%;
+  }
+  
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .footerActions {
+    justify-content: center;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1200;
+  padding: 24px;
+}

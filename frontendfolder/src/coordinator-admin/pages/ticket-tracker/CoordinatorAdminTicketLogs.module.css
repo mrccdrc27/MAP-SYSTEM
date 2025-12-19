@@ -1,0 +1,118 @@
+.logsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* Wrapper used by both messages and logs to create a consistent card-like scroll region */
+.messages-logs-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb; /* match ticket tracker card border */
+  /* keep wrapper visually identical to employee: no internal padding/gap; delegate scrolling to inner area */
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+/* Utility to remove the visible border from the wrapper (used for Logs view when desired) */
+.noBorder {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.logEntry {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  overflow: hidden;
+  /* reduced outer margin and padding for a more compact, near edge-to-edge appearance */
+  margin: 4px 0;
+  padding: 10px 12px;
+  background-color: var(--bg-color);
+  border: 1px solid rgba(15,23,42,0.04);
+  border-radius: 10px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.logEntry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+}
+
+.logAvatar {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.logAvatar svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-light);
+  fill: none; /* prefer stroke-only icons */
+  stroke: var(--text-light);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.logBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Inline single-sentence format: "The System, Name — action — timestamp" */
+.logUserLabel {
+  font-weight: var(--font-semibold);
+  margin-right: 6px;
+}
+
+.inlineTimestamp {
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.logText {
+  color: var(--text-primary);
+  font-weight: 400;
+  font-size: 0.8125rem; /* ensure same size as employee logs */
+}
+
+.logText strong {
+  font-weight: var(--font-semibold);
+}
+
+.logTimestamp {
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.noLogs {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Reuse same panel sizing helpers as Details */
+.panelRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.panelContent {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 8px;
+}

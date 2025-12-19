@@ -8,8 +8,8 @@ This package organizes views into logical modules:
 - password_views: Password reset and change flows
 - user_management_views: User CRUD operations and agent management
 - login_views: Login flow, OTP for login, and system welcome
-- captcha_views: CAPTCHA generation, verification, and requirement checks
 - role_management_views: Role creation, viewing, and assignment management
+- staff_routing_mixins: Protective routing mixins for staff portal pages
 """
 
 # Authentication and Token Management
@@ -43,7 +43,6 @@ from .password_views import (
     ForgotPasswordView,
     ResetPasswordView,
     ProfilePasswordResetView,
-    ForgotPasswordUIView,
     ChangePasswordUIView,
 )
 
@@ -59,15 +58,7 @@ from .login_views import (
     LoginView,
     request_otp_for_login,
     SystemWelcomeView,
-)
-
-# CAPTCHA
-from .captcha_views import (
-    CaptchaGenerateView,
-    CaptchaVerifyView,
-    captcha_required_view,
-    CaptchaGenerateSerializer,
-    CaptchaVerifySerializer,
+    VerifyOTPLoginView,
 )
 
 # Role Management
@@ -75,6 +66,15 @@ from .role_management_views import (
     CreateRoleView,
     UpdateAssignmentView,
     role_management_view,
+)
+
+# Staff Portal Routing
+from .staff_routing_mixins import (
+    StaffAuthenticationMixin,
+    StaffLoginRequiredMixin,
+    StaffNotAuthenticatedMixin,
+    StaffEmployeeBlockerMixin,
+    StaffSystemRedirectMixin,
 )
 
 __all__ = [
@@ -99,7 +99,6 @@ __all__ = [
     'ForgotPasswordView',
     'ResetPasswordView',
     'ProfilePasswordResetView',
-    'ForgotPasswordUIView',
     'ChangePasswordUIView',
     # User Management
     'UserViewSet',
@@ -109,14 +108,15 @@ __all__ = [
     'LoginView',
     'request_otp_for_login',
     'SystemWelcomeView',
-    # CAPTCHA
-    'CaptchaGenerateView',
-    'CaptchaVerifyView',
-    'captcha_required_view',
-    'CaptchaGenerateSerializer',
-    'CaptchaVerifySerializer',
+    'VerifyOTPLoginView',
     # Role Management
     'CreateRoleView',
     'UpdateAssignmentView',
     'role_management_view',
+    # Staff Portal Routing
+    'StaffAuthenticationMixin',
+    'StaffLoginRequiredMixin',
+    'StaffNotAuthenticatedMixin',
+    'StaffEmployeeBlockerMixin',
+    'StaffSystemRedirectMixin',
 ]

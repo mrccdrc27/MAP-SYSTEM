@@ -1,0 +1,58 @@
+/* === Coordinator Admin Layout Styles === */
+
+.navbarWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Outer scrollable container (page background) */
+.scrollContainer {
+  position: fixed;
+  top: var(--navbar-height);
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - var(--navbar-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--bg-color, #F8F8F8);
+  color: var(--text-color, #0C0C0C);
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+
+  display: flex;
+  flex-direction: column;
+  padding: 0px 38px 38px 38px; /* accommodates navbar */
+}
+
+/* Inner content container */
+.employee-layout-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1400px;
+  margin: var(--margin-size-main, 0 2.5vw); /* from index.css */
+  padding: 24px 38px 38px;
+  background-color: #fff;
+  border-radius: 24px; /* 20–25px rounded corners */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .employee-layout-main {
+    padding: 20px;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .employee-layout-main {
+    padding: 15px;
+    border-radius: 14px;
+  }
+}

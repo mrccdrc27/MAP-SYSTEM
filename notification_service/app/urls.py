@@ -23,7 +23,11 @@ from .views import (
     MyNotificationDetailView,
     ReadMyNotificationView,
     MarkMyNotificationAsReadView,
-    MarkAllMyNotificationsAsReadView
+    MarkAllMyNotificationsAsReadView,
+    
+    # New notification type views
+    NotificationTypesView,
+    MyNotificationsByTaskView
 )
 
 @api_view(['GET'])
@@ -94,7 +98,11 @@ urlpatterns = [
     path('my/notifications/unread/', MyUnreadNotificationsListView.as_view(), name='my-unread-notifications'),
     path('my/notifications/read/', MyReadNotificationsListView.as_view(), name='my-read-notifications'),
     path('my/notifications/mark-all-read/', MarkAllMyNotificationsAsReadView.as_view(), name='mark-all-my-notifications-read'),
+    path('my/notifications/task/<str:task_id>/', MyNotificationsByTaskView.as_view(), name='my-notifications-by-task'),
     path('my/notification/detail/', MyNotificationDetailView.as_view(), name='my-notification-detail'),
     path('my/notification/read/', ReadMyNotificationView.as_view(), name='read-my-notification'),
     path('my/notification/mark-read/', MarkMyNotificationAsReadView.as_view(), name='mark-my-notification-read'),
+    
+    # Notification types endpoint
+    path('notification-types/', NotificationTypesView.as_view(), name='notification-types'),
 ]

@@ -1,0 +1,275 @@
+/* Knowledge pages should not add an additional page-level container;
+   shared layout provides page padding and background. Keep this file
+   for page-scoped utilities only. */
+.container { display: block; }
+
+/* Page Header */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Filter Section */
+.filterSection {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+/* Table Wrapper */
+.tableWrapper {
+  margin: 20px 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  overflow-x: auto;
+}
+
+.articlesTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.articlesTable thead tr {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.articlesTable th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.articlesTable tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.articlesTable tbody tr:hover {
+  background: #f9fafb;
+}
+
+.articlesTable td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* Column helpers used by Knowledge pages to avoid inline styles */
+.colArticle { width: 260px; }
+.colVisibility { width: 120px; text-align: center; }
+.colCreated { width: 140px; text-align: center; }
+.colLikes { width: 140px; text-align: center; }
+.colDislikes { width: 160px; text-align: center; }
+.colActions { width: 180px; text-align: center; }
+
+.textCenter { text-align: center; }
+
+.emptyState { text-align: center; padding: 40px; color: #6b7280; font-style: italic; }
+
+.subjectTitle { font-weight: 600; }
+.subjectMeta { color: var(--text-muted); font-size: 13px; }
+
+.searchInput { width: 260px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filterSection {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filterSection input,
+  .filterSection select {
+    width: 100% !important;
+  }
+
+  .tableWrapper {
+    font-size: 12px;
+  }
+
+  .articlesTable th,
+  .articlesTable td {
+    padding: 8px 12px;
+  }
+}
+
+/* Article View Page */
+.articleViewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.articleViewContent {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.articleViewTitle {
+  margin: 0 0 16px 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.3;
+}
+
+.articleViewMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metaValue {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 24px 0;
+}
+
+.articleBody {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #374151;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 24px 0;
+}
+
+/* Tag pill and remove button moved to KnowledgeCreateEdit.module.css */
+
+/* Feedback Section */
+.feedbackSection {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.feedbackTitle {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.feedbackWidgetWrapper {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.feedbackList {
+  margin-top: 20px;
+}
+
+.noFeedback {
+  color: #9ca3af;
+  font-style: italic;
+  margin: 16px 0;
+}
+
+.feedbackItem {
+  padding: 16px;
+  margin-bottom: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 3px solid #2563eb;
+}
+
+.feedbackHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.feedbackDate {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.feedbackComment {
+  margin-top: 8px;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .articleViewHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .articleViewTitle {
+    font-size: 24px;
+  }
+
+  .articleViewMeta {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .articleBody {
+    font-size: 14px;
+  }
+}

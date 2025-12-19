@@ -18,29 +18,49 @@
     background-color: #fcfcfc;
 }
 
-.leftPanel,
-.rightPanel {
+.leftPanel {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 50%;
+    height: 100vh;
     display: flex;
-    /* height: 100vh; */
-    width: 50vw;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.leftImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
 }
 
 .leftPanel img {
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: cover;
+    flex-shrink: 0;
 }
 
 .rightPanel {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 10px;
-    
+    width: 50%;
+    margin-left: 50%;
+    min-height: 100vh;
     overflow-y: auto;
 }
 
@@ -141,7 +161,7 @@ fieldset {
     width: 100%;
     max-width: 400px;
     margin-top: 20px;
-    gap: 10px;
+    gap: 5px;
     font-size: 14px;
 }
 
@@ -207,6 +227,9 @@ fieldset {
     position: absolute;
     right: 16px;
     cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
 }
 
 input[type="password"]::-ms-reveal {

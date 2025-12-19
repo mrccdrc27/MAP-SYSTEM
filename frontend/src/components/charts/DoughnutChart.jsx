@@ -2,8 +2,9 @@
 import styles from "./chart.module.css";
 
 // chart.js components
-import { Doughnut } from "react-chartjs-2";
+import { Doughnut, getElementAtEvent } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { useRef } from "react";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -12,7 +13,10 @@ export default function DoughnutChart({
   values,
   chartLabel = "Data Distribution",
   chartTitle = "Chart Title",
+  onClick,
 }) {
+  const chartRef = useRef(null);
+
   const data = {
     labels,
     datasets: [
@@ -42,9 +46,26 @@ export default function DoughnutChart({
     },
   };
 
+  const handleClick = (event) => {
+    if (!onClick || !chartRef.current) return;
+    
+    const elements = getElementAtEvent(chartRef.current, event);
+    if (elements.length > 0) {
+      const { index } = elements[0];
+      const label = labels[index];
+      const value = values[index];
+      onClick({ label, value, index });
+    }
+  };
+
   return (
-    <div className={styles.chartCardCont}>
-      <Doughnut data={data} options={options} />
+    <div className={`${styles.chartCardCont} ${onClick ? styles.clickable : ''}`}>
+      <Doughnut 
+        ref={chartRef}
+        data={data} 
+        options={options} 
+        onClick={handleClick}
+      />
     </div>
   );
 }

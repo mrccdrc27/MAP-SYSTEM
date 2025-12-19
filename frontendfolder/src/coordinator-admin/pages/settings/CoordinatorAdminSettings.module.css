@@ -1,0 +1,94 @@
+.heading {
+  font-size: 2rem;
+  font-weight: bold;
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: var(--bg-color);
+  border: 1px solid #e5e7eb;
+  border-radius: 40px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  gap: 2rem;
+  box-sizing: border-box;
+}
+
+/* Section Wrappers */
+.section {
+  background: white;
+  border-radius: 40px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Labels and Inputs */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+label {
+  font-weight: 600;
+  color: var(--secondary-text-color);
+  font-family: 'Poppins', sans-serif;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"] {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 10px;
+  border: 1px solid #d3d3d3;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+/* Disabled password styling */
+input[disabled] {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Submit Buttons */
+.saveButton {
+  height: 48px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.saveButton:hover {
+  background-color: var(--primary-color-hover);
+}

@@ -1,0 +1,224 @@
+/* === FILTER PANEL STYLES === */
+.filterPanel {
+  width: 100%;
+  /* background-color: var(--white); */
+  margin-bottom: 20px;
+}
+
+/* Toggle Button for Show/Hide Filter */
+.fpShowFilter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+  background-color: transparent !important;
+}
+
+.fpShowFilter span {
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-family: var(--font-family-base);
+}
+
+.fpShowFilter span:hover {
+  color: var(--primary-color-hover);
+}
+
+/* Filter Panel Container - Opened State */
+.filterPanelCont {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+  background-color: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  padding: 20px;
+  gap: 16px;
+  margin-top: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Individual Filter Group */
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.filterGroup label {
+  font-size: 0.875rem;
+  font-weight: var(--font-semibold);
+  color: var(--text-color);
+  font-family: var(--font-family-base);
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Filter Actions (Apply/Reset Buttons) */
+.filterActions {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-width: 180px; /* Minimum width for both buttons */
+}
+
+/* Date Input Styling */
+.dateTime {
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  background-color: var(--white);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-family: var(--font-family-base);
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dateTime:hover {
+  border-color: var(--primary-color);
+}
+
+.dateTime:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+/* Dropdown Styling */
+.dropdown {
+  height: 40px;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  background-color: var(--white);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-family: var(--font-family-base);
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230C0C0C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown:hover {
+  border-color: var(--primary-color);
+}
+
+.dropdown:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+/* === RESPONSIVE STYLES === */
+@media (max-width: 1200px) {
+  .filterPanelCont {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .filterActions {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 1024px) {
+  .filterPanelCont {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .filterActions {
+    grid-column: span 3;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .fpShowFilter {
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .fpShowFilter span {
+    font-size: 0.8125rem;
+  }
+
+  .filterPanelCont {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .filterGroup {
+    margin-bottom: 0;
+  }
+
+  .filterActions {
+    grid-column: span 2;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .applyButton,
+  .resetButton {
+    padding: 8px 16px;
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fpShowFilter {
+    padding: 8px 0;
+  }
+
+  .fpShowFilter span {
+    font-size: 0.75rem;
+  }
+
+  .filterPanelCont {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .filterGroup {
+    margin-bottom: 0;
+  }
+
+  .filterActions {
+    grid-column: 1;
+    flex-direction: row;
+    width: 100%;
+    gap: 8px;
+    justify-content: stretch;
+  }
+
+  .applyButton,
+  .resetButton {
+    flex: 1;
+    height: 40px;
+    justify-content: center;
+  }
+
+  .dateTime,
+  .dropdown {
+    font-size: 0.8125rem;
+  }
+}

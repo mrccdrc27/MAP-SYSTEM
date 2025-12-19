@@ -1,0 +1,151 @@
+[
+  {
+    "id": 101,
+    "title": "How to Reset Your Password",
+    "content": "Step 1: Navigate to the login page and click 'Forgot Password'.\nStep 2: Enter your registered email address.\nStep 3: Check your email for a password reset link.\nStep 4: Click the link and enter your new password.\nStep 5: Confirm your new password and save changes.\n\nNote: Password reset links expire after 24 hours. If you encounter issues, contact IT Support.",
+    "versions": [
+      {
+        "number": "1.1.1",
+        "date": "2025-09-15",
+        "author": "John Smith",
+        "changes": "Initial release: basic password reset steps.",
+        "visibility": "Employee",
+        "content": "Step 1: Go to the login page and click 'Forgot Password'.\nStep 2: Enter the email address you used to register.\nStep 3: Submit the form and wait for the reset email.\nStep 4: Click the reset link and set a new password.\nStep 5: Confirm the new password and sign in.\n\nNote: The reset link will expire after 24 hours. Contact IT Support if you don't receive the email."
+      },
+      {
+        "number": "1.1.2",
+        "date": "2025-09-25",
+        "author": "John Smith",
+        "changes": "Minor clarifications to instructions.",
+        "visibility": "Employee",
+        "content": "Step 1: Navigate to the login page and click the 'Forgot Password' link.\nStep 2: Enter your registered email address (use your corporate email).\nStep 3: Check your inbox (and spam) for the password reset email.\nStep 4: Click the password reset link and follow prompts to create a new password.\nStep 5: Confirm the new password and sign in.\n\nTip: If the reset email doesn't arrive within 10 minutes, check your spam folder or contact IT Support. Reset links expire after 24 hours."
+      }
+    ],
+    "category_id": 5,
+    "categoryId": 5,
+    "visibility": "employee",
+    "author": "John Smith",
+    "date_created": "2025-09-15",
+    "dateCreated": "2025-09-15",
+    "date_modified": "2025-10-01",
+    "dateModified": "2025-10-01",
+    "archived": false,
+    "tags": ["Password", "Security", "Account"]
+  },
+  {
+    "id": 102,
+    "title": "Requesting Equipment and Assets",
+    "content": "To request new equipment or check out company assets:\n\n1. Navigate to the Ticket Management system.\n2. Create a new ticket and select the 'Asset Check Out' category.\n3. Provide detailed information about the equipment you need.\n4. Include a clear business justification for the request.\n5. Specify an expected return date if applicable.\n6. Attach any supporting documentation (quotes, approvals).\n\nYour request will be reviewed by the Asset Management team within 2 business days. Approved requests will be fulfilled based on availability.",
+    "category_id": 1,
+    "categoryId": 1,
+    "visibility": "employee",
+    "author": "Sarah Johnson",
+    "date_created": "2025-09-10",
+    "dateCreated": "2025-09-10",
+    "date_modified": "2025-09-20",
+    "dateModified": "2025-09-20",
+    "archived": false,
+    "tags": ["Equipment", "Assets", "Requests"],
+    "versions": [
+      {
+        "number": "1.1.1",
+        "date": "2025-09-10",
+        "author": "Sarah Johnson",
+        "changes": "Initial article created.",
+        "visibility": "Employee",
+        "content": "To request new equipment or check out company assets:\n\n1. Open the Ticket Management system.\n2. Create a new ticket and choose 'Asset Check Out'.\n3. Describe the equipment required and the reason.\n4. Provide any necessary approvals or documentation.\n5. Track the ticket for updates from Asset Management."
+      }
+    ]
+  },
+  {
+    "id": 103,
+    "title": "Server Maintenance Windows Schedule",
+    "content": "All company servers undergo routine maintenance according to the following schedule:\n\n• Weekly Maintenance: Every Sunday, 2:00 AM - 4:00 AM PST\n• Monthly Deep Maintenance: First Sunday of each month, 1:00 AM - 6:00 AM PST\n• Emergency Maintenance: As needed (advance notice will be provided when possible)\n\nDuring maintenance windows:\n- All services will be temporarily unavailable\n- Save your work before the maintenance window\n- Do not attempt to access systems during maintenance\n- Services will be restored automatically upon completion\n\nFor emergency issues outside maintenance windows, contact the System Administration team immediately.",
+    "category_id": 3,
+    "categoryId": 3,
+    "visibility": "admin",
+    "author": "Michael Chen",
+    "date_created": "2025-10-01",
+    "dateCreated": "2025-10-01",
+    "date_modified": "2025-10-10",
+    "dateModified": "2025-10-10",
+    "archived": false,
+    "tags": ["Server", "Maintenance", "Downtime", "Schedule"],
+    "versions": [
+      {
+        "number": "1.3.1",
+        "date": "2025-10-01",
+        "author": "Michael Chen",
+        "changes": "Initial server maintenance schedule publish.",
+        "visibility": "System Admin",
+        "content": "Weekly maintenance occurs every Sunday from 2:00 AM to 4:00 AM PST. Monthly deep maintenance occurs the first Sunday of each month from 1:00 AM to 6:00 AM PST. During these windows services may be unavailable. Plan work accordingly and save progress."
+      },
+      {
+        "number": "1.3.2",
+        "date": "2025-10-10",
+        "author": "Michael Chen",
+        "changes": "Updated monthly deep maintenance window details.",
+        "visibility": "System Admin",
+        "content": "Updated monthly deep maintenance: first Sunday of each month, 1:00 AM - 6:00 AM PST. This deeper window may include patching, firmware updates and extended validation time. Expect longer outages during deep maintenance and plan accordingly."
+      }
+    ]
+  },
+  {
+    "id": 104,
+    "title": "Working from Home Guidelines",
+    "content": "Remote work policy and best practices:\n\n**Eligibility:**\n- All employees may request remote work with manager approval\n- Must have reliable internet connection (minimum 25 Mbps)\n- Dedicated workspace at home\n\n**Requirements:**\n- Available during core business hours (9 AM - 3 PM)\n- Maintain regular communication with team\n- Use company VPN for all work activities\n- Secure home office environment\n\n**Equipment:**\n- Company-issued laptop and peripherals\n- VPN access credentials\n- Video conferencing setup\n\nContact HR for remote work agreement forms and IT Support for technical setup assistance.",
+    "category_id": 2,
+    "categoryId": 2,
+    "visibility": "employee",
+    "author": "Emily Rodriguez",
+    "date_created": "2025-09-05",
+    "dateCreated": "2025-09-05",
+    "date_modified": "2025-09-25",
+    "dateModified": "2025-09-25",
+    "archived": false,
+    "tags": ["Remote Work", "WFH", "Policy", "HR"],
+    "versions": [
+      {
+        "number": "1.1.1",
+        "date": "2025-09-05",
+        "author": "Emily Rodriguez",
+        "changes": "Initial remote work guidelines.",
+        "visibility": "Employee",
+        "content": "Remote work policy overview: eligibility, required equipment, and general best practices for working from home. Employees should request approval from their manager and ensure they have reliable internet."
+      },
+      {
+        "number": "1.1.2",
+        "date": "2025-09-25",
+        "author": "Emily Rodriguez",
+        "changes": "Added clarification on core hours.",
+        "visibility": "Employee",
+        "content": "Clarified core hours requirement: employees must be available between 9 AM and 3 PM local time for collaboration. Added guidance on maintaining communication and using VPN for secure access."
+      }
+    ]
+  },
+  {
+    "id": 105,
+    "title": "Company Holiday Calendar 2025",
+    "content": "Official company holidays for 2025:\n\n• New Year's Day: January 1\n• Martin Luther King Jr. Day: January 20\n• Presidents' Day: February 17\n• Memorial Day: May 26\n• Independence Day: July 4\n• Labor Day: September 1\n• Thanksgiving: November 27-28\n• Christmas: December 25\n\nAdditional floating holidays: 2 days per year (must be pre-approved)\n\nAll holidays are paid days off. If a holiday falls on a weekend, the company will observe it on the nearest weekday. Please coordinate time-off requests with your manager at least 2 weeks in advance.",
+    "category_id": 4,
+    "categoryId": 4,
+    "visibility": "employee",
+    "author": "David Lee",
+    "date_created": "2025-08-20",
+    "dateCreated": "2025-08-20",
+    "date_modified": "2025-08-20",
+    "dateModified": "2025-08-20",
+    "archived": false,
+    "tags": ["Holidays", "Calendar", "Time Off", "PTO"],
+    "versions": [
+      {
+        "number": "1.1.1",
+        "date": "2025-08-20",
+        "author": "David Lee",
+        "changes": "Published company holiday calendar for 2025.",
+        "visibility": "Employee",
+        "content": "List of official company holidays for 2025 including observed dates and guidance on floating holidays and time-off requests."
+      }
+    ]
+  }
+]

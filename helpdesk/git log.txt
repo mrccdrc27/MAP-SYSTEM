@@ -1,0 +1,437 @@
+2025-09-14 21:40:04.565 [info] [main] Log level: Info
+2025-09-14 21:40:04.565 [info] [main] Validating found git in: "C:\Program Files\Git\cmd\git.exe"
+2025-09-14 21:40:04.588 [info] [main] Using git "2.51.0.windows.1" from "C:\Program Files\Git\cmd\git.exe"
+2025-09-14 21:40:04.588 [info] [Model][doInitialScan] Initial repository scan started
+2025-09-14 21:40:04.649 [info] > git rev-parse --show-toplevel [56ms]
+2025-09-14 21:40:04.871 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [217ms]
+2025-09-14 21:40:04.878 [info] [Model][openRepository] Opened repository (path): c:\Users\sethp\OneDrive\Desktop\Capstone 2\Group5Capstone1
+2025-09-14 21:40:04.878 [info] [Model][openRepository] Opened repository (real path): c:\Users\sethp\OneDrive\Desktop\Capstone 2\Group5Capstone1
+2025-09-14 21:40:04.885 [info] [Model][openRepository] Opened repository (kind): repository
+2025-09-14 21:40:05.092 [info] > git rev-parse --show-toplevel [199ms]
+2025-09-14 21:40:05.092 [info] fatal: this operation must be run in a work tree
+2025-09-14 21:40:05.105 [info] > git config --get commit.template [215ms]
+2025-09-14 21:40:05.139 [info] > git rev-parse --show-toplevel [44ms]
+2025-09-14 21:40:05.151 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [255ms]
+2025-09-14 21:40:05.192 [info] > git rev-parse --show-toplevel [51ms]
+2025-09-14 21:40:05.254 [info] > git rev-parse --show-toplevel [59ms]
+2025-09-14 21:40:05.256 [info] [Model][doInitialScan] Initial repository scan completed - repositories (1), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2025-09-14 21:40:05.267 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [106ms]
+2025-09-14 21:40:05.287 [info] > git status -z -uall [132ms]
+2025-09-14 21:40:05.377 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [68ms]
+2025-09-14 21:40:11.656 [info] > git config --get commit.template [3105ms]
+2025-09-14 21:40:11.656 [info] > git config --get --local branch.backend-update-branch.vscode-merge-base [6274ms]
+2025-09-14 21:40:11.717 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/origin/backend-update-branch refs/remotes/origin/backend-update-branch [57ms]
+2025-09-14 21:40:11.980 [info] > git merge-base refs/heads/backend-update-branch refs/remotes/origin/backend-update-branch [260ms]
+2025-09-14 21:40:12.044 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [147ms]
+2025-09-14 21:40:12.935 [info] > git ls-files --stage -- .git/COMMIT_EDITMSG [924ms]
+2025-09-14 21:40:12.940 [info] > git diff --name-status -z --diff-filter=ADMR 5d38bdab7bb7aade7f3d38a2b26cffef3e581e6e...refs/remotes/origin/backend-update-branch [954ms]
+2025-09-14 21:40:12.961 [info] > git show --textconv :.git/COMMIT_EDITMSG [957ms]
+2025-09-14 21:40:13.418 [info] > git check-ignore -v -z --stdin [1357ms]
+2025-09-14 21:40:13.449 [info] > git hash-object -t tree /dev/null [485ms]
+2025-09-14 21:40:13.450 [warning] [GitFileSystemProvider][readFile] File not found - git:/c%3A/Users/sethp/OneDrive/Desktop/Capstone%202/Group5Capstone1/.git/COMMIT_EDITMSG.git?%7B%22path%22%3A%22c%3A%5C%5CUsers%5C%5Csethp%5C%5COneDrive%5C%5CDesktop%5C%5CCapstone%202%5C%5CGroup5Capstone1%5C%5C.git%5C%5CCOMMIT_EDITMSG%22%2C%22ref%22%3A%22%22%7D
+2025-09-14 21:40:13.454 [info] > git hash-object -t tree /dev/null [514ms]
+2025-09-14 21:40:13.454 [warning] [GitFileSystemProvider][stat] File not found - git:/c%3A/Users/sethp/OneDrive/Desktop/Capstone%202/Group5Capstone1/.git/COMMIT_EDITMSG.git?%7B%22path%22%3A%22c%3A%5C%5CUsers%5C%5Csethp%5C%5COneDrive%5C%5CDesktop%5C%5CCapstone%202%5C%5CGroup5Capstone1%5C%5C.git%5C%5CCOMMIT_EDITMSG%22%2C%22ref%22%3A%22%22%7D
+2025-09-14 21:40:13.606 [info] > git status -z -uall [166ms]
+2025-09-14 21:40:13.607 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [162ms]
+2025-09-14 21:40:13.717 [info] > git config --get commit.template [95ms]
+2025-09-14 21:40:13.734 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [77ms]
+2025-09-14 21:40:13.793 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [52ms]
+2025-09-14 21:40:13.803 [info] > git status -z -uall [64ms]
+2025-09-14 21:40:14.263 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [84ms]
+2025-09-14 21:40:15.243 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [46ms]
+2025-09-14 21:41:29.767 [info] > git ls-files --stage -- backend/core/views.py [47ms]
+2025-09-14 21:41:29.770 [info] > git show --textconv :backend/core/views.py [58ms]
+2025-09-14 21:41:29.770 [info] > git show --textconv HEAD:backend/core/views.py [54ms]
+2025-09-14 21:41:29.771 [info] > git ls-tree -l HEAD -- backend/core/views.py [47ms]
+2025-09-14 21:41:29.813 [info] > git cat-file -s f92373b1cca95dac2366abbd57d4377c29d4be64 [44ms]
+2025-09-14 21:41:29.835 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [283ms]
+2025-09-14 21:41:29.949 [info] > git check-ignore -v -z --stdin [34ms]
+2025-09-14 21:41:34.889 [info] > git diff --cached -- backend/core/views.py [187ms]
+2025-09-14 21:41:34.928 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z -n5 [36ms]
+2025-09-14 21:41:34.964 [info] > git config --get --local user.name [33ms]
+2025-09-14 21:41:34.964 [warning] [Git][config] git config failed: Failed to execute git
+2025-09-14 21:41:35.004 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z -n5 [37ms]
+2025-09-14 21:42:14.235 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [46ms]
+2025-09-14 21:42:16.647 [info] > git -c user.useConfigOnly=true commit --quiet --allow-empty-message --file - [82ms]
+2025-09-14 21:42:16.683 [info] > git config --get commit.template [33ms]
+2025-09-14 21:42:16.724 [info] > git config --get commit.template [38ms]
+2025-09-14 21:42:16.728 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [40ms]
+2025-09-14 21:42:16.769 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [36ms]
+2025-09-14 21:42:16.776 [info] > git status -z -uall [45ms]
+2025-09-14 21:42:16.843 [info] > git merge-base refs/heads/backend-update-branch refs/remotes/origin/backend-update-branch [62ms]
+2025-09-14 21:42:16.846 [info] > git show -s --decorate=full --shortstat --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z 25aea4ef8be79f1e4bec95d8629cd57e1d59ceee -- [64ms]
+2025-09-14 21:42:16.878 [info] > git config --get commit.template [73ms]
+2025-09-14 21:42:16.884 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [76ms]
+2025-09-14 21:42:16.893 [info] > git diff --name-status -z --diff-filter=ADMR 5d38bdab7bb7aade7f3d38a2b26cffef3e581e6e...refs/remotes/origin/backend-update-branch [46ms]
+2025-09-14 21:42:16.928 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-09-14 21:42:16.933 [info] > git status -z -uall [47ms]
+2025-09-14 21:42:16.944 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [149ms]
+2025-09-14 21:42:17.666 [info] > git log --oneline --cherry backend-update-branch...backend-update-branch@{upstream} -- [38ms]
+2025-09-14 21:42:18.632 [info] > git pull --tags origin backend-update-branch [963ms]
+2025-09-14 21:42:18.632 [info] From https://github.com/seyxhel/Group5Capstone1
+ * branch              backend-update-branch -> FETCH_HEAD
+2025-09-14 21:42:20.928 [info] > git push origin backend-update-branch:backend-update-branch [2294ms]
+2025-09-14 21:42:20.928 [info] To https://github.com/seyxhel/Group5Capstone1.git
+   5d38bdab..25aea4ef  backend-update-branch -> backend-update-branch
+2025-09-14 21:42:20.966 [info] > git config --get commit.template [36ms]
+2025-09-14 21:42:20.970 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [37ms]
+2025-09-14 21:42:21.014 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-09-14 21:42:21.020 [info] > git status -z -uall [48ms]
+2025-09-14 21:42:21.067 [info] > git merge-base refs/heads/backend-update-branch refs/remotes/origin/backend-update-branch [41ms]
+2025-09-14 21:42:21.106 [info] > git diff --name-status -z --diff-filter=ADMR 25aea4ef8be79f1e4bec95d8629cd57e1d59ceee...refs/remotes/origin/backend-update-branch [37ms]
+2025-09-14 21:42:21.142 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [110ms]
+2025-09-14 21:42:47.004 [info] > git ls-files --stage -- backend/core/views.py [42ms]
+2025-09-14 21:42:47.006 [info] > git config --get commit.template [42ms]
+2025-09-14 21:42:47.009 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [42ms]
+2025-09-14 21:42:47.043 [info] > git cat-file -s f92373b1cca95dac2366abbd57d4377c29d4be64 [37ms]
+2025-09-14 21:42:47.051 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 21:42:47.058 [info] > git status -z -uall [46ms]
+2025-09-14 21:42:47.083 [info] > git show --textconv :backend/core/views.py [36ms]
+2025-09-14 21:42:52.100 [info] > git config --get commit.template [35ms]
+2025-09-14 21:42:52.102 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [36ms]
+2025-09-14 21:42:52.144 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 21:42:52.151 [info] > git status -z -uall [47ms]
+2025-09-14 21:43:08.770 [info] > git ls-files --stage -- backend/core/views.py [35ms]
+2025-09-14 21:43:08.772 [info] > git show --textconv :backend/core/views.py [39ms]
+2025-09-14 21:43:08.808 [info] > git cat-file -s f92373b1cca95dac2366abbd57d4377c29d4be64 [36ms]
+2025-09-14 21:43:10.066 [info] > git check-ignore -v -z --stdin [34ms]
+2025-09-14 21:44:14.241 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [46ms]
+2025-09-14 21:46:14.248 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [46ms]
+2025-09-14 21:46:54.400 [info] > git ls-files --stage -- backend/core/views.py [36ms]
+2025-09-14 21:46:54.403 [info] > git show --textconv :backend/core/views.py [41ms]
+2025-09-14 21:46:54.439 [info] > git cat-file -s f92373b1cca95dac2366abbd57d4377c29d4be64 [37ms]
+2025-09-14 21:46:55.797 [info] > git config --get commit.template [34ms]
+2025-09-14 21:46:55.800 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [35ms]
+2025-09-14 21:46:55.843 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 21:46:55.850 [info] > git status -z -uall [48ms]
+2025-09-14 21:47:00.898 [info] > git config --get commit.template [36ms]
+2025-09-14 21:47:00.900 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [36ms]
+2025-09-14 21:47:00.942 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 21:47:00.949 [info] > git status -z -uall [47ms]
+2025-09-14 21:47:20.164 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [126ms]
+2025-09-14 21:47:20.174 [info] > git config --get commit.template [47ms]
+2025-09-14 21:47:20.178 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [48ms]
+2025-09-14 21:47:20.221 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 21:47:20.228 [info] > git status -z -uall [48ms]
+2025-09-14 21:47:21.135 [info] > git diff -- backend/core/views.py [37ms]
+2025-09-14 21:47:21.175 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z -n5 [38ms]
+2025-09-14 21:47:21.210 [info] > git config --get --local user.name [33ms]
+2025-09-14 21:47:21.210 [warning] [Git][config] git config failed: Failed to execute git
+2025-09-14 21:47:21.250 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z -n5 [38ms]
+2025-09-14 21:47:24.468 [info] > git add -A -- . [58ms]
+2025-09-14 21:47:24.572 [info] > git -c user.useConfigOnly=true commit --quiet --allow-empty-message --file - [102ms]
+2025-09-14 21:47:24.609 [info] > git config --get commit.template [35ms]
+2025-09-14 21:47:24.649 [info] > git config --get commit.template [37ms]
+2025-09-14 21:47:24.655 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [41ms]
+2025-09-14 21:47:24.696 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 21:47:24.704 [info] > git status -z -uall [47ms]
+2025-09-14 21:47:24.754 [info] > git merge-base refs/heads/backend-update-branch refs/remotes/origin/backend-update-branch [46ms]
+2025-09-14 21:47:24.759 [info] > git show -s --decorate=full --shortstat --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z 0f1ae61dd93cfff018faa193c145854bdcb623a0 -- [49ms]
+2025-09-14 21:47:24.779 [info] > git config --get commit.template [43ms]
+2025-09-14 21:47:24.788 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [49ms]
+2025-09-14 21:47:24.801 [info] > git diff --name-status -z --diff-filter=ADMR 25aea4ef8be79f1e4bec95d8629cd57e1d59ceee...refs/remotes/origin/backend-update-branch [43ms]
+2025-09-14 21:47:24.835 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [43ms]
+2025-09-14 21:47:24.842 [info] > git status -z -uall [52ms]
+2025-09-14 21:47:24.853 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [131ms]
+2025-09-14 21:47:25.272 [info] > git config --get commit.template [37ms]
+2025-09-14 21:47:25.276 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [39ms]
+2025-09-14 21:47:25.317 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [36ms]
+2025-09-14 21:47:25.324 [info] > git status -z -uall [46ms]
+2025-09-14 21:47:25.759 [info] > git log --oneline --cherry backend-update-branch...backend-update-branch@{upstream} -- [39ms]
+2025-09-14 21:47:25.905 [info] > git ls-files --stage -- backend/core/views.py [34ms]
+2025-09-14 21:47:25.943 [info] > git cat-file -s f4b61b17629d71753e058698e18f7f239eaf6472 [35ms]
+2025-09-14 21:47:25.982 [info] > git show --textconv :backend/core/views.py [37ms]
+2025-09-14 21:47:26.628 [info] > git pull --tags origin backend-update-branch [867ms]
+2025-09-14 21:47:26.628 [info] From https://github.com/seyxhel/Group5Capstone1
+ * branch              backend-update-branch -> FETCH_HEAD
+2025-09-14 21:47:28.339 [info] > git push origin backend-update-branch:backend-update-branch [1708ms]
+2025-09-14 21:47:28.339 [info] To https://github.com/seyxhel/Group5Capstone1.git
+   25aea4ef..0f1ae61d  backend-update-branch -> backend-update-branch
+2025-09-14 21:47:28.377 [info] > git config --get commit.template [36ms]
+2025-09-14 21:47:28.379 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [37ms]
+2025-09-14 21:47:28.423 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-09-14 21:47:28.428 [info] > git status -z -uall [46ms]
+2025-09-14 21:47:28.472 [info] > git merge-base refs/heads/backend-update-branch refs/remotes/origin/backend-update-branch [39ms]
+2025-09-14 21:47:28.512 [info] > git diff --name-status -z --diff-filter=ADMR 0f1ae61dd93cfff018faa193c145854bdcb623a0...refs/remotes/origin/backend-update-branch [37ms]
+2025-09-14 21:47:28.566 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [127ms]
+2025-09-14 21:48:14.252 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [45ms]
+2025-09-14 21:48:52.930 [info] > git config --get commit.template [39ms]
+2025-09-14 21:48:52.930 [info] > git ls-files --stage -- backend/core/views.py [38ms]
+2025-09-14 21:48:52.935 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [40ms]
+2025-09-14 21:48:52.968 [info] > git cat-file -s f4b61b17629d71753e058698e18f7f239eaf6472 [36ms]
+2025-09-14 21:48:52.976 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [36ms]
+2025-09-14 21:48:52.983 [info] > git status -z -uall [46ms]
+2025-09-14 21:48:53.007 [info] > git show --textconv :backend/core/views.py [35ms]
+2025-09-14 21:48:55.629 [info] > git ls-files --stage -- backend/core/views.py [33ms]
+2025-09-14 21:48:55.631 [info] > git show --textconv :backend/core/views.py [37ms]
+2025-09-14 21:48:55.666 [info] > git cat-file -s f4b61b17629d71753e058698e18f7f239eaf6472 [35ms]
+2025-09-14 21:48:58.033 [info] > git config --get commit.template [43ms]
+2025-09-14 21:48:58.037 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [45ms]
+2025-09-14 21:48:58.091 [info] > git status -z -uall [52ms]
+2025-09-14 21:48:58.092 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [50ms]
+2025-09-14 21:50:14.259 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [49ms]
+2025-09-14 21:52:14.263 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [50ms]
+2025-09-14 21:54:14.267 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [46ms]
+2025-09-14 21:56:14.275 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [48ms]
+2025-09-14 21:58:14.280 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [46ms]
+2025-09-14 22:00:14.297 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [64ms]
+2025-09-14 22:02:01.653 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [49ms]
+2025-09-14 22:02:14.287 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [48ms]
+2025-09-14 22:03:44.799 [info] > git rev-parse --show-toplevel [35ms]
+2025-09-14 22:03:44.799 [info] fatal: not a git repository (or any of the parent directories): .git
+2025-09-14 22:04:09.731 [info] > git rev-parse --show-toplevel [34ms]
+2025-09-14 22:04:09.731 [info] fatal: not a git repository (or any of the parent directories): .git
+2025-09-14 22:04:10.855 [info] > git rev-parse --show-toplevel [33ms]
+2025-09-14 22:04:10.855 [info] fatal: not a git repository (or any of the parent directories): .git
+2025-09-14 22:04:13.945 [info] > git rev-parse --show-toplevel [33ms]
+2025-09-14 22:04:13.945 [info] fatal: not a git repository (or any of the parent directories): .git
+2025-09-14 22:04:14.297 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [48ms]
+2025-09-14 22:05:06.324 [info] > git config --get commit.template [38ms]
+2025-09-14 22:05:06.327 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [37ms]
+2025-09-14 22:05:06.367 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 22:05:06.374 [info] > git status -z -uall [45ms]
+2025-09-14 22:05:10.389 [info] > git check-ignore -v -z --stdin [34ms]
+2025-09-14 22:05:11.422 [info] > git config --get commit.template [34ms]
+2025-09-14 22:05:11.424 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [35ms]
+2025-09-14 22:05:11.464 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [35ms]
+2025-09-14 22:05:11.470 [info] > git status -z -uall [44ms]
+2025-09-14 22:05:52.093 [info] > git check-ignore -v -z --stdin [34ms]
+2025-09-14 22:05:55.929 [info] > git check-ignore -v -z --stdin [34ms]
+2025-09-14 22:06:14.302 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [52ms]
+2025-09-14 22:06:38.509 [info] > git show --textconv :backend/gmail_send_test.py [35ms]
+2025-09-14 22:06:38.510 [warning] [GitFileSystemProvider][readFile] File not found - git:/c%3A/Users/sethp/OneDrive/Desktop/Capstone%202/Group5Capstone1/backend/gmail_send_test.py.git?%7B%22path%22%3A%22c%3A%5C%5CUsers%5C%5Csethp%5C%5COneDrive%5C%5CDesktop%5C%5CCapstone%202%5C%5CGroup5Capstone1%5C%5Cbackend%5C%5Cgmail_send_test.py%22%2C%22ref%22%3A%22%22%7D
+2025-09-14 22:06:38.511 [info] > git ls-files --stage -- backend/gmail_send_test.py [32ms]
+2025-09-14 22:06:38.511 [warning] [GitFileSystemProvider][stat] File not found - git:/c%3A/Users/sethp/OneDrive/Desktop/Capstone%202/Group5Capstone1/backend/gmail_send_test.py.git?%7B%22path%22%3A%22c%3A%5C%5CUsers%5C%5Csethp%5C%5COneDrive%5C%5CDesktop%5C%5CCapstone%202%5C%5CGroup5Capstone1%5C%5Cbackend%5C%5Cgmail_send_test.py%22%2C%22ref%22%3A%22%22%7D
+2025-09-14 22:06:38.788 [info] > git check-ignore -v -z --stdin [37ms]
+2025-09-14 22:06:39.362 [info] > git config --get commit.template [37ms]
+2025-09-14 22:06:39.365 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [36ms]
+2025-09-14 22:06:39.407 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 22:06:39.414 [info] > git status -z -uall [47ms]
+2025-09-14 22:06:44.458 [info] > git config --get commit.template [34ms]
+2025-09-14 22:06:44.461 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [36ms]
+2025-09-14 22:06:44.502 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [36ms]
+2025-09-14 22:06:44.508 [info] > git status -z -uall [45ms]
+2025-09-14 22:06:49.559 [info] > git config --get commit.template [35ms]
+2025-09-14 22:06:49.562 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [36ms]
+2025-09-14 22:06:49.603 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 22:06:49.610 [info] > git status -z -uall [46ms]
+2025-09-14 22:08:14.304 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [48ms]
+2025-09-14 22:10:14.316 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [48ms]
+2025-09-14 22:12:14.316 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [48ms]
+2025-09-14 22:12:54.669 [info] > git check-ignore -v -z --stdin [35ms]
+2025-09-14 22:12:59.040 [info] > git config --get commit.template [41ms]
+2025-09-14 22:12:59.043 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [41ms]
+2025-09-14 22:12:59.084 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 22:12:59.092 [info] > git status -z -uall [47ms]
+2025-09-14 22:13:04.145 [info] > git config --get commit.template [34ms]
+2025-09-14 22:13:04.149 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [36ms]
+2025-09-14 22:13:04.189 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [36ms]
+2025-09-14 22:13:04.196 [info] > git status -z -uall [45ms]
+2025-09-14 22:14:14.320 [info] > git diff --name-status -z --diff-filter=ADMR c7c918977abbc8470df1fd79032caca2985c43c4 [47ms]
+2025-09-14 22:14:16.300 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [110ms]
+2025-09-14 22:14:18.974 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z -n5 [37ms]
+2025-09-14 22:14:19.009 [info] > git config --get --local user.name [33ms]
+2025-09-14 22:14:19.009 [warning] [Git][config] git config failed: Failed to execute git
+2025-09-14 22:14:19.048 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z -n5 [36ms]
+2025-09-14 22:14:22.206 [info] > git add -A -- . [67ms]
+2025-09-14 22:14:22.303 [info] > git -c user.useConfigOnly=true commit --quiet --allow-empty-message --file - [94ms]
+2025-09-14 22:14:22.339 [info] > git config --get commit.template [35ms]
+2025-09-14 22:14:22.379 [info] > git config --get commit.template [37ms]
+2025-09-14 22:14:22.383 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [39ms]
+2025-09-14 22:14:22.424 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [36ms]
+2025-09-14 22:14:22.430 [info] > git status -z -uall [45ms]
+2025-09-14 22:14:22.481 [info] > git merge-base refs/heads/backend-update-branch refs/remotes/origin/backend-update-branch [47ms]
+2025-09-14 22:14:22.488 [info] > git show -s --decorate=full --shortstat --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7 -- [51ms]
+2025-09-14 22:14:22.505 [info] > git config --get commit.template [44ms]
+2025-09-14 22:14:22.515 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [50ms]
+2025-09-14 22:14:22.526 [info] > git diff --name-status -z --diff-filter=ADMR 0f1ae61dd93cfff018faa193c145854bdcb623a0...refs/remotes/origin/backend-update-branch [42ms]
+2025-09-14 22:14:22.561 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [42ms]
+2025-09-14 22:14:22.566 [info] > git status -z -uall [49ms]
+2025-09-14 22:14:22.583 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [137ms]
+2025-09-14 22:14:22.787 [info] > git ls-files --stage -- backend/gmail_send_test.py [37ms]
+2025-09-14 22:14:22.790 [info] > git show --textconv :backend/gmail_send_test.py [43ms]
+2025-09-14 22:14:22.825 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [35ms]
+2025-09-14 22:14:22.879 [info] > git blame --root --incremental 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7 -- backend/gmail_send_test.py [46ms]
+2025-09-14 22:14:23.167 [info] > git log --oneline --cherry backend-update-branch...backend-update-branch@{upstream} -- [38ms]
+2025-09-14 22:14:24.060 [info] > git pull --tags origin backend-update-branch [891ms]
+2025-09-14 22:14:24.060 [info] From https://github.com/seyxhel/Group5Capstone1
+ * branch              backend-update-branch -> FETCH_HEAD
+2025-09-14 22:14:25.351 [info] > git ls-files --stage -- backend/gmail_send_test.py [36ms]
+2025-09-14 22:14:25.388 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [35ms]
+2025-09-14 22:14:25.427 [info] > git show --textconv :backend/gmail_send_test.py [36ms]
+2025-09-14 22:14:25.966 [info] > git push origin backend-update-branch:backend-update-branch [1904ms]
+2025-09-14 22:14:25.966 [info] remote: error: GH013: Repository rule violations found for refs/heads/backend-update-branch.        
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   —————————————————————————————————————————        
+remote:     Resolve the following violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push        
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       —— Google OAuth Access Token —————————————————————————        
+remote:        locations:        
+remote:          - commit: 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7        
+remote:            path: backend/token.json:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/seyxhel/Group5Capstone1/security/secret-scanning/unblock-secret/32h42shsMwyiQCgxxvXoJsEAy7p        
+remote:             
+remote:             
+remote:       —— Google OAuth Refresh Token ————————————————————————        
+remote:        locations:        
+remote:          - commit: 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7        
+remote:            path: backend/token.json:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/seyxhel/Group5Capstone1/security/secret-scanning/unblock-secret/32h42pXn15AbRrPDwO8Q63kCgHg        
+remote:             
+remote: 
+remote: 
+To https://github.com/seyxhel/Group5Capstone1.git
+ ! [remote rejected]   backend-update-branch -> backend-update-branch (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/seyxhel/Group5Capstone1.git'
+2025-09-14 22:14:26.015 [info] > git config --get commit.template [45ms]
+2025-09-14 22:14:26.017 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [45ms]
+2025-09-14 22:14:26.061 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [40ms]
+2025-09-14 22:14:26.069 [info] > git status -z -uall [49ms]
+2025-09-14 22:14:33.348 [info] > git config --get commit.template [40ms]
+2025-09-14 22:14:33.353 [info] > git ls-files --stage -- backend/gmail_send_test.py [39ms]
+2025-09-14 22:14:33.355 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [44ms]
+2025-09-14 22:14:33.395 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [39ms]
+2025-09-14 22:14:33.399 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-09-14 22:14:33.406 [info] > git status -z -uall [48ms]
+2025-09-14 22:14:33.434 [info] > git show --textconv :backend/gmail_send_test.py [37ms]
+2025-09-14 22:14:37.117 [info] > git fetch --all [823ms]
+2025-09-14 22:14:37.154 [info] > git config --get commit.template [35ms]
+2025-09-14 22:14:37.159 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [38ms]
+2025-09-14 22:14:37.199 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [35ms]
+2025-09-14 22:14:37.206 [info] > git status -z -uall [44ms]
+2025-09-14 22:14:38.458 [info] > git config --get commit.template [36ms]
+2025-09-14 22:14:38.462 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [38ms]
+2025-09-14 22:14:38.504 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 22:14:38.511 [info] > git status -z -uall [47ms]
+2025-09-14 22:14:38.818 [info] > git ls-files --stage -- backend/gmail_send_test.py [34ms]
+2025-09-14 22:14:38.856 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [35ms]
+2025-09-14 22:14:38.894 [info] > git show --textconv :backend/gmail_send_test.py [34ms]
+2025-09-14 22:14:39.113 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/remotes/origin/backend-update-branch [34ms]
+2025-09-14 22:14:39.154 [info] > git log --oneline --cherry backend-update-branch...backend-update-branch@{upstream} -- [38ms]
+2025-09-14 22:14:40.029 [info] > git pull --tags origin backend-update-branch [873ms]
+2025-09-14 22:14:40.029 [info] From https://github.com/seyxhel/Group5Capstone1
+ * branch              backend-update-branch -> FETCH_HEAD
+2025-09-14 22:14:40.066 [info] > git config --get commit.template [35ms]
+2025-09-14 22:14:40.070 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [38ms]
+2025-09-14 22:14:40.110 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 22:14:40.117 [info] > git status -z -uall [44ms]
+2025-09-14 22:14:41.224 [info] > git ls-files --stage -- backend/gmail_send_test.py [37ms]
+2025-09-14 22:14:41.269 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [42ms]
+2025-09-14 22:14:41.318 [info] > git show --textconv :backend/gmail_send_test.py [36ms]
+2025-09-14 22:14:44.126 [info] > git push origin backend-update-branch:backend-update-branch [1711ms]
+2025-09-14 22:14:44.126 [info] remote: error: GH013: Repository rule violations found for refs/heads/backend-update-branch.        
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   —————————————————————————————————————————        
+remote:     Resolve the following violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push        
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       —— Google OAuth Access Token —————————————————————————        
+remote:        locations:        
+remote:          - commit: 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7        
+remote:            path: backend/token.json:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/seyxhel/Group5Capstone1/security/secret-scanning/unblock-secret/32h42shsMwyiQCgxxvXoJsEAy7p        
+remote:             
+remote:             
+remote:       —— Google OAuth Refresh Token ————————————————————————        
+remote:        locations:        
+remote:          - commit: 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7        
+remote:            path: backend/token.json:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/seyxhel/Group5Capstone1/security/secret-scanning/unblock-secret/32h42pXn15AbRrPDwO8Q63kCgHg        
+remote:             
+remote: 
+remote: 
+To https://github.com/seyxhel/Group5Capstone1.git
+ ! [remote rejected]   backend-update-branch -> backend-update-branch (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/seyxhel/Group5Capstone1.git'
+2025-09-14 22:14:44.165 [info] > git config --get commit.template [36ms]
+2025-09-14 22:14:44.169 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [38ms]
+2025-09-14 22:14:44.210 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [37ms]
+2025-09-14 22:14:44.217 [info] > git status -z -uall [46ms]
+2025-09-14 22:14:44.266 [info] > git config --get commit.template [44ms]
+2025-09-14 22:14:44.270 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [46ms]
+2025-09-14 22:14:44.318 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [43ms]
+2025-09-14 22:14:44.326 [info] > git status -z -uall [54ms]
+2025-09-14 22:14:46.589 [info] > git ls-files --stage -- backend/gmail_send_test.py [37ms]
+2025-09-14 22:14:46.627 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [36ms]
+2025-09-14 22:14:46.669 [info] > git show --textconv :backend/gmail_send_test.py [38ms]
+2025-09-14 22:14:49.364 [info] > git config --get commit.template [34ms]
+2025-09-14 22:14:49.372 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [39ms]
+2025-09-14 22:14:49.414 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2025-09-14 22:14:49.421 [info] > git status -z -uall [47ms]
+2025-09-14 22:14:54.945 [info] > git log --oneline --cherry backend-update-branch...backend-update-branch@{upstream} -- [38ms]
+2025-09-14 22:14:55.862 [info] > git pull --tags origin backend-update-branch [915ms]
+2025-09-14 22:14:55.862 [info] From https://github.com/seyxhel/Group5Capstone1
+ * branch              backend-update-branch -> FETCH_HEAD
+2025-09-14 22:14:57.401 [info] > git ls-files --stage -- backend/gmail_send_test.py [35ms]
+2025-09-14 22:14:57.442 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [39ms]
+2025-09-14 22:14:57.482 [info] > git show --textconv :backend/gmail_send_test.py [37ms]
+2025-09-14 22:14:57.607 [info] > git push origin backend-update-branch:backend-update-branch [1744ms]
+2025-09-14 22:14:57.607 [info] remote: error: GH013: Repository rule violations found for refs/heads/backend-update-branch.        
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   —————————————————————————————————————————        
+remote:     Resolve the following violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push        
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       —— Google OAuth Access Token —————————————————————————        
+remote:        locations:        
+remote:          - commit: 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7        
+remote:            path: backend/token.json:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/seyxhel/Group5Capstone1/security/secret-scanning/unblock-secret/32h42shsMwyiQCgxxvXoJsEAy7p        
+remote:             
+remote:             
+remote:       —— Google OAuth Refresh Token ————————————————————————        
+remote:        locations:        
+remote:          - commit: 7830cd9f0020cfcc90a6eda0468ee5da9a26cfb7        
+remote:            path: backend/token.json:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/seyxhel/Group5Capstone1/security/secret-scanning/unblock-secret/32h42pXn15AbRrPDwO8Q63kCgHg        
+remote:             
+remote: 
+remote: 
+To https://github.com/seyxhel/Group5Capstone1.git
+ ! [remote rejected]   backend-update-branch -> backend-update-branch (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/seyxhel/Group5Capstone1.git'
+2025-09-14 22:14:57.649 [info] > git config --get commit.template [39ms]
+2025-09-14 22:14:57.653 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [40ms]
+2025-09-14 22:14:57.696 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-09-14 22:14:57.703 [info] > git status -z -uall [48ms]
+2025-09-14 22:15:01.022 [info] > git config --get commit.template [36ms]
+2025-09-14 22:15:01.027 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/backend-update-branch refs/remotes/backend-update-branch [38ms]
+2025-09-14 22:15:01.071 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-09-14 22:15:01.078 [info] > git status -z -uall [48ms]
+2025-09-14 22:15:01.127 [info] > git ls-files --stage -- backend/gmail_send_test.py [40ms]
+2025-09-14 22:15:01.169 [info] > git cat-file -s f476d47a7da492a9f4a158db99923e3b86e4133e [40ms]
+2025-09-14 22:15:01.211 [info] > git show --textconv :backend/gmail_send_test.py [39ms]

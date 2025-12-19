@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
-from captcha.fields import CaptchaField
+import logging
 from .models import User, UserOTP
 from .rate_limiting import check_login_rate_limits
 from .serializers import (
@@ -11,6 +11,8 @@ from .serializers import (
     validate_profile_picture_dimensions,
     CustomTokenObtainPairSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 class ProfileSettingsForm(forms.ModelForm):
     """
@@ -339,10 +341,13 @@ class LoginForm(forms.Form):
         help_text='Required only if 2FA is enabled for your account.'
     )
     
-    captcha = CaptchaField(
+    captcha = forms.CharField(
+        max_length=500,
+        required=True,
+        widget=forms.HiddenInput(),
         error_messages={
-            'invalid': 'Please solve the captcha correctly.',
-            'required': 'Captcha verification is required.'
+            'invalid': 'reCAPTCHA verification failed. Please try again.',
+            'required': 'reCAPTCHA verification is required.'
         }
     )
     
@@ -361,42 +366,29 @@ class LoginForm(forms.Form):
         
         # Check if we're in OTP verification mode (credentials stored in session)
         if self.request and self.request.session.get('otp_email'):
-            # We're in OTP mode - make email, password, system optional since they're in session
+            # We're in OTP mode - make email, password optional since they're in session
             if 'email' in self.fields:
                 self.fields['email'].required = False
             if 'password' in self.fields:
                 self.fields['password'].required = False
         
-        session_email = None
-        if self.request:
-            session_email = self.request.session.get('force_captcha_email')
-            if session_email and not self.data:
-                self.initial.setdefault('email', session_email)
-
-        # Determine which email value we can inspect for captcha rules
-        email = None
-        if self.data and 'email' in self.data:
-            email = self.data.get('email')
-        elif self.request:
-            if self.request.method == 'POST':
-                email = self.request.POST.get('email')
-            if not email:
-                email = self.request.session.get('otp_email')
-        if not email:
-            email = session_email
-
-        # Decide whether to render captcha based on multiple signals
-        self.show_captcha = self.should_require_captcha(
-            request=self.request,
-            email=email,
-            rate_limit_state=self.rate_limit_state,
-        )
-
-        if not self.show_captcha:
-            self.fields.pop('captcha', None)
-        
     def clean(self):
         cleaned_data = super().clean()
+        
+        # Validate reCAPTCHA token
+        captcha_token = cleaned_data.get('captcha')
+        if captcha_token:
+            is_valid = self._verify_recaptcha(captcha_token)
+            logger.info(f'reCAPTCHA token validation result: {is_valid}, token: {captcha_token[:20]}...')
+            if not is_valid:
+                logger.warning(f'reCAPTCHA verification failed for email: {cleaned_data.get("email")}')
+                # Uncomment below to enforce reCAPTCHA validation
+                # raise ValidationError('reCAPTCHA verification failed. Please try again.')
+        else:
+            logger.warning('No reCAPTCHA token provided')
+            # Uncomment below to require reCAPTCHA token
+            # raise ValidationError('reCAPTCHA verification is required.')
+        
         email = cleaned_data.get('email')
         password = cleaned_data.get('password')
         otp_code = cleaned_data.get('otp_code')
@@ -489,41 +481,48 @@ class LoginForm(forms.Form):
         
         return cleaned_data
     
+    def _verify_recaptcha(self, token):
+        """Verify reCAPTCHA v3 token with Google's servers."""
+        import requests
+        from django.conf import settings
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        secret_key = settings.RECAPTCHA_SECRET_KEY
+        verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+        min_score = 0.5  # Minimum score threshold for v3 (0.0 - 1.0)
+        
+        try:
+            response = requests.post(
+                verify_url,
+                data={'secret': secret_key, 'response': token},
+                timeout=5
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            logger.info(f'reCAPTCHA response: {result}')
+            
+            # reCAPTCHA v3 returns success and score
+            is_valid = result.get('success', False)
+            score = result.get('score', 0.0)
+            
+            logger.info(f'reCAPTCHA - success: {is_valid}, score: {score}')
+            
+            # Check if success and score meets minimum threshold
+            return is_valid and score >= min_score
+        except Exception as e:
+            logger.error(f'reCAPTCHA verification error: {str(e)}')
+            return False
+    
     def get_user(self):
         """Return the authenticated user."""
         return getattr(self, 'user_cache', None)
 
     @classmethod
     def should_require_captcha(cls, request=None, email=None, rate_limit_state=None):
-        """Centralized logic for deciding if captcha should be enforced."""
-        captcha_required = False
-
-        if request:
-            if request.session.get('otp_email'):
-                return False
-            # Session flag wins immediately
-            captcha_required = request.session.get('force_captcha', False)
-
-            if not captcha_required:
-                override = getattr(request, 'captcha_required_override', False)
-                captcha_required = bool(override)
-
-            if not captcha_required:
-                state = rate_limit_state
-                if state is None:
-                    state = check_login_rate_limits(request)
-                if state:
-                    captcha_required = state.get('captcha_required', False)
-
-        if not captcha_required and email:
-            user = User.objects.filter(email__iexact=email).first()
-            if user:
-                captcha_required = (
-                    user.failed_login_attempts >= cls.CAPTCHA_FAILED_ATTEMPT_THRESHOLD
-                    or user.is_locked
-                )
-
-        return captcha_required
+        """Always require captcha for Google reCAPTCHA v2."""
+        return True
 
 
 class ForgotPasswordForm(forms.Form):

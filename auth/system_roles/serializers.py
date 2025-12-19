@@ -6,7 +6,7 @@ from systems.models import System
 from django.utils.crypto import get_random_string
 from django.conf import settings
 from django.db import IntegrityError
-from notification_client import notification_client
+from django.core.mail import send_mail
 import re
 
 
@@ -31,15 +31,24 @@ def validate_phone_number_format(phone_number):
 
 
 def send_invitation_email(user, temp_password, system_name, role_name):
-    """Send invitation email with temporary credentials to new user via notification service."""
+    """Send invitation email with temporary credentials to new user via Django mail."""
     try:
-        success = notification_client.send_invitation_email_async(
-            user=user,
-            temp_password=temp_password,
-            system_name=system_name,
-            role_name=role_name
+        subject = f'Invitation to {system_name}'
+        message = (
+            f"Hello {user.first_name},\n\n"
+            f"You have been invited to join the {system_name} system with the role of {role_name}.\n\n"
+            f"Your temporary password is: {temp_password}\n\n"
+            "Please log in and change your password immediately."
         )
-        return success
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False
+        )
+        return True
     except Exception as e:
         # Log the error in production
         print(f"Failed to send invitation email to {user.email}: {str(e)}")
@@ -47,14 +56,23 @@ def send_invitation_email(user, temp_password, system_name, role_name):
 
 
 def send_system_addition_email(user, system_name, role_name):
-    """Send notification email to existing user being added to a new system via notification service."""
+    """Send notification email to existing user being added to a new system via Django mail."""
     try:
-        success = notification_client.send_system_addition_email_async(
-            user=user,
-            system_name=system_name,
-            role_name=role_name
+        subject = f'Access Granted to {system_name}'
+        message = (
+            f"Hello {user.first_name},\n\n"
+            f"You have been granted access to the {system_name} system with the role of {role_name}.\n\n"
+            "You can now access this system from your dashboard."
         )
-        return success
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False
+        )
+        return True
     except Exception as e:
         # Log the error in production
         print(f"Failed to send system addition email to {user.email}: {str(e)}")

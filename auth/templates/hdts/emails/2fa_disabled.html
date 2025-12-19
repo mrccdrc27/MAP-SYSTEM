@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+        .footer { background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px; }
+        .warning { background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 3px; margin: 15px 0; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Two-Factor Authentication Disabled</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ full_name }},</p>
+            <p>Two-Factor Authentication (2FA) has been disabled on your HDTS account.</p>
+            <div class="warning">
+                <strong>Security Notice:</strong> Disabling 2FA reduces your account security. We recommend re-enabling it to protect your data.
+            </div>
+            <p>You will no longer need to provide an OTP code when logging in.</p>
+            <p>If you did not disable this feature, please contact our support team immediately.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2024 HDTS. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

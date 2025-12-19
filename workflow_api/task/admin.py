@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, TaskItem, TaskItemHistory
+from .models import Task, TaskItem, TaskItemHistory, FailedNotification
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
@@ -83,3 +83,76 @@ class TaskItemHistoryAdmin(admin.ModelAdmin):
     def get_task_id(self, obj):
         return obj.task_item.task.task_id if obj.task_item and obj.task_item.task else None
     get_task_id.short_description = 'Task ID'
+
+@admin.register(FailedNotification)
+class FailedNotificationAdmin(admin.ModelAdmin):
+    list_display = ['failed_notification_id', 'user_id', 'task_id', 'role_name', 'status', 'retry_count', 'created_at']
+    list_filter = ['status', 'role_name', 'created_at']
+    search_fields = ['user_id', 'task_id', 'task_title', 'role_name']
+    readonly_fields = ['failed_notification_id', 'created_at', 'last_retry_at', 'succeeded_at']
+    
+    fieldsets = (
+        ('Notification Details', {
+            'fields': ('failed_notification_id', 'user_id', 'task_id', 'task_title', 'role_name')
+        }),
+        ('Status & Retry Info', {
+            'fields': ('status', 'retry_count', 'max_retries', 'error_message')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'last_retry_at', 'succeeded_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['retry_selected_notifications', 'mark_as_failed', 'mark_as_pending']
+    
+    def retry_selected_notifications(self, request, queryset):
+        """Admin action to retry selected notifications"""
+        from task.tasks import send_assignment_notification as notify_task
+        from django.utils import timezone
+        
+        success_count = 0
+        failed_count = 0
+        
+        for notification in queryset.filter(status__in=['pending', 'failed']):
+            try:
+                notification.status = 'retrying'
+                notification.retry_count += 1
+                notification.last_retry_at = timezone.now()
+                notification.save()
+                
+                notify_task.delay(
+                    user_id=notification.user_id,
+                    task_id=notification.task_id,
+                    task_title=notification.task_title,
+                    role_name=notification.role_name
+                )
+                
+                notification.status = 'success'
+                notification.succeeded_at = timezone.now()
+                notification.save()
+                success_count += 1
+                
+            except Exception as e:
+                notification.error_message = str(e)
+                if notification.retry_count >= notification.max_retries:
+                    notification.status = 'failed'
+                else:
+                    notification.status = 'pending'
+                notification.save()
+                failed_count += 1
+        
+        self.message_user(request, f"Retried {success_count + failed_count} notifications: {success_count} succeeded, {failed_count} failed")
+    retry_selected_notifications.short_description = "Retry selected notifications"
+    
+    def mark_as_failed(self, request, queryset):
+        """Mark selected notifications as failed"""
+        updated = queryset.update(status='failed')
+        self.message_user(request, f"{updated} notifications marked as failed")
+    mark_as_failed.short_description = "Mark as failed"
+    
+    def mark_as_pending(self, request, queryset):
+        """Mark selected notifications as pending for retry"""
+        updated = queryset.update(status='pending')
+        self.message_user(request, f"{updated} notifications marked as pending")
+    mark_as_pending.short_description = "Mark as pending"

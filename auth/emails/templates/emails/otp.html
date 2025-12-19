@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Verification Code</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .otp-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .otp-code {
+            font-size: 42px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .info-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Your Verification Code</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello {{ user_name }},</p>
+            
+            <p>You requested a one-time password (OTP) to verify your identity. Please use the code below to complete your login:</p>
+            
+            <div class="otp-box">
+                <p style="margin: 0; font-size: 14px;">Your OTP Code:</p>
+                <div class="otp-code">{{ otp_code }}</div>
+                <p style="margin: 0; font-size: 12px;">Valid for {{ expiry_time }}</p>
+            </div>
+            
+            <div class="info-box">
+                <p><strong>Security Tips:</strong></p>
+                <ul style="margin: 10px 0;">
+                    <li>This code expires in {{ expiry_time }}</li>
+                    <li>Never share this code with anyone</li>
+                    <li>If you didn't request this code, please secure your account immediately</li>
+                </ul>
+            </div>
+            
+            <p>If you didn't request this code, please contact your system administrator immediately.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent on {{ timestamp }}</p>
+            <p class="warning">Never share your OTP code with anyone</p>
+            <p>&copy; 2025 Ticket Tracking System. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

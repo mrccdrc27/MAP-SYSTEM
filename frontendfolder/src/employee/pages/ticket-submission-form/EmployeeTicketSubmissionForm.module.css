@@ -1,0 +1,497 @@
+/* Registration Page Layout */
+/* formContainer intentionally removed — use shared `FormCard.formContainer` */
+
+/* ✅ Form Fields */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.fieldset {
+    border: none;
+    padding: 0;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+.fieldsetLegend {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+  }
+
+.required {
+  color: var(--error-color);
+  margin-left: 4px;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  border-radius: 25px;
+  padding: 13px 16px;
+  border: 1px solid #d3d3d3;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+}
+
+/* Wrapper for inputs/textareas that show a right-side character counter */
+.inputWithCounter {
+  position: relative;
+}
+
+.inputWithCounter input,
+.inputWithCounter textarea {
+  /* add extra right padding so text doesn't underlap the counter */
+  padding-right: 56px;
+}
+
+.charCounter {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6b7280;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 6px;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+/* Select/Dropdown Styling - Matching input field dimensions */
+select {
+  width: 100% !important;
+  height: 40px !important;
+  padding: 8px 40px 8px 16px !important; /* top right bottom left */
+  border-radius: 25px !important;
+  border: 1px solid #E0E0E0 !important;
+  background-color: #F8F8F8 !important;
+  color: #0C0C0C !important;
+  font-size: 14px !important;
+  font-family: 'Poppins', sans-serif !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230C0C0C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+  background-size: 16px !important;
+  line-height: 24px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Option elements */
+select option {
+  padding: 8px 16px !important;
+  background-color: #ffffff !important;
+  color: #0C0C0C !important;
+}
+
+/* Hover state for select - Gray 300 */
+select:hover:not(:disabled) {
+  background-color: #E0E0E0 !important; /* Gray 300 */
+  border-color: #D1D5DB !important;
+}
+
+/* Textarea */
+textarea {
+  width: 100%;
+  height: 13vh;
+  min-height: 120px;
+  padding: 13px 16px;
+  border-radius: 25px;
+  border: 1px solid #E0E0E0;
+  background-color: #F8F8F8;
+  color: #0C0C0C;
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Focus states - Primary blue with shadow dropdown */
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2563EB;
+  background-color: #ffffff;
+}
+
+/* Open/Active state for select with shadow dropdown */
+select:active,
+select:focus {
+  outline: none;
+  border-color: #2563EB;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Error Styling */
+.inputError {
+  border-color: #DC2626 !important;
+  background-color: #FEF2F2 !important;
+}
+
+/* ✅ Error Message */
+.errorMessage {
+  font-size: 12px;
+  color: #DC2626;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ✅ Submit Button Override */
+/* Action container and sizing moved to shared `formActions.module.css` */
+
+/* ✅ Upload File Styles */
+.fileUploadWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.uploadFileBtn {
+  width: fit-content;
+}
+
+.uploadFileBtn:hover {
+  background-color: var(--primary-color-hover);
+  color: white !important;
+}
+
+/* ✅ File Preview List */
+.filePreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filePreview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #d3d3d3;
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem); /* 12–14px, matching index.css tiny-text/label */
+  word-break: break-all;
+  min-height: 32px;
+}
+
+.fileName {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: default;
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem); /* 12–14px, matching button and labels */
+}
+
+/* ✅ Remove File Button */
+
+.removeFileBtn {
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.removeFileBtn svg {
+  width: 14px;
+  height: 14px;
+  color: white !important;
+  fill: white !important;
+  stroke: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+  .removeFileBtn:hover {
+    background-color: #B91C1C;
+}
+
+/* Budget Items Section */
+.budgetItemsSection {
+  margin: 24px 0;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.budgetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.budgetHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.addItemBtn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addItemBtn:hover {
+  background: #2563eb;
+}
+
+.budgetItem {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.budgetItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.budgetItemHeader span {
+  font-weight: 600;
+  color: #374151;
+}
+
+.removeBtn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.removeBtn:hover {
+  background: #dc2626;
+}
+
+.totalBudget {
+  padding: 16px;
+  background: #e0f2fe;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 16px;
+  color: #0c4a6e;
+  text-align: right;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.scheduleSection {
+  margin: 24px 0;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.scheduleSection h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.fileList {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+}
+
+.fileItem button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.fileItem button:hover {
+  background: #dc2626;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cancelBtn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelBtn:hover {
+  background: #4b5563;
+}
+
+.cancelBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.container {
+  padding: 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 24px;
+}
+
+.form {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.formGroup label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.formGroup input[readonly] {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 16px 0 12px 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.categoryDetailsSection {
+  margin-top: 0;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+

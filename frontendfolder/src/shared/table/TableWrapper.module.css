@@ -1,0 +1,219 @@
+/* === Table Wrapper === */
+/* PageLayout already provides all necessary padding: 36px 38px 38px 38px */
+.table-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+
+/* === Card Container === */
+.table-card {
+  width: 100%;
+  max-width: 1200px;
+  height: 700px; /* Fixed card height */
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #cccccc;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.table-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* === Header === */
+.table-header {
+  padding: 15px 30px;
+  flex-shrink: 0;
+}
+
+.table-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.table-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+/* === Controls === */
+.controls-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+/* === Search Field === */
+.search-container {
+  flex: 1 1 200px;
+  max-width: 250px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  color: var(--text-color);
+  font-family: inherit;
+  transition: box-shadow 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007acc;
+  background-color: #ffffff;
+}
+
+/* === Filter Dropdown === */
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-select {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background-color: var(--white);
+  color: var(--text-color);
+  font-family: inherit;
+  transition: box-shadow 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.filter-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+  border-color: transparent;
+}
+
+/* === Filter & Sort Buttons === */
+.filter-sort-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* === Action Buttons === */
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* === Button Styles === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-color);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.btn-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--white);
+  text-transform: capitalize;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--secondary-text-color);
+  border: 1px solid #d3d3d3;
+  text-transform: capitalize;
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary-color-hover);
+  color: var(--white);
+  border-color: var(--primary-color-hover);
+  transform: translateY(-2px);
+}
+
+/* === Table Content (Scrollable) === */
+.table-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0; /* remove spacing inside the scrollable area */
+}
+
+.table-content > * {
+  margin: 0;
+  padding: 0;
+}
+
+/* === Pagination Wrapper === */
+.table-card > div:last-child {
+  padding: 0 20px;
+}
+
+/* === Responsive Adjustments === */
+@media (max-width: 768px) {
+  .table-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls-right {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .table-title,
+  .search-container,
+  .filter-container,
+  .filter-sort-buttons,
+  .table-actions {
+    width: 100%;
+  }
+
+  .table-actions,
+  .filter-sort-buttons {
+    justify-content: flex-start;
+  }
+}

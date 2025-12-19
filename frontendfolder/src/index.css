@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* === Core Colors === */
+  --primary-color: #007BFF;            /* Primary Blue */
+  --primary-color-hover: #0056B3;      /* Deeper Blue */
+  --primary-color-alt: #006FE6;        /* Alt Primary (secondary usage) */
+  --primary-color-alt-hover: #338CEB;  /* Alt Hover */
+
+  --bg-color: #F8F8F8;                 /* Light Background */
+  --text-color: #0C0C0C;               /* Base Text Color */
+  --text-light: #FCFCFC;               /* Light Text Base */
+
+  --neutral-gray: #414651;             /* Neutral Gray */
+  --gray-300: #E0E0E0;                 /* Gray 300 */
+  --white: #FFFFFF;                    /* White Background */
+
+  /* === Status Colors === */
+  --success-color: #039855;            /* Success Green */
+  --success-hover: #35AD77;            /* Success Green Tint */
+  --error-color: #D92D20;              /* Error Red */
+  --error-hover: #E1574D;              /* Error Red Tint */
+  --warning-color: #FDB022;            /* Warning Yellow */
+  --warning-hover: #FDC04E;            /* Warning Yellow Tint */
+  --info-color: #175CD3;               /* Info Blue */
+
+  /* === Ticket Status Colors === */
+  /* Ticket status colors (text color + subtle background) */
+  --new-text: #1E90FF; /* New Tickets — Blue */
+  --new-bg: rgba(30, 144, 255, 0.12);
+
+  --submitted-text: #1E90FF; /* treat submitted as New */
+  --submitted-bg: rgba(30, 144, 255, 0.12);
+
+  --pending-text: #FBBF24; /* Pending Tickets — Amber */
+  --pending-bg: rgba(251, 191, 36, 0.12);
+
+  --open-text: #14B8A6; /* Open Tickets — Teal */
+  --open-bg: rgba(20, 184, 166, 0.12);
+
+  --inprogress-text: #FB923C; /* In Progress — Orange */
+  --inprogress-bg: rgba(251, 146, 60, 0.12);
+
+  --onhold-text: #A855F7; /* On Hold — Purple */
+  --onhold-bg: rgba(168, 85, 247, 0.12);
+
+  --withdrawn-text: #9CA3AF; /* Withdrawn — Gray */
+  --withdrawn-bg: rgba(156, 163, 175, 0.12);
+
+  --resolved-text: #22C55E; /* Resolved — Green */
+  --resolved-bg: rgba(34, 197, 94, 0.12);
+
+  --closed-text: #2563EB; /* Closed — Dark Blue */
+  --closed-bg: rgba(37, 99, 235, 0.12);
+
+  --rejected-text: #EF4444; /* Rejected — Red */
+  --rejected-bg: rgba(239, 68, 68, 0.12);
+
+  /* Pulse colors (stronger, semi-opaque) used for animated glows */
+  --new-pulse: rgba(30, 144, 255, 0.35);
+  --submitted-pulse: rgba(30, 144, 255, 0.35);
+  --pending-pulse: rgba(251, 191, 36, 0.35);
+  --open-pulse: rgba(20, 184, 166, 0.35);
+  --inprogress-pulse: rgba(251, 146, 60, 0.35);
+  --onhold-pulse: rgba(168, 85, 247, 0.35);
+  --withdrawn-pulse: rgba(156, 163, 175, 0.35);
+  --resolved-pulse: rgba(34, 197, 94, 0.35);
+  --closed-pulse: rgba(37, 99, 235, 0.35);
+  --rejected-pulse: rgba(239, 68, 68, 0.35);
+
+  /* === Ticket Priority Levels === */
+  --priority-critical-text: #DC2626;
+  --priority-critical-bg: rgba(220, 38, 38, 0.25);
+
+  --priority-high-text: #F97316;
+  --priority-high-bg: rgba(249, 115, 22, 0.25);
+
+  --priority-medium-text: #64748B;
+  --priority-medium-bg: rgba(234, 179, 8, 0.25);
+
+  --priority-low-text: #3B82F6;
+  --priority-low-bg: rgba(59, 130, 246, 0.25);
+
+  /* Navbar */
+  --navbar-height: 60px; /* centralized navbar height */
+
+  /* === Typography System Variables === */
+  /* Font family */
+  --font-family-base: 'Poppins', sans-serif;
+
+  /* Font weights */
+  --font-light: 300;
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Typography color tokens */
+  --text-primary: #1F2937;   /* gray-800 */
+  --text-secondary: #374151; /* gray-700 */
+  --text-muted: #6B7280;     /* gray-500 */
+  --btn-text: #FFFFFF;
+  --toast-success: #22C55E;
+  --toast-error: #EF4444;
+}
+
+/* ========== COMPREHENSIVE TYPOGRAPHY SYSTEM ========== */
+
+/* H1 – compact line height (110%–120%) */
+h1 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-bold);
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem);      /* ~28–36px */
+  line-height: 1.2;                         /* ~110%–120% */
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* H2 – readable line height (130%–150%) */
+h2 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-semibold);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);  /* ~24–32px */
+  line-height: 1.4;                         /* ~130%–150% */
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* H3 – readable line height (130%–150%) */
+h3 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-medium);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);    /* ~20–28px */
+  line-height: 1.4;                         /* ~130%–150% */
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* H4 – readable line height (130%–150%) */
+h4 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-light);
+  font-size: clamp(0.8125rem, 1.6vw, 0.9375rem);  /* ~13–15px */
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Body – generous line height (150%–200%) */
+body, p {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-regular);
+  font-size: clamp(0.9375rem, 1.6vw, 1rem);    /* ~15–16px */
+  line-height: 1.7;                         /* ~150%–200% */
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Small Text */
+.small-text {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-light);
+  font-size: clamp(0.8125rem, 1.6vw, 0.9375rem);  /* ~13–15px */
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Tiny Text */
+.tiny-text {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-light);
+  font-size: clamp(0.6875rem, 1.2vw, 0.8125rem); /* ~11–13px */
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Button Text */
+.button-text {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-medium);
+  font-size: clamp(0.8125rem, 1.6vw, 0.9375rem);    /* ~13–15px */
+  line-height: 1.5;
+  color: var(--btn-text);
+  text-transform: uppercase;
+}
+
+/* Input Field Text */
+.input-text {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-regular);
+  font-size: clamp(0.6875rem, 0.9vw, 0.75rem); /* ~11px – 12px */
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Toast Message */
+.toast-text {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-medium);
+  font-size: clamp(0.875rem, 2vw, 1rem);    /* 14–16px */
+  line-height: 1.5;
+}
+
+/* Toast Status Colors */
+.toast-success {
+  color: var(--toast-success);
+}
+
+.toast-error {
+  color: var(--toast-error);
+}
+
+/* Legacy support for existing classes */
+label, small {
+  font-family: var(--font-family-base);
+  font-size: clamp(0.6875rem, 1.2vw, 0.8125rem);
+  font-weight: var(--font-light);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+input,
+select,
+textarea,
+button,
+label,
+option {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-color);
+}
+
+label span.required {
+  color: var(--error-color);
+  margin-left: 2px;
+}

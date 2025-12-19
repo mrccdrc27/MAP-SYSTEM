@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Locked</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .alert-icon {
+            font-size: 48px;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #e74c3c;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .alert-box {
+            background-color: #ffebee;
+            border-left: 4px solid #e74c3c;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+        .info-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-table td:first-child {
+            font-weight: bold;
+            width: 40%;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="alert-icon">⚠️</div>
+            <h1>Your Account Has Been Locked</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello {{ user_name }},</p>
+            
+            <div class="alert-box">
+                <p><strong>Security Alert:</strong> Your account has been temporarily locked due to multiple failed login attempts.</p>
+            </div>
+            
+            <p>For your security, we've locked your account to prevent unauthorized access.</p>
+            
+            <table class="info-table">
+                <tr>
+                    <td>Failed Attempts:</td>
+                    <td>{{ failed_attempts }}</td>
+                </tr>
+                <tr>
+                    <td>Lockout Duration:</td>
+                    <td>{{ lockout_duration }}</td>
+                </tr>
+                <tr>
+                    <td>IP Address:</td>
+                    <td>{{ ip_address }}</td>
+                </tr>
+                <tr>
+                    <td>Time:</td>
+                    <td>{{ timestamp }}</td>
+                </tr>
+            </table>
+            
+            <p><strong>What happens next?</strong></p>
+            <ul>
+                <li>Your account will be automatically unlocked after {{ lockout_duration }}</li>
+                <li>If this was you, please wait and try again later</li>
+                <li>If you don't recognize this activity, please contact your system administrator immediately</li>
+            </ul>
+            
+            <p>If you need immediate access to your account, please contact your system administrator.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated security notification</p>
+            <p>&copy; 2025 Ticket Tracking System. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

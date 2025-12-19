@@ -1,0 +1,296 @@
+/* ===== BUTTON COMPONENT - DESIGN SYSTEM ===== */
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  outline: none;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Default icon color - gray for buttons without specific background */
+.button svg {
+  color: #666666;
+  fill: #666666;
+  stroke: #666666;
+}
+
+.button:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ===== PRIMARY BUTTON (Default) - Red background, white text ===== */
+.primary {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 6px;
+  height: 40px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600; /* explicit: make primary buttons bold by default */
+  gap: 5px;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+.primary:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+/* Primary button icons */
+.primary svg {
+  width: 16px;
+  height: 16px;
+  color: white !important;
+  fill: white !important;
+  stroke: white !important;
+  flex-shrink: 0;
+}
+
+.primary:disabled svg {
+  color: #666666;
+  fill: #666666;
+  stroke: #666666;
+}
+
+/* ===== OUTLINE BUTTON - Minimal style for tertiary actions ===== */
+.outline {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  height: 40px;
+  padding: 12px 16px;
+  font-size: 14px;
+  gap: 5px;
+  font-weight: 600; /* explicit: match form action boldness */
+}
+
+.outline:hover:not(:disabled) {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.outline:disabled {
+  background-color: transparent;
+  color: #666666;
+  border-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.outline svg {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-color) !important; /* Icons match the outline color */
+  fill: var(--primary-color) !important;
+  stroke: var(--primary-color) !important;
+  flex-shrink: 0;
+}
+
+.outline:hover svg {
+  color: white !important; /* Icons turn white on hover when background becomes primary */
+  fill: white !important;
+  stroke: white !important;
+}
+
+.outline:disabled svg {
+  color: #666666 !important; /* Gray icons when disabled */
+  fill: #666666 !important;
+  stroke: #666666 !important;
+}
+
+/* ===== ACTION BUTTONS - Small circular buttons for tables ===== */
+.action {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0;
+  gap: 0;
+}
+
+.action:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+  transform: scale(1.05);
+}
+
+.action:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+.action svg {
+  width: 16px;
+  height: 16px;
+  color: white !important; /* White icons on primary background */
+  fill: white !important;
+  stroke: white !important;
+  flex-shrink: 0;
+}
+
+.action:disabled svg {
+  color: #666666 !important; /* Gray icons when disabled */
+  fill: #666666 !important;
+  stroke: #666666 !important;
+}
+
+/* ===== CHECK-IN/OUT BUTTONS - Secondary button style (larger and more prominent) ===== */
+.checkin,
+.secondary {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 8px;
+  height: 48px;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.checkin:hover:not(:disabled),
+.secondary:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.checkin:disabled,
+.secondary:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.checkin svg,
+.secondary svg {
+  width: 18px;
+  height: 18px;
+  color: white !important;
+  fill: white !important;
+  stroke: white !important;
+  flex-shrink: 0;
+}
+
+.checkin:disabled svg,
+.secondary:disabled svg {
+  color: #666666 !important;
+  fill: #666666 !important;
+}
+
+/* ===== SIZE VARIANTS ===== */
+.small {
+  height: 32px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  width: fit-content;
+  justify-content: center;
+}
+
+/* ===== NAV BUTTON - neutral bordered button used for modal/history nav */
+.nav {
+  background-color: var(--white);
+  color: var(--text-secondary);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  height: 40px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 6px;
+}
+
+.nav:hover:not(:disabled) {
+  background-color: var(--gray-300);
+  border-color: var(--neutral-gray);
+}
+
+.nav:disabled {
+  background-color: var(--gray-300);
+  color: var(--text-muted);
+  border-color: var(--gray-300);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.nav:disabled svg {
+  color: var(--text-muted) !important;
+  fill: var(--text-muted) !important;
+  stroke: var(--text-muted) !important;
+}
+
+.small svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Make secondary small buttons pill-shaped */
+.secondary.small {
+  border-radius: 16px !important;
+}
+
+.large {
+  height: 48px !important;
+  padding: 16px 24px !important;
+  font-size: 16px !important;
+}
+
+.large svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* ===== MOBILE RESPONSIVENESS ===== */
+@media (max-width: 576px) {
+  .button:not(.action) {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .checkin,
+  .secondary {
+    min-width: unset;
+    width: 100%;
+  }
+}
+
+/* ===== FORM ACTION SHARED SIZE ===== */
+.formAction {
+  height: 40px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  font-weight: 500;
+}
+
+/* ===== DISABLED STATE OVERRIDE ===== */
+.disabled {
+  pointer-events: none;
+}
+
+/* ===== ICON-ONLY BUTTONS ===== */
+.iconOnly {
+  padding: 8px !important;
+  gap: 0 !important;
+}
+
+.iconOnly svg {
+  margin: 0;
+}

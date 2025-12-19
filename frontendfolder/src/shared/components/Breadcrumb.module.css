@@ -1,0 +1,104 @@
+/* ===== BREADCRUMB COMPONENT ===== */
+
+.breadcrumbContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Space between breadcrumb and title */
+  margin: 0;
+  padding: 80px 38px 0 38px; /* Standard page padding: 80px top, 38px sides, 0 bottom - divider is explicit */
+  box-sizing: border-box;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumbNav {
+  margin: 0;
+}
+
+.breadcrumbList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.breadcrumbItem {
+  font-size: 0.875rem;        /* 14px - matches small-text from index.css */
+  font-weight: var(--font-regular);
+  color: var(--text-muted);   /* #6B7280 - muted gray */
+  font-family: var(--font-family-base);
+  line-height: 1.5;
+}
+
+.breadcrumbItem + .breadcrumbItem::before {
+  content: "/";
+  padding: 0 8px;
+  color: var(--text-muted);
+}
+
+.breadcrumbLink {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: var(--font-regular);
+  font-family: var(--font-family-base);
+}
+
+.breadcrumbLink:hover {
+  color: var(--primary-color);
+}
+
+/* Title Section */
+.titleSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* Ensure breadcrumb title H3 matches spec color and weight without touching global H3 */
+.breadcrumbContainer > .titleSection > h3 {
+  color: #111827;
+  font-weight: 500;
+  margin: 0;
+}
+
+.breadcrumbDivider {
+  border-bottom: 1px solid #D1D5DB;
+  margin-bottom: 24px; /* 24px bottom margin after divider before form */
+  width: 100%;
+}
+
+/* Actions Container (for buttons, etc.) */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .breadcrumbContainer {
+    padding: 60px 20px 20px 20px;
+  }
+
+  .pageTitle {
+    font-size: 1.5rem; /* 24px on mobile */
+  }
+
+  .titleSection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

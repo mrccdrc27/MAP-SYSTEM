@@ -1,0 +1,485 @@
+/* Main Container */
+.coordinatorTicketTrackerPage {
+  background-color: var(--bg-color);
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+}
+
+/* Two Column Grid */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Left Column */
+.leftColumn {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Ticket Header */
+.ticketHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ticketNumber {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Status Badge Colors */
+.statusPending {
+  color: #b38f00;
+  background-color: #fff9cc;
+}
+
+.statusInProgress {
+  color: #7c3aed;
+  background-color: #bcbcdf;
+}
+
+.statusOnHold {
+  color: #b35000;
+  background-color: #ffe5b4;
+}
+
+.statusResolved {
+  color: #059669;
+  background-color: #bbf7d0;
+}
+
+.statusClosed {
+  color: #16a34a;
+  background-color: #dcfce7;
+}
+
+.statusRejected {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+.statusWithdrawn {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.statusOpen {
+  color: #0284c7;
+  background-color: #a6ccdd;
+}
+
+.statusNew {
+  color: #2563eb;
+  background-color: #dbeafe;
+}
+
+/* Priority Badges */
+.priorityBadge {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.priorityLow {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.priorityMedium {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.priorityHigh {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.priorityCritical {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+.priorityNotSet {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Subject Section */
+.subjectSection {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+.subjectMeta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+  font-size: 0.9rem;
+  background-color: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaLabel {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metaValue {
+  color: #111827;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Description Section */
+.descriptionSection {
+  margin-bottom: 24px;
+}
+
+.descriptionLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.descriptionText {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.7;
+  margin: 0;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+/* Attachment Section */
+.attachmentSection {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.attachmentLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.attachmentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.attachmentCard {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.attachmentCard:hover {
+  border-color: #3b82f6;
+  background-color: #f0f9ff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.attachmentIcon {
+  font-size: 2.5rem;
+  filter: grayscale(0.2);
+}
+
+.attachmentInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachmentName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.attachmentDownload {
+  font-size: 0.875rem;
+  color: #ffffff;
+  background: #3b82f6;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.attachmentDownload:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Right Column */
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Action Buttons Container */
+.actionButtonsContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+/* Open Button (Green - Primary Action) */
+.openButton {
+  flex: 1;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #dcfce7;
+  color: #16a34a;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.1);
+}
+
+.openButton:hover {
+  background-color: #bbf7d0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+}
+
+/* Reject Button (Red - Secondary Action) */
+.rejectButton {
+  flex: 1;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fee2e2;
+  color: #dc2626;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
+}
+
+.rejectButton:hover {
+  background-color: #fecaca;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+/* Tabs Container */
+.tabsContainer {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  flex: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.tabs {
+  display: flex;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 18px 20px;
+  background: transparent;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.tab:hover {
+  background-color: #f9fafb;
+  color: #6b7280;
+}
+
+.activeTab {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 800;
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  gap: 16px;
+  /* remove top padding so content is flush under tabs */
+  padding: 0 24px 24px 24px;
+}
+
+
+.logEntry {
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  border-left: 4px solid #3b82f6;
+  transition: all 0.2s ease;
+}
+
+.logEntry:hover {
+  background-color: #f3f4f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.logUser {
+  font-size: 0.8125rem; /* slightly smaller for compact logs */
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.logAction {
+  font-size: 0.8125rem;
+  color: #374151;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.logTimestamp {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Polished sentence text for log entries */
+.logText {
+  font-size: 0.8125rem;
+  color: #374151;
+  font-weight: 400;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.logText strong {
+  font-weight: var(--font-semibold);
+}
+
+/* Not Found */
+.notFound {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin: 2rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .rightColumn {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .leftColumn {
+    padding: 24px;
+  }
+
+  .ticketHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .subjectMeta {
+    grid-template-columns: 1fr;
+  }
+
+  .tabContent {
+    height: 400px;
+  }
+}

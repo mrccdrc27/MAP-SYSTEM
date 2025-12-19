@@ -1,0 +1,560 @@
+/* --- Layout --- */
+.main-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  background-color: #ffffff;
+  transition: height 200ms ease, box-shadow 200ms ease;
+}
+
+.main-nav-bar.scrolled {
+  height: 52px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.main-nav-bar.scrolled .logo-image {
+  width: 30px;
+  height: 30px;
+}
+
+.main-nav-bar.scrolled .brand-name {
+  font-size: 1rem;
+}
+
+.main-nav-bar.scrolled .avatar-placeholder,
+.main-nav-bar.scrolled .avatar-image {
+  width: 28px;
+  height: 28px;
+}
+
+/* Hide notification and profile when navbar is in the scrolled/minimized state */
+.main-nav-bar.scrolled .notification-icon-container,
+.main-nav-bar.scrolled .profile-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.main-nav-bar > section:last-child {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-right: 30px;
+  position: relative;
+}
+
+/* Hide the hamburger by default (desktop) */
+.hamburgerBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+/* --- Logo --- */
+.logo-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 30px;
+}
+
+.logo-image {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+  transition: width 180ms ease, height 180ms ease;
+}
+
+/* --- Branding --- */
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  transition: font-size 180ms ease;
+}
+
+.role-badge {
+  font-size: 0.75rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* --- Nav Links --- */
+.nav-list {
+  display: flex;
+  list-style: none;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--text-color);
+  font-size: 1rem;
+  padding: 10px;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover,
+.dropdown-trigger:hover {
+  color: var(--primary-color);
+}
+
+.active-link,
+.dropdown-container.open .dropdown-trigger,
+.dropdown-trigger.active-link {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* --- Dropdown --- */
+.dropdown-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 10px;
+  color: var(--text-color);
+  transition: color 0.2s ease;
+}
+
+.dropdown-text {
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.arrow-icon {
+  transition: transform 0.2s ease;
+  transform-origin: center;
+}
+
+.arrow-flipped {
+  transform: rotate(180deg);
+}
+
+.custom-dropdown {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%) scaleY(0.95);
+  transform-origin: top;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000;
+  padding: 4px 0;
+  background-color: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.dropdown-container.open .custom-dropdown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scaleY(1);
+}
+
+.dropdown-menu {
+  padding: 0;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 14px;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  white-space: nowrap;
+  cursor: pointer;
+  margin-bottom: 4px;
+  opacity: 0;
+  transform: translateY(-5px);
+  animation: dropdownFade 0.2s ease forwards;
+  transition: background-color 0.2s, color 0.2s, font-weight 0.2s;
+}
+
+.dropdown-menu button:last-child {
+  margin-bottom: 0;
+}
+
+.dropdown-menu button:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+@keyframes dropdownFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Notification --- */
+.notification-icon-container {
+  position: relative;
+}
+
+.notification-icon-wrapper {
+  cursor: pointer;
+}
+
+.notif-icon {
+  height: 35px;
+  width: 35px;
+  padding: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease;
+}
+
+.notif-icon:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  background-color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+/* --- Profile --- */
+.profile-container {
+  position: relative;
+}
+
+.profile-avatar {
+  cursor: pointer;
+}
+
+.avatar-placeholder,
+.avatar-image {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: width 180ms ease, height 180ms ease;
+}
+
+.profile-avatar-large .avatar-image,
+.profile-avatar-large .avatar-placeholder {
+  width: 40px;
+  height: 40px;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  width: 250px;
+  z-index: 1000;
+  overflow: hidden;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Mobile profile section (hidden on desktop, shown inside mobile menu) */
+.mobile-profile-section {
+  display: none;
+}
+
+.mobile-profile-section .profile-avatar-large .avatar-image {
+  width: 44px;
+  height: 44px;
+}
+
+.mobile-profile-info h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mobile-profile-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mobile-settings-btn,
+.mobile-logout-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.mobile-settings-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.mobile-logout-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.mobile-only-action {
+  display: none;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.profile-info h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.profile-menu {
+  padding: 10px;
+}
+
+.profile-menu button {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-color);
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background-color 0.2s, color 0.2s, font-weight 0.2s;
+}
+
+.profile-menu button:last-child {
+  margin-bottom: 0;
+}
+
+.profile-menu button:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.logout-btn {
+  color: #dc3545 !important;
+}
+
+.logout-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+  font-weight: 500;
+}
+
+/* --- Responsive --- */
+
+/* Tablet (≤1023px) */
+@media (max-width: 1023px) {
+  .nav-list {
+    gap: 16px;
+  }
+
+  .nav-link,
+  .dropdown-trigger {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .brand-name {
+    font-size: 1.1rem;
+  }
+
+  .logo-placeholder {
+    padding-left: 20px;
+  }
+
+  .main-nav-bar > section:last-child {
+    padding-right: 20px;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  .logo-placeholder {
+    padding-left: 15px;
+  }
+
+  .main-nav-bar > section:last-child {
+    padding-right: 15px;
+    gap: 12px;
+  }
+
+  /* show the right-side hamburger on mobile */
+  .hamburgerBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    padding: 6px;
+    margin-left: 8px;
+    cursor: pointer;
+    color: var(--text-color);
+  }
+
+  /* Make nav-list into a mobile sidebar/menu when open */
+  .nav-list {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 60px);
+    background: white;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    z-index: 1200;
+    overflow-y: auto;
+  }
+
+  .nav-list.open {
+    display: flex;
+  }
+
+  .logo-image {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-name {
+    font-size: 1rem;
+  }
+
+  .role-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .nav-list {
+    gap: 12px;
+  }
+
+  .nav-link,
+  .dropdown-trigger {
+    font-size: 0.85rem;
+    padding: 6px;
+  }
+
+  .dropdown-text {
+    margin-right: 4px;
+  }
+
+  /* Hide desktop profile and notifications on mobile */
+  .nav-right-section .notification-icon-container,
+  .nav-right-section .profile-container {
+    display: none;
+  }
+
+  /* Show mobile-profile-section inside mobile nav list */
+  .mobile-profile-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+  }
+
+  .mobile-profile-info {
+    flex: 1;
+  }
+
+  .mobile-profile-info .role-badge {
+    margin-top: 4px;
+  }
+
+  .mobile-only-action {
+    display: block;
+    padding: 12px 20px;
+  }
+}
+
+/* Very small screens (≤480px) */
+@media (max-width: 480px) {
+  .logo-placeholder {
+    padding-left: 10px;
+  }
+
+  .main-nav-bar > section:last-child {
+    padding-right: 10px;
+    gap: 8px;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  .logo-image {
+    width: 30px;
+    height: 30px;
+  }
+
+  .nav-list {
+    gap: 8px;
+  }
+
+  .nav-link,
+  .dropdown-trigger {
+    font-size: 0.8rem;
+    padding: 5px;
+  }
+}

@@ -1,0 +1,124 @@
+.selectFieldContainer {
+  margin-bottom: 16px;
+  width: 100%; /* Full width within container */
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: red;
+}
+
+.multiSelectHint {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.select {
+  width: 100%; /* Full width within container */
+  height: 40px; /* Similar dimensions to input fields */
+  padding: 13px 16px; /* Padding: H: 13px | W: 16px */
+  padding-right: 40px; /* Space for custom arrow */
+  border: 1px solid #E0E0E0; /* Border: Gray 300 #E0E0E0 */
+  border-radius: 25px; /* Border-radius: matches input fields */
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #F8F8F8; /* Background: Light #F8F8F8 */
+  color: #0C0C0C; /* Text: Base #0C0C0C */
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  appearance: none; /* Remove default arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+}
+
+/* Multi-select specific styling */
+.multiSelect {
+  height: auto; /* Auto height for multi-select */
+  min-height: 120px; /* Minimum height for visibility */
+  max-height: 200px; /* Maximum height with scroll */
+  overflow-y: auto; /* Scrollable for long lists */
+  padding: 8px; /* Adjusted padding for multi-select */
+  padding-right: 16px; /* Remove extra space since no arrow */
+  background-image: none; /* Remove arrow for multi-select */
+}
+
+/* Multi-select option styling */
+.multiSelect option {
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 2px 0;
+  cursor: pointer;
+}
+
+.multiSelect option:hover {
+  background-color: #E0E0E0;
+}
+
+.multiSelect option:checked {
+  background-color: #2563EB;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Hover state - Gray 300 */
+.select:hover:not(:disabled) {
+  background-color: #E0E0E0; /* Gray 300 */
+  border-color: #D1D5DB;
+}
+
+/* Focus/Open state - Primary blue with shadow dropdown */
+.select:focus {
+  border-color: #2563EB; /* Primary blue */
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Shadow dropdown */
+}
+
+/* Error state */
+.selectError {
+  border-color: #DC2626 !important;
+  background-color: #FEF2F2; /* Light red background for errors */
+}
+
+.selectError:focus {
+  border-color: #DC2626 !important;
+  background-color: #FEF2F2;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1), 0 2px 4px -1px rgba(220, 38, 38, 0.06);
+}
+
+/* Disabled state - gray border and muted text */
+.selectDisabled {
+  background-color: #f3f4f6; /* Gray background */
+  border-color: #d1d5db; /* Gray border */
+  cursor: not-allowed;
+  color: #9ca3af; /* Muted text */
+  opacity: 0.6;
+}
+
+.errorMessage {
+  color: #DC2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Dropdown menu styling for long lists */
+.select option {
+  padding: 10px;
+  background-color: #ffffff;
+  color: #0C0C0C;
+}
+
+/* Note: max-height and overflow for long lists is browser-dependent
+   Most modern browsers automatically handle this with scrolling */

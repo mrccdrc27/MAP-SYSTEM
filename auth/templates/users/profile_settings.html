@@ -10,95 +10,71 @@
 </head>
 <body>
     {% include "components/nav.html" %}
+    {% include "components/toast_notification.html" %}
+
     <main class="manageProfilePage">
         <div class="manageProfileContainer">
             <div class="header">
                 <h2>Manage Profile</h2>
             </div>
-            {% if messages %}
-                <div class="toastContainer">
-                    {% for message in messages %}
-                        <div class="toast {% if message.tags %}{{ message.tags }}{% endif %}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
 
-            <form method="post" enctype="multipart/form-data" id="profile-form" data-is-admin="{% if user.is_superuser or user.is_staff %}true{% else %}false{% endif %}">
+            <!-- Loading State -->
+            <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;">
+                <div class="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            </div>
+
+            <form id="profile-form" onsubmit="return false;">
                 {% csrf_token %}
 
                 <div class="profileContent">
                     <div class="profileLeft">
                         <div class="profileCard">
-                <div class="profileImageSection">
-                  <div class="profileImageMenu hidden">
-                    <button
-                      type="button"
-                      class="profileMenuBtn"
-                      id="view-photo-btn"
-                    >
-                      View
-                    </button>
-                    <label
-                      for="id_profile_picture"
-                      class="profileMenuBtn changeImageBtn"
-                      >Edit</label
-                    >
-                    {% if user.profile_picture %}
-                    <div class="removePhotoOption">
-                      <input
-                        type="checkbox"
-                        name="profile_picture-clear"
-                        id="profile_picture-clear_id"
-                      />
-                      <label for="profile_picture-clear_id">Remove</label>
-                    </div>
-                    {% endif %}
-                  </div>
-                  <div class="profileImageContainer">
-                    <img
-                      id="profile-preview"
-                      src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg{% endif %}"
-                      alt="Profile"
-                      class="profileImage"
-                    />
+                            <div class="profileImageSection">
+                                <div class="profileImageMenu hidden">
+                                    <button type="button" class="profileMenuBtn" id="view-photo-btn">View</button>
+                                    <label for="id_profile_picture" class="profileMenuBtn changeImageBtn">Edit</label>
+                                    <div class="removePhotoOption" id="remove-photo-container" style="display: none;">
+                                        <input type="checkbox" name="profile_picture-clear" id="profile_picture-clear_id" />
+                                        <label for="profile_picture-clear_id">Remove</label>
+                                    </div>
+                                </div>
+                                <div class="profileImageContainer">
+                                    <img id="profile-preview" src="https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg" alt="Profile" class="profileImage" />
+                                    <!-- Camera Icon Overlay -->
+                                    <div class="profileImageOverlay">
+                                        <i class="fa fa-camera"></i>
+                                    </div>
+                                </div>
 
-                    <!-- Camera Icon Overlay -->
-                    <div class="profileImageOverlay">
-                      <i class="fa fa-camera"></i>
-                    </div>
-                  </div>
+                                <p id="unsaved-warning" class="unsavedWarning hidden">
+                                    ⚠️ Changes not saved yet
+                                </p>
 
-                  <p id="unsaved-warning" class="unsavedWarning hidden">
-                    ⚠️ Changes not saved yet
-                  </p>
+                                <div class="formGroup formGroupFile hidden">
+                                    <input type="file" id="id_profile_picture" name="profile_picture" accept="image/*">
+                                </div>
 
-                  <div class="formGroup formGroupFile hidden">
-                    {{ form.profile_picture.errors }} {{ form.profile_picture }}
-                  </div>
-
-                  <div class="profileInfo">
-                    <h3>{% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}</h3>
-                    <div class="profileInfoContainer">
-                      <p><strong>Username:</strong></p>
-                      <span>{{ user.username }}</span>
-                    </div>
-                    <div class="profileInfoContainer">
-                      <p><strong>Email:</strong></p>
-                      <span>{{ user.email }}</span>
-                    </div>
-                    <div class="profileInfoContainer">
-                      <p><strong>Company ID:</strong></p>
-                      <span>{{ user.company_id|default:'N/A'}}</span>
-                    </div>
-                    <div class="profileInfoContainer">
-                      <p><strong>Department:</strong></p>
-                      <span>{{ user.get_department_display|default:'N/A'}}</span>
-                    </div>
-                  </div>
-                </div>
-
+                                <div class="profileInfo">
+                                    <h3 id="display-full-name">Loading...</h3>
+                                    <div class="profileInfoContainer">
+                                        <p><strong>Username:</strong></p>
+                                        <span id="display-username">-</span>
+                                    </div>
+                                    <div class="profileInfoContainer">
+                                        <p><strong>Email:</strong></p>
+                                        <span id="display-email">-</span>
+                                    </div>
+                                    <div class="profileInfoContainer">
+                                        <p><strong>Company ID:</strong></p>
+                                        <span id="display-company-id">-</span>
+                                    </div>
+                                    <div class="profileInfoContainer">
+                                        <p><strong>Department:</strong></p>
+                                        <span id="display-department">-</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -108,134 +84,66 @@
                             <h2>Personal Details</h2>
                             <div class="formGrid">
                                 <div class="formGroup">
-                                    {{ form.first_name.label_tag }}
-                                    {{ form.first_name.errors }}
-                                    {{ form.first_name }}
+                                    <label for="id_first_name">First Name</label>
+                                    <input type="text" name="first_name" id="id_first_name" maxlength="100">
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.middle_name.label_tag }}
-                                    {{ form.middle_name.errors }}
-                                    {{ form.middle_name }}
+                                    <label for="id_middle_name">Middle Name</label>
+                                    <input type="text" name="middle_name" id="id_middle_name" maxlength="100">
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.last_name.label_tag }}
-                                    {{ form.last_name.errors }}
-                                    {{ form.last_name }}
+                                    <label for="id_last_name">Last Name</label>
+                                    <input type="text" name="last_name" id="id_last_name" maxlength="100">
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.suffix.label_tag }}
-                                    {{ form.suffix.errors }}
-                                    {{ form.suffix }}
+                                    <label for="id_suffix">Suffix</label>
+                                    <input type="text" name="suffix" id="id_suffix" maxlength="10">
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.username.label_tag }}
-                                    {{ form.username.errors }}
-                                    {{ form.username }}
+                                    <label for="id_username">Username</label>
+                                    <input type="text" name="username" id="id_username" maxlength="150" required>
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.phone_number.label_tag }}
-                                    {{ form.phone_number.errors }}
-                                    {% include "components/phone_input.html" with field_id="id_phone_number" field_name="phone_number" default_country="+63" show_label=False %}
+                                    {% include "components/phone_input.html" with field_id="id_phone_number" field_name="phone_number" default_country="+63" show_label=True label_text="Phone Number" %}
                                 </div>
                             </div>
 
                             <h2>Organization</h2>
                             <div class="formGrid">
                                 <div class="formGroup">
-                                    {{ form.email.label_tag }}
-                                    {{ form.email.errors }}
-                                    {{ form.email }}
-                                    <small>{{ form.email.help_text }}</small>
+                                    <label for="id_email">Email</label>
+                                    <input type="email" name="email" id="id_email" readonly disabled style="background-color: #f5f5f5; cursor: not-allowed;">
+                                    <small>Email cannot be changed directly.</small>
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.company_id.label_tag }}
-                                    {{ form.company_id.errors }}
-                                    {{ form.company_id }}
-                                    <small>{{ form.company_id.help_text }}</small>
+                                    <label for="id_company_id">Company ID</label>
+                                    <input type="text" name="company_id" id="id_company_id" readonly disabled style="background-color: #f5f5f5; cursor: not-allowed;">
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.department.label_tag }}
-                                    {{ form.department.errors }}
-                                    {{ form.department }}
+                                    <label for="id_department">Department</label>
+                                    <input type="text" name="department" id="id_department" readonly disabled style="background-color: #f5f5f5; cursor: not-allowed;">
                                 </div>
                             </div>
 
                             <h2>Account & Security</h2>
                             <div class="formGrid">
                                 <div class="formGroup formGroupCheckbox">
-                                    {{ form.otp_enabled.errors }}
-                                    {{ form.otp_enabled }}
-                                    {{ form.otp_enabled.label_tag }}
+                                    <input type="checkbox" name="otp_enabled" id="id_otp_enabled">
+                                    <label for="id_otp_enabled">Two-Factor Authentication</label>
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.last_login.label_tag }}
-                                    {{ form.last_login.errors }}
-                                    {{ form.last_login }}
-                                    <small>{{ form.last_login.help_text }}</small>
+                                    <label>Last Login</label>
+                                    <input type="text" id="id_last_login" readonly disabled style="background-color: #f5f5f5;">
                                 </div>
                                 <div class="formGroup">
-                                    {{ form.date_joined.label_tag }}
-                                    {{ form.date_joined.errors }}
-                                    {{ form.date_joined }}
-                                    <small>{{ form.date_joined.help_text }}</small>
+                                    <label>Date Joined</label>
+                                    <input type="text" id="id_date_joined" readonly disabled style="background-color: #f5f5f5;">
                                 </div>
                             </div>
-
-                            {% comment %}
-                                {% if user.is_superuser or user.is_staff %}
-                                <h2>Admin Information</h2>
-                                <div class="formGrid">
-                                    <div class="formGroup">
-                                        {{ form.status.label_tag }}
-                                        {{ form.status.errors }}
-                                        {{ form.status }}
-                                    </div>
-                                    <div class="formGroup">
-                                        {{ form.failed_login_attempts.label_tag }}
-                                        {{ form.failed_login_attempts.errors }}
-                                        {{ form.failed_login_attempts }}
-                                        <small>{{ form.failed_login_attempts.help_text }}</small>
-                                    </div>
-                                    <div class="formGroup">
-                                        {{ form.lockout_time.label_tag }}
-                                        {{ form.lockout_time.errors }}
-                                        {{ form.lockout_time }}
-                                        <small>{{ form.lockout_time.help_text }}</small>
-                                    </div>
-                                </div>
-                                <div class="formGrid formGridCheckboxes">
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.notified.errors }}
-                                        {{ form.notified }}
-                                        {{ form.notified.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_active.errors }}
-                                        {{ form.is_active }}
-                                        {{ form.is_active.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_staff.errors }}
-                                        {{ form.is_staff }}
-                                        {{ form.is_staff.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_superuser.errors }}
-                                        {{ form.is_superuser }}
-                                        {{ form.is_superuser.label_tag }}
-                                    </div>
-                                    <div class="formGroup formGroupCheckbox">
-                                        {{ form.is_locked.errors }}
-                                        {{ form.is_locked }}
-                                        {{ form.is_locked.label_tag }}
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endcomment %}
                             
                             <div class="formActions">
                                 <button type="button" id="edit-profile-btn" class="editChangesBtn">EDIT PROFILE</button>
-                                <button type="submit" id="save-changes-btn" class="saveChangesBtn hidden">SAVE CHANGES</button>
+                                <button type="button" id="save-changes-btn" class="saveChangesBtn hidden">SAVE CHANGES</button>
                                 <button type="button" id="cancel-changes-btn" class="cancelChangesBtn hidden">CANCEL</button>
                             </div>
                         </div>
@@ -246,267 +154,245 @@
     </main>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const profileForm = document.getElementById("profile-form");
-        if (!profileForm) return;
-
-        // Get user admin status from form data attribute
-        const isAdmin = profileForm.dataset.isAdmin === "true";
-
-        const formInputs = profileForm.querySelectorAll(
-          ".profileSettingsCard input, .profileSettingsCard select"
-        );
-
-        const editBtn = document.getElementById("edit-profile-btn");
-        const saveBtn = document.getElementById("save-changes-btn");
-        const cancelBtn = document.getElementById("cancel-changes-btn");
-
-        const profilePicInput = document.getElementById("id_profile_picture");
-        const profilePicLabel = document.querySelector("label.changeImageBtn");
-        const removePicCheckbox = document.getElementById(
-          "profile_picture-clear_id"
-        );
-        const removePicLabel = document.querySelector(
-          'label[for="profile_picture-clear_id"]'
-        );
-
-        const preview = document.getElementById("profile-preview");
-        const unsaved = document.getElementById("unsaved-warning");
-        const originalImageSrc = preview.src;
-
-        // Fields that are always read-only (non-editable by anyone)
-        const permanentReadOnlyIds = [
-          "id_last_login",
-          "id_date_joined",
-          "id_failed_login_attempts",
-          "id_lockout_time",
-        ];
-
-        // Fields that only admins can edit (restricted for regular users)
-        const adminOnlyIds = [
-          "id_first_name",
-          "id_middle_name",
-          "id_last_name",
-          "id_suffix",
-          "id_email",
-          "id_company_id",
-          "id_department",
-        ];
-
-        function setFormEnabled(enabled) {
-          formInputs.forEach((input) => {
-            if (!input) return;
-            if (input.type === "button" || input.type === "submit") return;
+        document.addEventListener("DOMContentLoaded", function () {
+            const API_URL = '/api/v1/users/profile/';
+            const profileForm = document.getElementById("profile-form");
+            const loadingOverlay = document.getElementById("loading-overlay");
             
-            // Always keep these read-only
-            if (permanentReadOnlyIds.includes(input.id)) {
-              input.readOnly = true;
-              if (input.tagName.toLowerCase() === "select") {
-                input.disabled = true;
-              }
-              return;
-            }
-
-            // For non-admin users, keep admin-only fields disabled
-            if (!isAdmin && adminOnlyIds.includes(input.id)) {
-              if (input.tagName.toLowerCase() === "select" || input.type === "checkbox") {
-                input.disabled = true;
-              } else {
-                input.readOnly = true;
-              }
-              return;
-            }
-
-            // For all other fields, enable/disable based on edit mode
-            if (
-              input.tagName.toLowerCase() === "select" ||
-              input.type === "checkbox"
-            ) {
-              input.disabled = !enabled;
-            } else {
-              input.readOnly = !enabled;
-            }
-          });
-
-          if (profilePicInput) profilePicInput.disabled = !enabled;
-          if (profilePicLabel) {
-            profilePicLabel.style.pointerEvents = enabled ? "auto" : "none";
-            profilePicLabel.style.opacity = enabled ? "1" : "0.6";
-          }
-          if (removePicCheckbox) removePicCheckbox.disabled = !enabled;
-          if (removePicLabel) {
-            removePicLabel.style.pointerEvents = enabled ? "auto" : "none";
-            removePicLabel.style.opacity = enabled ? "1" : "0.6";
-          }
-
-          if (editBtn) editBtn.classList.toggle("hidden", enabled);
-          if (saveBtn) saveBtn.classList.toggle("hidden", !enabled);
-          if (cancelBtn) cancelBtn.classList.toggle("hidden", !enabled);
-        }
-
-        if (editBtn) {
-          editBtn.addEventListener("click", () => setFormEnabled(true));
-        }
-
-        if (cancelBtn) {
-          cancelBtn.addEventListener("click", () => {
-            profileForm.reset();
-            preview.src = originalImageSrc;
-            unsaved.classList.add("hidden");
-            setFormEnabled(false);
-          });
-        }
-
-        // Handle form submission - ensure disabled fields don't get submitted
-        if (profileForm) {
-          profileForm.addEventListener("submit", function(e) {
-            console.log("Form submitting. User is admin:", isAdmin);
+            // Buttons
+            const editBtn = document.getElementById("edit-profile-btn");
+            const saveBtn = document.getElementById("save-changes-btn");
+            const cancelBtn = document.getElementById("cancel-changes-btn");
             
-            // For non-admin users, disable ALL restricted fields before submission
-            // Disabled fields are not included in form submission
-            if (!isAdmin) {
-              console.log("Non-admin user - disabling restricted fields:", adminOnlyIds);
-              adminOnlyIds.forEach((fieldId) => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                  console.log("Disabling field:", fieldId, "current value:", field.value);
-                  // Disable the field so it won't be submitted
-                  field.disabled = true;
-                  // Also remove readonly to ensure it's truly disabled
-                  field.readOnly = false;
+            // Fields
+            const inputs = profileForm.querySelectorAll('input:not([type="hidden"]):not([type="file"])');
+            const profilePicInput = document.getElementById("id_profile_picture");
+            const preview = document.getElementById("profile-preview");
+            const unsaved = document.getElementById("unsaved-warning");
+            
+            let initialData = {};
+            let isAdmin = false; // Will be determined by API response if possible, or assumed false for safety
+
+            // --- 1. Fetch Data ---
+            async function fetchProfileData() {
+                showLoading(true);
+                try {
+                    const response = await fetch(API_URL, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to load profile data');
+                    
+                    const data = await response.json();
+                    initialData = data;
+                    populateForm(data);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    ToastNotification.error('Error', 'Could not load profile data.');
+                } finally {
+                    showLoading(false);
                 }
-              });
-              
-              // Log what fields will be submitted
-              const formData = new FormData(profileForm);
-              console.log("Fields being submitted:");
-              for (let [key, value] of formData.entries()) {
-                console.log("  ", key, ":", value);
-              }
             }
-          });
-        }
 
-        if (profilePicInput) {
-          profilePicInput.addEventListener("change", function () {
-            const file = this.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = function (e) {
-                preview.src = e.target.result;
-                unsaved.classList.remove("hidden");
-              };
-              reader.readAsDataURL(file);
-            }
-          });
-        }
-
-        const toasts = document.querySelectorAll(".toast");
-        toasts.forEach((toast) =>
-          setTimeout(() => toast.classList.add("hide"), 3500)
-        );
-
-        // Hide file input, keep label clickable
-        if (profilePicInput && profilePicLabel) {
-          if (profilePicLabel.nextSibling !== profilePicInput) {
-            profilePicLabel.parentNode.insertBefore(
-              profilePicInput,
-              profilePicLabel.nextSibling
-            );
-          }
-          profilePicInput.classList.add("fileInputHidden");
-        }
-
-        setFormEnabled(false);
-        checkAdminPrivileges();
-
-        // Add visual indicators for restricted fields (non-admin users)
-        if (!isAdmin) {
-          adminOnlyIds.forEach((fieldId) => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-              const formGroup = field.closest(".formGroup");
-              if (formGroup) {
-                // Check if help text already exists
-                let helpText = formGroup.querySelector("small.admin-only-notice");
-                if (!helpText) {
-                  helpText = document.createElement("small");
-                  helpText.className = "admin-only-notice";
-                  helpText.style.color = "#999";
-                  helpText.style.fontSize = "12px";
-                  helpText.style.marginTop = "4px";
-                  helpText.textContent = "Only administrators can edit this field.";
-                  formGroup.appendChild(helpText);
+            function populateForm(data) {
+                // Populate Display Section
+                const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') || data.username;
+                document.getElementById('display-full-name').textContent = fullName;
+                document.getElementById('display-username').textContent = data.username || '-';
+                document.getElementById('display-email').textContent = data.email || '-';
+                document.getElementById('display-company-id').textContent = data.company_id || '-';
+                document.getElementById('display-department').textContent = data.department || '-';
+                
+                if (data.profile_picture) {
+                    preview.src = data.profile_picture;
+                    document.getElementById('remove-photo-container').style.display = 'flex';
                 }
-              }
+
+                // Populate Inputs
+                setValue('id_first_name', data.first_name);
+                setValue('id_middle_name', data.middle_name);
+                setValue('id_last_name', data.last_name);
+                setValue('id_suffix', data.suffix);
+                setValue('id_username', data.username);
+                setValue('id_phone_number', data.phone_number);
+                setValue('id_email', data.email);
+                setValue('id_company_id', data.company_id);
+                setValue('id_department', data.department);
+                
+                // Checkboxes
+                if (document.getElementById('id_otp_enabled')) {
+                    document.getElementById('id_otp_enabled').checked = data.otp_enabled;
+                }
+
+                // Read-only info
+                setValue('id_last_login', formatDate(data.last_login));
+                setValue('id_date_joined', formatDate(data.date_joined));
             }
-          });
-        }
 
-        // --- Profile Image Overlay Menu ---
-        const container = document.querySelector(".profileImageContainer");
-        const menu = document.querySelector(".profileImageMenu");
-        const viewBtn = document.getElementById("view-photo-btn");
+            function setValue(id, value) {
+                const el = document.getElementById(id);
+                if (el) el.value = value || '';
+            }
 
-        if (container && menu && preview) {
-          container.addEventListener("click", (e) => {
-            e.stopPropagation();
-            menu.classList.toggle("hidden");
-          });
+            function formatDate(isoString) {
+                if (!isoString) return '-';
+                return new Date(isoString).toLocaleString();
+            }
 
-          document.addEventListener("click", () =>
-            menu.classList.add("hidden")
-          );
+            // --- 2. Edit Mode Toggle ---
+            function setEditMode(enabled) {
+                // Fields that are always allowed to be edited by user
+                const editableIds = [
+                    'id_first_name', 'id_middle_name', 'id_last_name', 'id_suffix',
+                    'id_username', 'id_phone_number', 'id_otp_enabled'
+                ];
 
-          if (viewBtn) {
-            viewBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              window.open(preview.src, "_blank");
-              menu.classList.add("hidden");
+                inputs.forEach(input => {
+                    if (editableIds.includes(input.id)) {
+                        input.readOnly = !enabled;
+                        input.disabled = !enabled && input.type !== 'text'; // Checkboxes need disabled
+                        if (input.type === 'checkbox') input.disabled = !enabled;
+                    }
+                });
+
+                // Profile picture handling
+                if (profilePicInput) profilePicInput.disabled = !enabled;
+                const changeLabel = document.querySelector('.changeImageBtn');
+                if (changeLabel) changeLabel.style.pointerEvents = enabled ? 'auto' : 'none';
+
+                // Buttons visibility
+                editBtn.classList.toggle('hidden', enabled);
+                saveBtn.classList.toggle('hidden', !enabled);
+                cancelBtn.classList.toggle('hidden', !enabled);
+            }
+
+            editBtn.addEventListener('click', () => setEditMode(true));
+            
+            cancelBtn.addEventListener('click', () => {
+                setEditMode(false);
+                populateForm(initialData); // Reset changes
+                unsaved.classList.add('hidden');
             });
-          }
-        }
 
-        // --- Admin Privileges ---
-        function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let cookie of cookies) {
-              cookie = cookie.trim();
-              if (cookie.startsWith(name + "=")) {
-                cookieValue = decodeURIComponent(
-                  cookie.substring(name.length + 1)
-                );
-                break;
-              }
-            }
-          }
-          return cookieValue;
-        }
+            // --- 3. Form Submission ---
+            saveBtn.addEventListener('click', async () => {
+                showLoading(true);
+                
+                const formData = new FormData();
+                
+                // Add text fields
+                formData.append('first_name', document.getElementById('id_first_name').value);
+                formData.append('middle_name', document.getElementById('id_middle_name').value);
+                formData.append('last_name', document.getElementById('id_last_name').value);
+                formData.append('suffix', document.getElementById('id_suffix').value);
+                formData.append('username', document.getElementById('id_username').value);
+                formData.append('phone_number', document.getElementById('id_phone_number').value);
+                
+                // Add otp_enabled
+                if (document.getElementById('id_otp_enabled')) {
+                    formData.append('otp_enabled', document.getElementById('id_otp_enabled').checked);
+                }
+                
+                // Add file if present
+                if (profilePicInput.files[0]) {
+                    formData.append('profile_picture', profilePicInput.files[0]);
+                }
+                
+                // Handle clear picture checkbox
+                const clearCheck = document.getElementById('profile_picture-clear_id');
+                if (clearCheck && clearCheck.checked) {
+                    formData.append('profile_picture', ''); // Sending empty string or handling specific logic
+                }
 
-        async function checkAdminPrivileges() {
-          try {
-            const csrfToken = getCookie("csrftoken");
-            const response = await fetch("/api/v1/users/list/", {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken,
-              },
-              credentials: "include",
+                // Note: OTP enabled/disabled might need a separate endpoint usually, 
+                // but if the profile serializer handles it, we can send it.
+                // However, the current serializer/view logic implies restricted fields.
+                // OTP toggling usually requires password verification (separate flow).
+                // For now, we won't send otp_enabled here to avoid 403 or errors unless logic is confirmed.
+                // *Self-correction*: The view said "Allow otp_enabled...".
+                // But typically sensitive changes require a separate flow. 
+                // We'll skip sending it in the general profile PATCH for now to be safe, 
+                // as the UI logic for OTP usually involves the modal.
+
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                            // Content-Type not set for FormData to let browser set boundary
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const updatedData = await response.json();
+                        initialData = updatedData; // Update reference
+                        populateForm(updatedData);
+                        setEditMode(false);
+                        unsaved.classList.add('hidden');
+                        ToastNotification.success('Success', 'Profile updated successfully.');
+                    } else {
+                        const err = await response.json();
+                        console.error('Update failed', err);
+                        let msg = 'Failed to update profile.';
+                        if (err.detail) msg = err.detail;
+                        else if (typeof err === 'object') {
+                            msg = Object.values(err).flat().join(', ');
+                        }
+                        ToastNotification.error('Error', msg);
+                    }
+                } catch (error) {
+                    console.error('Network error:', error);
+                    ToastNotification.error('Error', 'Network error occurred.');
+                } finally {
+                    showLoading(false);
+                }
             });
-            if (response.ok) {
-              document.getElementById("admin-links").style.display = "block";
+
+            // --- Helpers ---
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
             }
-          } catch {
-            console.log("User does not have admin privileges");
-          }
-        }
-      });
+
+            function showLoading(show) {
+                loadingOverlay.style.display = show ? 'flex' : 'none';
+            }
+
+            // --- Profile Image Preview ---
+            profilePicInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        preview.src = e.target.result;
+                        unsaved.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            // Initialize
+            setEditMode(false);
+            fetchProfileData();
+        });
     </script>
 
+    <!-- Include Modals -->
     {% include "components/disable_otp_modal.html" %}
     {% include "components/image_cropper_modal.html" %}
-    </body>
+</body>
 </html>

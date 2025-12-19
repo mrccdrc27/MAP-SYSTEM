@@ -1,0 +1,134 @@
+# API Endpoints
+
+A structured list of all the API endpoints in the application.
+
+## Authentication
+- `POST /api/v1/users/register/` - Register a new user.
+- `POST /api/v1/users/login/` - User login and obtain JWT token.
+- `POST /api/v1/users/login/verify-otp/` - Verify OTP during login.
+- `POST /api/v1/users/logout/` - Logout and clear cookies.
+
+## Token Management
+- `POST /api/v1/token/obtain/` - Obtain JWT token.
+- `POST /api/v1/token/refresh/` - Refresh an existing JWT token.
+- `POST /api/v1/token/verify/` - Verify a JWT token.
+- `POST /api/v1/users/token/refresh/` - Refresh JWT token from an HTTP-only cookie.
+- `GET /api/v1/users/token/validate/` - Validate a JWT token.
+- `GET /token/` - Obtain JWT token (alternative endpoint).
+
+## User Profile & Management
+- `GET /api/v1/users/profile/` - Retrieve authenticated user's profile.
+- `PATCH /api/v1/users/profile/` - Partially update authenticated user's profile.
+- `PUT /api/v1/users/profile/` - Fully update authenticated user's profile.
+- `GET /api/v1/users/` - List all users.
+- `POST /api/v1/users/` - Create a new user.
+- `GET /api/v1/users/{id}/` - Retrieve a specific user by ID.
+- `PUT /api/v1/users/{id}/` - Update a user's profile (full update).
+- `PATCH /api/v1/users/{id}/` - Partially update a user's profile.
+- `DELETE /api/v1/users/{id}/` - Delete a user.
+
+### Extended User Management
+- `GET /api/v1/users/agents/` - List all agent users.
+- `GET /api/v1/users/list/` - An alternative endpoint to list all users.
+- `GET /api/v1/users/management/` - List all users under management scope.
+- `POST /api/v1/users/management/` - Create a new user under management scope.
+- `GET /api/v1/users/management/{id}/` - Retrieve a specific user under management scope.
+- `PUT /api/v1/users/management/{id}/` - Update a user profile under management scope (full update).
+- `PATCH /api/v1/users/management/{id}/` - Partially update a user profile under management scope.
+- `DELETE /api/v1/users/management/{id}/` - Delete a user under management scope.
+
+### User Invitations
+- `GET /api/v1/users/invite-agent/` - Display the invite agent page.
+- `POST /api/v1/users/invite-agent/` - Send an invitation to a new agent.
+- `GET /api/v1/users/management/invite_agent/` - Display the invite agent page under management scope.
+- `POST /api/v1/users/management/invite_agent/` - Send an invitation to a new agent under management scope.
+
+## Password Management
+- `POST /api/v1/users/password/change/` - Change password from the user's profile.
+- `POST /api/v1/users/password/forgot/` - Request a password reset (e.g., send a reset link).
+- `GET /api/v1/users/password/reset/` - Display the password reset page with a token.
+- `POST /api/v1/users/password/reset/` - Reset password using a valid token.
+- `POST /api/v1/users/profile/reset-password/` - (Duplicate) Reset password from profile.
+
+## Two-Factor Authentication (2FA)
+- `POST /api/v1/users/2fa/enable/` - Enable 2FA for the authenticated user.
+- `POST /api/v1/users/2fa/disable/` - Disable 2FA for the authenticated user.
+- `POST /api/v1/users/2fa/request-otp/` - Request a one-time password (OTP) for 2FA.
+- `POST /api/v1/users/2fa/request-otp-authenticated/` - Request an OTP for an already authenticated user.
+- `POST /api/v1/users/verify-disable-otp/` - Verify credentials before disabling 2FA.
+
+## CAPTCHA
+- `POST /api/v1/users/captcha/generate/` - Generate a new CAPTCHA challenge.
+- `GET /api/v1/users/captcha/required/` - Check if CAPTCHA is required for the current session.
+- `POST /api/v1/users/captcha/verify/` - Verify a user's CAPTCHA response.
+
+## Systems Management
+- `GET /api/v1/systems/` - List all systems.
+- `POST /api/v1/systems/` - Create a new system.
+- `GET /api/v1/systems/public/` - List all publicly visible systems.
+- `GET /api/v1/systems/{id}/` - Get details for a specific system.
+- `PUT /api/v1/systems/{id}/` - Update a system's details.
+- `PATCH /api/v1/systems/{id}/` - Partially update a system's details.
+- `DELETE /api/v1/systems/{id}/` - Delete a system.
+
+## Roles and Permissions
+- `GET /api/v1/roles/` - List all system roles.
+- `POST /api/v1/roles/` - Create a new system role.
+- `POST /api/v1/roles/register/` - (Duplicate) Create a new role.
+- `GET /api/v1/roles/{id}/` - Get details for a specific role.
+- `PUT /api/v1/roles/{id}/` - Update a system role.
+- `PATCH /api/v1/roles/{id}/` - Partially update a system role.
+- `DELETE /api/v1/roles/{id}/` - Delete a system role.
+
+## System-Role Assignments
+- `POST /api/v1/system-roles/invite/` - Invite a user to a system.
+- `GET /api/v1/system-roles/systems/{system_slug}/users/` - List all users within a specific system.
+- `GET /api/v1/system-roles/user-system-roles/` - List the roles assigned to the current user.
+- `POST /api/v1/system-roles/user-system-roles/` - Assign a role to a user within a system.
+- `GET /api/v1/system-roles/user-system-roles/{id}/` - Get details of a specific user-system role assignment.
+- `PUT /api/v1/system-roles/user-system-roles/{id}/` - Update a user-system role assignment.
+- `PATCH /api/v1/system-roles/user-system-roles/{id}/` - Partially update a user-system role assignment.
+- `DELETE /api/v1/system-roles/user-system-roles/{id}/` - Remove a role from a user.
+- `POST /api/v1/system-roles/user-system-roles/edit-settings/` - Edit user settings related to system roles.
+- `GET /api/v1/system-roles/user-system-roles/system/{system_slug}/roles/` - Get all roles for a specific system.
+
+## HDTS (Help Desk Ticketing System)
+- `GET /api/v1/hdts/` - Root endpoint for the HDTS API.
+- `GET /api/v1/hdts/employees/` - List all employees in the HDTS.
+- `POST /api/v1/hdts/employees/api/register/` - Register a new employee.
+- `POST /api/v1/hdts/employees/api/login/` - Employee login.
+- `POST /api/v1/hdts/employees/api/logout/` - Employee logout.
+- `GET /api/v1/hdts/employees/api/me/` - Get the current employee's profile.
+- `GET /api/v1/hdts/employees/api/profile/` - Get employee profile.
+- `PUT /api/v1/hdts/employees/api/profile/` - Update employee profile (full).
+- `PATCH /api/v1/hdts/employees/api/profile/` - Update employee profile (partial).
+- `POST /api/v1/hdts/employees/api/profile/change-password/` - Change an employee's password.
+- `POST /api/v1/hdts/employees/api/password/forgot/` - Request password reset for an employee.
+- `POST /api/v1/hdts/employees/api/password/reset/` - Reset an employee's password.
+- `POST /api/v1/hdts/employees/api/2fa/enable/` - Enable 2FA for an employee.
+- `POST /api/v1/hdts/employees/api/2fa/disable/` - Disable 2FA for an employee.
+- `POST /api/v1/hdts/employees/api/2fa/request-otp/` - Request an OTP for an employee.
+- `POST /api/v1/hdts/employees/api/2fa/verify-otp/` - Verify an OTP for an employee.
+- `POST /api/v1/hdts/employees/api/token/refresh/` - Refresh an employee's JWT token.
+- `GET /api/v1/hdts/user-management/pending/api/` - Get a list of pending users in HDTS.
+- `GET /api/v1/hdts/user-management/users/api/` - Get a list of users in HDTS.
+- `GET /api/v1/hdts/users/{user_id}/` - Get details for a specific user in HDTS.
+
+## TTS (Ticket Tracking System)
+- `GET /api/v1/tts/` - Root endpoint for the TTS API.
+- `GET /api/v1/tts/assign-agent-to-role/` - Display the form to assign an agent to a role.
+- `POST /api/v1/tts/assign-agent-to-role/` - Assign an agent to a role.
+- `GET /api/v1/tts/assign-role/` - Display the role assignment page.
+- `GET /api/v1/tts/create-role/` - Display the create role page.
+- `POST /api/v1/tts/create-role/` - Create a new role in TTS.
+- `GET /api/v1/tts/round-robin/` - Get the current round-robin assignment status.
+- `PUT /api/v1/tts/update-assignment/{assignment_id}/` - Update a ticket assignment.
+- `DELETE /api/v1/tts/update-assignment/{assignment_id}/` - Delete a ticket assignment.
+- `GET /api/v1/tts/user-info/{user_id}/` - Get information for a specific user.
+- `POST /api/v1/tts/users-info/` - Get information for multiple users.
+
+## Miscellaneous
+- `GET /api/` - Root of the entire API.
+- `GET /api/me/` - Get details of the currently authenticated user.
+- `GET /api/v1/` - Root of the v1 API.
+- `GET /assign-role/` - (Legacy/Internal) Assign a role.

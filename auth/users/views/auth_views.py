@@ -14,6 +14,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_seriali
 
 from django.contrib.auth import login
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
@@ -389,14 +390,12 @@ class UILogoutView(TemplateView):
     """UI logout view that clears JWT cookies and redirects to login."""
     
     def get(self, request, *args, **kwargs):
-        # Create redirect response to login page
-        response = redirect('auth_login')
+        # Create redirect response to login page with logout indicator
+        logout_url = reverse('auth_login') + '?logout=1'
+        response = redirect(logout_url)
         
         # Clear JWT cookies
         response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
         response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
-        
-        # Add logout message
-        messages.success(request, 'You have been successfully logged out.')
         
         return response

@@ -1,0 +1,48 @@
+/* === Not Found Page Layout === */
+
+.wrapper {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  text-align: center;
+  background-color: var(--bg-color);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* === Error Code === */
+.code {
+  margin: 0;
+  font-size: 5rem;
+  font-weight: 700;
+  color: var(--warning-text);
+}
+
+/* === Supporting Message === */
+.message {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--secondary-text-color);
+}
+
+/* === Back Button === */
+.button {
+  margin-top: 1rem;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #fff;
+  background-color: var(--primary-color);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--primary-color-hover);
+}

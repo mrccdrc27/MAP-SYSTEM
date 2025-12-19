@@ -121,11 +121,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_login = models.DateTimeField(null=True, blank=True)  # Last login timestamp
     date_joined = models.DateTimeField(auto_now_add=True)  # Account creation timestamp
     
-    # Audit fields for approval/rejection
-    approved_at = models.DateTimeField(null=True, blank=True)  # When user was approved
-    rejected_at = models.DateTimeField(null=True, blank=True)  # When user was rejected
-    approved_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')  # Admin who approved
-    rejected_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='rejected_users')  # Admin who rejected
+    # Consolidated audit fields for status changes
+    status_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='status_changes')  # Admin who last changed status
+    status_at = models.DateTimeField(null=True, blank=True)  # Timestamp of last status change
 
     objects = CustomUserManager()  # Use custom manager
 

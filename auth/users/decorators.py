@@ -37,11 +37,76 @@ def get_user_from_jwt_cookie(request):
         # Catch any other unexpected errors during token processing
         return None
 
+def staff_required(view_func):
+    """
+    Decorator for views that require staff authentication via middleware.
+    
+    Expects:
+    - request.user_type == 'staff' (set by AuthenticationRoutingMiddleware)
+    - request.user_id (set by AuthenticationRoutingMiddleware)
+    
+    If not authenticated or wrong user type, redirects to login.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        # Check if middleware authenticated the user as staff
+        if not hasattr(request, 'user_type') or request.user_type != 'staff':
+            messages.error(request, 'You must be logged in as staff to access this page.')
+            return redirect(reverse('auth_login') + f'?next={request.path}')
+        
+        # Fetch the User object from database
+        try:
+            user = User.objects.get(id=request.user_id)
+            request.user = user  # Attach for template use
+        except User.DoesNotExist:
+            messages.error(request, 'Your user account was not found.')
+            return redirect(reverse('auth_login'))
+        
+        # Call the view function
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
+
+def employee_required(view_func):
+    """
+    Decorator for views that require employee authentication via middleware.
+    
+    Expects:
+    - request.user_type == 'employee' (set by AuthenticationRoutingMiddleware)
+    - request.user_id (set by AuthenticationRoutingMiddleware)
+    
+    If not authenticated or wrong user type, redirects to login.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from hdts.models import Employees
+        
+        # Check if middleware authenticated the user as employee
+        if not hasattr(request, 'user_type') or request.user_type != 'employee':
+            messages.error(request, 'You must be logged in as an employee to access this page.')
+            return redirect(reverse('auth_login') + f'?next={request.path}')
+        
+        # Fetch the Employee object from database
+        try:
+            employee = Employees.objects.get(id=request.user_id)
+            request.employee = employee  # Attach for template use
+        except Employees.DoesNotExist:
+            messages.error(request, 'Your employee account was not found.')
+            return redirect(reverse('auth_login'))
+        
+        # Call the view function
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
+
 def jwt_cookie_required(view_func):
     """
     Decorator for views that require the user to be authenticated via JWT cookie.
     Redirects to login if not authenticated via JWT.
     Clears cookies and shows session expired message if token is expired.
+    
+    DEPRECATED: Use @staff_required or @employee_required instead.
+    This decorator is kept for backward compatibility only.
     """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):

@@ -1,0 +1,118 @@
+.faqContainer {
+  /* Use the standard white card chrome used across the app */
+  background-color: var(--white);
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  padding: 28px;
+  /* subtle 1px border to match other view cards */
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.faqHeader {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.searchWrapper {
+  width: 100%;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  background-color: var(--white);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+.faqList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Stronger overrides for cases where theme or global styles make text transparent */
+.faqList,
+.faqList * {
+  color: inherit !important;
+  -webkit-text-fill-color: unset !important;
+  opacity: 1 !important;
+}
+
+.faqItem {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0.75rem 0;
+}
+
+.faqQuestion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  /* Use explicit color to avoid theme overrides making text invisible */
+  color: #0c0c0c;
+  transition: color 0.2s ease;
+}
+
+.faqQuestion:hover {
+  color: var(--primary-color-hover);
+}
+
+.faqArrow {
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.faqAnswer {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-size: 0.95rem;
+  animation: fadeIn 0.12s ease;
+  border-top: 1px solid #f5f5f5;
+  padding-top: 0.6rem;
+}
+
+.noResults {
+  color: var(--text-muted);
+  padding: 1rem 0;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+/* Ensure search placeholder is visible */
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,6 +1,6 @@
 # auth/hdts/urls.py
 
-from django.urls import path
+from django.urls import path, include
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -17,7 +17,8 @@ def hdts_root(request, format=None):
         'pending_users': reverse('hdts:manage_pending_users', request=request, format=format),
         'pending_users_api': reverse('hdts:pending_users_api', request=request, format=format),
         'all_users_api': reverse('hdts:all_users_api', request=request, format=format),
-        'update_user_status': reverse('hdts:update_user_status', args=[1], request=request, format=format),  # example id=1
+        'update_user_status': reverse('hdts:update_user_status', args=[1], request=request, format=format),
+        'employees': reverse('hdts:employees-root', request=request, format=format),
     })
 
 
@@ -30,4 +31,8 @@ urlpatterns = [
     path('user-management/update-status/<int:user_id>/', views.update_user_status_view, name='update_user_status'),
     # Read-only basic profile fetch for HDTS users by ID (for cross-system integrations like HDTS backend)
     path('users/<int:user_id>/', views.get_hdts_user_profile_by_id, name='hdts_user_profile_by_id'),
+    
+    # ==================== Employee Endpoints ====================
+    path('employees/', include('hdts.employee_urls')),
 ]
+

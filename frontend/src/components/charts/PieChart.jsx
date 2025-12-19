@@ -2,6 +2,8 @@
 
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { useRef } from "react";
+import { getElementAtEvent } from "react-chartjs-2";
 
 // style
 import styles from "./chart.module.css";
@@ -13,7 +15,10 @@ export default function PieChart({
   dataPoints,
   chartTitle = "Active Users Document Count",
   chartLabel = "Active User Documents",
+  onClick,
 }) {
+  const chartRef = useRef(null);
+
   const data = {
     labels,
     datasets: [
@@ -43,9 +48,26 @@ export default function PieChart({
     },
   };
 
+  const handleClick = (event) => {
+    if (!onClick || !chartRef.current) return;
+    
+    const elements = getElementAtEvent(chartRef.current, event);
+    if (elements.length > 0) {
+      const { index } = elements[0];
+      const label = labels[index];
+      const value = dataPoints[index];
+      onClick({ label, value, index });
+    }
+  };
+
   return (
-    <div className={styles.chartCardCont}>
-      <Pie data={data} options={options} />
+    <div className={`${styles.chartCardCont} ${onClick ? styles.clickable : ''}`}>
+      <Pie 
+        ref={chartRef}
+        data={data} 
+        options={options} 
+        onClick={handleClick}
+      />
     </div>
   );
 }

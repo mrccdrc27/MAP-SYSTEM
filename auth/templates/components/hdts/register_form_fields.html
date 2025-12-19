@@ -1,0 +1,169 @@
+<!-- Form Fields Component - Personal Information Section -->
+
+<!-- Last Name Field -->
+<div class="fieldset">
+    <label for="{{ form.last_name.id_for_label }}">
+        Last Name <span class="required">*</span>
+    </label>
+    {{ form.last_name }}
+    {% if form.last_name.errors %}
+    <span class="error-msg">{{ form.last_name.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- First Name Field -->
+<div class="fieldset">
+    <label for="{{ form.first_name.id_for_label }}">
+        First Name <span class="required">*</span>
+    </label>
+    {{ form.first_name }}
+    {% if form.first_name.errors %}
+    <span class="error-msg">{{ form.first_name.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Middle Name Field -->
+<div class="fieldset">
+    <label for="{{ form.middle_name.id_for_label }}">Middle Name</label>
+    {{ form.middle_name }}
+    {% if form.middle_name.errors %}
+    <span class="error-msg">{{ form.middle_name.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Suffix Field -->
+<div class="fieldset">
+    <label for="{{ form.suffix.id_for_label }}">Suffix</label>
+    {{ form.suffix }}
+    {% if form.suffix.errors %}
+    <span class="error-msg">{{ form.suffix.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Company ID Field -->
+<div class="fieldset">
+    <label for="{{ form.company_id.id_for_label }}">
+        Company ID <span class="required">*</span>
+    </label>
+    <div class="company-id-group">
+        <div class="prefix-wrapper">MA</div>
+        <div class="input-wrapper">
+            {{ form.company_id }}
+        </div>
+    </div>
+    {% if form.company_id.help_text %}
+    <div class="help-text">{{ form.company_id.help_text }}</div>
+    {% endif %}
+    {% if form.company_id.errors %}
+    <span class="error-msg">{{ form.company_id.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Department Field -->
+<div class="fieldset">
+    <label for="{{ form.department.id_for_label }}">
+        Department <span class="required">*</span>
+    </label>
+    {{ form.department }}
+    {% if form.department.errors %}
+    <span class="error-msg">{{ form.department.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Profile Picture Upload Field -->
+<div class="fieldset">
+    <label for="{{ form.profile_picture.id_for_label }}">
+        Upload Profile Picture <span class="required">*</span>
+    </label>
+    <div class="file-upload-wrapper">
+        <label for="{{ form.profile_picture.id_for_label }}" class="file-upload-label" id="fileLabel">
+            <i class="fas fa-cloud-upload-alt"></i>&nbsp;&nbsp;Choose File
+        </label>
+        {{ form.profile_picture }}
+    </div>
+    {% if form.profile_picture.errors %}
+    <span class="error-msg"><i class="fas fa-exclamation-circle"></i>&nbsp;{{ form.profile_picture.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Inline Profile Preview -->
+<div id="profilePreviewContainer" class="profile-preview-container" style="display: none;">
+    <div class="profile-preview-content">
+        <div class="profile-preview-picture">
+            <img id="profilePreviewImg" src="" alt="Profile Picture" class="profile-preview-img">
+        </div>
+        <div class="profile-preview-details">
+            <div class="profile-detail-row">
+                <span class="profile-detail-label">Name:</span>
+                <span class="profile-detail-value" id="previewFullName">-</span>
+            </div>
+            <div class="profile-detail-row">
+                <span class="profile-detail-label">Company ID:</span>
+                <span class="profile-detail-value" id="previewCompanyId">-</span>
+            </div>
+            <div class="profile-detail-row">
+                <span class="profile-detail-label">Department:</span>
+                <span class="profile-detail-value" id="previewDepartment">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="divider">
+
+<!-- Email Field -->
+<div class="fieldset">
+    <label for="{{ form.email.id_for_label }}">
+        Email Address <span class="required">*</span>
+    </label>
+    {{ form.email }}
+    {% if form.email.errors %}
+    <span class="error-msg">{{ form.email.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Password Field -->
+<div class="fieldset">
+    <label for="{{ form.password.id_for_label }}">
+        Password <span class="required">*</span>
+    </label>
+    <div class="password-container">
+        {{ form.password }}
+        <span class="password-toggle" onclick="togglePasswordVisibility(this, '{{ form.password.id_for_label }}')">
+            <i class="fas fa-eye-slash"></i>
+        </span>
+    </div>
+    {% if form.password.errors %}
+    <span class="error-msg"><i class="fas fa-exclamation-circle"></i>&nbsp;{{ form.password.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Confirm Password Field -->
+<div class="fieldset">
+    <label for="{{ form.password2.id_for_label }}">
+        Confirm Password <span class="required">*</span>
+    </label>
+    <div class="password-container">
+        {{ form.password2 }}
+        <span class="password-toggle" onclick="togglePasswordVisibility(this, '{{ form.password2.id_for_label }}')">
+            <i class="fas fa-eye-slash"></i>
+        </span>
+    </div>
+    {% if form.password2.errors %}
+    <span class="error-msg"><i class="fas fa-exclamation-circle"></i>&nbsp;{{ form.password2.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Terms & Conditions Checkbox -->
+<div class="fieldset">
+    <div class="checkbox-wrapper">
+        <input type="checkbox" id="termsCheckbox" name="terms" required>
+        <label for="termsCheckbox">
+            I agree to the 
+            <span class="link" onclick="showModal('privacy')">Privacy Policy</span>
+            and
+            <span class="link" onclick="showModal('terms')">Terms and Conditions</span>
+            <span class="required">*</span>
+        </label>
+    </div>
+</div>

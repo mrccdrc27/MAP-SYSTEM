@@ -1,64 +1,110 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .views import (
-    AnalyticsRootView,
-    DashboardSummaryView,
-    StatusSummaryView,
-    SLAComplianceView,
-    TeamPerformanceView,
+    # Trend Analytics endpoints
+    TicketTrendAnalyticsView,
+    TaskItemTrendAnalyticsView,
+    TicketCategoryAnalyticsView,
+    
+    # NEW: Ticket Analytics endpoints (granular)
+    TicketDashboardView,
+    TicketStatusSummaryView,
+    TicketPriorityDistributionView,
+    TicketAgeDistributionView,
+    TicketSLAComplianceView,
+    
+    # NEW: Workflow Analytics endpoints (granular)
     WorkflowMetricsView,
-    StepPerformanceView,
     DepartmentAnalyticsView,
-    PriorityDistributionView,
-    TicketAgeAnalyticsView,
-    AssignmentAnalyticsView,
-    AuditActivityView,
-    TaskItemStatusAnalyticsView,
-    TaskItemAssignmentOriginAnalyticsView,
-    TaskItemPerformanceAnalyticsView,
-    TaskItemUserPerformanceAnalyticsView,
-    TaskItemHistoryTrendAnalyticsView,
-    TaskItemTransferAnalyticsView,
+    StepPerformanceView,
+    
+    # NEW: Task Item Analytics endpoints (granular)
+    TaskItemStatusDistributionView,
+    TaskItemOriginDistributionView,
+    TaskItemPerformanceView,
+    UserPerformanceView,
+    TransferAnalyticsView,
+    
+    # Legacy Aggregated endpoints (deprecated, kept for backward compatibility)
     AggregatedTicketsReportView,
     AggregatedWorkflowsReportView,
     AggregatedTasksReportView,
+    
+    # Drilldown endpoints
+    DrilldownTicketsByStatusView,
+    DrilldownTicketsByPriorityView,
+    DrilldownTicketsByAgeView,
+    DrilldownSLAComplianceView,
+    DrilldownUserTasksView,
+    DrilldownWorkflowTasksView,
+    DrilldownStepTasksView,
+    DrilldownDepartmentTasksView,
+    DrilldownTransfersView,
+    DrilldownTaskItemsByStatusView,
+    DrilldownTaskItemsByOriginView,
+    
+    # Operational Insights endpoints
+    OperationalInsightsView,
+    WorkloadAnalysisView,
+    SLARiskReportView,
+    AnomalyDetectionView,
+    ServiceHealthSummaryView,
 )
 
 app_name = 'reporting'
 
-# Create router for navigable API
-router = DefaultRouter()
-
 urlpatterns = [
-    # Root analytics endpoint
-    path('', AnalyticsRootView.as_view(), name='analytics-root'),
+    # ==================== TREND ANALYTICS ====================
+    path('ticket-trends/', TicketTrendAnalyticsView.as_view(), name='ticket-trends'),
+    path('task-item-trends/', TaskItemTrendAnalyticsView.as_view(), name='task-item-trends'),
+    path('ticket-categories/', TicketCategoryAnalyticsView.as_view(), name='ticket-categories'),
     
-    # Analytics endpoints
-    path('dashboard/', DashboardSummaryView.as_view(), name='dashboard-summary'),
-    path('status-summary/', StatusSummaryView.as_view(), name='status-summary'),
-    path('sla-compliance/', SLAComplianceView.as_view(), name='sla-compliance'),
-    path('team-performance/', TeamPerformanceView.as_view(), name='team-performance'),
-    path('workflow-metrics/', WorkflowMetricsView.as_view(), name='workflow-metrics'),
-    path('step-performance/', StepPerformanceView.as_view(), name='step-performance'),
-    path('department-analytics/', DepartmentAnalyticsView.as_view(), name='department-analytics'),
-    path('priority-distribution/', PriorityDistributionView.as_view(), name='priority-distribution'),
-    path('ticket-age/', TicketAgeAnalyticsView.as_view(), name='ticket-age'),
-    path('assignment-analytics/', AssignmentAnalyticsView.as_view(), name='assignment-analytics'),
-    path('audit-activity/', AuditActivityView.as_view(), name='audit-activity'),
+    # ==================== TICKET ANALYTICS (NEW - GRANULAR) ====================
+    path('tickets/dashboard/', TicketDashboardView.as_view(), name='ticket-dashboard'),
+    path('tickets/status/', TicketStatusSummaryView.as_view(), name='ticket-status'),
+    path('tickets/priority/', TicketPriorityDistributionView.as_view(), name='ticket-priority'),
+    path('tickets/age/', TicketAgeDistributionView.as_view(), name='ticket-age'),
+    path('tickets/sla/', TicketSLAComplianceView.as_view(), name='ticket-sla'),
     
-    # Task Item Analytics endpoints
-    path('task-item-status/', TaskItemStatusAnalyticsView.as_view(), name='task-item-status'),
-    path('task-item-origin/', TaskItemAssignmentOriginAnalyticsView.as_view(), name='task-item-origin'),
-    path('task-item-performance/', TaskItemPerformanceAnalyticsView.as_view(), name='task-item-performance'),
-    path('task-item-user-performance/', TaskItemUserPerformanceAnalyticsView.as_view(), name='task-item-user-performance'),
-    path('task-item-history-trends/', TaskItemHistoryTrendAnalyticsView.as_view(), name='task-item-history-trends'),
-    path('task-item-transfer/', TaskItemTransferAnalyticsView.as_view(), name='task-item-transfer'),
+    # ==================== WORKFLOW ANALYTICS (NEW - GRANULAR) ====================
+    path('workflows/metrics/', WorkflowMetricsView.as_view(), name='workflow-metrics'),
+    path('workflows/departments/', DepartmentAnalyticsView.as_view(), name='workflow-departments'),
+    path('workflows/steps/', StepPerformanceView.as_view(), name='workflow-steps'),
     
-    # Aggregated endpoints (NEW)
+    # ==================== TASK ITEM ANALYTICS (NEW - GRANULAR) ====================
+    path('tasks/status/', TaskItemStatusDistributionView.as_view(), name='task-status'),
+    path('tasks/origin/', TaskItemOriginDistributionView.as_view(), name='task-origin'),
+    path('tasks/performance/', TaskItemPerformanceView.as_view(), name='task-performance'),
+    path('tasks/users/', UserPerformanceView.as_view(), name='task-users'),
+    path('tasks/transfers/', TransferAnalyticsView.as_view(), name='task-transfers'),
+    
+    # ==================== LEGACY AGGREGATED (DEPRECATED) ====================
+    # Keep for backward compatibility - will be removed in future version
     path('reports/tickets/', AggregatedTicketsReportView.as_view(), name='aggregated-tickets'),
     path('reports/workflows/', AggregatedWorkflowsReportView.as_view(), name='aggregated-workflows'),
     path('reports/tasks/', AggregatedTasksReportView.as_view(), name='aggregated-tasks'),
     
-    # Include router URLs
-    path('', include(router.urls)),
+    # ==================== DRILLDOWN ENDPOINTS ====================
+    # Tickets
+    path('drilldown/tickets/status/', DrilldownTicketsByStatusView.as_view(), name='drilldown-tickets-status'),
+    path('drilldown/tickets/priority/', DrilldownTicketsByPriorityView.as_view(), name='drilldown-tickets-priority'),
+    path('drilldown/tickets/age/', DrilldownTicketsByAgeView.as_view(), name='drilldown-tickets-age'),
+    path('drilldown/tickets/sla/', DrilldownSLAComplianceView.as_view(), name='drilldown-sla'),
+    
+    # Workflows
+    path('drilldown/workflows/', DrilldownWorkflowTasksView.as_view(), name='drilldown-workflow-tasks'),
+    path('drilldown/steps/', DrilldownStepTasksView.as_view(), name='drilldown-step-tasks'),
+    path('drilldown/departments/', DrilldownDepartmentTasksView.as_view(), name='drilldown-department-tasks'),
+    
+    # Task Items
+    path('drilldown/task-items/status/', DrilldownTaskItemsByStatusView.as_view(), name='drilldown-taskitems-status'),
+    path('drilldown/task-items/origin/', DrilldownTaskItemsByOriginView.as_view(), name='drilldown-taskitems-origin'),
+    path('drilldown/user-tasks/', DrilldownUserTasksView.as_view(), name='drilldown-user-tasks'),
+    path('drilldown/transfers/', DrilldownTransfersView.as_view(), name='drilldown-transfers'),
+    
+    # ==================== OPERATIONAL INSIGHTS ====================
+    path('insights/', OperationalInsightsView.as_view(), name='operational-insights'),
+    path('insights/workload/', WorkloadAnalysisView.as_view(), name='workload-analysis'),
+    path('insights/sla-risk/', SLARiskReportView.as_view(), name='sla-risk-report'),
+    path('insights/anomalies/', AnomalyDetectionView.as_view(), name='anomaly-detection'),
+    path('insights/health/', ServiceHealthSummaryView.as_view(), name='service-health'),
 ]

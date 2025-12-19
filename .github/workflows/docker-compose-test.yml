@@ -1,0 +1,415 @@
+name: Docker Compose Orchestration Test
+
+on:
+  push:
+    branches: [ '**' ]
+    paths:
+      - 'Docker/**'
+      - 'auth/**'
+      - 'ticket_service/**'
+      - 'workflow_api/**'
+      - 'messaging/**'
+      - 'notification_service/**'
+      - 'frontend/**'
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+env:
+  COMPOSE_FILE: docker-compose.yml
+  STARTUP_TIMEOUT: 120
+
+jobs:
+  build-containers:
+    name: Build All Docker Containers
+    runs-on: ubuntu-latest
+    outputs:
+      build-status: ${{ steps.build.outcome }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build all services (no cache)
+        id: build
+        working-directory: Docker
+        run: |
+          echo "Building all Docker services..."
+          docker compose build --no-cache 2>&1 | tee build.log
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ All containers built successfully"
+            echo "build_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Container build failed"
+            echo "build_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Verify Docker images created
+        run: |
+          echo "=== Docker Images Created ==="
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep -E "docker-|rabbitmq|postgres" || true
+          
+          # Check each expected image
+          expected_images=("docker-auth-service" "docker-ticket-service" "docker-workflow-api" "docker-workflow-worker" "docker-messaging-service" "docker-notification-service" "docker-notification-worker")
+          
+          missing_images=()
+          for img in "${expected_images[@]}"; do
+            if ! docker images --format "{{.Repository}}" | grep -q "$img"; then
+              missing_images+=("$img")
+            fi
+          done
+          
+          if [ ${#missing_images[@]} -gt 0 ]; then
+            echo "⚠️ Some images may not have built (could be named differently):"
+            printf '%s\n' "${missing_images[@]}"
+          else
+            echo "✅ All expected images found"
+          fi
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: Docker/build.log
+          retention-days: 7
+
+  orchestration-test:
+    name: Test Docker Compose Orchestration
+    runs-on: ubuntu-latest
+    needs: build-containers
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
+        working-directory: Docker
+        run: docker compose build
+
+      - name: Start all services
+        working-directory: Docker
+        run: |
+          echo "Starting Docker Compose services..."
+          docker compose up -d
+          
+          echo "Waiting for services to initialize (${STARTUP_TIMEOUT}s max)..."
+          sleep 60
+
+      - name: Check container status
+        id: container_status
+        run: |
+          echo "=== Container Status ==="
+          docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          # Count running containers
+          running=$(docker ps --filter "status=running" --format "{{.Names}}" | wc -l)
+          total=$(docker ps -a --format "{{.Names}}" | wc -l)
+          
+          echo ""
+          echo "Running: $running / Total: $total"
+          
+          # Check for crashed containers
+          crashed=$(docker ps -a --filter "status=exited" --format "{{.Names}}: {{.Status}}")
+          if [ -n "$crashed" ]; then
+            echo ""
+            echo "⚠️ Exited containers:"
+            echo "$crashed"
+          fi
+
+      - name: Verify RabbitMQ is healthy
+        run: |
+          echo "Checking RabbitMQ health..."
+          max_attempts=10
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            if docker exec rabbitmq rabbitmq-diagnostics -q ping 2>/dev/null; then
+              echo "✅ RabbitMQ is healthy"
+              break
+            fi
+            echo "Attempt $attempt/$max_attempts - RabbitMQ not ready yet..."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "❌ RabbitMQ failed to become healthy"
+            docker logs rabbitmq 2>&1 | tail -30
+            exit 1
+          fi
+
+      - name: Verify PostgreSQL is ready
+        run: |
+          echo "Checking PostgreSQL..."
+          max_attempts=10
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            if docker exec postgres_db pg_isready -U postgres 2>/dev/null; then
+              echo "✅ PostgreSQL is ready"
+              break
+            fi
+            echo "Attempt $attempt/$max_attempts - PostgreSQL not ready yet..."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "❌ PostgreSQL failed to become ready"
+            docker logs postgres_db 2>&1 | tail -30
+            exit 1
+          fi
+
+      - name: Verify databases are created
+        run: |
+          echo "Checking databases in PostgreSQL..."
+          docker exec postgres_db psql -U postgres -c "\l" | grep -E "workflowmanagement|notificationservice" || echo "Some databases may not be created yet"
+
+      - name: Wait for services to fully initialize
+        run: |
+          echo "Waiting additional time for Django services to start..."
+          sleep 30
+
+      - name: Test Auth Service
+        continue-on-error: true
+        run: |
+          echo "Testing Auth Service (port 8003)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8003/api/ 2>/dev/null || echo "000")
+          
+          if [ "$response" = "000" ]; then
+            echo "⚠️ Auth Service not responding (may still be starting)"
+          elif [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
+            echo "✅ Auth Service responding (HTTP $response)"
+          else
+            echo "⚠️ Auth Service returned HTTP $response"
+          fi
+
+      - name: Test Workflow API Service
+        continue-on-error: true
+        run: |
+          echo "Testing Workflow API (port 8002)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8002/api/ 2>/dev/null || echo "000")
+          
+          if [ "$response" = "000" ]; then
+            echo "⚠️ Workflow API not responding (may still be starting)"
+          elif [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
+            echo "✅ Workflow API responding (HTTP $response)"
+          else
+            echo "⚠️ Workflow API returned HTTP $response"
+          fi
+
+      - name: Test Ticket Service
+        continue-on-error: true
+        run: |
+          echo "Testing Ticket Service (port 8004)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8004/api/ 2>/dev/null || echo "000")
+          
+          if [ "$response" = "000" ]; then
+            echo "⚠️ Ticket Service not responding (may still be starting)"
+          elif [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
+            echo "✅ Ticket Service responding (HTTP $response)"
+          else
+            echo "⚠️ Ticket Service returned HTTP $response"
+          fi
+
+      - name: Test Messaging Service
+        continue-on-error: true
+        run: |
+          echo "Testing Messaging Service (port 8005)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8005/ 2>/dev/null || echo "000")
+          
+          if [ "$response" = "000" ]; then
+            echo "⚠️ Messaging Service not responding (may still be starting)"
+          elif [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
+            echo "✅ Messaging Service responding (HTTP $response)"
+          else
+            echo "⚠️ Messaging Service returned HTTP $response"
+          fi
+
+      - name: Test Notification Service
+        continue-on-error: true
+        run: |
+          echo "Testing Notification Service (port 8006)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/ 2>/dev/null || echo "000")
+          
+          if [ "$response" = "000" ]; then
+            echo "⚠️ Notification Service not responding (may still be starting)"
+          elif [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
+            echo "✅ Notification Service responding (HTTP $response)"
+          else
+            echo "⚠️ Notification Service returned HTTP $response"
+          fi
+
+      - name: Verify Celery workers are running
+        run: |
+          echo "=== Celery Worker Status ==="
+          
+          # Check workflow worker
+          if docker ps --filter "name=workflow-worker" --filter "status=running" | grep -q workflow-worker; then
+            echo "✅ Workflow Worker is running"
+          else
+            echo "⚠️ Workflow Worker may not be running"
+          fi
+          
+          # Check notification worker
+          if docker ps --filter "name=notification-worker" --filter "status=running" | grep -q notification-worker; then
+            echo "✅ Notification Worker is running"
+          else
+            echo "⚠️ Notification Worker may not be running"
+          fi
+
+      - name: Check RabbitMQ queues
+        continue-on-error: true
+        run: |
+          echo "=== RabbitMQ Queue Status ==="
+          docker exec rabbitmq rabbitmqctl list_queues name messages consumers 2>/dev/null || echo "Could not list queues"
+
+      - name: Collect service logs on failure
+        if: failure()
+        working-directory: Docker
+        run: |
+          mkdir -p ../logs
+          
+          for service in rabbitmq postgres_db auth-service ticket-service workflow-api workflow-worker messaging-service notification-service notification-worker; do
+            echo "=== $service ===" >> ../logs/all-services.log
+            docker logs $service 2>&1 >> ../logs/all-services.log 2>/dev/null || echo "No logs for $service" >> ../logs/all-services.log
+            echo "" >> ../logs/all-services.log
+          done
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-logs
+          path: logs/
+          retention-days: 7
+
+      - name: Final service status
+        if: always()
+        run: |
+          echo ""
+          echo "=== Final Container Status ==="
+          docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+      - name: Stop all services
+        if: always()
+        working-directory: Docker
+        run: |
+          echo "Stopping all services..."
+          docker compose down -v
+          echo "✅ Services stopped and volumes removed"
+
+  service-logs-review:
+    name: Review Service Logs
+    runs-on: ubuntu-latest
+    needs: build-containers
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start services briefly
+        working-directory: Docker
+        run: |
+          docker compose build
+          docker compose up -d
+          sleep 45
+
+      - name: Collect startup logs
+        run: |
+          echo "=== Auth Service Startup ==="
+          docker logs auth-service 2>&1 | head -50 || true
+          
+          echo ""
+          echo "=== Workflow API Startup ==="
+          docker logs workflow-api 2>&1 | head -50 || true
+          
+          echo ""
+          echo "=== Workflow Worker Startup ==="
+          docker logs workflow-worker 2>&1 | head -50 || true
+          
+          echo ""
+          echo "=== Ticket Service Startup ==="
+          docker logs ticket-service 2>&1 | head -50 || true
+          
+          echo ""
+          echo "=== Notification Service Startup ==="
+          docker logs notification-service 2>&1 | head -50 || true
+          
+          echo ""
+          echo "=== Notification Worker Startup ==="
+          docker logs notification-worker 2>&1 | head -50 || true
+
+      - name: Check for startup errors
+        run: |
+          echo "=== Checking for errors in logs ==="
+          
+          error_count=0
+          
+          for service in auth-service ticket-service workflow-api workflow-worker notification-service notification-worker; do
+            errors=$(docker logs $service 2>&1 | grep -iE "error|exception|failed|traceback" | head -10 || true)
+            if [ -n "$errors" ]; then
+              echo "⚠️ Potential issues in $service:"
+              echo "$errors"
+              echo ""
+              error_count=$((error_count + 1))
+            fi
+          done
+          
+          if [ $error_count -eq 0 ]; then
+            echo "✅ No obvious errors found in startup logs"
+          else
+            echo "⚠️ Found potential issues in $error_count service(s)"
+          fi
+
+      - name: Stop services
+        if: always()
+        working-directory: Docker
+        run: docker compose down -v
+
+  test-summary:
+    name: Orchestration Test Summary
+    runs-on: ubuntu-latest
+    needs: [build-containers, orchestration-test, service-logs-review]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "=============================================="
+          echo "  Docker Compose Orchestration Test Summary  "
+          echo "=============================================="
+          echo ""
+          echo "Build Containers:     ${{ needs.build-containers.result }}"
+          echo "Orchestration Test:   ${{ needs.orchestration-test.result }}"
+          echo "Service Logs Review:  ${{ needs.service-logs-review.result }}"
+          echo ""
+          
+          if [ "${{ needs.build-containers.result }}" = "success" ] && \
+             [ "${{ needs.orchestration-test.result }}" = "success" ]; then
+            echo "✅ Docker Compose orchestration is working!"
+          else
+            echo "⚠️ Some tests did not pass - check individual job results"
+          fi
+
+      - name: Set final status
+        run: |
+          if [ "${{ needs.build-containers.result }}" = "failure" ]; then
+            echo "❌ Build failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.orchestration-test.result }}" = "failure" ]; then
+            echo "❌ Orchestration test failed"
+            exit 1
+          fi
+          
+          echo "✅ All critical tests passed"

@@ -316,10 +316,27 @@
       </a>
     </div>
 
-    <!-- Admin Settings - Only show if user is Admin in the currently selected system -->
-    {% if request.session.last_selected_system %}
+    <!-- Admin Settings - Only show if user is Admin in ANY system or is a superuser -->
+    {% if user.is_superuser %}
+      {# Show admin menu for superusers #}
+      <div class="settingsMenuSection">
+        <div class="settingsMenuLabel">Administration</div>
+        <a href="{% url 'agent-management' %}" class="settingsLink" data-nav="agents">
+          <i class="fa fa-users"></i> Manage Agents
+        </a>
+        <a href="{% url 'invite-agent' %}" class="settingsLink" data-nav="invite-agent">
+          <i class="fa fa-user-plus"></i> Invite Agent
+        </a>
+        <a href="{% url 'role_management_shortcut' %}" class="settingsLink" data-nav="role-management">
+          <i class="fa fa-cogs"></i> Manage Roles
+        </a>
+        <a href="{% url 'tts:manage_assignments' %}" class="settingsLink" data-nav="manage-assignments">
+          <i class="fa fa-users-cog"></i> Manage Assignments
+        </a>
+      </div>
+    {% else %}
       {% for system_role in user.system_roles.all %}
-        {% if system_role.system.slug == request.session.last_selected_system and system_role.role.name == "Admin" %}
+        {% if system_role.role.name == "Admin" %}
           <div class="settingsMenuSection">
             <div class="settingsMenuLabel">Administration</div>
             <a href="{% url 'agent-management' %}" class="settingsLink" data-nav="agents">
@@ -337,27 +354,9 @@
               </a>
             {% endif %}
           </div>
-          {% comment %}Only render once - exit loop after first match{% endcomment %}
           {% if forloop.first %}{% endif %}
         {% endif %}
       {% endfor %}
-    {% elif user.is_superuser %}
-      {# Show admin menu for superusers even without a selected system #}
-      <div class="settingsMenuSection">
-        <div class="settingsMenuLabel">Administration</div>
-        <a href="{% url 'agent-management' %}" class="settingsLink" data-nav="agents">
-          <i class="fa fa-users"></i> Manage Agents
-        </a>
-        <a href="{% url 'invite-agent' %}" class="settingsLink" data-nav="invite-agent">
-          <i class="fa fa-user-plus"></i> Invite Agent
-        </a>
-        <a href="{% url 'role_management_shortcut' %}" class="settingsLink" data-nav="role-management">
-          <i class="fa fa-cogs"></i> Manage Roles
-        </a>
-        <a href="{% url 'tts:manage_assignments' %}" class="settingsLink" data-nav="manage-assignments">
-          <i class="fa fa-users-cog"></i> Manage Assignments
-        </a>
-      </div>
     {% endif %}
 
     <!-- Logout -->

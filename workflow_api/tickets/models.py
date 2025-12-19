@@ -1,4 +1,5 @@
 from django.db import models
+from workflow_api.safe_logging import safe_print as print  # Use safe print for verbosity control
 
 class RoundRobin(models.Model):
     """Stores round-robin state for role-based user assignment"""

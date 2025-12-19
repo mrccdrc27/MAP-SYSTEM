@@ -1,0 +1,19 @@
+.card {
+  background: #fff;
+  box-shadow: 0 0 20px rgba(211,211,211,0.3);
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  padding: 24px;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Shared form container used across pages. Update this single rule to
+   change placement/width/padding for all forms that use FormCard. */
+.formContainer {
+  margin: 8px 38px 0 38px; /* 8px top, 38px sides */
+  max-width: 600px;
+  width: 100%;
+  box-sizing: border-box;
+}

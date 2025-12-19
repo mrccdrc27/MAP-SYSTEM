@@ -1,0 +1,90 @@
+# Views package - re-exports all views for compatibility
+from .auth_views import (
+    login_view,
+    CreateEmployeeView,
+    CreateAdminEmployeeView,
+    EmployeeTokenObtainPairView,
+    AdminTokenObtainPairView,
+    deny_employee,
+    create_employee_admin_view,
+    approve_employee,
+    ApproveEmployeeView,
+)
+
+from .employee_views import (
+    employee_profile_view,
+    list_employees,
+    get_employee,
+    get_user_activity_logs,
+    change_password,
+    verify_password,
+    upload_profile_image,
+)
+
+from .ticket_views import (
+    TicketViewSet,
+    get_ticket_detail,
+    get_ticket_by_number,
+    add_ticket_comment,
+    approve_ticket,
+    reject_ticket,
+    claim_ticket,
+    update_ticket_status,
+    withdraw_ticket,
+    submit_csat_rating,
+    get_csat_feedback,
+    get_new_tickets,
+    get_open_tickets,
+    get_my_tickets,
+    download_attachment,
+    finalize_ticket,
+    custom_api_root,
+)
+
+from .knowledge_views import (
+    KnowledgeArticleViewSet,
+)
+
+from .media_views import (
+    serve_protected_media,
+    test_jwt_view,
+)
+
+__all__ = [
+    'login_view',
+    'CreateEmployeeView',
+    'CreateAdminEmployeeView',
+    'EmployeeTokenObtainPairView',
+    'AdminTokenObtainPairView',
+    'deny_employee',
+    'create_employee_admin_view',
+    'approve_employee',
+    'ApproveEmployeeView',
+    'employee_profile_view',
+    'list_employees',
+    'get_employee',
+    'get_user_activity_logs',
+    'change_password',
+    'verify_password',
+    'upload_profile_image',
+    'TicketViewSet',
+    'get_ticket_detail',
+    'get_ticket_by_number',
+    'add_ticket_comment',
+    'approve_ticket',
+    'reject_ticket',
+    'claim_ticket',
+    'update_ticket_status',
+    'withdraw_ticket',
+    'submit_csat_rating',
+    'get_csat_feedback',
+    'get_new_tickets',
+    'get_open_tickets',
+    'get_my_tickets',
+    'download_attachment',
+    'finalize_ticket',
+    'custom_api_root',
+    'KnowledgeArticleViewSet',
+    'serve_protected_media',
+    'test_jwt_view',
+]

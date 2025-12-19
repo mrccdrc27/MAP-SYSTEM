@@ -18,7 +18,7 @@ from .serializers import (
 )
 from systems.models import System
 from roles.models import Role
-from permissions import IsSystemAdminOrSuperUser, IsSystemAdminOrSuperUserForSystem, filter_queryset_by_system_access
+from auth.permissions import IsSystemAdminOrSuperUser, IsSystemAdminOrSuperUserForSystem, filter_queryset_by_system_access
 
 
 @extend_schema_view(

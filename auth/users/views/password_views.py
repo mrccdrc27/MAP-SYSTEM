@@ -57,13 +57,22 @@ class ForgotPasswordView(generics.CreateAPIView):
                 reset_token = PasswordResetToken.generate_for_user(user)
                 
                 # Send password reset email
-                if send_password_reset_email(user, reset_token, request):
-                    message = 'If an account with that email exists, a password reset link has been sent.'
+                email_sent = send_password_reset_email(user, reset_token, request)
+                if email_sent:
+                    print(f"✅ Password reset email sent successfully to {email}")
                 else:
-                    message = 'If an account with that email exists, a password reset link has been sent.'
+                    print(f"❌ Failed to send password reset email to {email}")
+                
+                message = 'If an account with that email exists, a password reset link has been sent.'
                     
             except User.DoesNotExist:
                 # For security, don't reveal that the email doesn't exist
+                print(f"⚠️  User with email {email} not found")
+                message = 'If an account with that email exists, a password reset link has been sent.'
+            except Exception as e:
+                print(f"❌ Error in forgot password: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 message = 'If an account with that email exists, a password reset link has been sent.'
             
             return Response({'message': message}, status=status.HTTP_200_OK)
@@ -109,23 +118,14 @@ class ResetPasswordView(generics.GenericAPIView):
                 'token_valid': True
             }
             
-        return render(request, 'reset_password.html', context)
+        return render(request, 'public/staff_reset_password.html', context)
         
     def post(self, request, *args, **kwargs):
-        """Process the password reset form submission."""
-        token = request.POST.get('token') or request.query_params.get('token', '')
-        password = request.POST.get('password', '')
-        password_confirm = request.POST.get('password_confirm', '')
+        """Process the password reset API submission."""
+        # Data comes from request.data for JSON requests
+        serializer = self.get_serializer(data=request.data)
         
-        data = {
-            'token': token,
-            'password': password,
-            'password_confirm': password_confirm
-        }
-        
-        serializer = self.get_serializer(data=data)
-        
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True): # Raise exception to get DRF's default error handling
             reset_token = serializer.validated_data['reset_token']
             password = serializer.validated_data['password']
             
@@ -140,18 +140,13 @@ class ResetPasswordView(generics.GenericAPIView):
             # Invalidate all existing OTP codes for security
             UserOTP.objects.filter(user=user, is_used=False).update(is_used=True)
             
-            context = {
+            return Response({
                 'success': True,
                 'message': 'Password has been reset successfully. You can now log in with your new password.'
-            }
-            return render(request, 'users/reset_password_success.html', context)
+            }, status=status.HTTP_200_OK)
         
-        context = {
-            'token': token,
-            'token_valid': True,
-            'errors': serializer.errors
-        }
-        return render(request, 'reset_password.html', context)
+        # If serializer.is_valid() returns False, it would have raised an exception due to raise_exception=True.
+        # This part of the code should not be reached.
 
 
 @extend_schema(
@@ -178,56 +173,7 @@ class ProfilePasswordResetView(generics.GenericAPIView):
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
 
 
-@method_decorator([csrf_protect, never_cache], name='dispatch')
-class ForgotPasswordUIView(FormView):
-    """
-    UI view for forgot password that matches the DRF ForgotPasswordView validation.
-    """
-    template_name = 'users/forgot_password.html'
-    form_class = ForgotPasswordForm
-    success_url = reverse_lazy('auth_login')
-    
-    def dispatch(self, request, *args, **kwargs):
-        # Redirect authenticated users
-        if hasattr(request, 'user') and request.user.is_authenticated:
-            return redirect(self.success_url)
-        return super().dispatch(request, *args, **kwargs)
-    
-    def get_context_data(self, **kwargs):
-        """Add additional context for template"""
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'page_title': 'Forgot Password',
-            'login_url': reverse_lazy('auth_login'),
-        })
-        return context
-    
-    def form_valid(self, form):
-        """Handle successful form submission using the same logic as DRF view"""
-        email = form.cleaned_data['email']
-        
-        try:
-            user = User.objects.get(email=email, is_active=True)
-            reset_token = PasswordResetToken.generate_for_user(user)
-            
-            # Send password reset email using the same function as DRF view
-            if send_password_reset_email(user, reset_token, self.request):
-                message = 'If an account with that email exists, a password reset link has been sent.'
-            else:
-                message = 'If an account with that email exists, a password reset link has been sent.'
-                
-        except User.DoesNotExist:
-            # For security, don't reveal that the email doesn't exist
-            message = 'If an account with that email exists, a password reset link has been sent.'
-        
-        # Add success message and redirect to login
-        messages.success(self.request, message)
-        return redirect(self.success_url)
-    
-    def form_invalid(self, form):
-        """Handle form errors"""
-        messages.error(self.request, 'Please correct the errors below.')
-        return super().form_invalid(form)
+
 
 
 @method_decorator([never_cache], name='dispatch')  

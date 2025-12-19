@@ -1,0 +1,111 @@
+/* === Layout === */
+.dashboardContainer {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  /* PageLayout already provides all necessary padding: 36px 38px 38px 38px */
+  box-sizing: border-box;
+}
+
+/* === Page Title === */
+.title {
+  font-family: 'Poppins', sans-serif;  /* H1 Typography spec: Poppins */
+  font-size: clamp(32px, 4vw, 40px);   /* H1 Typography spec: 32-40px clamp */
+  font-weight: 700;                     /* H1 Typography spec: Bold */
+  line-height: 1.2;                     /* H1 Typography spec: 110%-120% */
+  color: var(--text-color);             /* Theme color */
+  margin-bottom: 1.5rem;                /* Spacing below (24px, matches section spacing) */
+}
+
+/* === Tabs === */
+.tabContainer {
+  width: 100%; /* Full width container */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem; /* Requested gap between tabs */
+  position: relative; /* for sliding indicator */
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.04); /* Subtle divider */
+  margin-bottom: 1.5rem; /* Space between tabs and content */
+}
+
+.tab {
+  flex: 1; /* Equal spacing on desktop */
+  text-align: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--secondary-text-color);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text-color);
+}
+
+.tabActive {
+  color: var(--primary-color);
+}
+
+.tabInactive {
+  /* keep same layout but muted color */
+  flex: 1;
+  color: var(--secondary-text-color);
+  background: transparent;
+}
+
+.tabContent {
+  width: 100%; /* Content area below tabs: full width */
+  display: block;
+}
+
+/* === Grid Layouts === */
+.statsGrid,
+.userGrid,
+.statusCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem; /* 16px gap between cards */
+  margin-bottom: 1.5rem;
+}
+
+/* === Responsive Rules === */
+
+/* Desktop: side-by-side cards (default handled by grid) */
+
+/* Tablet: 2x2 grid for status cards */
+@media (max-width: 1024px) {
+  .statusCardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile: stack everything vertically */
+@media (max-width: 640px) {
+  .statusCardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tabContainer {
+    flex-wrap: wrap;
+    gap: 0.75rem; /* reduced gap on mobile */
+  }
+
+  /* On mobile, tabs should size to content instead of equal width */
+  .tab, .tabInactive, .tabActive {
+    flex: 0 0 auto;
+  }
+}
+
+/* Sliding underline indicator */
+.tabIndicator {
+  position: absolute;
+  bottom: -1px; /* sits just below the thin divider line */
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 3px;
+  transition: left 200ms ease, width 200ms ease;
+}

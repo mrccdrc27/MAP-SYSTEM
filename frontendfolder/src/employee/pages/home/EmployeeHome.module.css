@@ -1,0 +1,336 @@
+/* === PAGE CONTAINER === */
+.pageContainer {
+  /* PageLayout already provides all necessary padding: 36px 38px 38px 38px */
+  box-sizing: border-box;
+}
+
+/* === HEADER === */
+.welcomeHeader {
+  font-family: 'Poppins', sans-serif;  /* H1 Typography spec: Poppins */
+  font-size: clamp(32px, 4vw, 40px);   /* H1 Typography spec: 32-40px clamp */
+  font-weight: 700;                     /* H1 Typography spec: Bold */
+  line-height: 1.2;                     /* H1 Typography spec: 110%-120% */
+  color: var(--text-color);             /* Theme color */
+  margin-bottom: 1.5rem;                /* Dashboard spacing: 24px below (matches major section spacing) */
+}
+
+.welcomeName {
+  color: var(--primary-color);
+}
+
+/* === TOP SECTION CARDS === */
+.topSection {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr; /* Quick Actions slightly larger than Notice */
+  gap: 2rem; /* Increased gap for better breathing room */
+  margin-bottom: 2rem; /* Reduced spacing to bring Recent Tickets closer */
+}
+
+.card {
+  background: white;
+  border-radius: 12px; /* Slightly more rounded for modern look */
+  padding: 32px; /* Increased padding for better content spacing */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Slightly stronger shadow */
+  border: 1px solid #e5e7eb;
+  min-height: 200px; /* Ensure consistent card heights */
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  font-size: 1.375rem; /* 22px - larger title */
+  font-weight: 700; /* Bolder weight */
+  margin-bottom: 1.5rem; /* More space below title */
+  color: #1a202c; /* Darker color for better hierarchy */
+  letter-spacing: -0.025em; /* Slight letter spacing for cleaner look */
+}
+
+/* === ACTION GROUPS === */
+.actionGroupColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Increased gap between primary and secondary buttons */
+  flex: 1; /* Take full height of card */
+}
+
+.actionGroupRow {
+  display: flex;
+  gap: 20px; /* Increased gap between secondary buttons */
+  flex-wrap: wrap;
+}
+
+/* Remove flex overrides to let Button component handle its own styling */
+
+/* === BUTTON LAYOUT OVERRIDES === */
+/* Ensure buttons in action row are equal width on desktop */
+@media (min-width: 769px) {
+  .actionGroupRow > * {
+    flex: 1;
+    min-width: 180px; /* Larger minimum width for better proportion */
+  }
+}
+
+/* On tablet and mobile, buttons should stack */
+@media (max-width: 768px) {
+  .topSection {
+    grid-template-columns: 1fr; /* Stack cards vertically */
+    gap: 1.5rem;
+  }
+  
+  .card {
+    padding: 24px; /* Reduce padding on smaller screens */
+    min-height: auto;
+  }
+  
+  .actionGroupRow {
+    flex-direction: column;
+    gap: 16px; /* Better gap on mobile */
+  }
+}
+
+/* === NOTICE === */
+.noticeText {
+  color: var(--secondary-text-color);
+  margin-bottom: 1.5rem; /* Increased space below intro text */
+  line-height: 1.6;
+  font-size: 0.95rem; /* Slightly larger text */
+}
+
+.workingHours {
+  color: var(--primary-color);
+  font-weight: 700; /* Bolder for emphasis */
+  background: rgba(var(--primary-color-rgb), 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.noticeList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Better spacing between list items */
+}
+
+.noticeItem {
+  color: var(--secondary-text-color);
+  padding-left: 1.25rem; /* More padding for bullet */
+  position: relative;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.noticeItem::before {
+  content: "•";
+  color: var(--primary-color);
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+  font-size: 1.2rem; /* Larger bullet */
+  line-height: 1.2;
+}
+
+.phoneNumber {
+  color: var(--primary-color);
+  font-weight: 700; /* Bolder for emphasis */
+  background: rgba(var(--primary-color-rgb), 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* === TICKET SECTION === */
+.recentTickets {
+  background: white;
+  border-radius: 12px; /* Match card border radius */
+  padding: 32px; /* Match card padding */
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Match card shadow */
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem; /* Reduced space below header */
+}
+
+.sectionTitle {
+  font-size: 1.375rem; /* Match card title size */
+  font-weight: 700; /* Match card title weight */
+  color: #1a202c; /* Match card title color */
+  letter-spacing: -0.025em;
+}
+
+.ticketList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* Reduced gap between ticket items */
+}
+
+.ticketItem {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.ticketItem:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+/* === TICKET INFO GROUP === */
+.ticketInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* === TICKET HEADER === */
+.ticketHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ticketNumber {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Align labels and values */
+.ticketDetailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px 20px;
+}
+
+.ticketLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.ticketValue {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  word-break: break-word;
+}
+
+/* === STATUS BADGE (now in header) === */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* === ACTIONS BLOCK === */
+.ticketActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.lastUpdated {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Simple Button in Ticket Card */
+/* Use the shared Button component for sizing and styles. Avoid overriding font-size/padding here to keep consistency across the app. */
+.ticketActions .viewDetails {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === EMPTY STATE === */
+.noTickets {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 992px) {
+  /* PageLayout handles responsive padding - no need to override */
+}
+
+@media (max-width: 768px) {
+  /* Stack cards vertically on tablets */
+  .topSection {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .ticketHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .ticketDetailsGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .ticketActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .ticketActions .viewDetails {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .actionGroupRow {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 576px) {
+  /* PageLayout handles responsive padding - no need to override */
+  
+  .card {
+    padding: 24px;
+  }
+  
+  .ticketItem {
+    padding: 16px;
+  }
+}
+
+/* Remove excessive animations - keep it simple */

@@ -1,0 +1,264 @@
+/* === Table Container === */
+.tableContainer {
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #cccccc;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* === Header Section === */
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  border-bottom: 1px solid #cccccc;
+}
+
+.tableTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.button {
+  background-color: var(--primary-color);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 40px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* === Table Content === */
+.tableOverflow {
+  overflow-x: auto;
+}
+
+/* When applied, make the table body vertically scrollable and limit visible rows.
+   Uses CSS variable `--visible-rows` to determine how many rows to show (default 5).
+   Slightly reduced per-row/header heights so the UI shows 5 visible rows (not 6).
+*/
+.scrollableRows {
+  /* Use a slightly smaller row estimate and smaller header padding to tighten the table height */
+  max-height: calc((var(--visible-rows, 5) * 48px) + 64px);
+  overflow-y: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHead {
+  background-color: #f0f1f2;
+
+  /* Make the table header stick to the top when the table content scrolls vertically */
+  position: sticky;
+  top: 0;
+  z-index: 5;
+
+  /* Lock the first column so it stays visible when horizontally scrolling */
+  .table tbody td:first-child,
+  .table thead th:first-child {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 3; /* higher than header to avoid overlap artifacts when scrolling vertically */
+  }
+
+  /* Add a subtle right border to the locked column to visually separate it */
+  .table tbody td:first-child {
+    border-right: 1px solid #e5e7eb;
+  }
+
+  /* Utilities to lock multiple left columns. Assumes typical column widths; adjust if needed. */
+  .lockLeft1 .table tbody td:nth-child(1),
+  .lockLeft1 .table thead th:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    background: #fff;
+  }
+
+  .lockLeft2 .table tbody td:nth-child(1),
+  .lockLeft2 .table thead th:nth-child(1) {
+    position: sticky; left: 0; z-index: 4; background: #fff;
+  }
+  .lockLeft2 .table tbody td:nth-child(2),
+  .lockLeft2 .table thead th:nth-child(2) {
+    position: sticky; left: 140px; z-index: 4; background: #fff;
+  }
+
+  .lockLeft3 .table tbody td:nth-child(1),
+  .lockLeft3 .table thead th:nth-child(1) { position: sticky; left: 0; z-index: 4; background: #fff; }
+  .lockLeft3 .table tbody td:nth-child(2),
+  .lockLeft3 .table thead th:nth-child(2) { position: sticky; left: 140px; z-index: 4; background: #fff; }
+  .lockLeft3 .table tbody td:nth-child(3),
+  .lockLeft3 .table thead th:nth-child(3) { position: sticky; left: 280px; z-index: 4; background: #fff; }
+
+  .lockLeft4 .table tbody td:nth-child(1),
+  .lockLeft4 .table thead th:nth-child(1) { position: sticky; left: 0; z-index: 4; background: #fff; }
+  .lockLeft4 .table tbody td:nth-child(2),
+  .lockLeft4 .table thead th:nth-child(2) { position: sticky; left: 140px; z-index: 4; background: #fff; }
+  .lockLeft4 .table tbody td:nth-child(3),
+  .lockLeft4 .table thead th:nth-child(3) { position: sticky; left: 280px; z-index: 4; background: #fff; }
+  .lockLeft4 .table tbody td:nth-child(4),
+  .lockLeft4 .table thead th:nth-child(4) { position: sticky; left: 420px; z-index: 4; background: #fff; }
+
+  .lockLeft5 .table tbody td:nth-child(1),
+  .lockLeft5 .table thead th:nth-child(1) { position: sticky; left: 0; z-index: 4; background: #fff; }
+  .lockLeft5 .table tbody td:nth-child(2),
+  .lockLeft5 .table thead th:nth-child(2) { position: sticky; left: 140px; z-index: 4; background: #fff; }
+  .lockLeft5 .table tbody td:nth-child(3),
+  .lockLeft5 .table thead th:nth-child(3) { position: sticky; left: 280px; z-index: 4; background: #fff; }
+  .lockLeft5 .table tbody td:nth-child(4),
+  .lockLeft5 .table thead th:nth-child(4) { position: sticky; left: 420px; z-index: 4; background: #fff; }
+  .lockLeft5 .table tbody td:nth-child(5),
+  .lockLeft5 .table thead th:nth-child(5) { position: sticky; left: 560px; z-index: 4; background: #fff; }
+
+  .lockLeft6 .table tbody td:nth-child(1),
+  .lockLeft6 .table thead th:nth-child(1) { position: sticky; left: 0; z-index: 4; background: #fff; }
+  .lockLeft6 .table tbody td:nth-child(2),
+  .lockLeft6 .table thead th:nth-child(2) { position: sticky; left: 140px; z-index: 4; background: #fff; }
+  .lockLeft6 .table tbody td:nth-child(3),
+  .lockLeft6 .table thead th:nth-child(3) { position: sticky; left: 280px; z-index: 4; background: #fff; }
+  .lockLeft6 .table tbody td:nth-child(4),
+  .lockLeft6 .table thead th:nth-child(4) { position: sticky; left: 420px; z-index: 4; background: #fff; }
+  .lockLeft6 .table tbody td:nth-child(5),
+  .lockLeft6 .table thead th:nth-child(5) { position: sticky; left: 560px; z-index: 4; background: #fff; }
+  .lockLeft6 .table tbody td:nth-child(6),
+  .lockLeft6 .table thead th:nth-child(6) { position: sticky; left: 700px; z-index: 4; background: #fff; }
+}
+
+.tableHeaderCell {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0c0c0c;
+  text-transform: uppercase;
+  text-align: left;
+  border-top: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
+  height: 48px;
+}
+
+.tableRow {
+  border-bottom: 1px solid #cccccc;
+  transition: background-color 0.2s ease;
+  min-height: 48px;
+  vertical-align: middle;
+}
+
+/* Removed striped rows to match reference */
+/* .tableRow:nth-child(even) {
+  background-color: #f8f8f8;
+} */
+
+.tableRow:hover {
+  background-color: #fcfcfc;
+}
+
+.tableCell {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-color);
+  height: 48px;
+}
+
+/* === Status Badges === */
+.statusBadge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.statusNew {
+  background-color: var(--new-bg);
+  color: var(--new-text);
+}
+
+.statusOpen {
+  background-color: var(--open-bg);
+  color: var(--open-text);
+}
+
+.statusInProgress {
+  background-color: var(--inprogress-bg);
+  color: var(--inprogress-text);
+}
+
+.statusOnHold {
+  background-color: var(--onhold-bg);
+  color: var(--onhold-text);
+}
+
+.statusSubmitted {
+  background-color: var(--submitted-bg);
+  color: var(--submitted-text);
+}
+
+.statusPending {
+  background-color: var(--pending-bg);
+  color: var(--pending-text);
+}
+
+.statusClosed {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.statusRejected {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.statusWithdrawn {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* === CSAT Rating Badges === */
+.ratingExcellent {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.ratingGood {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.ratingNeutral {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.ratingPoor {
+  background-color: #fecaca;
+  color: #dc2626;
+}
+
+.ratingVeryPoor {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.emptyState {
+  padding: 2rem;
+  text-align: center;
+  color: var(--secondary-text-color);
+  font-size: 0.875rem;
+}

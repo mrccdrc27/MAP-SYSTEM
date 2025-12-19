@@ -1,0 +1,100 @@
+/* === Title === */
+.heading {
+  font-size: 18px;          /* spec */
+  font-weight: 600;         /* semi-bold */
+  margin: 0;                /* rely on modal gap, not margins */
+}
+
+/* === Field Wrapper === */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;                 /* spacing between label & textarea */
+}
+
+.field label {
+  font-size: 14px;          /* spec */
+  font-weight: 400;
+  color: #212529;
+}
+
+.required {
+  color: #dc3545;           /* spec: danger red */
+  margin-left: 4px;
+}
+
+/* === Textarea === */
+.textarea {
+  padding: 8px;
+  resize: none;
+  width: 100%;
+  font-family: inherit;
+  border-radius: 8px;       /* consistent with buttons */
+  border: 1px solid #d3d3d3;
+  font-size: 14px;
+  color: #212529;
+}
+
+/* === Actions (Button Row) === */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;                /* spec: 12–16px */
+  margin-top: 24px;
+}
+
+/* === Cancel Button === */
+.cancel {
+  padding: 8px 16px;
+  background-color: #f8f9fa;   /* spec */
+  border: 1px solid #d3d3d3;   /* spec */
+  border-radius: 8px;
+  color: #212529;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === Confirm Button === */
+.confirm {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Contextual button states */
+.confirm.close,
+.confirm.confirm {
+  background-color: #007bff;   /* Blue for confirm/close */
+}
+.confirm.delete {
+  background-color: #dc3545;   /* Red for delete/deactivate */
+}
+.confirm.activate {
+  background-color: #28a745;   /* Green for activate */
+}
+
+.confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === Responsive Adjustments === */
+@media (max-width: 768px) {
+  .actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cancel,
+  .confirm {
+    width: 100%;               /* bigger touch targets */
+  }
+}

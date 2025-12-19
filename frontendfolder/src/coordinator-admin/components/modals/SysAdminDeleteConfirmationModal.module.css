@@ -1,0 +1,104 @@
+.container {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  text-align: center;
+}
+
+.iconSection {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.iconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteIcon {
+  font-size: 32px;
+  color: #ef4444;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.warning {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+}
+
+.cancel,
+.delete {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.cancel {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.cancel:hover:not(:disabled) {
+  background-color: #d1d5db;
+}
+
+.cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete {
+  background-color: #ef4444;
+  color: white;
+}
+
+.delete:hover:not(:disabled) {
+  background-color: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.delete:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

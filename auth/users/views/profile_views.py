@@ -139,17 +139,21 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         serializer.save()
 
 
-@jwt_cookie_required 
+from ..decorators import staff_required
+
+@staff_required
 def profile_settings_view(request):
     """
-    Render and process the profile settings form for the authenticated user
-    using JWT cookie authentication.
-
-    Loosened version: non-admin users can only update allowed fields,
-    but restricted fields are silently ignored instead of rejected.
+    Render and process the profile settings form for authenticated staff users.
+    
+    Authentication is handled by:
+    1. AuthenticationRoutingMiddleware (checks JWT, sets user_type and user_id)
+    2. @staff_required decorator (verifies staff type and fetches User object)
+    
+    The decorator ensures request.user is set to the authenticated User object.
     """
-    # The decorator now ensures request.user is set if the JWT is valid
-    user = request.user 
+    # The decorator has already set request.user
+    user = request.user
     is_admin_or_superuser = user.is_superuser or user.is_staff
     # Allow otp_enabled and profile_picture-clear (the clear checkbox) as well
     allowed_fields = {'username', 'phone_number', 'profile_picture', 'otp_enabled', 'profile_picture-clear'}

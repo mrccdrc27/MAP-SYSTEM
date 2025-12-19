@@ -1,0 +1,15 @@
+/* Customize react-loading-skeleton */
+:global(.react-loading-skeleton) {
+  background-color: #f0f0f0;
+  border-radius: 6px;
+}
+
+:global(.react-loading-skeleton::after) {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0)
+  );
+}

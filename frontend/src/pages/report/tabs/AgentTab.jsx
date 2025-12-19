@@ -9,13 +9,7 @@ import ChartContainer from "../../../components/charts/ChartContainer";
 // styles
 import styles from "../report.module.css";
 
-export default function AgentTab({
-  displayStyle = "charts",
-  timeFilter,
-  analyticsData = {},
-  loading,
-  error,
-}) {
+export default function AgentTab({ timeFilter, analyticsData = {}, loading, error }) {
   const ticketsReport = analyticsData || {};
 
   if (loading)
@@ -56,201 +50,6 @@ export default function AgentTab({
   const slaComplianceRate = dashboard?.sla_compliance_rate || 0;
   const totalUsers = dashboard?.total_users || 0;
   const escalationRate = dashboard?.escalation_rate || 0;
-
-  // Render different views based on displayStyle
-  if (displayStyle === "list") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        {/* KPI as List */}
-        <div className={styles.chartSection}>
-          <h2>Agent Performance KPI</h2>
-          <div className={styles.listView}>
-            <div className={styles.listItem}>
-              <span className={styles.listLabel}>SLA Compliance Rate</span>
-              <span className={styles.listValue}>
-                {Math.round(slaComplianceRate)}%
-              </span>
-            </div>
-            <div className={styles.listItem}>
-              <span className={styles.listLabel}>Total Users</span>
-              <span className={styles.listValue}>{totalUsers}</span>
-            </div>
-            <div className={styles.listItem}>
-              <span className={styles.listLabel}>Escalation Rate</span>
-              <span className={styles.listValue}>
-                {Math.round(escalationRate)}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* SLA Compliance as List */}
-        <div className={styles.chartSection}>
-          <h2>SLA Compliance by Priority</h2>
-          <div className={styles.listView}>
-            {slaLabels.map((label, idx) => (
-              <div key={idx} className={styles.analyticsSection}>
-                <h3>{label}</h3>
-                <div className={styles.listItem}>
-                  <span className={styles.listLabel}>Compliance Rate</span>
-                  <span className={styles.listValue}>
-                    {slaCompliances[idx]}%
-                  </span>
-                </div>
-                <div className={styles.listItem}>
-                  <span className={styles.listLabel}>Met</span>
-                  <span className={styles.listValue}>{slaMetCounts[idx]}</span>
-                </div>
-                <div className={styles.listItem}>
-                  <span className={styles.listLabel}>Breached</span>
-                  <span className={styles.listValue}>
-                    {slaBreachedCounts[idx]}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* User Performance as List */}
-        <div className={styles.chartSection}>
-          <h2>User Resolution Rates</h2>
-          <div className={styles.listView}>
-            {userLabels.map((label, idx) => (
-              <div key={idx} className={styles.listItem}>
-                <span className={styles.listLabel}>{label}</span>
-                <span className={styles.listValue}>
-                  {userResolutionRates[idx]}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Per-User Task Item Performance as List */}
-        {taskUserLabels.length > 0 && (
-          <div className={styles.chartSection}>
-            <h2>Per-User Task Item Performance</h2>
-            <div className={styles.listView}>
-              {taskUserLabels.map((label, idx) => (
-                <div key={idx} className={styles.analyticsSection}>
-                  <h3>{label}</h3>
-                  <div className={styles.listItem}>
-                    <span className={styles.listLabel}>Resolved</span>
-                    <span className={styles.listValue}>
-                      {taskUserResolved[idx]}
-                    </span>
-                  </div>
-                  <div className={styles.listItem}>
-                    <span className={styles.listLabel}>Escalated</span>
-                    <span className={styles.listValue}>
-                      {taskUserEscalated[idx]}
-                    </span>
-                  </div>
-                  <div className={styles.listItem}>
-                    <span className={styles.listLabel}>Breached</span>
-                    <span className={styles.listValue}>
-                      {taskUserBreached[idx]}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (displayStyle === "grid") {
-    return (
-      <div className={styles.rpTicketTabSection}>
-        {/* KPI as Grid Table */}
-        <div className={styles.chartSection}>
-          <h2>Agent Performance KPI</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Metric</div>
-              <div>Value</div>
-            </div>
-            <div className={styles.gridRow}>
-              <div>SLA Compliance Rate</div>
-              <div>{Math.round(slaComplianceRate)}%</div>
-            </div>
-            <div className={styles.gridRow}>
-              <div>Total Users</div>
-              <div>{totalUsers}</div>
-            </div>
-            <div className={styles.gridRow}>
-              <div>Escalation Rate</div>
-              <div>{Math.round(escalationRate)}%</div>
-            </div>
-          </div>
-        </div>
-
-        {/* SLA Compliance as Grid Table */}
-        <div className={styles.chartSection}>
-          <h2>SLA Compliance Details</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>Priority</div>
-              <div>Compliance %</div>
-              <div>Met</div>
-              <div>Breached</div>
-            </div>
-            {slaLabels.map((label, idx) => (
-              <div key={idx} className={styles.gridRow}>
-                <div>{label}</div>
-                <div>{slaCompliances[idx]}%</div>
-                <div>{slaMetCounts[idx]}</div>
-                <div>{slaBreachedCounts[idx]}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* User Performance as Grid Table */}
-        <div className={styles.chartSection}>
-          <h2>User Resolution Rates</h2>
-          <div className={styles.gridTable}>
-            <div className={styles.gridHeader}>
-              <div>User</div>
-              <div>Resolution Rate %</div>
-            </div>
-            {userLabels.map((label, idx) => (
-              <div key={idx} className={styles.gridRow}>
-                <div>{label}</div>
-                <div>{userResolutionRates[idx]}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Per-User Task Item Performance as Grid Table */}
-        {taskUserLabels.length > 0 && (
-          <div className={styles.chartSection}>
-            <h2>Per-User Task Item Performance</h2>
-            <div className={styles.gridTable}>
-              <div className={styles.gridHeader}>
-                <div>User</div>
-                <div>Resolved</div>
-                <div>Escalated</div>
-                <div>Breached</div>
-              </div>
-              {taskUserLabels.map((label, idx) => (
-                <div key={idx} className={styles.gridRow}>
-                  <div>{label}</div>
-                  <div>{taskUserResolved[idx]}</div>
-                  <div>{taskUserEscalated[idx]}</div>
-                  <div>{taskUserBreached[idx]}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className={styles.chartsGrid}>
@@ -303,36 +102,57 @@ export default function AgentTab({
       </div>
 
       {/* Per-User Task Item Performance */}
-      {taskUserLabels.length > 0 && (
+      {taskUserPerf.length > 0 && (
         <div className={styles.chartSection}>
           <h2>Per-User Task Item Performance</h2>
-          <div className={styles.chartRow}>
-            <ChartContainer title="Resolved Items per User">
-              <BarChart
-                labels={taskUserLabels}
-                dataPoints={taskUserResolved}
-                chartTitle="Resolved Items"
-                chartLabel="Count"
-              />
-            </ChartContainer>
-
-            <ChartContainer title="Escalated Items per User">
-              <BarChart
-                labels={taskUserLabels}
-                dataPoints={taskUserEscalated}
-                chartTitle="Escalated Items"
-                chartLabel="Count"
-              />
-            </ChartContainer>
-
-            <ChartContainer title="Breached Items per User">
-              <BarChart
-                labels={taskUserLabels}
-                dataPoints={taskUserBreached}
-                chartTitle="Breached Items"
-                chartLabel="Count"
-              />
-            </ChartContainer>
+          <div className={styles.userPerformanceTable}>
+            <table className={styles.performanceTable}>
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Total</th>
+                  <th style={{ color: '#7ed321' }}>Resolved</th>
+                  <th style={{ color: '#e74c3c' }}>Escalated</th>
+                  <th style={{ color: '#f5a623' }}>Breached</th>
+                  <th>Resolution Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taskUserPerf.slice(0, 10).map((user, idx) => (
+                  <tr key={idx}>
+                    <td className={styles.userName}>{user.user_name || `User ${user.user_id}`}</td>
+                    <td>{user.total_items || 0}</td>
+                    <td>
+                      <span className={styles.statBadge} style={{ backgroundColor: '#7ed32120', color: '#7ed321' }}>
+                        {user.resolved || 0}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.statBadge} style={{ backgroundColor: '#e74c3c20', color: '#e74c3c' }}>
+                        {user.escalated || 0}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.statBadge} style={{ backgroundColor: '#f5a62320', color: '#f5a623' }}>
+                        {user.breached || 0}
+                      </span>
+                    </td>
+                    <td>
+                      <div className={styles.progressBarContainer}>
+                        <div 
+                          className={styles.progressBar} 
+                          style={{ 
+                            width: `${user.resolution_rate || 0}%`,
+                            backgroundColor: (user.resolution_rate || 0) >= 80 ? '#7ed321' : (user.resolution_rate || 0) >= 50 ? '#f5a623' : '#e74c3c'
+                          }}
+                        />
+                        <span className={styles.progressText}>{(user.resolution_rate || 0).toFixed(1)}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

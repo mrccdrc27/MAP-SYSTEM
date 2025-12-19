@@ -1,0 +1,84 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+.modal {
+  width: 92%;
+  max-width: 1100px;
+  max-height: 86vh;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.title {
+  font-weight: 600;
+}
+.body {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+.column {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f3f4f6;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.colHeader {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafafa;
+  font-weight: 600;
+}
+.colMeta {
+  padding: 6px 10px;
+  color: #6b7280;
+  font-size: 13px;
+}
+.colBody {
+  padding: 10px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.diffAdded {
+  background: #ecfdf5;
+  color: #064e3b;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+.diffRemoved {
+  background: #ffefef;
+  color: #7f1d1d;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+.diffContext {
+  color: #111827;
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #e5e7eb;
+}

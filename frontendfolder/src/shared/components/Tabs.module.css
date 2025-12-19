@@ -1,0 +1,102 @@
+/* Tabs.module.css */
+.tabsContainer {
+  width: 100%;
+}
+
+.tabList {
+  display: flex;
+  width: 100%;
+  /* subtle divider that matches card borders */
+  border-bottom: 1px solid rgba(15,23,42,0.04);
+  background: transparent; /* let the parent card background show through */
+  gap: 2rem;
+  align-items: stretch;
+  box-sizing: border-box;
+  position: relative; /* ensure stacking context */
+  z-index: 1100; /* sit above common navbars/overlays so tabs remain clickable */
+}
+
+.tab {
+  /* Ensure equal-width tabs by distributing available space evenly. */
+  flex: 1 1 0%;
+  min-width: 0;
+  padding: 12px 0 16px 0; /* extra bottom padding so indicator doesn't overlap text */
+  background: none;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s ease, background 0.15s ease, border-bottom 0.15s ease;
+  outline: none;
+  text-align: center;
+  position: relative;
+  z-index: 1110; /* above the tabList to ensure the button surface is clickable */
+  pointer-events: auto; /* ensure clicks land on buttons */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab:hover {
+  /* Hover uses a subtle gray tint to match the page background and keep the label prominent */
+  color: var(--primary-color-strong, #1e40af);
+  background: rgba(0,0,0,0.06); /* subtle gray tint (6% black over white -> soft gray) */
+}
+
+.activeTab {
+  color: #2563eb;
+  border-bottom: 3px solid #2563eb;
+  background: transparent;
+  font-weight: 800;
+}
+
+/* Slightly stronger background when hovering an already active tab, keep underline visible */
+.activeTab:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+/* Visible focus for keyboard users */
+.tab:focus {
+  /* Remove default outline on click so we don't get lines at top/around the button */
+  outline: none;
+}
+
+/* Only show a subtle bottom-focused indicator for keyboard users */
+.tab:focus-visible {
+  box-shadow: inset 0 -3px 0 rgba(37,99,235,0.18);
+}
+
+.tabContent {
+  padding: 18px 0 0 0;
+  width: 100%;
+}
+
+/* When tab panels should fill the available vertical space (useful for layouts
+   where the right column should stretch and allow inner panels to scroll),
+   apply the fullHeight modifier. */
+.fullHeight {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0; /* allow children with overflow to work correctly */
+}
+
+/* Responsive behavior */
+@media (max-width: 640px) {
+  .tabList {
+    gap: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+
+  /* On small screens we allow horizontal scrolling but keep tabs visually consistent.
+     Each tab will still try to take equal width but can shrink to fit within the scroll area. */
+  .tab {
+    flex: 1 1 0%;
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+}

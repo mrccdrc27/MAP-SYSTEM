@@ -147,7 +147,7 @@ export default function TicketDetail() {
         type: "SET_TICKET",
         payload: {
           ticket: {
-            ticket_id: t.ticket_id,
+            ticket_id: t.ticket_number || t.ticket_id || t.id, // Use ticket_number as primary ID
             ticket_number: t.ticket_number,
             ticket_subject: t.subject,
             ticket_description: t.description,

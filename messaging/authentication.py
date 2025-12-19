@@ -12,12 +12,17 @@ logger = logging.getLogger(__name__)
 
 class JWTCookieAuthentication(BaseAuthentication):
     """
-    JWT authentication via cookies with system-level authorization
+    JWT authentication via cookies or Authorization header with system-level authorization
     """
     
     def authenticate(self, request):
-        # Get JWT token from cookies
-        token = request.COOKIES.get('access_token')
+        # Try to get JWT token from Authorization header first (Bearer token)
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]  # Remove 'Bearer ' prefix
+        else:
+            # Fall back to cookies
+            token = request.COOKIES.get('access_token')
         
         if not token:
             return None

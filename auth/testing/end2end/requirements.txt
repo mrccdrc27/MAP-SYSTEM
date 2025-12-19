@@ -1,0 +1,6 @@
+# End-to-End Test Dependencies for Auth Service
+# Install with: pip install -r requirements.txt
+
+pytest>=7.0.0
+pytest-playwright>=0.4.0
+playwright>=1.40.0

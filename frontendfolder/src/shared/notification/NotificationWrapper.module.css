@@ -1,0 +1,30 @@
+/* Shared wrapper styles for cards/tables/overlays (modeled after table wrapper) */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card--padded {
+  padding: 16px;
+}
+
+.card--elevated {
+  box-shadow: 0 10px 30px rgba(11, 22, 39, 0.08);
+}
+
+.centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.responsive-width {
+  width: 420px;
+  max-width: 95vw;
+}
+/* Notification styles moved to src/shared/notification/NotificationContent.module.css */

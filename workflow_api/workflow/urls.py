@@ -1,11 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import WorkflowViewSet, CategoryViewSet, StepManagementViewSet, TransitionManagementViewSet
+from .views import WorkflowViewSet, StepManagementViewSet, TransitionManagementViewSet
 
 # Create routers
 workflow_router = DefaultRouter()
 workflow_router.register(r'', WorkflowViewSet, basename='workflow')
-workflow_router.register(r'categories', CategoryViewSet, basename='category')
 
 # Step and Transition management routers
 step_router = DefaultRouter()

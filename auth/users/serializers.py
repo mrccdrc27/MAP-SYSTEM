@@ -4,11 +4,12 @@ from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import User, UserOTP, PasswordResetToken
-from notification_client import notification_client
+from emails.services import get_email_service
 from system_roles.models import UserSystemRole
 import hashlib
 import requests
 import re
+import logging
 
 
 def validate_phone_number(phone_number):
@@ -190,8 +191,11 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     username = serializers.CharField(max_length=150, required=False)
     first_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    middle_name = serializers.CharField(max_length=100, required=False, allow_blank=True, allow_null=True)
     last_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    suffix = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
+    otp_enabled = serializers.BooleanField(required=False)
     profile_picture = serializers.ImageField(
         required=False,
         allow_null=True,
@@ -200,7 +204,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', 'phone_number', 'profile_picture')
+        fields = ('email', 'username', 'first_name', 'middle_name', 'last_name', 'suffix', 'phone_number', 'profile_picture', 'otp_enabled')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -342,12 +346,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['username'] = user.username
         token['full_name'] = user.get_full_name()
+        token['user_type'] = 'staff'  # This is for Staff users (User model)
         
         # Add system-specific roles using the existing UserSystemRole model
         roles = []
         
         # Get all user roles across different systems
-        user_system_roles = user.system_roles.select_related('system', 'role').all()
+        user_system_roles = UserSystemRole.objects.filter(user=user).select_related('system', 'role').all()
         for user_role in user_system_roles:
             roles.append({
                 'system': user_role.system.slug,  # Using system slug as identifier
@@ -383,11 +388,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                         user.lockout_time = None
                         user.save(update_fields=["is_locked", "failed_login_attempts", "lockout_time"])
                         # Send account unlocked notification via microservice
-                        notification_client.send_account_unlocked_notification(
-                            user=user,
-                            ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None,
-                            user_agent=self.context.get('request').META.get('HTTP_USER_AGENT') if self.context.get('request') else None
-                        )
+                        try:
+                            get_email_service().send_account_unlocked_email(
+                                user_email=user.email,
+                                user_name=user.get_full_name() or user.username,
+                                ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None
+                            )
+                        except Exception as e:
+                            logging.getLogger(__name__).error(f"Failed to send unlocked email: {e}")
                     else:
                         raise serializers.ValidationError(
                             "Account is locked due to too many failed login attempts. Please try again later.",
@@ -408,20 +416,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                         user.is_locked = True
                         user.lockout_time = timezone.now()
                         # Send account locked notification via microservice
-                        notification_client.send_account_locked_notification(
-                            user=user,
-                            failed_attempts=user.failed_login_attempts,
-                            ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None,
-                            user_agent=self.context.get('request').META.get('HTTP_USER_AGENT') if self.context.get('request') else None
-                        )
                     else:
                         # Send failed login attempt notification for multiple attempts (but not locked yet)
                         if user.failed_login_attempts >= 5:  # Start notifying after 5 attempts
-                            notification_client.send_failed_login_notification(
-                                user=user,
-                                ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None,
-                                user_agent=self.context.get('request').META.get('HTTP_USER_AGENT') if self.context.get('request') else None
-                            )
+                            try:
+                                get_email_service().send_failed_login_email(
+                                    user_email=user.email,
+                                    user_name=user.get_full_name() or user.username,
+                                    ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None,
+                                    attempt_time=timezone.now(),
+                                    failed_attempts=user.failed_login_attempts
+                                )
+                            except Exception as e:
+                                logging.getLogger(__name__).error(f"Failed to send failed login email: {e}")
                     user.save(update_fields=["failed_login_attempts", "is_locked", "lockout_time"])
                 raise serializers.ValidationError(
                     'Invalid email or password.',
@@ -445,9 +452,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     # Send OTP email
                     try:
                         send_otp_email(user_auth, otp_instance.otp_code)
-                        print(f"OTP sent to {user_auth.email}: {otp_instance.otp_code}")  # Debug print
+                        # Log success (without sensitive data)
+                        logging.getLogger(__name__).info(f"OTP sent to {user_auth.email}")
                     except Exception as e:
-                        print(f"Failed to send OTP email: {str(e)}")  # Debug print
+                        logging.getLogger(__name__).error(f"Failed to send OTP email: {str(e)}")
                     
                     raise serializers.ValidationError(
                         'OTP code is required for this account. An OTP has been sent to your email.',
@@ -461,9 +469,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     otp_instance = UserOTP.generate_for_user(user_auth, otp_type='email')
                     try:
                         send_otp_email(user_auth, otp_instance.otp_code)
-                        print(f"New OTP sent to {user_auth.email}: {otp_instance.otp_code}")  # Debug print
+                        logging.getLogger(__name__).info(f"New OTP sent to {user_auth.email}")
                     except Exception as e:
-                        print(f"Failed to send OTP email: {str(e)}")  # Debug print
+                        logging.getLogger(__name__).error(f"Failed to send OTP email: {str(e)}")
                     
                     raise serializers.ValidationError(
                         'Your previous OTP expired. A new OTP has been sent to your email.',
@@ -628,11 +636,13 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 def send_otp_email(user, otp_code):
-    """Send OTP code to user's email via notification service."""
-    from notification_client import notification_client
-    
+    """Send OTP code to user's email via email service."""
     try:
-        success = notification_client.send_otp_email_async(user, otp_code)
+        success, _, _ = get_email_service().send_otp_email(
+            user_email=user.email,
+            user_name=user.get_full_name() or user.username,
+            otp_code=otp_code
+        )
         return success
     except Exception as e:
         # Log the error in production
@@ -641,11 +651,22 @@ def send_otp_email(user, otp_code):
 
 
 def send_password_reset_email(user, reset_token, request=None):
-    """Send password reset email to user via notification service."""
-    from notification_client import notification_client
-    
+    """Send password reset email."""
     try:
-        success = notification_client.send_password_reset_email_async(user, reset_token, request)
+        # Build reset URL
+        if request:
+            base_url = f"{request.scheme}://{request.get_host()}"
+        else:
+            base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        
+        reset_url = f"{base_url}/api/v1/users/password/reset?token={reset_token.token}"
+        
+        success, _, _ = get_email_service().send_password_reset_email(
+            user_email=user.email,
+            user_name=user.get_full_name() or user.username,
+            reset_url=reset_url,
+            reset_token=reset_token.token
+        )
         return success
     except Exception as e:
         # Log the error in production
@@ -786,3 +807,370 @@ class AssignSystemRoleSerializer(serializers.Serializer):
         system = validated_data.pop('system')
         role = validated_data.pop('role')
         return UserSystemRole.objects.create(user=user, system=system, role=role)
+
+
+class LoginWithRecaptchaSerializer(serializers.Serializer):
+    """
+    Serializer for API-based login with reCAPTCHA v2 verification.
+    Handles email/password authentication and validates reCAPTCHA response server-side.
+    reCAPTCHA can be bypassed by setting RECAPTCHA_ENABLED=False in environment.
+    """
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    g_recaptcha_response = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    
+    def validate(self, attrs):
+        """Authenticate user with email and password after reCAPTCHA v2 verification."""
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        LOCKOUT_THRESHOLD = 10
+        LOCKOUT_TIME = timedelta(minutes=15)
+        
+        email = attrs.get('email')
+        password = attrs.get('password')
+        recaptcha_response = attrs.get('g_recaptcha_response')
+        
+        # Check if reCAPTCHA is enabled
+        recaptcha_enabled = getattr(settings, 'RECAPTCHA_ENABLED', True)
+        
+        # Verify reCAPTCHA only if enabled
+        if recaptcha_enabled:
+            if recaptcha_response:
+                verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+                secret_key = settings.RECAPTCHA_SECRET_KEY
+                
+                try:
+                    response = requests.post(
+                        verify_url,
+                        data={'secret': secret_key, 'response': recaptcha_response},
+                        timeout=5
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    
+                    if not result.get('success', False):
+                        raise serializers.ValidationError('reCAPTCHA verification failed.')
+                        
+                except requests.RequestException:
+                    raise serializers.ValidationError('Failed to verify reCAPTCHA. Please try again.')
+            else:
+                raise serializers.ValidationError('reCAPTCHA verification is required.')
+        
+        if email and password:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                user = None
+            
+            if user:
+                if user.is_locked:
+                    if user.lockout_time and timezone.now() >= user.lockout_time + LOCKOUT_TIME:
+                        user.is_locked = False
+                        user.failed_login_attempts = 0
+                        user.lockout_time = None
+                        user.save(update_fields=["is_locked", "failed_login_attempts", "lockout_time"])
+                        try:
+                            get_email_service().send_account_unlocked_email(
+                                user_email=user.email,
+                                user_name=user.get_full_name() or user.username,
+                                ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None
+                            )
+                        except Exception as e:
+                            logging.getLogger(__name__).error(f"Failed to send unlocked email: {e}")
+                    else:
+                        raise serializers.ValidationError(
+                            "Account is locked due to too many failed login attempts. Please try again later.",
+                            code="account_locked"
+                        )
+            
+            user_auth = authenticate(username=email, password=password)
+            
+            if not user_auth:
+                if user:
+                    user.failed_login_attempts += 1
+                    if user.failed_login_attempts >= LOCKOUT_THRESHOLD:
+                        user.is_locked = True
+                        user.lockout_time = timezone.now()
+                        try:
+                            get_email_service().send_account_locked_email(
+                                user_email=user.email,
+                                user_name=user.get_full_name() or user.username,
+                                locked_until=timezone.now() + LOCKOUT_TIME,
+                                failed_attempts=user.failed_login_attempts,
+                                lockout_duration="15 minutes",
+                                ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None
+                            )
+                        except Exception as e:
+                            logging.getLogger(__name__).error(f"Failed to send locked email: {e}")
+                    else:
+                        if user.failed_login_attempts >= 5:
+                            try:
+                                get_email_service().send_failed_login_email(
+                                    user_email=user.email,
+                                    user_name=user.get_full_name() or user.username,
+                                    ip_address=self.context.get('request').META.get('REMOTE_ADDR') if self.context.get('request') else None,
+                                    attempt_time=timezone.now(),
+                                    failed_attempts=user.failed_login_attempts
+                                )
+                            except Exception as e:
+                                logging.getLogger(__name__).error(f"Failed to send failed login email: {e}")
+                    user.save(update_fields=["failed_login_attempts", "is_locked", "lockout_time"])
+                
+                raise serializers.ValidationError('Invalid email or password.')
+            
+            attrs['user'] = user_auth
+        else:
+            raise serializers.ValidationError('Email and password are required.')
+        
+        return attrs
+
+
+class LoginProcessSerializer(LoginWithRecaptchaSerializer):
+    """
+    Extends LoginWithRecaptchaSerializer to handle full login process including:
+    - HDTS permission checks
+    - OTP generation/requirement check
+    - Token generation
+    - System role data aggregation
+    """
+    
+    def validate(self, attrs):
+        # First perform standard authentication
+        attrs = super().validate(attrs)
+        user = attrs['user']
+        request = self.context.get('request')
+        
+        # HDTS Specific Checks
+        is_hdts_employee = UserSystemRole.objects.filter(
+            user=user,
+            system__slug='hdts',
+            role__name='Employee'
+        ).exists()
+        
+        if is_hdts_employee and user.status != 'Approved':
+            error_message = 'Your account is pending approval by the HDTS system administrator.'
+            if user.status == 'Rejected':
+                error_message = 'Your account has been rejected by the HDTS system administrator.'
+            
+            raise serializers.ValidationError(error_message)
+
+        # 2FA Check
+        if user.otp_enabled:
+            # Generate OTP and send email
+            otp_instance = UserOTP.generate_for_user(user, otp_type='email')
+            
+            try:
+                get_email_service().send_otp_email(
+                    user_email=user.email,
+                    user_name=user.get_full_name() or user.username,
+                    otp_code=otp_instance.otp_code
+                )
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"Failed to send OTP email to {user.email}: {str(e)}")
+            
+            # Generate temporary token
+            from rest_framework_simplejwt.tokens import RefreshToken
+            temp_token = RefreshToken.for_user(user)
+            temp_token['temp_otp_login'] = True
+            temp_token['otp_required'] = True
+            
+            return {
+                'success': False,
+                'otp_required': True,
+                'message': 'OTP verification required. Check your email for the code.',
+                'temporary_token': str(temp_token.access_token),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                }
+            }
+
+        # If no 2FA, process full login
+        return self._generate_full_login_response(user)
+
+    def _generate_full_login_response(self, user):
+        from django.utils.timezone import now
+        
+        # Reset failed login attempts
+        user.failed_login_attempts = 0
+        user.is_locked = False
+        user.lockout_time = None
+        user.save(update_fields=["failed_login_attempts", "is_locked", "lockout_time"])
+        
+        # Update last_logged_on
+        UserSystemRole.objects.filter(user=user).update(last_logged_on=now())
+        
+        # Generate tokens using CustomTokenObtainPairSerializer for custom claims
+        # (email, username, full_name, user_type, roles)
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
+        
+        # Gather system roles
+        system_roles_data = []
+        user_system_roles = UserSystemRole.objects.filter(user=user).select_related('system', 'role')
+        for role_assignment in user_system_roles:
+            system_roles_data.append({
+                'system_name': role_assignment.system.name,
+                'system_slug': role_assignment.system.slug,
+                'role_name': role_assignment.role.name,
+                'assigned_at': role_assignment.assigned_at,
+            })
+            
+        # Determine redirect
+        primary_system = None
+        redirect_url = settings.DEFAULT_SYSTEM_URL
+        if system_roles_data:
+            primary_system = system_roles_data[0]['system_slug']
+            redirect_url = settings.SYSTEM_TEMPLATE_URLS.get(primary_system, settings.DEFAULT_SYSTEM_URL)
+            
+        available_systems = {
+            role_data['system_slug']: settings.SYSTEM_TEMPLATE_URLS.get(role_data['system_slug'], settings.DEFAULT_SYSTEM_URL)
+            for role_data in system_roles_data
+        }
+
+        return {
+            'success': True,
+            'otp_required': False,
+            'message': 'Authentication successful',
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'user': user,
+            'system_roles': system_roles_data,
+            'redirect': {
+                'primary_system': primary_system,
+                'url': redirect_url,
+                'available_systems': available_systems
+            }
+        }
+
+class VerifyOTPLoginSerializer(serializers.Serializer):
+    temporary_token = serializers.CharField(required=True)
+    otp_code = serializers.CharField(required=True)
+    
+    def validate(self, attrs):
+        from rest_framework_simplejwt.tokens import AccessToken
+        from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+        
+        token_str = attrs.get('temporary_token')
+        otp_code = attrs.get('otp_code')
+        
+        try:
+            token = AccessToken(token_str)
+            if not token.get('temp_otp_login'):
+                raise serializers.ValidationError('Invalid token type.')
+            
+            user_id = token.get('user_id')
+            user = User.objects.get(id=user_id)
+        except (TokenError, InvalidToken, User.DoesNotExist):
+            raise serializers.ValidationError('Invalid or expired token.')
+            
+        # Verify OTP
+        otp_instance = UserOTP.get_valid_otp_for_user(user)
+        if not otp_instance or not otp_instance.verify(otp_code):
+            raise serializers.ValidationError('Invalid or expired OTP code.')
+            
+        # Process full login
+        # Reuse logic from LoginProcessSerializer, but we can't easily inherit because inputs are different
+        # So we duplicate the generation logic or extract it to a mixin/helper
+        # For now, let's call the helper method from the class if we make it static or separate
+        # But since I put it on the instance, let's just duplicate or extract.
+        # Better: extract to a standalone helper function or method on User model?
+        # Let's just instantiate LoginProcessSerializer temporarily to reuse the method? No, that's messy.
+        
+        # Re-implement generation logic here for now (it's clean enough)
+        from django.utils.timezone import now
+        
+        user.failed_login_attempts = 0
+        user.is_locked = False
+        user.lockout_time = None
+        user.save(update_fields=["failed_login_attempts", "is_locked", "lockout_time"])
+        
+        UserSystemRole.objects.filter(user=user).update(last_logged_on=now())
+        
+        # Use CustomTokenObtainPairSerializer for custom claims (email, username, full_name, user_type, roles)
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
+        
+        system_roles_data = []
+        user_system_roles = UserSystemRole.objects.filter(user=user).select_related('system', 'role')
+        for role_assignment in user_system_roles:
+            system_roles_data.append({
+                'system_name': role_assignment.system.name,
+                'system_slug': role_assignment.system.slug,
+                'role_name': role_assignment.role.name,
+                'assigned_at': role_assignment.assigned_at,
+            })
+            
+        primary_system = None
+        redirect_url = settings.DEFAULT_SYSTEM_URL
+        if system_roles_data:
+            primary_system = system_roles_data[0]['system_slug']
+            redirect_url = settings.SYSTEM_TEMPLATE_URLS.get(primary_system, settings.DEFAULT_SYSTEM_URL)
+            
+        available_systems = {
+            role_data['system_slug']: settings.SYSTEM_TEMPLATE_URLS.get(role_data['system_slug'], settings.DEFAULT_SYSTEM_URL)
+            for role_data in system_roles_data
+        }
+        
+        return {
+            'success': True,
+            'message': 'OTP verification successful',
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'user': user,
+            'system_roles': system_roles_data,
+            'redirect': {
+                'primary_system': primary_system,
+                'url': redirect_url,
+                'available_systems': available_systems
+            }
+        }
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    otp_required = serializers.BooleanField(required=False)
+    message = serializers.CharField()
+    access_token = serializers.CharField(required=False)
+    refresh_token = serializers.CharField(required=False)
+    temporary_token = serializers.CharField(required=False)
+    
+    # Use SerializerMethodField to handle User object serialization safely
+    user = serializers.SerializerMethodField()
+    redirect = serializers.DictField(required=False)
+    
+    def get_user(self, instance):
+        if 'user' not in instance:
+            return None
+            
+        user = instance['user']
+        if isinstance(user, dict):
+            # Already serialized (e.g. in OTP required case where we pass a dict)
+            return user
+            
+        # If it's a User model instance, serialize it manually
+        # matching the structure expected by the frontend
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'middle_name': user.middle_name,
+            'last_name': user.last_name,
+            'suffix': user.suffix,
+            'username': user.username,
+            'phone_number': user.phone_number,
+            'company_id': user.company_id,
+            'department': user.department,
+            'status': user.status,
+            'notified': user.notified,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            'otp_enabled': user.otp_enabled,
+            'date_joined': user.date_joined,
+        }
+        
+        # Merge system_roles if present in the parent instance dict
+        if 'system_roles' in instance:
+            user_data['system_roles'] = instance['system_roles']
+            
+        return user_data

@@ -1,5 +1,6 @@
 """
 OTP (One-Time Password) and 2FA views - handles two-factor authentication.
+Handles requesting OTP, enabling/disabling 2FA, and OTP verification.
 """
 
 from rest_framework import generics, status
@@ -50,25 +51,29 @@ class RequestOTPView(generics.CreateAPIView):
             user = serializer.validated_data['user']
             otp_instance = UserOTP.generate_for_user(user, otp_type='email')
             
-            # Send OTP via email
+            # Send OTP via SendGrid
             try:
-                from django.core.mail import send_mail
-                from django.conf import settings
+                from emails.services import get_email_service
                 
-                send_mail(
-                    subject='Your 2FA Code',
-                    message=f'Your verification code is: {otp_instance.otp_code}\n\nThis code will expire in 5 minutes.',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
+                success, _, _ = get_email_service().send_otp_email(
+                    user_email=user.email,
+                    user_name=user.get_full_name() or user.username,
+                    otp_code=otp_instance.otp_code
                 )
                 
-                return Response({
-                    'message': 'OTP sent to your email address',
-                    'expires_in_minutes': 5
-                }, status=status.HTTP_200_OK)
+                if success:
+                    return Response({
+                        'message': 'OTP sent to your email address',
+                        'expires_in_minutes': 5
+                    }, status=status.HTTP_200_OK)
+                else:
+                    logger.error(f"Failed to send OTP email to {user.email}")
+                    return Response({
+                        'error': 'Failed to send email. Please try again later.'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
             except Exception as e:
-                logger.error(f"Failed to send OTP email to {user.email}: {str(e)}")
+                logger.error(f"Exception sending OTP email to {user.email}: {str(e)}")
                 return Response({
                     'error': 'Failed to send email. Please try again later.'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -182,25 +187,29 @@ def request_otp_authenticated_view(request):
     # Generate OTP for the user
     otp_instance = UserOTP.generate_for_user(user, otp_type='email')
     
-    # Send OTP via email
+    # Send OTP via SendGrid
     try:
-        from django.core.mail import send_mail
-        from django.conf import settings
+        from emails.services import get_email_service
         
-        send_mail(
-            subject='Your 2FA Verification Code',
-            message=f'Your verification code is: {otp_instance.otp_code}\n\nThis code will expire in 5 minutes.\n\nIf you did not request this code, please ignore this email.',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
+        success, _, _ = get_email_service().send_otp_email(
+            user_email=user.email,
+            user_name=user.get_full_name() or user.username,
+            otp_code=otp_instance.otp_code
         )
         
-        return Response({
-            'message': 'OTP sent to your email address',
-            'expires_in_minutes': 5
-        }, status=status.HTTP_200_OK)
+        if success:
+            return Response({
+                'message': 'OTP sent to your email address',
+                'expires_in_minutes': 5
+            }, status=status.HTTP_200_OK)
+        else:
+            logger.error(f"Failed to send OTP email to {user.email}")
+            return Response({
+                'error': 'Failed to send email. Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
     except Exception as e:
-        logger.error(f"Failed to send OTP email to {user.email}: {str(e)}")
+        logger.error(f"Exception sending OTP email to {user.email}: {str(e)}")
         return Response({
             'error': 'Failed to send email. Please try again later.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

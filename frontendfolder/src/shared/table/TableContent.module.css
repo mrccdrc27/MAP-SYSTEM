@@ -1,0 +1,406 @@
+/* === Container & Layout === */
+.data-table-container {
+  background: #fff;
+  border-radius: 0 0 40px 40px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.table-wrapper-inner {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 10px;
+}
+
+.table-wrapper-inner::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-wrapper-inner::-webkit-scrollbar-thumb {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+/* === Table Header === */
+.table-header {
+  background-color: #f0f1f2;
+}
+
+.table-header-cell,
+.sortable-header,
+.selection-header,
+.actions-header {
+  height: 50px;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0C0C0C;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  border-top: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
+  background-color: #f0f1f2;
+  vertical-align: middle;
+}
+
+/* Column width specifications */
+.selection-header {
+  width: 30px;
+  min-width: 30px;
+}
+
+.actions-header {
+  width: 70px;
+  min-width: 70px;
+  text-align: center;
+}
+
+/* === Sortable Columns === */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease-in-out;
+}
+.sortable-header:hover {
+  background-color: #E0E0E0; /* Gray 300 on hover */
+}
+.sortable-header.active {
+  color: #0C0C0C;
+}
+
+.sortable-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sort-icon {
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.6;
+  color: #0C0C0C; /* Base text color for icons */
+  transition: opacity 0.15s ease-in-out;
+}
+.sort-icon.active {
+  opacity: 1;
+}
+
+/* === Table Body === */
+.table-body {
+  background-color: #FFFFFF;
+}
+
+.table-row {
+  background-color: #FFFFFF;
+  transition: background-color 0.15s ease-in-out;
+  border-bottom: 1px solid #cccccc;
+}
+
+/* Alternating row colors - removed to match reference */
+/* .table-row:nth-child(even) {
+  background-color: #f8f8f8;
+} */
+
+/* Row hover effect */
+.table-row:hover {
+  background-color: #fcfcfc;
+}
+
+.table-cell {
+  height: 50px;
+  padding: 0.75rem;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  color: #0C0C0C;
+}
+
+.cell-content {
+  font-size: 0.8125rem;
+  color: var(--text-color);
+}
+
+/* === Selection & Actions Cells === */
+.selection-cell {
+  width: 30px;
+  padding: 0 4px 0 8px;
+}
+
+.actions-cell {
+  width: 70px;
+  text-align: center;
+  padding: 12px;
+}
+
+.actions-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* === Action Buttons === */
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+.action-btn:hover {
+  background-color: #f3f4f6;
+}
+.action-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+.action-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.action-btn.disabled:hover {
+  background-color: transparent;
+}
+
+.action-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.action-btn-edit    { color: #2563eb; }
+.action-btn-edit:hover { color: #1d4ed8; }
+
+.action-btn-delete  { color: #dc2626; }
+.action-btn-delete:hover { color: #b91c1c; }
+
+.action-btn-view    { color: #059669; }
+.action-btn-view:hover { color: #047857; }
+
+.action-btn-default { color: #6b7280; }
+.action-btn-default:hover { color: #374151; }
+
+/* === Checkbox === */
+.table-checkbox {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #2563eb;
+  cursor: pointer;
+}
+.table-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* === Status Badge === */
+.status-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-transform: capitalize;
+}
+.badge-blue    { background: #dbeafe;  color: #1e40af; }
+.badge-red     { background: #fee2e2;  color: #dc2626; }
+.badge-green   { background: #dcfce7;  color: #16a34a; }
+.badge-yellow  { background: #fef3c7;  color: #d97706; }
+.badge-gray    { background: #f3f4f6;  color: #374151; }
+
+/* === Table Footer / Pagination === */
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #d3d3d3;
+  font-size: 0.875rem;
+  color: #374151;
+}
+.table-footer-info {
+  color: #6b7280;
+}
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-current {
+  padding: 0.25rem 0.75rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* === Empty & Loading States === */
+.empty-state,
+.table-loading {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === Column Width Specifications === */
+.data-table .checkbox-column {
+  width: 30px;
+  min-width: 30px;
+}
+
+.data-table .image-column {
+  width: 50px;
+  min-width: 50px;
+}
+
+.data-table .action-column {
+  width: 70px;
+  min-width: 70px;
+}
+
+.data-table .id-column,
+.data-table .ticket-number-column {
+  width: 120px;
+  min-width: 120px;
+}
+
+.data-table .status-column,
+.data-table .priority-column {
+  width: 100px;
+  min-width: 100px;
+}
+
+.data-table .date-column {
+  width: 120px;
+  min-width: 120px;
+}
+
+.data-table .category-column {
+  width: 140px;
+  min-width: 140px;
+}
+
+/* Flexible columns for longer content */
+.data-table .subject-column,
+.data-table .description-column,
+.data-table .name-column {
+  width: auto;
+  min-width: 200px;
+}
+
+/* === Responsive === */
+@media (max-width: 992px) {
+  .table-wrapper-inner {
+    overflow-x: auto;
+  }
+  
+  /* Use sticky headers to preserve context */
+  .table-header-cell,
+  .sortable-header,
+  .selection-header,
+  .actions-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #F8F9FA;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-cell,
+  .table-header-cell,
+  .sortable-header,
+  .selection-header,
+  .actions-header {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .table-footer {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .table-pagination {
+    justify-content: center;
+  }
+
+  .actions-container {
+    flex-wrap: wrap;
+  }
+  
+  /* Reduce minimum widths on mobile */
+  .data-table .id-column,
+  .data-table .ticket-number-column {
+    min-width: 100px;
+  }
+  
+  .data-table .category-column {
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 576px) {
+  .table-cell,
+  .table-header-cell,
+  .sortable-header,
+  .selection-header,
+  .actions-header {
+    padding: 0.375rem;
+    font-size: 0.7rem;
+  }
+}

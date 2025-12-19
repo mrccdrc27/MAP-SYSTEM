@@ -1,0 +1,78 @@
+/* === Base Style for Medium Buttons === */
+.medium-button-new,
+.medium-button-export,
+.medium-button-schedule-audits,
+.medium-button-perform-audits,
+.medium-button-delete,
+.medium-button-sort,
+.medium-button-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 16px;
+  height: 40px;
+  border-radius: 40px;
+  font-size: 0.875rem;
+  text-transform: capitalize;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* === Primary Button: NEW === */
+.medium-button-new {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.medium-button-new:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* === Export / Sort / Filter === */
+.medium-button-export,
+.medium-button-sort,
+.medium-button-filter {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid #d3d3d3;
+}
+
+.medium-button-export:hover,
+.medium-button-sort:hover,
+.medium-button-filter:hover {
+  background-color: var(--primary-color-hover);
+  color: var(--bg-color);
+  border-color: var(--primary-color-hover);
+}
+
+/* === Audits Buttons (with adjusted height & font) === */
+.medium-button-schedule-audits,
+.medium-button-perform-audits {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 1rem;
+  height: auto;
+}
+
+.medium-button-schedule-audits:hover,
+.medium-button-perform-audits:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* === Delete Button === */
+.medium-button-delete {
+  background-color: red;
+  color: var(--bg-color);
+}
+
+.medium-button-delete:hover {
+  background-color: darkred;
+}
+
+/* === Optional Icon Styling === */
+.medium-button-new img,
+.medium-button-delete img {
+  width: 16px;
+  height: 16px;
+}
