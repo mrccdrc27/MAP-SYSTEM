@@ -76,6 +76,15 @@ export default function EmployeeTicketSubmissionForm() {
   const [budgetItems, setBudgetItems] = useState([{ cost_element: '', estimated_cost: '', description: '', account: 2 }]);
   const [showCustomDeviceType, setShowCustomDeviceType] = useState(false);
 
+  // Local date string in YYYY-MM-DD to use for date input min (avoid UTC offset issues)
+  const localToday = (() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  })();
+
   // Determine actual category (if "Others", it's General Request)
   const getActualCategory = () => {
     if (formData.category === 'Others') {
@@ -174,8 +183,11 @@ export default function EmployeeTicketSubmissionForm() {
       case 'performanceEndDate':
         if (isBudgetProposal && !value) {
           error = 'Performance End Date is required';
-        } else if (isBudgetProposal && formData.performanceStartDate && value < formData.performanceStartDate) {
-          error = 'End Date must be after or equal to Start Date';
+        } else if (isBudgetProposal && formData.performanceStartDate) {
+          // Ensure end is >= start (no upper limit)
+          if (value < formData.performanceStartDate) {
+            error = 'End Date must be after or equal to Start Date';
+          }
         }
         break;
       
@@ -654,7 +666,7 @@ export default function EmployeeTicketSubmissionForm() {
                 type="date"
                 value={formData.schedule || ''}
                 onChange={handleInputChange('schedule')}
-                min={new Date().toISOString().split('T')[0]}
+                min={localToday}
               />
             )}
           />
