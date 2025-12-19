@@ -1,6 +1,8 @@
 import { Route, Routes } from "react-router-dom";
 import React from "react";
+import { useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
+import { useAuth } from "../context/AuthContext";
 
 // pages > agent
 import Track from "../pages/agent/track-page/Track";
@@ -47,8 +49,10 @@ export default function MainRoute() {
   return (
     <Routes>
       {/* PUBLIC ROUTES */}
-      <Route path="/" element={<Login />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<ExternalLoginRedirect />} />
+      <Route path="/login" element={<ExternalLoginRedirect />} />
+      {/* <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} /> */}
       <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -64,8 +68,14 @@ export default function MainRoute() {
       <Route element={<ProtectedRoute requireAdmin={true} />}>
         <Route path="/admin/workflow" element={<Workflow />} />
         <Route path="/admin/workflows" element={<Workflow />} />
-        <Route path="/admin/workflows/create" element={<CreateWorkflowPage />} />
-        <Route path="/admin/workflows/:workflowId/edit" element={<WorkflowEditorPage />} />
+        <Route
+          path="/admin/workflows/create"
+          element={<CreateWorkflowPage />}
+        />
+        <Route
+          path="/admin/workflows/:workflowId/edit"
+          element={<WorkflowEditorPage />}
+        />
         <Route path="/admin/agent" element={<Agent />} />
         <Route path="/admin/archive" element={<AdminArchive />} />
         <Route path="/admin/archive/:id" element={<AdminArchiveDetail />} />
@@ -106,4 +116,38 @@ export default function MainRoute() {
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
+}
+
+function ExternalLoginRedirect() {
+  const { hasAuth, loading, initialized } = useAuth();
+
+  useEffect(() => {
+    // Wait for auth context to initialize
+    if (!initialized || loading) {
+      return;
+    }
+
+    if (hasAuth) {
+      // User is authenticated - redirect to frontend dashboard
+      window.location.replace("/dashboard");
+    } else {
+      // User is not authenticated - redirect to auth service
+      const authBase = import.meta.env.VITE_AUTH_LOGIN || "http://localhost:8003";
+      const base = authBase.replace(/\/+$/g, "");
+      let target;
+      if (/\/staff\/login$/i.test(base)) {
+        target = base + "/"; // already includes staff/login
+      } else {
+        target = `${base}/staff/login/`;
+      }
+      window.location.replace(target);
+    }
+  }, [hasAuth, loading, initialized]);
+
+  // Show loading while auth context initializes
+  if (!initialized || loading) {
+    return <div>Loading...</div>;
+  }
+
+  return null;
 }
