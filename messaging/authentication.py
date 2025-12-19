@@ -18,22 +18,34 @@ class JWTCookieAuthentication(BaseAuthentication):
     def authenticate(self, request):
         # Try to get JWT token from Authorization header first (Bearer token)
         auth_header = request.headers.get('Authorization', '')
+        logger.debug(f"Auth header received: {auth_header[:50] if auth_header else 'None'}...")
+        
         if auth_header.startswith('Bearer '):
             token = auth_header[7:]  # Remove 'Bearer ' prefix
+            logger.debug(f"Token from header (first 50 chars): {token[:50]}...")
         else:
             # Fall back to cookies
             token = request.COOKIES.get('access_token')
+            logger.debug(f"Token from cookie: {'present' if token else 'None'}")
         
         if not token:
+            logger.debug("No token found - returning None")
             return None
             
         try:
+            # Log the signing key being used (first few chars only for security)
+            signing_key = settings.JWT_SIGNING_KEY
+            logger.debug(f"Using JWT_SIGNING_KEY (first 10 chars): {signing_key[:10] if signing_key else 'None'}...")
+            
             # Decode JWT token
             payload = jwt.decode(
                 token, 
-                settings.JWT_SIGNING_KEY, 
+                signing_key, 
                 algorithms=['HS256']
             )
+            
+            logger.debug(f"Token decoded successfully. Payload keys: {list(payload.keys())}")
+            logger.debug(f"User ID: {payload.get('user_id')}, Roles: {payload.get('roles')}")
             
             # Extract user information from JWT payload
             user_id = payload.get('user_id')

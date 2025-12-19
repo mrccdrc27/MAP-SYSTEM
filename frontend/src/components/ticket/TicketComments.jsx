@@ -97,15 +97,11 @@ const TicketComments = ({ ticketId }) => {
     reactionType
   ) => {
     if (!reactionType && existingReactionId) {
-      // Remove reaction
-      await removeReaction(existingReactionId);
+      // Remove reaction - use commentId, not the rating ID
+      await removeReaction(commentId);
     } else if (existingReactionId) {
-      // Update existing reaction
-      // For simplicity, we'll remove and re-add
-      await removeReaction(existingReactionId);
-      if (reactionType) {
-        await addReaction(commentId, reactionType);
-      }
+      // Update existing reaction - just add new type (backend handles upsert)
+      await addReaction(commentId, reactionType);
     } else if (reactionType) {
       // Add new reaction
       await addReaction(commentId, reactionType);

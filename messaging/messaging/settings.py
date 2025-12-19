@@ -134,7 +134,7 @@ REST_FRAMEWORK = {
         'authentication.JWTCookieAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        # Using custom permission classes in views instead of global IsAuthenticated
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',

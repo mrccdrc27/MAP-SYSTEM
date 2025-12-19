@@ -1,0 +1,22 @@
+# Messaging Service Environment Configuration
+
+# Django
+DJANGO_ENV=development
+DJANGO_DEBUG=True
+DJANGO_SECRET_KEY=secret-key-1234
+DJANGO_JWT_SIGNING_KEY=signing-key-1234
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,messaging_service
+
+# Database
+DATABASE_URL=postgresql://postgres:password@localhost:5432/messaging_db
+PGHOST=localhost
+PGPORT=5432
+POSTGRES_DB=messaging_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your-secure-password
+
+# CORS & Media
+DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000,http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173
+DJANGO_CORS_ALLOW_ALL_ORIGINS=False
+DJANGO_CORS_ALLOW_CREDENTIALS=True
+DJANGO_MEDIA_BASE_URL=http://localhost:8005

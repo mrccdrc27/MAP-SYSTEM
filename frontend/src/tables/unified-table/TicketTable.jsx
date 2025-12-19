@@ -82,11 +82,6 @@ function TicketItem({ item }) {
           : "—"}
       </td>
 
-      {/* <td>
-        {item.target_resolution && !isNaN(new Date(item.target_resolution))
-          ? format(new Date(item.target_resolution), "MMMM dd, yyyy")
-          : "—"}
-      </td> */}
       <td>
         {item.target_resolution && !isNaN(new Date(item.target_resolution))
           ? format(new Date(item.target_resolution), "EEEE, MMM d")
@@ -138,6 +133,12 @@ export default function TicketTable({
 
   // 👇 Add this to inspect data
   // console.log("Fetched tickets:", JSON.stringify(tickets, null, 2));
+
+   // 👇 Log the first item if it exists
+  if (tickets.length > 0) {
+    console.log("First ticket item:", tickets[0]);
+  }
+
 
   return (
     <div className={general.ticketTableSection}>
