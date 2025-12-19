@@ -9,11 +9,19 @@ import ChartContainer from "../../../components/charts/ChartContainer";
 // styles
 import styles from "../report.module.css";
 
-export default function AgentTab({ displayStyle = "charts", timeFilter, analyticsData = {}, loading, error }) {
+export default function AgentTab({
+  displayStyle = "charts",
+  timeFilter,
+  analyticsData = {},
+  loading,
+  error,
+}) {
   const ticketsReport = analyticsData || {};
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
-  if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
+  if (loading)
+    return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (error)
+    return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
   if (!ticketsReport.sla_compliance && !ticketsReport.dashboard)
     return <div style={{ padding: "20px" }}>No agent data available</div>;
 
@@ -24,21 +32,25 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
   const tasksReport = ticketsReport.task_performance || {};
 
   // SLA compliance is by priority
-  const slaLabels = slaCompliance?.map(s => s.priority) || [];
-  const slaCompliances = slaCompliance?.map(s => Math.round(s.compliance_rate || 0)) || [];
-  const slaMetCounts = slaCompliance?.map(s => s.sla_met) || [];
-  const slaBreachedCounts = slaCompliance?.map(s => s.sla_breached) || [];
+  const slaLabels = slaCompliance?.map((s) => s.priority) || [];
+  const slaCompliances =
+    slaCompliance?.map((s) => Math.round(s.compliance_rate || 0)) || [];
+  const slaMetCounts = slaCompliance?.map((s) => s.sla_met) || [];
+  const slaBreachedCounts = slaCompliance?.map((s) => s.sla_breached) || [];
 
   // User Performance data for assignment distribution
-  const userLabels = userPerf?.map(u => u.user_name || `User ${u.user_id}`) || [];
-  const userResolutionRates = userPerf?.map(u => Math.round(u.resolution_rate || 0)) || [];
+  const userLabels =
+    userPerf?.map((u) => u.user_name || `User ${u.user_id}`) || [];
+  const userResolutionRates =
+    userPerf?.map((u) => Math.round(u.resolution_rate || 0)) || [];
 
   // Task Item Performance by User
   const taskUserPerf = tasksReport?.user_performance || [];
-  const taskUserLabels = taskUserPerf?.map(u => u.user_name || `User ${u.user_id}`) || [];
-  const taskUserResolved = taskUserPerf?.map(u => u.resolved || 0) || [];
-  const taskUserBreached = taskUserPerf?.map(u => u.breached || 0) || [];
-  const taskUserEscalated = taskUserPerf?.map(u => u.escalated || 0) || [];
+  const taskUserLabels =
+    taskUserPerf?.map((u) => u.user_name || `User ${u.user_id}`) || [];
+  const taskUserResolved = taskUserPerf?.map((u) => u.resolved || 0) || [];
+  const taskUserBreached = taskUserPerf?.map((u) => u.breached || 0) || [];
+  const taskUserEscalated = taskUserPerf?.map((u) => u.escalated || 0) || [];
 
   // Dashboard metrics for KPI
   const slaComplianceRate = dashboard?.sla_compliance_rate || 0;
@@ -55,7 +67,9 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
           <div className={styles.listView}>
             <div className={styles.listItem}>
               <span className={styles.listLabel}>SLA Compliance Rate</span>
-              <span className={styles.listValue}>{Math.round(slaComplianceRate)}%</span>
+              <span className={styles.listValue}>
+                {Math.round(slaComplianceRate)}%
+              </span>
             </div>
             <div className={styles.listItem}>
               <span className={styles.listLabel}>Total Users</span>
@@ -63,7 +77,9 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
             </div>
             <div className={styles.listItem}>
               <span className={styles.listLabel}>Escalation Rate</span>
-              <span className={styles.listValue}>{Math.round(escalationRate)}%</span>
+              <span className={styles.listValue}>
+                {Math.round(escalationRate)}%
+              </span>
             </div>
           </div>
         </div>
@@ -77,7 +93,9 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
                 <h3>{label}</h3>
                 <div className={styles.listItem}>
                   <span className={styles.listLabel}>Compliance Rate</span>
-                  <span className={styles.listValue}>{slaCompliances[idx]}%</span>
+                  <span className={styles.listValue}>
+                    {slaCompliances[idx]}%
+                  </span>
                 </div>
                 <div className={styles.listItem}>
                   <span className={styles.listLabel}>Met</span>
@@ -85,7 +103,9 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
                 </div>
                 <div className={styles.listItem}>
                   <span className={styles.listLabel}>Breached</span>
-                  <span className={styles.listValue}>{slaBreachedCounts[idx]}</span>
+                  <span className={styles.listValue}>
+                    {slaBreachedCounts[idx]}
+                  </span>
                 </div>
               </div>
             ))}
@@ -99,7 +119,9 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
             {userLabels.map((label, idx) => (
               <div key={idx} className={styles.listItem}>
                 <span className={styles.listLabel}>{label}</span>
-                <span className={styles.listValue}>{userResolutionRates[idx]}%</span>
+                <span className={styles.listValue}>
+                  {userResolutionRates[idx]}%
+                </span>
               </div>
             ))}
           </div>
@@ -115,15 +137,21 @@ export default function AgentTab({ displayStyle = "charts", timeFilter, analytic
                   <h3>{label}</h3>
                   <div className={styles.listItem}>
                     <span className={styles.listLabel}>Resolved</span>
-                    <span className={styles.listValue}>{taskUserResolved[idx]}</span>
+                    <span className={styles.listValue}>
+                      {taskUserResolved[idx]}
+                    </span>
                   </div>
                   <div className={styles.listItem}>
                     <span className={styles.listLabel}>Escalated</span>
-                    <span className={styles.listValue}>{taskUserEscalated[idx]}</span>
+                    <span className={styles.listValue}>
+                      {taskUserEscalated[idx]}
+                    </span>
                   </div>
                   <div className={styles.listItem}>
                     <span className={styles.listLabel}>Breached</span>
-                    <span className={styles.listValue}>{taskUserBreached[idx]}</span>
+                    <span className={styles.listValue}>
+                      {taskUserBreached[idx]}
+                    </span>
                   </div>
                 </div>
               ))}

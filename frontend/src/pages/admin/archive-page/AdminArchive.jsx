@@ -9,6 +9,9 @@ import general from "../../../style/general.module.css";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// skeleton
+import TableSkeleton from "../../../components/skeleton/TableSkeleton";
+
 // hook
 import useUserTickets from "../../../api/useUserTickets";
 import useTasksFetcher from "../../../api/useTasksFetcher";
@@ -73,11 +76,16 @@ export default function AdminArchive() {
     const date = new Date(dateString);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const targetDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
 
     if (targetDate < today) return "date-red";
     if (targetDate.getTime() === today.getTime()) return "date-red";
-    if (targetDate.getTime() === today.getTime() + 24 * 60 * 60 * 1000) return "date-yellow";
+    if (targetDate.getTime() === today.getTime() + 24 * 60 * 60 * 1000)
+      return "date-yellow";
     return "date-green";
   };
 
@@ -188,7 +196,7 @@ export default function AdminArchive() {
   const getGroupedData = () => {
     const filtered = getFilteredData();
     const mostRecent = getMostRecentTasksPerTicket(filtered);
-    
+
     // Apply load more limit
     const limitedItems = mostRecent.slice(0, displayedCount);
 
@@ -336,7 +344,7 @@ export default function AdminArchive() {
       <main className={styles.ticketPage}>
         {/* Header */}
         <section className={styles.tpHeader}>
-          <h1>Tickets</h1>
+          <h1>Manage All Tickets</h1>
         </section>
 
         {/* Body */}
@@ -455,8 +463,8 @@ export default function AdminArchive() {
           {/* Table Section */}
           <div className={styles.tpTableSection}>
             {isLoading && (
-              <div className={styles.loaderOverlay}>
-                <div className={styles.loader}></div>
+              <div className={styles.skeletonWrapper}>
+                <TableSkeleton rows={5} columns={8} />
               </div>
             )}
 
@@ -482,7 +490,9 @@ export default function AdminArchive() {
                           {expandedGroups[groupName] ? "▼" : "▶"}
                         </span>
                         <span className={styles.groupName}>{groupName}</span>
-                        <span className={styles.groupCount}>({items.length})</span>
+                        <span className={styles.groupCount}>
+                          ({items.length})
+                        </span>
                       </div>
                     )}
 
@@ -492,50 +502,82 @@ export default function AdminArchive() {
                         <thead className={styles.tableHead}>
                           <tr>
                             <th className={styles.thExpand}></th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("ticket_number", e)}>
-                              Ticket # {sortConfig.key === "ticket_number" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) => handleSort("ticket_number", e)}
+                            >
+                              Ticket #{" "}
+                              {sortConfig.key === "ticket_number" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
                               )}
                             </th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("ticket_subject", e)}>
-                              Subject {sortConfig.key === "ticket_subject" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) => handleSort("ticket_subject", e)}
+                            >
+                              Subject{" "}
+                              {sortConfig.key === "ticket_subject" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
                               )}
                             </th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("workflow_name", e)}>
-                              Workflow {sortConfig.key === "workflow_name" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) => handleSort("workflow_name", e)}
+                            >
+                              Workflow{" "}
+                              {sortConfig.key === "workflow_name" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
                               )}
                             </th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("current_step_name", e)}>
-                              Current Step {sortConfig.key === "current_step_name" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) =>
+                                handleSort("current_step_name", e)
+                              }
+                            >
+                              Current Step{" "}
+                              {sortConfig.key === "current_step_name" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
                               )}
                             </th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("user_full_name", e)}>
-                              Assignee {sortConfig.key === "user_full_name" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) => handleSort("user_full_name", e)}
+                            >
+                              Assignee{" "}
+                              {sortConfig.key === "user_full_name" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
                               )}
                             </th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("ticket_priority", e)}>
-                              Priority {sortConfig.key === "ticket_priority" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) => handleSort("ticket_priority", e)}
+                            >
+                              Priority{" "}
+                              {sortConfig.key === "ticket_priority" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
                               )}
                             </th>
-                            <th className={styles.sortableHeader} onClick={(e) => handleSort("target_resolution", e)}>
-                              Target Date {sortConfig.key === "target_resolution" && (
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={(e) =>
+                                handleSort("target_resolution", e)
+                              }
+                            >
+                              Target Date{" "}
+                              {sortConfig.key === "target_resolution" && (
                                 <span className={styles.sortIndicator}>
                                   {sortConfig.direction === "asc" ? "▲" : "▼"}
                                 </span>
@@ -554,18 +596,29 @@ export default function AdminArchive() {
                           ) : (
                             items.map((mainTask) => {
                               // Get all tasks for this ticket
-                              const allTasksMap = getAllTasksByTicket(getFilteredData());
-                              const allTasksForTicket = allTasksMap[mainTask.ticket_id] || [mainTask];
-                              const isTicketExpanded = expandedTickets[mainTask.ticket_id];
+                              const allTasksMap = getAllTasksByTicket(
+                                getFilteredData()
+                              );
+                              const allTasksForTicket = allTasksMap[
+                                mainTask.ticket_id
+                              ] || [mainTask];
+                              const isTicketExpanded =
+                                expandedTickets[mainTask.ticket_id];
 
                               return (
-                                <React.Fragment key={mainTask.task_item_id || mainTask.ticket_id}>
+                                <React.Fragment
+                                  key={
+                                    mainTask.task_item_id || mainTask.ticket_id
+                                  }
+                                >
                                   {/* Main Task Row (Most Recent) */}
                                   <tr className={styles.tableRow}>
                                     <td className={styles.expandCell}>
                                       {allTasksForTicket.length > 1 && (
                                         <button
-                                          onClick={() => toggleTicket(mainTask.ticket_id)}
+                                          onClick={() =>
+                                            toggleTicket(mainTask.ticket_id)
+                                          }
                                           className={styles.expandButton}
                                           title={`Show all ${allTasksForTicket.length} tasks`}
                                         >
@@ -631,23 +684,45 @@ export default function AdminArchive() {
                                     </td> */}
                                     <td className={styles.priority}>
                                       <span
-                                        className={`${general.priorityBadge || styles.priorityBadge} ${general[getPriorityColor(
-                                          mainTask.ticket_priority
-                                        )]}`}
+                                        className={`${
+                                          general.priorityBadge ||
+                                          styles.priorityBadge
+                                        } ${
+                                          general[
+                                            getPriorityColor(
+                                              mainTask.ticket_priority
+                                            )
+                                          ]
+                                        }`}
                                       >
                                         {mainTask.ticket_priority || "Medium"}
                                       </span>
                                     </td>
                                     <td className={styles.targetDate}>
-                                      <span className={`${general.statusBadge || styles.statusBadge} ${general[getDateColor(mainTask.target_resolution)]}`}>
+                                      <span
+                                        className={`${
+                                          general.statusBadge ||
+                                          styles.statusBadge
+                                        } ${
+                                          general[
+                                            getDateColor(
+                                              mainTask.target_resolution
+                                            )
+                                          ]
+                                        }`}
+                                      >
                                         {formatDate(mainTask.target_resolution)}
                                       </span>
                                     </td>
                                     <td className={styles.action}>
-                                      <button 
-                                        className={styles.btn} 
+                                      <button
+                                        className={styles.btn}
                                         title="View ticket details"
-                                        onClick={() => navigate(`/admin/archive/${mainTask.task_item_id}`)}
+                                        onClick={() =>
+                                          navigate(
+                                            `/admin/archive/${mainTask.task_item_id}`
+                                          )
+                                        }
                                       >
                                         👁
                                       </button>
@@ -655,45 +730,84 @@ export default function AdminArchive() {
                                   </tr>
 
                                   {/* Additional Tasks Row (when expanded) */}
-                                  {isTicketExpanded && allTasksForTicket.length > 1 && (
-                                    <tr className={styles.expandedRow}>
-                                      <td colSpan="9">
-                                        <div className={styles.expandedContent}>
-                                          <h4 className={styles.detailsTitle}>
-                                            All Tasks for This Ticket ({allTasksForTicket.length})
-                                          </h4>
-                                          <div className={styles.taskHistoryTable}>
-                                            <table className={styles.nestedTable}>
-                                              <thead>
-                                                <tr>
-                                                  <th>Assigned To</th>
-                                                  <th>Current Step</th>
-                                                  {/* <th>Status</th> */}
-                                                  <th>Assigned On</th>
-                                                  <th>Notes</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody>
-                                                {allTasksForTicket.map((task, idx) => (
-                                                  <tr key={`${task.task_item_id}-${idx}`} className={styles.tableRow}>
-                                                    <td className={styles.assignee}>
-                                                      <div>
-                                                        <p className={styles.cellName}>
-                                                          {task.user_full_name}
-                                                        </p>
-                                                        <p className={styles.cellRole}>
-                                                          {task.role || "-"}
-                                                        </p>
-                                                      </div>
-                                                    </td>
-                                                    <td className={styles.currentStep}>
-                                                      <div>
-                                                        <p className={styles.cellName}>
-                                                          {task.current_step_name || "-"}
-                                                        </p>
-                                                      </div>
-                                                    </td>
-                                                    {/* <td className={styles.status}>
+                                  {isTicketExpanded &&
+                                    allTasksForTicket.length > 1 && (
+                                      <tr className={styles.expandedRow}>
+                                        <td colSpan="9">
+                                          <div
+                                            className={styles.expandedContent}
+                                          >
+                                            <h4 className={styles.detailsTitle}>
+                                              All Tasks for This Ticket (
+                                              {allTasksForTicket.length})
+                                            </h4>
+                                            <div
+                                              className={
+                                                styles.taskHistoryTable
+                                              }
+                                            >
+                                              <table
+                                                className={styles.nestedTable}
+                                              >
+                                                <thead>
+                                                  <tr>
+                                                    <th>Assigned To</th>
+                                                    <th>Current Step</th>
+                                                    {/* <th>Status</th> */}
+                                                    <th>Assigned On</th>
+                                                    <th>Notes</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {allTasksForTicket.map(
+                                                    (task, idx) => (
+                                                      <tr
+                                                        key={`${task.task_item_id}-${idx}`}
+                                                        className={
+                                                          styles.tableRow
+                                                        }
+                                                      >
+                                                        <td
+                                                          className={
+                                                            styles.assignee
+                                                          }
+                                                        >
+                                                          <div>
+                                                            <p
+                                                              className={
+                                                                styles.cellName
+                                                              }
+                                                            >
+                                                              {
+                                                                task.user_full_name
+                                                              }
+                                                            </p>
+                                                            <p
+                                                              className={
+                                                                styles.cellRole
+                                                              }
+                                                            >
+                                                              {task.role || "-"}
+                                                            </p>
+                                                          </div>
+                                                        </td>
+                                                        <td
+                                                          className={
+                                                            styles.currentStep
+                                                          }
+                                                        >
+                                                          <div>
+                                                            <p
+                                                              className={
+                                                                styles.cellName
+                                                              }
+                                                            >
+                                                              {task.current_step_name ||
+                                                                "-"}
+                                                            </p>
+                                                          </div>
+                                                        </td>
+                                                        {/* <td className={styles.status}>
                                                       <span
                                                         className={`${general.statusBadge || styles.statusBadge} ${general[getStatusColor(
                                                           task.status || task.task_status
@@ -704,23 +818,45 @@ export default function AdminArchive() {
                                                           .toUpperCase()}
                                                       </span>
                                                     </td> */}
-                                                    <td className={styles.targetDate}>
-                                                      <span className={`${general.statusBadge || styles.statusBadge} ${general[getDateColor(task.assigned_on)]}`}>
-                                                        {formatDateTime(task.assigned_on)}
-                                                      </span>
-                                                    </td>
-                                                    <td className={styles.ticketSubject}>
-                                                      {task.notes || "-"}
-                                                    </td>
-                                                  </tr>
-                                                ))}
-                                              </tbody>
-                                            </table>
+                                                        <td
+                                                          className={
+                                                            styles.targetDate
+                                                          }
+                                                        >
+                                                          <span
+                                                            className={`${
+                                                              general.statusBadge ||
+                                                              styles.statusBadge
+                                                            } ${
+                                                              general[
+                                                                getDateColor(
+                                                                  task.assigned_on
+                                                                )
+                                                              ]
+                                                            }`}
+                                                          >
+                                                            {formatDateTime(
+                                                              task.assigned_on
+                                                            )}
+                                                          </span>
+                                                        </td>
+                                                        <td
+                                                          className={
+                                                            styles.ticketSubject
+                                                          }
+                                                        >
+                                                          {task.notes || "-"}
+                                                        </td>
+                                                      </tr>
+                                                    )
+                                                  )}
+                                                </tbody>
+                                              </table>
+                                            </div>
                                           </div>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )}
+                                        </td>
+                                      </tr>
+                                    )}
                                 </React.Fragment>
                               );
                             })
@@ -732,11 +868,11 @@ export default function AdminArchive() {
                 ))}
               </div>
             )}
-            
+
             {/* Load More Button */}
             {!isLoading && getFilteredData().length > 0 && hasMoreItems && (
               <div className={styles.loadMoreContainer}>
-                <button 
+                <button
                   onClick={handleLoadMore}
                   className={styles.loadMoreButton}
                 >

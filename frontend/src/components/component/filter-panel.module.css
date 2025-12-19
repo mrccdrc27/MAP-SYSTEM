@@ -34,19 +34,6 @@
   margin-bottom: 0.25rem;
 }
 
-/* .resetButton {
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  color: var(--bg-color);
-  background-color: var(--primary-color);
-  cursor: pointer;
-}
-
-.resetButton:hover {
-  background-color: var(--primary-color-hover);
-} */
-
 /* REVISED BUTTON STYLES */
 .resetButton {
   background-color: #007BFF; 

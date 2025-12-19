@@ -22,19 +22,6 @@ export function Dropdown({ name, value, onChange, options = [], placeholder = "P
         <option key={opt} value={opt}>{opt}</option>
       ))}
     </select>
-    //  <div className={general.dropdownContainer}>
-    //   <select
-    //     className={general.dropdown}
-    //     name={name}
-    //     value={value}
-    //     onChange={onChange}
-    //   >
-    //     <option value="" disabled>{placeholder}</option>
-    //     {options.map((opt) => (
-    //       <option key={opt} value={opt}>{opt}</option>
-    //     ))}
-    //   </select>
-    // </div>
   );
 }
 

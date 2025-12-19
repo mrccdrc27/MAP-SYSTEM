@@ -5,7 +5,13 @@ import DoughnutChart from "../../../components/charts/DoughnutChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
 
 // icons
-import { AlertTriangle, GitBranch, Clock, Users, TrendingUp } from "lucide-react";
+import {
+  AlertTriangle,
+  GitBranch,
+  Clock,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 
 // styles
 import styles from "../report.module.css";
@@ -19,8 +25,10 @@ export default function TaskItemTab({
 }) {
   const tasksReport = analyticsData || {};
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
-  if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
+  if (loading)
+    return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (error)
+    return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
   if (!tasksReport.status_distribution)
     return <div style={{ padding: "20px" }}>No task item data available</div>;
 
@@ -42,24 +50,31 @@ export default function TaskItemTab({
 
   // Performance KPIs
   const timeToActionAvg = perf.time_to_action_hours?.average || 0;
-  const slaCompliance = perf.sla_compliance?.summary?.current_compliance_rate_percent || 0;
+  const slaCompliance =
+    perf.sla_compliance?.summary?.current_compliance_rate_percent || 0;
   const activeItems = perf.active_items || 0;
   const overdueItems = perf.overdue_items || 0;
 
   // User Performance
-  const userLabels = userPerf.map((u) => u.user_name || `User ${u.user_id}`) || [];
+  const userLabels =
+    userPerf.map((u) => u.user_name || `User ${u.user_id}`) || [];
   const userResolved = userPerf.map((u) => u.resolved) || [];
   const userBreached = userPerf.map((u) => u.breached) || [];
   const userEscalated = userPerf.map((u) => u.escalated) || [];
 
   // Transfer & Escalation
   const transferrers = transfers.top_transferrers || [];
-  const transferrerLabels = transferrers.map((t) => t.role_user__user_full_name || `User ${t.role_user__user_id}`);
+  const transferrerLabels = transferrers.map(
+    (t) => t.role_user__user_full_name || `User ${t.role_user__user_id}`
+  );
   const transferrerCounts = transferrers.map((t) => t.transfer_count);
 
   const escalationsByStep = transfers.escalations_by_step || [];
-  const escalationStepLabels = escalationsByStep.map((e) =>
-    e.assigned_on_step__name?.split(" - ")[1] || e.assigned_on_step__name || "Unknown"
+  const escalationStepLabels = escalationsByStep.map(
+    (e) =>
+      e.assigned_on_step__name?.split(" - ")[1] ||
+      e.assigned_on_step__name ||
+      "Unknown"
   );
   const escalationCounts = escalationsByStep.map((e) => e.escalation_count);
 
