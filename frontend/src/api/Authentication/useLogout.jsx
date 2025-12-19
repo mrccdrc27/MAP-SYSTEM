@@ -31,9 +31,9 @@ export function useLogout() {
       console.error("Failed to clear cookies:", e);
     }
 
-    // Redirect to auth logout endpoint which will clear server cookies and redirect appropriately
-    console.log("Redirecting to logout endpoint");
-    window.location.href = `${AUTH_URL}/logout/`;
+    // Redirect directly to staff login page (admin/staff logout)
+    console.log("Redirecting to staff login page");
+    window.location.href = `${AUTH_URL}/staff/login/?logout=1`;
   };
 
   return { logout };

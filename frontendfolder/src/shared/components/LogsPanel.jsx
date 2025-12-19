@@ -40,8 +40,8 @@ export default function LogsPanel({ logs = [] }) {
         logs.map((log) => (
           <div key={log.id} className={styles.logEntry}>
             <div className={styles.logAvatar} aria-hidden>
-              {getLogIcon(log.action || log.text)}
-            </div>
+                {getLogIcon(log.action || log.text)}
+              </div>
             <div className={styles.logBody}>
               <div className={styles.logText}>
                 {log.user ? (

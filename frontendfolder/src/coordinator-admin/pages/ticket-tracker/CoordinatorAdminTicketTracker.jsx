@@ -121,9 +121,24 @@ const generateLogs = (ticket) => {
   if (logs.length === 0) {
     const created = ticket.createdAt || ticket.dateCreated || ticket.created_at || ticket.submit_date || null;
     if (created) {
+      // Convert employee to string if it's an object
+      let employeeName = 'System';
+      const emp = ticket.employeeName || ticket.employee;
+      if (typeof emp === 'string') {
+        employeeName = emp;
+      } else if (emp && typeof emp === 'object') {
+        const first = emp.first_name || emp.firstName || emp.first || '';
+        const last = emp.last_name || emp.lastName || emp.last || '';
+        const full = `${first} ${last}`.trim();
+        if (full) employeeName = full;
+        else if (emp.name) employeeName = emp.name;
+        else if (emp.username) employeeName = emp.username;
+        else if (emp.id) employeeName = `Employee ${emp.id}`;
+      }
+      
       logs.push({
         id: 1,
-        user: ticket.employeeName || ticket.employee || 'System',
+        user: employeeName,
         action: 'Created',
         timestamp: created ? formatDate(created) : null,
         text: created ? `Ticket created on ${formatDate(created)}.` : `Ticket created.`,
@@ -866,9 +881,10 @@ export default function CoordinatorAdminTicketTracker() {
                 fullHeight={true}
                 className={detailStyles.tabsFill}
               >
-                {activeTab === 'details' ? (
+                {activeTab === 'details' && (
                   <CoordinatorAdminTicketDetails ticket={ticket} ticketLogs={ticketLogs} canSeeCoordinatorReview={canSeeCoordinatorReview} formatDate={formatDate} />
-                ) : (
+                )}
+                {activeTab === 'logs' && (
                   <CoordinatorAdminTicketLogs ticketLogs={ticketLogs} />
                 )}
               </Tabs>

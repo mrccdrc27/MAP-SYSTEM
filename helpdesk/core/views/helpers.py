@@ -4,6 +4,7 @@ from ..authentication import ExternalUser
 def get_external_employee_data(user_id):
     """
     Get external employee data from the ExternalEmployee model (synced from auth2).
+    If not found locally, attempt to fetch from auth service API.
     Returns employee data dict or empty dict if not found.
     """
     try:
@@ -24,8 +25,39 @@ def get_external_employee_data(user_id):
                 'department': employee.department,
                 'image': str(employee.image.url) if employee.image else None,
             }
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[get_external_employee_data] Local lookup failed: {e}")
+    
+    # If not found locally, try fetching from auth service API
+    try:
+        from django.conf import settings
+        import requests
+        
+        auth_service_url = settings.DJANGO_AUTH_SERVICE
+        if auth_service_url:
+            # Try the management endpoint which should have user details
+            api_url = f"{auth_service_url}/api/v1/users/management/{user_id}/"
+            print(f"[get_external_employee_data] Trying API: {api_url}")
+            
+            response = requests.get(api_url, timeout=3)
+            print(f"[get_external_employee_data] API response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                print(f"[get_external_employee_data] Got user data: {user_data.get('first_name')} {user_data.get('last_name')}")
+                return {
+                    'id': user_data.get('id'),
+                    'first_name': user_data.get('first_name', ''),
+                    'last_name': user_data.get('last_name', ''),
+                    'email': user_data.get('email', ''),
+                    'company_id': user_data.get('employee_id') or user_data.get('company_id'),
+                    'department': user_data.get('department', ''),
+                    'image': user_data.get('profile_picture'),
+                }
+            else:
+                print(f"[get_external_employee_data] API returned error: {response.text}")
+    except Exception as e:
+        print(f"[get_external_employee_data] API call failed: {e}")
     
     return {}
 
@@ -70,12 +102,16 @@ def _actor_display_name(request):
             # Attempt to fetch profile from ExternalEmployee model
             try:
                 profile = get_external_employee_data(user.id)
+                first = (profile or {}).get('first_name') or ''
+                last = (profile or {}).get('last_name') or ''
+                full = f"{first} {last}".strip()
             except Exception:
-                profile = None
-            first = (profile or {}).get('first_name') or ''
-            last = (profile or {}).get('last_name') or ''
-            full = f"{first} {last}".strip()
-        return full or 'External User'
+                pass
+        
+        # If still no name, return a fallback that includes user ID for debugging
+        if not full:
+            return f'External User (ID: {user.id})'
+        return full
     # Local employee path
     return get_user_display_name(user)
 

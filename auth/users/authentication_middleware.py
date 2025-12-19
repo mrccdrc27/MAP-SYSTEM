@@ -195,7 +195,7 @@ class AuthenticationRoutingMiddleware:
             # Staff trying to access invalid endpoints
             if self._is_invalid_endpoint(path, user_type):
                 # Redirect to HDTS system (fallback for invalid paths)
-                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173')
                 return HttpResponseRedirect(hdts_url)
 
         # ============ EMPLOYEE USER ROUTING ============
@@ -208,7 +208,7 @@ class AuthenticationRoutingMiddleware:
             # Employee trying to access invalid endpoints
             if self._is_invalid_endpoint(path, user_type):
                 # Redirect to HDTS system
-                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173')
                 return HttpResponseRedirect(hdts_url)
 
         return None

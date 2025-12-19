@@ -488,7 +488,7 @@ export default function TicketDetail() {
 
               <div className={styles.layoutSection}>
                 <div className={styles.tdpTabs}>
-                  {["Details", "Messages"].map((tab) => (
+                  {["Details", "Messages", "Logs"].map((tab) => (
                     <button
                       style={{ flex: 1 }}
                       key={tab}
@@ -602,19 +602,6 @@ export default function TicketDetail() {
                         </div>
                       )}
                     </div> */}
-                    <div className={styles.actionLogs}>
-                      <h4>Action Logs</h4>
-                      <ActionLogList
-                        logs={
-                          logs && logs.length > 0 ? [...logs].reverse() : []
-                        }
-                        loading={loading}
-                        error={error}
-                      />
-                    </div>
-                    <div className={styles.actionLogs}>
-                      {/* <ActionLog log={logs && logs.length > 0 ? logs[0] : null} /> */}
-                    </div>
                   </>
                 )}
 
@@ -625,6 +612,20 @@ export default function TicketDetail() {
                     <Messaging
                       ticket_id={state.ticket?.ticket_id}
                       ticket_owner={state.ticket?.user_assignment}
+                    />
+                  </div>
+                )}
+
+                {/* Logs Section */}
+                {activeTab === "Logs" && (
+                  <div className={styles.actionLogs}>
+                    <h4>Action Logs</h4>
+                    <ActionLogList
+                      logs={
+                        logs && logs.length > 0 ? [...logs].reverse() : []
+                      }
+                      loading={loading}
+                      error={error}
                     />
                   </div>
                 )}

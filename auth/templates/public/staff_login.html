@@ -550,13 +550,9 @@
                         document.cookie = `access_token=${data.access_token}; path=/`;
                         document.cookie = `refresh_token=${data.refresh_token}; path=/`;
 
-                        // Redirect
+                        // Redirect to frontend - let the frontend handle routing based on JWT
                         setTimeout(() => {
-                            if (data.redirect && data.redirect.url) {
-                                window.location.href = data.redirect.url;
-                            } else {
-                                window.location.href = '/api/v1/users/welcome/';
-                            }
+                            window.location.href = 'http://localhost:5173';
                         }, 1500);
                     } else {
                         // Login failed
@@ -635,17 +631,9 @@
                         document.cookie = `access_token=${data.access_token}; path=/`;
                         document.cookie = `refresh_token=${data.refresh_token}; path=/`;
 
-                        // Redirect
+                        // Redirect to frontend - let the frontend handle routing based on JWT
                         setTimeout(() => {
-                            if (data.redirect && data.redirect.url) {
-                                window.location.href = data.redirect.url;
-                            } else if (data.user && data.user.system_roles && data.user.system_roles.length > 0) {
-                                // Fallback if redirect URL not provided but roles exist (legacy)
-                                const primarySystem = data.user.system_roles[0].system_slug;
-                                window.location.href = `/system/${primarySystem}/`;
-                            } else {
-                                window.location.href = '/api/v1/users/welcome/';
-                            }
+                            window.location.href = 'http://localhost:5173';
                         }, 1500);
                     } else if (data.otp_expired) {
                         ToastNotification.error('OTP Expired', data.error || 'Your OTP has expired. Please log in again.');

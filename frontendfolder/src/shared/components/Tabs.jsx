@@ -28,9 +28,6 @@ export default function Tabs({ tabs = [], active, activeTab, onChange, onTabChan
   };
 
   const handleClick = (value) => {
-    // debug: confirm clicks reach this component
-    // eslint-disable-next-line no-console
-    console.log('[Tabs] click', value);
     handleChange(value);
   };
 
