@@ -22,33 +22,11 @@
 
 .ticketHeader {
   display: flex;
-  /* justify-content: space-between;
-  align-items: center; */
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
   padding-bottom: 20px;
-  gap: 6px;
   border-bottom: var(--border-bottom);
-}
-
-/* Layout */
-.layoutFlex {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.thtWrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.ticketTitle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 4px;
 }
 
 .ticketTitle h2 {
@@ -56,11 +34,9 @@
   color: var(--primary-color);
 }
 
-.layoutFlex .ticketID {
+.ticketTitle .ticketID {
   color: var(--secondary-color);
   font-size: var(--base-font-size);
-  background-color: aliceblue;
-  padding: 4px 10px;
 }
 
 /* STATUS */
