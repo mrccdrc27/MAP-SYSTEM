@@ -1,5 +1,6 @@
 // react
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // hook
 import { useNotifications } from "../../api/useNotification";
@@ -13,6 +14,7 @@ export default function Notification({
   closeNotifAction,
   parentFetchNotifications,
 }) {
+  const navigate = useNavigate();
   const {
     notifications,
     loading,
@@ -58,6 +60,20 @@ export default function Notification({
         // eslint-disable-next-line no-console
         console.warn("parentFetchNotifications failed:", e);
       }
+    }
+  };
+
+  // Handle notification click - navigate to task if related_task_id exists
+  const handleNotificationClick = async (notification) => {
+    // Mark as read first
+    if (!notification.is_read) {
+      await handleMarkAsRead(notification.id);
+    }
+    
+    // Navigate to task detail if related_task_id exists
+    if (notification.related_task_id) {
+      closeNotifAction(false);
+      navigate(`/ticket/${notification.related_task_id}`);
     }
   };
 
@@ -144,14 +160,15 @@ export default function Notification({
             <p className={styles.emptyState}>No notifications.</p>
           ) : (
             list.map((n) => (
-              <div key={n.id} className={styles.nItem}>
+              <div 
+                key={n.id} 
+                className={`${styles.nItem} ${n.related_task_id ? styles.nItemClickable : ''}`}
+                onClick={() => n.related_task_id && handleNotificationClick(n)}
+                style={{ cursor: n.related_task_id ? 'pointer' : 'default' }}
+              >
                 <div className={styles.nUserAvatar}>
                   <img
                     className={styles.userAvatar}
-                    // src={
-                    //   n.avatar ||
-                    //   "https://i.pinimg.com/736x/e6/50/7f/e6507f42d79520263d8d952633cedcf2.jpg"
-                    // }
                     src="/map-logo.png"
                     alt="User Avatar"
                   />
@@ -159,9 +176,6 @@ export default function Notification({
                 <div className={styles.nContent}>
                   <h3>{n.subject || "no subject"}</h3>
                   <p>{n.message}</p>
-                  {/* <span className={styles.nTime}>
-                    {n.created_at || "Just now"}
-                  </span> */}
                   <span className={styles.nTime}>
                     {n.created_at ? formatDate(n.created_at) : "Just now"}
                   </span>
@@ -180,7 +194,10 @@ export default function Notification({
 
                 <div
                   className={styles.nDeleteButton}
-                  onClick={() => handleMarkAsRead(n.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMarkAsRead(n.id);
+                  }}
                 >
                   <i className="fa-solid fa-trash"></i>
                 </div>
