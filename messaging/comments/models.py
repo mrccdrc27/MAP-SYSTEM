@@ -80,7 +80,18 @@ class CommentRating(models.Model):
     def save(self, *args, **kwargs):
         # Update the comment's rating counts
         super().save(*args, **kwargs)
-        
+        self._update_comment_counts()
+    
+    def delete(self, *args, **kwargs):
+        # Store reference to comment before deletion
+        comment = self.comment
+        super().delete(*args, **kwargs)
+        # Update counts after deletion
+        comment.thumbs_up_count = comment.ratings.filter(rating=True).count()
+        comment.thumbs_down_count = comment.ratings.filter(rating=False).count()
+        comment.save(update_fields=['thumbs_up_count', 'thumbs_down_count'])
+    
+    def _update_comment_counts(self):
         # Count ratings and update the comment
         comment = self.comment
         comment.thumbs_up_count = comment.ratings.filter(rating=True).count()

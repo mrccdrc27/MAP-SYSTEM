@@ -46,14 +46,17 @@ class CommentRatingSerializer(serializers.ModelSerializer):
         
     def validate_rating(self, value):
         """
-        Check that rating is a boolean value (True/1 or False/0)
+        Check that rating is a boolean value (True/1 or False/0) or None for deletion
         """
+        if value is None:
+            return value  # Allow None for deletion
         if not isinstance(value, bool) and value not in [0, 1]:
-            raise serializers.ValidationError("Rating must be a boolean value (True/1 or False/0)")
+            raise serializers.ValidationError("Rating must be a boolean value (True/1 or False/0) or null to remove")
         return value
 
 class ReplySerializer(serializers.ModelSerializer):
     ratings_summary = serializers.SerializerMethodField()
+    ratings = serializers.SerializerMethodField()  # Include individual ratings for frontend
     ticket_id = serializers.CharField(required=False)  # Add this to handle ticket_id input
     documents = CommentDocumentSerializer(many=True, read_only=True)
     # Add fields for reply creation - parent should be CharField, not FK
@@ -62,7 +65,8 @@ class ReplySerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['comment_id', 'ticket_id', 'user_id', 'firstname', 'lastname', 'role', 
-                 'content', 'created_at', 'parent', 'thumbs_up_count', 'thumbs_down_count', 'ratings_summary', 'documents']
+                 'content', 'created_at', 'parent', 'thumbs_up_count', 'thumbs_down_count', 
+                 'ratings_summary', 'ratings', 'documents']
         read_only_fields = ['comment_id', 'created_at', 'thumbs_up_count', 'thumbs_down_count', 'documents']
     
     def get_ratings_summary(self, obj):
@@ -70,6 +74,13 @@ class ReplySerializer(serializers.ModelSerializer):
             'thumbs_up': obj.thumbs_up_count,
             'thumbs_down': obj.thumbs_down_count
         }
+    
+    def get_ratings(self, obj):
+        """Return individual ratings for tracking user reactions"""
+        # Use fresh query to avoid cached/stale data after rating changes
+        from .models import CommentRating
+        ratings = CommentRating.objects.filter(comment=obj)
+        return CommentRatingSerializer(ratings, many=True).data
     
     def validate(self, data):
         # Only validate required fields if they're not already set
@@ -107,6 +118,7 @@ class ReplySerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     replies = ReplySerializer(many=True, read_only=True)
     ratings_summary = serializers.SerializerMethodField()
+    ratings = serializers.SerializerMethodField()  # Include individual ratings for frontend
     ticket_id = serializers.CharField(required=False)
     parent = serializers.CharField(max_length=50, required=False, allow_null=True, help_text="Parent comment_id for replies")
     documents = CommentDocumentSerializer(many=True, read_only=True)
@@ -121,7 +133,7 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['comment_id', 'ticket_id', 'user_id', 'firstname', 'lastname', 'role', 
                  'content', 'created_at', 'parent', 'thumbs_up_count', 'thumbs_down_count', 
-                 'replies', 'ratings_summary', 'documents', 
+                 'replies', 'ratings_summary', 'ratings', 'documents', 
                  'document1', 'document2', 'document3', 'document4', 'document5']
         read_only_fields = ['comment_id', 'created_at', 'thumbs_up_count', 'thumbs_down_count', 'replies', 'documents']
     
@@ -130,6 +142,13 @@ class CommentSerializer(serializers.ModelSerializer):
             'thumbs_up': obj.thumbs_up_count,
             'thumbs_down': obj.thumbs_down_count
         }
+    
+    def get_ratings(self, obj):
+        """Return individual ratings for tracking user reactions"""
+        # Use fresh query to avoid cached/stale data after rating changes
+        from .models import CommentRating
+        ratings = CommentRating.objects.filter(comment=obj)
+        return CommentRatingSerializer(ratings, many=True).data
     
     def validate(self, data):
         # More flexible validation - only check for required fields if they're missing

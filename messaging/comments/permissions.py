@@ -13,16 +13,16 @@ class CommentPermission(BasePermission):
         """Check basic authentication and system role permissions"""
         # Check if user is authenticated
         if not hasattr(request, 'user') or not request.user:
-            logger.debug("Permission denied: No user in request")
+            print(f"[CommentPermission] DENIED: No user in request")
             return False
             
         if not getattr(request.user, 'is_authenticated', False):
-            logger.debug("Permission denied: User not authenticated")
+            print(f"[CommentPermission] DENIED: User not authenticated")
             return False
         
         # Check if user has roles
         if not hasattr(request.user, 'roles') or not request.user.roles:
-            logger.debug(f"Permission denied: User {getattr(request.user, 'user_id', 'unknown')} has no roles")
+            print(f"[CommentPermission] DENIED: User {getattr(request.user, 'user_id', 'unknown')} has no roles")
             return False
         
         # Define system and role requirements for comments
@@ -34,8 +34,10 @@ class CommentPermission(BasePermission):
         # Check if user has required system roles
         has_permission = self._user_has_required_roles(request.user, required_system_roles)
         
-        if not has_permission:
-            logger.warning(f"Permission denied: User {getattr(request.user, 'user_id', 'unknown')} with roles {request.user.roles} does not have required roles")
+        if has_permission:
+            print(f"[CommentPermission] GRANTED for user {getattr(request.user, 'user_id', 'unknown')}")
+        else:
+            print(f"[CommentPermission] DENIED: User {getattr(request.user, 'user_id', 'unknown')} with roles {request.user.roles} does not have required roles")
         
         return has_permission
     
@@ -45,7 +47,14 @@ class CommentPermission(BasePermission):
         if request.method in ['GET', 'HEAD', 'OPTIONS']:
             return True
         
-        # For write operations on comments
+        # For actions that any authenticated user with basic permission can do
+        # (like rating a comment or replying to it)
+        action = getattr(view, 'action', None)
+        if action in ['rate', 'reply']:
+            print(f"[CommentPermission] has_object_permission: Allowing '{action}' action for user {getattr(request.user, 'user_id', 'unknown')}")
+            return True
+        
+        # For write operations on comments (update/delete)
         if hasattr(obj, 'user_id'):
             # Author can always modify their own comments
             if obj.user_id == request.user.user_id:
@@ -63,12 +72,11 @@ class CommentPermission(BasePermission):
         dict and string role representations from the JWT payload.
         """
         if not user or not getattr(user, 'roles', None):
-            logger.debug("_user_has_required_roles: No user or no roles")
+            print("[CommentPermission] _user_has_required_roles: No user or no roles")
             return False
 
         user_roles = getattr(user, 'roles', [])
-        logger.debug(f"_user_has_required_roles: Checking user roles: {user_roles}")
-        logger.debug(f"_user_has_required_roles: Required roles: {required_system_roles}")
+        print(f"[CommentPermission] Checking user roles: {user_roles}")
 
         for system, roles in required_system_roles.items():
             for required_role in roles:
@@ -90,13 +98,11 @@ class CommentPermission(BasePermission):
                         system_lower = str(system).lower()
                         required_lower = str(required_role).lower()
                         
-                        logger.debug(f"Comparing: user({sys_lower}:{role_lower}) vs required({system_lower}:{required_lower})")
-                        
                         if sys_lower == system_lower and role_lower == required_lower:
-                            logger.info(f"Permission granted: User has {sys_name}:{role_name}")
+                            print(f"[CommentPermission] Match found: {sys_name}:{role_name}")
                             return True
 
-        logger.warning(f"Permission denied: No matching role found for user roles: {user_roles}")
+        print(f"[CommentPermission] No matching role found")
         return False
     
     def _user_is_admin(self, user):

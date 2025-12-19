@@ -4,7 +4,6 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema, OpenApiExample
 import logging
 
@@ -89,7 +88,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             }
         }
     )
-    @action(detail=True, methods=['get', 'post'], permission_classes=[AllowAny])
+    @action(detail=True, methods=['get', 'post'], permission_classes=[CommentPermission])
     def reply(self, request, comment_id=None):
         """Get reply info or add a reply to an existing comment with optional document attachments"""
         logger.info(f"Reply action called. User: {request.user}, Authenticated: {getattr(request.user, 'is_authenticated', False)}")
@@ -403,7 +402,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             }
         }
     )
-    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    @action(detail=True, methods=['post'], permission_classes=[CommentPermission])
     def rate(self, request, comment_id=None):
         """Rate a comment (thumbs up/down)"""
         logger.info(f"Rate action called. User: {request.user}, Authenticated: {getattr(request.user, 'is_authenticated', False)}")
@@ -449,18 +448,53 @@ class CommentViewSet(viewsets.ModelViewSet):
             'rating': request.data.get('rating')
         }
         
-        # Validate rating field
+        # Validate rating field is present
         if 'rating' not in request.data:
             return Response(
                 {"rating": "This field is required"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check for existing rating
+        rating_value = request.data.get('rating')
+        user_id = str(request.user.user_id)
+        
+        # Handle rating removal (null value)
+        if rating_value is None:
+            try:
+                existing_rating = CommentRating.objects.get(
+                    comment=comment,
+                    user_id=user_id
+                )
+                existing_rating.delete()
+                
+                # Refresh comment to get updated counts
+                comment.refresh_from_db()
+                
+                # Send notification for rating removal
+                self.notification_service.send_comment_rate(comment, rating_data={
+                    'user_id': user_id,
+                    'rating': None,
+                    'action': 'removed'
+                })
+                
+                comment_serializer = CommentSerializer(comment, context={'request': request})
+                return Response({
+                    'message': 'Rating removed successfully',
+                    'comment': comment_serializer.data
+                }, status=status.HTTP_200_OK)
+            except CommentRating.DoesNotExist:
+                # No rating to remove, just return success with current state
+                comment_serializer = CommentSerializer(comment, context={'request': request})
+                return Response({
+                    'message': 'No rating to remove',
+                    'comment': comment_serializer.data
+                }, status=status.HTTP_200_OK)
+        
+        # Check for existing rating (create or update)
         try:
             existing_rating = CommentRating.objects.get(
                 comment=comment,
-                user_id=rating_data.get('user_id')
+                user_id=user_id
             )
             serializer = CommentRatingSerializer(existing_rating, data=rating_data, partial=True)
             rating_action = 'updated'
@@ -470,6 +504,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         if serializer.is_valid():
             rating = serializer.save()
+            
+            # Refresh comment to get updated counts
+            comment.refresh_from_db()
             
             # Send specific rating notification with rating data
             self.notification_service.send_comment_rate(comment, rating_data={

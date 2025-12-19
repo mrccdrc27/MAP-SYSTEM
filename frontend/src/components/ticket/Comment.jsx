@@ -1,5 +1,5 @@
 // src/components/ticket/Comment.jsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import ReactDOM from "react-dom";
 import { format } from "date-fns";
 import DocumentAttachment from "./DocumentAttachment";
@@ -25,7 +25,7 @@ const Comment = ({
   const [isContentExpanded, setIsContentExpanded] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [isRatingLoading, setIsRatingLoading] = useState(false); // Prevent double clicks
+  const [isRatingLoading, setIsRatingLoading] = useState(false);
 
   const MAX_CONTENT_LENGTH = 200;
 
@@ -65,10 +65,36 @@ const Comment = ({
     setShowImageModal(true);
   };
 
-  // Check if the current user has already reacted
-  const userReaction = comment.reactions?.find(
-    (reaction) => reaction.user_id === currentUserId
-  );
+  // Get like/dislike counts - use thumbs counts from backend
+  const likeCount = useMemo(() => {
+    return comment.thumbs_up_count ?? 0;
+  }, [comment.thumbs_up_count]);
+
+  const dislikeCount = useMemo(() => {
+    return comment.thumbs_down_count ?? 0;
+  }, [comment.thumbs_down_count]);
+
+  // Check if current user has reacted - look in reactions/ratings array
+  // Backend stores: rating=true (like) or rating=false (dislike)
+  const userReaction = useMemo(() => {
+    const reactions = comment.reactions || comment.ratings || [];
+    const userIdStr = String(currentUserId);
+    
+    const found = reactions.find((r) => {
+      const rUserId = String(r.user_id);
+      return rUserId === userIdStr;
+    });
+    
+    if (!found) return null;
+    
+    // Convert backend format to frontend format
+    // Backend: rating: true/false
+    // Frontend expects: reaction_type: 'like'/'dislike'
+    return {
+      ...found,
+      reaction_type: found.rating === true ? "like" : found.rating === false ? "dislike" : null,
+    };
+  }, [comment.reactions, comment.ratings, currentUserId]);
 
   // Truncate comment content if it's too long
   const truncatedContent =
@@ -83,7 +109,8 @@ const Comment = ({
   const handleReplySubmit = (e) => {
     e.preventDefault();
     if (replyContent.trim()) {
-      onReply(comment.id, replyContent, replyFiles);
+      // Use comment_id (CX format) for replies
+      onReply(comment.comment_id || comment.id, replyContent, replyFiles);
       setReplyContent("");
       setReplyFiles([]);
       setShowReplyForm(false);
@@ -92,68 +119,47 @@ const Comment = ({
   };
 
   const handleLikeClick = async () => {
-    if (isRatingLoading) return; // Prevent double clicks
+    if (isRatingLoading) return;
 
     setIsRatingLoading(true);
 
     try {
-      if (userReaction && userReaction.reaction_type === "like") {
-        // User already liked, so remove the like
-        await onReaction(comment.id, userReaction.id, null);
+      if (userReaction?.reaction_type === "like") {
+        // User already liked, toggle off (remove)
+        await onReaction(comment.comment_id || comment.id, userReaction.id, null);
       } else {
-        // User hasn't liked or has disliked, so add/change to like
-        await onReaction(comment.id, userReaction?.id, "like");
+        // Add or change to like
+        await onReaction(comment.comment_id || comment.id, userReaction?.id, "like");
       }
     } catch (error) {
       console.error("Error handling like:", error);
     } finally {
-      // Add a small delay to prevent rapid clicking
       setTimeout(() => {
         setIsRatingLoading(false);
-      }, 500);
+      }, 300);
     }
   };
 
   const handleDislikeClick = async () => {
-    if (isRatingLoading) return; // Prevent double clicks
+    if (isRatingLoading) return;
 
     setIsRatingLoading(true);
 
     try {
-      if (userReaction && userReaction.reaction_type === "dislike") {
-        // User already disliked, so remove the dislike
-        await onReaction(comment.id, userReaction.id, null);
+      if (userReaction?.reaction_type === "dislike") {
+        // User already disliked, toggle off (remove)
+        await onReaction(comment.comment_id || comment.id, userReaction.id, null);
       } else {
-        // User hasn't disliked or has liked, so add/change to dislike
-        await onReaction(comment.id, userReaction?.id, "dislike");
+        // Add or change to dislike
+        await onReaction(comment.comment_id || comment.id, userReaction?.id, "dislike");
       }
     } catch (error) {
       console.error("Error handling dislike:", error);
     } finally {
-      // Add a small delay to prevent rapid clicking
       setTimeout(() => {
         setIsRatingLoading(false);
-      }, 500);
+      }, 300);
     }
-  };
-
-  const getLikeCount = () => {
-    if (comment.thumbs_up_count !== undefined) {
-      return comment.thumbs_up_count;
-    }
-    return (
-      comment.reactions?.filter((r) => r.reaction_type === "like").length || 0
-    );
-  };
-
-  const getDislikeCount = () => {
-    if (comment.thumbs_down_count !== undefined) {
-      return comment.thumbs_down_count;
-    }
-    return (
-      comment.reactions?.filter((r) => r.reaction_type === "dislike").length ||
-      0
-    );
   };
 
   return (
@@ -228,7 +234,7 @@ const Comment = ({
             onClick={handleLikeClick}
             disabled={isRatingLoading}
           >
-            <i className="fa-solid fa-thumbs-up"></i> {getLikeCount()}
+            <i className="fa-solid fa-thumbs-up"></i> {likeCount}
           </button>
 
           <button
@@ -240,7 +246,7 @@ const Comment = ({
             onClick={handleDislikeClick}
             disabled={isRatingLoading}
           >
-            <i className="fa-solid fa-thumbs-down"></i> {getDislikeCount()}
+            <i className="fa-solid fa-thumbs-down"></i> {dislikeCount}
           </button>
 
           {/* Only show reply button if this is not already a reply */}
@@ -260,7 +266,7 @@ const Comment = ({
               onClick={() => {
                 if (onDelete) {
                   const confirmed = window.confirm("Delete this comment?");
-                  if (confirmed) onDelete(comment.id);
+                  if (confirmed) onDelete(comment.comment_id || comment.id);
                 }
               }}
             >
