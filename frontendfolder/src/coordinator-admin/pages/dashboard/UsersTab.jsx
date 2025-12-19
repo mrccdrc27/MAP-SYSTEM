@@ -316,7 +316,8 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
     // Read a stable snapshot of current user for local filtering
     const current = authService.getCurrentUser();
 
-    // Try fetching pending HDTS users and all HDTS users (for pie) in parallel
+    // Fetch pending HDTS employees (employees only, status = Pending) for main table
+    // AND all HDTS users (for pie and line charts) in parallel
     Promise.allSettled([
       backendUserService.getPendingHdtsUsers(),
       backendUserService.getAllHdtsUsers()
@@ -324,18 +325,19 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       if (!mounted) return;
       const [pendingRes, allHdtsRes] = results;
 
-      // normalize pending users
+      // normalize pending employees (employees only with Pending status - from hdts_employees table)
       let pendingRaw = [];
       if (pendingRes.status === 'fulfilled') {
         const pr = pendingRes.value;
         pendingRaw = Array.isArray(pr) ? pr : (pr.users || pr.results || []);
       }
 
-      // normalize hdts users (for pie)
+      // normalize all hdts users (from both hdts_employees and users_user tables - for statistics)
       let hdtsRaw = [];
       if (allHdtsRes.status === 'fulfilled') {
         const ar = allHdtsRes.value;
-        hdtsRaw = Array.isArray(ar) ? ar : (ar.users || ar.results || []);
+        // Use all_users if available (combined from both tables), otherwise fallback to users array
+        hdtsRaw = ar.all_users || (Array.isArray(ar) ? ar : (ar.users || ar.results || []));
       }
 
       const mapUser = (o) => ({
@@ -352,7 +354,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       const mappedPending = pendingRaw.map(mapUser);
       const mappedHdts = hdtsRaw.map(mapUser);
 
-      // apply visibility filter for Ticket Coordinators
+      // apply visibility filter for Ticket Coordinators (on pending employees)
       let visible = mappedPending;
       if (current) {
         if (current.role === 'Ticket Coordinator') {
@@ -405,7 +407,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       'Pending Users'
     ].map((label, i) => ({
       label,
-      count: pendingCount,
+      count: users.length, // Count of pending employees from users array
       isHighlight: false,
       position: i,
       path: userPaths.find(p => p.label === label)?.path
@@ -415,7 +417,6 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       lastName: u.lastName || '',
       firstName: u.firstName || '',
       department: u.department || '',
-      role: u.role || '',
       status: { text: (u.status || '').toString(), statusClass: (
         (/pending/i.test(u.status) ? 'statusPending' : (/approved|active/i.test(u.status) ? 'statusApproved' : (/reject|rejected/i.test(u.status) ? 'statusRejected' : (/inactive/i.test(u.status) ? 'statusInactive' : 'statusApproved'))))
       ) }
@@ -449,7 +450,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
     })()
   };
 
-  const userActivityTimeline = users
+  const userActivityTimeline = rawUsers
     .slice() // copy
     .sort((a, b) => new Date(getUserJoinedDate(b) || 0) - new Date(getUserJoinedDate(a) || 0))
     .slice(0, 4)
@@ -460,7 +461,19 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
         const d = new Date(dj);
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       })();
-      return { time, action: `User ${u.companyId || ''} account created`, type: 'user' };
+      
+      // Determine action based on status
+      const status = getUserStatus(u).toLowerCase();
+      let actionText = 'account created';
+      if (/reject|rejected/i.test(status)) {
+        actionText = 'account rejected';
+      } else if (/inactive/i.test(status)) {
+        actionText = 'account inactive';
+      } else if (/approved|active/i.test(status)) {
+        actionText = 'account approved';
+      }
+      
+      return { time, action: `User ${u.companyId || ''} ${actionText}`, type: 'user' };
     });
 
   return (
@@ -477,7 +490,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
 
       <DataTable
         title="User Approval"
-        headers={['Company ID', 'Last Name', 'First Name', 'Department', 'Role', 'Status']}
+        headers={['Company ID', 'Last Name', 'First Name', 'Department', 'Status']}
         data={userData.tableData}
         maxVisibleRows={5}
         loading={loadingUsers}

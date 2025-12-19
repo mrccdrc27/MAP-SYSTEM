@@ -14,6 +14,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from users.serializers import UserProfileSerializer
+from .serializers import EmployeeProfileSerializer
 from django.shortcuts import get_object_or_404
 from system_roles.models import UserSystemRole
 
@@ -145,17 +146,15 @@ def update_user_status_view(request, user_id):
 @permission_classes([IsAuthenticated])
 def get_pending_users_api(request):
     """
-    API endpoint to get pending HDTS Employee registrations.
+    API endpoint to get pending HDTS Employee registrations from hdts_employees table.
     Returns JSON data for frontend consumption.
     """
-    # Find users who have the Employee role in the 'hdts' system AND have status='Pending'
-    pending_users = User.objects.filter(
-        status='Pending',
-        system_roles__system__slug='hdts',
-        system_roles__role__name='Employee'
-    ).distinct()
+    from .models import Employees
     
-    serializer = UserProfileSerializer(pending_users, many=True)
+    # Find employees with status='Pending' from hdts_employees table
+    pending_users = Employees.objects.filter(status='Pending')
+    
+    serializer = EmployeeProfileSerializer(pending_users, many=True)
     return Response({
         'count': pending_users.count(),
         'users': serializer.data
