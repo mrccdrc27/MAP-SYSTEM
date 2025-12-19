@@ -13,8 +13,8 @@ import { format } from "date-fns";
 function TableHeader({ headers }) {
   return (
     <tr className={styles.header}>
-      {headers.map((header) => (
-        <th key={header}>{header}</th>
+      {headers.map((header, index) => (
+        <th key={index}>{header}</th> // Using index as the key to avoid duplication
       ))}
     </tr>
   );
@@ -24,17 +24,16 @@ function TableItem({ item, columns }) {
   const navigate = useNavigate();
   return (
     <tr className={styles.dtItem}>
-      {columns.map((col) => (
-        <td key={col.key}>
+      {columns.map((col, index) => (
+        <td key={`${col.key}-${index}`}> {/* Ensure unique key for columns */}
           {col.format ? col.format(item[col.key]) : item[col.key]}
         </td>
       ))}
-      {/* Add a dynamic button if "action" column is passed */}
       {columns.some((col) => col.key === "action") && (
         <td>
           <button
             className={styles.dtBtn}
-            onClick={() => navigate(`/admin/archive/${item.id}`)} // Assuming 'id' is the unique identifier
+            onClick={() => navigate(`/admin/archive/${item.id}`)}
           >
             👁
           </button>
@@ -46,10 +45,9 @@ function TableItem({ item, columns }) {
 
 export default function DynamicTable({
   data = [],
-  headers = [], // Column headers passed dynamically
-  columns = [], // Column definitions with keys to access values dynamically
+  headers = [],
+  columns = [],
 }) {
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -59,8 +57,7 @@ export default function DynamicTable({
 
   return (
     <div className={styles.dtSection}>
-      <div className={styles.dtHeader}>
-      </div>
+      <div className={styles.dtHeader}></div>
       <div className={styles.dtWrapper}>
         <table className={styles.dtTable}>
           <thead>
@@ -68,8 +65,8 @@ export default function DynamicTable({
           </thead>
           <tbody>
             {data.length > 0 ? (
-              paginatedData.map((item) => (
-                <TableItem key={item.id} item={item} columns={columns} />
+              paginatedData.map((item, index) => (
+                <TableItem key={item.id || index} item={item} columns={columns} />
               ))
             ) : (
               <tr>
@@ -93,3 +90,4 @@ export default function DynamicTable({
     </div>
   );
 }
+

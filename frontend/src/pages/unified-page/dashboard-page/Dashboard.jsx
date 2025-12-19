@@ -28,7 +28,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { userTickets, loading, error } = useUserTickets();
 
-  console.log("First Ticket:", JSON.stringify(userTickets?.[0], null, 2));
+  // console.log("First Ticket:", JSON.stringify(userTickets?.[0], null, 2));
 
   // Only tickets that have not yet been acted
   const pendingTickets = useMemo(() => {

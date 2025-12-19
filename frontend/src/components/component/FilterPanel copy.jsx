@@ -1,9 +1,9 @@
 // style
+import DynamicDropdown from "./Dropdown";
 import styles from "./filter-panel.module.css";
 
 // component
-import { Datetime } from "./General";
-import DynamicDropdown from "./Dropdown";
+import { Dropdown, Datetime } from "./General";
 
 // react
 import { useState } from "react";
@@ -30,44 +30,27 @@ export default function FilterPanel({
       </div>
       {showFilter && (
         <div className={styles.filterPanelCont}>
-
           {/* Dropdown Category */}
           <div className={styles.filterGroup}>
             <label htmlFor="category">Category</label>
-            <DynamicDropdown
-              label="Category"
-              options={categoryOptions.map((opt) => ({ label: opt }))}
-              multiple={false}
-              selectedItems={
-                filters.category ? [{ label: filters.category }] : []
-              }
-              onChange={(selectedArray) =>
-                onFilterChange({
-                  target: {
-                    name: "category",
-                    value: selectedArray[0]?.label || "",
-                  },
-                })
-              }
+            <Dropdown
+              name="category"
+              value={filters.category}
+              onChange={onFilterChange}
+              options={categoryOptions}
+              placeholder="Select category"
             />
           </div>
 
           {/* Dropdown Status */}
           <div className={styles.filterGroup}>
             <label htmlFor="status">Status</label>
-            <DynamicDropdown
-              label="Status"
-              options={statusOptions.map((opt) => ({ label: opt }))}
-              multiple={false}
-              selectedItems={filters.status ? [{ label: filters.status }] : []}
-              onChange={(selectedArray) =>
-                onFilterChange({
-                  target: {
-                    name: "status",
-                    value: selectedArray[0]?.label || "",
-                  },
-                })
-              }
+            <Dropdown
+              name="status"
+              value={filters.status}
+              onChange={onFilterChange}
+              options={statusOptions}
+              placeholder="Select status"
             />
           </div>
 

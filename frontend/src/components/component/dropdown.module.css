@@ -14,10 +14,10 @@
   font-weight: 400;
   font-size: 0.75rem;
   text-align: left;
-  border: 2px solid var(--color-gray-300);
+  border: var(--border-very-light-gray);
   border-radius: 4px;
-  background-color: var(--color-white-background);
-  color: var(--color-text-dark);
+  background-color: var(--bg1-color);
+  color: var(--table-color);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -26,13 +26,13 @@
 }
 
 .ddDropdownButton:hover {
-  border-color: var(--color-primary-blue);
+  border-color: var(--primary-color-hover);
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .ddDropdownButton:focus {
   outline: none;
-  border-color: var(--color-primary-blue);
+  border-color: var(--primary-color-hover);
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
 }
 
@@ -55,8 +55,8 @@
   left: 0;
   min-width: 100%;
   width: 100%;
-  background-color: var(--color-white-background);
-  border: 2px solid var(--color-gray-300);
+  background-color: var(--bg-color);
+  border: var(--border-very-light-gray);
   border-radius: 8px;
   padding: 0.75rem 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -80,20 +80,17 @@
 .ddSearchInput {
   width: 100%;
   padding: 0.625rem 1rem;
-  font-size: clamp(14px, 2.5vw, 16px);
-  font-family: var(--font-base);
-  border-radius: 6px;
-  border: 1px solid var(--color-gray-300);
+  font-size: var(--table-head-size);
+  border-radius: 2px;
+  border: 1px solid var(--border-color);
   background-color: var(--color-light-background);
-  color: var(--color-text-dark);
+  color: var(--table-color);
   transition: border-color 0.2s ease;
   margin-bottom: 0;
 }
 
-.ddSearchInput:focus {
-  outline: none;
-  border-color: var(--color-primary-blue);
-  background-color: var(--color-white-background);
+.ddSearchInput:hover {
+  border-color: var(--primary-color-hover);
 }
 
 .ddSearchInput::placeholder {
@@ -109,10 +106,9 @@
 
 .ddDropdownItem {
   padding: 0.625rem 1rem;
-  border-radius: 6px;
+  border-radius: 2px;
   cursor: pointer;
-  font-size: 0.75rem;
-  font-family: var(--font-base);
+  font-size: var(--table-head-size);
   display: flex;
   align-items: center;
   color: var(--color-text-dark);
@@ -121,13 +117,13 @@
 }
 
 .ddDropdownItem:hover {
-  background-color: var(--color-light-background);
-  color: var(--color-primary-blue);
+  background-color: rgba(0, 123, 255, 0.1);
+  /* color: var(--primary-color); */
 }
 
 .ddDropdownItem.selected {
-  background-color: rgba(0, 123, 255, 0.1);
-  color: var(--color-primary-blue);
+  background-color: rgba(0, 123, 255, 0.2);
+  color: var(--primary-color);
   font-weight: 500;
   border: none;
   outline: none;

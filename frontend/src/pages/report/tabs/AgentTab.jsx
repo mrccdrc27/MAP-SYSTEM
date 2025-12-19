@@ -12,8 +12,10 @@ import styles from "../report.module.css";
 export default function AgentTab({ timeFilter, analyticsData = {}, loading, error }) {
   const ticketsReport = analyticsData || {};
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
-  if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
+  if (loading)
+    return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (error)
+    return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
   if (!ticketsReport.sla_compliance && !ticketsReport.dashboard)
     return <div style={{ padding: "20px" }}>No agent data available</div>;
 
@@ -24,21 +26,25 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
   const tasksReport = ticketsReport.task_performance || {};
 
   // SLA compliance is by priority
-  const slaLabels = slaCompliance?.map(s => s.priority) || [];
-  const slaCompliances = slaCompliance?.map(s => Math.round(s.compliance_rate || 0)) || [];
-  const slaMetCounts = slaCompliance?.map(s => s.sla_met) || [];
-  const slaBreachedCounts = slaCompliance?.map(s => s.sla_breached) || [];
+  const slaLabels = slaCompliance?.map((s) => s.priority) || [];
+  const slaCompliances =
+    slaCompliance?.map((s) => Math.round(s.compliance_rate || 0)) || [];
+  const slaMetCounts = slaCompliance?.map((s) => s.sla_met) || [];
+  const slaBreachedCounts = slaCompliance?.map((s) => s.sla_breached) || [];
 
   // User Performance data for assignment distribution
-  const userLabels = userPerf?.map(u => u.user_name || `User ${u.user_id}`) || [];
-  const userResolutionRates = userPerf?.map(u => Math.round(u.resolution_rate || 0)) || [];
+  const userLabels =
+    userPerf?.map((u) => u.user_name || `User ${u.user_id}`) || [];
+  const userResolutionRates =
+    userPerf?.map((u) => Math.round(u.resolution_rate || 0)) || [];
 
   // Task Item Performance by User
   const taskUserPerf = tasksReport?.user_performance || [];
-  const taskUserLabels = taskUserPerf?.map(u => u.user_name || `User ${u.user_id}`) || [];
-  const taskUserResolved = taskUserPerf?.map(u => u.resolved || 0) || [];
-  const taskUserBreached = taskUserPerf?.map(u => u.breached || 0) || [];
-  const taskUserEscalated = taskUserPerf?.map(u => u.escalated || 0) || [];
+  const taskUserLabels =
+    taskUserPerf?.map((u) => u.user_name || `User ${u.user_id}`) || [];
+  const taskUserResolved = taskUserPerf?.map((u) => u.resolved || 0) || [];
+  const taskUserBreached = taskUserPerf?.map((u) => u.breached || 0) || [];
+  const taskUserEscalated = taskUserPerf?.map((u) => u.escalated || 0) || [];
 
   // Dashboard metrics for KPI
   const slaComplianceRate = dashboard?.sla_compliance_rate || 0;

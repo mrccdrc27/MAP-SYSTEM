@@ -407,7 +407,7 @@ export default function TicketDetail() {
                 </div>
               </div> */}
 
-              {/* Comments section under attachments */}
+              {/* Comment */}
               <TicketComments ticketId={state.ticket?.ticket_id} />
             </div>
             {/* Right */}

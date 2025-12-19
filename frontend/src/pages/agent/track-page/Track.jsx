@@ -10,7 +10,7 @@ import { useWorkflowProgress } from "../../../api/workflow-graph/useWorkflowProg
 import styles from "./track.module.css";
 
 // react
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Track() {
@@ -18,7 +18,7 @@ export default function Track() {
   const tickets = userTickets || []; // === added
   const loading = !userTickets; // === added
 
-  // ✅ Log a sample ticket once tickets are fetched
+  // Log a sample ticket once tickets are fetched
   useEffect(() => {
     if (tickets.length > 0) {
       console.log(
@@ -30,7 +30,7 @@ export default function Track() {
     }
   }, [tickets]);
 
-  const navigate = useNavigate(); // === added (optional)
+  const navigate = useNavigate(); 
 
   // search bar states
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,9 +38,8 @@ export default function Track() {
   const [notFound, setNotFound] = useState(false);
 
   // state and tracker hook
-  const [taskId, setTaskId] = useState(null); // === added
-  const { tracker } = useWorkflowProgress(taskId); // === added
-
+  const [taskId, setTaskId] = useState(null); 
+  const { tracker } = useWorkflowProgress(taskId); 
   const handleSearch = (e) => {
     e.preventDefault();
 

@@ -12,7 +12,7 @@ export default function TableSkeleton({ rows = 5, columns = 5 }) {
         <tr>
           {colArray.map((_, i) => (
             <th key={i}>
-              <Skeleton height={20} />
+              <Skeleton height={40} />
             </th>
           ))}
         </tr>
@@ -22,7 +22,7 @@ export default function TableSkeleton({ rows = 5, columns = 5 }) {
           <tr key={rowIndex}>
             {colArray.map((_, colIndex) => (
               <td key={colIndex}>
-                <Skeleton height={20} />
+                <Skeleton height={40} />
               </td>
             ))}
           </tr>

@@ -18,6 +18,9 @@ const TicketComments = ({ ticketId }) => {
   const [clearAttachmentFilesTrigger, setClearAttachmentFilesTrigger] =
     useState(0);
 
+  // console.log("User:", user);
+  // console.log("Is admin:", typeof isAdmin === "function" ? isAdmin() : isAdmin);
+
   const {
     comments,
     loading,

@@ -37,6 +37,9 @@ function Login() {
   // Check if user is already logged in and redirect accordingly
   useEffect(() => {
     if (user) {
+      // IMPORTANT: wait until profile fields exist
+      if (!user.first_name && !user.username) return;
+      
       // Get redirect destination from location state or default based on role
       const from = location.state?.from?.pathname;
 

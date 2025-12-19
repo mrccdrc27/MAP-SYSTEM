@@ -39,6 +39,9 @@ export default function WorkflowVisualizer2({ workflowData }) {
     return <div className={styles.loading}>Loading visual workflow...</div>;
   }
 
+  const nodes = workflowData.nodes;
+  const isSingle = nodes.length === 1;
+
   const renderConnector = (index, currentStatus, nextStatus) => {
     if (index === workflowData.nodes.length - 1) return null;
 
@@ -56,12 +59,10 @@ export default function WorkflowVisualizer2({ workflowData }) {
 
   return (
     <div className={styles.container}>
-      {/* <h3 className={styles.title}>Workflow Progress</h3> */}
-
       {/* og */}
-      <div className={styles.workflow}>
-        {workflowData.nodes.map((node, index) => {
-          const nextNode = workflowData.nodes[index + 1];
+      <div className={`${styles.workflow} ${isSingle ? styles.single : ""}`}>
+        {nodes.map((node, index) => {
+          const nextNode = nodes[index + 1];
 
           return (
             <React.Fragment key={node.id}>
@@ -74,7 +75,6 @@ export default function WorkflowVisualizer2({ workflowData }) {
                   <div className={styles.nodeLabel}>{node.label}</div>
                   <div className={styles.nodeRole}>
                     {node.role}
-                    {/* <strong>{node.role}</strong> */}
                   </div>
                 </div>
               </div>

@@ -147,7 +147,6 @@ export default function TicketTable({
         </h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          {/* <button className={general.exportButton}>Export</button> */}
         </div>
       </div>
       <div className={general.ticketTableWrapper}>

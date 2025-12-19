@@ -11,10 +11,30 @@ export default function IntegrationTab({ analyticsData, loading, error }) {
   // Dummy data simulation
   const reportData = {
     integrations: [
-      { name: "Integration A", status: "Active", responseTime: "200ms", errorRate: 0.05 },
-      { name: "Integration B", status: "Inactive", responseTime: "500ms", errorRate: 0.12 },
-      { name: "Integration C", status: "Active", responseTime: "300ms", errorRate: 0.03 },
-      { name: "Integration D", status: "Active", responseTime: "100ms", errorRate: 0.02 },
+      {
+        name: "Integration A",
+        status: "Active",
+        responseTime: "200ms",
+        errorRate: 0.05,
+      },
+      {
+        name: "Integration B",
+        status: "Inactive",
+        responseTime: "500ms",
+        errorRate: 0.12,
+      },
+      {
+        name: "Integration C",
+        status: "Active",
+        responseTime: "300ms",
+        errorRate: 0.03,
+      },
+      {
+        name: "Integration D",
+        status: "Active",
+        responseTime: "100ms",
+        errorRate: 0.02,
+      },
     ],
   };
 

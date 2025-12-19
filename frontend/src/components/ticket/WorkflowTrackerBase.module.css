@@ -27,6 +27,12 @@
   padding: 1rem 0;
 }
 
+/* When there's only one node, center it inside the workflow container */
+.workflow.single {
+  justify-content: center;
+  min-width: 100%;
+}
+
 .nodeContainer {
   display: flex;
   flex-direction: column;

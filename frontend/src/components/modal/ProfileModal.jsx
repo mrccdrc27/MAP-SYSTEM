@@ -11,7 +11,7 @@ export default function ProfileModal({ closeProfileAction }) {
   const { logout } = useLogout();
 
   const { user, loading, } = useAuth();
-  console.log(user)
+  // console.log(user)
 
     if (loading) return <p>Loading...</p>;
   return (
