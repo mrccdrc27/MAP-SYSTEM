@@ -1,3 +1,9 @@
+const path = require('path');
+
+const venvPath = path.join(__dirname, 'venv', 'Scripts');
+const pythonInterpreter = path.join(venvPath, 'python.exe');
+const celeryScript = path.join(venvPath, 'celery.exe');
+
 module.exports = {
   apps: [
     // -------------------
@@ -8,7 +14,7 @@ module.exports = {
       cwd: './auth',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8003',
-      interpreter: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/python.exe',
+      interpreter: pythonInterpreter,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -31,7 +37,7 @@ module.exports = {
       cwd: './workflow_api',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8002',
-      interpreter: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/python.exe',
+      interpreter: pythonInterpreter,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -53,7 +59,7 @@ module.exports = {
     {
       name: 'workflow-worker',
       cwd: './workflow_api',
-      script: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/celery.exe',
+      script: celeryScript,
       args: '-A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed',
       interpreter: 'none',
       env: {
@@ -75,7 +81,7 @@ module.exports = {
       cwd: './notification_service',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8006',
-      interpreter: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/python.exe',
+      interpreter: pythonInterpreter,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -94,7 +100,7 @@ module.exports = {
     {
       name: 'notification-worker',
       cwd: './notification_service',
-      script: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/celery.exe',
+      script: celeryScript,
       args: '-A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue',
       interpreter: 'none',
       env: {
@@ -114,7 +120,7 @@ module.exports = {
       cwd: './messaging',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8005',
-      interpreter: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/python.exe',
+      interpreter: pythonInterpreter,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -123,31 +129,28 @@ module.exports = {
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
         DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
       }
-      
-    // },
-      // specifically excluding the ticket service for now
-    // // -------------------
-    // // Ticket Service
-    // // -------------------
-    // {
-    //   name: 'ticket-service',
-    //   cwd: './ticket_service',
-    //   script: 'manage.py',
-    //   args: 'runserver 0.0.0.0:8004',
-    //   interpreter: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/python.exe',
-    //   env: {
-    //     DJANGO_ENV: "development",
-    //     DJANGO_DEBUG: "True",
-    //     DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,ticket-service",
-    //     DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
-    //     CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
-    //   }
-    // 
     },
+    // specifically excluding the ticket service for now
+    /*
+    {
+      name: 'ticket-service',
+      cwd: './ticket_service',
+      script: 'manage.py',
+      args: 'runserver 0.0.0.0:8004',
+      interpreter: pythonInterpreter,
+      env: {
+        DJANGO_ENV: "development",
+        DJANGO_DEBUG: "True",
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,ticket-service",
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
+        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
+      }
+    },
+    */
     {
       name: 'ticket-worker',
       cwd: './ticket_service',
-      script: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/celery.exe',
+      script: celeryScript,
       args: '-A ticket_service worker --pool=solo --loglevel=info -Q ticket_tasks-default',
       interpreter: 'none',
       env: {
@@ -165,7 +168,7 @@ module.exports = {
       cwd: './helpdesk',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8000', 
-      interpreter: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/python.exe',
+      interpreter: pythonInterpreter,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True"
@@ -174,7 +177,7 @@ module.exports = {
     {
       name: 'helpdesk-worker',
       cwd: './helpdesk',
-      script: 'C:/work/Capstone 2/Ticket-Tracking-System/venv/Scripts/celery.exe',
+      script: celeryScript,
       args: '-A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo',
       interpreter: 'none',
       env: {

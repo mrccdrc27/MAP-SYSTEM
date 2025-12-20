@@ -25,7 +25,7 @@ pm2 start ecosystem.config.js
 **Note:** The `ticket-service` is intentionally excluded from this setup.
 
 ## Managing Processes
-
+vvv
 -   **List all running processes:**
     ```bash
     pm2 list
