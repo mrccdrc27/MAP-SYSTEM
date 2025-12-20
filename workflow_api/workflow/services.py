@@ -63,12 +63,23 @@ class WorkflowGraphService:
                             role_name = node.get('role')
                             role = Roles.objects.get(name=role_name)
                             
+                            # Handle escalate_to role
+                            escalate_to_role = None
+                            escalate_to_name = node.get('escalate_to')
+                            if escalate_to_name:
+                                try:
+                                    escalate_to_role = Roles.objects.get(name=escalate_to_name)
+                                except Roles.DoesNotExist:
+                                    logger.warning(f"Escalate to role '{escalate_to_name}' not found, setting to None")
+                            
                             new_step = Steps.objects.create(
                                 workflow_id=workflow,
                                 role_id=role,
+                                escalate_to=escalate_to_role,
                                 name=node.get('name', ''),
                                 description=node.get('description', ''),
                                 instruction=node.get('instruction', ''),
+                                weight=node.get('weight', 0.5),
                                 design=node.get('design', {}),
                                 order=idx,
                                 is_start=node.get('is_start', False),
@@ -174,12 +185,23 @@ class WorkflowGraphService:
                             except Roles.DoesNotExist:
                                 raise ValidationError(f'Role "{role_name}" not found')
                             
+                            # Handle escalate_to role
+                            escalate_to_role = None
+                            escalate_to_name = node.get('escalate_to')
+                            if escalate_to_name:
+                                try:
+                                    escalate_to_role = Roles.objects.get(name=escalate_to_name)
+                                except Roles.DoesNotExist:
+                                    logger.warning(f"Escalate to role '{escalate_to_name}' not found, setting to None")
+                            
                             new_step = Steps.objects.create(
                                 workflow_id=workflow,
                                 role_id=role,
+                                escalate_to=escalate_to_role,
                                 name=node.get('name', ''),
                                 description=node.get('description', ''),
                                 instruction=node.get('instruction', ''),
+                                weight=node.get('weight', 0.5),
                                 design=node.get('design', {}),
                                 order=0,
                                 is_start=node.get('is_start', False),
@@ -199,6 +221,8 @@ class WorkflowGraphService:
                                     step.description = node['description']
                                 if 'instruction' in node:
                                     step.instruction = node['instruction']
+                                if 'weight' in node:
+                                    step.weight = node['weight']
                                 if 'design' in node:
                                     step.design = node['design']
                                 if 'is_start' in node:
@@ -211,6 +235,16 @@ class WorkflowGraphService:
                                         step.role_id = role
                                     except Roles.DoesNotExist:
                                         raise ValidationError(f'Role "{node["role"]}" not found')
+                                if 'escalate_to' in node:
+                                    if node['escalate_to']:
+                                        try:
+                                            escalate_role = Roles.objects.get(name=node['escalate_to'])
+                                            step.escalate_to = escalate_role
+                                        except Roles.DoesNotExist:
+                                            logger.warning(f"Escalate to role '{node['escalate_to']}' not found")
+                                            step.escalate_to = None
+                                    else:
+                                        step.escalate_to = None
                                 
                                 step.save()
                                 logger.info(f"✅ Updated node: {node_id}")

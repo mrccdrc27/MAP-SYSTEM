@@ -36,7 +36,12 @@ import {
   Lightbulb, 
   Link, 
   ArrowRight,
-  Layout
+  Layout,
+  MoreVertical,
+  ArrowUpRight,
+  Scale,
+  Info,
+  Edit3
 } from 'lucide-react';
 
 const nodeTypes = {
@@ -60,8 +65,8 @@ const WORKFLOW_TEMPLATES = {
     description: '2 steps: Submit → Complete',
     icon: <CheckCircle size={16} />,
     nodes: [
-      { name: 'Submit Request', role: null, is_start: true, is_end: false },
-      { name: 'Complete', role: null, is_start: false, is_end: true }
+      { name: 'Submit Request', role: null, is_start: true, is_end: false, description: 'Initial request submission', instruction: '', escalate_to: null, weight: 0.3 },
+      { name: 'Complete', role: null, is_start: false, is_end: true, description: 'Request completed', instruction: '', escalate_to: null, weight: 0.7 }
     ],
     edges: [{ from: 0, to: 1, name: 'Process' }],
     metadata: { category: 'Request', sub_category: 'General' }
@@ -71,9 +76,9 @@ const WORKFLOW_TEMPLATES = {
     description: '3 steps: New → Processing → Resolved',
     icon: <BarChart size={16} />,
     nodes: [
-      { name: 'New Ticket', role: null, is_start: true, is_end: false },
-      { name: 'In Progress', role: null, is_start: false, is_end: false },
-      { name: 'Resolved', role: null, is_start: false, is_end: true }
+      { name: 'New Ticket', role: null, is_start: true, is_end: false, description: 'Ticket created', instruction: 'Review the ticket and assign to appropriate agent', escalate_to: null, weight: 0.2 },
+      { name: 'In Progress', role: null, is_start: false, is_end: false, description: 'Work in progress', instruction: 'Work on resolving the issue', escalate_to: null, weight: 0.5 },
+      { name: 'Resolved', role: null, is_start: false, is_end: true, description: 'Issue resolved', instruction: '', escalate_to: null, weight: 0.3 }
     ],
     edges: [
       { from: 0, to: 1, name: 'Assign' },
@@ -86,10 +91,10 @@ const WORKFLOW_TEMPLATES = {
     description: 'Submit → Review → Approve/Reject',
     icon: <ThumbsUp size={16} />,
     nodes: [
-      { name: 'Submit', role: null, is_start: true, is_end: false },
-      { name: 'Manager Review', role: null, is_start: false, is_end: false },
-      { name: 'Approved', role: null, is_start: false, is_end: true },
-      { name: 'Rejected', role: null, is_start: false, is_end: true }
+      { name: 'Submit', role: null, is_start: true, is_end: false, description: 'Request submitted for approval', instruction: 'Submit all required documents', escalate_to: null, weight: 0.2 },
+      { name: 'Manager Review', role: null, is_start: false, is_end: false, description: 'Pending manager review', instruction: 'Review the request and either approve or reject', escalate_to: null, weight: 0.5 },
+      { name: 'Approved', role: null, is_start: false, is_end: true, description: 'Request approved', instruction: '', escalate_to: null, weight: 0.15 },
+      { name: 'Rejected', role: null, is_start: false, is_end: true, description: 'Request rejected', instruction: '', escalate_to: null, weight: 0.15 }
     ],
     edges: [
       { from: 0, to: 1, name: 'Submit for Review' },
@@ -103,10 +108,10 @@ const WORKFLOW_TEMPLATES = {
     description: 'Multi-level support with escalation',
     icon: <TrendingUp size={16} />,
     nodes: [
-      { name: 'New Ticket', role: null, is_start: true, is_end: false },
-      { name: 'Tier 1 Support', role: null, is_start: false, is_end: false },
-      { name: 'Tier 2 Support', role: null, is_start: false, is_end: false },
-      { name: 'Resolved', role: null, is_start: false, is_end: true }
+      { name: 'New Ticket', role: null, is_start: true, is_end: false, description: 'Ticket created', instruction: 'Triage and assign to Tier 1', escalate_to: null, weight: 0.1 },
+      { name: 'Tier 1 Support', role: null, is_start: false, is_end: false, description: 'First level support', instruction: 'Attempt to resolve. Escalate if unable to resolve within SLA.', escalate_to: null, weight: 0.3 },
+      { name: 'Tier 2 Support', role: null, is_start: false, is_end: false, description: 'Escalated support', instruction: 'Handle complex issues escalated from Tier 1', escalate_to: null, weight: 0.4 },
+      { name: 'Resolved', role: null, is_start: false, is_end: true, description: 'Issue resolved', instruction: '', escalate_to: null, weight: 0.2 }
     ],
     edges: [
       { from: 0, to: 1, name: 'Assign T1' },
@@ -121,12 +126,12 @@ const WORKFLOW_TEMPLATES = {
     description: 'Request → Approval → Fulfillment',
     icon: <Monitor size={16} />,
     nodes: [
-      { name: 'Submit Request', role: null, is_start: true, is_end: false },
-      { name: 'Manager Approval', role: null, is_start: false, is_end: false },
-      { name: 'IT Fulfillment', role: null, is_start: false, is_end: false },
-      { name: 'User Verification', role: null, is_start: false, is_end: false },
-      { name: 'Completed', role: null, is_start: false, is_end: true },
-      { name: 'Rejected', role: null, is_start: false, is_end: true }
+      { name: 'Submit Request', role: null, is_start: true, is_end: false, description: 'Service request submitted', instruction: 'Fill out all required fields and attach supporting documents', escalate_to: null, weight: 0.1 },
+      { name: 'Manager Approval', role: null, is_start: false, is_end: false, description: 'Awaiting manager approval', instruction: 'Review request details and approve or deny', escalate_to: null, weight: 0.2 },
+      { name: 'IT Fulfillment', role: null, is_start: false, is_end: false, description: 'IT working on request', instruction: 'Complete the service request and prepare for delivery', escalate_to: null, weight: 0.35 },
+      { name: 'User Verification', role: null, is_start: false, is_end: false, description: 'User verifying delivery', instruction: 'Verify the service/item meets your requirements', escalate_to: null, weight: 0.15 },
+      { name: 'Completed', role: null, is_start: false, is_end: true, description: 'Request completed', instruction: '', escalate_to: null, weight: 0.1 },
+      { name: 'Rejected', role: null, is_start: false, is_end: true, description: 'Request rejected', instruction: '', escalate_to: null, weight: 0.1 }
     ],
     edges: [
       { from: 0, to: 1, name: 'Request Approval' },
@@ -160,7 +165,8 @@ const HELP_TIPS = {
       'Steps represent stages in your workflow',
       'Must have exactly ONE start step (green border)',
       'Can have multiple end steps (red border)',
-      'Each step needs a role assigned to handle it'
+      'Each step needs a role assigned to handle it',
+      'Click the ⋮ button to expand and set escalation, weight, instructions'
     ]
   },
   transitions: {
@@ -250,10 +256,13 @@ export default function CreateWorkflowPage() {
       id: `temp-${uuidv4()}`,
       name: node.name,
       role: node.role || defaultRole,
-      description: '',
-      instruction: '',
+      escalate_to: node.escalate_to || '',
+      description: node.description || '',
+      instruction: node.instruction || '',
+      weight: node.weight ?? 0.5,
       is_start: node.is_start,
       is_end: node.is_end,
+      expanded: false,
       _index: idx
     }));
     
@@ -275,8 +284,10 @@ export default function CreateWorkflowPage() {
       data: {
         label: node.name,
         role: node.role,
-        description: '',
-        instruction: '',
+        escalate_to: node.escalate_to,
+        description: node.description,
+        instruction: node.instruction,
+        weight: node.weight,
         is_start: node.is_start,
         is_end: node.is_end,
       },
@@ -306,10 +317,13 @@ export default function CreateWorkflowPage() {
       id: `temp-${uuidv4()}`,
       name: `Step ${simpleNodes.length + 1}`,
       role: defaultRole,
+      escalate_to: '', // Role to escalate to when step times out
       description: '',
       instruction: '',
+      weight: 0.5, // Default weight for step progress calculation
       is_start: simpleNodes.length === 0,
-      is_end: false
+      is_end: false,
+      expanded: false // UI state for expandable card
     };
     setSimpleNodes(prev => [...prev, newNode]);
     
@@ -319,8 +333,10 @@ export default function CreateWorkflowPage() {
       data: {
         label: newNode.name,
         role: newNode.role,
+        escalate_to: '',
         description: '',
         instruction: '',
+        weight: 0.5,
         is_start: newNode.is_start,
         is_end: newNode.is_end,
       },
@@ -475,8 +491,10 @@ export default function CreateWorkflowPage() {
       data: {
         label: `Step ${nodes.length + 1}`,
         role: roles[0].name,
+        escalate_to: '',
         description: '',
         instruction: '',
+        weight: 0.5,
         is_start: nodes.length === 0,
         is_end: false,
       },
@@ -493,10 +511,13 @@ export default function CreateWorkflowPage() {
       id: tempId,
       name: newNode.data.label,
       role: newNode.data.role,
+      escalate_to: '',
       description: '',
       instruction: '',
+      weight: 0.5,
       is_start: newNode.data.is_start,
-      is_end: newNode.data.is_end
+      is_end: newNode.data.is_end,
+      expanded: false
     }]);
   }, [nodes.length, setNodes, roles]);
 
@@ -640,8 +661,10 @@ export default function CreateWorkflowPage() {
           id: node.id,
           name: node.name,
           role: node.role || 'User',
+          escalate_to: node.escalate_to || null, // Role to escalate to
           description: node.description || '',
           instruction: node.instruction || '',
+          weight: node.weight ?? 0.5, // Step weight for progress calculation
           design: { x: 0, y: 0 },
           is_start: node.is_start || false,
           is_end: node.is_end || false,
@@ -658,8 +681,10 @@ export default function CreateWorkflowPage() {
           id: node.id,
           name: node.data?.label || node.id,
           role: node.data?.role || 'User',
+          escalate_to: node.data?.escalate_to || null,
           description: node.data?.description || '',
           instruction: node.data?.instruction || '',
+          weight: node.data?.weight ?? 0.5,
           design: {
             x: node.position?.x || 0,
             y: node.position?.y || 0,
@@ -891,7 +916,7 @@ export default function CreateWorkflowPage() {
                 simpleNodes.map((node, idx) => (
                   <div 
                     key={node.id} 
-                    className={`${styles.stepCardCompact} ${node.is_start ? styles.stepStartCompact : ''} ${node.is_end ? styles.stepEndCompact : ''}`}
+                    className={`${styles.stepCardCompact} ${node.is_start ? styles.stepStartCompact : ''} ${node.is_end ? styles.stepEndCompact : ''} ${node.expanded ? styles.stepCardExpanded : ''}`}
                   >
                     <div className={styles.stepCardHeader}>
                       <span className={styles.stepBadge}>{idx + 1}</span>
@@ -900,7 +925,15 @@ export default function CreateWorkflowPage() {
                         value={node.name}
                         onChange={(e) => updateSimpleNode(idx, 'name', e.target.value)}
                         className={styles.stepInput}
+                        placeholder="Step name"
                       />
+                      <button 
+                        className={styles.expandBtnSmall} 
+                        onClick={() => updateSimpleNode(idx, 'expanded', !node.expanded)}
+                        title={node.expanded ? 'Collapse' : 'Show more options'}
+                      >
+                        {node.expanded ? <ChevronUp size={14} /> : <MoreVertical size={14} />}
+                      </button>
                       <button className={styles.removeBtnSmall} onClick={() => removeSimpleNode(idx)}>
                         <X size={14} />
                       </button>
@@ -910,6 +943,7 @@ export default function CreateWorkflowPage() {
                         value={node.role || ''}
                         onChange={(e) => updateSimpleNode(idx, 'role', e.target.value)}
                         className={styles.roleSelectCompact}
+                        title="Assigned role for this step"
                       >
                         <option value="">-- Role --</option>
                         {roles.map(r => (
@@ -939,6 +973,80 @@ export default function CreateWorkflowPage() {
                         </label>
                       </div>
                     </div>
+                    
+                    {/* Expanded Section - Additional Fields */}
+                    {node.expanded && (
+                      <div className={styles.stepCardExpansion}>
+                        <div className={styles.expansionDivider} />
+                        
+                        {/* Escalate To */}
+                        <div className={styles.expansionRow}>
+                          <label className={styles.expansionLabel}>
+                            <ArrowUpRight size={12} /> Escalate To
+                          </label>
+                          <select
+                            value={node.escalate_to || ''}
+                            onChange={(e) => updateSimpleNode(idx, 'escalate_to', e.target.value)}
+                            className={styles.expansionSelect}
+                            title="Role to escalate to when step times out"
+                          >
+                            <option value="">-- None --</option>
+                            {roles.map(r => (
+                              <option key={r.role_id || r.id} value={r.name}>{r.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {/* Weight */}
+                        <div className={styles.expansionRow}>
+                          <label className={styles.expansionLabel}>
+                            <Scale size={12} /> Weight
+                          </label>
+                          <div className={styles.weightInputWrapper}>
+                            <input
+                              type="number"
+                              min="0"
+                              max="1"
+                              step="0.1"
+                              value={node.weight ?? 0.5}
+                              onChange={(e) => updateSimpleNode(idx, 'weight', parseFloat(e.target.value) || 0.5)}
+                              className={styles.expansionInput}
+                              title="Step weight (0-1) for progress calculation"
+                            />
+                            <span className={styles.weightHint}>(0-1)</span>
+                          </div>
+                        </div>
+                        
+                        {/* Description */}
+                        <div className={styles.expansionRowFull}>
+                          <label className={styles.expansionLabel}>
+                            <Info size={12} /> Description
+                          </label>
+                          <input
+                            type="text"
+                            value={node.description || ''}
+                            onChange={(e) => updateSimpleNode(idx, 'description', e.target.value)}
+                            className={styles.expansionInputFull}
+                            placeholder="Brief description of this step"
+                            maxLength={256}
+                          />
+                        </div>
+                        
+                        {/* Instructions */}
+                        <div className={styles.expansionRowFull}>
+                          <label className={styles.expansionLabel}>
+                            <Edit3 size={12} /> Instructions
+                          </label>
+                          <textarea
+                            value={node.instruction || ''}
+                            onChange={(e) => updateSimpleNode(idx, 'instruction', e.target.value)}
+                            className={styles.expansionTextarea}
+                            placeholder="Detailed instructions for agents handling this step..."
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -1192,11 +1300,47 @@ export default function CreateWorkflowPage() {
                 </select>
               </div>
               <div className={styles.formGroup}>
+                <label>Escalate To</label>
+                <select
+                  value={editingNode.data.escalate_to || ''}
+                  onChange={(e) => handleUpdateNode('escalate_to', e.target.value)}
+                >
+                  <option value="">-- None --</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.name}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label>Weight (0-1)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={editingNode.data.weight ?? 0.5}
+                  onChange={(e) => handleUpdateNode('weight', parseFloat(e.target.value) || 0.5)}
+                  placeholder="0.5"
+                />
+              </div>
+              <div className={styles.formGroup}>
                 <label>Description</label>
                 <textarea
                   value={editingNode.data.description || ''}
                   onChange={(e) => handleUpdateNode('description', e.target.value)}
                   rows={2}
+                  placeholder="Brief description of this step"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Instructions</label>
+                <textarea
+                  value={editingNode.data.instruction || ''}
+                  onChange={(e) => handleUpdateNode('instruction', e.target.value)}
+                  rows={3}
+                  placeholder="Detailed instructions for agents handling this step..."
                 />
               </div>
               <div className={styles.formGroup}>

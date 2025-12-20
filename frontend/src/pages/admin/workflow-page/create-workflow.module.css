@@ -273,6 +273,9 @@
   .sidebar {
     width: 250px !important;
   }
+  .simpleLayout {
+    grid-template-columns: 200px 1fr 220px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -282,33 +285,94 @@
 
   .sidebar {
     width: 100% !important;
-    height: 250px;
+    height: auto;
+    max-height: 300px;
     border-right: none;
     border-bottom: var(--border-bottom);
   }
 
   .resizeHandle {
-    width: 100%;
-    height: 4px;
-    cursor: row-resize;
+    display: none;
   }
 
   .content {
-    height: calc(100vh - 250px);
+    height: 500px; /* Fixed height for diagram on mobile */
   }
 
-  .toolbar {
+  /* Top Toolbar Responsive */
+  .topToolbar {
     flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .topToolbar .toolbarLeft {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
-
-  .toolbarLeft,
-  .toolbarRight {
+  
+  .modeToggle {
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .modeBtn {
+    justify-content: center;
   }
 
   .toolbarRight {
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .saveBtn {
+    grid-column: span 2;
+  }
+
+  /* Simple Mode Responsive */
+  .simpleLayout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    overflow-y: auto;
+  }
+  
+  .leftSidebar {
+    border-right: none;
+    border-bottom: var(--border-bottom);
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: visible;
+    max-height: none;
+    height: auto;
+  }
+  
+  .sidebarSection {
+    flex-shrink: 0;
+    min-width: 0;
+    width: 100%;
+    border-bottom: var(--border-bottom);
+    border-right: none;
+  }
+  
+  .rightSidebar {
+    border-left: none;
+    border-top: var(--border-bottom);
+    max-height: none;
+    height: auto;
+  }
+  
+  .stepsGrid {
+    grid-template-columns: 1fr;
+    max-height: 300px;
+  }
+  
+  .centerPanel {
+    overflow: visible;
+    height: auto;
   }
 }
 
@@ -874,6 +938,145 @@
   transition: all 0.2s;
 }
 
+/* Expand Button for Step Cards */
+.expandBtnSmall {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--muted-text-color);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.expandBtnSmall:hover {
+  background: var(--bg-content-color);
+  color: var(--primary-color);
+}
+
+/* Expanded Step Card */
+.stepCardExpanded {
+  background: var(--bg-content-color);
+}
+
+.stepCardExpansion {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.expansionDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin-bottom: 10px;
+}
+
+.expansionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.expansionRowFull {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.expansionLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--muted-text-color);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.expansionSelect {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  background: var(--bg1-color);
+  color: var(--text-color);
+  min-width: 0;
+}
+
+.expansionSelect:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.expansionInput {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  background: var(--bg1-color);
+  color: var(--text-color);
+  text-align: center;
+}
+
+.expansionInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.weightInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.weightHint {
+  font-size: 0.625rem;
+  color: var(--muted-text-color);
+}
+
+.expansionInputFull {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--bg1-color);
+  color: var(--text-color);
+}
+
+.expansionInputFull:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.expansionTextarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--bg1-color);
+  color: var(--text-color);
+  resize: vertical;
+  min-height: 40px;
+  font-family: inherit;
+}
+
+.expansionTextarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
 /* Transitions Compact */
 .transitionsCompact {
   flex: 1;
@@ -1113,45 +1316,6 @@
 .tipItem strong {
   color: var(--heading-color);
   font-weight: 600;
-}
-
-/* Responsive Simple Mode */
-@media (max-width: 1024px) {
-  .simpleLayout {
-    grid-template-columns: 200px 1fr 220px;
-  }
-}
-
-@media (max-width: 768px) {
-  .simpleLayout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
-  }
-  
-  .leftSidebar {
-    border-right: none;
-    border-bottom: var(--border-bottom);
-    flex-direction: row;
-    overflow-x: auto;
-    max-height: 150px;
-  }
-  
-  .sidebarSection {
-    flex-shrink: 0;
-    min-width: 220px;
-    border-bottom: none;
-    border-right: var(--border-bottom);
-  }
-  
-  .rightSidebar {
-    border-left: none;
-    border-top: var(--border-bottom);
-    max-height: 200px;
-  }
-  
-  .stepsGrid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Required field marker */

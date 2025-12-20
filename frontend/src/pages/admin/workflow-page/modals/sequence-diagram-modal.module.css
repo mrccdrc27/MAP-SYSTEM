@@ -293,3 +293,54 @@
     width: 100%;
   }
 }
+
+.helperBox {
+  background: rgba(0, 123, 255, 0.05);
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 0 24px 16px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--text-color);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.helperBox svg {
+  color: var(--primary-color);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.confirmBtn {
+  padding: 8px 24px;
+  border: none;
+  background: var(--success-color);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: #37d767;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.confirmBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.hidden {
+  display: none !important;
+}

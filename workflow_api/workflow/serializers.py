@@ -19,8 +19,10 @@ class GraphNodeSerializer(serializers.Serializer):
     id = serializers.CharField()  # Can be integer or temp-id string
     name = serializers.CharField(max_length=64, required=False)
     role = serializers.CharField(max_length=64, required=False)
+    escalate_to = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
     description = serializers.CharField(max_length=256, required=False, allow_blank=True)
     instruction = serializers.CharField(required=False, allow_blank=True)
+    weight = serializers.DecimalField(max_digits=4, decimal_places=2, required=False, default=0.5)
     design = GraphNodeDesignSerializer(required=False)
     to_delete = serializers.BooleanField(default=False, required=False)
     is_start = serializers.BooleanField(default=False, required=False)
@@ -189,6 +191,7 @@ class WorkflowDetailSerializer(serializers.ModelSerializer):
 class StepSerializer(serializers.ModelSerializer):
     """Serializer for step details"""
     role_name = serializers.CharField(source='role_id.name', read_only=True)
+    escalate_to_name = serializers.CharField(source='escalate_to.name', read_only=True, allow_null=True)
     
     class Meta:
         model = Steps
@@ -197,11 +200,16 @@ class StepSerializer(serializers.ModelSerializer):
             'workflow_id',
             'role_id',
             'role_name',
+            'escalate_to',
+            'escalate_to_name',
             'name',
             'description',
             'instruction',
+            'weight',
             'order',
             'design',
+            'is_start',
+            'is_end',
             'is_initialized',
             'created_at',
             'updated_at',
@@ -214,6 +222,7 @@ class UpdateStepDetailsSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=64, required=False)
     description = serializers.CharField(max_length=256, required=False, allow_blank=True)
     instruction = serializers.CharField(required=False, allow_blank=True)
+    weight = serializers.DecimalField(max_digits=4, decimal_places=2, required=False)
     order = serializers.IntegerField(required=False)
     design = GraphNodeDesignSerializer(required=False)
 

@@ -16,18 +16,29 @@ import styles from './sequence-diagram-modal.module.css';
 // Initialize mermaid
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'default',
+  theme: 'base',
+  themeVariables: {
+    fontFamily: 'inherit',
+    primaryColor: '#e3f2fd',
+    primaryTextColor: '#0277bd',
+    primaryBorderColor: '#81d4fa',
+    lineColor: '#78909c',
+    secondaryColor: '#f1f8e9',
+    tertiaryColor: '#ffffff',
+    noteBkgColor: '#fff9c4',
+    noteBorderColor: '#fff59d'
+  },
   securityLevel: 'loose',
   sequence: {
     diagramMarginX: 50,
-    diagramMarginY: 10,
-    actorMargin: 50,
-    width: 150,
-    height: 65,
-    boxMargin: 10,
-    boxTextMargin: 5,
-    noteMargin: 10,
-    messageMargin: 35,
+    diagramMarginY: 20,
+    actorMargin: 60,
+    width: 160,
+    height: 60,
+    boxMargin: 15,
+    boxTextMargin: 10,
+    noteMargin: 15,
+    messageMargin: 40,
     mirrorActors: false,
     bottomMarginAdj: 1,
     useMaxWidth: true,
@@ -166,7 +177,9 @@ export default function SequenceDiagramModal({
   onClose, 
   nodes, 
   edges, 
-  workflowName 
+  workflowName,
+  onConfirm,
+  isCreating
 }) {
   const diagramRef = useRef(null);
   const [mermaidCode, setMermaidCode] = useState('');
@@ -183,6 +196,8 @@ export default function SequenceDiagramModal({
       setError(null);
     }
   }, [isOpen, nodes, edges, workflowName]);
+  
+  // ... (rest of the render logic remains the same)
 
   // Render mermaid diagram
   useEffect(() => {
@@ -277,10 +292,26 @@ export default function SequenceDiagramModal({
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2><Layout size={20} /> Sequence Diagram</h2>
+          <h2>
+            <Layout size={20} /> 
+            {onConfirm ? 'Review & Confirm Workflow' : 'Sequence Diagram'}
+          </h2>
           <p className={styles.subtitle}>{workflowName || 'Workflow'}</p>
-          <button className={styles.closeBtn} onClick={onClose}><X size={20} /></button>
+          {!onConfirm && (
+            <button className={styles.closeBtn} onClick={onClose}><X size={20} /></button>
+          )}
         </div>
+
+        {onConfirm && (
+          <div className={styles.helperBox}>
+            <AlertCircle size={20} />
+            <div>
+              <strong>Pre-Creation Review</strong>
+              <br />
+              Please review the sequence diagram below. This visualizes how your workflow steps interaction will flow in the system. If the logic appears correct, click <strong>Create Workflow</strong> to finish.
+            </div>
+          </div>
+        )}
 
         <div className={styles.content}>
           {/* Tab Toggle */}
@@ -300,26 +331,22 @@ export default function SequenceDiagramModal({
           </div>
 
           {/* Diagram View */}
-          {!showCode && (
-            <div className={styles.diagramContainer}>
-              {error && (
-                <div className={styles.error}>
-                  <AlertCircle size={16} />
-                  {error}
-                </div>
-              )}
-              <div ref={diagramRef} className={styles.diagram} />
-            </div>
-          )}
+          <div className={`${styles.diagramContainer} ${showCode ? styles.hidden : ''}`}>
+            {error && (
+              <div className={styles.error}>
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
+            <div ref={diagramRef} className={styles.diagram} />
+          </div>
 
           {/* Code View */}
-          {showCode && (
-            <div className={styles.codeContainer}>
-              <pre className={styles.codeBlock}>
-                <code>{mermaidCode}</code>
-              </pre>
-            </div>
-          )}
+          <div className={`${styles.codeContainer} ${!showCode ? styles.hidden : ''}`}>
+            <pre className={styles.codeBlock}>
+              <code>{mermaidCode}</code>
+            </pre>
+          </div>
         </div>
 
         <div className={styles.footer}>
@@ -349,9 +376,27 @@ export default function SequenceDiagramModal({
               <ImageIcon size={16} /> Export PNG
             </button>
           </div>
-          <button className={styles.closeFooterBtn} onClick={onClose}>
-            Close
-          </button>
+          
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              className={styles.closeFooterBtn} 
+              onClick={onClose}
+              disabled={isCreating}
+            >
+              {onConfirm ? 'Back to Editor' : 'Close'}
+            </button>
+            
+            {onConfirm && (
+              <button 
+                className={styles.confirmBtn}
+                onClick={onConfirm}
+                disabled={isCreating}
+              >
+                {isCreating ? 'Creating...' : 'Create Workflow'}
+                {!isCreating && <Check size={16} />}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
