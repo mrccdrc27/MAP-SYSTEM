@@ -119,7 +119,7 @@ def apply_round_robin_assignment(task, user_ids, role_name):
         try:
             notify_task.delay(
                 user_id=user_id,
-                task_id=str(task.task_id),
+                task_item_id=str(task_item.task_item_id),
                 task_title=task_title,
                 role_name=role_name
             )
@@ -129,7 +129,7 @@ def apply_round_robin_assignment(task, user_ids, role_name):
             logger.warning(f"⚠️ Failed to send assignment notification: {e}")
             FailedNotification.objects.create(
                 user_id=user_id,
-                task_id=str(task.task_id),
+                task_item_id=str(task_item.task_item_id),
                 task_title=task_title,
                 role_name=role_name,
                 error_message=str(e),
@@ -167,7 +167,7 @@ def assign_users_for_step(task, step, role_name):
     return apply_round_robin_assignment(task, user_ids, role_name)
 
 
-def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=None, from_user_role=None, escalated_by_id=None, escalated_by_name=None):
+def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=None, from_user_role=None, from_task_item_id=None, escalated_by_id=None, escalated_by_name=None):
     """
     Assign users for escalation to a higher-priority role.
     Uses round-robin to distribute escalated tasks fairly.
@@ -178,6 +178,7 @@ def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=Non
         reason: String reason for escalation
         from_user_id: User ID of the original assignee (for notification)
         from_user_role: Role name of the original assignee
+        from_task_item_id: Task item ID of the original assignment (for notification)
         escalated_by_id: User ID who initiated the escalation
         escalated_by_name: Name of user who initiated the escalation
     
@@ -247,12 +248,22 @@ def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=Non
         # Use the passed from_user_role, fallback to step's role if not provided
         original_role = from_user_role or (task.current_step.role_id.name if task.current_step and task.current_step.role_id else 'Unknown')
         
+        # Get from_task_item_id if not provided
+        if not from_task_item_id:
+            # Try to find the original task item for from_user_id
+            original_task_item = TaskItem.objects.filter(
+                task=task,
+                role_user__user_id=from_user_id
+            ).order_by('-assigned_on').first()
+            from_task_item_id = str(original_task_item.task_item_id) if original_task_item else f"task_{task.task_id}_escalation"
+        
         current_app.send_task(
             'notifications.send_escalation_notification',
             kwargs={
                 'from_user_id': from_user_id,
                 'to_user_id': selected_role_user.user_id,
-                'task_id': str(task.task_id),
+                'from_task_item_id': str(from_task_item_id),
+                'to_task_item_id': str(task_item.task_item_id),
                 'task_title': str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
                 'escalated_from_role': original_role,
                 'escalated_to_role': escalate_to_role.name,
@@ -262,7 +273,7 @@ def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=Non
             },
             queue=inapp_queue
         )
-        logger.info(f"📧 Escalation notification queued: task {task.task_id} from user {from_user_id} to user {selected_role_user.user_id}")
+        logger.info(f"📧 Escalation notification queued: task item {from_task_item_id} from user {from_user_id} to user {selected_role_user.user_id} (new task item {task_item.task_item_id})")
     except Exception as e:
         logger.error(f"⚠️ Failed to send escalation notification: {e}")
     
@@ -330,11 +341,13 @@ def assign_ticket_owner(task):
         logger.info(f"👑 Ticket owner assigned: User {selected_owner.user_id} ({selected_owner.user_full_name}) for Task {task.task_id}")
         
         # Send notification to ticket owner
+        # Note: Ticket owners don't have a TaskItem, so we use a special format: task_<task_id>_owner
         task_title = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
+        task_item_id = f"task_{task.task_id}_owner"  # Special identifier for ticket owner notifications
         try:
             notify_task.delay(
                 user_id=selected_owner.user_id,
-                task_id=str(task.task_id),
+                task_item_id=task_item_id,
                 task_title=task_title,
                 role_name=TICKET_COORDINATOR_ROLE
             )
@@ -342,7 +355,7 @@ def assign_ticket_owner(task):
             logger.warning(f"⚠️ Failed to send ticket owner notification: {e}")
             FailedNotification.objects.create(
                 user_id=selected_owner.user_id,
-                task_id=str(task.task_id),
+                task_item_id=task_item_id,
                 task_title=task_title,
                 role_name=TICKET_COORDINATOR_ROLE,
                 error_message=str(e),

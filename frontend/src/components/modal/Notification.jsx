@@ -63,17 +63,29 @@ export default function Notification({
     }
   };
 
-  // Handle notification click - navigate to task if related_task_id exists
+  // Handle notification click - navigate to task if related_task_item_id exists
   const handleNotificationClick = async (notification) => {
     // Mark as read first
     if (!notification.is_read) {
       await handleMarkAsRead(notification.id);
     }
     
-    // Navigate to task detail if related_task_id exists
-    if (notification.related_task_id) {
+    // Navigate to task detail if related_task_item_id exists
+    if (notification.related_task_item_id) {
       closeNotifAction(false);
-      navigate(`/ticket/${notification.related_task_id}`);
+      
+      // Handle special format for ticket owner: "task_<task_id>_owner"
+      // For owners, we need to navigate differently since they don't have a task_item_id
+      const taskItemId = notification.related_task_item_id;
+      if (taskItemId.startsWith('task_') && taskItemId.endsWith('_owner')) {
+        // Extract task_id from "task_<task_id>_owner" format
+        const taskId = taskItemId.replace('task_', '').replace('_owner', '');
+        // Navigate to the task overview page instead of task item detail
+        navigate(`/ticket?task=${taskId}`);
+      } else {
+        // Regular task item - navigate directly
+        navigate(`/ticket/${taskItemId}`);
+      }
     }
   };
 
@@ -162,9 +174,9 @@ export default function Notification({
             list.map((n) => (
               <div 
                 key={n.id} 
-                className={`${styles.nItem} ${n.related_task_id ? styles.nItemClickable : ''}`}
-                onClick={() => n.related_task_id && handleNotificationClick(n)}
-                style={{ cursor: n.related_task_id ? 'pointer' : 'default' }}
+                className={`${styles.nItem} ${n.related_task_item_id ? styles.nItemClickable : ''}`}
+                onClick={() => n.related_task_item_id && handleNotificationClick(n)}
+                style={{ cursor: n.related_task_item_id ? 'pointer' : 'default' }}
               >
                 <div className={styles.nUserAvatar}>
                   <img

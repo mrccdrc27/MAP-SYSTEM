@@ -86,14 +86,14 @@ class TaskItemHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(FailedNotification)
 class FailedNotificationAdmin(admin.ModelAdmin):
-    list_display = ['failed_notification_id', 'user_id', 'task_id', 'role_name', 'status', 'retry_count', 'created_at']
+    list_display = ['failed_notification_id', 'user_id', 'task_item_id', 'role_name', 'status', 'retry_count', 'created_at']
     list_filter = ['status', 'role_name', 'created_at']
-    search_fields = ['user_id', 'task_id', 'task_title', 'role_name']
+    search_fields = ['user_id', 'task_item_id', 'task_title', 'role_name']
     readonly_fields = ['failed_notification_id', 'created_at', 'last_retry_at', 'succeeded_at']
     
     fieldsets = (
         ('Notification Details', {
-            'fields': ('failed_notification_id', 'user_id', 'task_id', 'task_title', 'role_name')
+            'fields': ('failed_notification_id', 'user_id', 'task_item_id', 'task_title', 'role_name')
         }),
         ('Status & Retry Info', {
             'fields': ('status', 'retry_count', 'max_retries', 'error_message')
@@ -123,7 +123,7 @@ class FailedNotificationAdmin(admin.ModelAdmin):
                 
                 notify_task.delay(
                     user_id=notification.user_id,
-                    task_id=notification.task_id,
+                    task_item_id=notification.task_item_id,
                     task_title=notification.task_title,
                     role_name=notification.role_name
                 )

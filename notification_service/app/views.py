@@ -56,7 +56,7 @@ class MyNotificationsListView(generics.ListAPIView):
     
     Query Parameters (optional):
     - notification_type: Filter by notification type (e.g., 'task_assignment', 'task_transfer_in')
-    - related_task_id: Filter by related task ID
+    - related_task_item_id: Filter by related task item ID
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -71,10 +71,10 @@ class MyNotificationsListView(generics.ListAPIView):
         if notification_type:
             queryset = queryset.filter(notification_type=notification_type)
         
-        # Optional filtering by related task ID
-        related_task_id = self.request.query_params.get('related_task_id')
-        if related_task_id:
-            queryset = queryset.filter(related_task_id=related_task_id)
+        # Optional filtering by related task item ID
+        related_task_item_id = self.request.query_params.get('related_task_item_id')
+        if related_task_item_id:
+            queryset = queryset.filter(related_task_item_id=related_task_item_id)
         
         return queryset
 
@@ -491,12 +491,12 @@ class NotificationTypesView(APIView):
         })
 
 
-class MyNotificationsByTaskView(generics.ListAPIView):
+class MyNotificationsByTaskItemView(generics.ListAPIView):
     """
-    List all notifications for the authenticated user related to a specific task.
+    List all notifications for the authenticated user related to a specific task item.
     
     Path Parameters:
-    - task_id: The task ID to filter notifications by
+    - task_item_id: The task item ID to filter notifications by
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -504,8 +504,8 @@ class MyNotificationsByTaskView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        task_id = self.kwargs.get('task_id')
+        task_item_id = self.kwargs.get('task_item_id')
         return InAppNotification.objects.filter(
             user_id=user_id,
-            related_task_id=task_id
+            related_task_item_id=task_item_id
         ).order_by('-created_at')

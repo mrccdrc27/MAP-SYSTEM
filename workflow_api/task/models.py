@@ -217,7 +217,7 @@ class FailedNotification(models.Model):
     
     # Notification details
     user_id = models.IntegerField(help_text="User ID to notify")
-    task_id = models.CharField(max_length=50, help_text="Task ID")
+    task_item_id = models.CharField(max_length=50, help_text="Task Item ID")
     task_title = models.CharField(max_length=255, help_text="Task title/subject")
     role_name = models.CharField(max_length=100, help_text="Role name")
     
@@ -241,8 +241,8 @@ class FailedNotification(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['status', 'created_at']),
-            models.Index(fields=['user_id', 'task_id']),
+            models.Index(fields=['user_id', 'task_item_id']),
         ]
     
     def __str__(self):
-        return f'FailedNotification {self.failed_notification_id}: User {self.user_id} - Task {self.task_id} ({self.status})'
+        return f'FailedNotification {self.failed_notification_id}: User {self.user_id} - TaskItem {self.task_item_id} ({self.status})'

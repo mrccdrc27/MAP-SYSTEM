@@ -277,7 +277,7 @@ class FailedNotificationSerializer(serializers.ModelSerializer):
         fields = [
             'failed_notification_id',
             'user_id',
-            'task_id',
+            'task_item_id',
             'task_title',
             'role_name',
             'status',
