@@ -1,6 +1,9 @@
 // react
 import { useMemo } from "react";
 
+// components
+import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
+
 // charts
 import BarChart from "../../../components/charts/BarChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
@@ -21,7 +24,26 @@ const countByField = (data, field) => {
 export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, error }) {
   const workflowsReport = analyticsData || {};
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (loading) {
+    return (
+      <div className={styles.tabContent}>
+        <ComponentSkeleton className="report-skeleton">
+          <div className={styles.skeletonContainer}>
+            <div className={styles.skeletonHeader}>
+              <div className={styles.skeletonTitle}>Loading Workflow Analytics...</div>
+              <div className={styles.skeletonSubtitle}>Fetching workflow performance data</div>
+            </div>
+            <div className={styles.skeletonGrid}>
+              <div className={styles.skeletonCard}>🔄 Workflow Metrics</div>
+              <div className={styles.skeletonCard}>🏢 Department Analytics</div>
+              <div className={styles.skeletonCard}>📊 Step Performance</div>
+              <div className={styles.skeletonCard}>⏱️ Processing Times</div>
+            </div>
+          </div>
+        </ComponentSkeleton>
+      </div>
+    );
+  }
   if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
   if (!workflowsReport.workflow_metrics && !workflowsReport.department_analytics && !workflowsReport.step_performance)
     return <div style={{ padding: "20px" }}>No workflow data available</div>;

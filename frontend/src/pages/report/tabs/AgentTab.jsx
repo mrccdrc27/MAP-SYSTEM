@@ -1,5 +1,8 @@
 import { useMemo } from "react";
 
+// components
+import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
+
 // charts
 import PieChart from "../../../components/charts/PieChart";
 import BarChart from "../../../components/charts/BarChart";
@@ -12,8 +15,26 @@ import styles from "../report.module.css";
 export default function AgentTab({ timeFilter, analyticsData = {}, loading, error }) {
   const ticketsReport = analyticsData || {};
 
-  if (loading)
-    return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (loading) {
+    return (
+      <div className={styles.tabContent}>
+        <ComponentSkeleton className="report-skeleton">
+          <div className={styles.skeletonContainer}>
+            <div className={styles.skeletonHeader}>
+              <div className={styles.skeletonTitle}>Loading Agent Analytics...</div>
+              <div className={styles.skeletonSubtitle}>Fetching agent performance data</div>
+            </div>
+            <div className={styles.skeletonGrid}>
+              <div className={styles.skeletonCard}>👨‍💼 Agent Performance</div>
+              <div className={styles.skeletonCard}>⏱️ SLA Compliance</div>
+              <div className={styles.skeletonCard}>📋 Task Distribution</div>
+              <div className={styles.skeletonCard}>🎯 Resolution Rates</div>
+            </div>
+          </div>
+        </ComponentSkeleton>
+      </div>
+    );
+  }
   if (error)
     return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
   if (!ticketsReport.sla_compliance && !ticketsReport.dashboard)

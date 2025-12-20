@@ -156,6 +156,14 @@ export default function AdminNav() {
           >
             Tickets
           </NavLink>
+          <NavLink
+            to="/report"
+            className={({ isActive }) =>
+              isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
+            }
+          >
+            Reporting
+          </NavLink>
         </div>
 
         {/* Profile and Notif icon */}

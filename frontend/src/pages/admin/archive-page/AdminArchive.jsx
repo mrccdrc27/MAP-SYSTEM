@@ -840,7 +840,7 @@ export default function AdminArchive() {
                   totalItems={pagination.count}
                   onPageChange={handlePageChange}
                   onPageSizeChange={handlePageSizeChange}
-                  pageSizeOptions={[10, 20, 50, 100]}
+                  pageSizeOptions={[5, 10, 20, 50, 100]}
                 />
               </div>
             )}

@@ -6,6 +6,7 @@ import LineChart from "../../../components/charts/LineChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
 
 // components
+import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
 import DrilldownModal, { DRILLDOWN_COLUMNS } from "../components/DrilldownModal";
 
 // hooks
@@ -47,7 +48,26 @@ export default function TaskItemTab({
     clearDrilldownData,
   } = useDrilldownAnalytics();
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (loading) {
+    return (
+      <div className={styles.tabContent}>
+        <ComponentSkeleton className="report-skeleton">
+          <div className={styles.skeletonContainer}>
+            <div className={styles.skeletonHeader}>
+              <div className={styles.skeletonTitle}>Loading Task Analytics...</div>
+              <div className={styles.skeletonSubtitle}>Fetching task performance data</div>
+            </div>
+            <div className={styles.skeletonGrid}>
+              <div className={styles.skeletonCard}>📊 Task Statistics</div>
+              <div className={styles.skeletonCard}>📈 Trend Analysis</div>
+              <div className={styles.skeletonCard}>⚡ Performance Metrics</div>
+              <div className={styles.skeletonCard}>👥 Assignment Data</div>
+            </div>
+          </div>
+        </ComponentSkeleton>
+      </div>
+    );
+  }
   if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
   if (!tasksReport.status_distribution)
     return <div style={{ padding: "20px" }}>No task item data available</div>;

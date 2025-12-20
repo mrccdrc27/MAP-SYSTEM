@@ -1,3 +1,4 @@
+import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
 import PieChart from "../../../components/charts/PieChart";
 import BarChart from "../../../components/charts/BarChart";
 import LineChart from "../../../components/charts/LineChart";
@@ -38,10 +39,29 @@ export default function IntegrationTab({ analyticsData, loading, error }) {
     ],
   };
 
-  const loadingState = false;
-  const errorState = null;
+  const loadingState = loading || false;
+  const errorState = error || null;
 
-  if (loadingState) return <div>Loading...</div>;
+  if (loadingState) {
+    return (
+      <div className={styles.tabContent}>
+        <ComponentSkeleton className="report-skeleton">
+          <div className={styles.skeletonContainer}>
+            <div className={styles.skeletonHeader}>
+              <div className={styles.skeletonTitle}>Loading Integration Analytics...</div>
+              <div className={styles.skeletonSubtitle}>Fetching integration performance data</div>
+            </div>
+            <div className={styles.skeletonGrid}>
+              <div className={styles.skeletonCard}>🔌 Integration Status</div>
+              <div className={styles.skeletonCard}>📡 API Metrics</div>
+              <div className={styles.skeletonCard}>⚡ Response Times</div>
+              <div className={styles.skeletonCard}>🛠️ Error Rates</div>
+            </div>
+          </div>
+        </ComponentSkeleton>
+      </div>
+    );
+  }
   if (errorState) return <div>Error: {errorState}</div>;
   if (!reportData) return <div>No data available.</div>;
 

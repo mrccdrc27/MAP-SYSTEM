@@ -1,4 +1,5 @@
 // components
+import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
 import ChartContainer from "../../../components/charts/ChartContainer";
 import LineChart from "../../../components/charts/LineChart";
 import BarChart from "../../../components/charts/BarChart";
@@ -251,7 +252,24 @@ export default function InsightsTab({ timeFilter }) {
   };
 
   if (loading && !operationalInsights) {
-    return <div style={{ padding: "20px" }}>Loading operational insights...</div>;
+    return (
+      <div className={styles.tabContent}>
+        <ComponentSkeleton className="report-skeleton">
+          <div className={styles.skeletonContainer}>
+            <div className={styles.skeletonHeader}>
+              <div className={styles.skeletonTitle}>Loading Operational Insights...</div>
+              <div className={styles.skeletonSubtitle}>Generating AI-powered analytics</div>
+            </div>
+            <div className={styles.skeletonGrid}>
+              <div className={styles.skeletonCard}>🤖 Smart Insights</div>
+              <div className={styles.skeletonCard}>🔍 Trend Analysis</div>
+              <div className={styles.skeletonCard}>⚡ Performance Alerts</div>
+              <div className={styles.skeletonCard}>📊 Predictive Analytics</div>
+            </div>
+          </div>
+        </ComponentSkeleton>
+      </div>
+    );
   }
   
   if (error) {
