@@ -57,7 +57,7 @@ class WorkflowGraphService:
                     edges_data = graph_data.get('edges', [])
                     
                     # Create all nodes
-                    for node in nodes_data:
+                    for idx, node in enumerate(nodes_data):
                         node_id = node.get('id')
                         if not node.get('to_delete', False):
                             role_name = node.get('role')
@@ -70,7 +70,9 @@ class WorkflowGraphService:
                                 description=node.get('description', ''),
                                 instruction=node.get('instruction', ''),
                                 design=node.get('design', {}),
-                                order=0
+                                order=idx,
+                                is_start=node.get('is_start', False),
+                                is_end=node.get('is_end', False)
                             )
                             temp_id_mapping[node_id] = new_step.step_id
                             logger.info(f"✅ Created node: {node_id} -> DB ID {new_step.step_id}")
@@ -179,7 +181,9 @@ class WorkflowGraphService:
                                 description=node.get('description', ''),
                                 instruction=node.get('instruction', ''),
                                 design=node.get('design', {}),
-                                order=0
+                                order=0,
+                                is_start=node.get('is_start', False),
+                                is_end=node.get('is_end', False)
                             )
                             graph_changes['nodes_added'] += 1
                             temp_id_mapping[node_id] = new_step.step_id
@@ -197,6 +201,10 @@ class WorkflowGraphService:
                                     step.instruction = node['instruction']
                                 if 'design' in node:
                                     step.design = node['design']
+                                if 'is_start' in node:
+                                    step.is_start = node['is_start']
+                                if 'is_end' in node:
+                                    step.is_end = node['is_end']
                                 if 'role' in node:
                                     try:
                                         role = Roles.objects.get(name=node['role'])

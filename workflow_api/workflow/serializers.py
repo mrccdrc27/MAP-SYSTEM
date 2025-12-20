@@ -100,9 +100,15 @@ class UpdateWorkflowGraphSerializer(serializers.Serializer):
     
     def validate(self, data):
         nodes = data.get('nodes', [])
-        start_nodes = [node for node in nodes if node.get('is_start', False)]
-        if len(start_nodes) != 1:
-            raise serializers.ValidationError("There must be exactly one start node.")
+        # Filter out nodes marked for deletion
+        active_nodes = [node for node in nodes if not node.get('to_delete', False)]
+        start_nodes = [node for node in active_nodes if node.get('is_start', False)]
+        
+        # Allow empty nodes (workflow with no steps yet) or exactly one start node
+        if len(active_nodes) > 0 and len(start_nodes) != 1:
+            raise serializers.ValidationError(
+                "When nodes are present, there must be exactly one start node."
+            )
         return data
 
 

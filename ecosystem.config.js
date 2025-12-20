@@ -1,8 +1,8 @@
 const path = require('path');
 
 const venvPath = path.join(__dirname, 'venv', 'Scripts');
-const pythonInterpreter = path.join(venvPath, 'python.exe');
-const celeryScript = path.join(venvPath, 'celery.exe');
+const pythonInterpreter = path.join(venvPath, 'pythonw.exe');
+const celeryScript = path.join(__dirname, 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');
 
 module.exports = {
   apps: [
@@ -15,6 +15,7 @@ module.exports = {
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8003',
       interpreter: pythonInterpreter,
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -38,6 +39,7 @@ module.exports = {
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8002',
       interpreter: pythonInterpreter,
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -59,9 +61,10 @@ module.exports = {
     {
       name: 'workflow-worker',
       cwd: './workflow_api',
-      script: celeryScript,
-      args: '-A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed',
+      script: pythonInterpreter,
+      args: '-m celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed',
       interpreter: 'none',
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -82,6 +85,7 @@ module.exports = {
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8006',
       interpreter: pythonInterpreter,
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -100,9 +104,10 @@ module.exports = {
     {
       name: 'notification-worker',
       cwd: './notification_service',
-      script: celeryScript,
-      args: '-A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue',
+      script: pythonInterpreter,
+      args: '-m celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue',
       interpreter: 'none',
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -121,6 +126,7 @@ module.exports = {
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8005',
       interpreter: pythonInterpreter,
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -138,6 +144,7 @@ module.exports = {
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8004',
       interpreter: pythonInterpreter,
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -150,9 +157,10 @@ module.exports = {
     {
       name: 'ticket-worker',
       cwd: './ticket_service',
-      script: celeryScript,
-      args: '-A ticket_service worker --pool=solo --loglevel=info -Q ticket_tasks-default',
+      script: pythonInterpreter,
+      args: '-m celery -A ticket_service worker --pool=solo --loglevel=info -Q ticket_tasks-default',
       interpreter: 'none',
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -169,6 +177,7 @@ module.exports = {
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8000', 
       interpreter: pythonInterpreter,
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True"
@@ -177,9 +186,10 @@ module.exports = {
     {
       name: 'helpdesk-worker',
       cwd: './helpdesk',
-      script: celeryScript,
-      args: '-A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo',
+      script: pythonInterpreter,
+      args: '-m celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo',
       interpreter: 'none',
+      windowsHide: true,
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True"
@@ -192,9 +202,10 @@ module.exports = {
     {
       name: 'helpdesk-frontend',
       cwd: './frontendfolder',
-      script: 'cmd.exe',
-      args: '/c npm run dev',
-      watch: false
+      script: './node_modules/vite/bin/vite.js',
+      interpreter: 'node',
+      watch: false,
+      windowsHide: true
     },
 
     // -------------------
@@ -203,9 +214,10 @@ module.exports = {
     {
       name: 'main-frontend',
       cwd: './frontend',
-      script: 'cmd.exe',
-      args: '/c npm run dev',
+      script: './node_modules/vite/bin/vite.js',
+      interpreter: 'node',
       watch: false,
+      windowsHide: true,
       env: {
         VITE_AUTH_URL: "http://localhost:8003",
         VITE_WORKFLOW_API: "http://localhost:8002/workflow",

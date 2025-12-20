@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './workflow-creation-confirmation.module.css';
+import { Check } from 'lucide-react';
 
 export default function WorkflowCreationConfirmation({
   workflow,
@@ -21,7 +22,9 @@ export default function WorkflowCreationConfirmation({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <div className={styles.successIcon}>✓</div>
+          <div className={styles.successIcon}>
+            <Check size={32} strokeWidth={3} />
+          </div>
           <h2>Workflow Created Successfully</h2>
         </div>
 

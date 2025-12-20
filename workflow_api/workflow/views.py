@@ -27,7 +27,7 @@ from authentication import JWTCookieAuthentication
 logger = logging.getLogger(__name__)
 
 
-class WorkflowViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
+class WorkflowViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for managing workflows.
     
@@ -35,6 +35,7 @@ class WorkflowViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
     - list: GET /workflows/ - List all workflows
     - create: POST /workflows/ - Create workflow with optional graph
     - retrieve: GET /workflows/{id}/ - Get workflow details
+    - destroy: DELETE /workflows/{id}/ - Delete a workflow
     - update_graph: PUT /workflows/{id}/update-graph/ - Update workflow graph (nodes/edges)
     - update_details: PUT /workflows/{id}/update-details/ - Update workflow metadata
     - workflow_detail: GET /workflows/{id}/detail/ - Get complete workflow details with graph
@@ -288,6 +289,45 @@ class WorkflowViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
             logger.error(f"❌ Error updating workflow: {str(e)}")
             return Response(
                 {'error': f'Failed to update workflow: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def destroy(self, request, workflow_id=None):
+        """
+        Delete a workflow and all its associated steps and transitions.
+        """
+        try:
+            workflow = Workflows.objects.get(workflow_id=workflow_id)
+        except Workflows.DoesNotExist:
+            return Response(
+                {'error': f'Workflow with ID {workflow_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            workflow_name = workflow.name
+            workflow_id_str = workflow.workflow_id
+            
+            # Log audit event before deletion (while object still exists)
+            try:
+                log_action(request.user, 'delete_workflow', target=workflow, request=request)
+            except Exception as e:
+                logger.error(f"Failed to log audit for delete_workflow: {e}")
+            
+            # Delete related steps and transitions will be cascaded by Django
+            workflow.delete()
+            
+            logger.info(f"✅ Deleted workflow: {workflow_name} (ID: {workflow_id_str})")
+            
+            return Response(
+                {'message': f'Workflow {workflow_name} deleted successfully'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        
+        except Exception as e:
+            logger.error(f"❌ Error deleting workflow: {str(e)}")
+            return Response(
+                {'error': f'Failed to delete workflow: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

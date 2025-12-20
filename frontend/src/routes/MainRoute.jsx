@@ -42,6 +42,8 @@ import ResetPassword from "../pages/auth/PasswordReset";
 import WorkflowEditorPage from "../pages/test/WorkflowEditorPage";
 import AuthContextTest from "../pages/test/AuthContextTest";
 import WorkflowEditorTests from "../pages/test/WorkflowEditorTests";
+import WorkflowCreationE2ETests from "../pages/test/WorkflowCreationE2ETests";
+import WorkflowBuilderTest from "../pages/test/WorkflowBuilderTest";
 
 // WebSocket test
 import WebSocketTest from "../components/WebSocketTest";
@@ -113,6 +115,8 @@ export default function MainRoute() {
       <Route path="/test" element={<Test />} />
       <Route path="/test/auth-context" element={<AuthContextTest />} />
       <Route path="/test/workflow-editor" element={<WorkflowEditorTests />} />
+      <Route path="/test/workflow-creation" element={<WorkflowCreationE2ETests />} />
+      <Route path="/test/workflow-builder" element={<WorkflowBuilderTest />} />
 
       {/* 404 ROUTE */}
       <Route path="*" element={<NotFound />} />

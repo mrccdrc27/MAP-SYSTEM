@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Creation E2E Tests</title>
+  <style>
+    * {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    
+    .config-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .config-section h3 {
+      margin-top: 0;
+      color: #555;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    input[type="text"]:focus, input[type="url"]:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #545b62;
+    }
+    
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    
+    #output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .pass { color: #4ec9b0; }
+    .fail { color: #f14c4c; }
+    .info { color: #569cd6; }
+    .warn { color: #dcdcaa; }
+    
+    .summary-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .summary-stats {
+      display: flex;
+      gap: 30px;
+      margin-top: 15px;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 36px;
+      font-weight: bold;
+    }
+    
+    .stat-label {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .stat-passed .stat-value { color: #28a745; }
+    .stat-failed .stat-value { color: #dc3545; }
+    .stat-total .stat-value { color: #007bff; }
+    
+    .instructions {
+      background: #e7f3ff;
+      border-left: 4px solid #007bff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 0 8px 8px 0;
+    }
+    
+    .instructions h4 {
+      margin-top: 0;
+      color: #007bff;
+    }
+    
+    .instructions ol {
+      margin-bottom: 0;
+      padding-left: 20px;
+    }
+    
+    .instructions li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔬 Workflow Creation E2E Tests</h1>
+    
+    <div class="instructions">
+      <h4>How to Use</h4>
+      <ol>
+        <li>Make sure your backend services are running (workflow_api on port 8002)</li>
+        <li>Log in to the frontend application first to get an auth token</li>
+        <li>Copy your auth token from localStorage (accessToken) and paste below</li>
+        <li>Click "Run All Tests" to execute the complete test suite</li>
+      </ol>
+    </div>
+    
+    <div class="config-section">
+      <h3>⚙️ Configuration</h3>
+      <div class="form-group">
+        <label for="apiUrl">API Base URL</label>
+        <input type="url" id="apiUrl" value="http://localhost:8002" />
+      </div>
+      <div class="form-group">
+        <label for="authToken">Auth Token (from localStorage.accessToken)</label>
+        <input type="text" id="authToken" placeholder="Paste your JWT token here..." />
+      </div>
+      
+      <div class="button-group">
+        <button class="btn-primary" onclick="runAllTests()">▶️ Run All Tests</button>
+        <button class="btn-secondary" onclick="runQuickTests()">⚡ Quick Tests</button>
+        <button class="btn-danger" onclick="clearOutput()">🗑️ Clear</button>
+      </div>
+    </div>
+    
+    <div class="summary-box" id="summaryBox" style="display: none;">
+      <h3>📊 Test Results</h3>
+      <div class="summary-stats">
+        <div class="stat stat-passed">
+          <div class="stat-value" id="passedCount">0</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat stat-failed">
+          <div class="stat-value" id="failedCount">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat stat-total">
+          <div class="stat-value" id="totalCount">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+    </div>
+    
+    <h3>📋 Test Output</h3>
+    <div id="output">Click "Run All Tests" to start...</div>
+  </div>
+
+  <script>
+    // Test results
+    const testResults = {
+      passed: 0,
+      failed: 0,
+      results: [],
+      reset() {
+        this.passed = 0;
+        this.failed = 0;
+        this.results = [];
+      }
+    };
+    
+    // Output helpers
+    function log(message, className = '') {
+      const output = document.getElementById('output');
+      const span = document.createElement('span');
+      span.className = className;
+      span.textContent = message + '\n';
+      output.appendChild(span);
+      output.scrollTop = output.scrollHeight;
+    }
+    
+    function clearOutput() {
+      document.getElementById('output').innerHTML = '';
+      document.getElementById('summaryBox').style.display = 'none';
+    }
+    
+    function updateSummary() {
+      document.getElementById('summaryBox').style.display = 'block';
+      document.getElementById('passedCount').textContent = testResults.passed;
+      document.getElementById('failedCount').textContent = testResults.failed;
+      document.getElementById('totalCount').textContent = testResults.passed + testResults.failed;
+    }
+    
+    function logTest(name, passed, message = '') {
+      const status = passed ? '✅ PASS' : '❌ FAIL';
+      const className = passed ? 'pass' : 'fail';
+      log(`${status}: ${name}`, className);
+      if (message) log(`   └─ ${message}`, className);
+      testResults.results.push({ name, passed, message });
+      if (passed) testResults.passed++;
+      else testResults.failed++;
+      updateSummary();
+    }
+    
+    // API helpers
+    function getApiBaseUrl() {
+      return document.getElementById('apiUrl').value.trim();
+    }
+    
+    function getAuthToken() {
+      return document.getElementById('authToken').value.trim();
+    }
+    
+    async function apiRequest(method, url, data = null) {
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`
+        },
+        credentials: 'include'
+      };
+      
+      if (data) {
+        options.body = JSON.stringify(data);
+      }
+      
+      try {
+        const response = await fetch(`${getApiBaseUrl()}${url}`, options);
+        const json = await response.json().catch(() => ({}));
+        return { ok: response.ok, status: response.status, data: json };
+      } catch (err) {
+        return { ok: false, status: 0, data: { error: err.message } };
+      }
+    }
+    
+    // Tests
+    async function testApiConfig() {
+      log('\n🔧 Testing API Configuration...', 'info');
+      
+      const baseUrl = getApiBaseUrl();
+      const token = getAuthToken();
+      
+      logTest('API Base URL configured', !!baseUrl, `URL: ${baseUrl}`);
+      logTest('Auth token provided', !!token, token ? 'Token available' : 'No token!');
+      
+      try {
+        const response = await fetch(`${baseUrl}/`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include'
+        });
+        logTest('API reachable', response.ok || response.status === 401, `Status: ${response.status}`);
+      } catch (err) {
+        logTest('API reachable', false, err.message);
+      }
+    }
+    
+    async function testRolesApi() {
+      log('\n👤 Testing Roles API...', 'info');
+      
+      const result = await apiRequest('GET', '/roles/');
+      logTest('Roles endpoint OK', result.ok, `Status: ${result.status}`);
+      
+      if (result.ok && Array.isArray(result.data)) {
+        logTest('Roles response is array', true, `Found ${result.data.length} roles`);
+        if (result.data.length > 0) {
+          const role = result.data[0];
+          logTest('Role has name field', 'name' in role, `Sample: "${role.name}"`);
+        } else {
+          logTest('Roles exist', false, 'No roles found - creation will fail!');
+        }
+        return result.data;
+      }
+      return [];
+    }
+    
+    async function testValidation() {
+      log('\n⚠️ Testing Validation...', 'info');
+      
+      // Missing name
+      const noName = await apiRequest('POST', '/workflows/', {
+        description: 'Test',
+        category: 'Test',
+        sub_category: 'Test',
+        department: 'Test'
+      });
+      logTest('Rejects missing name', !noName.ok);
+      
+      // Missing category
+      const noCat = await apiRequest('POST', '/workflows/', {
+        name: 'Test',
+        sub_category: 'Test',
+        department: 'Test'
+      });
+      logTest('Rejects missing category', !noCat.ok);
+    }
+    
+    async function testCreateWorkflow() {
+      log('\n📝 Testing Workflow Creation...', 'info');
+      
+      const timestamp = Date.now();
+      
+      // Basic creation
+      const basicResult = await apiRequest('POST', '/workflows/', {
+        name: `E2E Test ${timestamp}`,
+        description: 'E2E test workflow',
+        category: 'Test',
+        sub_category: 'Automated',
+        department: 'Testing'
+      });
+      
+      logTest('Basic creation succeeds', basicResult.ok,
+        basicResult.ok ? `ID: ${basicResult.data?.workflow_id}` : basicResult.data?.error);
+    }
+    
+    async function testCreateWithGraph() {
+      log('\n📊 Testing Creation With Graph...', 'info');
+      
+      const roles = await apiRequest('GET', '/roles/');
+      if (!roles.ok || !roles.data?.length) {
+        logTest('Graph creation', false, 'No roles available');
+        return;
+      }
+      
+      const roleName = roles.data[0].name;
+      const timestamp = Date.now();
+      
+      const payload = {
+        workflow: {
+          name: `Graph Test ${timestamp}`,
+          description: 'E2E test with graph',
+          category: 'Test',
+          sub_category: 'Automated',
+          department: 'Testing'
+        },
+        graph: {
+          nodes: [
+            { id: 'temp-1', name: 'Start', role: roleName, is_start: true, is_end: false, design: { x: 100, y: 100 } },
+            { id: 'temp-2', name: 'End', role: roleName, is_start: false, is_end: true, design: { x: 300, y: 100 } }
+          ],
+          edges: [
+            { id: 'temp-e1', from: 'temp-1', to: 'temp-2', name: 'Proceed' }
+          ]
+        }
+      };
+      
+      const result = await apiRequest('POST', '/workflows/', payload);
+      
+      logTest('Graph creation succeeds', result.ok,
+        result.ok ? '' : result.data?.error || 'Unknown error');
+      
+      if (result.ok) {
+        logTest('Response has workflow', 'workflow' in result.data);
+        logTest('Response has graph', 'graph' in result.data);
+        logTest('Temp ID mapping returned', 'temp_id_mapping' in result.data);
+      }
+    }
+    
+    async function testStartNodeValidation() {
+      log('\n🚀 Testing Start Node Validation...', 'info');
+      
+      const roles = await apiRequest('GET', '/roles/');
+      if (!roles.ok || !roles.data?.length) {
+        logTest('Start node validation', false, 'No roles available');
+        return;
+      }
+      
+      const roleName = roles.data[0].name;
+      const timestamp = Date.now();
+      
+      // No start node
+      const noStart = await apiRequest('POST', '/workflows/', {
+        workflow: { name: `NoStart ${timestamp}`, category: 'Test', sub_category: 'Test', department: 'Test' },
+        graph: {
+          nodes: [
+            { id: 'temp-1', name: 'Step', role: roleName, is_start: false, is_end: true }
+          ],
+          edges: []
+        }
+      });
+      logTest('Rejects no start node', !noStart.ok);
+      
+      // Multiple start nodes
+      const multiStart = await apiRequest('POST', '/workflows/', {
+        workflow: { name: `MultiStart ${timestamp}`, category: 'Test', sub_category: 'Test', department: 'Test' },
+        graph: {
+          nodes: [
+            { id: 'temp-1', name: 'Start1', role: roleName, is_start: true, is_end: false },
+            { id: 'temp-2', name: 'Start2', role: roleName, is_start: true, is_end: true }
+          ],
+          edges: []
+        }
+      });
+      logTest('Rejects multiple start nodes', !multiStart.ok);
+    }
+    
+    async function testInvalidRole() {
+      log('\n👥 Testing Invalid Role...', 'info');
+      
+      const timestamp = Date.now();
+      
+      const result = await apiRequest('POST', '/workflows/', {
+        workflow: { name: `InvalidRole ${timestamp}`, category: 'Test', sub_category: 'Test', department: 'Test' },
+        graph: {
+          nodes: [
+            { id: 'temp-1', name: 'Step', role: `FakeRole_${timestamp}`, is_start: true, is_end: true }
+          ],
+          edges: []
+        }
+      });
+      
+      logTest('Rejects invalid role', !result.ok,
+        result.ok ? 'Should have been rejected!' : 'Correctly rejected');
+    }
+    
+    function testFrontendValidation() {
+      log('\n✓ Testing Frontend Validation Logic...', 'info');
+      
+      const validateMeta = (meta) => {
+        const errors = [];
+        if (!meta.name?.trim()) errors.push('name');
+        if (!meta.category?.trim()) errors.push('category');
+        if (!meta.sub_category?.trim()) errors.push('sub_category');
+        if (!meta.department?.trim()) errors.push('department');
+        return errors;
+      };
+      
+      logTest('Validates empty metadata', validateMeta({}).length === 4);
+      logTest('Validates partial metadata', validateMeta({ name: 'Test' }).length === 3);
+      logTest('Accepts valid metadata', validateMeta({
+        name: 'Test', category: 'Test', sub_category: 'Test', department: 'Test'
+      }).length === 0);
+      
+      // Node validation
+      const validateNodes = (nodes) => {
+        if (nodes.length === 0) return true;
+        return nodes.filter(n => n.is_start).length === 1;
+      };
+      
+      logTest('Empty nodes valid', validateNodes([]));
+      logTest('One start node valid', validateNodes([{ is_start: true }, { is_start: false }]));
+      logTest('No start node invalid', !validateNodes([{ is_start: false }, { is_start: false }]));
+      logTest('Multiple start invalid', !validateNodes([{ is_start: true }, { is_start: true }]));
+    }
+    
+    // Main test runners
+    async function runAllTests() {
+      clearOutput();
+      testResults.reset();
+      
+      log('═══════════════════════════════════════════════', 'info');
+      log('🔬 WORKFLOW CREATION E2E TEST SUITE', 'info');
+      log('═══════════════════════════════════════════════', 'info');
+      log(`Time: ${new Date().toISOString()}`, 'info');
+      log(`API: ${getApiBaseUrl()}`, 'info');
+      log('═══════════════════════════════════════════════\n', 'info');
+      
+      await testApiConfig();
+      await testRolesApi();
+      testFrontendValidation();
+      await testValidation();
+      await testStartNodeValidation();
+      await testInvalidRole();
+      await testCreateWorkflow();
+      await testCreateWithGraph();
+      
+      log('\n═══════════════════════════════════════════════', 'info');
+      log('📊 COMPLETE', 'info');
+      log(`✅ Passed: ${testResults.passed}`, 'pass');
+      log(`❌ Failed: ${testResults.failed}`, testResults.failed > 0 ? 'fail' : 'pass');
+      log('═══════════════════════════════════════════════', 'info');
+    }
+    
+    async function runQuickTests() {
+      clearOutput();
+      testResults.reset();
+      
+      log('⚡ Running Quick Tests (No API Mutations)...\n', 'info');
+      
+      await testApiConfig();
+      await testRolesApi();
+      testFrontendValidation();
+      
+      log(`\n✅ ${testResults.passed} passed, ❌ ${testResults.failed} failed`, 'info');
+    }
+    
+    // Try to auto-fill token from localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          document.getElementById('authToken').value = token;
+          log('Auth token auto-loaded from localStorage', 'info');
+        }
+      } catch (e) {
+        // Ignore - localStorage not available
+      }
+    });
+  </script>
+</body>
+</html>
