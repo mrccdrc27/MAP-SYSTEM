@@ -187,7 +187,7 @@ CORS_ALLOWED_ORIGINS = config(
 )
 
 # Celery Configuration
-CELERY_BROKER_URL = config('DJANGO_CELERY_BROKER_URL', default='amqp://admin:admin@localhost:5672/')
+CELERY_BROKER_URL = config('DJANGO_CELERY_BROKER_URL', default='amqp://guest:guest@127.0.0.1:5672//')    
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TASK_ACKS_LATE = True
@@ -205,7 +205,7 @@ AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8
 
 # Notification Service Configuration
 NOTIFICATION_SERVICE_URL = config('DJANGO_NOTIFICATION_SERVICE_URL', default='http://localhost:8001')
-NOTIFICATION_SERVICE_BROKER_URL = config('DJANGO_NOTIFICATION_SERVICE_BROKER_URL', default='amqp://admin:admin@localhost:5672/')
+NOTIFICATION_SERVICE_BROKER_URL = config('DJANGO_NOTIFICATION_SERVICE_BROKER_URL', default='amqp://guest:guest@127.0.0.1:5672//')
 
 # TTS (Ticket Tracking Service) Configuration for round-robin assignment
 TTS_SERVICE_URL = config('DJANGO_TTS_SERVICE_URL', default='http://localhost:8002')

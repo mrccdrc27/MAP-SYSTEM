@@ -19,7 +19,7 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service",
-        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
         TTS_SYSTEM_URL: "http://localhost:1000/",
         AMS_SYSTEM_URL: "http://localhost:3000/ams",
@@ -42,8 +42,8 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api",
-        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
-        DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
+        DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue-default",
         DJANGO_TICKET_STATUS_QUEUE: "ticket_status-default",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
@@ -65,8 +65,8 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
-        DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
+        DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
         DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8006",
         C_FORCE_ROOT: "false"
@@ -92,7 +92,7 @@ module.exports = {
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
         DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456",
         DJANGO_API_KEY: "in-app-notification-api-key-secure",
-        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
       }
@@ -106,7 +106,7 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
       }
@@ -143,7 +143,7 @@ module.exports = {
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,ticket-service",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
-        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
+        CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//"
       }
     },
     */
@@ -156,7 +156,7 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
+        CELERY_BROKER_URL: "amqp://admin:admin@127.0.0.1:5672//"
       }
     },
 
