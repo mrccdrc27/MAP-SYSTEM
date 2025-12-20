@@ -13,7 +13,7 @@ INAPP_NOTIFICATION_QUEUE = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-
 # =============================================================================
 
 @shared_task(name="task.send_assignment_notification")
-def send_assignment_notification(user_id, task_id, task_title, role_name):
+def send_assignment_notification(user_id, task_item_id, task_title, role_name):
     """
     Send an in-app notification when a user is assigned to a task.
     
@@ -22,7 +22,7 @@ def send_assignment_notification(user_id, task_id, task_title, role_name):
     
     Args:
         user_id (int): ID of the user being assigned
-        task_id (str): ID of the task
+        task_item_id (str): ID of the task item (user's specific assignment)
         task_title (str): Title/name of the task
         role_name (str): Role the user is being assigned to
     
@@ -32,7 +32,7 @@ def send_assignment_notification(user_id, task_id, task_title, role_name):
     Example:
         >>> send_assignment_notification.delay(
         ...     user_id=6,
-        ...     task_id="TASK-001",
+        ...     task_item_id="123",
         ...     task_title="Review Ticket",
         ...     role_name="Reviewer"
         ... )
@@ -52,7 +52,7 @@ def send_assignment_notification(user_id, task_id, task_title, role_name):
                 subject,
                 message,
                 'task_assignment',
-                str(task_id),
+                str(task_item_id),
                 None,
                 {
                     'role_name': role_name,
@@ -63,7 +63,7 @@ def send_assignment_notification(user_id, task_id, task_title, role_name):
         )
         
         logger.info(
-            f"📧 Assignment notification queued for user {user_id} to task {task_id} "
+            f"📧 Assignment notification queued for user {user_id} to task item {task_item_id} "
             f"with role '{role_name}'"
         )
         
@@ -71,19 +71,19 @@ def send_assignment_notification(user_id, task_id, task_title, role_name):
             "status": "success",
             "message": "Notification queued for sending",
             "user_id": user_id,
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue assignment notification for user {user_id}, task {task_id}: {str(e)}",
+            f"❌ Failed to queue assignment notification for user {user_id}, task item {task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
             "user_id": user_id,
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
 
 
@@ -95,7 +95,8 @@ def send_assignment_notification(user_id, task_id, task_title, role_name):
 def send_transfer_notification(
     from_user_id, 
     to_user_id, 
-    task_id, 
+    from_task_item_id,
+    to_task_item_id,
     task_title, 
     transferred_by_id,
     transferred_by_name=None,
@@ -108,7 +109,8 @@ def send_transfer_notification(
     Args:
         from_user_id (int): Original assignee user ID
         to_user_id (int): New assignee user ID
-        task_id (str): The task ID
+        from_task_item_id (str): The original task item ID (for the user losing the task)
+        to_task_item_id (str): The new task item ID (for the user receiving the task)
         task_title (str): The task title/ticket number
         transferred_by_id (int): User ID who initiated the transfer
         transferred_by_name (str): Name of user who initiated the transfer
@@ -124,7 +126,8 @@ def send_transfer_notification(
             args=(
                 from_user_id,
                 to_user_id,
-                str(task_id),
+                str(from_task_item_id),
+                str(to_task_item_id),
                 task_title,
                 transferred_by_id,
                 transferred_by_name,
@@ -134,7 +137,7 @@ def send_transfer_notification(
         )
         
         logger.info(
-            f"📧 Transfer notification queued: task {task_id} from user {from_user_id} to user {to_user_id}"
+            f"📧 Transfer notification queued: task item {from_task_item_id} from user {from_user_id} to user {to_user_id} (new task item {to_task_item_id})"
         )
         
         return {
@@ -142,18 +145,20 @@ def send_transfer_notification(
             "message": "Transfer notification queued",
             "from_user_id": from_user_id,
             "to_user_id": to_user_id,
-            "task_id": task_id
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue transfer notification for task {task_id}: {str(e)}",
+            f"❌ Failed to queue transfer notification for task items {from_task_item_id}/{to_task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
-            "task_id": task_id
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
 
 
@@ -165,7 +170,8 @@ def send_transfer_notification(
 def send_escalation_notification(
     from_user_id,
     to_user_id,
-    task_id,
+    from_task_item_id,
+    to_task_item_id,
     task_title,
     escalated_from_role,
     escalated_to_role,
@@ -182,7 +188,8 @@ def send_escalation_notification(
     Args:
         from_user_id (int): Original assignee user ID
         to_user_id (int): New assignee user ID (escalated to)
-        task_id (str): The task ID
+        from_task_item_id (str): The original task item ID (for the user losing the task)
+        to_task_item_id (str): The new task item ID (for the user receiving the task)
         task_title (str): The task title/ticket number
         escalated_from_role (str): Original role name
         escalated_to_role (str): Escalated role name
@@ -199,7 +206,8 @@ def send_escalation_notification(
             args=(
                 from_user_id,
                 to_user_id,
-                str(task_id),
+                str(from_task_item_id),
+                str(to_task_item_id),
                 task_title,
                 escalated_from_role,
                 escalated_to_role,
@@ -211,7 +219,7 @@ def send_escalation_notification(
         )
         
         logger.info(
-            f"🚨 Escalation notification queued: task {task_id} from user {from_user_id} to user {to_user_id}"
+            f"🚨 Escalation notification queued: task item {from_task_item_id} from user {from_user_id} to user {to_user_id} (new task item {to_task_item_id})"
         )
         
         return {
@@ -219,18 +227,20 @@ def send_escalation_notification(
             "message": "Escalation notification queued",
             "from_user_id": from_user_id,
             "to_user_id": to_user_id,
-            "task_id": task_id
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue escalation notification for task {task_id}: {str(e)}",
+            f"❌ Failed to queue escalation notification for task items {from_task_item_id}/{to_task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
-            "task_id": task_id
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
 
 
@@ -241,7 +251,7 @@ def send_escalation_notification(
 @shared_task(name="task.send_task_completed_notification")
 def send_task_completed_notification(
     user_id,
-    task_id,
+    task_item_id,
     task_title,
     completed_by_id=None,
     completed_by_name=None
@@ -252,7 +262,7 @@ def send_task_completed_notification(
     
     Args:
         user_id (int): User to notify (e.g., ticket owner)
-        task_id (str): The task ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         completed_by_id (int): User who completed the task
         completed_by_name (str): Name of user who completed the task
@@ -265,7 +275,7 @@ def send_task_completed_notification(
             'notifications.send_task_completed_notification',
             args=(
                 user_id,
-                str(task_id),
+                str(task_item_id),
                 task_title,
                 completed_by_id,
                 completed_by_name
@@ -274,25 +284,25 @@ def send_task_completed_notification(
         )
         
         logger.info(
-            f"✅ Task completed notification queued for user {user_id} on task {task_id}"
+            f"✅ Task completed notification queued for user {user_id} on task item {task_item_id}"
         )
         
         return {
             "status": "success",
             "message": "Task completed notification queued",
             "user_id": user_id,
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue task completed notification for task {task_id}: {str(e)}",
+            f"❌ Failed to queue task completed notification for task item {task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
 
 
@@ -303,7 +313,7 @@ def send_task_completed_notification(
 @shared_task(name="task.send_workflow_step_notification")
 def send_workflow_step_notification(
     user_id,
-    task_id,
+    task_item_id,
     task_title,
     previous_step,
     current_step,
@@ -316,7 +326,7 @@ def send_workflow_step_notification(
     
     Args:
         user_id (int): User to notify
-        task_id (str): The task ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         previous_step (str): Previous step name
         current_step (str): Current step name
@@ -331,7 +341,7 @@ def send_workflow_step_notification(
             'notifications.send_workflow_step_notification',
             args=(
                 user_id,
-                str(task_id),
+                str(task_item_id),
                 task_title,
                 previous_step,
                 current_step,
@@ -342,25 +352,25 @@ def send_workflow_step_notification(
         )
         
         logger.info(
-            f"📋 Workflow step notification queued for user {user_id} on task {task_id}"
+            f"📋 Workflow step notification queued for user {user_id} on task item {task_item_id}"
         )
         
         return {
             "status": "success",
             "message": "Workflow step notification queued",
             "user_id": user_id,
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue workflow step notification for task {task_id}: {str(e)}",
+            f"❌ Failed to queue workflow step notification for task item {task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
 
 
@@ -371,7 +381,7 @@ def send_workflow_step_notification(
 @shared_task(name="task.send_sla_warning_notification")
 def send_sla_warning_notification(
     user_id,
-    task_id,
+    task_item_id,
     task_title,
     time_remaining,
     target_resolution
@@ -381,7 +391,7 @@ def send_sla_warning_notification(
     
     Args:
         user_id (int): User to notify
-        task_id (str): The task ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         time_remaining (str): Human-readable time remaining
         target_resolution (str): Target resolution datetime
@@ -394,7 +404,7 @@ def send_sla_warning_notification(
             'notifications.send_sla_warning_notification',
             args=(
                 user_id,
-                str(task_id),
+                str(task_item_id),
                 task_title,
                 time_remaining,
                 target_resolution
@@ -403,32 +413,32 @@ def send_sla_warning_notification(
         )
         
         logger.info(
-            f"⚠️ SLA warning notification queued for user {user_id} on task {task_id}"
+            f"⚠️ SLA warning notification queued for user {user_id} on task item {task_item_id}"
         )
         
         return {
             "status": "success",
             "message": "SLA warning notification queued",
             "user_id": user_id,
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue SLA warning notification for task {task_id}: {str(e)}",
+            f"❌ Failed to queue SLA warning notification for task item {task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
 
 
 @shared_task(name="task.send_sla_breach_notification")
 def send_sla_breach_notification(
     user_id,
-    task_id,
+    task_item_id,
     task_title,
     target_resolution,
     breach_duration=None
@@ -438,7 +448,7 @@ def send_sla_breach_notification(
     
     Args:
         user_id (int): User to notify
-        task_id (str): The task ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         target_resolution (str): Target resolution datetime
         breach_duration (str): How long past the deadline
@@ -451,7 +461,7 @@ def send_sla_breach_notification(
             'notifications.send_sla_breach_notification',
             args=(
                 user_id,
-                str(task_id),
+                str(task_item_id),
                 task_title,
                 target_resolution,
                 breach_duration
@@ -460,25 +470,25 @@ def send_sla_breach_notification(
         )
         
         logger.info(
-            f"🔴 SLA breach notification queued for user {user_id} on task {task_id}"
+            f"🔴 SLA breach notification queued for user {user_id} on task item {task_item_id}"
         )
         
         return {
             "status": "success",
             "message": "SLA breach notification queued",
             "user_id": user_id,
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue SLA breach notification for task {task_id}: {str(e)}",
+            f"❌ Failed to queue SLA breach notification for task item {task_item_id}: {str(e)}",
             exc_info=True
         )
         return {
             "status": "error",
             "message": str(e),
-            "task_id": task_id
+            "task_item_id": task_item_id
         }
 
 
@@ -495,7 +505,7 @@ def send_bulk_assignment_notifications(assignments_data):
     Args:
         assignments_data (list): List of dicts with keys:
             - user_id (int)
-            - task_id (str)
+            - task_item_id (str)
             - task_title (str)
             - role_name (str)
     
@@ -506,13 +516,13 @@ def send_bulk_assignment_notifications(assignments_data):
         >>> send_bulk_assignment_notifications.delay([
         ...     {
         ...         "user_id": 6,
-        ...         "task_id": "TASK-001",
+        ...         "task_item_id": "123",
         ...         "task_title": "Review Ticket",
         ...         "role_name": "Reviewer"
         ...     },
         ...     {
         ...         "user_id": 7,
-        ...         "task_id": "TASK-002",
+        ...         "task_item_id": "124",
         ...         "task_title": "Approve Ticket",
         ...         "role_name": "Approver"
         ...     }
@@ -526,7 +536,7 @@ def send_bulk_assignment_notifications(assignments_data):
             try:
                 result = send_assignment_notification(
                     user_id=assignment['user_id'],
-                    task_id=assignment['task_id'],
+                    task_item_id=assignment['task_item_id'],
                     task_title=assignment['task_title'],
                     role_name=assignment['role_name']
                 )

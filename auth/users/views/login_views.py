@@ -428,18 +428,18 @@ class SystemWelcomeView(TemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        # Middleware handles routing, just display system selection page
+        # Check if user has systems assigned
         systems = list(self.get_user_systems())
 
         if not systems:
             messages.error(request, 'No systems are assigned to your account. Please contact support.')
             return self.render_to_response(self.get_context_data(systems=systems))
 
+        # Always show system selection page
         return self.render_to_response(self.get_context_data(systems=systems))
 
     def post(self, request, *args, **kwargs):
-        # System selection is now handled by the frontend/middleware
-        # This is kept for legacy support
+        # System selection - redirect to the selected system
         system_slug = request.POST.get('system_slug') or request.POST.get('system')
 
         if not system_slug:
@@ -453,9 +453,12 @@ class SystemWelcomeView(TemplateView):
             messages.error(request, 'You do not have access to the selected system.')
             return self.get(request, *args, **kwargs)
 
+        # Store selected system in session
         request.session['last_selected_system'] = selected_system.slug
-        # Middleware will redirect based on user_type, just redirect to home
-        return redirect('/')
+        
+        # Redirect to the selected system's URL
+        system_url = settings.SYSTEM_TEMPLATE_URLS.get(selected_system.slug, settings.DEFAULT_SYSTEM_URL)
+        return redirect(system_url)
 
 
 

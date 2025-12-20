@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - MAP Active</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/system_select.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .errorIcon {
+            font-size: 64px;
+            color: #ef4444;
+            margin-bottom: 8px;
+        }
+        .errorCode {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1d4ed8;
+            margin: 0;
+            line-height: 1;
+        }
+        .errorActions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .errorBtn {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 18px 20px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            color: inherit;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .errorBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.18);
+            border-color: #3b82f6;
+            background: #ffffff;
+        }
+        .errorBtn.primary {
+            background: #1d4ed8;
+            color: white;
+            border-color: #1d4ed8;
+        }
+        .errorBtn.primary:hover {
+            background: #1e40af;
+            border-color: #1e40af;
+        }
+        .systemCardHeader .logo i {
+            font-size: 56px;
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <main class="systemSelectPage">
+        <section class="systemCard">
+            <header class="systemCardHeader">
+                <div class="logo">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <h1>Page Not Found</h1>
+                </div>
+                <p class="errorCode">404</p>
+                <p>The page you're looking for doesn't exist or has been moved.</p>
+            </header>
+
+            <div class="errorActions">
+                <a href="javascript:history.back()" class="errorBtn">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Go Back
+                </a>
+                {% if redirect_url %}
+                <a href="{{ redirect_url }}" class="errorBtn primary">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    {{ redirect_message|default:"Continue" }}
+                </a>
+                {% else %}
+                <a href="/staff/login/" class="errorBtn primary">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Staff Login
+                </a>
+                <a href="/login/" class="errorBtn">
+                    <i class="fa-solid fa-user"></i>
+                    Employee Login
+                </a>
+                {% endif %}
+            </div>
+
+            <footer class="systemFooter">
+                <a href="/staff/login/" class="profileLink">
+                    <i class="fa-solid fa-right-to-bracket"></i> Staff Portal
+                </a>
+                <a href="/login/" class="logoutLink">
+                    <i class="fa-solid fa-user"></i> Employee Portal
+                </a>
+            </footer>
+        </section>
+    </main>
+</body>
+</html>

@@ -171,7 +171,7 @@
             const unsaved = document.getElementById("unsaved-warning");
             
             let initialData = {};
-            let isAdmin = false; // Will be determined by API response if possible, or assumed false for safety
+            let isAdmin = false; // Will be determined by user's system role
 
             // --- 1. Fetch Data ---
             async function fetchProfileData() {
@@ -188,13 +188,50 @@
                     
                     const data = await response.json();
                     initialData = data;
+                    
+                    // Determine if user has Admin role in their system_roles
+                    // system_roles contains: {role_name, system_name, system_slug, ...}
+                    isAdmin = (data.system_roles || []).some(sr => 
+                        sr.role_name && sr.role_name.toLowerCase() === 'admin'
+                    );
+                    
                     populateForm(data);
+                    applyFieldRestrictions();
                     
                 } catch (error) {
                     console.error('Error:', error);
                     ToastNotification.error('Error', 'Could not load profile data.');
                 } finally {
                     showLoading(false);
+                }
+            }
+            
+            // Apply field restrictions based on user role
+            function applyFieldRestrictions() {
+                if (!isAdmin) {
+                    // Non-admins cannot edit personal details (first_name, middle_name, last_name, suffix)
+                    // They can only edit: username, phone_number, profile_picture
+                    const restrictedFields = ['id_first_name', 'id_middle_name', 'id_last_name', 'id_suffix', 'id_otp_enabled'];
+                    
+                    restrictedFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            field.readOnly = true;
+                            field.disabled = true;
+                            field.style.backgroundColor = '#f5f5f5';
+                            field.style.cursor = 'not-allowed';
+                            
+                            // Add helper text for restricted fields
+                            const parent = field.closest('.formGroup');
+                            if (parent && !parent.querySelector('.restricted-hint')) {
+                                const hint = document.createElement('small');
+                                hint.className = 'restricted-hint';
+                                hint.textContent = 'Contact admin to change this field.';
+                                hint.style.color = '#888';
+                                parent.appendChild(hint);
+                            }
+                        }
+                    });
                 }
             }
 
@@ -245,18 +282,30 @@
 
             // --- 2. Edit Mode Toggle ---
             function setEditMode(enabled) {
-                console.log('setEditMode:', enabled);
-                // Fields that are always allowed to be edited by user
-                const editableIds = [
+                console.log('setEditMode:', enabled, 'isAdmin:', isAdmin);
+                
+                // Fields that can be edited by admins
+                const adminEditableIds = [
                     'id_first_name', 'id_middle_name', 'id_last_name', 'id_suffix',
                     'id_username', 'id_phone_number', 'id_otp_enabled'
                 ];
+                
+                // Fields that can be edited by non-admins
+                const nonAdminEditableIds = ['id_username', 'id_phone_number'];
+                
+                const editableIds = isAdmin ? adminEditableIds : nonAdminEditableIds;
 
                 inputs.forEach(input => {
                     if (editableIds.includes(input.id)) {
                         input.readOnly = !enabled;
                         input.disabled = !enabled && input.type !== 'text'; // Checkboxes need disabled
                         if (input.type === 'checkbox') input.disabled = !enabled;
+                        
+                        // Reset styling for editable fields when enabled
+                        if (enabled) {
+                            input.style.backgroundColor = '';
+                            input.style.cursor = '';
+                        }
                     }
                 });
 
@@ -308,20 +357,28 @@
                 
                 const formData = new FormData();
                 
-                // Add text fields
-                formData.append('first_name', document.getElementById('id_first_name').value);
-                formData.append('middle_name', document.getElementById('id_middle_name').value);
-                formData.append('last_name', document.getElementById('id_last_name').value);
-                formData.append('suffix', document.getElementById('id_suffix').value);
-                formData.append('username', document.getElementById('id_username').value);
-                formData.append('phone_number', document.getElementById('id_phone_number').value);
-                
-                // Add otp_enabled
-                if (document.getElementById('id_otp_enabled')) {
-                    formData.append('otp_enabled', document.getElementById('id_otp_enabled').checked);
+                // For non-admins, only send allowed fields: username, phone_number, profile_picture
+                // For admins, send all editable fields
+                if (isAdmin) {
+                    // Admins can update all personal details
+                    formData.append('first_name', document.getElementById('id_first_name').value);
+                    formData.append('middle_name', document.getElementById('id_middle_name').value);
+                    formData.append('last_name', document.getElementById('id_last_name').value);
+                    formData.append('suffix', document.getElementById('id_suffix').value);
+                    formData.append('username', document.getElementById('id_username').value);
+                    formData.append('phone_number', document.getElementById('id_phone_number').value);
+                    
+                    // Add otp_enabled for admins
+                    if (document.getElementById('id_otp_enabled')) {
+                        formData.append('otp_enabled', document.getElementById('id_otp_enabled').checked);
+                    }
+                } else {
+                    // Non-admins can only update: username, phone_number, profile_picture
+                    formData.append('username', document.getElementById('id_username').value);
+                    formData.append('phone_number', document.getElementById('id_phone_number').value);
                 }
                 
-                // Add file if present
+                // Add file if present (allowed for both admin and non-admin)
                 if (profilePicInput.files[0]) {
                     formData.append('profile_picture', profilePicInput.files[0]);
                 }
@@ -329,18 +386,8 @@
                 // Handle clear picture checkbox
                 const clearCheck = document.getElementById('profile_picture-clear_id');
                 if (clearCheck && clearCheck.checked) {
-                    formData.append('profile_picture', ''); // Sending empty string or handling specific logic
+                    formData.append('profile_picture', ''); // Sending empty string to clear
                 }
-
-                // Note: OTP enabled/disabled might need a separate endpoint usually, 
-                // but if the profile serializer handles it, we can send it.
-                // However, the current serializer/view logic implies restricted fields.
-                // OTP toggling usually requires password verification (separate flow).
-                // For now, we won't send otp_enabled here to avoid 403 or errors unless logic is confirmed.
-                // *Self-correction*: The view said "Allow otp_enabled...".
-                // But typically sensitive changes require a separate flow. 
-                // We'll skip sending it in the general profile PATCH for now to be safe, 
-                // as the UI logic for OTP usually involves the modal.
 
                 try {
                     const response = await fetch(API_URL, {

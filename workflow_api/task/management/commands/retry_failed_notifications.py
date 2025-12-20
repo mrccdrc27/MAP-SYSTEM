@@ -80,7 +80,7 @@ class Command(BaseCommand):
         for notification in notifications:
             self.stdout.write(f"\nRetrying notification {notification.failed_notification_id}:")
             self.stdout.write(f"  User: {notification.user_id}")
-            self.stdout.write(f"  Task: {notification.task_id}")
+            self.stdout.write(f"  Task Item: {notification.task_item_id}")
             self.stdout.write(f"  Retry count: {notification.retry_count}/{notification.max_retries}")
             
             try:
@@ -93,7 +93,7 @@ class Command(BaseCommand):
                 # Attempt to send notification
                 notify_task.delay(
                     user_id=notification.user_id,
-                    task_id=notification.task_id,
+                    task_item_id=notification.task_item_id,
                     task_title=notification.task_title,
                     role_name=notification.role_name
                 )

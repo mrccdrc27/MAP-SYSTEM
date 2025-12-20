@@ -35,6 +35,12 @@ from hdts.employee_template_views import (
 from hdts.employee_api_views import MeView
 from users.views.role_management_views import role_management_view
 
+# Custom error handlers
+from .error_handlers import custom_404_view, custom_500_view
+
+handler404 = custom_404_view
+handler500 = custom_500_view
+
 def root_redirect(request):
     """Redirect root URL to login page"""
     return redirect('auth_login')
@@ -146,3 +152,33 @@ if settings.DEBUG:
     ]
     # Serve media files in development
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Catch-all pattern for 404 handling (works in both DEBUG and production)
+# Must be at the very end of urlpatterns
+from django.urls import re_path
+from django.views.generic import RedirectView
+
+def catch_all_404(request):
+    """
+    Catch-all view that handles unmatched URLs.
+    First checks if adding a trailing slash would match an existing URL.
+    """
+    from django.urls import resolve, Resolver404
+    
+    path = request.path
+    
+    # If path doesn't end with slash, try adding one
+    if not path.endswith('/'):
+        try:
+            resolve(path + '/')
+            # URL exists with trailing slash - redirect to it
+            return RedirectView.as_view(url=path + '/', permanent=False)(request)
+        except Resolver404:
+            pass
+    
+    # No match found - show 404 page
+    return custom_404_view(request)
+
+urlpatterns += [
+    re_path(r'^.*$', catch_all_404, name='catch-all-404'),
+]

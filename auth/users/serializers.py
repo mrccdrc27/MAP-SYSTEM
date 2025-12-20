@@ -132,7 +132,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'email', 'username', 'first_name', 'middle_name', 'last_name', 
             'suffix', 'phone_number', 'company_id', 'department', 'status', 
-            'notified', 'is_active', 'profile_picture', 'date_joined', 'otp_enabled', 'system_roles'
+            'notified', 'is_active', 'profile_picture', 'date_joined', 'last_login',
+            'otp_enabled', 'system_roles'
         )
     
     def get_profile_picture(self, obj):

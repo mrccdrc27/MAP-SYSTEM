@@ -5,8 +5,8 @@ All API calls are made via JavaScript from the client side.
 
 Protected routing:
 - Unauthenticated users accessing protected routes → redirect to /login/
-- Authenticated users accessing /login/ → redirect to /profile-settings/
-- Authenticated users accessing /staff/* → redirect to /profile-settings/
+- Authenticated users accessing /login/ → redirect to HDTS system
+- Authenticated users accessing /staff/* → redirect to HDTS system
 """
 from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
@@ -49,14 +49,16 @@ class EmployeeLoginRequiredMixin(EmployeeAuthenticationMixin):
 class EmployeeNotAuthenticatedMixin(EmployeeAuthenticationMixin):
     """
     Mixin that redirects authenticated employees away from public pages.
-    If already authenticated, redirects to /profile-settings/
+    If already authenticated, redirects to HDTS system.
     """
     
     def dispatch(self, request, *args, **kwargs):
         super().dispatch(request, *args, **kwargs)
         
         if self.is_authenticated_employee:
-            return redirect('employee-profile-settings-shortcut')
+            # Redirect to HDTS system URL
+            hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+            return redirect(hdts_url)
         
         return super(EmployeeAuthenticationMixin, self).dispatch(request, *args, **kwargs)
 
@@ -64,14 +66,16 @@ class EmployeeNotAuthenticatedMixin(EmployeeAuthenticationMixin):
 class EmployeeStaffBlockerMixin(EmployeeAuthenticationMixin):
     """
     Mixin that blocks authenticated employees from accessing /staff/* endpoints.
-    Redirects to /profile-settings/ if they somehow access these pages.
+    Redirects to HDTS system if they somehow access these pages.
     """
     
     def dispatch(self, request, *args, **kwargs):
         super().dispatch(request, *args, **kwargs)
         
         if self.is_authenticated_employee:
-            return redirect('employee-profile-settings-shortcut')
+            # Redirect to HDTS system URL
+            hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+            return redirect(hdts_url)
         
         return super(EmployeeAuthenticationMixin, self).dispatch(request, *args, **kwargs)
 
@@ -80,7 +84,7 @@ class EmployeeLoginView(EmployeeNotAuthenticatedMixin, TemplateView):
     """
     Serve the employee login template.
     - If not authenticated: show login page
-    - If authenticated: redirect to profile settings
+    - If authenticated: redirect to HDTS system
     """
     template_name = 'public/hdts_login.html'
     permission_classes = [AllowAny]
