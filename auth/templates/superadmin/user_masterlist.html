@@ -1,0 +1,343 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}User Masterlist - Superuser Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>User Masterlist</h2>
+    <div class="btn-group">
+        <a href="{% url 'superadmin-user-create' %}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add User
+        </a>
+        <a href="{% url 'superadmin-api-user-export' %}" class="btn btn-secondary">
+            <i class="fas fa-download"></i> Export
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card">
+    <form method="get" action="" class="filter-bar">
+        <div class="form-group search-input">
+            <label class="form-label">Search</label>
+            <input type="text" name="search" class="form-control" placeholder="Email, name, username, or company ID..." value="{{ search }}">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control">
+                <option value="">All Statuses</option>
+                {% for status in status_choices %}
+                <option value="{{ status }}" {% if status == status_filter %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Active</label>
+            <select name="is_active" class="form-control">
+                <option value="">All</option>
+                <option value="true" {% if is_active_filter == 'true' %}selected{% endif %}>Active</option>
+                <option value="false" {% if is_active_filter == 'false' %}selected{% endif %}>Inactive</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Staff</label>
+            <select name="is_staff" class="form-control">
+                <option value="">All</option>
+                <option value="true" {% if is_staff_filter == 'true' %}selected{% endif %}>Staff Only</option>
+                <option value="false" {% if is_staff_filter == 'false' %}selected{% endif %}>Non-Staff</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Superuser</label>
+            <select name="is_superuser" class="form-control">
+                <option value="">All</option>
+                <option value="true" {% if is_superuser_filter == 'true' %}selected{% endif %}>Superusers</option>
+                <option value="false" {% if is_superuser_filter == 'false' %}selected{% endif %}>Non-Superusers</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">&nbsp;</label>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">&nbsp;</label>
+            <a href="{% url 'superadmin-user-masterlist' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Bulk Actions -->
+<div class="card">
+    <div class="card-header">
+        <div class="checkbox-wrapper">
+            <input type="checkbox" id="select-all" onchange="toggleSelectAll(this)">
+            <label for="select-all">Select All</label>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-success btn-sm" onclick="bulkAction('activate')" disabled id="btn-activate">
+                <i class="fas fa-check"></i> Activate
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="bulkAction('deactivate')" disabled id="btn-deactivate">
+                <i class="fas fa-ban"></i> Deactivate
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="bulkAction('approve')" disabled id="btn-approve">
+                <i class="fas fa-thumbs-up"></i> Approve
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="bulkAction('delete')" disabled id="btn-delete">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+    
+    <div class="table-container">
+        <table class="table" id="users-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"></th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Company ID</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Staff</th>
+                    <th>Last Login</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr data-user-id="{{ user.id }}">
+                    <td>
+                        <input type="checkbox" class="user-checkbox" value="{{ user.id }}" onchange="updateBulkButtons()">
+                    </td>
+                    <td>
+                        {{ user.email }}
+                        {% if user.is_superuser %}
+                            <span class="badge badge-primary" title="Superuser"><i class="fas fa-shield-halved"></i></span>
+                        {% endif %}
+                        {% if user.is_locked %}
+                            <span class="badge badge-danger" title="Locked"><i class="fas fa-lock"></i></span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.get_full_name|default:'-' }}</td>
+                    <td>{{ user.company_id|default:'-' }}</td>
+                    <td>{{ user.department|default:'-' }}</td>
+                    <td>
+                        <span class="badge {% if user.status == 'Approved' %}badge-success{% elif user.status == 'Pending' %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ user.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                            <span class="badge badge-success">Yes</span>
+                        {% else %}
+                            <span class="badge badge-danger">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_staff %}
+                            <span class="badge badge-info">Yes</span>
+                        {% else %}
+                            <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.last_login|date:"M d, Y H:i"|default:'-' }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{% url 'superadmin-user-edit' user.id %}" class="btn btn-secondary btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if user.id != request.user.id %}
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser({{ user.id }}, '{{ user.email }}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                        <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                        No users found matching your criteria
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if users.has_other_pages %}
+    <div class="pagination">
+        {% if users.has_previous %}
+            <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                <i class="fas fa-angles-left"></i>
+            </a>
+            <a href="?page={{ users.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                <i class="fas fa-angle-left"></i>
+            </a>
+        {% endif %}
+        
+        <span class="active">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+        
+        {% if users.has_next %}
+            <a href="?page={{ users.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="?page={{ users.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                <i class="fas fa-angles-right"></i>
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <p id="delete-modal-message">Are you sure you want to delete this user?</p>
+        <div class="btn-group" style="margin-top: 20px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CSRF token for API calls
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+               document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+    }
+    
+    // Toggle select all checkboxes
+    function toggleSelectAll(checkbox) {
+        document.querySelectorAll('.user-checkbox').forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+        updateBulkButtons();
+    }
+    
+    // Update bulk action buttons based on selection
+    function updateBulkButtons() {
+        const checkedBoxes = document.querySelectorAll('.user-checkbox:checked');
+        const hasSelection = checkedBoxes.length > 0;
+        
+        document.getElementById('btn-activate').disabled = !hasSelection;
+        document.getElementById('btn-deactivate').disabled = !hasSelection;
+        document.getElementById('btn-approve').disabled = !hasSelection;
+        document.getElementById('btn-delete').disabled = !hasSelection;
+    }
+    
+    // Get selected user IDs
+    function getSelectedUserIds() {
+        return Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => parseInt(cb.value));
+    }
+    
+    // Perform bulk action
+    async function bulkAction(action) {
+        const userIds = getSelectedUserIds();
+        if (userIds.length === 0) {
+            alert('No users selected');
+            return;
+        }
+        
+        const actionText = {
+            'activate': 'activate',
+            'deactivate': 'deactivate',
+            'approve': 'approve',
+            'delete': 'permanently delete'
+        }[action];
+        
+        if (!confirm(`Are you sure you want to ${actionText} ${userIds.length} user(s)?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('{% url "superadmin-api-user-bulk" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    action: action,
+                    user_ids: userIds
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Operation failed'));
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+    
+    // Delete single user
+    let userToDelete = null;
+    
+    function deleteUser(userId, userEmail) {
+        userToDelete = userId;
+        document.getElementById('delete-modal-message').textContent = `Are you sure you want to delete "${userEmail}"? This action cannot be undone.`;
+        document.getElementById('delete-modal').classList.add('active');
+        
+        document.getElementById('confirm-delete-btn').onclick = async function() {
+            try {
+                const response = await fetch(`/superadmin/api/users/${userToDelete}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    closeDeleteModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Delete failed'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        };
+    }
+    
+    function closeDeleteModal() {
+        document.getElementById('delete-modal').classList.remove('active');
+        userToDelete = null;
+    }
+    
+    // Close modal on outside click
+    document.getElementById('delete-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
+</script>
+{% endblock %}

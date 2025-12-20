@@ -44,6 +44,7 @@ class AuthenticationRoutingMiddleware:
         '/api/schema/',
         '/api/docs/',
         '/docs/',
+        '/superadmin/login/',  # Superadmin login uses session auth
     }
 
     # Paths that should match the start (prefixes)
@@ -51,6 +52,7 @@ class AuthenticationRoutingMiddleware:
         '/api/',  # Allow all API routes first, then filter protected ones
         '/static/',
         '/media/',
+        '/superadmin/',  # Superadmin portal uses session auth, handled by its own middleware
     }
 
     # Staff-only endpoints
@@ -144,6 +146,9 @@ class AuthenticationRoutingMiddleware:
             if path.startswith(prefix):
                 # All static/media are public
                 if prefix in {'/static/', '/media/'}:
+                    return True
+                # Superadmin portal uses its own session-based auth
+                if prefix == '/superadmin/':
                     return True
                 # API routes need further checking below
                 if prefix == '/api/':

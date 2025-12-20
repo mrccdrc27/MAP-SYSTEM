@@ -101,6 +101,13 @@ urlpatterns = [
     path('api/', api_root, name='api-root'),  # API root moved to /api/
     path('admin/', admin.site.urls),
     path('api/v1/', include('auth.v1.urls')),
+    
+    # ==================== SUPERUSER Admin Portal ====================
+    # Superuser-only portal with Django session authentication:
+    # - Uses standard Django sessions (not JWT)
+    # - No system redirection logic
+    # - Manages user masterlist, import/export, CRUD operations
+    path('superadmin/', include('users.superadmin_urls')),
 
     # ==================== STAFF Portal (Protected & Guarded) ====================
     # Staff portal with protective routing:

@@ -1,0 +1,238 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Import Users - Superuser Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Import Users</h2>
+    <a href="{% url 'superadmin-user-masterlist' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to List
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-csv"></i> CSV File Import</h3>
+    </div>
+    
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            <strong>Instructions:</strong>
+            <ul style="margin: 10px 0 0 20px;">
+                <li>Upload a CSV file with user data</li>
+                <li>The first row should contain headers</li>
+                <li>Email is required; password will be auto-generated if not provided</li>
+                <li>Existing emails will be skipped</li>
+            </ul>
+        </div>
+    </div>
+    
+    <form id="import-form" enctype="multipart/form-data" onsubmit="return submitImport(event)">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label class="form-label" for="csv-file">CSV File</label>
+            <input type="file" class="form-control" id="csv-file" name="file" accept=".csv" required>
+        </div>
+        
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+                <i class="fas fa-upload"></i> Upload & Import
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Sample CSV Format -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-table"></i> Expected CSV Format</h3>
+        <button class="btn btn-secondary btn-sm" onclick="downloadSampleCSV()">
+            <i class="fas fa-download"></i> Download Sample
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    {% for header in sample_csv_headers %}
+                    <th>{{ header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>john@example.com</td>
+                    <td>johndoe</td>
+                    <td>SecurePass123!</td>
+                    <td>John</td>
+                    <td></td>
+                    <td>Doe</td>
+                    <td></td>
+                    <td>+15551234567</td>
+                    <td>IT Department</td>
+                    <td>Pending</td>
+                    <td>true</td>
+                    <td>false</td>
+                </tr>
+                <tr>
+                    <td>jane@example.com</td>
+                    <td>janesmith</td>
+                    <td></td>
+                    <td>Jane</td>
+                    <td>Marie</td>
+                    <td>Smith</td>
+                    <td>Jr.</td>
+                    <td>+15559876543</td>
+                    <td>Budget Department</td>
+                    <td>Approved</td>
+                    <td>true</td>
+                    <td>true</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <h4 style="margin-bottom: 15px;">Column Descriptions:</h4>
+        <ul style="color: var(--text-muted); line-height: 1.8;">
+            <li><strong>email</strong> (required) - User's email address, must be unique</li>
+            <li><strong>username</strong> - Optional username, must be unique if provided</li>
+            <li><strong>password</strong> - User's password (auto-generated if empty)</li>
+            <li><strong>first_name</strong> - User's first name</li>
+            <li><strong>middle_name</strong> - User's middle name</li>
+            <li><strong>last_name</strong> - User's last name</li>
+            <li><strong>suffix</strong> - Jr., Sr., II, III, IV, V</li>
+            <li><strong>phone_number</strong> - E.164 format (e.g., +15551234567)</li>
+            <li><strong>department</strong> - IT Department, Asset Department, or Budget Department</li>
+            <li><strong>status</strong> - Pending, Approved, or Rejected</li>
+            <li><strong>is_active</strong> - true/false (default: true)</li>
+            <li><strong>is_staff</strong> - true/false (default: false)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Import Results -->
+<div class="card" id="results-card" style="display: none;">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-clipboard-list"></i> Import Results</h3>
+    </div>
+    
+    <div id="results-success" class="alert alert-success" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <span id="success-message"></span>
+    </div>
+    
+    <div id="results-errors" style="display: none;">
+        <h4 style="margin-bottom: 15px; color: var(--danger-color);">
+            <i class="fas fa-exclamation-triangle"></i> Errors:
+        </h4>
+        <ul id="error-list" style="color: var(--text-muted); line-height: 1.8;"></ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CSRF token for API calls
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    }
+    
+    async function submitImport(event) {
+        event.preventDefault();
+        
+        const form = document.getElementById('import-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const fileInput = document.getElementById('csv-file');
+        
+        if (!fileInput.files[0]) {
+            alert('Please select a CSV file');
+            return false;
+        }
+        
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        try {
+            const response = await fetch('{% url "superadmin-api-user-import" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            // Show results card
+            document.getElementById('results-card').style.display = 'block';
+            
+            if (response.ok) {
+                // Show success message
+                document.getElementById('results-success').style.display = 'flex';
+                document.getElementById('success-message').textContent = data.message;
+                
+                // Show errors if any
+                if (data.errors && data.errors.length > 0) {
+                    document.getElementById('results-errors').style.display = 'block';
+                    const errorList = document.getElementById('error-list');
+                    errorList.innerHTML = '';
+                    data.errors.forEach(error => {
+                        const li = document.createElement('li');
+                        li.textContent = error;
+                        li.style.color = 'var(--danger-color)';
+                        errorList.appendChild(li);
+                    });
+                } else {
+                    document.getElementById('results-errors').style.display = 'none';
+                }
+                
+                // Clear the file input
+                fileInput.value = '';
+            } else {
+                document.getElementById('results-success').style.display = 'none';
+                document.getElementById('results-errors').style.display = 'block';
+                const errorList = document.getElementById('error-list');
+                errorList.innerHTML = `<li style="color: var(--danger-color);">${data.error || 'Import failed'}</li>`;
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Import';
+        
+        return false;
+    }
+    
+    function downloadSampleCSV() {
+        const headers = ['email', 'username', 'password', 'first_name', 'middle_name', 'last_name', 'suffix', 'phone_number', 'department', 'status', 'is_active', 'is_staff'];
+        const sampleData = [
+            ['john@example.com', 'johndoe', 'SecurePass123!', 'John', '', 'Doe', '', '+15551234567', 'IT Department', 'Pending', 'true', 'false'],
+            ['jane@example.com', 'janesmith', '', 'Jane', 'Marie', 'Smith', 'Jr.', '+15559876543', 'Budget Department', 'Approved', 'true', 'true']
+        ];
+        
+        let csv = headers.join(',') + '\n';
+        sampleData.forEach(row => {
+            csv += row.join(',') + '\n';
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'user_import_sample.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+{% endblock %}

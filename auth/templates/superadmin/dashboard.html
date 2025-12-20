@@ -1,0 +1,179 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Dashboard - Superuser Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <div class="btn-group">
+        <a href="{% url 'superadmin-user-create' %}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add User
+        </a>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_users }}</h3>
+            <p>Total Users</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ active_users }}</h3>
+            <p>Active Users</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ pending_users }}</h3>
+            <p>Pending Approval</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="fas fa-user-tie"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ approved_users }}</h3>
+            <p>Approved Users</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon danger">
+            <i class="fas fa-user-times"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ rejected_users }}</h3>
+            <p>Rejected Users</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fas fa-shield-halved"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ superusers }}</h3>
+            <p>Superusers</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="fas fa-user-gear"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ staff_users }}</h3>
+            <p>Staff Users</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon danger">
+            <i class="fas fa-lock"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ locked_users }}</h3>
+            <p>Locked Accounts</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Recent Users</h3>
+        <a href="{% url 'superadmin-user-masterlist' %}" class="btn btn-secondary btn-sm">
+            View All <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Company ID</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in recent_users %}
+                <tr>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.get_full_name|default:'-' }}</td>
+                    <td>{{ user.company_id|default:'-' }}</td>
+                    <td>
+                        <span class="badge {% if user.status == 'Approved' %}badge-success{% elif user.status == 'Pending' %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ user.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        <a href="{% url 'superadmin-user-edit' user.id %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted);">No users found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Quick Actions</h3>
+    </div>
+    
+    <div class="btn-group" style="flex-wrap: wrap;">
+        <a href="{% url 'superadmin-user-create' %}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Create User
+        </a>
+        <a href="{% url 'superadmin-user-import' %}" class="btn btn-secondary">
+            <i class="fas fa-file-import"></i> Import Users
+        </a>
+        <a href="{% url 'superadmin-api-user-export' %}" class="btn btn-secondary">
+            <i class="fas fa-file-export"></i> Export Users
+        </a>
+        <a href="{% url 'superadmin-user-masterlist' %}?status=Pending" class="btn btn-warning">
+            <i class="fas fa-clock"></i> Review Pending
+        </a>
+        <a href="{% url 'superadmin-user-masterlist' %}?is_active=false" class="btn btn-danger">
+            <i class="fas fa-user-slash"></i> View Inactive
+        </a>
+    </div>
+</div>
+{% endblock %}

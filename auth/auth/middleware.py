@@ -60,11 +60,14 @@ class JWTAuthenticationMiddleware:
                 # Clear invalid token
                 request.COOKIES.pop('access_token', None)
         else:
-            # No JWT token present - invalidate Django session to prevent session-only authentication
-            # This ensures API endpoints require JWT tokens, not just valid sessions
-            if request.session and request.session.session_key:
-                logger.debug("No JWT token found - invalidating Django session")
-                request.session.flush()
+            # No JWT token present
+            # Allow session authentication for superadmin routes (they use Django sessions)
+            if not request.path.startswith('/superadmin/'):
+                # For non-superadmin routes, invalidate Django session to prevent session-only authentication
+                # This ensures API endpoints require JWT tokens, not just valid sessions
+                if request.session and request.session.session_key:
+                    logger.debug("No JWT token found - invalidating Django session")
+                    request.session.flush()
         
         response = self.get_response(request)
         return response
