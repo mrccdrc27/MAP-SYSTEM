@@ -9,25 +9,20 @@ const CoordinatorAdminRejectUserModal = ({ user, onClose }) => {
   const handleReject = async () => {
     try {
       setIsLoading(true);
-      const { API_CONFIG } = await import("../../../config/environment.js");
-      const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
-      const token = localStorage.getItem('access_token');
+      const { authUserService } = await import("../../../services/auth/userService");
       
-      // Use the new deny endpoint
-      let response = await fetch(`${BASE_URL}/api/employees/${user.id}/deny/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-      });
-      
-      if (!response.ok) {
-        const err = await response.text();
-        throw new Error(err || 'Failed to reject user');
+      // Determine HDTS user id from the passed `user` object. The page passes
+      // a normalized user which may store the original raw record in `_raw`.
+      const hdtsId = user?._raw?.id || user?.companyId || user?.id || user?._raw?.user_id || user?._raw?.employee_id;
+      if (!hdtsId) {
+        alert('Cannot determine HDTS user id for rejection.');
+        setIsLoading(false);
+        return;
       }
-      
-      alert(`User ${user.firstName} ${user.lastName} rejected successfully.`);
+
+      // Use the auth service endpoint to reject the pending HDTS user
+      await authUserService.rejectHdtsUser(hdtsId);
+      alert(`User ${user.firstName || ''} ${user.lastName || ''} rejected successfully.`);
       onClose(true); // pass true to trigger refresh
     } catch (err) {
       alert("Failed to reject user: " + (err?.message || err));

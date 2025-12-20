@@ -154,6 +154,7 @@ export default function EmployeeSettings({ editingUserId = null }) {
     try {
       const token = localStorage.getItem('access_token');
       if (token) {
+        // Upload to helpdesk backend
         const res = await backendEmployeeService.uploadEmployeeImage(null, selectedFile);
         const newImageUrl = res?.image_url || res?.image || res?.imageUrl || previewUrl;
         // Resolve to an absolute URL so listeners (navbars) can update immediately
@@ -169,8 +170,33 @@ export default function EmployeeSettings({ editingUserId = null }) {
         };
         const resolvedWithCache = addCacheBuster(resolvedImageUrl);
 
+        // After upload, fetch from auth service to get the synced profile_picture field
+        let authProfilePicture = null;
+        try {
+          const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
+          const authProfileResp = await fetch(`${AUTH_BASE}/api/v1/users/profile/`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (authProfileResp && authProfileResp.ok) {
+            const authProfile = await authProfileResp.json();
+            // Get profile_picture from auth service response
+            authProfilePicture = authProfile?.profile_picture || authProfile?.image || authProfile?.imageUrl;
+            if (authProfilePicture) {
+              console.log('[Settings] Got profile_picture from auth service:', authProfilePicture);
+            }
+          }
+        } catch (err) {
+          console.warn('[Settings] Failed to fetch updated profile from auth service:', err);
+        }
+
+        // Use auth service profile_picture if available, otherwise use helpdesk image URL
+        const finalImageUrl = authProfilePicture || resolvedWithCache;
+
         // Update local user cache for immediate UI feedback
-        setUser((prev) => ({ ...(prev || {}), profileImage: resolvedWithCache, image: resolvedWithCache }));
+        setUser((prev) => ({ ...(prev || {}), profileImage: finalImageUrl, image: finalImageUrl }));
         try {
           const cached = authUser || (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { return null; } })();
           // Only overwrite the global `loggedInUser` if we're updating the authenticated user's own profile
@@ -179,7 +205,7 @@ export default function EmployeeSettings({ editingUserId = null }) {
             // via `editingUserId` when this settings component is used by admin.
             const profileId = editingUserId || (user && (user.id || user.companyId || user.company_id)) || null;
             if (cached && profileId && String(cachedId) === String(profileId)) {
-              const updated = { ...cached, profileImage: resolvedWithCache, image: resolvedWithCache };
+              const updated = { ...cached, profileImage: finalImageUrl, image: finalImageUrl, profile_picture: authProfilePicture };
               try { localStorage.setItem('user', JSON.stringify(updated)); } catch (e) {}
               try { localStorage.setItem('loggedInUser', JSON.stringify(updated)); } catch (e) {}
               try { if (setAuthUser) setAuthUser(updated); } catch (e) {}
@@ -192,7 +218,7 @@ export default function EmployeeSettings({ editingUserId = null }) {
         try { toast.success('Profile image updated successfully.'); } catch (e) {}
         try {
           const profileId = editingUserId || (user && (user.id || user.companyId || user.company_id)) || null;
-          window.dispatchEvent(new CustomEvent('profile:updated', { detail: { profileImage: resolvedWithCache, userId: profileId } }));
+          window.dispatchEvent(new CustomEvent('profile:updated', { detail: { profileImage: finalImageUrl, userId: profileId } }));
         } catch (e) {}
       } else {
         // Fallback: no backend token; store preview in local profile

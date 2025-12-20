@@ -4,6 +4,7 @@ from .models import ActivityLog
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
+import re
 
 class EmployeeSerializer(serializers.ModelSerializer):
     recent_logs = serializers.SerializerMethodField()
@@ -12,13 +13,31 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = [
             'id',  # <-- Add this line
             'last_name', 'first_name', 'middle_name', 'suffix',
-            'company_id', 'department', 'email', 'password', 
+            'company_id', 'department', 'email', 'username', 'phone_number', 'password', 
             'image', 'role', 'status', 'date_created', 'recent_logs'
         ]
         extra_kwargs = {
             'password': {'write_only': True},
             'image': {'required': False, 'allow_null': True}
         }
+
+    def validate_username(self, value):
+        """Validate that username is unique and not already taken."""
+        if not value:
+            raise serializers.ValidationError("Username is required.")
+        if Employee.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("This username is already taken. Please choose a different one.")
+        return value
+
+    def validate_phone_number(self, value):
+        """Validate phone number: must be 11 digits starting with 09."""
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+        # Remove any non-digit characters for validation
+        phone_digits = re.sub(r'\D', '', value)
+        if len(phone_digits) != 11 or not phone_digits.startswith('09'):
+            raise serializers.ValidationError("Phone number must be 11 digits starting with 09 (e.g., 09123456789).")
+        return value
 
     def create(self, validated_data):
         password = validated_data.pop('password')

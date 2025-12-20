@@ -157,7 +157,7 @@ const EmployeeNavBar = () => {
             if (resp.ok) {
               const profile = await resp.json();
               if (import.meta.env.DEV) console.debug('[Navbar] Auth profile (Bearer):', profile);
-              const candidate = normalizeImageUrl(profile.image || profile.profile_image || profile.image_url || profile.imageUrl, AUTH_BASE);
+              const candidate = normalizeImageUrl(profile.image || profile.profile_image || profile.profile_picture || profile.image_url || profile.imageUrl, AUTH_BASE);
               if (candidate) { setProfileImageUrl(candidate); return; }
             } else {
               if (import.meta.env.DEV) console.debug('[Navbar] Auth profile (Bearer) not ok:', resp.status);
@@ -174,13 +174,49 @@ const EmployeeNavBar = () => {
           // Prefer auth service base for rendering images created by auth service
           const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
           const BACKEND_BASE = API_CONFIG.BACKEND.BASE_URL.replace(/\/$/, '');
-          let candidate = normalizeImageUrl(profile.image || profile.profile_image || profile.image_url || profile.imageUrl, AUTH_BASE);
+          let candidate = normalizeImageUrl(profile.image || profile.profile_image || profile.profile_picture || profile.image_url || profile.imageUrl, AUTH_BASE);
           if (!candidate) {
-            candidate = normalizeImageUrl(profile.image || profile.profile_image || profile.image_url || profile.imageUrl, BACKEND_BASE);
+            candidate = normalizeImageUrl(profile.image || profile.profile_image || profile.profile_picture || profile.image_url || profile.imageUrl, BACKEND_BASE);
           }
           if (candidate) { setProfileImageUrl(candidate); return; }
         } catch (err) {
           if (import.meta.env.DEV) console.debug('[Navbar] Backend employee fetch failed:', err);
+        }
+
+        // 4) Try HDTS employees API for newly registered employees
+        try {
+          const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
+          let token = null;
+          try { token = localStorage.getItem('access_token'); } catch (e) { token = null; }
+          
+          const headers = {
+            'Accept': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          };
+          
+          // Get all HDTS users (which includes employees from hdts_employees table)
+          const resp = await fetch(`${AUTH_BASE}/api/v1/hdts/user-management/users/api/`, {
+            method: 'GET',
+            headers,
+            credentials: 'include'
+          });
+          
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            const allUsers = data.all_users || [];
+            
+            // Match by email (most reliable for employees)
+            const userEmail = currentUser?.email;
+            const match = userEmail ? allUsers.find(u => u.email === userEmail) : null;
+            
+            if (match) {
+              if (import.meta.env.DEV) console.debug('[Navbar] HDTS employee profile:', match);
+              const candidate = normalizeImageUrl(match.profile_picture || match.image || match.profile_image || match.image_url || match.imageUrl, AUTH_BASE);
+              if (candidate) { setProfileImageUrl(candidate); return; }
+            }
+          }
+        } catch (err) {
+          if (import.meta.env.DEV) console.debug('[Navbar] HDTS employees fetch failed:', err);
         }
 
         // If nothing worked, leave default

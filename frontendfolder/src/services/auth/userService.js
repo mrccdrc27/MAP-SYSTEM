@@ -40,7 +40,6 @@ export const authUserService = {
       }
 
       const data = await response.json();
-      console.log('📋 Auth Service - Fetched HDTS users:', data);
       
       // The response has structure: { count: X, users: [...], all_users: [...] }
       // all_users combines both system users and employees from hdts_employees table
@@ -108,8 +107,8 @@ export const authUserService = {
   async approveHdtsUser(userId) {
     try {
       if (!userId) throw new Error('Missing userId for approval');
-      // Call the new JSON API endpoint which uses DRF and accepts Authorization
-      const url = `${AUTH_BASE_URL}/api/v1/hdts/user-management/update-status-api/${userId}/`;
+      // Call the update status endpoint
+      const url = `${AUTH_BASE_URL}/api/v1/hdts/user-management/update-status/${userId}/`;
       const headers = getAuthHeaders();
       headers['Content-Type'] = 'application/json';
 
@@ -128,6 +127,37 @@ export const authUserService = {
       return await response.json();
     } catch (error) {
       console.error('Error approving HDTS user:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reject an HDTS pending user by id
+   * Calls the auth service endpoint to reject the pending user
+   */
+  async rejectHdtsUser(userId) {
+    try {
+      if (!userId) throw new Error('Missing userId for rejection');
+      // Call the update status endpoint with reject action
+      const url = `${AUTH_BASE_URL}/api/v1/hdts/user-management/update-status/${userId}/`;
+      const headers = getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ action: 'reject' }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Failed to reject user: ${response.status} ${text}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error rejecting HDTS user:', error);
       throw error;
     }
   }

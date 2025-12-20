@@ -77,6 +77,24 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'suffix', 'phone_number', 'company_id', 'department', 'status', 'notified'
         )
 
+    def validate_username(self, value):
+        """Validate that username is unique and not already taken."""
+        if not value:
+            raise serializers.ValidationError("Username is required.")
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("This username is already taken. Please choose a different one.")
+        return value
+
+    def validate_phone_number(self, value):
+        """Validate phone number: must be 11 digits starting with 09."""
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+        # Remove any non-digit characters for validation
+        phone_digits = re.sub(r'\D', '', value)
+        if len(phone_digits) != 11 or not phone_digits.startswith('09'):
+            raise serializers.ValidationError("Phone number must be 11 digits starting with 09 (e.g., 09123456789).")
+        return value
+
     def validate_password(self, value):
         # NIST 800-63B password requirements
         min_length = 8
@@ -227,6 +245,17 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
                 for field_name in fields_to_remove:
                     self.fields.pop(field_name)
 
+    def validate_profile_picture(self, value):
+        """Validate and log profile picture field."""
+        print(f"[SERIALIZER] validate_profile_picture called")
+        print(f"[SERIALIZER] profile_picture value: {value}")
+        print(f"[SERIALIZER] profile_picture type: {type(value)}")
+        if value:
+            print(f"[SERIALIZER] profile_picture.name: {value.name}")
+            print(f"[SERIALIZER] profile_picture.size: {value.size}")
+            print(f"[SERIALIZER] profile_picture.content_type: {value.content_type}")
+        return value
+
     def validate_email(self, value):
         """Validate that email is unique (excluding current user)."""
         user = self.instance
@@ -259,6 +288,31 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with this phone number already exists.")
         
         return phone
+
+    def update(self, instance, validated_data):
+        """Custom update method with logging."""
+        print(f"[SERIALIZER] update() called")
+        print(f"[SERIALIZER] Instance: {instance}")
+        print(f"[SERIALIZER] Instance ID: {instance.id}")
+        print(f"[SERIALIZER] Validated data keys: {list(validated_data.keys())}")
+        
+        for key, value in validated_data.items():
+            if key == 'profile_picture':
+                print(f"[SERIALIZER]   - {key}: <FILE OBJECT> {value.name if hasattr(value, 'name') else 'NO NAME'}")
+            else:
+                print(f"[SERIALIZER]   - {key}: {value}")
+        
+        # Call parent update
+        print(f"[SERIALIZER] Calling parent update method...")
+        instance = super().update(instance, validated_data)
+        
+        print(f"[SERIALIZER] Parent update completed")
+        print(f"[SERIALIZER] instance.profile_picture after update: {instance.profile_picture}")
+        if instance.profile_picture:
+            print(f"[SERIALIZER] instance.profile_picture.name: {instance.profile_picture.name}")
+            print(f"[SERIALIZER] instance.profile_picture.url: {instance.profile_picture.url}")
+        
+        return instance
 
 
 class AdminUserProfileUpdateSerializer(serializers.ModelSerializer):

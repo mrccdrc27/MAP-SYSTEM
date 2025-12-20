@@ -210,7 +210,7 @@ const EmployeeTicketRecords = () => {
     navigate(`/employee/ticket-tracker/${ticket.ticketNumber}`, { state: { from: 'TicketRecords' } });
   };
 
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(true);
 
   return (
     <div className={styles.pageContainer}>

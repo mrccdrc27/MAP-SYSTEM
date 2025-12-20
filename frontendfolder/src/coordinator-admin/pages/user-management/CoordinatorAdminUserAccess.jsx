@@ -75,8 +75,6 @@ const CoordinatorAdminUserAccess = () => {
           // Ensure it's an array
           const usersArray = Array.isArray(raw) ? raw : (raw || []);
 
-          console.log('UserAccess - fetched users from both tables:', usersArray.length, usersArray);
-
           // Normalize to the UI shape expected by this page
           const normalized = usersArray.map(u => {
             // Derive role: prefer explicit `role`, but many auth users store

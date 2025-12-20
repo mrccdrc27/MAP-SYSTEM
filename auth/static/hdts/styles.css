@@ -311,9 +311,13 @@ input[type="checkbox"] {
     width: 18px;
     height: 18px;
     margin-top: 2px;
-    cursor: pointer;
+    cursor: not-allowed;
     flex-shrink: 0;
     accent-color: var(--primary-color);
+}
+
+input[type="checkbox"]:disabled {
+    pointer-events: none;
 }
 
 .checkbox-wrapper label {
@@ -321,6 +325,12 @@ input[type="checkbox"] {
     margin: 0;
     font-weight: normal;
     cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.checkbox-wrapper label:hover {
+    color: var(--primary-color-hover);
 }
 
 .link {
@@ -616,8 +626,13 @@ input[type="checkbox"] {
     transition: all 0.3s ease;
 }
 
-.modal-btn:hover {
+.modal-btn:hover:not(:disabled) {
     background-color: var(--bg-color);
+}
+
+.modal-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
     border-color: var(--primary-color);
     color: var(--primary-color);
 }

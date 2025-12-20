@@ -8,10 +8,31 @@ import Button from '../../../shared/components/Button';
 import styles from './SysAdminUserProfileView.module.css';
 import detailStyles from '../ticket-tracker/CoordinatorAdminTicketDetails.module.css';
 import { getEmployeeUsers, getEmployeeUserById } from '../../../utilities/storages/employeeUserStorage';
-import { backendEmployeeService } from '../../../services/backend/employeeService';
+import { authUserService } from '../../../services/auth/userService';
 import { backendUserService } from '../../../services/backend/userService.js';
 import { getUserActivityLogs } from '../../../utilities/storages/userActivityLog';
 import SysAdminUserProfileLogs from './SysAdminUserProfileLogs';
+import { API_CONFIG } from '../../../config/environment.js';
+
+// Helper function to resolve profile picture URLs
+const resolveProfilePictureUrl = (imageUrl) => {
+  if (!imageUrl) return null;
+  
+  const AUTH_BASE = API_CONFIG.AUTH.BASE_URL;
+  
+  // Already an absolute URL
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // Relative path from auth service
+  if (imageUrl.startsWith('/')) {
+    return `${AUTH_BASE}${imageUrl}`;
+  }
+  
+  // Relative path without leading slash
+  return `${AUTH_BASE}/${imageUrl}`;
+};
 
 export default function CoordinatorAdminUserProfileView() {
   const { companyId } = useParams();
@@ -115,9 +136,9 @@ export default function CoordinatorAdminUserProfileView() {
               // backend lookup failed; fall through to local fallback
             }
           } else {
-            // Try employee service full list as a last backend attempt
+            // Try auth service HDTS users as a last backend attempt (gets all HDTS employees including from hdts_employees table)
             try {
-              const emps = await backendEmployeeService.getAllEmployees();
+              const emps = await authUserService.getAllHdtsUsers();
               if (Array.isArray(emps) && emps.length > 0) {
                 const match = emps.find(e => String(e.company_id || e.companyId || e.companyIdNumber || e.companyId) === String(companyId) || String(e.id) === String(companyId));
                 if (match) {
@@ -169,6 +190,9 @@ export default function CoordinatorAdminUserProfileView() {
       else if (e.profile_picture.url) picture = e.profile_picture.url;
     }
     if (!picture) picture = e.profile_image || e.profileImage || e.image || e.profile_picture_url || '';
+    
+    // Resolve relative URLs to absolute URLs
+    picture = resolveProfilePictureUrl(picture);
 
     return {
       id: e.id || e.pk || e.employee_id || null,

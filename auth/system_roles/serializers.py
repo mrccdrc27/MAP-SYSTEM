@@ -330,7 +330,7 @@ class AdminInviteUserSerializer(serializers.Serializer):
             )
         else:
             # Create new user
-            temp_password = get_random_string(length=10)
+            temp_password = 'password123'
             
             # Generate unique username from email with increment if needed
             base_username = email.split('@')[0].replace('.', '').replace('-', '')[:20]
@@ -360,6 +360,7 @@ class AdminInviteUserSerializer(serializers.Serializer):
                     phone_number=validated_data.get('phone_number') or None,  # Already validated and normalized
                     department=validated_data.get('department', None) or '',
                     is_active=True,
+                    status='Approved',  # Set status to Approved
                 )
                 
                 # Send invitation email with temporary password

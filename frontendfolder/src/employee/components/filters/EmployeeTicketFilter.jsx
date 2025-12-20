@@ -1,7 +1,4 @@
 import FilterPanel from "../../../shared/table/FilterPanel";
-import { TICKET_CATEGORIES } from '../../../shared/constants/ticketCategories';
-import ticketConfig from '../../../utilities/ticket-data/ticketConfig';
-import { subCategories as MOCK_SUBCATEGORIES, budgetSubCategories as MOCK_BUDGET_SUBCATS } from '../../../mock-data/tickets';
 
 /**
  * EmployeeTicketFilter - Wrapper component for Employee ticket filtering
@@ -52,41 +49,79 @@ export default function EmployeeTicketFilter({
     { label: "Low", category: "Minor" },
   ];
 
-  // Default category options derived from shared constants used by the submission form
-  const defaultCategoryOptions = (TICKET_CATEGORIES || []).map((c) => ({ label: c, category: 'Form' }));
+  // Default category options - same as CoordinatorTicketFilter for consistency
+  const defaultCategoryOptions = [
+    { label: "IT Support", category: "IT Support" },
+    { label: "Asset Check In", category: "Asset Check In" },
+    { label: "Asset Check Out", category: "Asset Check Out" },
+    { label: "New Budget Proposal", category: "New Budget Proposal" },
+    { label: "General Request", category: "General Request" },
+  ];
 
-  // Build default sub-category options from ticketConfig and mock-data where available
-  const buildDefaultSubCategories = () => {
-    const out = [];
-    try {
-      // IT Support subcategories (ticketConfig.itSupport)
-      const itOpts = ticketConfig?.itSupport?.fields?.find(f => f.name === 'subcategory')?.options || [];
-      itOpts.forEach(o => out.push({ label: o, category: 'IT Support' }));
-
-      // Asset check-in/out subcategories (product types)
-      const inOpts = ticketConfig?.assetCheckIn?.fields?.find(f => f.name === 'subcategory')?.options || [];
-      inOpts.forEach(o => out.push({ label: o, category: 'Asset Check In' }));
-      const outOpts = ticketConfig?.assetCheckOut?.fields?.find(f => f.name === 'subcategory')?.options || [];
-      outOpts.forEach(o => out.push({ label: o, category: 'Asset Check Out' }));
-
-      // Budget proposal subcategories from mock-data
-      (MOCK_SUBCATEGORIES?.budgetSubCategories || MOCK_BUDGET_SUBCATS || []).forEach(o => out.push({ label: o, category: 'New Budget Proposal' }));
-
-      // 'Others' (General Request) subcategories from mock-data mapping
-      const generalSubs = MOCK_SUBCATEGORIES?.['General Request'] || MOCK_SUBCATEGORIES?.['Others'] || [];
-      (generalSubs || []).forEach(o => out.push({ label: o, category: 'Others' }));
-    } catch (e) {
-      // fallback: no-op
-    }
-    return out;
+  // Mapping of category labels to category IDs for sub-category filtering
+  const categoryMapping = {
+    "IT Support": "IT Support",
+    "Asset Check In": "Asset Check In",
+    "Asset Check Out": "Asset Check Out",
+    "New Budget Proposal": "New Budget Proposal",
+    "General Request": "General Request",
   };
 
-  const defaultSubCategoryOptions = buildDefaultSubCategories();
+  // Ensure categoryOptions have proper structure for sub-category filtering
+  const enhancedCategoryOptions = (categoryOptions || defaultCategoryOptions).map(cat => {
+    const label = typeof cat === 'string' ? cat : cat.label;
+    const categoryId = categoryMapping[label] || label;
+    return {
+      label,
+      category: categoryId,
+    };
+  });
+
+  // Default sub-category options - same as CoordinatorTicketFilter for consistency
+  // Note: General Request has no sub-categories, so they are excluded
+  const defaultSubCategoryOptions = [
+    // IT Support sub-categories
+    { label: "Technical Assistance", category: "IT Support" },
+    { label: "Software Installation/Update", category: "IT Support" },
+    { label: "Hardware Troubleshooting", category: "IT Support" },
+    { label: "Email/Account Access Issue", category: "IT Support" },
+    { label: "Internet/Network Connectivity Issue", category: "IT Support" },
+    { label: "Printer/Scanner Setup or Issue", category: "IT Support" },
+    { label: "System Performance Issue", category: "IT Support" },
+    { label: "Virus/Malware Check", category: "IT Support" },
+    { label: "IT Consultation Request", category: "IT Support" },
+    { label: "Data Backup/Restore", category: "IT Support" },
+    // Asset Check In & Out sub-categories
+    { label: "Laptop", category: "Asset Check In" },
+    { label: "Printer", category: "Asset Check In" },
+    { label: "Projector", category: "Asset Check In" },
+    { label: "Mouse", category: "Asset Check In" },
+    { label: "Keyboard", category: "Asset Check In" },
+    // New Budget Proposal sub-categories
+    { label: "Capital Expenses (CapEx)", category: "New Budget Proposal" },
+    { label: "Operational Expenses (OpEx)", category: "New Budget Proposal" },
+    { label: "Reimbursement Claim (Liabilities)", category: "New Budget Proposal" },
+    { label: "Charging Department (Cost Center)", category: "New Budget Proposal" },
+  ];
+
+  // Use defaults always for sub-categories to ensure proper category mapping
+  const normalizedSubCategoryOptions = defaultSubCategoryOptions.filter(subCat => subCat && subCat.label);
+
+  // Build fields array - exclude rating field for employees
+  const fields = [
+    ...(showStatus ? ['status'] : []),
+    'priority',
+    'category',
+    'subCategory',
+    'startDate',
+    'endDate',
+  ];
 
   return (
     <FilterPanel
       // Use base FilterPanel with custom configuration
       hideToggleButton={hideToggleButton}
+      fields={fields}
       onApply={onApply}
       onReset={onReset}
       initialFilters={initialFilters}
@@ -101,8 +136,8 @@ export default function EmployeeTicketFilter({
       // Options (can be overridden by props)
       statusOptions={statusOptions || defaultActiveStatusOptions}
       priorityOptions={priorityOptions || defaultPriorityOptions}
-      categoryOptions={categoryOptions || defaultCategoryOptions}
-      subCategoryOptions={subCategoryOptions || defaultSubCategoryOptions}
+      categoryOptions={enhancedCategoryOptions}
+      subCategoryOptions={subCategoryOptions || normalizedSubCategoryOptions}
       
       // Show date filters (Employee needs Start Date and End Date)
       showDateFilters={true}
