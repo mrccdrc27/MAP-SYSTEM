@@ -1360,6 +1360,37 @@
   color: #6b7280;
 }
 
+/* Error and Warning States */
+.formInputError {
+  border-color: #ef4444 !important;
+}
+
+.formInputError:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.formInputWarning {
+  border-color: #f59e0b !important;
+}
+
+.formInputWarning:focus {
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important;
+}
+
+.formError {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.formHelp {
+  color: #6b7280;
+  font-size: 11px;
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
 .formTextarea {
   width: 100%;
   padding: 8px 12px;

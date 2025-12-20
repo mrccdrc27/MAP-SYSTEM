@@ -145,7 +145,7 @@ const WorkflowEditorContent = forwardRef(({
   }, [setNodes, saveToHistory]);
 
   // Handle adding a new node
-  const handleAddNode = useCallback((label = 'New Step') => {
+  const handleAddNode = useCallback((label = 'New Step', role = 'Unassigned') => {
     saveToHistory();
     const viewport = getViewport();
     const centerX = -viewport.x / viewport.zoom + 200;
@@ -156,7 +156,7 @@ const WorkflowEditorContent = forwardRef(({
       id: newNodeId,
       data: {
         label: label,
-        role: 'Unassigned',
+        role: role,
         description: '',
         instruction: '',
         is_start: false,
@@ -165,7 +165,7 @@ const WorkflowEditorContent = forwardRef(({
         onStepClick: () => onStepClick({
           id: newNodeId,
           name: label,
-          role: 'Unassigned',
+          role: role,
           description: '',
           instruction: '',
           is_start: false,
@@ -263,7 +263,10 @@ const WorkflowEditorContent = forwardRef(({
     saveChanges,
     undo,
     redo,
-  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode, saveToHistory, undo, redo]);
+    // Expose nodes and edges for validation
+    getNodes: () => nodes,
+    getEdges: () => edges,
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode, saveToHistory, undo, redo, nodes, edges]);
 
   // Convert workflow data to ReactFlow format
   useEffect(() => {

@@ -61,7 +61,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 9998;
+        z-index: 10000;
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s, visibility 0.3s;
@@ -368,9 +368,13 @@
                 // File input
                 const fileInput = document.getElementById('id_profile_picture');
                 if (fileInput) {
+                    console.log('ImageCropper: Found file input, binding change event');
                     fileInput.addEventListener('change', (e) => {
+                        console.log('ImageCropper: File selected');
                         this.loadImage(e.target.files[0]);
                     });
+                } else {
+                    console.error('ImageCropper: File input #id_profile_picture not found');
                 }
                 
                 // Zoom
@@ -455,7 +459,11 @@
             }
             
             loadImage(file) {
-                if (!file || !file.type.match('image.*')) return;
+                if (!file || !file.type.match('image.*')) {
+                    console.error('ImageCropper: Invalid file or no file selected');
+                    return;
+                }
+                console.log('ImageCropper: Loading image');
                 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -650,6 +658,7 @@
             }
             
             openModal() {
+                console.log('ImageCropper: Opening modal');
                 this.modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
             }
@@ -661,6 +670,18 @@
         }
         
         // Initialize cropper when DOM is ready
-        const cropper = new ImageCropper();
+        window.imageCropperInstance = null;
+        
+        function initCropper() {
+            if (window.imageCropperInstance) return;
+            console.log('ImageCropper: Initializing...');
+            window.imageCropperInstance = new ImageCropper();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCropper);
+        } else {
+            initCropper();
+        }
     });
 </script>

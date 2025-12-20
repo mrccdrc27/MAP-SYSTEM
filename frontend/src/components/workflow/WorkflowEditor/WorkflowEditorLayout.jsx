@@ -10,6 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
 import { useWorkflowRefresh } from '../WorkflowRefreshContext';
+import { validateWorkflowGraph, formatValidationErrors, getDefaultRole } from '../../../utils/workflowValidation';
 import AdminNav from "../../../components/navigation/AdminNav";
 import { Save, RefreshCw, Undo, Redo, AlertCircle, ChevronRight, ChevronLeft, Settings } from 'lucide-react';
 
@@ -31,7 +32,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
 
   const contentRef = useRef();
   const { getWorkflowDetail } = useWorkflowAPI();
-  const { roles } = useWorkflowRoles();
+  const { roles, loading: rolesLoading, error: rolesError } = useWorkflowRoles();
 
   // Load workflow data
   useEffect(() => {
@@ -45,6 +46,13 @@ export default function WorkflowEditorLayout({ workflowId }) {
     };
     loadWorkflow();
   }, [workflowId, getWorkflowDetail]);
+
+  // Show warning if roles failed to load
+  useEffect(() => {
+    if (rolesError) {
+      console.warn('Failed to load roles:', rolesError);
+    }
+  }, [rolesError]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -72,8 +80,30 @@ export default function WorkflowEditorLayout({ workflowId }) {
     }
   }, []);
 
-  // Save handler
+  // Save handler with validation
   const handleSave = useCallback(async () => {
+    // Get current nodes and edges from content ref
+    const currentNodes = contentRef.current?.getNodes?.() || [];
+    const currentEdges = contentRef.current?.getEdges?.() || [];
+    
+    // Run validation before saving
+    const validation = validateWorkflowGraph(currentNodes, currentEdges, roles);
+    
+    if (!validation.isValid) {
+      const errorMessage = formatValidationErrors(validation);
+      alert(`Cannot save workflow:\n\n${errorMessage}`);
+      return;
+    }
+    
+    // Show warnings but allow save
+    if (validation.warnings && validation.warnings.length > 0) {
+      const warningMessage = validation.warnings.join('\n');
+      const proceed = window.confirm(
+        `The workflow has the following warnings:\n\n${warningMessage}\n\nDo you want to save anyway?`
+      );
+      if (!proceed) return;
+    }
+    
     setIsSaving(true);
     try {
       if (contentRef.current?.saveChanges) {
@@ -83,10 +113,11 @@ export default function WorkflowEditorLayout({ workflowId }) {
       }
     } catch (err) {
       console.error('Failed to save:', err);
+      alert(`Failed to save workflow: ${err.response?.data?.error || err.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
-  }, [triggerRefresh]);
+  }, [triggerRefresh, roles]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -118,10 +149,18 @@ export default function WorkflowEditorLayout({ workflowId }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo, handleSave]);
 
-  const handleAddStep = useCallback((label = 'New Step') => {
-    contentRef.current?.handleAddNode?.(label);
+  const handleAddStep = useCallback((label = 'New Step', role = null) => {
+    // Use provided role or get default from available roles
+    const stepRole = role || getDefaultRole(roles);
+    
+    if (!stepRole) {
+      alert('Cannot add step: No roles available. Please configure roles in the system first.');
+      return;
+    }
+    
+    contentRef.current?.handleAddNode?.(label, stepRole);
     setHasUnsavedChanges(true);
-  }, []);
+  }, [roles]);
 
   const onStepClick = useCallback((stepData) => {
     setSelectedElement({ type: 'step', id: String(stepData.id), data: stepData });
@@ -303,6 +342,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
               stepCount={stepCount}
               transitionCount={transitionCount}
               isEditingGraph={isEditingGraph}
+              roles={roles}
             />
             <button
               onClick={() => setToolbarCollapsed(true)}

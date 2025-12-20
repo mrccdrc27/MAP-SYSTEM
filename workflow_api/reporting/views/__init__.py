@@ -48,3 +48,11 @@ from .insight_views import (
     AnomalyDetectionView,
     ServiceHealthSummaryView
 )
+from .forecasting_views import (
+    TicketVolumeForecastView,
+    ResolutionTimeForecastView,
+    CategoryTrendForecastView,
+    SLABreachRiskForecastView,
+    WorkloadForecastView,
+    ComprehensiveForecastView
+)

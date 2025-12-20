@@ -554,7 +554,6 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         has_acted = user_assignment.taskitemhistory_set.filter(status__in=['resolved', 'escalated']).exists()
-        is_escalated = user_assignment.origin == 'Escalation'
         
         # Get step information
         current_step = task.current_step
@@ -617,7 +616,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         ).select_related('role_user', 'role_user__role_id').prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
         
         current_owner = None
+        is_escalated = False
+        is_transferred = False
         if most_recent_task_item:
+            # Calculate is_escalated and is_transferred based on current owner's origin
+            is_escalated = most_recent_task_item.origin == 'Escalation'
+            is_transferred = most_recent_task_item.origin == 'Transferred'
+            
             # Get latest status from history
             latest_history = most_recent_task_item.taskitemhistory_set.order_by('-created_at').first()
             status_value = latest_history.status if latest_history else 'new'
@@ -643,6 +648,8 @@ class TaskViewSet(viewsets.ModelViewSet):
             'step_transition_id': step_transition_id,
             'has_acted': has_acted,
             'is_escalated': is_escalated,
+            'is_transferred': is_transferred,
+            'target_resolution': task.target_resolution.isoformat() if task.target_resolution else None,
             'current_owner': current_owner,
             'step': {
                 'id': current_step.step_id,
@@ -1207,7 +1214,7 @@ class FailedNotificationViewSet(viewsets.ReadOnlyModelViewSet):
             # Attempt to send notification
             notify_task.delay(
                 user_id=notification.user_id,
-                task_id=notification.task_id,
+                task_item_id=notification.task_item_id,
                 task_title=notification.task_title,
                 role_name=notification.role_name
             )
@@ -1274,7 +1281,7 @@ class FailedNotificationViewSet(viewsets.ReadOnlyModelViewSet):
                 
                 notify_task.delay(
                     user_id=notification.user_id,
-                    task_id=notification.task_id,
+                    task_item_id=notification.task_item_id,
                     task_title=notification.task_title,
                     role_name=notification.role_name
                 )

@@ -183,6 +183,14 @@
   margin: 0 0 8px 0;
 }
 
+/* KPI Row for multiple KPI cards */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
 /* Charts Grid */
 .chartsGrid {
   display: flex;

@@ -48,6 +48,14 @@ from .views import (
     SLARiskReportView,
     AnomalyDetectionView,
     ServiceHealthSummaryView,
+    
+    # ML Forecasting endpoints
+    TicketVolumeForecastView,
+    ResolutionTimeForecastView,
+    CategoryTrendForecastView,
+    SLABreachRiskForecastView,
+    WorkloadForecastView,
+    ComprehensiveForecastView,
 )
 
 app_name = 'reporting'
@@ -107,4 +115,12 @@ urlpatterns = [
     path('insights/sla-risk/', SLARiskReportView.as_view(), name='sla-risk-report'),
     path('insights/anomalies/', AnomalyDetectionView.as_view(), name='anomaly-detection'),
     path('insights/health/', ServiceHealthSummaryView.as_view(), name='service-health'),
+    
+    # ==================== ML FORECASTING ====================
+    path('forecast/volume/', TicketVolumeForecastView.as_view(), name='forecast-volume'),
+    path('forecast/resolution-time/', ResolutionTimeForecastView.as_view(), name='forecast-resolution-time'),
+    path('forecast/categories/', CategoryTrendForecastView.as_view(), name='forecast-categories'),
+    path('forecast/sla-risk/', SLABreachRiskForecastView.as_view(), name='forecast-sla-risk'),
+    path('forecast/workload/', WorkloadForecastView.as_view(), name='forecast-workload'),
+    path('forecast/dashboard/', ComprehensiveForecastView.as_view(), name='forecast-dashboard'),
 ]

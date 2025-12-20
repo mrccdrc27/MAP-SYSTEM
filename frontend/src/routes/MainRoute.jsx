@@ -41,6 +41,7 @@ import Test from "../pages/test";
 import ResetPassword from "../pages/auth/PasswordReset";
 import WorkflowEditorPage from "../pages/test/WorkflowEditorPage";
 import AuthContextTest from "../pages/test/AuthContextTest";
+import WorkflowEditorTests from "../pages/test/WorkflowEditorTests";
 
 // WebSocket test
 import WebSocketTest from "../components/WebSocketTest";
@@ -111,6 +112,7 @@ export default function MainRoute() {
       {/* TEST ROUTE - Consider protecting or removing in production */}
       <Route path="/test" element={<Test />} />
       <Route path="/test/auth-context" element={<AuthContextTest />} />
+      <Route path="/test/workflow-editor" element={<WorkflowEditorTests />} />
 
       {/* 404 ROUTE */}
       <Route path="*" element={<NotFound />} />

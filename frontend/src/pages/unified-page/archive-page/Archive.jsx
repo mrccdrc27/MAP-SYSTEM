@@ -79,7 +79,7 @@ export default function Ticket() {
 
       // Metadata
       step_instance_id: entry.task_id, // Use task_id as identifier
-      hasacted: entry.status === "resolved" || entry.status === "escalated",
+      hasacted: entry.status === "resolved" || entry.status === "escalated" || entry.status === "reassigned",
     }));
   }, [userTickets]);
 
@@ -131,12 +131,14 @@ export default function Ticket() {
       // Step 1: Only show acted tickets
       if (!ticket.hasacted) return false;
 
-      // Step 2: Apply filters
+      // Step 2: Apply category filter
       if (filters.category && ticket.category !== filters.category)
         return false;
 
+      // Step 3: Apply status filter
       if (filters.status && ticket.status !== filters.status) return false;
 
+      // Step 4: Apply date range filter
       const openedDate = new Date(ticket.submit_date);
       const start = filters.startDate ? new Date(filters.startDate) : null;
       const end = filters.endDate ? new Date(filters.endDate) : null;
@@ -144,17 +146,34 @@ export default function Ticket() {
       if (start && openedDate < start) return false;
       if (end && openedDate > end) return false;
 
-      // Step 3: Apply search
+      // Step 5: Apply search filter
       const search = (debouncedSearch || "").toLowerCase();
-      if (
-        search &&
-        !(
-          ticket.ticket_id.toLowerCase().includes(search) ||
-          ticket.subject.toLowerCase().includes(search) ||
-          ticket.description.toLowerCase().includes(search)
-        )
-      ) {
-        return false;
+      if (search) {
+        const ticketId = (ticket.ticket_id || "").toLowerCase();
+        const ticketNumber = String(ticket.ticket_number || "").toLowerCase();
+        const subject = (ticket.subject || "").toLowerCase();
+        const description = (ticket.description || "").toLowerCase();
+        const workflowName = (ticket.workflow_name || "").toLowerCase();
+        const currentStepName = (ticket.current_step_name || "").toLowerCase();
+        const actedOnStepName = (ticket.acted_on_step_name || "").toLowerCase();
+        const userFullName = (ticket.user_full_name || "").toLowerCase();
+        const status = (ticket.status || "").toLowerCase();
+
+        if (
+          !(
+            ticketId.includes(search) ||
+            ticketNumber.includes(search) ||
+            subject.includes(search) ||
+            description.includes(search) ||
+            workflowName.includes(search) ||
+            currentStepName.includes(search) ||
+            actedOnStepName.includes(search) ||
+            userFullName.includes(search) ||
+            status.includes(search)
+          )
+        ) {
+          return false;
+        }
       }
 
       return true;
