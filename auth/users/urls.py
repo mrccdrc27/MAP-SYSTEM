@@ -103,6 +103,7 @@ urlpatterns = [
     
     # Password reset endpoints
     path('password/forgot/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('password/reset', ResetPasswordView.as_view(), name='reset-password-no-slash'),  # Without trailing slash for token links
     path('password/reset/', ResetPasswordView.as_view(), name='reset-password'),
     path('password/change/', ProfilePasswordResetView.as_view(), name='change-password'),
     path('password/change/ui/', ChangePasswordUIView.as_view(), name='change-password-ui'),

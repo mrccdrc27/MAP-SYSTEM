@@ -246,16 +246,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 # Email Configuration
-# Get the email backend from environment variable with console as fallback for development
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+# SendGrid is the primary email backend
+# Falls back to console backend in development if SendGrid is not configured
+DEFAULT_FROM_EMAIL = config('SENDGRID_FROM_EMAIL', default='noreply@yourapp.com')
 
-# SMTP settings (used when EMAIL_BACKEND is set to smtp backend)
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@yourapp.com')
+# SMTP settings (used as fallback if SendGrid is disabled)
+EMAIL_HOST = config('DJANGO_EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('DJANGO_EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('DJANGO_EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('DJANGO_EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default='')
 
 # Frontend URL for invitation links
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
@@ -357,18 +357,16 @@ SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
 SENDGRID_FROM_EMAIL = config('SENDGRID_FROM_EMAIL', default=DEFAULT_FROM_EMAIL)
 SENDGRID_FROM_NAME = config('SENDGRID_FROM_NAME', default='TicketFlow')
 SENDGRID_ENABLED = config('SENDGRID_ENABLED', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+SENDGRID_SANDBOX_MODE_IN_DEBUG = config('SENDGRID_SANDBOX_MODE_IN_DEBUG', default='False', cast=lambda x: x.lower() in ('true', '1', 'yes'))
 SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='support@ticketflow.com')
 
-# If SendGrid is not configured, fall back to console email backend for development
-if not SENDGRID_API_KEY and DEBUG:
+# Set EMAIL_BACKEND based on SendGrid configuration
+if SENDGRID_ENABLED and SENDGRID_API_KEY:
+    # Use SendGrid backend when API key is configured
+    EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+elif DEBUG:
+    # Fall back to console backend in development
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-
-# Email Configuration
-# EMAIL_BACKEND = config('DJANGO_EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-# EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-# EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-# EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes') if isinstance(x, str) else x)
-# EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-# DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@example.com')
+else:
+    # Use SMTP backend as fallback in production
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

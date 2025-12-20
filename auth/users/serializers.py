@@ -629,7 +629,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         is_pwned, breach_count = check_password_pwned(password)
         if is_pwned:
             raise serializers.ValidationError(
-                f"This password has been found in {breach_count:,} data breaches. Please choose a different password."
+                "This password has been found in data breaches. Please choose a different password."
             )
 
         attrs['reset_token'] = reset_token
@@ -717,7 +717,7 @@ class ProfilePasswordResetSerializer(serializers.Serializer):
         is_pwned, breach_count = check_password_pwned(new_password)
         if is_pwned:
             raise serializers.ValidationError({
-                'new_password': f"This password has been found in {breach_count:,} data breaches. Please choose a different password."
+                'new_password': "This password has been found in data breaches. Please choose a different password."
             })
 
         return attrs
