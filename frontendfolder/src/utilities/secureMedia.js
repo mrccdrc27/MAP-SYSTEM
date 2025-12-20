@@ -30,12 +30,39 @@ export function generateSecureMediaUrl(filePath, token) {
  * @returns {string|null} - The access token or null if not found
  */
 export function getAccessToken() {
-  // Try different token storage keys used in the app
-  const employeeToken = localStorage.getItem('employee_access_token');
-  const adminToken = localStorage.getItem('admin_access_token');
-  const generalToken = localStorage.getItem('access_token');
+  // Check the correct key used by TokenUtils: 'accessToken' (camelCase)
+  const accessToken = localStorage.getItem('accessToken');
+  if (accessToken) {
+    console.log('💚 [TOKEN] Found token in localStorage under key "accessToken"');
+    return accessToken;
+  }
   
-  return employeeToken || adminToken || generalToken;
+  // Also try camelCase variants
+  const employeeToken = localStorage.getItem('employeeAccessToken');
+  if (employeeToken) {
+    console.log('💚 [TOKEN] Found token in localStorage under key "employeeAccessToken"');
+    return employeeToken;
+  }
+  
+  const adminToken = localStorage.getItem('adminAccessToken');
+  if (adminToken) {
+    console.log('💚 [TOKEN] Found token in localStorage under key "adminAccessToken"');
+    return adminToken;
+  }
+  
+  // Fall back to checking cookies
+  const tokenCookie = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('access_token='));
+  
+  if (tokenCookie) {
+    const token = tokenCookie.split('=')[1];
+    console.log('💚 [TOKEN] Found token in cookies under key "access_token"');
+    return token;
+  }
+  
+  console.log('🔴 [TOKEN] No token found in localStorage or cookies');
+  return null;
 }
 
 /**

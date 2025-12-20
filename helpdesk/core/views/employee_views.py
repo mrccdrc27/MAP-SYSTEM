@@ -266,12 +266,21 @@ def upload_profile_image(request):
     logger.info("="*80)
     sys.stdout.flush()
     
-    user = request.user
-    logger.info(f"[AUTH] User authenticated: {user}")
-    logger.info(f"[AUTH] User type: {type(user)}")
-    logger.info(f"[AUTH] User email: {getattr(user, 'email', 'NO EMAIL')}")
-    logger.info(f"[AUTH] User ID: {getattr(user, 'id', 'NO ID')}")
-    logger.info(f"[AUTH] User instance check: Is Employee? {isinstance(user, Employee)}")
+    auth_user = request.user
+    logger.info(f"[AUTH] Authenticated user: {auth_user}")
+    logger.info(f"[AUTH] User type: {type(auth_user)}")
+    logger.info(f"[AUTH] User email: {getattr(auth_user, 'email', 'NO EMAIL')}")
+    logger.info(f"[AUTH] User ID: {getattr(auth_user, 'id', 'NO ID')}")
+    
+    # Try to get Employee, but don't fail if it doesn't exist
+    # The auth service is the source of truth for profile pictures
+    logger.info(f"\n[EMPLOYEE_LOOKUP] Looking up Employee by email (optional): {auth_user.email}")
+    employee_user = None
+    try:
+        employee_user = Employee.objects.get(email=auth_user.email)
+        logger.info(f"[EMPLOYEE_LOOKUP] ✓ Found Employee: {employee_user}")
+    except Employee.DoesNotExist:
+        logger.warning(f"[EMPLOYEE_LOOKUP] ⚠ No Employee found for {auth_user.email} - will save to auth service only")
     
     logger.info(f"\n[REQUEST] Method: {request.method}")
     logger.info(f"[REQUEST] Content-Type: {request.META.get('CONTENT_TYPE', 'N/A')}")
@@ -315,23 +324,24 @@ def upload_profile_image(request):
     logger.info(f"[VALIDATION] File size OK: {image_file.size} bytes")
     sys.stdout.flush()
 
-    # Delete old image if it exists and is not the default
-    logger.info(f"\n[CLEANUP] Checking for old image...")
-    logger.info(f"[CLEANUP] user.image value: {user.image}")
-    if user.image:
-        logger.info(f"[CLEANUP] user.image.name: {user.image.name}")
-        if not user.image.name.endswith('default-profile.png'):
-            try:
-                logger.info(f"[CLEANUP] Deleting old image: {user.image.name}")
-                user.image.delete()
-                logger.info(f"[CLEANUP] Old image deleted successfully")
-            except Exception as e:
-                logger.error(f"[CLEANUP] ERROR deleting old image: {e}")
+    # Delete old image from Employee if one exists
+    if employee_user:
+        logger.info(f"\n[CLEANUP] Checking for old image on Employee record...")
+        logger.info(f"[CLEANUP] employee_user.image value: {employee_user.image}")
+        if employee_user.image:
+            logger.info(f"[CLEANUP] employee_user.image.name: {employee_user.image.name}")
+            if not employee_user.image.name.endswith('default-profile.png'):
+                try:
+                    logger.info(f"[CLEANUP] Deleting old image: {employee_user.image.name}")
+                    employee_user.image.delete()
+                    logger.info(f"[CLEANUP] Old image deleted successfully")
+                except Exception as e:
+                    logger.error(f"[CLEANUP] ERROR deleting old image: {e}")
+            else:
+                logger.info(f"[CLEANUP] Skipping delete - image is default")
         else:
-            logger.info(f"[CLEANUP] Skipping delete - image is default")
-    else:
-        logger.info(f"[CLEANUP] No existing image to delete")
-    sys.stdout.flush()
+            logger.info(f"[CLEANUP] No existing image to delete")
+        sys.stdout.flush()
 
     # Resize image to 1024x1024
     logger.info(f"\n[PROCESSING] Starting image resize...")
@@ -354,29 +364,38 @@ def upload_profile_image(request):
         logger.info(f"[PROCESSING] BytesIO pointer reset to 0")
         sys.stdout.flush()
         
-        logger.info(f"\n[DATABASE] Saving image to Employee.image field...")
-        filename = f"{user.id}_profile.jpg"
-        logger.info(f"[DATABASE] Filename: {filename}")
-        logger.info(f"[DATABASE] User object before save: {user}")
-        logger.info(f"[DATABASE] User.image field before save: {user.image}")
+        image_url = None
+        filename = f"{auth_user.id}_profile.jpg"  # Use auth user ID for filename
         
-        user.image.save(filename, ContentFile(img_io.getvalue()), save=True)
-        logger.info(f"[DATABASE] Image saved successfully!")
-        logger.info(f"[DATABASE] User.image field after save: {user.image}")
-        logger.info(f"[DATABASE] User.image.url: {user.image.url}")
+        # If Employee record exists, save image to it
+        if employee_user:
+            logger.info(f"\n[DATABASE] Saving image to Employee.image field...")
+            filename = f"{employee_user.id}_profile.jpg"
+            logger.info(f"[DATABASE] Filename: {filename}")
+            logger.info(f"[DATABASE] Employee object before save: {employee_user}")
+            logger.info(f"[DATABASE] Employee.image field before save: {employee_user.image}")
+            
+            employee_user.image.save(filename, ContentFile(img_io.getvalue()), save=True)
+            logger.info(f"[DATABASE] Image saved successfully!")
+            logger.info(f"[DATABASE] Employee.image field after save: {employee_user.image}")
+            logger.info(f"[DATABASE] Employee.image.url: {employee_user.image.url}")
+            
+            # Verify save in database
+            logger.info(f"\n[VERIFICATION] Refreshing Employee from database...")
+            employee_user.refresh_from_db()
+            logger.info(f"[VERIFICATION] Employee refreshed from DB")
+            logger.info(f"[VERIFICATION] Employee.image after refresh: {employee_user.image}")
+            logger.info(f"[VERIFICATION] Employee.image.url after refresh: {employee_user.image.url}")
+            
+            image_url = employee_user.image.url
+            logger.info(f"[DATABASE] Final Employee image URL: {image_url}")
+        else:
+            logger.info(f"\n[DATABASE] No Employee record - image will be saved only to auth service")
+            image_url = f"/media/profile_pics/{filename}"
         
-        # Verify save in database
-        logger.info(f"\n[VERIFICATION] Refreshing user from database...")
-        user.refresh_from_db()
-        logger.info(f"[VERIFICATION] User refreshed from DB")
-        logger.info(f"[VERIFICATION] User.image after refresh: {user.image}")
-        logger.info(f"[VERIFICATION] User.image.url after refresh: {user.image.url}")
-        
-        image_url = user.image.url
-        logger.info(f"[DATABASE] Final image URL: {image_url}")
         sys.stdout.flush()
         
-        # Also sync the profile picture to the auth service using the resized BytesIO
+        # Sync the profile picture to the auth service using the resized BytesIO
         logger.info(f"\n[AUTH_SYNC] Starting auth service sync...")
         auth_sync_success = False
         try:

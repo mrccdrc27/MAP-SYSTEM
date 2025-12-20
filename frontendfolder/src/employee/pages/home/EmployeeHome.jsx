@@ -170,11 +170,6 @@ const EmployeeHome = () => {
         ) : recentTickets.length === 0 ? (
             <div className={styles.noTickets}>
               <p>{isLoading ? 'Loading tickets...' : 'No active tickets to display.'}</p>
-              {!isLoading && (
-                <Button variant="primary" onClick={handleSubmitTicket}>
-                  Submit a Ticket
-                </Button>
-              )}
             </div>
         ) : (
           <div className={styles.ticketList}>

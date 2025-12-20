@@ -898,7 +898,7 @@ def claim_ticket(request, ticket_id):
 
 @api_view(['POST'])
 @authentication_classes([CookieJWTAuthentication, JWTAuthentication])
-@permission_classes([IsAuthenticated, IsAdminOrCoordinator])
+@permission_classes([IsAuthenticated])
 def update_ticket_status(request, ticket_id):
     try:
         ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -911,7 +911,8 @@ def update_ticket_status(request, ticket_id):
             (ticket.employee == request.user)
         )
         if not (request.user.is_staff or getattr(request.user, 'role', None) in ['System Admin', 'Ticket Coordinator']):
-            if not (new_status == 'Closed' and is_ticket_owner):
+            # Employees can only close tickets, and only if they're the owner AND ticket is already Resolved
+            if not (new_status == 'Closed' and is_ticket_owner and ticket.status == 'Resolved'):
                 return Response({'error': 'permission denied'}, status=status.HTTP_403_FORBIDDEN)
         
         if not new_status:
@@ -1070,12 +1071,8 @@ def submit_csat_rating(request, ticket_id):
         if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
             return Response({'error': 'Rating must be an integer between 1 and 5'}, status=status.HTTP_400_BAD_REQUEST)
         
-        allowed_feedback = ['Fast response', 'Very helpful', 'Professional', 'Problem solved']
-        if feedback:
-            feedback_items = [f.strip() for f in feedback.split(',')]
-            for item in feedback_items:
-                if item and item not in allowed_feedback:
-                    return Response({'error': f'Invalid feedback option: {item}'}, status=status.HTTP_400_BAD_REQUEST)
+        # Allow any feedback text - frontend handles validation of options
+        # Store feedback as-is (comma-separated string from frontend)
         
         ticket.csat_rating = rating
         ticket.feedback = feedback
@@ -1106,6 +1103,7 @@ def submit_csat_rating(request, ticket_id):
 
 
 @api_view(['GET'])
+@authentication_classes([CookieJWTAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_csat_feedback(request):
     try:

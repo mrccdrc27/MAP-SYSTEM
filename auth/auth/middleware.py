@@ -24,8 +24,14 @@ class JWTAuthenticationMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Try to get and verify JWT token
+        # Try to get JWT token from cookies OR Authorization header
         access_token = request.COOKIES.get('access_token')
+        
+        # If not in cookies, check Authorization header (Bearer token)
+        if not access_token:
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            if auth_header.startswith('Bearer '):
+                access_token = auth_header[7:]  # Remove 'Bearer ' prefix
         
         if access_token:
             # First, try to decode as a custom employee token
@@ -56,8 +62,8 @@ class JWTAuthenticationMiddleware:
                         logger.warning(f"JWT token references non-existent user: {user_id}")
                         
             except (TokenError, InvalidToken) as e:
-                logger.debug(f"Invalid JWT token in cookie: {str(e)}")
-                # Clear invalid token
+                logger.debug(f"Invalid JWT token: {str(e)}")
+                # Clear invalid token from cookies if present
                 request.COOKIES.pop('access_token', None)
         else:
             # No JWT token present - invalidate Django session to prevent session-only authentication

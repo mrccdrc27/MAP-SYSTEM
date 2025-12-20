@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_seriali
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 import logging
@@ -80,6 +81,7 @@ logger = logging.getLogger(__name__)
         }
     )
 )
+@method_decorator(csrf_exempt, name='dispatch')
 class ProfileView(generics.RetrieveUpdateAPIView):
     """
     API view to retrieve and partially update the profile of the currently authenticated user.

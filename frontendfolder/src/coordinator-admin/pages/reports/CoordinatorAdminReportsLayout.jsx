@@ -14,7 +14,7 @@ const defaultTabs = [
 
 const CoordinatorAdminReportsLayout = ({ title = 'Reports', tabs = defaultTabs, children, filter }) => {
   const [active, setActive] = useState(tabs[0]?.value || defaultTabs[0].value);
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(true);
 
   return (
     <div className={ticketStyles.pageContainer}>

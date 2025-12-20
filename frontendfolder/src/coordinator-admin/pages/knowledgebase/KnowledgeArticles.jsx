@@ -122,6 +122,27 @@ const KnowledgeArticles = () => {
     return author;
   };
 
+  const getCreatorName = (article) => {
+    if (!article) return 'Unknown';
+    // Try multiple possible field structures from the API response
+    if (article.created_by && typeof article.created_by === 'object') {
+      const first = article.created_by.first_name || '';
+      const last = article.created_by.last_name || '';
+      const name = `${first} ${last}`.trim();
+      return name || 'Unknown';
+    }
+    if (article.creator_first_name || article.creator_last_name) {
+      const first = article.creator_first_name || '';
+      const last = article.creator_last_name || '';
+      const name = `${first} ${last}`.trim();
+      return name || 'Unknown';
+    }
+    if (article.author) {
+      return article.author;
+    }
+    return 'Unknown';
+  };
+
   const truncate = (text, max = 29) => {
     if (!text) return '';
     const str = String(text);
@@ -378,8 +399,8 @@ const KnowledgeArticles = () => {
                   <tr key={a.id || idx}>
                     <td>
                       <div className={userStyles.subjectCell}>
-                        <div className={knowledgeStyles.subjectTitle}>{a.title}</div>
-                        <div className={knowledgeStyles.subjectMeta}>{a.author} • {formatArticleDate(a)}</div>
+                        <div className={knowledgeStyles.subjectTitle} title={a.title}>{truncate(a.title, 29)}</div>
+                        <div className={knowledgeStyles.subjectMeta}>{getCreatorName(a)} • {formatArticleDate(a)}</div>
                       </div>
                     </td>
                       <td>{getCategoryName(a.category_id)}</td>

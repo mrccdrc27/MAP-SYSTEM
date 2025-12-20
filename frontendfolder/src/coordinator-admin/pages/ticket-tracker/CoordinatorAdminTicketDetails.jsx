@@ -388,7 +388,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
 
         {/* ASSIGNED AGENT SECTION - Visible during In Progress and Completed stages
             Show a placeholder when there is no assigned agent so the UI can be wired to backend later */}
-  {['in-progress', 'completed'].includes(ticketStage) && !hideAssignedAgent && (
+        {['in-progress', 'completed'].includes(ticketStage) && !hideAssignedAgent && (
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Assigned Agent</div>
             <div className={styles.userCardWrap}>
@@ -413,7 +413,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
                     </div>
                   </div>
                 </div>
-                ) : (
+              ) : (
                 // Placeholder card when no agent is assigned yet
                 <div className={styles.userCard}>
                   <div className={styles.avatar}>
