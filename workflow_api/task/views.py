@@ -615,13 +615,14 @@ class TaskViewSet(viewsets.ModelViewSet):
             task=task
         ).select_related('role_user', 'role_user__role_id').prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
         
+        # Calculate is_escalated and is_transferred based on actions taken on THIS task item (user_assignment)
+        # is_escalated = True if the user escalated this ticket from this task item
+        is_escalated = user_assignment.taskitemhistory_set.filter(status='escalated').exists()
+        # is_transferred = True if the user transferred this ticket from this task item
+        is_transferred = user_assignment.transferred_to is not None or user_assignment.taskitemhistory_set.filter(status='reassigned').exists()
+        
         current_owner = None
-        is_escalated = False
-        is_transferred = False
         if most_recent_task_item:
-            # Calculate is_escalated and is_transferred based on current owner's origin
-            is_escalated = most_recent_task_item.origin == 'Escalation'
-            is_transferred = most_recent_task_item.origin == 'Transferred'
             
             # Get latest status from history
             latest_history = most_recent_task_item.taskitemhistory_set.order_by('-created_at').first()
