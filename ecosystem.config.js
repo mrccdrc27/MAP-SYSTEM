@@ -1,8 +1,8 @@
 const path = require('path');
 
-const venvPath = path.join(__dirname, 'venv', 'Scripts');
+const venvPath = path.join(__dirname, 'tts', 'venv', 'Scripts');
 const pythonInterpreter = path.join(venvPath, 'pythonw.exe');
-const celeryScript = path.join(__dirname, 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');
+const celeryScript = path.join(__dirname, 'tts', 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');
 
 module.exports = {
   apps: [
@@ -35,7 +35,7 @@ module.exports = {
     // -------------------
     {
       name: 'workflow-api',
-      cwd: './workflow_api',
+      cwd: './tts/workflow_api',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8002',
       interpreter: pythonInterpreter,
@@ -60,7 +60,7 @@ module.exports = {
     },
     {
       name: 'workflow-worker',
-      cwd: './workflow_api',
+      cwd: './tts/workflow_api',
       script: pythonInterpreter,
       args: '-m celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed',
       interpreter: 'none',
@@ -81,7 +81,7 @@ module.exports = {
     // -------------------
     {
       name: 'notification-service',
-      cwd: './notification_service',
+      cwd: './tts/notification_service',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8006',
       interpreter: pythonInterpreter,
@@ -103,7 +103,7 @@ module.exports = {
     },
     {
       name: 'notification-worker',
-      cwd: './notification_service',
+      cwd: './tts/notification_service',
       script: pythonInterpreter,
       args: '-m celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue',
       interpreter: 'none',
@@ -122,7 +122,7 @@ module.exports = {
     // -------------------
     {
       name: 'messaging-service',
-      cwd: './messaging',
+      cwd: './tts/messaging',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8005',
       interpreter: pythonInterpreter,
@@ -140,7 +140,7 @@ module.exports = {
     /*
     {
       name: 'ticket-service',
-      cwd: './ticket_service',
+      cwd: './tts/ticket_service',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8004',
       interpreter: pythonInterpreter,
@@ -156,7 +156,7 @@ module.exports = {
     */
     {
       name: 'ticket-worker',
-      cwd: './ticket_service',
+      cwd: './tts/ticket_service',
       script: pythonInterpreter,
       args: '-m celery -A ticket_service worker --pool=solo --loglevel=info -Q ticket_tasks-default',
       interpreter: 'none',
@@ -173,7 +173,7 @@ module.exports = {
     // -------------------
     {
       name: 'helpdesk-backend',
-      cwd: './helpdesk',
+      cwd: './hdts/helpdesk',
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8000', 
       interpreter: pythonInterpreter,
@@ -185,7 +185,7 @@ module.exports = {
     },
     {
       name: 'helpdesk-worker',
-      cwd: './helpdesk',
+      cwd: './hdts/helpdesk',
       script: pythonInterpreter,
       args: '-m celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo',
       interpreter: 'none',
@@ -201,7 +201,7 @@ module.exports = {
     // -------------------
     {
       name: 'helpdesk-frontend',
-      cwd: './frontendfolder',
+      cwd: './hdts/frontendfolder',
       script: './node_modules/vite/bin/vite.js',
       interpreter: 'node',
       watch: false,
@@ -213,7 +213,7 @@ module.exports = {
     // -------------------
     {
       name: 'main-frontend',
-      cwd: './frontend',
+      cwd: './tts/frontend',
       script: './node_modules/vite/bin/vite.js',
       interpreter: 'node',
       watch: false,

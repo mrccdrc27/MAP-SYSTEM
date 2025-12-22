@@ -14,14 +14,14 @@ setup_env() {
 
 # Set up environment for all services
 echo "Setting up environment for all services..."
-cd frontend
+cd tts/frontend
 setup_env
-cd ..
+cd ../..
 
 cd user_service
 setup_env
 cd ..
 
-cd ticket_service
+cd tts/ticket_service
 setup_env
-cd ..
+cd ../..

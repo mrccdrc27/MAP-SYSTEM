@@ -1,0 +1,1 @@
+one to run scripts (seed-migrate-activate)

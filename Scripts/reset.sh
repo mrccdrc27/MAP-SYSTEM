@@ -14,13 +14,13 @@ setup_env() {
 setup_env
 
 # === Start workflow_api ===
-cd workflow_api
+cd tts/workflow_api
 python manage.py flush --no-input
 # disable when seeding workflows as the workflow seed has its own role generation
 celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-prod27 & 
 # Start Celery worker in background
 celery -A workflow_api worker --pool=solo --loglevel=info -Q ticket_tasks-prod &
-cd ..
+cd ../..
 
 # Start Django server
 echo "Starting workflow_api..."
@@ -37,11 +37,11 @@ cd ..
 
 # === Start ticket_service ===
 echo "Starting ticket_service..."
-cd ticket_service
+cd tts/ticket_service
 python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver 0.0.0.0:8000 &
-cd ..
+cd ../..
 
 # === Optionally Start task_service ===
 # echo "Starting task_service..."
@@ -53,7 +53,7 @@ cd ..
 
 # === Start React App ===
 echo "Starting React app..."
-cd frontend
+cd tts/frontend
 setup_env
 npx json-server --watch db.json --port 5000 --host 0.0.0.0 &
 npm install

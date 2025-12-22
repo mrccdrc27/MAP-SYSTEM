@@ -14,10 +14,10 @@ setup_env() {
 setup_env
 
 # worker command - Workflow_API
-cd workflow_api
+cd tts/workflow_api
 python manage.py flush --no-input
 celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed &
-cd ..
+cd ../..
 
 # Start user_service
 echo "Starting user_service..."
@@ -34,28 +34,28 @@ echo "Celery worker for workflow_api started in background."
 
 # Start workflow_api
 echo "Starting workflow_api..."
-cd workflow_api
+cd tts/workflow_api
 python manage.py makemigrations --no-input
 python manage.py migrate
 python manage.py seed_workflows2
 
 # Start Django server for workflow_api
 python manage.py runserver 0.0.0.0:8002 &
-cd ..
+cd ../..
 
 # Start ticket_service
 echo "Starting ticket_service..."
-cd ticket_service
+cd tts/ticket_service
 python manage.py flush --no-input
 python manage.py makemigrations
 python manage.py migrate
 python manage.py seed_tickets
 python manage.py runserver 0.0.0.0:8004 &
-cd ..
+cd ../..
 
 # Start React app
 # echo "Starting React app..."
-# cd frontend
+# cd tts/frontend
 # # setup_env
 # # npx json-server --watch db.json --port 5000 --host 0.0.0.0 &
 # npm install

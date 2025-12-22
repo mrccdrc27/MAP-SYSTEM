@@ -14,25 +14,25 @@ setup_env() {
 
 # Set up environment for all services
 echo "Setting up environment for all services..."
-cd frontend
+cd tts/frontend
 setup_env
-cd ..
+cd ../..
 
 cd user_service
 setup_env
 cd ..
 
-cd ticket_service
+cd tts/ticket_service
 setup_env
-cd ..
+cd ../..
 
 # developmental part
 
 # Start JSON Server
 echo "Starting JSON server..."
-cd frontend
+cd tts/frontend
 npx json-server --watch db.json --port 5000 --host 0.0.0.0 &
-cd ..
+cd ../..
 
 # Start user_service
 echo "Starting user_service..."
@@ -43,19 +43,19 @@ cd ..
 
 # Start ticket_service
 echo "Starting ticket_service..."
-cd ticket_service
+cd tts/ticket_service
 python manage.py flush --no-input
 python manage.py makemigrations
 python manage.py migrate
 python manage.py seed_tickets
 python manage.py runserver 0.0.0.0:4000 &
-cd ..
+cd ../..
 
 # Start React app
 echo "Starting React app..."
-cd frontend
+cd tts/frontend
 npm install
 npm run dev &
-cd ..
+cd ../..
 
 echo "All services started successfully."

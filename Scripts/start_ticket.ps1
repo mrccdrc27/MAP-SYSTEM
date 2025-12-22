@@ -15,6 +15,5 @@ $VenvPath = "$PSScriptRoot\..\venv\Scripts\Activate.ps1"
 if (Test-Path $VenvPath) { . $VenvPath } else { Write-Warning "Venv not found at $VenvPath" }
 
 # Navigate and Run
-Set-Location "$PSScriptRoot\..\ticket_service"
+Set-Location "$PSScriptRoot\..\tts\ticket_service"
 python manage.py runserver 0.0.0.0:8004
-
