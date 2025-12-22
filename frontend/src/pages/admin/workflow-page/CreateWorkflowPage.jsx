@@ -223,7 +223,7 @@ export default function CreateWorkflowPage() {
   const [showSequenceDiagram, setShowSequenceDiagram] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(null);
+
   const [editingNode, setEditingNode] = useState(null);
   const [editingSimpleNodeIndex, setEditingSimpleNodeIndex] = useState(null);
 
@@ -522,7 +522,6 @@ export default function CreateWorkflowPage() {
   }, [nodes.length, setNodes, roles]);
 
   const handleNodeClick = useCallback((event, node) => {
-    setSelectedNode(node);
     setEditingNode(node);
   }, []);
 
