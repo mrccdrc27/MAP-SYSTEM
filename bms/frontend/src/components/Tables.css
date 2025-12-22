@@ -1,0 +1,318 @@
+/* Page container - centers the table container */
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 100px);
+  padding: 10px 10px;
+  background-color: #f8fafc;
+}
+
+/* Container for the table */
+.page .container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 95%;
+  background-color: #ffffff;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+  padding-bottom: 20px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+/* Top section with title and search/filters */
+.page .top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 20px 24px;
+  border-bottom: 1px solid #d3d3d3;
+  background-color: #ffffff;
+}
+
+/* Title styling */
+.page .top .title {
+  font-size: 29px;
+  font-weight: 600;
+  color: #007bff;
+}
+
+/* Controls container for search and filters */
+.page .top .controls-container {
+  display: flex;
+  align-items: left;
+  gap: 1rem;
+}
+
+.search-account-input {
+  background-color: white !important; /* Remove black background */
+  border: 1px solid #d3d3d3;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  width: 300px ;
+  height: 50px;
+  max-width: 300px;
+  margin-left: 1rem;
+  transition: all 0.2s ease;
+}
+
+/* Active typing state - when input has text */
+.search-account-input:not(:empty),
+.search-account-input:focus:not(:placeholder-shown) {
+  border-color: #3b82f6; /* Blue border */
+  background-color: #f0f7ff; /* Light blue background */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-account-input:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-account-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+/* Text color when typing */
+.search-account-input:not(:placeholder-shown) {
+  color:  #242424;
+}
+
+/* Filter controls */
+.page .top .filter-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: left;
+}
+
+/* Dropdown button styling - clean white design */
+.page .top .filter-dropdown-btn {
+  position: relative;
+  display: flex;
+  align-items: left;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #4a5568;
+  min-width: 120px;
+  transition: all 0.2s ease;
+  
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.page .top .filter-dropdown-btn:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.page .top .filter-dropdown-btn:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+
+/* Dropdown menu styling */
+.page .top .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.page .top .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.page .top .dropdown-item:hover {
+  background-color: #f7fafc;
+}
+
+.page .top .dropdown-item.selected {
+  background-color: #ebf8ff;
+  color: #3182ce;
+  font-weight: 500;
+}
+
+/* Hide dropdown by default */
+.page .top .dropdown-menu {
+  display: none;
+}
+
+.page .top .filter-dropdown-btn.active + .dropdown-menu {
+  display: block;
+}
+
+
+/* Legacy input styling (for backwards compatibility) */
+.page .top input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+}
+
+.page .top input:hover {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+}
+
+.page .top div {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  width: 40vw;
+  gap: 1vw;
+}
+
+/* Main table styles */
+.page table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  margin-top: 1rem;
+}
+
+.page table th,
+.page table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.7rem;
+  color: var(--secondary-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  height: 40px;
+}
+
+/* Header styling */
+.page table th {
+  text-align: left;
+  padding-left: 8px;
+  font-size: 0.8rem;
+  background-color: #f8fafc;
+}
+
+/* Data cell styling */
+.page table td {
+  text-align: left;
+  padding-left: 8px;
+  font-size: 0.88rem;
+}
+
+/* Last 3 columns (dates, notes) centered */
+.page table th:nth-last-child(-n+3) {
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.page table td:nth-last-child(-n+3) {
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 0.88rem;
+  width: 60px;
+}
+
+/* Middle columns alignment */
+.page table th:nth-child(n+3):nth-child(-n+8),
+.page table td:nth-child(n+3):nth-child(-n+8) {
+  text-align: left;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 0.88rem;
+}
+
+/* Pagination spacing */
+.pagination {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.pagination-btn:hover {
+  background-color: #f9fafb;
+}
+
+.pagination-btn.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .page .top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .page .top .controls-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .page .top .search-box {
+    width: 250px;
+  }
+  
+  .page .top .filter-controls {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  
+  .page .top .filter-dropdown-btn {
+    min-width: 100px;
+  }
+}
+
+
