@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import *
 from .serializer import *
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -9,7 +10,7 @@ from datetime import timedelta
 from django.db.models import Sum, Value, F
 from django.db.models.functions import Coalesce
 from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from datetime import datetime
 from django.db import transaction
@@ -23,6 +24,12 @@ from assets_ms.services.activity_logger import (
     log_component_activity,
     log_audit_activity,
     log_repair_activity,
+)
+from assets_ms.authentication import (
+    JWTCookieAuthentication,
+    AMSSystemPermission,
+    AMSAdminPermission,
+    AMSOperatorOrAdminPermission,
 )
 
 logger = logging.getLogger(__name__)

@@ -27,6 +27,10 @@ def get_list(var_name, default=""):
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / ".env")
 
+# JWT Signing Key - MUST match the centralized auth service's signing key
+# This allows AMS Contexts to verify tokens issued by the centralized auth service
+JWT_SIGNING_KEY = os.getenv('DJANGO_JWT_SIGNING_KEY', os.getenv('CONTEXTS_SECRET_KEY'))
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -101,7 +105,7 @@ if os.getenv("CONTEXTS_DATABASE_URL"):
             conn_max_age=600
         )
     }
-else:
+elif os.getenv("CONTEXTS_DB_HOST") and os.getenv("CONTEXTS_DB_HOST") != "db":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -110,6 +114,14 @@ else:
             "PASSWORD": os.getenv("CONTEXTS_DB_PASSWORD"),
             "HOST": os.getenv("CONTEXTS_DB_HOST"),
             "PORT": os.getenv("CONTEXTS_DB_PORT"),
+        }
+    }
+else:
+    # SQLite fallback for local development without Docker
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -176,6 +188,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'contexts_ms.authentication.JWTCookieAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+        'contexts_ms.authentication.AMSSystemPermission',
+    ],
+}
 
 # Ensure CORS is properly configured
 if DEBUG:

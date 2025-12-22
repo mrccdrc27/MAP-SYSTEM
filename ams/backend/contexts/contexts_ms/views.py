@@ -1,8 +1,9 @@
 from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import *
 from .serializer import *
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -12,6 +13,13 @@ from rest_framework import serializers as drf_serializers
 from contexts_ms.services.assets import *
 import requests
 from django.db import transaction
+
+from contexts_ms.authentication import (
+    JWTCookieAuthentication,
+    AMSSystemPermission,
+    AMSAdminPermission,
+    AMSOperatorOrAdminPermission,
+)
 
 
 # If will add more views later or functionality, please create file on api folder or services folder
