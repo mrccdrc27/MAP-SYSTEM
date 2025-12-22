@@ -11,7 +11,7 @@ import RepairFilterModal from "../../components/Modals/RepairFilterModal";
 import Alert from "../../components/Alert";
 import Footer from "../../components/Footer";
 import { exportToExcel } from "../../utils/exportToExcel";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 
 import "../../styles/Repairs/Repairs.css";
 
@@ -95,6 +95,7 @@ function TableItem({
 }
 
 export default function AssetRepairs() {
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -342,7 +343,7 @@ export default function AssetRepairs() {
                 >
                   Filter
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <MediumButtons type="export" onClick={handleExport} />
                 )}
 

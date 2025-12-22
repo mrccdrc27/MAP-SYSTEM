@@ -14,7 +14,7 @@ import View from "../../components/Modals/View";
 import Footer from "../../components/Footer";
 import DueAuditFilterModal from "../../components/Modals/DueAuditFilterModal";
 import { exportToExcel } from "../../utils/exportToExcel";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 
 // TableHeader
 function TableHeader() {
@@ -62,6 +62,7 @@ function TableItem({ item, onDeleteClick, onViewClick }) {
 }
 
 export default function ScheduledAudits() {
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const data = scheduledAudit;
@@ -247,7 +248,7 @@ export default function ScheduledAudits() {
                 >
                   Filter
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <MediumButtons type="export" onClick={handleExport} />
                 )}
               </section>

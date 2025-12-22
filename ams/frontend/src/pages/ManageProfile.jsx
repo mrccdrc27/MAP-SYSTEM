@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "../features/counter/userSlice";
 import NavBar from "../components/NavBar";
-import authService from "../services/auth-service";
+import { useAuth } from "../context/AuthContext";
 import DefaultProfile from "../assets/img/default-profile.svg";
 import "../styles/ManageProfile.css";
 
 export default function ManageProfile() {
+  const { isAdmin } = useAuth();
   const [userInfo, setUserInfo] = useState({
     first_name: "",
     middle_name: "",
@@ -22,8 +23,8 @@ export default function ManageProfile() {
   const user = useSelector(selectUser);
 
   useEffect(() => {
-    // Load user information from auth service
-    // const currentUser = authService.getUserInfo();
+    // Load user information from auth context
+    // const currentUser = useAuth().getUserInfo();
     setUserInfo({
       first_name: user.firstName || "",
       middle_name: user.middleName || "",

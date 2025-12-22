@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 import NavBar from "../../components/NavBar";
 import Status from "../../components/Status";
 import MediumButtons from "../../components/buttons/MediumButtons";
@@ -132,6 +132,7 @@ function TableItem({
 }
 
 export default function Assets() {
+  const { isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -489,7 +490,7 @@ export default function Assets() {
                 >
                   Filter
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <>
                     <MediumButtons type="export" onClick={handleExport} />
                     <MediumButtons

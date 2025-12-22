@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import "../styles/ActionButtons.css";
-import authService from "../services/auth-service";
+import { useAuth } from "../context/AuthContext";
 
 export default function ActionButtons({
   showView = false,
@@ -22,6 +22,7 @@ export default function ActionButtons({
   onCheckinClick = null,
 }) {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   return (
     <section className="action-button-section">
@@ -31,7 +32,7 @@ export default function ActionButtons({
         </button>
       )}
 
-      {showEdit && authService.getUserInfo().role === "Admin" && (
+      {showEdit && isAdmin() && (
         <button
           title="Edit"
           className="action-button"
@@ -41,7 +42,7 @@ export default function ActionButtons({
         </button>
       )}
 
-      {showDelete && authService.getUserInfo().role === "Admin" && (
+      {showDelete && isAdmin() && (
         <button
           title="Delete"
           className="action-button"

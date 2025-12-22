@@ -1,13 +1,13 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/custom-colors.css";
 import "../styles/Login.css";
 import "../styles/LoadingButton.css";
 import Alert from "../components/Alert";
 import { useForm } from "react-hook-form";
-import authService from "../services/auth-service";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { setUser } from "../features/counter/userSlice";
+import { useAuth } from "../context/AuthContext";
 import LoadingButton from "../components/LoadingButton";
 import eyeOpen from "../assets/icons/eye-open.svg";
 import eyeClose from "../assets/icons/eye-close.svg";
@@ -16,12 +16,13 @@ import AssetImage from "../assets/img/pageimg6.png";
 
 function Login() {
   const navigate = useNavigate();
-  const [isInvalidCredentials, setInvalidCredentials] = useState(null);
+  const location = useLocation();
+  const [errorMessage, setErrorMessage] = useState(null);
   const [isSubmitting, setSubmitting] = useState(false);
   const [isShowPassword, setShowPassword] = useState(false);
-  const [hasActiveAdmin, setActiveAdmin] = useState(true);
 
   const dispatch = useDispatch();
+  const { login, isAuthenticated, getAmsRole } = useAuth();
 
   const {
     register,
@@ -34,64 +35,67 @@ function Login() {
 
   const password = watch("password", "");
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
+
   const submission = async (data) => {
     const { email, password } = data;
     setSubmitting(true);
+    setErrorMessage(null);
 
     try {
-      const user = await authService.login(email, password);
+      const result = await login({ email, password });
 
-      if (user) {
-        dispatch(
-          setUser({
-            firstName: user.first_name,
-            lastName: user.last_name,
-            role: user.role,
-            loggedIn: true,
-          })
-        );
-        setInvalidCredentials(false);
-
+      if (result.success) {
+        // Also update Redux store for backwards compatibility
+        const user = result.user;
+        if (user) {
+          dispatch(
+            setUser({
+              firstName: user.first_name || user.full_name?.split(' ')[0] || '',
+              lastName: user.last_name || user.full_name?.split(' ').slice(1).join(' ') || '',
+              role: getAmsRole() || 'operator',
+              loggedIn: true,
+            })
+          );
+        }
         navigate("/dashboard");
       } else {
-        setInvalidCredentials(true);
+        setErrorMessage(result.error || "Invalid credentials.");
       }
     } catch (error) {
-      console.log("login failed!");
+      console.error("Login failed:", error);
+      setErrorMessage("An unexpected error occurred. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   useEffect(() => {
-    if (isInvalidCredentials) {
-      setTimeout(() => {
-        setInvalidCredentials(false);
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
       }, 5000);
+      return () => clearTimeout(timer);
     }
-  }, [isInvalidCredentials]);
+  }, [errorMessage]);
 
   // Reset the value of isShowPassword state when the password input is empty.
   useEffect(() => {
-    if (password.length == 0) {
+    if (password.length === 0) {
       setShowPassword(false);
     }
   }, [password]);
 
-  // Determine if there is any active admin
-  useEffect(() => {
-    const hasActiveAdmin = async () => {
-      const fetchedData = await authService.hasActiveAdmin();
-      setActiveAdmin(fetchedData);
-    };
-
-    hasActiveAdmin();
-  }, []);
-
   return (
     <>
-      {isInvalidCredentials && (
-        <Alert message="Invalid credentials." type="danger" />
+      {errorMessage && (
+        <Alert message={errorMessage} type="danger" />
       )}
 
       <main className="login-page">
@@ -124,7 +128,7 @@ function Login() {
                 {...register("email", {
                   required: "Must not empty",
                   pattern: {
-                    value: /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
+                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
                     message: "Invalid email format",
                   },
                 })}
@@ -164,18 +168,6 @@ function Login() {
               {!isSubmitting ? "Log In" : "Verifying..."}
             </button>
           </form>
-
-          {!hasActiveAdmin && (
-            <div className="form-btn">
-              <button
-                type="button"
-                onClick={() => navigate("/register")}
-                className="register-btn"
-              >
-                Register
-              </button>
-            </div>
-          )}
 
           <a onClick={() => navigate("/request/password_reset")}>
             Forgot Password?

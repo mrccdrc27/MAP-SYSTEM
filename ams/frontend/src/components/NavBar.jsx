@@ -8,12 +8,13 @@ import { IoIosArrowDown } from "react-icons/io";
 import { FaBars, FaChevronLeft } from "react-icons/fa";
 import NotificationOverlay from "./NotificationOverlay";
 import SystemLogo from "../assets/icons/Map-LogoNew.svg";
-import authService from "../services/auth-service";
+import { useAuth } from "../context/AuthContext";
 import DefaultProfile from "../assets/img/default-profile.svg";
 
 export default function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout: authLogout, user, isAdmin } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAssetsMenu, setShowAssetsMenu] = useState(false);
   const [showReportsMenu, setShowReportsMenu] = useState(false);
@@ -173,9 +174,8 @@ export default function NavBar() {
     }
   }, [location.pathname]);
 
-  const logout = () => {
-    authService.logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    await authLogout();
   };
 
   return (
@@ -353,7 +353,7 @@ export default function NavBar() {
             </a>
           </li>
 
-          {authService.getUserInfo().role === "Admin" && (
+          {isAdmin() && (
             <>
               <li
                 className={`dropdown-container reports-dropdown-container ${
@@ -546,7 +546,7 @@ export default function NavBar() {
         </div>
         <div className="profile-container">
           <img
-            src={authService.getUserInfo().image || DefaultProfile}
+            src={user?.profile_picture || user?.image || DefaultProfile}
             alt="sample-profile"
             className="sample-profile"
             onClick={() => {
@@ -558,16 +558,16 @@ export default function NavBar() {
             <div className="profile-dropdown">
               <div className="profile-header">
                 <img
-                  src={authService.getUserInfo().image || DefaultProfile}
+                  src={user?.profile_picture || user?.image || DefaultProfile}
                   alt="profile"
                 />
                 <div className="profile-info">
                   <h3>
-                    {authService.getUserInfo().first_name}{" "}
-                    {authService.getUserInfo().last_name}
+                    {user?.first_name || user?.full_name?.split(' ')[0] || ''}{" "}
+                    {user?.last_name || user?.full_name?.split(' ').slice(1).join(' ') || ''}
                   </h3>
                   <span className="admin-badge">
-                    {authService.getUserInfo().role}
+                    {isAdmin() ? 'Admin' : 'Operator'}
                   </span>
                 </div>
               </div>
@@ -575,12 +575,12 @@ export default function NavBar() {
                 <button onClick={() => navigate("/manage-profile")}>
                   Manage Profile
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <button onClick={() => navigate("/user-management")}>
                     User Management
                   </button>
                 )}
-                <button onClick={logout} className="logout-btn">
+                <button onClick={handleLogout} className="logout-btn">
                   Log Out
                 </button>
               </div>

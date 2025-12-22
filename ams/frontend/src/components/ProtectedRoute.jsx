@@ -1,36 +1,34 @@
-import { Outlet, Navigate, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-import api from "../api";
-import { REFRESH_TOKEN, ACCESS_TOKEN } from "../constants";
-import { useState, useEffect } from "react";
+import { Outlet, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import SystemLoading from "./Loading/SystemLoading";
-import { selectUser } from "../features/counter/userSlice";
-import { useSelector } from "react-redux";
-import authService from "../services/auth-service";
 
-function ProtectedRoute({ roles }) {
-  const user = useSelector(selectUser);
+function ProtectedRoute({ roles = [] }) {
+  const { user, loading, initialized, hasAmsAccess, getAmsRole } = useAuth();
   const navigate = useNavigate();
-  const token = sessionStorage.getItem(ACCESS_TOKEN);
+  const location = useLocation();
 
-  // const role = currentUser?.role?.toLowerCase() || "";
-  const role = user?.role?.toLowerCase() || "";
-  const isAuthenticated = token ? true : false;
-
-  // Redirect the user back to the previous page.
-  useEffect(() => {
-    // Redirect user back to the previous page if authenticated and not authorized.
-    if (isAuthenticated && !roles.includes(role)) {
-      navigate(-1);
-    }
-  }, [isAuthenticated, roles, role]);
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+  // Show loading while checking auth status
+  if (loading || !initialized) {
+    return <SystemLoading />;
   }
 
-  if (!roles.includes(role)) {
-    return null;
+  // Not authenticated - redirect to login
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if user has AMS access
+  if (!hasAmsAccess()) {
+    return <Navigate to="/login" state={{ error: "No AMS access" }} replace />;
+  }
+
+  // Get user's AMS role
+  const userRole = getAmsRole()?.toLowerCase() || "";
+
+  // Check if user has required role (if roles are specified)
+  if (roles.length > 0 && !roles.includes(userRole)) {
+    // User doesn't have required role - redirect to dashboard or back
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

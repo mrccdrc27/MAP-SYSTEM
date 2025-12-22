@@ -16,11 +16,12 @@ import Status from "../../components/Status";
 import ActionButtons from "../../components/ActionButtons";
 import Pagination from "../../components/Pagination";
 import { exportToExcel } from "../../utils/exportToExcel";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 import AssetFilterModal from "../../components/Modals/AssetFilterModal";
 import { fetchProductById, fetchAssetsByProduct } from "../../services/assets-service";
 
 function ProductViewPage() {
+  const { isAdmin } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -341,7 +342,7 @@ function getActionState(asset) {
             type="export"
             onClick={handleExport}
           />
-          {authService.getUserInfo().role === "Admin" && (
+          {isAdmin() && (
             <MediumButtons
               type="new"
               navigatePage="/assets/registration"

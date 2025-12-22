@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth } from "./context/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Assets/Products";
 import ProductsRegistration from "./pages/Assets/ProductsRegistration";
@@ -83,7 +84,12 @@ import DepreciationDetails from "./pages/More/depreciation-details/DepreciationD
 import RecycleBin from "./pages/More/RecycleBin";
 
 function Logout() {
-  localStorage.clear();
+  const { logout } = useAuth();
+  
+  React.useEffect(() => {
+    logout();
+  }, [logout]);
+  
   return <Navigate to="/login" />;
 }
 

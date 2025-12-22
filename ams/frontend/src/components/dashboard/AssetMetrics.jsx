@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
 import "../../styles/dashboard/AssetMetrics.css";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 
 const AssetMetrics = ({ stats }) => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [selectedPeriod1, setSelectedPeriod1] = useState("This month");
   const [selectedPeriod2, setSelectedPeriod2] = useState("This month");
 
@@ -169,7 +170,7 @@ const AssetMetrics = ({ stats }) => {
               <p>No category data available</p>
             </div>
           )}
-          {authService.getUserInfo().role === "Admin" && (
+          {isAdmin() && (
             <button className="browse-all" onClick={() => navigate("/assets")}>
               Browse All
             </button>
@@ -211,7 +212,7 @@ const AssetMetrics = ({ stats }) => {
               <p>No status data available</p>
             </div>
           )}
-          {authService.getUserInfo().role === "Admin" && (
+          {isAdmin() && (
             <button
               className="browse-all"
               onClick={() => navigate("/reports/activity")}

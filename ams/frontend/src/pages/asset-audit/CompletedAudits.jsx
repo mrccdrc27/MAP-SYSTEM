@@ -12,7 +12,7 @@ import View from "../../components/Modals/View";
 import Footer from "../../components/Footer";
 import CompletedAuditFilterModal from "../../components/Modals/CompletedAuditFilterModal";
 import { exportToExcel } from "../../utils/exportToExcel";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 
 // TableHeader
 function TableHeader() {
@@ -46,6 +46,7 @@ function TableItem({ item, onViewClick }) {
 }
 
 export default function CompletedAudits() {
+  const { isAdmin } = useAuth();
   const data = completedAudit;
 
   // Filter modal state
@@ -210,7 +211,7 @@ export default function CompletedAudits() {
                 >
                   Filter
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <MediumButtons type="export" onClick={handleExport} />
                 )}
               </section>

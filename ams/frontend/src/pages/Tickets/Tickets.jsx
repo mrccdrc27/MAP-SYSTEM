@@ -15,7 +15,7 @@ import {
   fetchAllEmployees,
   fetchEmployeeById,
 } from "../../services/integration-auth-service";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 
 import "../../styles/Tickets/Tickets.css";
 
@@ -92,6 +92,7 @@ function TableItem({
 }
 
 const Tickets = () => {
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const toggleRef = useRef(null);
@@ -423,7 +424,7 @@ const Tickets = () => {
                 >
                   Filter
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <div ref={toggleRef}>
                     <MediumButtons
                       type="export"

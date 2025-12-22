@@ -14,7 +14,7 @@ import View from "../../components/Modals/View";
 import Footer from "../../components/Footer";
 import OverdueAuditFilterModal from "../../components/Modals/OverdueAuditFilterModal";
 import { exportToExcel } from "../../utils/exportToExcel";
-import authService from "../../services/auth-service";
+import { useAuth } from "../../context/AuthContext";
 
 // TableHeader
 function TableHeader() {
@@ -64,6 +64,7 @@ function TableItem({ item, onDeleteClick, onViewClick }) {
 }
 
 export default function OverdueAudits() {
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const data = overdueAudit;
@@ -258,7 +259,7 @@ export default function OverdueAudits() {
                 >
                   Filter
                 </button>
-                {authService.getUserInfo().role === "Admin" && (
+                {isAdmin() && (
                   <MediumButtons type="export" onClick={handleExport} />
                 )}
               </section>
