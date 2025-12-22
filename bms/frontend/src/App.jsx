@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/Finance/LoginPage";
-import ForgotPasswordPage from "./pages/Finance/ForgotPasswordPage"; // Import the ForgotPassword component
+import ForgotPasswordPage from "./pages/Finance/ForgotPasswordPage";
 import Dashboard from "./pages/Finance/Dashboard";
 import LedgerView from "./pages/Finance/LedgerView";
 import BudgetAllocation from "./pages/Finance/BudgetAllocation";
@@ -9,64 +9,56 @@ import ProposalHistory from "./pages/Finance/ProposalHistory";
 import ExpenseTracking from "./pages/Finance/ExpenseTracking";
 import ExpenseHistory from "./pages/Finance/ExpenseHistory";
 import BudgetVarianceReport from "./pages/Finance/BudgetVarianceReport";
-import { useAuth } from "./context/AuthContext"; // Import the custom hook
-import ResetPasswordPage from "./pages/ResetPasswordPage"; // Correct path
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import { useAuth } from "./context/AuthContext";
+import ProtectedRoute, { PublicRoute, UnauthorizedPage } from "./components/ProtectedRoute";
 
-// --- MODIFICATION START ---
-// 1. ProtectedRoute component to handle authentication checks
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-
-  // While checking for authentication, show a loading indicator
-  if (loading) {
-    return <div>Loading session...</div>;
-  }
-
-  // If not authenticated, redirect to the login page.
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // If authenticated, render the requested component.
-  return children;
-};
-
-// 2. Create a PublicRoute component to handle logged in users on public pages.
-const PublicRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return <div>Loading session...</div>;
-  }
-
-  // If user is already logged in, redirect them to the dashboard.
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-};
-// --- MODIFICATION END ---
+/**
+ * BMS App with centralized auth and role-based access control.
+ * 
+ * BMS Roles:
+ * - ADMIN: Full access to all features
+ * - FINANCE_HEAD: Access to financial operations and reports
+ * - GENERAL_USER: Basic access to view reports
+ * 
+ * Route Access:
+ * - /dashboard: All authenticated BMS users
+ * - /finance/ledger-view: All authenticated BMS users
+ * - /finance/budget-allocation: ADMIN, FINANCE_HEAD only
+ * - /finance/budget-proposal: ADMIN, FINANCE_HEAD only
+ * - /finance/proposal-history: All authenticated BMS users
+ * - /finance/expense-tracking: ADMIN, FINANCE_HEAD only
+ * - /finance/expense-history: All authenticated BMS users
+ * - /finance/budget-variance-report: All authenticated BMS users
+ */
 
 function App() {
-  const { isAuthenticated, loading } = useAuth();
+  const { loading, initialized } = useAuth();
 
-  if (loading) {
-    return <div>Loading...</div>;
+  // Show loading while auth is being checked
+  if (loading || !initialized) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontSize: '16px'
+      }}>
+        Loading...
+      </div>
+    );
   }
 
   return (
     <Routes>
-      {/* --- MODIFICATION START --- */}
-      {/* 3. Restructure routes to use the new wrapper components. */}
+      {/* Default route - redirect to dashboard */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      {/* Default route */}
-      <Route
-        path="/"
-        element={<Navigate to="/dashboard" replace />} // Always try to go to dashboard first
-      />
+      {/* Unauthorized page */}
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Public Routes */}
+      {/* Public Routes - redirect to dashboard if already logged in */}
       <Route
         path="/login"
         element={
@@ -92,71 +84,24 @@ function App() {
         }
       />
 
-      {/* Protected Routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/ledger-view"
-        element={
-          <ProtectedRoute>
-            <LedgerView />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/budget-allocation"
-        element={
-          <ProtectedRoute>
-            <BudgetAllocation />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/budget-proposal"
-        element={
-          <ProtectedRoute>
-            <BudgetProposal />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/proposal-history"
-        element={
-          <ProtectedRoute>
-            <ProposalHistory />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/expense-tracking"
-        element={
-          <ProtectedRoute>
-            <ExpenseTracking />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/expense-history"
-        element={
-          <ProtectedRoute>
-            <ExpenseHistory />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/finance/budget-variance-report"
-        element={
-          <ProtectedRoute>
-            <BudgetVarianceReport />
-          </ProtectedRoute>
-        }
-      />
+      {/* Protected Routes - All BMS users */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/finance/ledger-view" element={<LedgerView />} />
+        <Route path="/finance/proposal-history" element={<ProposalHistory />} />
+        <Route path="/finance/expense-history" element={<ExpenseHistory />} />
+        <Route path="/finance/budget-variance-report" element={<BudgetVarianceReport />} />
+      </Route>
+
+      {/* Protected Routes - ADMIN and FINANCE_HEAD only */}
+      <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'FINANCE_HEAD']} />}>
+        <Route path="/finance/budget-allocation" element={<BudgetAllocation />} />
+        <Route path="/finance/budget-proposal" element={<BudgetProposal />} />
+        <Route path="/finance/expense-tracking" element={<ExpenseTracking />} />
+      </Route>
+
+      {/* Catch-all route for 404 */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

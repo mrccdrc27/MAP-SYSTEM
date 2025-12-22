@@ -1,7 +1,14 @@
 import axios from 'axios';
+import { getAccessToken, setAccessToken, removeAccessToken } from './TokenUtils';
+
+// BMS Backend API URL (for budget operations)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+
+// Auth service URL (for token refresh)
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:8003';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_AUTH_API_URL || 'http://localhost:8001/api/auth',
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -10,7 +17,7 @@ const api = axios.create({
 // Will automatically add the JWT to every request
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('access_token');
+        const token = getAccessToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -21,13 +28,8 @@ api.interceptors.request.use(
     }
 );
 
-// MODIFICATION START: Singleton pattern for token refresh
-
-// This variable will hold the promise of the ongoing refresh token request
-// if it's not null, it means a refresh is in progress
+// Singleton pattern for token refresh
 let refreshTokenPromise = null;
-
-// This array will store subscribers that are waiting for the new token
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
@@ -41,11 +43,9 @@ const processQueue = (error, token = null) => {
     failedQueue = [];
 };
 
-// --- MODIFICATION END ---
-
 // Response interceptor: Handle automatic token refresh
 api.interceptors.response.use(
-    (response) => response, // On success, just return the response
+    (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
@@ -66,62 +66,44 @@ api.interceptors.response.use(
                 });
             }
 
-            originalRequest._retry = true; // Mark as a retry to prevent infinite loops on the original request
+            originalRequest._retry = true;
             
-            const refreshToken = localStorage.getItem('refresh_token');
-
-            if (refreshToken) {
-                // Start the refresh token request and store the promise
-                refreshTokenPromise = new Promise(async (resolve, reject) => {
-                    try {
-                        // Use a direct axios call to the refresh endpoint to avoid interceptor loop
-                        const response = await axios.post(`${api.defaults.baseURL}/token/refresh/`, { refresh: refreshToken });
-                        const newAccessToken = response.data.access;
-                        
-                        // NOTE: Your backend rotates refresh tokens. Ensure the new refresh token is also saved.
-                        // Assuming the refresh endpoint sends back both `access` and `refresh`.
-                        if (response.data.refresh) {
-                            localStorage.setItem('refresh_token', response.data.refresh);
-                        }
-                        localStorage.setItem('access_token', newAccessToken);
-
-                        // Update the header for the current original request
+            // Start the refresh token request
+            refreshTokenPromise = new Promise(async (resolve, reject) => {
+                try {
+                    // Call centralized auth service for token refresh
+                    const response = await axios.post(
+                        `${AUTH_URL}/api/v1/token/refresh/`,
+                        {},
+                        { withCredentials: true }
+                    );
+                    const newAccessToken = response.data.access;
+                    
+                    if (newAccessToken) {
+                        setAccessToken(newAccessToken);
                         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                        
-                        // Resolve the promise with the new token
                         processQueue(null, newAccessToken);
                         resolve(newAccessToken);
-                        
-                    } catch (refreshError) {
-                        // If refresh fails, the refresh token is invalid/expired. Log the user out.
-                        console.error("Token refresh failed:", refreshError);
-                        localStorage.removeItem('access_token');
-                        localStorage.removeItem('refresh_token');
-                        
-                        // Reject all waiting requests and the main promise
-                        processQueue(refreshError, null);
-                        reject(refreshError);
-
-                        // Force a redirect to the login page
-                        window.location.href = '/login';
-                    } finally {
-                        // Reset the promise holder after the refresh attempt is complete
-                        refreshTokenPromise = null;
+                    } else {
+                        throw new Error('No access token in response');
                     }
-                });
+                    
+                } catch (refreshError) {
+                    console.error("Token refresh failed:", refreshError);
+                    removeAccessToken();
+                    
+                    processQueue(refreshError, null);
+                    reject(refreshError);
 
-                // Retry the original request after the refresh promise resolves
-                return refreshTokenPromise.then(() => api(originalRequest));
+                    window.location.href = '/login';
+                } finally {
+                    refreshTokenPromise = null;
+                }
+            });
 
-            } else {
-                 // No refresh token found, redirect to login
-                console.log("No refresh token, redirecting to login.");
-                window.location.href = '/login';
-                return Promise.reject(error);
-            }
+            return refreshTokenPromise.then(() => api(originalRequest));
         }
         
-        // For any other error, just reject the promise
         return Promise.reject(error);
     }
 );

@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom'; 
+import { useLocation, Link, useNavigate } from 'react-router-dom'; 
 import { useForm } from "react-hook-form"; 
 import './loginPage.css';
 import backgroundImage from '../../assets/LOGO.jpg';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-import { login as apiLogin } from '../../API/authAPI';
 import { useAuth } from '../../context/AuthContext';
 
 function LoginPage() {
-  const { login } = useAuth(); // Getlogin function from context
-  const location = useLocation(); // To get messages from other pages (like password reset)
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [apiError, setApiError] = useState(null);
   const [isSubmitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -29,9 +29,16 @@ function LoginPage() {
     setApiError(null);
 
     try {
-      // Call the login function from the context
-      await login(data.email, data.password);
-      // Navigation now handled inside the login function in AuthContext
+      // Call the login function from the context (new format: { email, password })
+      const result = await login({ email: data.email, password: data.password });
+      
+      if (result.success) {
+        // Navigate to dashboard on success
+        navigate('/dashboard', { replace: true });
+      } else {
+        // Show error message
+        setApiError(result.error || 'Login failed. Please check your credentials.');
+      }
     } catch (error) {
       const errorMessage = error.response?.data?.detail || 'Login failed. Please check your credentials.';
       setApiError(errorMessage);
