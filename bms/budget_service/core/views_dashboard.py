@@ -23,6 +23,7 @@ from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from .serializers_dashboard import ForecastSerializer
 from django.views.decorators.cache import cache_page
+from .views_utils import get_user_bms_role
 
 
 class DepartmentBudgetView(views.APIView):
@@ -164,8 +165,7 @@ def get_period_divisor(period):
 def get_dashboard_budget_summary(request):
     # MODIFICATION START
     user = request.user
-    user_roles = getattr(user, 'roles', {})
-    bms_role = user_roles.get('bms')
+    bms_role = get_user_bms_role(user)
 
     today = timezone.now().date()
     fiscal_year = FiscalYear.objects.filter(
@@ -649,8 +649,7 @@ def get_project_status_list(request):
         is_active=True
     ).select_related('project')
 
-    user_roles = getattr(user, 'roles', {})
-    bms_role = user_roles.get('bms')
+    bms_role = get_user_bms_role(user)
 
     # FIX: Finance Head gets global view. General User gets restricted view.
     if bms_role == 'GENERAL_USER':
@@ -713,8 +712,7 @@ def get_project_status_list(request):
 @permission_classes([IsBMSUser])
 def get_department_budget_status(request):
     user = request.user
-    user_roles = getattr(user, 'roles', {})
-    bms_role = user_roles.get('bms')
+    bms_role = get_user_bms_role(user)
     today = timezone.now().date()
 
     fiscal_year = FiscalYear.objects.filter(
@@ -875,8 +873,7 @@ def overall_monthly_budget_actual(request):
 
     # --- MODIFICATION START ---
     # Apply data isolation to budget and expense queries
-    user_roles = getattr(user, 'roles', {})
-    bms_role = user_roles.get('bms')
+    bms_role = get_user_bms_role(user)
 
     budget_query = BudgetAllocation.objects.filter(
         fiscal_year=fiscal_year, is_active=True)
@@ -1015,8 +1012,7 @@ class ProjectDetailView(generics.RetrieveAPIView):
         Implements data isolation for viewing project details.
         """
         user = self.request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         # FIX: Finance Head joins Admin in global view
         if bms_role in ['ADMIN', 'FINANCE_HEAD']:
@@ -1115,8 +1111,7 @@ def get_budget_forecast(request):
     # Note: This assumes forecasts are organization-wide. If
     # department-specific forecasts are needed, add a department field
     # to the Forecast model and filter accordingly
-    user_roles = getattr(user, 'roles', {})
-    bms_role = user_roles.get('bms')
+    bms_role = get_user_bms_role(user)
 
     # For now, all users see the same forecast
     # If you need department-specific forecasts later, uncomment and modify:

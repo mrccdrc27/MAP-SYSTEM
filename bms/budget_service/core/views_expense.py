@@ -18,7 +18,8 @@ from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
 from core.service_authentication import APIKeyAuthentication
-from django.db import transaction 
+from django.db import transaction
+from .views_utils import get_user_bms_role
 
 def get_date_range_from_filter(filter_value):
     today = timezone.now().date()
@@ -61,8 +62,7 @@ class ExpenseHistoryView(generics.ListAPIView):
             'category__parent_category'  # Optimize for serializer
         )
 
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         if bms_role in ['ADMIN', 'FINANCE_HEAD']:  # Allow Finance Head to see history
             queryset = base_queryset
@@ -205,8 +205,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         base_queryset = Expense.objects.all()
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         # DATA ISOLATION
         if bms_role in ['ADMIN', 'FINANCE_HEAD']:
@@ -340,8 +339,7 @@ class ExpenseTrackingSummaryView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         today = timezone.now().date()
         active_fiscal_year = FiscalYear.objects.filter(
@@ -495,8 +493,7 @@ class ExpenseDetailViewForModal(generics.RetrieveAPIView):
         Other users can only see expenses within their own department.
         """
         user = self.request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         base_queryset = Expense.objects.select_related(
             'project__budget_proposal')
@@ -538,8 +535,7 @@ class ExpenseHistoryDetailView(generics.RetrieveAPIView):
         user = self.request.user
         # History is only for approved expenses
         base_queryset = Expense.objects.filter(status='APPROVED')
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         if bms_role == 'ADMIN':
             return base_queryset.all()

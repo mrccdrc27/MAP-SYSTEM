@@ -25,6 +25,7 @@ from django.db.utils import OperationalError
 from core.permissions import IsBMSUser
 from .serializers import DepartmentSerializer, ValidProjectAccountSerializer
 from .models import BudgetAllocation, Department, JournalEntryLine, UserActivityLog
+from .views_utils import get_user_bms_role
 
 User = get_user_model()
 
@@ -76,8 +77,7 @@ class ValidProjectAccountView(APIView):
 
         # --- MODIFICATION START: Data Isolation ---
         user = request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         if bms_role == 'GENERAL_USER':
             department_id = getattr(user, 'department_id', None)

@@ -4,6 +4,7 @@ from rest_framework import serializers
 from django.db.models import Sum
 from django.utils import timezone
 from django.db import transaction
+from .views_utils import get_user_bms_role
 
 
 class ExpenseMessageSerializer(serializers.ModelSerializer):
@@ -191,9 +192,9 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
             # --- MODIFICATION START: Strict Department Check ---
             request = self.context.get('request')
             if request and hasattr(request.user, 'roles'):
-                user_roles = request.user.roles or {}
+                bms_role = get_user_bms_role(request.user)
                 # If user is GENERAL_USER (Operator), ensure they match the project department
-                if user_roles.get('bms') == 'GENERAL_USER':
+                if bms_role == 'GENERAL_USER':
                     user_dept_id = getattr(request.user, 'department_id', None)
                     if user_dept_id and user_dept_id != project.department_id:
                         raise serializers.ValidationError(

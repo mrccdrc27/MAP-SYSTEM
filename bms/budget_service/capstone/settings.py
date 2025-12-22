@@ -184,16 +184,20 @@ INTERNAL_IPS = [
 
 # JWT Settings
 
+# JWT Signing Key - MUST match the centralized auth service's signing key
+# This allows BMS to verify tokens issued by the centralized auth service
+JWT_SIGNING_KEY = os.getenv('DJANGO_JWT_SIGNING_KEY', SECRET_KEY)
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(hours=4),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),  # Match auth service
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Match auth service
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
 
-    'ALGORITHM': 'HS256',  # Changed from RS256 to HS256 (symmetric)
-    'VERIFYING_KEY': None, # For HS256
-    'SIGNING_KEY': SECRET_KEY, 
+    'ALGORITHM': 'HS256',
+    'VERIFYING_KEY': None,
+    'SIGNING_KEY': JWT_SIGNING_KEY,  # Use shared signing key
     'AUDIENCE': None,
     'ISSUER': None,
 
@@ -201,7 +205,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
-    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser', # Default, creates SimpleLazyObject
 }
 
 
@@ -222,8 +225,8 @@ MIDDLEWARE = [
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [ 
-        'core.authentication.MicroserviceJWTAuthentication',  # For end-user JWTs
-        'core.service_authentication.APIKeyAuthentication', # For service-to-service API keys
+        'core.authentication.JWTCookieAuthentication',  # Primary: JWT via cookies or Bearer header (centralized auth)
+        'core.service_authentication.APIKeyAuthentication',  # For service-to-service API keys
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -300,7 +303,18 @@ WSGI_APPLICATION = 'capstone.wsgi.application'
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-if DATABASE_URL:
+# Allow SQLite for local development when no database config is provided
+USE_SQLITE = os.getenv('USE_SQLITE', 'False').lower() == 'true'
+
+if USE_SQLITE or (DEBUG and not DATABASE_URL and not os.getenv('DB_NAME')):
+    # SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+elif DATABASE_URL:
     # Use Railway's DATABASE_URL (recommended)
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)

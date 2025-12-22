@@ -32,6 +32,7 @@ from .models import (
 from .permissions import CanSubmitForApproval, IsTrustedService, IsBMSFinanceHead, IsBMSUser, IsBMSAdmin
 from .pagination import FiveResultsSetPagination, SixResultsSetPagination, StandardResultsSetPagination
 from .serializers import FiscalYearSerializer
+from .views_utils import get_user_bms_role
 from .serializers_budget import (
     AccountDropdownSerializer,
     AccountSetupSerializer,
@@ -100,8 +101,7 @@ class BudgetProposalSummaryView(generics.GenericAPIView):
     )
     def get(self, request):
         user = request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         active_proposals = BudgetProposal.objects.filter(is_deleted=False)
 
@@ -301,8 +301,7 @@ class LedgerViewList(generics.ListAPIView):
 
         # --- DATA ISOLATION LOGIC ---
         user = self.request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         if bms_role == 'GENERAL_USER':
             department_id = getattr(user, 'department_id', None)
@@ -427,8 +426,7 @@ class JournalEntryListView(generics.ListAPIView):
 
         # --- MODIFICATION START: Data Isolation ---
         user = self.request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         if bms_role == 'GENERAL_USER':
             department_id = getattr(user, 'department_id', None)
@@ -584,8 +582,7 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
             'department', 'fiscal_year'
         ).prefetch_related('items__account__account_type', 'comments', 'items__category')
 
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         # 1. Determine Visibility (Data Isolation)
         if bms_role in ['ADMIN', 'FINANCE_HEAD']:
@@ -644,8 +641,8 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
             ) or request.user.username
 
         # If user is a Dept Head, force the department to be their own
-        user_roles = getattr(request.user, 'roles', {})
-        if user_roles.get('bms') == 'GENERAL_USER':
+        bms_role = get_user_bms_role(request.user)
+        if bms_role == 'GENERAL_USER':
             department_id = getattr(request.user, 'department_id', None)
             if department_id:
                 data['department_input'] = str(department_id)
@@ -831,8 +828,7 @@ class ExternalBudgetProposalViewSet(viewsets.ModelViewSet):
             'department', 'fiscal_year'
         ).prefetch_related('items__account__account_type', 'comments', 'items__category')
 
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         # 1. Determine Visibility (Data Isolation)
         if bms_role in ['ADMIN', 'FINANCE_HEAD']:
@@ -891,8 +887,8 @@ class ExternalBudgetProposalViewSet(viewsets.ModelViewSet):
             ) or request.user.username
 
         # If user is a Dept Head, force the department to be their own
-        user_roles = getattr(request.user, 'roles', {})
-        if user_roles.get('bms') == 'GENERAL_USER':
+        bms_role = get_user_bms_role(request.user)
+        if bms_role == 'GENERAL_USER':
             department_id = getattr(request.user, 'department_id', None)
             if department_id:
                 data['department_input'] = str(department_id)
@@ -1276,8 +1272,7 @@ class BudgetVarianceReportView(APIView):
 
         # --- DATA ISOLATION LOGIC ---
         user = request.user
-        user_roles = getattr(user, 'roles', {})
-        bms_role = user_roles.get('bms')
+        bms_role = get_user_bms_role(user)
 
         filter_dept_id = None
         if bms_role == 'GENERAL_USER':
