@@ -3,7 +3,7 @@
 # Script to delete all migrations in workflow_api (except __init__.py)
 # Keeps __init__.py files intact
 
-SERVICE_PATH="c:/work/Capstone 2/Ticket-Tracking-System/tts/workflow_api"
+SERVICE_PATH="c:/work/Capstone 2/Ticket-Tracking-System/workflow_api"
 
 echo -e "\033[36mStarting migration deletion for workflow_api...\033[0m"
 

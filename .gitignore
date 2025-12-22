@@ -245,3 +245,4 @@ auth/auth/__pycache__/settings.cpython-313.pyc
 *.sqlite3
 *media
 
+*vite

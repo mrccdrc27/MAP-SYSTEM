@@ -74,7 +74,7 @@ services:
   # Helpdesk service - 10 seconds sleep
   helpdesk-service:
     build:
-      context: ../helpdesk
+      context: ../../hdts/helpdesk
       dockerfile: Dockerfile
     environment:
       DJANGO_ENV: "development"
@@ -148,7 +148,7 @@ services:
   # Auth service - 10 seconds sleep
   auth-service:
     build:
-      context: ../auth
+      context: ../../auth
       dockerfile: Dockerfile
     environment:
       DJANGO_ENV: "development"

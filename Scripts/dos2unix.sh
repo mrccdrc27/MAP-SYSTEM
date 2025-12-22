@@ -13,10 +13,8 @@ convert_to_unix() {
 # Convert start.sh in all service directories
 echo "Converting script files to Unix-style line endings..."
 convert_to_unix "tts/frontend" "start.sh"
-convert_to_unix "user_service" "start.sh"
 convert_to_unix "tts/ticket_service" "start.sh"
 convert_to_unix "tts/workflow_api" "start.sh"
-convert_to_unix "Docker/db-init" "start.sh"
 convert_to_unix "hdts/helpdesk" "entrypoint.sh"
 convert_to_unix "hdts/helpdesk" "start.sh"
 
@@ -30,6 +28,6 @@ convert_to_unix "tts/messaging" "entrypoint.sh"
 convert_to_unix "tts/notification_service" "entrypoint.sh"
 
 # Convert init-multiple-dbs.sh in Docker/db-init directory
-convert_to_unix "Docker/db-init" "init-multiple-dbs.sh"
+convert_to_unix "tts/Docker/db-init" "init-multiple-dbs.sh"
 
 echo "Conversion complete."

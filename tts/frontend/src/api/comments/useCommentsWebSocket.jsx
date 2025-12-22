@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Define the API endpoint as an environment variable to avoid hardcoding
-const MESSAGING_API = import.meta.env.VITE_MESSAGING_API;
+const MESSAGING_API = import.meta.env.VITE_MESSAGING_API || 'http://localhost:8005';
 
 export const useCommentsWebSocket = (ticketId, onCommentsUpdate) => {
   const [comments, setComments] = useState([]);

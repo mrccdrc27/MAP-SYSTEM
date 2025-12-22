@@ -13,7 +13,7 @@ fi
 
 # Step 2: Navigate to Docker directory
 echo "Navigating to Docker directory..."
-cd Docker
+cd tts/Docker
 
 # Step 3: Build Docker images
 echo "Building Docker images..."
