@@ -1,0 +1,95 @@
+.schedule-registration-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: auto;
+  padding: 80px 38px 38px 38px;
+  background-color: var(--bg-color);
+}
+
+.schedule-registration-page section {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  gap: 20px;
+}
+
+.schedule-registration-page .schedule-registration-form {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  width: 60vw;
+  align-self: center;
+  padding: 24px;
+  margin-top: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.3);
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+}
+
+.schedule-registration-page form {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.schedule-registration-page form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.schedule-registration-page fieldset label {
+  color: var(--secondary-text-color);
+  font-weight: 600;
+}
+
+.schedule-registration-page input,
+.schedule-registration-page select,
+.schedule-registration-page textarea {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+}
+
+.schedule-registration-page textarea {
+  height: 13vh;
+}
+
+.schedule-registration-page .schedule-registration-form fieldset p {
+  padding: 13px 16px;
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  font-size: 0.875rem;
+  color: var(--secondary-text-color);
+}
+
+.schedule-registration-page .save-btn {
+  justify-content: center;
+  align-items: center;
+  height: 48px;
+  padding: 12px 16px;
+  border-radius: 25px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  transition: 0.5s ease;
+  cursor: pointer;
+}
+
+.schedule-registration-page button:disabled {
+  cursor: not-allowed;
+  background-color: #d3d3d3;
+}
+
+.schedule-registration-page .save-btn:hover:not(button:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+.schedule-registration-page form span,
+.schedule-registration-page .error-message {
+  color: red;
+  font-size: 0.875rem;
+}

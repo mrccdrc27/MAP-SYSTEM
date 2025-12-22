@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "name": "ThinkPad X1 Carbon",
+    "category": "Laptops",
+    "manufacturer": "Lenovo",
+    "supplier": "WSI",
+    "location": "Makati"
+  },
+  {
+    "id": 2,
+    "name": "iPhone 13 Pro",
+    "category": "Mobile Phones",
+    "manufacturer": "Apple",
+    "supplier": "Amazon",
+    "location": "Pasig"
+  },
+  {
+    "id": 3,
+    "name": "Galaxy Tab S7",
+    "category": "Tablets",
+    "manufacturer": "Samsung",
+    "supplier": "Iontech Inc.",
+    "location": "Quezon City"
+  },
+  {
+    "id": 4,
+    "name": "Surface Pro 8",
+    "category": "Desktops",
+    "manufacturer": "Microsoft",
+    "supplier": "Noventiq",
+    "location": "Remote"
+  },
+  {
+    "id": 5,
+    "name": "HP EliteDisplay",
+    "category": "Monitors",
+    "manufacturer": "HP",
+    "supplier": "WSI",
+    "location": "Marikina"
+  }
+]

@@ -1,0 +1,434 @@
+/* Global styles for the application */
+a,
+a:hover,
+a:focus,
+a:active,
+.user-management-page *,
+.user-management-page *:hover,
+.user-management-page *:focus,
+.user-management-page *:active {
+  text-decoration: none !important;
+}
+
+.user-card,
+.user-card:hover,
+.user-card:focus,
+.user-card:active,
+.user-card *,
+.user-card *:hover,
+.user-card *:focus,
+.user-card *:active {
+  text-decoration: none !important;
+}
+
+.user-details,
+.user-details *,
+.user-details *:hover,
+.user-details *:focus,
+.user-details *:active {
+  text-decoration: none !important;
+}
+
+.user-details h3,
+.user-details h3:hover,
+.user-details h3:focus,
+.user-details h3:active {
+  text-decoration: none !important;
+}
+
+/* Ensure the app root fills the viewport so sticky footer patterns work */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.disabled-dropdown {
+  display: flex;
+
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #d3d3d3;
+  background-color: rgb(211, 211, 211, 0.5);
+
+  font-size: 0.875rem;
+  color: #808080;
+
+  cursor: default;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.875rem;
+}
+
+.save-btn {
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  height: 48px;
+  padding: 12px 16px;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  transition: 0.5s ease;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  background-color: #d3d3d3;
+}
+
+.save-btn:hover:not(button:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+.primary-button {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  background-color: #d3d3d3;
+}
+
+.primary-button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.primary-button:disabled:hover {
+  background-color: #d3d3d3;
+}
+
+.page-layout {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  padding: var(--page-padding);
+  overflow: auto;
+}
+
+.title-page-section {
+  margin-bottom: 20px;
+}
+
+.title-page-section h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.card {
+  width: 100%;
+  height: auto;
+  background-color: white;
+  padding: var(--card-padding);
+  border-radius: 20px;
+  border: 1px solid #d3d3d3;
+}
+
+.input-field {
+  background-color: var(--bg-color);
+  border: 1px solid #E0E0E0;
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 25px;
+  color: var(--text-color);
+}
+
+.input-field:focus {
+  border: 1px solid var(--primary-color);
+}
+
+.table-layout {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #cccccc;
+  width: 100%;
+
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 30px;
+    border-radius: 8px 8px 0 0;
+
+    h2 {
+      font-size: 1.25rem;
+      color: var(--text-color);
+    }
+  }
+
+  .table-actions {
+    display: flex;
+    gap: 10px;
+
+    input[type="search"] {
+      display: flex;
+      align-items: center;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 10px 12px;
+      border: none;
+      border: 1px solid #cccccc;
+    }
+  }
+}
+
+.export-button-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 200px;
+  box-shadow: 0 0 20px 0 rgb(218, 215, 215);
+  border-radius: 6px;
+  position: absolute;
+  z-index: 2;
+  right: 50px;
+
+
+  button {
+    display: flex;
+    justify-content: center;
+    width: 200px;
+    padding: 12px 16px;
+    background-color: #fff;
+    border-top: 1px solid #d3d3d3;
+
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: var(--primary-color-hover);
+    color: var(--bg-color);
+  }
+
+  button:first-child {
+    border-radius: 6px 6px 0 0;
+  }
+
+  button:last-child {
+    border-radius: 0 0 6px 6px;
+  }
+}
+
+/* Style for div element inside the td tag */
+.icon-td {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+
+.page-layout-with-table {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 60px 1fr auto;
+  grid-template-areas:
+    "main-nav-bar"
+    "main-with-table"
+    "footer";
+  min-height: 100vh;
+  justify-content: center;
+  background-color: var(--bg-color);
+
+  .main-nav-bar {
+    grid-area: main-nav-bar;
+  }
+
+  .main-with-table {
+    grid-area: main-with-table;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 65px 20px 40px 20px;
+    overflow: auto;
+  }
+
+  footer {
+    grid-area: footer;
+    display: flex;
+  }
+}
+
+footer {
+  margin-top: auto;
+}
+
+.page-with-tab-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  overflow-x: hidden;
+
+  .main-page-with-tab {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 80px 38px 38px 38px;
+    gap: 20px;
+
+    .page-with-tab-table-section {
+      height: 100%;
+
+      .page-with-tab-table {
+        height: 100%;
+        max-height: 46vh;
+        height: 100%;
+        overflow-y: auto;
+        background-color: white;
+
+        /* Prevent affecting the parent when scrolling. */
+        overscroll-behavior: contain;
+      }
+
+      table {
+        width: 100%;
+        height: 100%;
+        border-collapse: collapse;
+
+        th {
+          padding: 0.75rem !important;
+          text-align: left !important;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-color);
+          border-top: 1px solid #cccccc;
+          border-bottom: 1px solid #cccccc;
+          background-color: #f0f1f2;
+
+          height: 50px;
+
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
+
+        td {
+          text-align: left !important;
+          padding: 0.75rem;
+          font-size: 0.8125rem;
+          color: var(--text-color);
+          border-bottom: 1px solid #cccccc;
+
+          height: 50px;
+        }
+
+        /* Ensure empty-state row spans correctly across all columns */
+        td.no-data-message {
+          display: table-cell !important;
+          width: 100% !important;
+          white-space: normal !important;
+          padding: 0.75rem !important;
+          text-align: center !important;
+          font-style: italic;
+          color: var(--secondary-text-color);
+          background: transparent;
+        }
+
+        tr:hover {
+          background-color: #fcfcfc;
+        }
+
+        .action-button-section {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          color: var(--text-color);
+          gap: 10px;
+        }
+
+        .action-button {
+          border: none;
+          border: 1px solid #cccccc;
+          background-color: #f9f9f9;
+          padding: 5px 10px;
+          border-radius: 4px;
+          color: #555555;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: background-color 0.2s ease, color 0.2s ease,
+            border-color 0.2s ease;
+        }
+
+        .action-button:disabled {
+          cursor: not-allowed;
+          position: relative;
+        }
+
+        .action-button:disabled::after {
+          content: "";
+          width: 100%;
+          height: 100%;
+
+          background-color: #d3d3d367;
+          border-radius: 4px;
+          border: 1px solid #d3d3d356;
+
+          position: absolute;
+          top: -1px;
+          left: -1px;
+        }
+
+        .action-button:hover:not(.action-button:hover:disabled) {
+          background-color: #f0f0f0;
+          color: #333333;
+          border-color: #999999;
+        }
+      }
+    }
+
+    .table-pagination {
+      padding: 0 20px;
+    }
+  }
+}
+
+.page-layout-registration {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 60px 1fr auto;
+  grid-template-areas:
+    "main-nav-bar"
+    "main-with-table"
+    "footer";
+  min-height: 100vh;
+  justify-content: center;
+  background-color: var(--bg-color);
+
+  .main-nav-bar {
+    grid-area: main-nav-bar;
+  }
+
+  .registration {
+    grid-area: main-with-table;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    width: auto;
+    padding: 20px 38px 20px 38px;
+    background-color: var(--bg-color);
+    overflow: auto;
+  }
+
+  footer {
+    grid-area: footer;
+    display: flex;
+  }
+}

@@ -1,0 +1,184 @@
+.activity-log-container {
+  background: white;
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.activity-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+}
+
+.activity-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.activity-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6B7280;
+  border-bottom: 1px solid #E5E7EB;
+  white-space: nowrap;
+}
+
+.activity-table td {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  border-bottom: 1px solid #E5E7EB;
+  white-space: nowrap;
+}
+
+/* Column widths */
+.activity-table th:nth-child(1), /* DATE */
+.activity-table td:nth-child(1) {
+  width: 14%;
+}
+
+.activity-table th:nth-child(2), /* USER */
+.activity-table td:nth-child(2) {
+  width: 12%;
+}
+
+.activity-table th:nth-child(3), /* TYPE */
+.activity-table td:nth-child(3) {
+  width: 12%;
+}
+
+.activity-table th:nth-child(4), /* EVENT */
+.activity-table td:nth-child(4) {
+  width: 10%;
+}
+
+.activity-table th:nth-child(5), /* ITEM */
+.activity-table td:nth-child(5) {
+  width: 19%;
+}
+
+.activity-table th:nth-child(6), /* TO/FROM */
+.activity-table td:nth-child(6) {
+  width: 15%;
+}
+
+.activity-table th:nth-child(7), /* NOTES */
+.activity-table td:nth-child(7) {
+  width: 18%;
+}
+
+.type-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.activity-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Icon colors */
+.type-cell .activity-icon {
+  color: #6B7280;
+}
+
+.type-cell:has(span:contains('Asset')) .activity-icon {
+  color: #0D6EFD;
+}
+
+.type-cell:has(span:contains('Accessory')) .activity-icon {
+  color: #82ca9d;
+}
+
+.type-cell:has(span:contains('Consumable')) .activity-icon {
+  color: #FFB800;
+}
+
+.event-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.event-status.checkout {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.event-status.checkin {
+  background-color: #D1FAE5;
+  color: #059669;
+}
+
+.event-status.update {
+  background-color: #DBEAFE;
+  color: #0D6EFD;
+}
+
+.item-cell {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-cell .user-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #0D6EFD !important;
+}
+
+.user-link {
+  color: #0D6EFD;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.user-link:hover {
+  text-decoration: underline;
+}
+
+.browse-all-button {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #0D6EFD;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.browse-all-button:hover {
+  background-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .activity-log-container {
+    padding: 1rem;
+  }
+  
+  .activity-table th,
+  .activity-table td {
+    padding: 0.75rem;
+  }
+} 

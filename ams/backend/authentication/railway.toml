@@ -1,0 +1,7 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+startCommand = "gunicorn authentication.wsgi:application --bind 0.0.0.0:8000"

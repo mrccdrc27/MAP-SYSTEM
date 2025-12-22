@@ -1,0 +1,117 @@
+.eolwarranty-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.eolwarranty-content {
+  flex-grow: 1;
+  padding: 2rem 4rem;
+  margin-top: 60px;
+}
+
+.eolwarranty-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.eolwarranty-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.export-button {
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-button:hover {
+  background-color: #F3F4F6;
+}
+
+.eolwarranty-table-section {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.table-header h2 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.search-box input {
+  padding: 0.5rem 1rem;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  width: 240px;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.eolwarranty-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.eolwarranty-table th {
+  background-color: #F9FAFB;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B7280;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.eolwarranty-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #E5E7EB;
+  background-color: white;
+}
+
+.eolwarranty-table tbody tr:hover {
+  background-color: #F9FAFB;
+}
+
+.asset-info {
+  display: flex;
+  align-items: center;
+}
+
+.asset-id {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.asset-name {
+  color: #374151;
+} 

@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "name": "Adobe",
+    "url": "https://adobe.com",
+    "support_url": "https://helpx.adobe.com",
+    "phone_number": "1-800-585-0774",
+    "email": "support@adobe.com",
+    "logo": "https://logo.clearbit.com/adobe.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 2,
+    "name": "Apple",
+    "url": "https://apple.com",
+    "support_url": "https://support.apple.com",
+    "phone_number": "1-800-275-2273",
+    "email": "support@apple.com",
+    "logo": "https://logo.clearbit.com/apple.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 3,
+    "name": "Canon",
+    "url": "https://canon.com",
+    "support_url": "https://canon.com/support",
+    "phone_number": "1-800-385-2155",
+    "email": "support@canon.com",
+    "logo": "https://logo.clearbit.com/canon.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 4,
+    "name": "Dell",
+    "url": "https://dell.com",
+    "support_url": "https://dell.com/support",
+    "phone_number": "1-877-289-3355",
+    "email": "support@dell.com",
+    "logo": "https://logo.clearbit.com/dell.com",
+    "notes": "Remember to always purchase XPS or higher.",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 5,
+    "name": "HP",
+    "url": "https://hp.com",
+    "support_url": "https://support.hp.com",
+    "phone_number": "1-888-999-4747",
+    "email": "support@hp.com",
+    "logo": "https://logo.clearbit.com/hp.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 6,
+    "name": "Lenovo",
+    "url": "https://lenovo.com",
+    "support_url": "https://support.lenovo.com",
+    "phone_number": "1-855-253-6686",
+    "email": "support@lenovo.com",
+    "logo": "https://logo.clearbit.com/lenovo.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 7,
+    "name": "Lexmark",
+    "url": "https://lexmark.com",
+    "support_url": "https://support.lexmark.com",
+    "phone_number": "1-800-539-6275",
+    "email": "support@lexmark.com",
+    "logo": "https://logo.clearbit.com/lexmark.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 8,
+    "name": "Logitech",
+    "url": "https://logitech.com",
+    "support_url": "https://support.logitech.com",
+    "phone_number": "1-800-351-1123",
+    "email": "support@logitech.com",
+    "logo": "https://logo.clearbit.com/logitech.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 9,
+    "name": "Microsoft",
+    "url": "https://microsoft.com",
+    "support_url": "https://support.microsoft.com",
+    "phone_number": "1-877-696-7786",
+    "email": "support@microsoft.com",
+    "logo": "https://logo.clearbit.com/microsoft.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  },
+  {
+    "id": 10,
+    "name": "Samsung",
+    "url": "https://samsung.com",
+    "support_url": "https://support.samsung.com",
+    "phone_number": "1-800-321-7751",
+    "email": "support@samsung.com",
+    "logo": "https://logo.clearbit.com/samsung.com",
+    "notes": "",
+    "created_at": "2025-10-21"
+  }
+]

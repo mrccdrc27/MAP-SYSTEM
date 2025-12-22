@@ -1,0 +1,326 @@
+/* Variables */
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #e5ecfa;
+  --bg-color: #f8f9fa;
+  --text-color: #333;
+  --secondary-text-color: #555;
+  --border-color: #dee2e6;
+  --table-header-bg: #f8f9fa;
+  --table-border: #e9ecef;
+  --hover-color: #f8f9fa;
+  --consumable-color: #20c997;
+  --accessory-color: #0d6efd;
+}
+
+/* Page specific styles */
+.categories-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  padding: 100px 38px 38px 38px;
+  background-color: #f8f9fa;
+}
+
+.content-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px 34px;
+  border-bottom: 1px solid #d3d3d3;
+  border-collapse: collapse;
+}
+
+.page-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.search-container {
+  flex-grow: 1;
+  max-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  font-size: 14px;
+  background-color: white;
+  outline: none;
+  box-sizing: border-box;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.export-btn, .add-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-btn {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.export-btn:hover {
+  background-color: var(--hover-color);
+}
+
+.add-btn {
+  background-color: var(--primary-color);
+  border: none;
+  color: white;
+}
+
+.add-btn:hover {
+  background-color: #0b5ed7;
+}
+
+/* Table styles */
+.categories-table {
+  background-color: white;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+  width: 100%;
+}
+
+.categories-table table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-radius: 0;
+}
+
+.categories-table th,
+.categories-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #d3d3d3;
+  border-radius: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.categories-table th {
+  background-color: rgba(211, 211, 211, 0.2);
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--secondary-text-color);
+}
+
+.categories-table td {
+  font-size: 0.88rem;
+  color: var(--secondary-text-color);
+  vertical-align: middle;
+}
+
+.categories-table tr:hover {
+  background-color: var(--hover-color);
+}
+
+.categories-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table column widths */
+.checkbox-col {
+  width: 40px;
+}
+
+.name-col {
+  width: 30%;
+}
+
+.type-col {
+  width: 20%;
+}
+
+.quantity-col {
+  width: 20%;
+}
+
+.edit-col, .delete-col {
+  width: 60px !important;
+  text-align: center;
+  padding: 4px 12px;
+}
+
+/* Category name cell styling */
+.category-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.category-icon img {
+  max-width: 22px;
+  max-height: 22px;
+}
+
+/* Quantity styling */
+.quantity-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accessory-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: var(--accessory-color);
+  border-radius: 2px;
+}
+
+.consumable-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: var(--consumable-color);
+  border-radius: 2px;
+}
+
+.license-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: #6f42c1;
+  border-radius: 2px;
+}
+
+/* Pagination controls */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 34px;
+  background-color: white;
+  border-top: 1px solid var(--table-border);
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+.items-per-page select {
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: white;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prev-btn, .next-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.prev-btn:disabled, .next-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Input checkbox styling */
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+/* Action buttons styling */
+.categories-table .edit-button,
+.categories-table .delete-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  padding: 4px;
+  width: 26px;
+  height: 26px;
+}
+
+/* Ensure buttons are properly centered in their cells */
+.categories-table td:nth-child(5) button,
+.categories-table td:nth-child(6) button {
+  display: block;
+  margin: 0 auto;
+  padding: 4px;
+  width: 26px;
+  height: 26px;
+}
+
+/* Add specific spacing for the action columns */
+.categories-table th:nth-child(5),
+.categories-table th:nth-child(6),
+.categories-table td:nth-child(5),
+.categories-table td:nth-child(6) {
+  padding-left: 8px;
+  padding-right: 8px;
+  min-width: 40px;
+}

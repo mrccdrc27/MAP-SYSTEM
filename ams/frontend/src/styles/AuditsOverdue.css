@@ -1,0 +1,94 @@
+.overdue-audit-title-page-section {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.overdue-audit-title-page-section h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.overdue-audit-title-page-section > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.overdue-audit-table-section {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* keeps columns proportional */
+
+    th {
+      padding: 0.75rem !important;
+      text-align: left !important;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-color);
+      border-top: 1px solid #cccccc;
+      border-bottom: 1px solid #cccccc;
+      background-color: #f0f1f2;
+      height: 50px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td {
+      text-align: left !important;
+      padding: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-color);
+      border-bottom: 1px solid #cccccc;
+      height: 50px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    td.no-data-message {
+      display: table-cell !important;
+      width: 100% !important;
+      white-space: normal !important;
+      padding: 0.75rem !important;
+      text-align: center !important;
+      font-style: italic;
+      color: var(--secondary-text-color);
+      background: transparent;
+    }
+
+    tr:hover {
+      background-color: #fcfcfc;
+    }
+
+    /* 👇 Width setup for 6 columns */
+
+    /* First 4 columns share equal width (remaining space after last 2 fixed) */
+    th:nth-child(-n+4),
+    td:nth-child(-n+4) {
+      width: calc((100% - 270px) / 4); /* 120px + 150px = 270px for last 2 */
+    }
+
+    /* 5th column */
+    th:nth-child(5),
+    td:nth-child(5) {
+      width: 120px;
+      text-align: center;
+    }
+
+    /* 6th column (Actions) */
+    th:nth-child(6),
+    td:nth-child(6) {
+      width: 150px;
+      text-align: center;
+    }
+  }
+}

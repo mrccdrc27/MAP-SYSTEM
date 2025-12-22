@@ -1,0 +1,20 @@
+.sort-modal {
+  display: flex;
+  flex-direction: column;
+  width: 30%;
+  position: absolute;
+  top: 0;
+  right: 15%;
+  background-color: white;
+  padding: 20px;
+  border-radius: 30px;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.15);
+  border: 1px solid #d3d3d3;
+  gap: 10px;
+}
+
+.sort-modal p {
+  font-size: 0.875rem;
+  color: #808080;
+  font-weight: 600;
+}

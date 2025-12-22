@@ -1,0 +1,41 @@
+asgiref==3.8.1
+certifi==2025.4.26
+cffi==1.17.1
+charset-normalizer==3.4.2
+cryptography==45.0.2
+defusedxml==0.7.1
+dj-database-url==2.1.0
+Django==5.1.7
+django-cors-headers==4.7.0
+django-rest-passwordreset==1.5.0
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+djoser==2.3.1
+gunicorn==21.2.0
+idna==3.10
+oauthlib==3.2.2
+packaging==25.0
+pillow
+psycopg2-binary==2.9.10
+pycparser==2.22
+PyJWT==2.9.0
+python-dotenv==1.1.0
+
+# Use python-magic only on non-Windows
+python-magic==0.4.27 ; platform_system != "Windows"
+
+# Use python-magic-bin only on Windows
+python-magic-bin==0.4.14 ; platform_system == "Windows"
+
+python3-openid==3.2.0
+pytz==2025.2
+requests-oauthlib==2.0.0
+social-auth-app-django==5.4.3
+social-auth-core==4.6.1
+sqlparse==0.5.3
+typing_extensions==4.15.0
+tzdata==2025.2
+urllib3==2.4.0
+whitenoise==6.9.0
+openpyxl==3.1.2
+requests==2.32.5

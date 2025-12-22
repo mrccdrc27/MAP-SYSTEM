@@ -1,0 +1,288 @@
+* {
+  outline: none;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  padding: 100px 38px 38px 38px;
+}
+
+.page .container {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: auto;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+  padding-bottom: 28px;
+  overflow: hidden;
+}
+
+.page section {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.page .top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px 34px;
+  border-bottom: 1px solid #d3d3d3;
+}
+
+.page .top div {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+  align-items: center;
+  width: 40vw;
+  gap: 1vw;
+}
+
+.page .top input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+}
+
+.page .top input:hover {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+}
+
+.page table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.page table th,
+.page table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.7rem;
+  color: var(--secondary-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  height: 50px;
+}
+
+/* ALL HEADERS LEFT ALIGNED except last 3 columns */
+.page table th {
+  text-align: left;
+  padding-left: 12px;
+  font-size: 0.8rem;
+}
+
+/* LAST 3 HEADERS CENTERED */
+.page table th:nth-last-child(-n+3) {
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* ALL DATA CELLS LEFT ALIGNED except last 3 columns */
+.page table td {
+  text-align: left;
+  padding-left: 12px;
+  font-size: 0.88rem;
+}
+
+/* Middle columns (3rd to 8th: NAME, AVAILABLE, CHECKOUT, CHECKIN, CATEGORY, LOCATION) */
+.page table th:nth-child(n+3):nth-child(-n+8),
+.page table td:nth-child(n+3):nth-child(-n+8) {
+  text-align: left;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: 0.88rem;
+}
+
+/* Explicitly target LOCATION column (8th column) to ensure left alignment and override width */
+.page table th:nth-child(8),
+.page table td:nth-child(8) {
+  text-align: left !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  width: auto !important; /* Override any imposed width */
+  min-width: 100px; /* Ensure readability */
+}
+
+/* LAST 3 DATA CELLS CENTERED */
+.page table td:nth-last-child(-n+3) {
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 0.88rem;
+  width: 70px;
+}
+
+/* Set widths for checkbox + image columns (first two) */
+.page table th:nth-child(1),
+.page table td:nth-child(1) {
+  width: 30px; /* Reduced from 60px */
+  padding-left: 8px;
+  padding-right: 4px;
+  text-align: left;
+}
+
+.page table th:nth-child(2),
+.page table td:nth-child(2) {
+  width: 50px; /* Reduced from 60px */
+  padding-left: 4px;
+  padding-right: 8px;
+  text-align: left;
+}
+
+/* Ensure the image in the second column is left-aligned */
+.page table td:nth-child(2) img {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Align CHECKOUT and CHECKIN columns (5th and 6th) to the left */
+.page table th:nth-child(5),
+.page table td:nth-child(5),
+.page table th:nth-child(6),
+.page table td:nth-child(6) {
+  text-align: left !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Ensure buttons in CHECKOUT and CHECKIN columns are left-aligned */
+.page table td:nth-child(5) button,
+.page table td:nth-child(6) button {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+/* Images */
+.page img {
+  height: 5vh;
+  width: 5vw;
+  object-fit: cover;
+}
+
+/* Check-in/Check-out Button Styling - Now handled by StandardizedButtons.css */
+
+/* Container for the progress bar and text */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Style the text */
+.progress-text {
+  font-size: 0.88rem;
+  color: var(--deployable-text);
+}
+
+/* Style for the progress bar */
+.progress-container progress {
+  width: 100px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background-color: rgba(52, 199, 89, 0.2);
+  border: none;
+}
+
+/* Background of the progress bar */
+.progress-container progress::-webkit-progress-bar {
+  background-color: #e0e0e0;
+  border-radius: 5px;
+}
+
+/* Filled portion of the progress bar */
+.progress-container progress::-webkit-progress-value {
+  background-color: var(--deployable-text);
+  border-radius: 5px;
+}
+
+/* For Firefox */
+.progress-container progress::-moz-progress-bar {
+  background-color: var(--deployable-text);
+  border-radius: 5px;
+}
+
+.input-error {
+  border: 1px solid var(--warning-text) !important;
+}
+
+.error-message {
+  color: var(--warning-text);
+  font-size: 0.85rem;
+  margin-top: 4px;
+  display: block;
+}
+
+.no-products-message {
+  text-align: center;
+}
+
+.no-products-message p {
+  font-family: 'Poppins';
+  font-size: 20px;
+  color: var(--text-color);
+  margin: 50px;
+}
+
+/* Container for the progress bar and text */
+.progress-container {
+  display: flex;
+  align-items: center; /* Vertically center the text and progress bar */
+  gap: 8px; /* Space between the text and progress bar */
+}
+
+/* Style the text */
+.progress-text {
+  font-size: 0.88rem; /* Match the font size of other table cells */
+  color: var(--deployable-text); /* Keep the green color */
+}
+
+/* Style for the progress bar */
+.progress-container progress {
+  width: 100px; /* Adjust the width as needed */
+  height: 10px; /* Height of the progress bar */
+  border-radius: 5px; /* Rounded edges */
+  overflow: hidden; /* Ensure rounded edges are visible */
+}
+
+/* Background of the progress bar */
+.progress-container progress::-webkit-progress-bar {
+  background-color: #e0e0e0; /* Light gray background */
+  border-radius: 5px;
+}
+
+/* Filled portion of the progress bar */
+.progress-container progress::-webkit-progress-value {
+  background-color: var(--deployable-text); /* Green fill color */
+  border-radius: 5px;
+}
+
+/* For Firefox */
+.progress-container progress::-moz-progress-bar {
+  background-color: var(--deployable-text); /* Green fill color */
+  border-radius: 5px;
+}

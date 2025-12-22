@@ -1,0 +1,242 @@
+/* View Page Layout */
+.view-page-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 100px 40px 40px 40px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Breadcrumb Navigation */
+.view-breadcrumb {
+  font-size: 0.875rem;
+  color: var(--secondary-text-color);
+  margin-bottom: 12px;
+}
+
+.view-breadcrumb ul {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.view-breadcrumb li {
+  list-style: none;
+}
+
+.view-breadcrumb li + li::before {
+  padding: 0px 6px 0px 8px;
+  color: var(--secondary-text-color);
+  content: "/\00a0";
+}
+
+.view-breadcrumb a {
+  color: var(--secondary-text-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.view-breadcrumb a:hover {
+  color: var(--primary-color);
+}
+
+/* Page Title */
+.view-title-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d3d3d3;
+}
+
+.view-title-section h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* Content Wrapper */
+.view-content-wrapper {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.view-content-wrapper:not(:has(.view-sidebar)) {
+  justify-content: flex-start;
+}
+
+.view-content-wrapper:not(:has(.view-sidebar)) .view-main-content {
+  max-width: 900px;
+  width: 100%;
+}
+
+
+/* Main Content Area */
+.view-main-content {
+  flex: 1;
+  background-color: white;
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #cccccc;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.view-sidebar {
+  width: 300px;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #cccccc;
+  height: fit-content;
+}
+
+.view-sidebar h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 16px 0;
+}
+
+/* Sidebar Info Items */
+.view-info-item {
+  margin-bottom: 16px;
+}
+
+.view-info-item label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.view-info-item p {
+  font-size: 0.875rem;
+  color: #333;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.view-info-item a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.view-info-item a:hover {
+  text-decoration: underline;
+}
+
+/* Action Buttons */
+.view-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.view-action-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 25px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.view-action-btn.edit {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.view-action-btn.edit:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.view-action-btn.delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.view-action-btn.delete:hover {
+  background-color: #c82333;
+}
+
+/* Table in View Page */
+.view-table-section {
+  margin-top: 20px;
+}
+
+.view-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.view-table-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.view-table-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.view-table-actions input[type="search"] {
+  padding: 8px 12px;
+  border: 1px solid #d3d3d3;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  outline: none;
+  width: 200px;
+}
+
+.view-table-actions input[type="search"]:focus {
+  border-color: var(--primary-color);
+}
+
+.view-table-actions button {
+  padding: 8px 16px;
+  border: 1px solid #d3d3d3;
+  border-radius: 20px;
+  background-color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-table-actions button:hover {
+  background-color: #f5f6f8;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .view-content-wrapper {
+    flex-direction: column;
+  }
+
+  .view-sidebar {
+    width: 100%;
+  }
+}
+

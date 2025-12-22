@@ -1,0 +1,212 @@
+[
+  {
+    "asset_id": "100001",
+    "product": "ThinkPad E15 G4\"",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Dan Rick Otso",
+    "location": "Laguna",
+    "end_of_life_date": "2027-09-18",
+    "warranty_expiration_date": "2025-08-15"
+  },
+  {
+    "asset_id": "100002",
+    "product": "iPhone 16 Pro Max",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Carlos Miguel Oishi",
+    "location": "Pasig",
+    "end_of_life_date": "2025-09-23",
+    "warranty_expiration_date": "2025-09-25"
+  },
+  {
+    "asset_id": "100003",
+    "product": "XPS 13\"",
+    "status_type": "pending",
+    "status_name": "Pending",
+    "deployed_to": "",
+    "location": "Baguio",
+    "end_of_life_date": "2025-12-18",
+    "warranty_expiration_date": "2025-05-12"
+  },
+  {
+    "asset_id": "100004",
+    "product": "XPS 13\"",
+    "status_type": "pending",
+    "status_name": "Pending",
+    "deployed_to": "",
+    "location": "Cagayan de Oro",
+    "end_of_life_date": "2025-11-18",
+    "warranty_expiration_date": "2025-05-12"
+  },
+  {
+    "asset_id": "100005",
+    "product": "iPhone 16 Pro Max",
+    "status_type": "undeployable",
+    "status_name": "Broken",
+    "deployed_to": "",
+    "location": "Davao City",
+    "end_of_life_date": "2025-09-23",
+    "warranty_expiration_date": "2026-11-21"
+  },
+  {
+    "asset_id": "100007",
+    "product": "Yoga 7",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Jay Kamote",
+    "location": "Quezon City",
+    "end_of_life_date": "2030-06-06",
+    "warranty_expiration_date": "2025-08-15"
+  },
+  {
+    "asset_id": "100008",
+    "product": "Yoga 7",
+    "status_type": "undeployable",
+    "status_name": "Being Repaired",
+    "deployed_to": "",
+    "location": "Manila",
+    "end_of_life_date": "2030-06-06",
+    "warranty_expiration_date": "2025-08-15"
+  },
+  {
+    "asset_id": "100009",
+    "product": "Macbook Pro 16\"",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "May Pamana",
+    "location": "Batangas City",
+    "end_of_life_date": "2026-06-25",
+    "warranty_expiration_date": "2024-06-25"
+  },
+  {
+    "asset_id": "100010",
+    "product": "Macbook Pro 16\"",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Alan Rick Otso",
+    "location": "Bulacan",
+    "end_of_life_date": "2028-03-28",
+    "warranty_expiration_date": "2026-03-28"
+  },
+  {
+    "asset_id": "100011",
+    "product": "iPad Pro",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Pia Piatos-Lim",
+    "location": "Quezon City",
+    "end_of_life_date": "2026-03-26",
+    "warranty_expiration_date": "2024-03-26"
+  },
+  {
+    "asset_id": "100012",
+    "product": "Galaxy S24 Ultra",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Reymunda Jane Nova",
+    "location": "Zamboanga City",
+    "end_of_life_date": "2026-05-18",
+    "warranty_expiration_date": "2029-01-14"
+  },
+  {
+    "asset_id": "100013",
+    "product": "Galaxy S24 Ultra",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Xiaome Ocho",
+    "location": "General Santos",
+    "end_of_life_date": "2026-05-18",
+    "warranty_expiration_date": "2027-08-11"
+  },
+  {
+    "asset_id": "100014",
+    "product": "iPad Pro",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Glaiza Ranger",
+    "location": "Palawan",
+    "end_of_life_date": "2028-04-17",
+    "warranty_expiration_date": "2026-04-17"
+  },
+  {
+    "asset_id": "100015",
+    "product": "Surface Laptop 5",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Fernando Tempura",
+    "location": "Cebu City",
+    "end_of_life_date": "2025-09-22",
+    "warranty_expiration_date": "2030-02-09"
+  },
+  {
+    "asset_id": "100016",
+    "product": "Surface Laptop 5",
+    "status_type": "archived",
+    "status_name": "Archived",
+    "deployed_to": "",
+    "location": "Quezon City",
+    "end_of_life_date": "2025-09-11",
+    "warranty_expiration_date": "2027-03-29"
+  },
+  {
+    "asset_id": "100017",
+    "product": "Galaxy S24 Ultra",
+    "status_type": "deployable",
+    "status_name": "Ready to Deploy",
+    "deployed_to": "",
+    "location": "Makati",
+    "end_of_life_date": "2026-05-18",
+    "warranty_expiration_date": "2025-09-22"
+  },
+  {
+    "asset_id": "100018",
+    "product": "Galaxy S24 Ultra",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Renan Piatos",
+    "location": "Dumaguete",
+    "end_of_life_date": "2026-05-18",
+    "warranty_expiration_date": "2025-09-30"
+  },
+  {
+    "asset_id": "100019",
+    "product": "Macbook Pro 16\"",
+    "status_type": "deployable",
+    "status_name": "Ready to Deploy",
+    "deployed_to": "",
+    "location": "Cavite",
+    "end_of_life_date": "2031-12-21",
+    "warranty_expiration_date": "2029-12-21"
+  },
+  {
+    "asset_id": "100020",
+    "product": "Surface Laptop 5",
+    "status_type": "deployed",
+    "status_name": "Deployed",
+    "deployed_to": "Chippy McDonald",
+    "location": "Taguig",
+    "end_of_life_date": "2025-09-25",
+    "warranty_expiration_date": "2025-09-24"
+  },
+  {
+    "asset_id": "100021",
+    "product": "XPS 13\"",
+    "status_type": "deployable",
+    "status_name": "Ready to Deploy",
+    "deployed_to": "",
+    "location": "Makati",
+    "end_of_life_date": "2025-09-13",
+    "warranty_expiration_date": "2025-05-12"
+  },
+  {
+    "asset_id": "100022",
+    "product": "XPS 13\"",
+    "status_type": "deployable",
+    "status_name": "Ready to Deploy",
+    "deployed_to": "",
+    "location": "Iloilo City",
+    "end_of_life_date": "2025-09-29",
+    "warranty_expiration_date": "2025-05-12"
+  }
+]

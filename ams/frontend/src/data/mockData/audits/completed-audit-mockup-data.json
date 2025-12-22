@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "location": "Head Office - IT Room",
+    "user_id": 101,
+    "performed_by": "John Doe",
+    "audit_date": "2025-09-25",
+    "next_audit_date": "2025-12-25",
+    "notes": "Audit completed successfully. No discrepancies found.",
+    "is_deleted": false,
+    "created_at": "2025-09-25T15:30:00Z",
+    "audit_schedule": {
+      "id": 1,
+      "asset": {
+        "id": 201,
+        "displayed_id": "ASSET-010",
+        "name": "Lenovo ThinkPad X1 Carbon"
+      },
+      "date": "2025-09-25",
+      "notes": "Missed audit last month due to inventory backlog.",
+      "is_deleted": false,
+      "created_at": "2025-08-20T10:00:00Z"
+    },
+    "files": [
+      {
+        "id": 1,
+        "file": "audit_files/lenovo_x1_report.pdf",
+        "is_deleted": false
+      },
+      {
+        "id": 2,
+        "file": "audit_files/lenovo_x1_photo.jpg",
+        "is_deleted": false
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "location": "Media Room",
+    "user_id": 102,
+    "performed_by": "Jane Smith",
+    "audit_date": "2025-09-30",
+    "next_audit_date": "2026-01-30",
+    "notes": "Camera inventory verified and matched the records.",
+    "is_deleted": false,
+    "created_at": "2025-09-30T11:45:00Z",
+    "audit_schedule": {
+      "id": 2,
+      "asset": {
+        "id": 202,
+        "displayed_id": "ASSET-011",
+        "name": "Canon EOS M50 Camera"
+      },
+      "date": "2025-09-30",
+      "notes": "Pending audit for media equipment. Needs rescheduling.",
+      "is_deleted": false,
+      "created_at": "2025-08-28T13:30:00Z"
+    },
+    "files": [
+      {
+        "id": 3,
+        "file": "audit_files/canon_m50_report.pdf",
+        "is_deleted": false
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "location": "Main Office - Workstations",
+    "user_id": 103,
+    "performed_by": "Alice Johnson",
+    "audit_date": "2025-10-05",
+    "next_audit_date": "2026-01-05",
+    "notes": "iMac audited. Minor software updates required.",
+    "is_deleted": false,
+    "created_at": "2025-10-05T10:20:00Z",
+    "audit_schedule": {
+      "id": 3,
+      "asset": {
+        "id": 203,
+        "displayed_id": "ASSET-012",
+        "name": "Apple iMac 27-inch"
+      },
+      "date": "2025-10-05",
+      "notes": "Audit postponed due to hardware diagnostics.",
+      "is_deleted": false,
+      "created_at": "2025-09-10T09:15:00Z"
+    },
+    "files": [
+      {
+        "id": 4,
+        "file": "audit_files/imac27_report.pdf",
+        "is_deleted": false
+      },
+      {
+        "id": 5,
+        "file": "audit_files/imac27_screenshot.png",
+        "is_deleted": false
+      }
+    ]
+  }
+]

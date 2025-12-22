@@ -1,0 +1,200 @@
+.overdue-audits-page {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  height: 100vh;
+  width: 100vw;
+  padding: 100px 38px 38px 38px;
+  position: relative;
+  z-index: 1;
+}
+
+.overdue-audits-page section {
+  display: flex;
+  flex-direction: column;
+}
+
+.overdue-audits-page .main-top {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.overdue-audits-page
+  .main-top
+  div:not(
+    .status-archived,
+    .status-deployed,
+    .status-undeployable,
+    .status-pending,
+    .status-deployable,
+    .status-lost
+  ),
+.overdue-audits-page
+  .container
+  div:not(
+    .status-archived,
+    .status-deployed,
+    .status-undeployable,
+    .status-pending,
+    .status-deployable,
+    .status-lost
+  ) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.overdue-audits-page .main-top button {
+  padding: 12px 16px;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.5s ease;
+}
+
+.overdue-audits-page .main-top button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.overdue-audits-page .container {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: auto;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #d3d3d3;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+  padding-bottom: 28px;
+  overflow: none;
+  margin-top: 20px;
+}
+
+.overdue-audits-page .top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px 34px;
+  border-bottom: 1px solid #d3d3d3;
+  border-collapse: collapse;
+}
+
+.overdue-audits-page .top h2 {
+  font-size: 1.25rem;
+}
+
+.overdue-audits-page .top input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+}
+
+.overdue-audits-page .top input:hover {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+}
+
+.overdue-audits-page table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.overdue-audits-page table th {
+  background-color: rgba(211, 211, 211, 0.2);
+}
+
+.overdue-audits-page table th,
+.overdue-audits-page table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.75rem;
+  color: var(--secondary-text-color);
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.overdue-audits-page table td {
+  font-size: 0.88rem;
+  color: var(--secondary-text-color);
+}
+
+.overdue-audits-page span {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  color: #34c759;
+}
+
+/* Set the width of the checkbox header and its data*/
+.overdue-audits-page table th:nth-child(1),
+.overdue-audits-page table td:nth-child(1) {
+  width: 3vw;
+}
+
+/* Set the width of the due date and created header and its data */
+.overdue-audits-page table th:nth-child(2),
+.overdue-audits-page table td:nth-child(2) {
+  width: 12vw;
+}
+
+/* Set the width of the overdue by head and its data */
+.overdue-audits-page table th:nth-child(3),
+.overdue-audits-page table td:nth-child(3) {
+  width: 9vw;
+}
+
+/* Set the width of the asset head and its data */
+.overdue-audits-page table th:nth-child(4),
+.overdue-audits-page table td:nth-child(4) {
+  width: 16vw;
+}
+
+/* Set the width of the status column */
+.overdue-audits-page table th:nth-child(5),
+.overdue-audits-page table td:nth-child(5) {
+  width: 15vw;
+  max-width: 15vw;
+}
+
+/* Set the width of the audit, edit, delete, and view header and its data*/
+.overdue-audits-page table th:nth-last-child(1),
+.overdue-audits-page table td:nth-last-child(1),
+.overdue-audits-page table th:nth-last-child(2),
+.overdue-audits-page table td:nth-last-child(2),
+.overdue-audits-page table th:nth-last-child(3),
+.overdue-audits-page table td:nth-last-child(3),
+.overdue-audits-page table th:nth-last-child(4),
+.overdue-audits-page table td:nth-last-child(4) {
+  width: 50px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.table-message {
+  font-size: 18px;
+  color: #555;
+  margin: 50px;
+  align-self: start;
+}
+
+/* Center the action buttons */
+/* .overdue-audits-page table td:nth-last-child(1) button,
+.overdue-audits-page table td:nth-last-child(2) button,
+.overdue-audits-page table td:nth-last-child(3) button {
+  margin: 0 auto;
+  display: block;
+} */

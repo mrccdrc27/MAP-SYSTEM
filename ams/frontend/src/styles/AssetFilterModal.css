@@ -1,0 +1,176 @@
+.asset-filter-modal-container {
+  max-width: 800px !important;
+  min-width: 600px !important;
+}
+
+.asset-filter-modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.filter-grid fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 0;
+  border: none;
+  padding: 0;
+}
+
+.filter-grid label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--secondary-text-color);
+}
+
+.filter-grid input[type="text"],
+.filter-grid input[type="date"] {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid #d3d3d3;
+  border-radius: 25px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.filter-grid input[type="number"]:not(#purchaseCost):not(#cost) {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid #d3d3d3;
+  border-radius: 25px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.filter-grid input[type="text"]:focus,
+.filter-grid input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.filter-grid input[type="number"]:not(#purchaseCost):not(#cost):focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.filter-grid input[type="date"] {
+  cursor: pointer;
+}
+
+.filter-grid input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.filter-grid input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.filter-grid input[type="number"]::-webkit-inner-spin-button,
+.filter-grid input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.filter-grid select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 48px;
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid #d3d3d3;
+  border-radius: 25px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.filter-grid select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.asset-filter-cost-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.asset-filter-cost-input-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    border: 1px solid #d3d3d3;
+    border-radius: 25px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.asset-filter-cost-addon {
+    background-color: #f8f9fa;
+    padding: 13px 16px;
+    border-right: 1px solid #d3d3d3;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--secondary-text-color);
+    white-space: nowrap;
+    min-width: 50px;
+    text-align: center;
+}
+
+.asset-filter-cost-input-group input {
+    flex: 1;
+    padding: 13px 16px;
+    border: none;
+    border-radius: 0;
+    outline: none;
+    background-color: white;
+}
+
+.asset-filter-cost-input-group input:hover,
+.asset-filter-cost-input-group input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.asset-filter-cost-input-group input[type="number"]::-webkit-outer-spin-button,
+.asset-filter-cost-input-group input[type="number"]::-webkit-inner-spin-button {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.asset-filter-cost-input-group input[type="number"]:hover::-webkit-outer-spin-button,
+.asset-filter-cost-input-group input[type="number"]:hover::-webkit-inner-spin-button,
+.asset-filter-cost-input-group input[type="number"]:focus::-webkit-outer-spin-button,
+.asset-filter-cost-input-group input[type="number"]:focus::-webkit-inner-spin-button {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .asset-filter-modal-container {
+    min-width: 90% !important;
+    max-width: 95% !important;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

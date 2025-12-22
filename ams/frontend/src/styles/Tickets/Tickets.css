@@ -1,0 +1,93 @@
+.tickets-table-section {
+  overflow-x: auto;
+  max-height: 55vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+      padding: 0.75rem !important;
+      text-align: left !important;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-color);
+      border-top: 1px solid #cccccc;
+      border-bottom: 1px solid #cccccc;
+      background-color: #f0f1f2;
+      height: 50px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    /* table header for 'Checkbox' */
+    th:first-child {
+      width: 50px;
+    }
+
+    /* table header for 'Ticket Number'*/
+    th:nth-child(2) {
+      min-width: 100px;
+      max-width: fit-content;
+    }
+
+    td {
+      text-align: left !important;
+      padding: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-color);
+      border-bottom: 1px solid #cccccc;
+
+      height: 50px;
+      text-decoration: none;
+    }
+
+    td.no-data-message {
+      display: table-cell !important;
+      width: 100% !important;
+      white-space: normal !important;
+      padding: 0.75rem !important;
+      text-align: center !important;
+      font-style: italic;
+      color: var(--secondary-text-color);
+      background: transparent;
+    }
+
+    td a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    tr:hover {
+      background-color: #fcfcfc;
+    }
+  }
+}
+.tickets-table-section table th:nth-child(7),
+.tickets-table-section table th:nth-child(8) {
+  text-align: left !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+.tickets-table-section table td:nth-child(7),
+.tickets-table-section table td:nth-child(8) {
+  text-align: left !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  vertical-align: middle !important;
+}
+
+.tickets-table-section .action-button-section {
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.tickets-table-section .action-button {
+  margin: 0 2px 0 0 !important;
+  display: inline-flex !important;
+}

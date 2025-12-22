@@ -1,0 +1,178 @@
+[
+  {
+    "asset_id": "100015",
+    "product": "Surface Laptop 5",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Mary Grace Piattos",
+    "checkout_date": "2025-09-09",
+    "checkin_date": "2025-09-14"
+  },
+  {
+    "asset_id": "100021",
+    "product": "Surface Laptop 5",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Jay Kamote",
+    "checkout_date": "2025-09-09",
+    "checkin_date": "2025-09-14"
+  },
+  {
+    "asset_id": "100012",
+    "product": "Galaxy S24 Ultra",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Fernando Tempura",
+    "checkout_date": "2025-09-10",
+    "checkin_date": "2025-09-17"
+  },
+  {
+    "asset_id": "100022",
+    "product": "Galaxy S24 Ultra",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Roman Felicidad",
+    "checkout_date": "2025-09-10",
+    "checkin_date": "2025-09-17"
+  },
+  {
+    "asset_id": "100018",
+    "product": "Galaxy S24 Ultra",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Carlos Miguel Oishi",
+    "checkout_date": "2025-09-06",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100023",
+    "product": "Galaxy S24 Ultra",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Rome Felicidad",
+    "checkout_date": "2025-09-06",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100011",
+    "product": "iPad Pro",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Chippy McDonald",
+    "checkout_date": "2025-09-12",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100024",
+    "product": "iPad Pro",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Romeo Felicidad",
+    "checkout_date": "2025-09-12",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100010",
+    "product": "Macbook Pro 16\"",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Pia Piatos-Lim",
+    "checkout_date": "2025-09-17",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100025",
+    "product": "Macbook Pro 16\"",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Miggy Mango",
+    "checkout_date": "2025-09-17",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100009",
+    "product": "Macbook Pro 16\"",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Renan Piatos",
+    "checkout_date": "2025-09-16",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100026",
+    "product": "Macbook Pro 16\"",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Dodong Alcala",
+    "checkout_date": "2025-09-16",
+    "checkin_date": "2025-09-19"
+  },
+  {
+    "asset_id": "100002",
+    "product": "iPhone 16 Pro Max",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Xiaome Ocho",
+    "checkout_date": "2025-09-16",
+    "checkin_date": "2025-09-20"
+  },
+  {
+    "asset_id": "100027",
+    "product": "iPhone 16 Pro Max",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Dodong Barok",
+    "checkout_date": "2025-09-16",
+    "checkin_date": "2025-09-20"
+  },
+  {
+    "asset_id": "100000",
+    "product": "XPS 13\"",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Reymunda Jane Nova",
+    "checkout_date": "2025-09-25",
+    "checkin_date": "2025-10-09"
+  },
+  {
+    "asset_id": "100028",
+    "product": "XPS 13\"",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Dodong Bina",
+    "checkout_date": "2025-09-25",
+    "checkin_date": "2025-10-09"
+  },
+  {
+    "asset_id": "100020",
+    "product": "Surface Laptop 5",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "May Pamana",
+    "checkout_date": "2025-09-05",
+    "checkin_date": "2026-09-18"
+  },
+  {
+    "asset_id": "100029",
+    "product": "Surface Laptop 5",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Dodong Bunal",
+    "checkout_date": "2025-09-05",
+    "checkin_date": "2026-09-18"
+  },
+  {
+    "asset_id": "100013",
+    "product": "Galaxy S24 Ultra",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Dan Rick Otso",
+    "checkout_date": "2025-09-11",
+    "checkin_date": "2026-09-18"
+  },
+  {
+    "asset_id": "100030",
+    "product": "Galaxy S24 Ultra",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Dodong Darong",
+    "checkout_date": "2025-09-11",
+    "checkin_date": "2026-09-18"
+  },
+  {
+    "asset_id": "100014",
+    "product": "iPad Pro",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Alan Rick Otso",
+    "checkout_date": "2025-09-09",
+    "checkin_date": "2026-09-18"
+  },
+  {
+    "asset_id": "100007",
+    "product": "Yoga 7",
+    "checked_out_by": "Demo User",
+    "checked_out_to": "Glaiza Ranger",
+    "checkout_date": "2025-09-17",
+    "checkin_date": "2026-09-18"
+  }
+]

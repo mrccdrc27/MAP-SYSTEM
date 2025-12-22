@@ -1,0 +1,48 @@
+.import-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.import-btn {
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 25px;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  transition: all 0.3s ease;
+  text-transform: capitalize;
+  text-decoration: none;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.import-btn:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+}
+
+.import-btn img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+}
+
+@media (max-width: 768px) {
+  .import-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .import-btn,
+  .delete-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

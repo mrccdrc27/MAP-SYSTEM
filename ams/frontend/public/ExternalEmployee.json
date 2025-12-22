@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "firstname": "Fernando",
+    "lastname": "Tempura",
+    "branch": "Makati"
+  },
+  {
+    "id": 2,
+    "firstname": "Carlos Miguel",
+    "lastname": "Oishi",
+    "branch": "Pasig"
+  },
+  {
+    "id": 3,
+    "firstname": "Chippy",
+    "lastname": "McDonald",
+    "branch": "Marikina"
+  },
+  {
+    "id": 4,
+    "firstname": "Pia",
+    "lastname": "Piatos-Lim",
+    "branch": "Quezon City"
+  },
+  {
+    "id": 5,
+    "firstname": "Renan",
+    "lastname": "Piatos",
+    "branch": "Makati"
+  },
+  {
+    "id": 6,
+    "firstname": "Xiaome",
+    "lastname": "Ocho",
+    "branch": "Pasig"
+  },
+  {
+    "id": 7,
+    "firstname": "Reymunda Jane",
+    "lastname": "Nova",
+    "branch": "Marikina"
+  },
+  {
+    "id": 8,
+    "firstname": "Dan Rick",
+    "lastname": "Otso",
+    "branch": "Quezon City"
+  },
+  {
+    "id": 9,
+    "firstname": "Alan Rick",
+    "lastname": "Otso",
+    "branch": "Makati"
+  },
+  {
+    "id": 10,
+    "firstname": "Glaiza",
+    "lastname": "Ranger",
+    "branch": "Pasig"
+  },
+  {
+    "id": 11,
+    "firstname": "Jay",
+    "lastname": "Kamote",
+    "branch": "Marikina"
+  },
+  {
+    "id": 12,
+    "firstname": "Roman",
+    "lastname": "Felicidad",
+    "branch": "Quezon City"
+  },
+  {
+    "id": 13,
+    "firstname": "Rome",
+    "lastname": "Felicidad",
+    "branch": "Makati"
+  },
+  {
+    "id": 14,
+    "firstname": "Romeo",
+    "lastname": "Felicidad",
+    "branch": "Pasig"
+  },
+  {
+    "id": 15,
+    "firstname": "Miggy",
+    "lastname": "Mango",
+    "branch": "Marikina"
+  },
+  {
+    "id": 16,
+    "firstname": "Dodong",
+    "lastname": "Alcala",
+    "branch": "Quezon City"
+  }
+]

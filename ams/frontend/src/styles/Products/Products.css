@@ -1,0 +1,145 @@
+.products-table-section {
+  overflow-x: auto;
+  max-height: 55vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  table {
+    width: auto;
+    border-collapse: collapse;
+    white-space: nowrap;
+
+    th {
+      padding: 0.75rem !important;
+      text-align: left !important;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-color);
+      border-top: 1px solid #cccccc;
+      border-bottom: 1px solid #cccccc;
+      background-color: #f0f1f2;
+      height: 50px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    /* table header for 'Checkbox' */
+    th:first-child {
+      width: 50px;
+      min-width: 50px;
+    }
+
+    /* table header for 'Image'*/
+    th:nth-child(2) {
+      width: 60px;
+      min-width: 60px;
+    }
+
+    /* table header for 'Name' */
+    th:nth-child(3) {
+      width: 150px;
+      min-width: 150px;
+    }
+
+    /* table header for 'Category' */
+    th:nth-child(4) {
+      width: 120px;
+      min-width: 120px;
+    }
+
+    /* table header for 'Model Number' */
+    th:nth-child(5) {
+      width: 130px;
+      min-width: 130px;
+    }
+
+    /* table header for 'End of Life' */
+    th:nth-child(6) {
+      width: 120px;
+      min-width: 120px;
+    }
+
+    /* table header for 'Manufacturer' */
+    th:nth-child(7) {
+      width: 130px;
+      min-width: 130px;
+    }
+
+    /* table header for 'Depreciation' */
+    th:nth-child(8) {
+      width: 130px;
+      min-width: 130px;
+    }
+
+    /* table header for 'Default Cost' */
+    th:nth-child(9) {
+      width: 120px;
+      min-width: 120px;
+    }
+
+    /* table header for 'Default Supplier' */
+    th:nth-child(10) {
+      width: 140px;
+      min-width: 140px;
+    }
+
+    /* table header for 'Minimum Quantity' */
+    th:nth-child(11) {
+      width: 130px;
+      min-width: 130px;
+    }
+
+    /* table header for 'Action' */
+    th:nth-child(12) {
+      width: 100px;
+      min-width: 100px;
+    }
+
+    td {
+      text-align: left !important;
+      padding: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-color);
+      border-bottom: 1px solid #cccccc;
+      height: 50px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td.no-data-message {
+      display: table-cell !important;
+      width: 100% !important;
+      white-space: normal !important;
+      padding: 0.75rem !important;
+      text-align: center !important;
+      font-style: italic;
+      color: var(--secondary-text-color);
+      background: transparent;
+    }
+
+    tr:hover {
+      background-color: #fcfcfc;
+    }
+  }
+}
+
+.products-table-section .action-button-section {
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.products-table-section .action-button {
+  margin: 0 2px 0 0 !important;
+  display: inline-flex !important;
+}
+
+.products-table-section .table-img {
+  width: 40px !important;
+  height: 40px !important;
+  object-fit: cover !important;
+  border-radius: 4px !important;
+}

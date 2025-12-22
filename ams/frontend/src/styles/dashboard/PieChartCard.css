@@ -1,0 +1,37 @@
+.pie-chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pie-chart-card h3 {
+  color: #666;
+  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.chart-container {
+  height: 300px;
+  margin: 0 auto;
+}
+
+/* Customize Recharts Legend */
+.recharts-default-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem !important;
+}
+
+.recharts-legend-item {
+  display: flex !important;
+  align-items: center;
+}
+
+.recharts-legend-item-text {
+  color: #666 !important;
+  font-size: 0.9rem;
+} 

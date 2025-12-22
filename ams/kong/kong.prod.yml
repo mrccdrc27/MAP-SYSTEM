@@ -1,0 +1,113 @@
+_format_version: "3.0"
+_transform: true
+
+# ===========================================
+# Services - Define upstream backends (Production)
+# ===========================================
+services:
+  # Authentication Service
+  - name: authentication-service
+    url: http://authentication:8001
+    routes:
+      - name: auth-route
+        paths:
+          - ~/api/auth
+        strip_path: true
+        preserve_host: true
+        regex_priority: 100
+
+  # Assets Service
+  - name: assets-service
+    url: http://assets:8002
+    routes:
+      - name: assets-route
+        paths:
+          - ~/api/assets
+        strip_path: true
+        preserve_host: true
+        regex_priority: 100
+
+  # Contexts Service
+  - name: contexts-service
+    url: http://contexts:8003
+    routes:
+      - name: contexts-route
+        paths:
+          - ~/api/contexts
+        strip_path: true
+        preserve_host: true
+        regex_priority: 100
+
+  # Frontend Service (Production uses Caddy on port 8000, catch-all)
+  - name: frontend-service
+    url: http://frontend:8000
+    routes:
+      - name: frontend-route
+        paths:
+          - /
+        strip_path: false
+        preserve_host: true
+        regex_priority: 0
+
+# ===========================================
+# Plugins - Global plugins apply to all routes
+# ===========================================
+plugins:
+  # Rate Limiting - Global (stricter for production)
+  - name: rate-limiting
+    config:
+      minute: 60
+      hour: 500
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+
+  # CORS - Allow cross-origin requests
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+        - HEAD
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - X-Requested-With
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+
+  # Request Size Limiting
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 50
+      size_unit: megabytes
+
+  # Response Transformer - Add security headers
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - X-Frame-Options:SAMEORIGIN
+          - X-Content-Type-Options:nosniff
+          - X-XSS-Protection:1; mode=block
+          - Referrer-Policy:strict-origin-when-cross-origin
+          - Strict-Transport-Security:max-age=31536000; includeSubDomains
+
+# Stricter rate limit for auth endpoints
+  - name: rate-limiting
+    service: authentication-service
+    config:
+      minute: 20
+      hour: 100
+      policy: local
+      fault_tolerant: true
+

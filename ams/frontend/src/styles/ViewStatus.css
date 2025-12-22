@@ -1,0 +1,249 @@
+.status-table-wrapper {
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 0;
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.status-table tbody tr {
+  height: 60px;
+  transition: background-color 0.2s ease;
+}
+
+.status-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.status-table tbody td {
+  vertical-align: middle !important;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.status-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-table thead th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.status-table .table-buttons-edit,
+.status-table .table-buttons-delete,
+.status-table .table-buttons-view {
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Status Page Header */
+.status-page-header {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #545f71;
+}
+
+/* Status Table Cells */
+.status-table-cell {
+  color: #545f71;
+}
+
+.status-table-cell-checkbox {
+  width: 40px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.status-table-cell-name {
+  width: 25%;
+  color: #495057;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.status-table-cell-type {
+  width: 15%;
+  color: #6c757d;
+  vertical-align: middle;
+}
+
+.status-table-cell-notes {
+  width: 30%;
+  color: #6c757d;
+  vertical-align: middle;
+}
+
+.status-table-cell-count {
+  width: 10%;
+  color: #6c757d;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.status-table-cell-action {
+  width: 60px;
+  text-align: center;
+  vertical-align: middle !important;
+  padding: 12px 8px;
+}
+
+/* Ensure action buttons are properly centered */
+.status-table-cell-action > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+/* Status Table Headers */
+.status-table-header {
+  width: 40px;
+  text-align: center !important;
+  padding-left: 12px;
+  padding-right: 12px;
+  vertical-align: middle;
+}
+
+.status-table-header-checkbox {
+  width: 40px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.status-table-header-name {
+  width: 25%;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.status-table-header-type {
+  width: 15%;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.status-table-header-notes {
+  width: 30%;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.status-table-header-count {
+  width: 10%;
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Status Search Form */
+.status-search-form {
+  margin-right: 10px;
+}
+
+/* Status Pagination */
+.status-pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: white;
+  border-top: 1px solid #e9ecef;
+}
+
+.status-pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.status-pagination-text {
+  color: #6c757d;
+}
+
+.status-pagination-select {
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  background-color: white;
+  color: #6c757d;
+}
+
+.status-pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-prev-btn, .status-next-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.status-prev-btn:disabled, .status-next-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: #0d6efd;
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.status-top-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-top-section-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  font-size: 0.875rem;
+  background-color: white;
+  outline: none;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}

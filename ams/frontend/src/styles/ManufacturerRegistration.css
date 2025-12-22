@@ -1,0 +1,22 @@
+/* Manufacturer Registration specific styles */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--secondary-text-color);
+  font-weight: 600;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.file-size-info {
+  font-size: 0.75rem;
+  color: var(--secondary-text-color);
+  margin-top: 5px;
+  display: block;
+  margin-left: 5px;
+}
+

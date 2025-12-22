@@ -1,0 +1,194 @@
+.asset-report-content {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.asset-report-left-card {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "asset-report-filter asset-report-column";
+  width: 70%;
+  gap: 20px;
+  background-color: white;
+  padding: var(--card-padding);
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+}
+
+.asset-report-filter {
+  grid-area: asset-report-filter;
+}
+
+.asset-report-column {
+  grid-area: asset-report-column;
+}
+
+.asset-report-right-card {
+  display: flex;
+  flex-direction: column;
+  width: 30%;
+  gap: 10px;
+}
+
+.asset-report-right-card section:not(.asset-report-download):not(.asset-report-download section) {
+  background-color: white;
+  padding: var(--card-padding);
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+}
+
+.asset-report-right-card .middle-section input {
+  margin-bottom: 20px;
+}
+
+.asset-report-right-card section:nth-child(4) {
+  border-top: 5px solid var(--primary-color);
+}
+
+.asset-report-right-card p {
+  position: relative;
+  padding-top: 12px;
+  margin-top: 12px;
+  text-align: justify;
+  line-height: 1.5;
+  color: var(--secondary-text-color);
+}
+
+.asset-report-right-card p::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.asset-report-content h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.filter-form {
+  margin-bottom: 15px;
+}
+
+.filter-form label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.columns-grid {
+  display: flex;
+  gap: 20px;
+}
+
+.column-left,
+.column-right {
+  flex: 1;
+}
+
+.column-checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.column-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.column-checkbox label {
+  font-size: 14px;
+  color: #555;
+}
+
+.asset-report-download {
+  position: relative;
+
+}
+
+.download-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  box-shadow: 0 0 20px 0 rgb(218, 215, 215);
+  border-radius: 6px;
+
+  position: absolute;
+  z-index: 1;
+  margin-top: 5px;
+}
+
+.download-toggle button {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #fff;
+  border-top: 1px solid #d3d3d3;
+
+  cursor: pointer;
+}
+
+.download-toggle button:hover {
+  background-color: var(--primary-color-hover);
+  color: var(--bg-color);
+}
+
+.download-toggle button:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.download-toggle button:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+/* Delete Template Button */
+.delete-template-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  padding: 10px 16px;
+  margin-top: 12px;
+  background-color: white;
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-template-btn:hover {
+  background-color: var(--error-color);
+  color: white;
+}
+
+/* Tablet Screen Size */
+@media (max-width: 768px) {
+  .columns-grid {
+    flex-direction: column;
+  }
+}
+
+/* Smartphone Screen Size */
+@media (max-width: 640px) {
+  .asset-report-left-card {
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-areas:
+      "asset-report-filter"
+      "asset-report-column";
+  }
+}

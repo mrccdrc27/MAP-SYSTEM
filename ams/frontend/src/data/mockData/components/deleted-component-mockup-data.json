@@ -1,0 +1,42 @@
+[
+  {
+    "id": 101,
+    "name": "Samsung 1TB SSD",
+    "category": "Storage",
+    "manufacturer": "Samsung",
+    "supplier": "Amazon",
+    "location": "Makati"
+  },
+  {
+    "id": 102,
+    "name": "Corsair Vengeance 16GB RAM",
+    "category": "Memory",
+    "manufacturer": "Corsair",
+    "supplier": "WSI",
+    "location": "Pasig"
+  },
+  {
+    "id": 103,
+    "name": "NVIDIA RTX 3080",
+    "category": "Graphics Card",
+    "manufacturer": "NVIDIA",
+    "supplier": "Iontech Inc.",
+    "location": "Quezon City"
+  },
+  {
+    "id": 104,
+    "name": "Intel i7 Processor",
+    "category": "CPU",
+    "manufacturer": "Intel",
+    "supplier": "Noventiq",
+    "location": "Remote"
+  },
+  {
+    "id": 105,
+    "name": "Dell Power Supply 750W",
+    "category": "Power Supply",
+    "manufacturer": "Dell",
+    "supplier": "Amazon",
+    "location": "Marikina"
+  }
+]

@@ -1,0 +1,223 @@
+.metrics-section {
+  margin-top: 2rem;
+}
+
+.metrics-header {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 0;
+}
+
+.metric-summary-card {
+  background: white;
+  border-radius: 24px;
+  padding: 1.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.summary-content h3 {
+  font-size: 0.938rem;
+  color: #6B7280;
+  font-weight: 400;
+  margin: 0;
+}
+
+.summary-value {
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.time-period-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 240px; /* Limit the overall width of the button container */
+}
+
+.time-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  color: #6B7280;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 400;
+  flex: 1; /* Allow buttons to grow equally within the container */
+  min-width: 100px; /* Set minimum width */
+  max-width: 120px; /* Set maximum width */
+}
+
+.time-button:hover {
+  color: #111827;
+}
+
+.time-button.active {
+  background: #0D6EFD;
+  color: white;
+}
+
+/* Pulsing animation for active button */
+.time-button.active.pulse {
+  animation: buttonPulse 2s infinite;
+}
+
+@keyframes buttonPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(13, 110, 253, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+  }
+}
+
+.metrics-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.metric-header h3 {
+  font-size: 1.125rem;
+  color: #111827;
+  font-weight: 500;
+  margin: 0;
+}
+
+.chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  position: relative;
+}
+
+/* Customize Recharts Legend */
+.recharts-legend-wrapper {
+  left: 20px !important;
+}
+
+.recharts-legend-item {
+  font-size: 0.875rem !important;
+  color: #6B7280 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.recharts-legend-item-text {
+  margin-left: 0.75rem !important;
+  color: #111827 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 400 !important;
+}
+
+.recharts-legend-icon {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+}
+
+.recharts-sector {
+  stroke: none;
+}
+
+.recharts-pie-label-text {
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  fill: #111827 !important;
+}
+
+.browse-all {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #0D6EFD;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.browse-all:hover {
+  background-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .metrics-header,
+  .metrics-container {
+    grid-template-columns: 1fr;
+  }
+
+  .time-period-buttons {
+    width: 100%;
+    max-width: 220px;
+    justify-content: space-between;
+  }
+
+  .time-button {
+    flex: 1;
+    text-align: center;
+    min-width: 90px;
+    max-width: 110px;
+  }
+
+  .metrics-container {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+}
+
+/* No data message styling */
+.no-data-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  color: #6B7280;
+  font-style: italic;
+}
+
+.no-data-message p {
+  margin: 0;
+  font-size: 1rem;
+}

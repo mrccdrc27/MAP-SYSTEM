@@ -1,0 +1,65 @@
+.top-section-form-page {
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    width: 100%;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #d3d3d3;
+    gap: 8px;
+    background-color: transparent;
+}
+
+.top-section-form-page.no-border {
+    border-bottom: none;
+}
+
+.breadcrumb-navigation {
+    font-size: 0.875rem;
+    color: var(--secondary-text-color);
+}
+
+.breadcrumb-navigation ul {
+    display: flex;
+    width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.breadcrumb-navigation li {
+    list-style: none;
+}
+
+.breadcrumb-navigation li+li::before {
+    padding: 0px 6px 0px 8px;
+    color: var(--secondary-text-color);
+    content: "/\00a0";
+}
+
+.breadcrumb-navigation a {
+    color: var(--secondary-text-color);
+    cursor: pointer;
+}
+
+.breadcrumb-navigation a:hover {
+    color: var(--primary-color);
+}
+
+.top-section-form-page .title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.top-section-form-page .title h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+.top-section-form-page .title .title-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

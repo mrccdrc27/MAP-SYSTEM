@@ -1,0 +1,68 @@
+:root {
+  --bg-color: #f8f9fa;
+  --primary-color: #007bff;
+  --primary-color-hover: #0056B3;
+  --text-color: #0C0C0C;
+  --secondary-text-color: #545f71;
+  --light-text-color: #FCFCFC;
+
+  --error-color: #D92D20;
+  --error-color-hover: #e1574d;
+  --success-color: #039855;
+  --success-color-hover: #35ad77;
+
+  --warning-bg: #ffe0db;
+  --warning-text: #ff3e1d;
+  --success-bg: #e8f9df;
+  --success-text: #71dd37;
+
+  --disabled-color: #414651;
+
+  /* Status colors */
+  --archived: #e7e8ec;
+  --archiveda-text: #132144;
+
+  --deployed: #007bff33;
+  --deployed-text: #007bff;
+
+  --undeployable: #ff3b3033;
+  --undeployable-text: #cc2f26;
+
+  --pending: #ff950033;
+  --pending-text: #ff9500;
+
+  --deployable: #34c75933;
+  --deployable-text: #34c759;
+
+  /* Event/Action colors */
+  --create: #34c75933;
+  --create-text: #34c759;
+
+  --update: #007bff33;
+  --update-text: #007bff;
+
+  --delete: #ff3b3033;
+  --delete-text: #cc2f26;
+
+  --checkin: #a970ff33;
+  --checkin-text: #a970ff;
+
+  --checkout: #ff950033;
+  --checkout-text: #ff9500;
+
+  --schedule: #5ac8fa33;
+  --schedule-text: #5ac8fa;
+
+  --passed: #30d15833;
+  --passed-text: #30d158;
+
+  --failed: #ff453a33;
+  --failed-text: #ff453a;
+
+  --repair: #ffcc0033;
+  --repair-text: #ffcc00;
+
+  /* Layout */
+  --page-padding: 100px 38px 38px 38px;
+  --card-padding: 20px;
+}

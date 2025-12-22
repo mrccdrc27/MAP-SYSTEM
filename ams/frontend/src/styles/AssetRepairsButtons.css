@@ -1,0 +1,47 @@
+/* AssetRepairsButtons.css - Specific styles for buttons in the Asset Repairs table */
+.page .table-buttons-edit,
+.page .table-buttons-delete,
+.page .table-buttons-view {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 4px !important;
+  box-sizing: content-box !important;
+  cursor: pointer !important;
+}
+
+.page .table-buttons-edit img,
+.page .table-buttons-delete img,
+.page .table-buttons-view img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.page .table-buttons-edit:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.page .table-buttons-delete:hover {
+  background-color: rgba(255, 59, 48, 0.2) !important;
+}
+
+.page .table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.page table th.action-column,
+.page table td.action-column {
+  width: 50px !important;
+  min-width: 50px !important;
+  text-align: center !important;
+  padding: 8px 4px !important;
+}

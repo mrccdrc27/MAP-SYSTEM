@@ -1,0 +1,626 @@
+.user-management-page {
+  padding: 80px 40px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.user-management-page *,
+.user-management-page *:hover,
+.user-management-page *:focus,
+.user-management-page *:active {
+  text-decoration: none !important;
+}
+
+.user-management-container h1 {
+  font-size: 24px;
+  margin-bottom: 24px;
+  color: var(--text-color);
+}
+
+.user-section {
+  background: white;
+  border-radius: 40px;
+  padding: 24px;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+}
+
+.user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.user-header h2 {
+  font-size: 18px;
+  color: var(--text-color);
+}
+
+.user-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-box input {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 40px;
+  font-size: 14px;
+  min-width: 200px;
+  transition: border-color 0.2s ease; 
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.filter-container {
+  position: relative;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 40px;
+  background: white;
+  color: var(--text-color);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.add-user-btn {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 40px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-user-btn:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.user-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.user-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.user-info {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.user-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-details h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.user-details h3:hover {
+  text-decoration: none;
+}
+
+.user-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.role-badge, .status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.role-badge.operator {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.role-badge.admin {
+  background-color: #fff3e0;
+  color: #f57c00;
+  text-decoration: none;
+}
+
+.status-badge.active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  text-decoration: none;
+}
+
+.status-badge.inactive {
+  background-color: #ffebee;
+  color: #c62828;
+  text-decoration: none;
+}
+
+.user-card .user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 40px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn.primary {
+  background-color: #e3f2fd;
+  color: var(--primary-color);
+}
+
+.action-btn.primary:hover {
+  background-color: #bbdefb;
+}
+
+.action-btn.danger {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.action-btn.danger:hover {
+  background-color: #ffcdd2;
+}
+
+.action-btn.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.action-btn.success:hover {
+  background-color: #c8e6c9;
+}
+
+.user-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.status-badge.active {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.invite-agent-btn {
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-left: 10px;
+}
+
+.invite-agent-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Deactivate Agent Button */
+.deactivate-agent-btn {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  display: block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.deactivate-agent-btn:hover {
+  background-color: #c82333;
+}
+
+.activate-agent-btn {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  display: block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.activate-agent-btn:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.assets-table td:first-child {
+  text-align: center;
+  padding: 12px 8px;
+}
+
+.assets-table th:first-child {
+  text-align: center;
+}
+
+.bottom {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  border-top: 1px solid #e9ecef;
+  margin-top: 20px;
+}
+
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pagination-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e9ecef;
+  background-color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.pagination-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.pagination-btn.next {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.asset-audits-page .user-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.asset-audits-page table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.asset-audits-page table th,
+.asset-audits-page table td {
+  border-radius: 0 !important;
+  padding: 12px 16px !important;
+  vertical-align: middle !important;
+}
+
+.asset-audits-page table th:nth-child(1), /* PHOTO */
+.asset-audits-page table td:nth-child(1) {
+  width: 80px;
+  text-align: center !important;
+  padding: 12px 8px !important;
+}
+
+.asset-audits-page table th:nth-child(2), /* NAME */
+.asset-audits-page table td:nth-child(2) {
+  width: 200px;
+  padding-left: 16px !important;
+  text-align: left !important;
+}
+
+.asset-audits-page table th:nth-child(3), /* EMAIL */
+.asset-audits-page table td:nth-child(3) {
+  width: 220px;
+  padding-left: 16px !important;
+  text-align: left !important;
+}
+
+.asset-audits-page table th:nth-child(4), /* ROLE */
+.asset-audits-page table td:nth-child(4) {
+  width: 120px;
+  padding-left: 16px !important;
+  text-align: left !important;
+}
+
+.asset-audits-page table th:nth-child(5), /* STATUS */
+.asset-audits-page table td:nth-child(5) {
+  width: 100px;
+  padding-left: 16px !important;
+  text-align: left !important;
+}
+
+.asset-audits-page table th:nth-child(6), /* ACTION */
+.asset-audits-page table td:nth-child(6) {
+  width: 80px;
+  text-align: center !important;
+  padding: 12px 8px !important;
+}
+
+.asset-audits-page .table-buttons-edit,
+.asset-audits-page .table-buttons-delete,
+.asset-audits-page .table-buttons-view {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 6px !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 6px !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.asset-audits-page .table-buttons-edit img,
+.asset-audits-page .table-buttons-delete img,
+.asset-audits-page .table-buttons-view img {
+  width: 18px !important;
+  height: 18px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 !important;
+}
+
+.asset-audits-page .table-buttons-edit:hover,
+.asset-audits-page .table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+  border-color: rgba(0, 123, 255, 0.3) !important;
+}
+
+.asset-audits-page .table-buttons-delete:hover {
+  background-color: rgba(255, 59, 48, 0.1) !important;
+  border-color: rgba(255, 59, 48, 0.3) !important;
+}
+
+.asset-audits-page .status-badge {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.asset-audits-page table thead th {
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.asset-audits-page table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+  .user-photo,
+  .asset-audits-page .user-photo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .pagination-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .asset-audits-page table th,
+  .asset-audits-page table td {
+    padding: 8px 12px !important;
+  }
+
+  .asset-audits-page .table-buttons-edit,
+  .asset-audits-page .table-buttons-delete,
+  .asset-audits-page .table-buttons-view {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 4px !important;
+  }
+
+  .asset-audits-page .table-buttons-edit img,
+  .asset-audits-page .table-buttons-delete img,
+  .asset-audits-page .table-buttons-view img {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+/* Pagination Styling for User Management */
+.user-management-page .pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 34px;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+  margin-top: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.user-management-page .pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #000000 !important;
+}
+
+.user-management-page .pagination-left * {
+  color: #000000 !important;
+}
+
+.user-management-page .pagination-text {
+  font-size: 14px;
+  color: #000000 !important;
+  font-weight: 400;
+}
+
+.user-management-page .pagination-select {
+  padding: 3px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+  color: #000000 !important;
+  cursor: pointer;
+  min-width: 50px;
+}
+
+.user-management-page .pagination-select option {
+  color: #000000 !important;
+}
+
+.user-management-page .pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-management-page .pagination-btn {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: white;
+  color: #000000;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 50px;
+}
+
+.user-management-page .pagination-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.user-management-page .pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+  color: #9ca3af;
+}
+
+.user-management-page .pagination-page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  background-color: var(--primary-color);
+  color: white !important;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Override any global styles that might affect pagination text color */
+.user-management-page .pagination-container,
+.user-management-page .pagination-container *,
+.user-management-page .pagination-container span,
+.user-management-page .pagination-container .pagination-text,
+.user-management-page .pagination-left,
+.user-management-page .pagination-left *,
+.user-management-page .pagination-left span {
+  color: #000000 !important;
+}
+
+.user-management-page .pagination-container .pagination-select,
+.user-management-page .pagination-container .pagination-select * {
+  color: #000000 !important;
+}
+
+/* Ensure page number text is always white */
+.user-management-page .pagination-container .pagination-page-number,
+.user-management-page .pagination-container .pagination-page-number *,
+.user-management-page .pagination-page-number {
+  color: white !important;
+}

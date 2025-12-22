@@ -1,0 +1,176 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # API Gateway (Kong)
+  # ==========================================
+  kong:
+    image: kong:3.9
+    container_name: kong-gateway-dev
+    environment:
+      # DB-less mode (declarative configuration)
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+
+      # Proxy settings - Logging
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+
+      # Listen on port 80 for proxy, 8001 for admin API
+      KONG_PROXY_LISTEN: 0.0.0.0:80
+      KONG_ADMIN_LISTEN: 0.0.0.0:8444
+
+      # Performance & Workers
+      KONG_NGINX_WORKER_PROCESSES: auto
+      KONG_UPSTREAM_KEEPALIVE_POOL_SIZE: 60
+
+      # Gzip Compression
+      KONG_NGINX_HTTP_GZIP: "on"
+      KONG_NGINX_HTTP_GZIP_TYPES: "application/json application/javascript text/css text/plain text/xml application/xml"
+      KONG_NGINX_HTTP_GZIP_MIN_LENGTH: "256"
+      KONG_NGINX_HTTP_GZIP_COMP_LEVEL: "5"
+      KONG_NGINX_HTTP_GZIP_PROXIED: "any"
+      KONG_NGINX_HTTP_GZIP_VARY: "on"
+
+      # Timeouts
+      KONG_UPSTREAM_CONNECT_TIMEOUT: 30000
+      KONG_UPSTREAM_READ_TIMEOUT: 60000
+      KONG_UPSTREAM_SEND_TIMEOUT: 60000
+
+      # Custom error responses (JSON format)
+      KONG_ERROR_DEFAULT_TYPE: "application/json"
+    volumes:
+      - ./kong:/kong:ro
+    ports:
+      - "80:80"      # Proxy port (main gateway)
+      - "8444:8444"  # Admin API (for debugging/management)
+    depends_on:
+      - frontend
+      - authentication
+      - assets
+      - contexts
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # Frontend Service
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: frontend-dev
+    # Port exposed internally via Kong and to host for HMR WebSocket
+    expose:
+      - "5173"
+    ports:
+      - "5173:5173"  # Needed for Vite HMR WebSocket
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      # API Gateway URL for frontend to use
+      - VITE_API_GATEWAY_URL=http://localhost
+    networks:
+      - app-network
+
+  # ==========================================
+  # Database
+  # ==========================================
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: capstone
+      POSTGRES_MULTIPLE_DATABASES: ams_authentication,ams_assets,ams_contexts
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - app-network
+
+  # ==========================================
+  # Authentication Service
+  # ==========================================
+  authentication:
+    build:
+      context: ./backend/authentication
+      target: development
+    container_name: authentication-service
+    # Exposed via Kong, but also directly for DRF browsable API testing
+    expose:
+      - "8001"
+    ports:
+      - "8001:8001"  # Direct access for DRF testing
+    env_file:
+      - ./backend/authentication/.env
+    volumes:
+      - ./backend/authentication:/app
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+  # ==========================================
+  # Assets Service
+  # ==========================================
+  assets:
+    build:
+      context: ./backend/assets
+      target: development
+    container_name: assets-service
+    # Exposed via Kong, but also directly for DRF browsable API testing
+    expose:
+      - "8002"
+    ports:
+      - "8002:8002"  # Direct access for DRF testing
+    env_file:
+      - ./backend/assets/.env
+    volumes:
+      - ./backend/assets:/app
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+  # ==========================================
+  # Contexts Service
+  # ==========================================
+  contexts:
+    build:
+      context: ./backend/contexts
+      target: development
+    container_name: contexts-service
+    # Exposed via Kong, but also directly for DRF browsable API testing
+    expose:
+      - "8003"
+    ports:
+      - "8003:8003"  # Direct access for DRF testing
+    env_file:
+      - ./backend/contexts/.env
+    volumes:
+      - ./backend/contexts:/app
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

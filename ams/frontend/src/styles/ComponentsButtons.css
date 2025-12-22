@@ -1,0 +1,78 @@
+/* ComponentsButtons.css - Specific styles for buttons in the Components table */
+
+.components-page .table-buttons-edit,
+.components-page .table-buttons-delete,
+.components-page .table-buttons-view,
+.components-table-buttons-edit,
+.components-table-buttons-delete,
+.components-table-buttons-view {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 4px !important;
+  box-sizing: content-box !important;
+}
+
+.components-page .table-buttons-edit img,
+.components-page .table-buttons-delete img,
+.components-page .table-buttons-view img,
+.components-table-buttons-edit img,
+.components-table-buttons-delete img,
+.components-table-buttons-view img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.components-page .table-buttons-edit:hover,
+.components-page .table-buttons-view:hover,
+.components-table-buttons-edit:hover,
+.components-table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.components-page .table-buttons-delete:hover,
+.components-table-buttons-delete:hover {
+  background-color: rgba(255, 0, 0, 0.2) !important;
+}
+
+.components-page table.components-table td:nth-child(8),
+.components-page table.components-table td:nth-child(9),
+.components-page table.components-table td:nth-child(10) {
+  padding: 4px !important;
+  width: 40px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  height: 40px !important;
+}
+
+.components-page table.components-table th:nth-child(8),
+.components-page table.components-table th:nth-child(9),
+.components-page table.components-table th:nth-child(10) {
+  width: 40px !important;
+  padding: 4px !important;
+  text-align: center !important;
+}
+
+.components-page .components-table {
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.components-page .container {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+.components-page .components-table thead tr th:first-child,
+.components-page .components-table thead tr th:last-child {
+  border-radius: 0 !important;
+}

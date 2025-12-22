@@ -1,0 +1,142 @@
+[
+  {
+    "id": 1,
+    "name": "Straight Line - 3 Years",
+    "duration": 36,
+    "minimum_value": "500.00",
+    "is_deleted": false
+  },
+  {
+    "id": 2,
+    "name": "Straight Line - 5 Years",
+    "duration": 60,
+    "minimum_value": "1000.00",
+    "is_deleted": false
+  },
+  {
+    "id": 3,
+    "name": "Double Declining Balance - 4 Years",
+    "duration": 48,
+    "minimum_value": "750.00",
+    "is_deleted": false
+  },
+  {
+    "id": 4,
+    "name": "Sum of Years Digits - 6 Years",
+    "duration": 72,
+    "minimum_value": "300.00",
+    "is_deleted": false
+  },
+  {
+    "id": 5,
+    "name": "Units of Production",
+    "duration": 24,
+    "minimum_value": "250.00",
+    "is_deleted": false
+  },
+  {
+    "id": 6,
+    "name": "Straight Line - 2 Years",
+    "duration": 24,
+    "minimum_value": "200.00",
+    "is_deleted": false
+  },
+  {
+    "id": 7,
+    "name": "Double Declining Balance - 10 Years",
+    "duration": 120,
+    "minimum_value": "1200.00",
+    "is_deleted": false
+  },
+  {
+    "id": 8,
+    "name": "Straight Line - 8 Years",
+    "duration": 96,
+    "minimum_value": "900.00",
+    "is_deleted": false
+  },
+  {
+    "id": 9,
+    "name": "Custom Depreciation - Short Term",
+    "duration": 18,
+    "minimum_value": "150.00",
+    "is_deleted": false
+  },
+  {
+    "id": 10,
+    "name": "Custom Depreciation - Long Term",
+    "duration": 84,
+    "minimum_value": "800.00",
+    "is_deleted": false
+  },
+  {
+    "id": 11,
+    "name": "Declining Balance - 7 Years",
+    "duration": 84,
+    "minimum_value": "650.00",
+    "is_deleted": false
+  },
+  {
+    "id": 12,
+    "name": "Straight Line - 1 Year",
+    "duration": 12,
+    "minimum_value": "100.00",
+    "is_deleted": true
+  },
+  {
+    "id": 13,
+    "name": "Accelerated Depreciation - 2 Years",
+    "duration": 24,
+    "minimum_value": "300.00",
+    "is_deleted": false
+  },
+  {
+    "id": 14,
+    "name": "Straight Line - 15 Years",
+    "duration": 180,
+    "minimum_value": "2000.00",
+    "is_deleted": false
+  },
+  {
+    "id": 15,
+    "name": "Custom - Electronics",
+    "duration": 36,
+    "minimum_value": "450.00",
+    "is_deleted": false
+  },
+  {
+    "id": 16,
+    "name": "Custom - Furniture",
+    "duration": 60,
+    "minimum_value": "600.00",
+    "is_deleted": false
+  },
+  {
+    "id": 17,
+    "name": "Custom - Vehicles",
+    "duration": 72,
+    "minimum_value": "1500.00",
+    "is_deleted": false
+  },
+  {
+    "id": 18,
+    "name": "Custom - IT Equipment",
+    "duration": 48,
+    "minimum_value": "800.00",
+    "is_deleted": false
+  },
+  {
+    "id": 19,
+    "name": "Straight Line - 20 Years",
+    "duration": 240,
+    "minimum_value": "3000.00",
+    "is_deleted": false
+  },
+  {
+    "id": 20,
+    "name": "Test Depreciation - Deleted",
+    "duration": 6,
+    "minimum_value": "50.00",
+    "is_deleted": true
+  }
+]

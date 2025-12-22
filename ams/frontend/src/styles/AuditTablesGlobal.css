@@ -1,0 +1,123 @@
+/* Global styles for all audit tables */
+
+.asset-audits-page table,
+.overdue-audits-page table,
+.completed-audits-page table,
+.audits-table {
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.asset-audits-page table th,
+.asset-audits-page table td,
+.overdue-audits-page table th,
+.overdue-audits-page table td,
+.completed-audits-page table th,
+.completed-audits-page table td,
+.audits-table th,
+.audits-table td {
+  border-radius: 0 !important;
+}
+
+.asset-audits-page table th:first-child,
+.asset-audits-page table td:first-child,
+.overdue-audits-page table th:first-child,
+.overdue-audits-page table td:first-child,
+.completed-audits-page table th:first-child,
+.completed-audits-page table td:first-child,
+.audits-table th:first-child,
+.audits-table td:first-child {
+  text-align: center !important;
+}
+
+.asset-audits-page table input[type="checkbox"],
+.overdue-audits-page table input[type="checkbox"],
+.completed-audits-page table input[type="checkbox"],
+.audits-table input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+  width: 16px;
+  height: 16px;
+  margin: 0 auto;
+  display: block;
+}
+
+.asset-audits-page table td,
+.overdue-audits-page table td,
+.completed-audits-page table td,
+.audits-table td {
+  vertical-align: middle !important;
+}
+
+.asset-audits-page .table-buttons-edit,
+.asset-audits-page .table-buttons-delete,
+.asset-audits-page .table-buttons-view,
+.overdue-audits-page .table-buttons-edit,
+.overdue-audits-page .table-buttons-delete,
+.overdue-audits-page .table-buttons-view,
+.completed-audits-page .table-buttons-edit,
+.completed-audits-page .table-buttons-delete,
+.completed-audits-page .table-buttons-view {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 4px !important;
+  box-sizing: content-box !important;
+}
+
+.asset-audits-page .table-buttons-edit img,
+.asset-audits-page .table-buttons-delete img,
+.asset-audits-page .table-buttons-view img,
+.overdue-audits-page .table-buttons-edit img,
+.overdue-audits-page .table-buttons-delete img,
+.overdue-audits-page .table-buttons-view img,
+.completed-audits-page .table-buttons-edit img,
+.completed-audits-page .table-buttons-delete img,
+.completed-audits-page .table-buttons-view img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.asset-audits-page .table-buttons-edit:hover,
+.asset-audits-page .table-buttons-view:hover,
+.overdue-audits-page .table-buttons-edit:hover,
+.overdue-audits-page .table-buttons-view:hover,
+.completed-audits-page .table-buttons-edit:hover,
+.completed-audits-page .table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.asset-audits-page .table-buttons-delete:hover,
+.overdue-audits-page .table-buttons-delete:hover,
+.completed-audits-page .table-buttons-delete:hover {
+  background-color: rgba(255, 59, 48, 0.2) !important;
+}
+
+/* Global audits table header color override - Match Products table */
+.audits-table th {
+  color: var(--secondary-text-color) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  -moz-appearance: checkbox;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  cursor: pointer;
+  margin: 0;
+}

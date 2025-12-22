@@ -1,0 +1,80 @@
+.user-list-container {
+  padding: 20px;
+}
+
+.user-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-filter-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 40px;
+  font-size: 14px;
+  min-width: 200px;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.filter-container {
+  position: relative;
+  display: inline-block;
+}
+
+.filter-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.filter-button:hover {
+  background-color: #e9ecef;
+}
+
+.filter-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-user-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.add-user-button:hover {
+  background-color: #0056b3;
+}
+
+.user-list-table {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}

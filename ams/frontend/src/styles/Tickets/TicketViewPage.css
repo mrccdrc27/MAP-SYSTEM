@@ -1,0 +1,152 @@
+/* Ticket View Page Styles - Copied from ProductViewPage with ticket-specific class names */
+
+.ticket-about-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Ticket Details Section */
+.ticket-details-section,
+.ticket-additional-fields-section {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.ticket-section-header {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 20px 0;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Ticket Details Grid */
+.ticket-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.ticket-detail-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-detail-row label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ticket-detail-row span {
+  font-size: 0.875rem;
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+/* Description Section */
+.ticket-description-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.ticket-description-section h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 12px 0;
+}
+
+.ticket-description-section p {
+  font-size: 0.875rem;
+  color: var(--text-color);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Vertical Action Buttons */
+.ticket-vertical-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.ticket-action-btn,
+.ticket-vertical-action-buttons .medium-button-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  height: 40px !important;
+  padding: 12px 16px !important;
+  border: none;
+  border-radius: 25px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: capitalize;
+  box-sizing: border-box;
+  gap: 8px;
+}
+
+.ticket-action-btn i {
+  font-size: 0.875rem;
+  color: white;
+}
+
+.ticket-checkout-btn {
+  background-color: #34c759;
+  color: white;
+}
+
+.ticket-checkout-btn:hover {
+  background-color: rgba(52, 199, 89, 0.8);
+  transform: translateY(-1px);
+}
+
+.ticket-checkin-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.ticket-checkin-btn:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+}
+
+/* Ensure MediumButtons delete button matches other buttons */
+.ticket-vertical-action-buttons .medium-button-delete {
+  background-color: red !important;
+  color: white !important;
+  margin: 0 !important;
+  min-width: unset !important;
+  max-width: unset !important;
+}
+
+.ticket-vertical-action-buttons .medium-button-delete:hover {
+  background-color: darkred !important;
+  transform: translateY(-1px) !important;
+}
+
+@media (max-width: 768px) {
+  .ticket-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .ticket-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

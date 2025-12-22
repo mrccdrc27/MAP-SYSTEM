@@ -1,0 +1,31 @@
+/* Fix for Category Quantity column alignment */
+/* Target the quantity header specifically */
+.quantity-header {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+.quantity-header div {
+  text-align: left !important;
+  display: block !important;
+}
+
+/* Target the data cells */
+.page .container .middle .assets-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+.page .container .middle .assets-table td:nth-child(4) .quantity-icon {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: #545f71 !important;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
+}
+
+.page .container .middle .assets-table td:nth-child(4) .quantity-icon span {
+  text-align: left !important;
+  color: #545f71 !important; /* Ensure text is not green */
+}

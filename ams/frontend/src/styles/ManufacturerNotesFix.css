@@ -1,0 +1,20 @@
+.notes-header {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+.notes-header div {
+  text-align: left !important;
+  display: block !important;
+}
+
+.page .container .middle .assets-table th:nth-child(7) {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+.page .container .middle .assets-table td:nth-child(7) {
+  text-align: left !important;
+  padding-left: 12px !important;
+  color: #545f71 !important;
+}

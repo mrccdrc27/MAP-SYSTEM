@@ -1,0 +1,24 @@
+.url-header {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+.url-cell {
+  text-align: left !important;
+  padding-left: 12px !important;
+  color: #545f71 !important;
+}
+
+.suppliers-table thead tr th.url-header {
+  text-align: left !important;
+}
+
+.suppliers-table .url-cell {
+  padding-left: 12px !important;
+  text-align: left !important;
+}
+
+.url-cell[style*="color"] {
+  text-align: left !important;
+  padding-left: 12px !important;
+}

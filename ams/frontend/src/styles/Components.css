@@ -1,0 +1,338 @@
+/* Components Page - Exact Products Table Styling */
+
+/* Components Page Layout - Same as Products Page */
+.components-page {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  height: 100vh;
+  width: 100vw;
+  padding: 100px 38px 38px 38px;
+  position: relative;
+  z-index: 1;
+}
+
+.components-page .container {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: auto;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #d3d3d3;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+  padding-bottom: 28px;
+  overflow: hidden;
+}
+
+/* Top Section - Header with Title and Controls */
+.components-page .top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px 34px;
+  border-bottom: 1px solid #d3d3d3;
+  border-collapse: collapse;
+}
+
+.components-page .top h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #111827;
+}
+
+.components-page .top div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.components-page .top input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+}
+
+.components-page .top input:hover {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+}
+
+/* Middle Section - Table Container */
+.components-page .middle {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+/* Table Wrapper for Horizontal Scrolling */
+.components-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* Components Table Core Styling - Exact Products Table Match */
+.components-page table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  min-width: 800px; /* Ensure minimum width for proper column spacing */
+}
+
+.components-page table th {
+  background-color: rgba(211, 211, 211, 0.2);
+}
+
+.components-page table th,
+.components-page table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.75rem;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.components-page table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.components-page table td {
+  color: var(--secondary-text-color);
+}
+
+.components-page table td {
+  font-size: 0.88rem;
+  height: 50px;
+}
+
+/* Table Global Styling */
+.components-page table,
+.components-page table th,
+.components-page table td {
+  border-radius: 0 !important;
+}
+
+.components-page table td {
+  vertical-align: middle !important;
+}
+
+/* Table Hover Effect */
+.components-page table tbody tr:hover {
+  background-color: rgba(211, 211, 211, 0.1);
+}
+
+/* Checkbox Column */
+.components-page table th:nth-child(1),
+.components-page table td:nth-child(1) {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  text-align: center !important;
+}
+
+.components-page table input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+  width: 16px;
+  height: 16px;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Image Column */
+.components-page table th:nth-child(2),
+.components-page table td:nth-child(2) {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+
+.components-page table .table-img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Component Name Column */
+.components-page table th:nth-child(3),
+.components-page table td:nth-child(3) {
+  width: 150px;
+  min-width: 150px;
+  text-align: left;
+}
+
+/* Available Column */
+.components-page table th:nth-child(4),
+.components-page table td:nth-child(4) {
+  width: 100px;
+  min-width: 100px;
+  text-align: left;
+}
+
+/* Category Column */
+.components-page table th:nth-child(5),
+.components-page table td:nth-child(5) {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+}
+
+/* Model Number Column */
+.components-page table th:nth-child(6),
+.components-page table td:nth-child(6) {
+  width: 150px;
+  min-width: 150px;
+  text-align: left;
+}
+
+/* Check-in/Checkout Column - Repositioned after Model Number */
+.components-page table th:nth-child(7),
+.components-page table td:nth-child(7) {
+  width: 100px;
+  min-width: 100px;
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+}
+
+/* Action Columns */
+.components-page table th:nth-last-child(1),
+.components-page table td:nth-last-child(1),
+.components-page table th:nth-last-child(2),
+.components-page table td:nth-last-child(2),
+.components-page table th:nth-last-child(3),
+.components-page table td:nth-last-child(3) {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Action Button Styling */
+.components-page .table-buttons-edit,
+.components-page .table-buttons-delete,
+.components-page .table-buttons-view {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 4px !important;
+  box-sizing: content-box !important;
+}
+
+.components-page .table-buttons-edit img,
+.components-page .table-buttons-delete img,
+.components-page .table-buttons-view img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.components-page .table-buttons-edit:hover,
+.components-page .table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.components-page .table-buttons-delete:hover {
+  background-color: rgba(255, 59, 48, 0.2) !important;
+}
+
+/* Check-in/Check-out Button Styling - Exact Approved Tickets Match */
+.components-page .check-in-btn,
+.components-page .check-out-btn {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  border-radius: 20px !important;
+  border: none !important;
+  cursor: pointer !important;
+  min-width: 70px !important;
+  text-align: center !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  height: 28px !important;
+  font-family: inherit !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+.components-page .check-in-btn {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.components-page .check-out-btn {
+  background-color: #34c759 !important;
+  color: white !important;
+}
+
+.components-page .check-in-btn:hover {
+  background-color: var(--primary-color-hover) !important;
+}
+
+.components-page .check-out-btn:hover {
+  background-color: rgba(52, 199, 89, 0.8) !important;
+}
+
+/* Pagination Styling - Thin style matching Audits */
+.components-page .pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px;
+  border-top: 1px solid #e0e0e0;
+  background-color: white;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  margin-top: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* No Components Message */
+.components-page .no-components-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--secondary-text-color);
+  font-style: italic;
+}
+
+/* Loading State */
+.components-page .loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  color: var(--secondary-text-color);
+}

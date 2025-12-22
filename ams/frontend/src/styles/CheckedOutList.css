@@ -1,0 +1,316 @@
+* {
+    outline: none;
+  }
+
+  /* Assets Page Layout - Match Asset Edit Form */
+  .list-page {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-color);
+    height: 100vh;
+    width: 100vw;
+    padding: 100px 38px 38px 38px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .list-page .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    height: auto;
+    width: 100%;
+    background-color: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #d3d3d3;
+    box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+    padding-bottom: 28px;
+    margin-top: 20px;
+    overflow: hidden;
+  }
+
+  .list-page .top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 16px 34px;
+    border-bottom: 1px solid #d3d3d3;
+    border-collapse: collapse;
+  }
+
+  .list-page .top p {
+    font-size: 1rem;
+    font-weight: 400;
+    margin: 0;
+    color: #111827;
+  }
+
+  .list-page .top button {
+    padding: 12px 16px;
+    border-radius: 25px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .list-page .top button:hover {
+    background-color: #0056b3;
+  }
+
+  /* Middle Section - Table Container */
+  .list-page .middle {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    width: 100%;
+    position: relative;
+  }
+
+  /* Table Wrapper for Horizontal Scrolling */
+  .list-page .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  /* Assets Table Core Styling - Exact Assets Table Match */
+  .list-page table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    min-width: 800px; /* Ensure minimum width for proper column spacing */
+  }
+
+  .list-page table th {
+    background-color: rgba(211, 211, 211, 0.2);
+  }
+
+  .list-page table th,
+  .list-page table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #d3d3d3;
+    font-size: 0.75rem;
+    text-align: left;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  .list-page table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+  }
+
+  .list-page table td {
+    color: var(--secondary-text-color);
+  }
+
+  .list-page table td {
+    font-size: 0.88rem;
+    height: 50px;
+  }
+
+  /* Table Global Styling */
+  .list-page table,
+  .list-page table th,
+  .list-page table td {
+    border-radius: 0 !important;
+  }
+
+  .list-page table td {
+    vertical-align: middle !important;
+  }
+
+  /* Table Hover Effect */
+  .list-page table tbody tr:hover {
+    background-color: rgba(211, 211, 211, 0.1);
+  }
+
+  /* Checkbox Column */
+  .list-page table th:nth-child(1),
+  .list-page table td:nth-child(1) {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    text-align: center !important;
+  }
+
+  .list-page table input[type="checkbox"] {
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+    -moz-appearance: checkbox !important;
+    width: 16px;
+    height: 16px;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* Check-Out Date Column - Left Aligned */
+  .list-page table th:nth-child(2),
+  .list-page table td:nth-child(2) {
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    text-align: left !important;
+  }
+
+  /* User Column - Left Aligned */
+  .list-page table th:nth-child(3),
+  .list-page table td:nth-child(3) {
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    text-align: left !important;
+  }
+
+  /* Checked-Out To Column - Left Aligned */
+  .list-page table th:nth-child(4),
+  .list-page table td:nth-child(4) {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    text-align: left !important;
+  }
+
+  /* Notes Column - Left Aligned */
+  .list-page table th:nth-child(5),
+  .list-page table td:nth-child(5) {
+    width: auto;
+    min-width: 200px;
+    text-align: left !important;
+  }
+
+  /* Check-In Button Column - Center Aligned */
+  .list-page table th:nth-child(6),
+  .list-page table td:nth-child(6) {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* Ensure proper spacing for action buttons */
+  .list-page table th:nth-last-child(1),
+  .list-page table td:nth-last-child(1) {
+    padding-left: 8px;
+    padding-right: 16px;
+  }
+
+  .cmp-check-in-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    min-width: 70px;
+    text-align: center;
+    display: inline-block;
+    height: 32px;
+    line-height: 1;
+    margin: 0 auto;
+    vertical-align: middle;
+  }
+
+  .cmp-check-in-btn:hover {
+    background-color: var(--primary-color-hover);
+  }
+
+  /* No items message styling */
+  .list-page .no-items-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--secondary-text-color);
+    font-style: italic;
+  }
+
+  .list-page .no-items-message p {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  /* Bottom section for spacing */
+  .list-page .bottom {
+    height: 20px;
+  }
+
+  /* Pagination Styling - Exact match with Assets module */
+  .list-page .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 20px;
+    border-top: 1px solid #e0e0e0;
+    background-color: white;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    margin-top: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .list-page .pagination-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .list-page .pagination-text {
+    color: #000000;
+    font-size: 0.875rem;
+  }
+
+  .list-page .pagination-select {
+    color: #000000;
+    font-size: 0.875rem;
+    border: 1px solid #d3d3d3;
+    border-radius: 4px;
+    padding: 4px 8px;
+  }
+
+  .list-page .pagination-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .list-page .pagination-btn {
+    color: #000000;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .list-page .pagination-btn:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+
+  .list-page .pagination-page-number {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    min-width: 24px;
+    text-align: center;
+  }
+

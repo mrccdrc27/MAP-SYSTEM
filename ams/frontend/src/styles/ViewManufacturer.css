@@ -1,0 +1,233 @@
+/* Variables */
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #e5ecfa;
+  --bg-color: #f8f9fa;
+  --text-color: #333;
+  --secondary-text-color: #555;
+  --border-color: #dee2e6;
+  --table-header-bg: #f8f9fa;
+  --table-border: #e9ecef;
+  --hover-color: #f8f9fa;
+  --consumable-color: #20c997;
+  --accessory-color: #0d6efd;
+}
+
+/* Page specific styles */
+.manufacturers-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.content-container {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  height: 100vh;
+  width: 100vw;
+  padding: 100px 38px 38px 38px;
+  position: relative;
+  z-index: 1;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.page-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.search-container {
+  flex-grow: 1;
+  max-width: 300px;
+  margin: 0 8px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  background-color: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.export-btn, .add-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-btn {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.export-btn:hover {
+  background-color: var(--hover-color);
+}
+
+.add-btn {
+  background-color: var(--primary-color);
+  border: none;
+  color: white;
+}
+
+.add-btn:hover {
+  background-color: #0b5ed7;
+}
+
+/* Table styles */
+.manufacturers-table {
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.manufacturers-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.manufacturers-table th,
+.manufacturers-table td {
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--table-border);
+}
+
+.manufacturers-table th {
+  background-color: var(--table-header-bg);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+
+.manufacturers-table tr:hover {
+  background-color: var(--hover-color);
+}
+
+.manufacturers-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table column widths */
+.checkbox-col {
+  width: 40px;
+}
+
+.name-col {
+  width: 30%;
+}
+
+.type-col {
+  width: 20%;
+}
+
+.quantity-col {
+  width: 20%;
+}
+
+.edit-col, .delete-col {
+  width: 60px;
+  text-align: center;
+}
+
+/* Category name cell styling */
+.manufacturer-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Pagination controls */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: white;
+  border-top: 1px solid var(--table-border);
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+.items-per-page select {
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: white;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prev-btn, .next-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.prev-btn:disabled, .next-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Input checkbox styling */
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}

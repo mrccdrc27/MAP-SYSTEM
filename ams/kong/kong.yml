@@ -1,0 +1,236 @@
+_format_version: "3.0"
+_transform: true
+
+# ===========================================
+# Services - Define upstream backends
+# ===========================================
+services:
+  # Authentication Service
+  - name: authentication-service
+    url: http://authentication:8001
+    routes:
+      - name: auth-route
+        paths:
+          - ~/api/auth
+        strip_path: true
+        preserve_host: true
+        regex_priority: 100
+
+  # Assets Service
+  - name: assets-service
+    url: http://assets:8002
+    routes:
+      - name: assets-route
+        paths:
+          - ~/api/assets
+        strip_path: true
+        preserve_host: true
+        regex_priority: 100
+
+  # Contexts Service
+  - name: contexts-service
+    url: http://contexts:8003
+    routes:
+      - name: contexts-route
+        paths:
+          - ~/api/contexts
+        strip_path: true
+        preserve_host: true
+        regex_priority: 100
+
+  # Health Check Endpoint (internal service for monitoring)
+  - name: health-service
+    url: http://kong:8001/status
+    routes:
+      - name: health-route
+        paths:
+          - /health
+        strip_path: true
+        methods:
+          - GET
+
+  # Frontend Service (catch-all, lowest priority)
+  - name: frontend-service
+    url: http://frontend:5173
+    routes:
+      - name: frontend-route
+        paths:
+          - /
+        strip_path: false
+        preserve_host: true
+        regex_priority: 0
+
+# ===========================================
+# Global Plugins - Apply to all routes
+# ===========================================
+plugins:
+  # ----------------------------------------
+  # 1. RATE LIMITING - Prevent abuse
+  # ----------------------------------------
+  - name: rate-limiting
+    config:
+      minute: 100
+      hour: 1000
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+      error_code: 429
+      error_message: "Rate limit exceeded. Please slow down."
+
+  # ----------------------------------------
+  # 2. SECURITY HEADERS - Protect against common attacks
+  # ----------------------------------------
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - X-Frame-Options:SAMEORIGIN
+          - X-Content-Type-Options:nosniff
+          - X-XSS-Protection:1; mode=block
+          - Referrer-Policy:strict-origin-when-cross-origin
+          - Permissions-Policy:geolocation=(), microphone=(), camera=()
+          - X-Kong-Gateway:true
+
+  # ----------------------------------------
+  # 3. CORS - Cross-Origin Resource Sharing
+  # ----------------------------------------
+  - name: cors
+    config:
+      origins:
+        - "http://localhost"
+        - "http://localhost:5173"
+        - "http://127.0.0.1"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+        - HEAD
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - X-Requested-With
+        - X-CSRF-Token
+      exposed_headers:
+        - X-Auth-Token
+        - X-RateLimit-Remaining
+        - X-RateLimit-Limit
+      credentials: true
+      max_age: 3600
+
+  # ----------------------------------------
+  # 4. REQUEST SIZE LIMITING - Prevent large payloads
+  # ----------------------------------------
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 50
+      size_unit: megabytes
+
+  # ----------------------------------------
+  # 5. REQUEST LOGGING - Log all API requests
+  # ----------------------------------------
+  - name: file-log
+    config:
+      path: /dev/stdout
+      reopen: true
+
+  # ----------------------------------------
+  # 6. REQUEST ID - Add unique ID to each request
+  # ----------------------------------------
+  - name: correlation-id
+    config:
+      header_name: X-Request-ID
+      generator: uuid
+      echo_downstream: true
+
+  # ----------------------------------------
+  # 7. BOT DETECTION - Basic bot filtering
+  # ----------------------------------------
+  - name: bot-detection
+    config:
+      deny:
+        - curl
+        - wget
+        - python-requests
+      allow:
+        - postman
+        - insomnia
+
+# ===========================================
+# Per-Service Plugins
+# ===========================================
+
+  # ----------------------------------------
+  # AUTH SERVICE - Stricter rate limiting (brute force protection)
+  # ----------------------------------------
+  - name: rate-limiting
+    service: authentication-service
+    config:
+      minute: 30
+      hour: 200
+      policy: local
+      fault_tolerant: true
+      error_message: "Too many authentication attempts. Please wait."
+
+  # ----------------------------------------
+  # AUTH SERVICE - Request transformation (add headers)
+  # ----------------------------------------
+  - name: request-transformer
+    service: authentication-service
+    config:
+      add:
+        headers:
+          - X-Forwarded-Service:authentication
+          - X-Gateway-Auth:kong
+
+  # ----------------------------------------
+  # ASSETS SERVICE - Response caching for GET requests
+  # ----------------------------------------
+  - name: proxy-cache
+    service: assets-service
+    config:
+      strategy: memory
+      content_type:
+        - application/json
+      cache_ttl: 60
+      cache_control: true
+      vary_headers:
+        - Authorization
+
+  # ----------------------------------------
+  # CONTEXTS SERVICE - Response caching for GET requests
+  # ----------------------------------------
+  - name: proxy-cache
+    service: contexts-service
+    config:
+      strategy: memory
+      content_type:
+        - application/json
+      cache_ttl: 300
+      cache_control: true
+      vary_headers:
+        - Authorization
+
+  # ----------------------------------------
+  # FRONTEND SERVICE - High rate limit for HMR
+  # ----------------------------------------
+  - name: rate-limiting
+    service: frontend-service
+    config:
+      minute: 10000
+      hour: 100000
+      policy: local
+      fault_tolerant: true
+
+# ===========================================
+# Consumers - For API key authentication (future use)
+# ===========================================
+consumers:
+  - username: admin-user
+    custom_id: admin-001
+
+  - username: frontend-app
+    custom_id: frontend-001

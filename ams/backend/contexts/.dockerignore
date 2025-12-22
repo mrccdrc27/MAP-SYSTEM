@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Env
+*.env
+
+# Django stuff
+db.sqlite3
+media/
+staticfiles/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Env
+*.env
+
+# Django stuff
+db.sqlite3
+media/
+staticfiles/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

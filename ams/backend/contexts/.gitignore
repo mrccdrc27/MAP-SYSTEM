@@ -1,0 +1,63 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
+
+# =========================
+# Virtual environments
+# =========================
+contexts_venv/
+env/
+venv/
+site-packages/
+
+# =========================
+# Django
+# =========================
+**/migrations/
+!**/migrations/__init__.py
+*.sqlite3
+media/
+staticfiles/
+
+# =========================
+# Environment & secrets
+# =========================
+.env
+settings_local.py
+
+# =========================
+# IDEs / editors
+# =========================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# =========================
+# Docker
+# =========================
+*.log
+docker-compose.override.yml
+
+# =========================
+# OS-specific
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Misc / build artifacts
+# =========================
+*.pytest_cache/
+*.cover
+.coverage
+htmlcov/
+dist/
+build/

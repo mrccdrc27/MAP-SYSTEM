@@ -1,0 +1,284 @@
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background: white;
+  border-radius: 8px;
+  width: 85%;
+  max-width: 750px;
+  border: 1px solid #cccccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #cccccc;
+  background: white;
+}
+
+.popup-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border-radius: 4px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #333;
+  background-color: #f0f0f0;
+}
+
+.close-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.popup-body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.status-card-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  border-radius: 0;
+  background: white;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+.status-card-table *,
+.status-card-table * * {
+  text-align: left !important;
+}
+
+.status-card-table thead,
+.status-card-table tbody,
+.status-card-table tr,
+.status-card-table th,
+.status-card-table td {
+  border-radius: 0;
+}
+
+.status-card-table th {
+  padding: 0.75rem !important;
+  text-align: left !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  border-top: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
+  background-color: #f0f1f2;
+  height: 50px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.status-card-table td {
+  padding: 0.75rem !important;
+  text-align: left !important;
+  font-size: 0.875rem;
+  color: #666;
+  border-bottom: 1px solid #cccccc;
+  background: white;
+}
+
+/* Remove bottom border from last row */
+.status-card-table tr:last-child td {
+  border-bottom: 1px solid #cccccc;
+}
+
+/* Add hover effect */
+.status-card-table tbody tr:hover td {
+  background-color: #f9f9f9;
+}
+
+.date-cell {
+  color: #374151;
+  font-weight: normal;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.date-header {
+  text-align: left;
+}
+
+/* Category info styles */
+.category-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-icon {
+  color: #6B7280;
+  font-size: 1.125rem;
+}
+
+.category-name {
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Asset info styles */
+.asset-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #0D6EFD;
+  cursor: pointer;
+}
+
+.asset-info:hover {
+  text-decoration: underline;
+}
+
+.asset-icon {
+  color: #0D6EFD !important;
+  font-size: 1rem;
+  flex-shrink: 0;
+  min-width: 1rem;
+}
+
+/* Location info styles */
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #0D6EFD;
+  cursor: pointer;
+}
+
+.location-info:hover {
+  text-decoration: underline;
+}
+
+.location-info svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  color: #0D6EFD !important;
+  flex-shrink: 0;
+  min-width: 1rem;
+}
+
+.location-name {
+  color: #0D6EFD;
+  font-weight: 500;
+}
+
+/* User info styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.user-info:hover {
+  text-decoration: underline;
+}
+
+.user-icon {
+  width: 1rem !important;
+  height: 1rem !important;
+  color: var(--primary-color) !important;
+  flex-shrink: 0;
+  min-width: 1rem;
+}
+
+.user-name {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* Column widths */
+.status-card-table th:nth-child(1),
+.status-card-table td:nth-child(1) {
+  width: 35%;
+  text-align: left;
+}
+
+.status-card-table th:nth-child(2),
+.status-card-table td:nth-child(2) {
+  width: 35%;
+  text-align: left;
+}
+
+.status-card-table th:nth-child(3),
+.status-card-table td:nth-child(3) {
+  width: 30%;
+  text-align: left;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .popup-content {
+    width: 95%;
+    max-width: 95%;
+    max-height: 80vh;
+  }
+
+  .popup-body {
+    max-height: calc(80vh - 80px);
+    overflow-y: auto;
+  }
+
+  .status-card-table th,
+  .status-card-table td {
+    padding: 0.5rem !important;
+    font-size: 0.75rem;
+  }
+}

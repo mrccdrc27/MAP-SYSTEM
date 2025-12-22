@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "John Ronald Smith Jr.",
+    "email": "johnsmith@example.net",
+    "role": "Employee",
+    "phoneNumber": "0917 123 4567",
+    "company": "MapAMS Solutions Inc.",
+    "phone": "+63 2 800 1001",
+    "status": {
+      "type": "deployable",
+      "name": "Active"
+    },
+    "photo": "default-profile.svg",
+    "created_at": "2024-01-15T10:30:00Z",
+    "lastLogin": "2024-05-10T08:45:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Mark T. Mayer",
+    "email": "mark7@example.com",
+    "role": "Admin",
+    "phoneNumber": "0917 234 5678",
+    "company": "MapAMS Solutions Inc.",
+    "phone": "+63 2 800 1002",
+    "status": {
+      "type": "deployable",
+      "name": "Active"
+    },
+    "photo": "default-profile.svg",
+    "created_at": "2024-02-20T14:15:00Z",
+    "lastLogin": "2024-05-09T14:15:00Z"
+  },
+  {
+    "id": 3,
+    "name": "Jerry J. Tran",
+    "email": "catherinetran@example.net",
+    "role": "Employee",
+    "phoneNumber": "0917 345 6789",
+    "company": "MapAMS Solutions Inc.",
+    "phone": "+63 2 800 1003",
+    "status": {
+      "type": "deployable",
+      "name": "Active"
+    },
+    "photo": "default-profile.svg",
+    "created_at": "2024-03-10T09:45:00Z",
+    "lastLogin": "2024-05-08T09:45:00Z"
+  },
+  {
+    "id": 4,
+    "name": "Stephanie L. Miranda",
+    "email": "heather@example.org",
+    "role": "Manager",
+    "phoneNumber": "0917 456 7890",
+    "company": "MapAMS Solutions Inc.",
+    "phone": "+63 2 800 1004",
+    "status": {
+      "type": "deployable",
+      "name": "Active"
+    },
+    "photo": "default-profile.svg",
+    "created_at": "2024-01-25T16:20:00Z",
+    "lastLogin": "2024-05-07T16:20:00Z"
+  },
+  {
+    "id": 5,
+    "name": "Douglas Harmon",
+    "email": "johnnyray@example.com",
+    "role": "Employee",
+    "phoneNumber": "0917 567 8901",
+    "company": "MapAMS Solutions Inc.",
+    "phone": "+63 2 800 1005",
+    "status": {
+      "type": "deployable",
+      "name": "Active"
+    },
+    "photo": "default-profile.svg",
+    "created_at": "2024-04-05T11:30:00Z",
+    "lastLogin": "2024-05-06T11:30:00Z"
+  }
+]

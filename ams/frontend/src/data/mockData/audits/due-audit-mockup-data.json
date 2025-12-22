@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "asset": {
+      "id": 101,
+      "displayed_id": "ASSET-001",
+      "name": "Dell Latitude 7420 Laptop"
+    },
+    "date": "2025-10-17",
+    "notes": "Quarterly audit for laptops in IT department.",
+    "is_deleted": false,
+    "created_at": "2025-09-01T09:00:00Z"
+  },
+  {
+    "id": 2,
+    "asset": {
+      "id": 102,
+      "displayed_id": "ASSET-002",
+      "name": "Epson EB-X06 Projector"
+    },
+    "date": "2025-10-15",
+    "notes": "Verify bulb usage and maintenance logs.",
+    "is_deleted": false,
+    "created_at": "2025-09-05T10:30:00Z"
+  },
+  {
+    "id": 3,
+    "asset": {
+      "id": 103,
+      "displayed_id": "ASSET-003",
+      "name": "HP LaserJet Pro M404dn Printer"
+    },
+    "date": "2025-10-10",
+    "notes": "Audit delayed due to staff leave. Still pending.",
+    "is_deleted": false,
+    "created_at": "2025-09-07T11:45:00Z"
+  },
+  {
+    "id": 4,
+    "asset": {
+      "id": 104,
+      "displayed_id": "ASSET-004",
+      "name": "Cisco Catalyst 2960 Switch"
+    },
+    "date": "2025-10-01",
+    "notes": "Network audit for October schedule.",
+    "is_deleted": false,
+    "created_at": "2025-09-03T08:15:00Z"
+  }
+]

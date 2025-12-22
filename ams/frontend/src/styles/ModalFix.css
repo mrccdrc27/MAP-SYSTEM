@@ -1,0 +1,35 @@
+html {
+  overflow-y: scroll;
+}
+
+body {
+  padding-right: 0 !important;
+  overflow-x: hidden;
+}
+
+.modal-open {
+  overflow: hidden;
+  padding-right: 17px;
+}
+
+.settings-tabs .tab {
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-content {
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-page {
+  overflow-x: hidden;
+}
+
+.settings-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden;
+}

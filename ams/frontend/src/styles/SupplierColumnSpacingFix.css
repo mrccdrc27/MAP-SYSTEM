@@ -1,0 +1,41 @@
+.city-header, .city-cell {
+  padding-right: 0 !important;
+}
+
+.country-header, .country-cell {
+  padding-left: 0 !important;
+}
+
+.url-header, .url-cell {
+  width: 15% !important;
+  max-width: 160px !important;
+  padding-right: 20px !important;
+}
+
+.action-header:nth-of-type(10),
+.action-cell:nth-of-type(10) {
+  padding-left: 15px !important;
+}
+
+.url-cell {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.action-header:nth-of-type(11),
+.action-cell:nth-of-type(11) {
+  padding-left: 10px !important;
+}
+
+@media (max-width: 1200px) {
+  .url-header, .url-cell {
+    padding-right: 15px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .url-header, .url-cell {
+    padding-right: 10px !important;
+  }
+}

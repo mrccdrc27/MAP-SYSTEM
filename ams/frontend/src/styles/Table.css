@@ -1,0 +1,165 @@
+/* Table Component Styles - Independent Design Similar to Audit Tables */
+.table-container {
+  width: 100%;
+  background-color: white;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.data-table th {
+  background-color: rgba(211, 211, 211, 0.2);
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.75rem;
+  color: var(--secondary-text-color);
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-radius: 0 !important;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.88rem;
+  color: var(--secondary-text-color);
+  height: 50px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-radius: 0 !important;
+}
+
+.data-table tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Checkbox column styling */
+.checkbox-column {
+  width: 40px;
+  text-align: center;
+  padding: 0.5rem !important;
+}
+
+.checkbox-column input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  -moz-appearance: checkbox;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Loading state */
+.table-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.table-loading p {
+  color: var(--secondary-text-color);
+  font-size: 1rem;
+}
+
+/* Empty state */
+.table-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.table-message {
+  color: var(--secondary-text-color);
+  font-size: 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* UserManagement specific styling */
+.user-management-table .data-table th {
+  background-color: rgba(211, 211, 211, 0.2);
+  font-weight: 600;
+  color: var(--secondary-text-color);
+}
+
+.user-management-table .data-table td {
+  vertical-align: middle;
+}
+
+.user-management-table .user-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .data-table {
+    font-size: 0.875rem;
+  }
+}
+
+/* Column width utilities */
+.col-narrow {
+  width: 80px;
+}
+
+.col-medium {
+  width: 120px;
+}
+
+.col-wide {
+  width: 200px;
+}
+
+.col-auto {
+  width: auto;
+}
+
+/* Text alignment utilities */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-left {
+  text-align: left;
+}

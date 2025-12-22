@@ -1,0 +1,88 @@
+/* Reuse the same styles as AssetForecastTable */
+/* This file can be empty or contain product-specific overrides if needed */
+
+.forecast-table-wrapper {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 25px;
+  border: 1px solid #cccccc;
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.forecast-table thead {
+  background-color: #f0f1f2;
+}
+
+.forecast-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #cccccc;
+}
+
+.forecast-table td {
+  padding: 0.75rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: #666;
+  border-bottom: 1px solid #f0f0f0;
+  height: 50px;
+}
+
+.forecast-table tbody tr:hover {
+  background-color: #fcfcfc;
+}
+
+.trend-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.trend-cell.up {
+  color: #22c55e;
+}
+
+.trend-cell.down {
+  color: #ef4444;
+}
+
+.trend-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .forecast-table th,
+  .forecast-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .forecast-table td {
+    height: 45px;
+  }
+
+  .export-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+}
+

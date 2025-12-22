@@ -1,0 +1,127 @@
+.new-accessory-modal {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 10;
+  position: fixed;
+}
+
+.new-accessory-modal .overlay {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.new-accessory-modal .content {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  height: fit-content;
+  width: 30%;
+  background-color: white;
+  padding: 25px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  position: absolute;
+  gap: 10px;
+}
+
+.new-accessory-modal h3 {
+  display: flex;
+  position: absolute;
+  left: 25px;
+  top: 25px;
+  overflow-wrap: anywhere;
+}
+
+.new-accessory-modal .close-button {
+  height: 28px;
+  width: 28px;
+  padding: 5px;
+  background-color: #ff0000;
+  border-radius: 50px;
+  position: absolute;
+  right: 25px;
+  top: 25px;
+  transition: 0.5s ease;
+  cursor: pointer;
+}
+
+.new-accessory-modal .close-button:hover {
+  background-color: darkred;
+}
+
+.new-accessory-modal form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 35px;
+}
+
+.new-accessory-modal form fieldset {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  width: 100%;
+  gap: 10px;
+}
+
+.new-accessory-modal form label {
+  color: var(--secondary-text-color);
+  font-weight: 600;
+}
+
+.new-accessory-modal form input {
+  display: flex;
+  width: 100%;
+  padding: 12px;
+  border-radius: 40px;
+  box-shadow: 0 0 0 1px #d3d3d3;
+}
+
+.new-accessory-modal form input:focus {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.new-accessory-modal button {
+  padding: 12px 16px;
+  border-radius: 40px;
+  cursor: pointer;
+  width: 50%;
+  font-size: 0.875rem;
+  transition: 0.5s ease;
+  overflow-wrap: anywhere;
+}
+
+.new-accessory-modal .content div {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.new-accessory-modal .save-button {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.new-accessory-modal .save-button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.new-accessory-modal .cancel-button {
+  border: 1px solid #d3d3d3;
+  background-color: white;
+}
+
+.new-accessory-modal .cancel-button:hover {
+  background-color: red;
+  color: var(--bg-color);
+  border: 1px solid red;
+}

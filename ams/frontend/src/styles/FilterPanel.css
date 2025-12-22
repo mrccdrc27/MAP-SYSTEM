@@ -1,0 +1,291 @@
+.filterPanel {
+    margin-bottom: 20px;
+}
+
+.fpShowFilter {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.fpShowFilter span {
+    color: #007bff;
+    font-size: 0.8125rem;
+    /* 13px */
+    cursor: pointer;
+}
+
+/* Filter Container */
+.filterPanelCont {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e0e0e0;
+    ;
+    background-color: #ffffff;
+    padding: 20px;
+}
+
+.filterGroup {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+.filterGroup label {
+    font-size: 0.875rem;
+    /* 14px */
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.resetButton {
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    color: #fcfcfc;
+    background-color: #007bff;
+    cursor: pointer;
+}
+
+.resetButton:hover {
+    background-color: #0056b3;
+}
+
+/*  */
+
+/* === DATE INPUT STYLES === */
+/* DATETIME */
+
+.filterGroup input {
+    font-size: 0.75rem;
+    /* 12px */
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-variant: 1px solid #cccccc;
+    padding: 10px 15px;
+    width: 100%;
+    cursor: pointer;
+    color: #0C0C0C;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    background-color: #F8F8F8;
+}
+
+
+.filterGroup input:hover,
+input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.filterGroup input[type="number"],
+.filterGroup input[type="text"] {
+    cursor: auto;
+}
+
+/* === DROPDOWN INPUT STYLES === */
+/* DROPDOWN STYLE */
+.dropdown {
+    font-size: 0.75rem;
+    /* 12px */
+    border-radius: 4px;
+    border: 1px solid #cccccc;
+    padding: 10px 15px;
+    width: 100%;
+    cursor: pointer;
+    color: #0C0C0C;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: #F8F8F8;
+}
+
+.dropdown:hover,
+.dropdown:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* === DATE RANGE STYLES === */
+/*Date range container*/
+.dateRange {
+    display: flex;
+    align-items: flex-end;
+    min-width: 200px;
+    gap: 10px;
+    flex-direction: row;
+}
+
+/* Date range dash separator */
+.rangeSeparator {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-variant: 1px solid #cccccc;
+    padding: 10px 15px;
+    max-width: 5px;
+}
+
+/* === SEARCHABLE DROPDOWN STYLES === */
+/* Control (the box) */
+.dropdown__control {
+  font-size: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #cccccc;
+  padding: 5px 10px;
+  width: 100%;
+  cursor: pointer;
+  color: #0C0C0C;
+  background-color: #F8F8F8;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dropdown__control:hover,
+.dropdown__control--is-focused {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Placeholder & input text */
+.dropdown__placeholder,
+.dropdown__single-value {
+  color: #0C0C0C;
+  font-size: 0.75rem;
+}
+
+/* Dropdown menu */
+.dropdown__menu {
+  background: #fff;
+  border: 1px solid #cccccc;
+  border-radius: 0;
+  margin-top: 0;
+  padding: 0;
+}
+
+/* Options */
+.dropdown__option {
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  background: #fff;
+  color: #000;
+}
+
+.dropdown__option:hover,
+.dropdown__option--is-focused,
+.dropdown__option--is-selected {
+  background: #007bff;
+  color: #fff;
+}
+
+/* Hide the extra separator line */
+.dropdown__indicator-separator {
+  display: none;
+}
+
+/* === MEDIA QUERIES ==== */
+/* Mobile devices (max-width: 768px) */
+@media (max-width: 768px) {
+
+    .fpShowFilter {
+        justify-content: center;
+        margin-bottom: 5px;
+    }
+
+    .fpShowFilter span {
+        font-size: 0.75rem;
+        /* 12px */
+    }
+
+    /* Filter Container */
+    .filterPanelCont {
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    .filterGroup {
+        min-width: 100%;
+        margin-bottom: 10px;
+        align-items: center;
+    }
+
+    .resetButton {
+        width: 100%;
+        padding: 12px;
+    }
+
+    /* Date and Dropdown Inputs */
+    .dateTime,
+    .dropdown {
+        padding: 8px 10px;
+    }
+
+    .dateRange {
+        flex-direction: column;
+        min-width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .rangeSeparator {
+        align-self: center;
+    }
+
+    .dropdown__value-container {
+        padding: 8px 10px;
+    }
+
+}
+
+/* Smaller screens (max-width: 480px) */
+@media (max-width: 480px) {
+
+    .fpShowFilter {
+        margin-bottom: 3px;
+    }
+
+    .fpShowFilter span {
+        font-size: 0.6875rem;
+        /* 11px */
+    }
+
+    /* Filter Container */
+    .filterPanelCont {
+        padding: 10px;
+    }
+
+    .resetButton {
+        font-size: 0.75rem;
+        padding: 10px;
+    }
+
+    .filterGroup {
+        min-width: 100%;
+        margin-bottom: 5px;
+    }
+
+    /* Date and Dropdown Inputs */
+    .dateTime,
+    .dropdown,
+    .dropdown__control,
+    .dropdown__option {
+        padding: 6px 8px;
+    }
+
+    .dateRange {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .rangeSeparator {
+        align-self: center;
+    }
+
+    /* React-select responsive styles */
+    .dropdown__value-container {
+        padding: 6px 8px;
+    }
+    
+}

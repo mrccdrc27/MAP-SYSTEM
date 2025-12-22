@@ -1,0 +1,120 @@
+.accessories-view-modal {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  z-index: 2;
+}
+
+.accessories-view-modal .overlay {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.accessories-view-modal .content {
+  display: flex;
+  flex-direction: column;
+  max-height: 80%;
+  width: fit-content;
+  background-color: white;
+  padding: 20px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  position: absolute;
+}
+
+.accessories-view-modal .content div {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  width: 50vw;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  overflow-x: none;
+}
+
+.accessories-view-modal .content div section {
+  gap: 10px;
+}
+
+.accessories-view-modal section {
+  display: flex;
+  flex-direction: column;
+  width: 48%;
+}
+
+.accessories-view-modal fieldset {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.accessories-view-modal .content div section fieldset {
+  padding: 20px;
+  border: 1px solid #d3d3d3;
+  border-radius: 10px;
+}
+
+.accessories-view-modal fieldset label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 45%;
+  font-weight: 600;
+  color: var(--secondary-text-color);
+}
+
+.accessories-view-modal fieldset label::after {
+  content: ":";
+}
+
+.accessories-view-modal fieldset p {
+  margin-left: 10px;
+  color: var(--secondary-text-color);
+}
+
+.accessories-view-modal span {
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+  width: 50%;
+  flex-wrap: wrap;
+}
+
+.accessories-view-modal span progress {
+  height: 5px;
+  width: 60%;
+}
+
+.accessories-view-modal .content button {
+  height: 28px;
+  width: 28px;
+  padding: 5px;
+  background-color: #ff0000;
+  border-radius: 50px;
+  position: absolute;
+  right: 25px;
+  top: 15px;
+  transition: 0.5s ease;
+  cursor: pointer;
+}
+
+.accessories-view-modal .content button:hover {
+  background-color: darkred;
+}
+
+.accessories-view-modal .content fieldset img {
+  height: 100px;
+  width: 100px;
+  object-fit: cover;
+  margin-right: 10px;
+}

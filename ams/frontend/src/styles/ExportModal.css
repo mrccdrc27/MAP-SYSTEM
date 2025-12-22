@@ -1,0 +1,66 @@
+.export-modal {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 101;
+}
+
+.export-modal .overlay {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.export-modal .content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: fit-content;
+  width: 30%;
+  background-color: white;
+  padding: 50px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+  position: absolute;
+  gap: 20px;
+}
+
+.export-modal .close-button {
+  height: 28px;
+  width: 28px;
+  padding: 5px;
+  background-color: #ff0000;
+  border-radius: 50px;
+  position: absolute;
+  right: 25px;
+  top: 15px;
+  transition: 0.5s ease;
+  cursor: pointer;
+}
+
+.export-modal .close-button:hover {
+  background-color: darkred;
+}
+
+.export-modal button {
+  display: flex;
+  padding: 16px 32px;
+  border-radius: 40px;
+  font-size: 1rem;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  cursor: pointer;
+  transition: 0.5s ease;
+}
+
+.export-modal button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.export-modal p {
+  color: var(--secondary-text-color);
+}

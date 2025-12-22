@@ -1,0 +1,32 @@
+footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: start;
+    background-color: #f8f9fa;
+    padding: 20px 20px 30px 20px;
+
+    gap: 5px;
+}
+
+footer img {
+    width: 40x;
+    height: 40px;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+}
+
+footer p {
+    font-size: 0.8125rem;
+    color: #677788;
+    /* color: #545f71; */
+}
+
+footer p:last-child {
+    margin-left: auto;
+}
+
+footer p span {
+    font-weight: lighter;
+    color: var(--text-color);
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "component_checkout": 1,
+    "quantity": 2,
+    "checkin_date": "2025-10-10T10:00:00",
+    "notes": "Returned partial RAM after upgrade",
+    "handled_by": "John Doe"
+  },
+  {
+    "id": 1,
+    "component_checkout": 5,
+    "quantity": 2,
+    "checkin_date": "2025-10-08T09:00:00",
+    "notes": "Old fans returned",
+    "handled_by": "Bob Williams"
+  },
+  {
+    "id": 1,
+    "component_checkout": 5,
+    "quantity": 2,
+    "checkin_date": "2025-10-09T13:30:00",
+    "notes": "Network card returned",
+    "handled_by": "John Doe"
+  }
+]

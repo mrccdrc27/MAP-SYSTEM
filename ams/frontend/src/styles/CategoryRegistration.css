@@ -1,0 +1,80 @@
+/* Category Registration specific styles */
+
+/* Any styles specific to the category registration page that aren't covered by Registration.css */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--secondary-text-color);
+  font-weight: 600;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.file-size-info {
+  font-size: 0.75rem;
+  color: var(--secondary-text-color);
+  margin-top: 5px;
+  display: block;
+  margin-left: 5px;
+}
+
+.status-registration-section {
+  display: flex;
+  flex-direction: row;
+  padding: 0 28px 0 28px;
+  gap: 25px;
+}
+
+.status-registration-section section:nth-child(1) {
+  align-self: start;
+}
+
+.status-info-section {
+  display: flex;
+  flex-direction: column;
+  width: 60%;
+  padding: 24px;
+  margin-top: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.3);
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  gap: 16px;
+
+  h2 {
+    font-size: 1.25rem;
+    color: var(--text-color);
+  }
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    position: relative;
+    padding-top: 18px;
+
+    p {
+      color: var(--secondary-text-color);
+      font-size: 1rem;
+      line-height: 1.5;
+      text-align: justify;
+    }
+  }
+
+  /* draw a subtle horizontal divider before every section except the first using ::before */
+  section:not(:first-child)::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: rgba(0, 0, 0, 0.06);
+    pointer-events: none;
+  }
+}

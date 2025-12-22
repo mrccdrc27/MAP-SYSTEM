@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "name": "Archived",
+    "type": "archived",
+    "notes": "No longer in active use",
+    "tag": 2
+  },
+  {
+    "id": 2,
+    "name": "Being Repaired",
+    "type": "undeployable",
+    "notes": "",
+    "tag": 2
+  },
+  {
+    "id": 3,
+    "name": "Broken",
+    "type": "undeployable",
+    "notes": "",
+    "tag": 0
+  },
+  {
+    "id": 4,
+    "name": "Deployed",
+    "type": "deployed",
+    "notes": "",
+    "tag": 14
+  },
+  {
+    "id": 5,
+    "name": "Lost or Stolen",
+    "type": "undeployable",
+    "notes": "",
+    "tag": 0
+  },
+  {
+    "id": 6,
+    "name": "Pending",
+    "type": "pending",
+    "notes": "",
+    "tag": 2
+  },
+  {
+    "id": 7,
+    "name": "Ready to Deploy",
+    "type": "deployable",
+    "notes": "",
+    "tag": 6
+  },
+  {
+    "id": 8,
+    "name": "Not Default 1",
+    "type": "deployable",
+    "notes": "",
+    "tag": 6
+  },
+  {
+    "id": 9,
+    "name": "Not Default 2",
+    "type": "deployable",
+    "notes": "",
+    "tag": 0
+  }
+]

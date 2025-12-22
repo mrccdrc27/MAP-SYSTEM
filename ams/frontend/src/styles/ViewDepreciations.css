@@ -1,0 +1,189 @@
+/* ViewDepreciations Component Styles */
+.depreciation-table-wrapper {
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 0;
+}
+
+.depreciation-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.depreciation-table tbody tr {
+  height: 60px;
+  transition: background-color 0.2s ease;
+}
+
+.depreciation-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.depreciation-table tbody td {
+  vertical-align: middle !important;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.depreciation-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.depreciation-table thead th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.depreciation-page-header {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #545f71;
+}
+
+.depreciation-top-section-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.depreciation-search-form {
+  margin-right: 10px;
+}
+
+.depreciation-table-container {
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.depreciation-table-header-checkbox {
+  width: 40px;
+}
+
+.depreciation-table-header-name {
+  width: 40%;
+}
+
+.depreciation-table-header-duration {
+  width: 25%;
+}
+
+.depreciation-table-header-minimum-value {
+  width: 25%;
+}
+
+.depreciation-table-header-action {
+  width: 40px;
+  text-align: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.depreciation-table-cell-checkbox {
+  width: 40px;
+  text-align: center;
+}
+
+.depreciation-table-cell-name {
+  width: 40%;
+  color: #495057;
+  font-weight: 500;
+}
+
+.depreciation-table-cell-duration {
+  width: 25%;
+  color: #6c757d;
+}
+
+.depreciation-table-cell-minimum-value {
+  width: 25%;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.depreciation-table-cell-action {
+  width: 60px;
+  text-align: center;
+  padding: 12px 8px;
+}
+
+.depreciation-pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: white;
+  border-top: 1px solid #e9ecef;
+}
+
+.depreciation-pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.depreciation-pagination-text {
+  color: #6c757d;
+}
+
+.depreciation-pagination-select {
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  background-color: white;
+  color: #6c757d;
+}
+
+.depreciation-pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.depreciation-prev-btn, .depreciation-next-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.depreciation-prev-btn:disabled, .depreciation-next-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.depreciation-page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: #0d6efd;
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Depreciation Table Button Alignment */
+.depreciation-table .table-buttons-edit,
+.depreciation-table .table-buttons-delete {
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}

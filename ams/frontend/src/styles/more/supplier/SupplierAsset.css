@@ -1,0 +1,16 @@
+table {
+    img {
+        width: 22px;
+        height: 22px;
+    }
+
+    th:nth-child(1) {
+        width: 10px;
+    }
+
+    th:last-child {
+        width: 50px;
+    }
+
+
+}

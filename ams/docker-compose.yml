@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # API Gateway (Kong)
+  # ==========================================
+  kong:
+    image: kong:3.9
+    container_name: kong-gateway-prod
+    environment:
+      # DB-less mode (declarative configuration)
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      # Proxy settings
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      # Listen on port 80 for proxy
+      KONG_PROXY_LISTEN: 0.0.0.0:80
+      KONG_ADMIN_LISTEN: "off"  # Disable admin API in production
+      # Performance
+      KONG_NGINX_WORKER_PROCESSES: auto
+    volumes:
+      - ./kong/kong.prod.yml:/kong/kong.yml:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - authentication
+      - assets
+      - contexts
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # Frontend Service
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    container_name: frontend-prod
+    # Port now only exposed internally via Kong
+    expose:
+      - "8000"
+    environment:
+      - PORT=8000
+    networks:
+      - app-network
+
+  # ==========================================
+  # Authentication Service
+  # ==========================================
+  authentication:
+    build:
+      context: ./backend/authentication
+      target: production
+    container_name: authentication-service-prod
+    # Port now only exposed internally via Kong
+    expose:
+      - "8001"
+    env_file:
+      - ./backend/authentication/.env.prod
+    networks:
+      - app-network
+
+  # ==========================================
+  # Assets Service
+  # ==========================================
+  assets:
+    build:
+      context: ./backend/assets
+      target: production
+    container_name: assets-service-prod
+    # Port now only exposed internally via Kong
+    expose:
+      - "8002"
+    env_file:
+      - ./backend/assets/.env.prod
+    networks:
+      - app-network
+
+  # ==========================================
+  # Contexts Service
+  # ==========================================
+  contexts:
+    build:
+      context: ./backend/contexts
+      target: production
+    container_name: contexts-service-prod
+    # Port now only exposed internally via Kong
+    expose:
+      - "8003"
+    env_file:
+      - ./backend/contexts/.env.prod
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

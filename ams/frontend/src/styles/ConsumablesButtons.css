@@ -1,0 +1,85 @@
+/* ConsumablesButtons.css - Specific styles for buttons in the Consumables table */
+
+.consumables-page .table-buttons-edit,
+.consumables-page .table-buttons-delete,
+.consumables-page .table-buttons-view,
+.consumables-table-buttons-edit,
+.consumables-table-buttons-delete,
+.consumables-table-buttons-view {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 4px !important;
+  box-sizing: content-box !important;
+}
+
+.consumables-page .table-buttons-edit img,
+.consumables-page .table-buttons-delete img,
+.consumables-page .table-buttons-view img,
+.consumables-table-buttons-edit img,
+.consumables-table-buttons-delete img,
+.consumables-table-buttons-view img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* Hover effects */
+.consumables-page .table-buttons-edit:hover,
+.consumables-page .table-buttons-view:hover,
+.consumables-table-buttons-edit:hover,
+.consumables-table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.consumables-page .table-buttons-delete:hover,
+.consumables-table-buttons-delete:hover {
+  background-color: rgba(255, 0, 0, 0.2) !important;
+}
+
+/* Specific styles for consumables-table action columns */
+.consumables-page table.consumables-table td:nth-child(7),
+.consumables-page table.consumables-table td:nth-child(8),
+.consumables-page table.consumables-table td:nth-child(9) {
+  padding: 4px !important;
+  width: 40px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  height: 40px !important;
+}
+
+.consumables-page table.consumables-table th:nth-child(7),
+.consumables-page table.consumables-table th:nth-child(8),
+.consumables-page table.consumables-table th:nth-child(9) {
+  width: 40px !important;
+  padding: 4px !important;
+  text-align: center !important;
+}
+
+.consumables-page .consumables-table {
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.consumables-page .container {
+  border-radius: 40px !important;
+  overflow: hidden !important;
+}
+
+.consumables-page .consumables-table thead tr th:first-child,
+.consumables-page .consumables-table thead tr th:last-child {
+  border-radius: 0 !important;
+}
+
+.consumables-page .consumables-table th,
+.consumables-page .consumables-table td {
+  border-radius: 0 !important;
+}

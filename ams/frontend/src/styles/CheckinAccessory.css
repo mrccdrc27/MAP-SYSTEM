@@ -1,0 +1,179 @@
+.checkin-accessory-page {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  width: auto;
+  padding: 100px 38px 38px 38px;
+  background-color: var(--bg-color);
+}
+
+.checkin-accessory-page section {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  gap: 20px;
+}
+
+.checkin-accessory-page .recent-checkout-info fieldset {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkin-accessory-page .recent-checkout-info h2 {
+  font-size: 1.25rem;
+  color: var(--secondary-text-color);
+}
+
+.checkin-accessory-page .recent-checkout-info p {
+  display: flex;
+  color: var(--secondary-text-color);
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.checkin-accessory-page .checkin-form,
+.checkin-accessory-page .recent-checkout-info {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  width: 100%;
+  align-self: center;
+  padding: 24px;
+  margin-top: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.3);
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+}
+
+.checkin-accessory-page .recent-checkout-info {
+  display: flex;
+  align-self: start;
+  width: 35%;
+  background-color: var(--bg-color);
+  box-shadow: none;
+}
+
+.checkin-accessory-page form {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.checkin-accessory-page form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.checkin-accessory-page fieldset label:not(.upload-image-btn) {
+  color: var(--secondary-text-color);
+  font-weight: 600;
+}
+
+.checkin-accessory-page input,
+.checkin-accessory-page select,
+.checkin-accessory-page textarea {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 10px;
+  border: 1px solid #d3d3d3;
+}
+
+.checkin-accessory-page textarea {
+  height: 13vh;
+}
+
+.checkin-accessory-page .checkin-form fieldset p {
+  padding: 13px 16px;
+  border-radius: 10px;
+  border: 1px solid #d3d3d3;
+  font-size: 0.875rem;
+  color: var(--secondary-text-color);
+}
+
+.checkin-accessory-page .save-btn {
+  justify-content: center;
+  align-items: center;
+  height: 48px;
+  padding: 12px 16px;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  transition: 0.5s ease;
+  cursor: pointer;
+}
+
+.checkin-accessory-page .save-btn:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.checkin-accessory-page .images-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.checkin-accessory-page .image-selected {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  width: 100px;
+  border-radius: 10px;
+  position: relative;
+}
+
+.checkin-accessory-page .image-selected img:not(.image-selected button img) {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 15px;
+  padding: 2px;
+}
+
+.checkin-accessory-page .image-selected button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 20px;
+  width: 20px;
+  padding: 10px;
+  border-radius: 50px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: red;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+}
+
+.checkin-accessory-page .image-selected button:hover {
+  background-color: darkred;
+}
+
+.checkin-accessory-page .image-selected button img {
+  height: 12px;
+  width: 12px;
+}
+
+.checkin-accessory-page .upload-image-btn {
+  display: flex;
+  width: fit-content;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--primary-color);
+  border-radius: 40px;
+  padding: 12px;
+  font-size: 0.83333rem;
+  color: var(--bg-color);
+  cursor: pointer;
+  transition: 0.5s ease;
+}
+
+.checkin-accessory-page .upload-image-btn:hover {
+  background-color: var(--primary-color-hover);
+}

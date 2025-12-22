@@ -1,0 +1,98 @@
+/* AccessoriesButtons.css - Specific styles for buttons in the Accessories table */
+.accessories-page .table-buttons-edit,
+.accessories-page .table-buttons-delete,
+.accessories-page .table-buttons-view,
+.accessories-table-buttons-edit,
+.accessories-table-buttons-delete,
+.accessories-table-buttons-view {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 auto !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid #d3d3d3 !important;
+  border-radius: 4px !important;
+  box-sizing: content-box !important;
+  cursor: pointer !important;
+}
+
+.accessories-page .table-buttons-edit img,
+.accessories-page .table-buttons-delete img,
+.accessories-page .table-buttons-view img,
+.accessories-table-buttons-edit img,
+.accessories-table-buttons-delete img,
+.accessories-table-buttons-view img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.accessories-page .table-buttons-edit:hover,
+.accessories-page .table-buttons-view:hover,
+.accessories-table-buttons-edit:hover,
+.accessories-table-buttons-view:hover {
+  background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.accessories-page .table-buttons-delete:hover,
+.accessories-table-buttons-delete:hover {
+  background-color: rgba(255, 0, 0, 0.2) !important;
+}
+
+.accessories-page table th:nth-last-child(1),
+.accessories-page table th:nth-last-child(2),
+.accessories-page table th:nth-last-child(3),
+.accessories-page table td:nth-last-child(1),
+.accessories-page table td:nth-last-child(2),
+.accessories-page table td:nth-last-child(3) {
+  text-align: center !important;
+  vertical-align: middle !important;
+  width: 60px !important;
+  padding: 8px !important;
+}
+
+.accessories-page table th:nth-last-child(1),
+.accessories-page table th:nth-last-child(2),
+.accessories-page table th:nth-last-child(3) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.accessories-page table td:nth-last-child(1) button,
+.accessories-page table td:nth-last-child(2) button,
+.accessories-page table td:nth-last-child(3) button {
+  margin: 0 auto !important;
+  display: block !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.accessories-page table td:nth-last-child(1) button img,
+.accessories-page table td:nth-last-child(2) button img,
+.accessories-page table td:nth-last-child(3) button img {
+  width: 16px !important;
+  height: 16px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.accessories-page .accessories-table {
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.accessories-page .accessories-table thead tr th:first-child,
+.accessories-page .accessories-table thead tr th:last-child {
+  border-radius: 0 !important;
+}
+
+.accessories-page .container {
+  border-radius: 40px !important;
+  overflow: hidden !important;
+}

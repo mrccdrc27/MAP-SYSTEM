@@ -1,0 +1,267 @@
+.status-archived,
+.status-deployed,
+.status-undeployable,
+.status-pending,
+.status-deployable,
+.status-lost,
+.status-create,
+.status-update,
+.status-delete,
+.status-checkin,
+.status-checkout,
+.status-schedule,
+.status-passed,
+.status-failed,
+.status-repair {
+  display: inline-flex;
+  height: auto;
+  width: fit-content;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 40px;
+  gap: 5px;
+  font-size: 0.75rem;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.status-archived .circle,
+.status-deployed .circle,
+.status-undeployable .circle,
+.status-pending .circle,
+.status-deployable .circle,
+.status-lost .circle,
+.status-create .circle,
+.status-update .circle,
+.status-delete .circle,
+.status-checkin .circle,
+.status-checkout .circle,
+.status-schedule .circle,
+.status-passed .circle,
+.status-failed .circle,
+.status-repair .circle {
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  margin-right: 3px;
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--pulse-color), 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px rgba(var(--pulse-color), 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--pulse-color), 0);
+  }
+}
+
+.status-details {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.status-to {
+  margin: 0 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-deployed .status-to {
+  color: var(--deployed-text);
+}
+
+.status-target {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.status-deployed .status-target {
+  color: var(--deployed-text);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-deployed .icon img,
+.status-undeployable .icon img,
+.status-pending .icon img,
+.status-deployable .icon img {
+  height: 12px;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.status-deployed .icon img {
+  filter: invert(40%) sepia(85%) saturate(1500%) hue-rotate(199deg) brightness(100%) contrast(101%);
+}
+
+.status-archived {
+  background-color: var(--archived);
+  color: var(--archived-text);
+}
+
+.status-archived .circle {
+  background-color: #132144;
+  --pulse-color: 19, 33, 68;
+}
+
+.status-deployed {
+  background-color: var(--deployed);
+  color: var(--deployed-text);
+}
+
+.status-deployed .circle {
+  background-color: var(--deployed-text);
+  --pulse-color: 0, 123, 255;
+}
+
+.status-undeployable {
+  background-color: var(--undeployable);
+  color: var(--undeployable-text);
+}
+
+.status-undeployable .circle {
+  background-color: var(--undeployable-text);
+  --pulse-color: 204, 47, 38;
+}
+
+.status-pending {
+  background-color: var(--pending);
+  color: var(--pending-text);
+}
+
+.status-pending .circle {
+  background-color: var(--pending-text);
+  --pulse-color: 255, 149, 0;
+}
+
+.status-deployable {
+  background-color: var(--deployable);
+  color: var(--deployable-text);
+}
+
+.status-deployable .circle {
+  background-color: var(--deployable-text);
+  --pulse-color: 52, 199, 89;
+}
+
+.status-lost {
+  background-color: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+}
+
+.status-lost .circle {
+  background-color: #ff3b30;
+  --pulse-color: 255, 59, 48;
+}
+
+
+/* Even/Action in Activity Report */
+.status-create {
+  background-color: var(--create);
+  color: var(--create-text);
+}
+
+.status-create .circle {
+  background-color: var(--create-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-update {
+  background-color: var(--update);
+  color: var(--update-text);
+}
+
+.status-update .circle {
+  background-color: var(--update-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-delete {
+  background-color: var(--delete);
+  color: var(--delete-text);
+}
+
+.status-delete .circle {
+  background-color: var(--delete-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-checkin {
+  background-color: var(--checkin);
+  color: var(--checkin-text);
+}
+
+.status-checkin .circle {
+  background-color: var(--checkin-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-checkout {
+  background-color: var(--checkout);
+  color: var(--checkout-text);
+}
+
+.status-checkout .circle {
+  background-color: var(--checkout-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-schedule {
+  background-color: var(--schedule);
+  color: var(--schedule-text);
+}
+
+.status-schedule .circle {
+  background-color: var(--schedule-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-passed {
+  background-color: var(--passed);
+  color: var(--passed-text);
+}
+
+.status-passed .circle {
+  background-color: var(--passed-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-failed {
+  background-color: var(--failed);
+  color: var(--failed-text);
+}
+
+.status-failed .circle {
+  background-color: var(--failed-text);
+  --pulse-color: 19, 33, 68;
+}
+
+.status-repair {
+  background-color: var(--repair);
+  color: var(--repair-text);
+}
+
+.status-repair .circle {
+  background-color: var(--repair-text);
+  --pulse-color: 19, 33, 68;
+}

@@ -1,0 +1,245 @@
+.asset-audits-page {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  height: 100vh;
+  width: 100vw;
+  padding: 100px 38px 38px 38px;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.asset-audits-page section {
+  display: flex;
+  flex-direction: column;
+}
+
+.asset-audits-page .main-top {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asset-audits-page
+  .main-top
+  div:not(
+    .status-archived,
+    .status-deployed,
+    .status-undeployable,
+    .status-pending,
+    .status-deployable,
+    .status-lost
+  ),
+.asset-audits-page
+  .container
+  div:not(
+    .status-archived,
+    .status-deployed,
+    .status-undeployable,
+    .status-pending,
+    .status-deployable,
+    .status-lost
+  ) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.asset-audits-page .main-top button {
+  padding: 12px 16px;
+  border-radius: 40px;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.5s ease;
+}
+
+.asset-audits-page .main-top button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.asset-audits-page .tab-nav {
+  width: 100%;
+  border-bottom: 1px solid #d3d3d3;
+}
+
+.asset-audits-page .tab-nav ul {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  list-style-type: none;
+}
+
+.asset-audits-page li {
+  padding: 13px 16px;
+}
+
+.asset-audits-page li.active {
+  border-bottom: 3px solid var(--primary-color);
+}
+
+.asset-audits-page ul a {
+  color: var(--secondary-text-color);
+}
+
+.asset-audits-page ul a:hover {
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.asset-audits-page li a.active {
+  color: var(--primary-color);
+}
+
+.asset-audits-page .container {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: auto;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
+  padding-bottom: 28px;
+  overflow: none;
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
+.asset-audits-page .top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px 34px;
+  border-bottom: 1px solid #d3d3d3;
+  border-collapse: collapse;
+}
+
+.asset-audits-page .top h2 {
+  font-size: 1.25rem;
+}
+
+.asset-audits-page .top input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 40px;
+  border: 1px solid #d3d3d3;
+}
+
+.asset-audits-page .top input:hover {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+}
+
+.asset-audits-page table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.asset-audits-page table th {
+  background-color: rgba(211, 211, 211, 0.2);
+  color: var(--secondary-text-color) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+.asset-audits-page table th,
+.asset-audits-page table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d3d3d3;
+  font-size: 0.75rem;
+  color: var(--secondary-text-color) !important;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.asset-audits-page table td {
+  font-size: 0.88rem;
+  color: var(--secondary-text-color) !important;
+  height: 50px;
+}
+
+.asset-audits-page span {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  color: #34c759;
+}
+
+/* Set the width of the checkbox header and its data*/
+.asset-audits-page table th:nth-child(1),
+.asset-audits-page table td:nth-child(1) {
+  width: 3vw;
+}
+
+/* Set the width of the due date and created header and its data */
+.asset-audits-page table th:nth-child(2),
+.asset-audits-page table td:nth-child(2),
+.asset-audits-page table th:nth-last-child(4),
+.asset-audits-page table td:nth-last-child(4) {
+  width: 12vw;
+}
+
+/* Set the width of the asset head and its data */
+.asset-audits-page table th:nth-child(3),
+.asset-audits-page table td:nth-child(3) {
+  width: 16vw;
+}
+
+/* Set the width of the status column */
+.asset-audits-page table th:nth-child(4),
+.asset-audits-page table td:nth-child(4) {
+  width: 16vw;
+}
+
+/* Set the width of the notes column */
+.asset-audits-page table th:nth-child(5),
+.asset-audits-page table td:nth-child(5) {
+  width: 12vw;
+}
+
+/* Set the width of the audit, edit, delete, and view header and its data*/
+.asset-audits-page table th:nth-last-child(1),
+.asset-audits-page table td:nth-last-child(1),
+.asset-audits-page table th:nth-last-child(2),
+.asset-audits-page table td:nth-last-child(2),
+.asset-audits-page table th:nth-last-child(3),
+.asset-audits-page table td:nth-last-child(3),
+.asset-audits-page table th:nth-last-child(4),
+.asset-audits-page table td:nth-last-child(4) {
+  width: 50px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* .asset-audits-page table th:nth-last-child(1),
+.asset-audits-page table td:nth-last-child(1),
+.asset-audits-page table th:nth-last-child(2),
+.asset-audits-page table td:nth-last-child(2),
+.asset-audits-page table th:nth-last-child(3),
+.asset-audits-page table td:nth-last-child(3) {
+  width: 5vw;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+} */
+
+/* Center the action buttons */
+/* .asset-audits-page table td:nth-last-child(1) button,
+.asset-audits-page table td:nth-last-child(2) button,
+.asset-audits-page table td:nth-last-child(3) button {
+  margin: 0 auto;
+  display: block;
+} */
