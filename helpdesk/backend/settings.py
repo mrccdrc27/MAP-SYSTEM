@@ -29,6 +29,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
+# Service URLs for inter-service communication
+DJANGO_AUTH_SERVICE = os.environ.get('DJANGO_AUTH_SERVICE', 'http://localhost:8003')
 
 # Application definition
 
@@ -159,7 +161,7 @@ JWT_AUTH_COOKIE = "access_token"
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
     # Set refresh token lifetime to 8 hours (long-lived to support extended sessions)
     'REFRESH_TOKEN_LIFETIME': timedelta(hours=8),
     'ROTATE_REFRESH_TOKENS': False,

@@ -8,6 +8,7 @@ const UserRegistration = ({ token }) => {
     first_name: '',
     middle_name: '',
     last_name: '',
+    username: '',
     phone_number: '',
     profile_picture: null,
     password: '',
@@ -24,16 +25,28 @@ const UserRegistration = ({ token }) => {
     if (e.target.type === 'file') {
       setFormData({ ...formData, [e.target.name]: e.target.files[0] });
     } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
+      let value = e.target.value;
+      // Restrict phone_number to digits only, max 11
+      if (e.target.name === 'phone_number') {
+        value = value.replace(/\D/g, '').slice(0, 11);
+      }
+      setFormData({ ...formData, [e.target.name]: value });
     }
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const { first_name, middle_name, last_name, phone_number, profile_picture, password, password2 } = formData;
+    const { first_name, middle_name, last_name, username, phone_number, profile_picture, password, password2 } = formData;
 
-    if (!first_name || !last_name || !phone_number || !password || !password2) {
-      setMessage('First name, last name, phone number, and passwords are required');
+    if (!first_name || !last_name || !username || !phone_number || !password || !password2) {
+      setMessage('First name, last name, username, phone number, and passwords are required');
+      return;
+    }
+
+    // Validate phone number format: 11 digits starting with 09
+    const phoneDigits = phone_number.replace(/\D/g, '');
+    if (phoneDigits.length !== 11 || !phoneDigits.startsWith('09')) {
+      setMessage('Phone number must be 11 digits starting with 09 (e.g., 09123456789)');
       return;
     }
 
@@ -51,6 +64,7 @@ const UserRegistration = ({ token }) => {
       submitData.append('first_name', first_name);
       submitData.append('middle_name', middle_name);
       submitData.append('last_name', last_name);
+      submitData.append('username', username);
       submitData.append('phone_number', phone_number);
       submitData.append('password', password);
       submitData.append('password2', password2);
@@ -357,13 +371,37 @@ const UserRegistration = ({ token }) => {
         </div>
 
         <div style={styles.fullWidthContainer}>
+          <label style={styles.label} htmlFor="username">Username *</label>
+          <input
+            id="username"
+            style={styles.input}
+            type="text"
+            name="username"
+            placeholder="johndoe123"
+            value={formData.username}
+            onChange={handleChange}
+            required
+            onFocus={(e) => {
+              e.target.style.borderColor = colors.primary;
+              e.target.style.backgroundColor = colors.background;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = colors.border;
+              e.target.style.backgroundColor = colors.lightGray;
+            }}
+          />
+        </div>
+
+        <div style={styles.fullWidthContainer}>
           <label style={styles.label} htmlFor="phone_number">Phone Number *</label>
           <input
             id="phone_number"
             style={styles.input}
-            type="tel"
+            type="text"
+            inputMode="numeric"
             name="phone_number"
-            placeholder="+1 (555) 123-4567"
+            placeholder="09123456789"
+            maxLength="11"
             value={formData.phone_number}
             onChange={handleChange}
             required

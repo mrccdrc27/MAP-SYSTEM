@@ -1,6 +1,7 @@
 // Backend employee service
 import { API_CONFIG } from '../../config/environment.js';
 import { backendAuthService } from './authService.js';
+import { getAccessToken } from '../../utilities/secureMedia.js';
 
 const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
 
@@ -274,15 +275,41 @@ export const backendEmployeeService = {
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      console.log('Uploading image for employee:', employeeId);
-      console.log('Image file:', imageFile.name, imageFile.type, imageFile.size);
+      const endpoint = `${BASE_URL}/api/employee/upload-image/`;
+      
+      console.log('🚀 [FRONTEND] uploadEmployeeImage START');
+      console.log('🚀 [FRONTEND] Endpoint:', endpoint);
+      console.log('🚀 [FRONTEND] Image file:', imageFile.name, imageFile.type, imageFile.size);
+      console.log('🚀 [FRONTEND] BASE_URL:', BASE_URL);
+      
+      // Get authorization token from cookies
+      const token = getAccessToken();
+      console.log('🚀 [FRONTEND] Token present:', !!token, token ? `length: ${token.length}` : '');
+      
+      // Build headers - include Authorization if token exists
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🚀 [FRONTEND] Authorization header will be sent');
+      } else {
+        console.log('⚠️ [FRONTEND] No token found - request will rely on cookies');
+      }
       
       // Backend endpoint expects authenticated user and does not require an employeeId in the path
-      const response = await fetch(`${BASE_URL}/api/employee/upload-image/`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
+        headers: headers,
         body: formData,
       });
+      
+      console.log('🚀 [FRONTEND] Response received');
+      console.log('🚀 [FRONTEND] Response status:', response.status);
+      console.log('🚀 [FRONTEND] Response headers:', {
+        'content-type': response.headers.get('content-type'),
+        'content-length': response.headers.get('content-length')
+      });
+      
       handleAuthError(response);
       if (!response.ok) {
         // Read the response once and handle both JSON and text
@@ -301,19 +328,19 @@ export const backendEmployeeService = {
           // If reading fails, use default message
         }
         
-        console.error('Upload failed:', errorMessage);
+        console.error('❌ [FRONTEND] Upload failed:', errorMessage);
         throw new Error(errorMessage);
       }
 
       try {
         const result = await response.json();
-        console.log('Upload successful:', result);
+        console.log('✅ [FRONTEND] Upload successful:', result);
         return result;
       } catch (_) {
         return { success: true };
       }
     } catch (error) {
-      console.error('Error uploading employee image:', error);
+      console.error('❌ [FRONTEND] Error uploading employee image:', error);
       throw error;
     }
   },

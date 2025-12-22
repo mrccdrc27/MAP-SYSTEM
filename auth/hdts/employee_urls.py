@@ -18,6 +18,7 @@ from .employee_api_views import (
     EmployeeForgotPasswordView as EmployeeForgotPasswordAPIView,
     EmployeeResetPasswordView as EmployeeResetPasswordAPIView,
     MeView,
+    EmployeeByIdView,
 )
 
 
@@ -57,6 +58,9 @@ def employees_root(request, format=None):
 
 urlpatterns = [
     path('', employees_root, name='employees-root'),
+    
+    # ========== INTERNAL SERVICE-TO-SERVICE ENDPOINTS ==========
+    path('internal/<int:employee_id>/', EmployeeByIdView.as_view(), name='employee-by-id'),
     
     # ========== API ENDPOINTS (json responses) ==========
     path('api/me/', MeView.as_view(), name='me'),

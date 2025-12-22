@@ -52,6 +52,30 @@ export default function BudgetProposalForm({
   budgetItems,
   setBudgetItems 
 }) {
+  // Local date string in YYYY-MM-DD to use as min
+  const localToday = (() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  })();
+
+  const formatDatePlusDays = (dateStr, days) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const handleStartChange = (e) => {
+    // Simply update the start date without touching end date
+    const start = e && e.target ? e.target.value : '';
+    onChange('performanceStartDate')({ target: { value: start } });
+  };
   const addBudgetItem = () => {
     setBudgetItems([...budgetItems, { cost_element: '', estimated_cost: '', description: '', account: 2 }]);
   };
@@ -222,8 +246,9 @@ export default function BudgetProposalForm({
           <input
             type="date"
             value={formData.performanceStartDate || ''}
-            onChange={onChange('performanceStartDate')}
+            onChange={handleStartChange}
             onBlur={onBlur('performanceStartDate')}
+            min={localToday}
           />
         )}
       />
@@ -234,15 +259,19 @@ export default function BudgetProposalForm({
         label="Performance End Date"
         required
         error={errors.performanceEndDate}
-        render={() => (
-          <input
-            type="date"
-            value={formData.performanceEndDate || ''}
-            onChange={onChange('performanceEndDate')}
-            onBlur={onBlur('performanceEndDate')}
-            min={formData.performanceStartDate || ''}
-          />
-        )}
+        render={() => {
+          const min = formData.performanceStartDate || '';
+          return (
+            <input
+              type="date"
+              value={formData.performanceEndDate || ''}
+              onChange={onChange('performanceEndDate')}
+              onBlur={onBlur('performanceEndDate')}
+              min={min}
+              disabled={!formData.performanceStartDate}
+            />
+          );
+        }}
       />
 
       {/* Prepared By */}

@@ -3,6 +3,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
 from .forms import UserRegistrationForm
 from users.models import User
 from roles.models import Role
@@ -14,6 +17,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from users.serializers import UserProfileSerializer
+from .serializers import EmployeeProfileSerializer
 from django.shortcuts import get_object_or_404
 from system_roles.models import UserSystemRole
 
@@ -104,58 +108,94 @@ def manage_pending_users_view(request):
     return render(request, 'management/hdts/user_management/pending_approvals.html', context)
 
 @hdts_admin_required
-@require_POST # Ensure this view only accepts POST requests
+@csrf_exempt  # Exempt from CSRF for API calls from frontend
 def update_user_status_view(request, user_id):
     """
     Handles the POST request to approve or reject a user.
+    Accepts both form-encoded and JSON data.
+    Updates both User and Employees tables for consistency.
     """
     from django.utils import timezone
+    from .models import Employees
     
-    user_to_update = get_object_or_404(User, id=user_id)
-    action = request.POST.get('action') # 'approve' or 'reject'
-
-    if user_to_update.status != 'Pending':
-        messages.warning(request, f"User {user_to_update.email} is no longer pending.")
-        return redirect('hdts:manage_pending_users')
-
-    if action == 'approve':
-        user_to_update.status = 'Approved'
-        user_to_update.approved_at = timezone.now()  # Set approval timestamp
-        user_to_update.approved_by = request.user  # Track who approved
-        # Add notification logic here if needed
-        # notification_client.send_notification(...)
-        messages.success(request, f"User {user_to_update.email} approved.")
-    elif action == 'reject':
-        user_to_update.status = 'Rejected'
-        user_to_update.rejected_at = timezone.now()  # Set rejection timestamp
-        user_to_update.rejected_by = request.user  # Track who rejected
-        # Optionally deactivate the user or add notification logic
-        # user_to_update.is_active = False 
-        messages.success(request, f"User {user_to_update.email} rejected.")
-    else:
-        messages.error(request, "Invalid action.")
-        return redirect('hdts:manage_pending_users')
-
-    user_to_update.save(update_fields=['status', 'approved_at', 'rejected_at', 'approved_by', 'rejected_by']) # Save status and audit fields
-
-    return redirect('hdts:manage_pending_users') # Redirect back to the management page
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    # Parse action from either form data or JSON
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            action = data.get('action')
+        else:
+            action = request.POST.get('action')
+    except json.JSONDecodeError:
+        action = request.POST.get('action')
+    
+    # Try to find in User table first, then Employees table
+    user_to_update = None
+    employee_to_update = None
+    
+    try:
+        user_to_update = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        pass
+    
+    try:
+        employee_to_update = Employees.objects.get(id=user_id)
+    except Employees.DoesNotExist:
+        pass
+    
+    if not user_to_update and not employee_to_update:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    
+    # Check if either is pending
+    is_user_pending = user_to_update and user_to_update.status == 'Pending'
+    is_employee_pending = employee_to_update and employee_to_update.status == 'Pending'
+    
+    if not is_user_pending and not is_employee_pending:
+        return JsonResponse({'error': 'User is no longer pending'}, status=400)
+    
+    if action not in ['approve', 'reject']:
+        return JsonResponse({'error': 'Invalid action'}, status=400)
+    
+    # Update User table if exists
+    if user_to_update:
+        user_to_update.status = 'Approved' if action == 'approve' else 'Rejected'
+        user_to_update.status_at = timezone.now()
+        user_to_update.status_by = request.user
+        user_to_update.save(update_fields=['status', 'status_at', 'status_by'])
+    
+    # Update Employees table if exists
+    if employee_to_update:
+        employee_to_update.status = 'Approved' if action == 'approve' else 'Rejected'
+        employee_to_update.updated_at = timezone.now()
+        employee_to_update.save(update_fields=['status', 'updated_at'])
+    
+    status_text = 'approved' if action == 'approve' else 'rejected'
+    email = user_to_update.email if user_to_update else employee_to_update.email
+    messages.success(request, f"User {email} {status_text}.")
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'User {status_text} successfully',
+        'user_id': user_id,
+        'status': 'Approved' if action == 'approve' else 'Rejected'
+    })
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_pending_users_api(request):
     """
-    API endpoint to get pending HDTS Employee registrations.
+    API endpoint to get pending HDTS Employee registrations from hdts_employees table.
     Returns JSON data for frontend consumption.
     """
-    # Find users who have the Employee role in the 'hdts' system AND have status='Pending'
-    pending_users = User.objects.filter(
-        status='Pending',
-        system_roles__system__slug='hdts',
-        system_roles__role__name='Employee'
-    ).distinct()
+    from .models import Employees
     
-    serializer = UserProfileSerializer(pending_users, many=True)
+    # Find employees with status='Pending' from hdts_employees table
+    pending_users = Employees.objects.filter(status='Pending')
+    
+    serializer = EmployeeProfileSerializer(pending_users, many=True)
     return Response({
         'count': pending_users.count(),
         'users': serializer.data

@@ -390,8 +390,23 @@ class UILogoutView(TemplateView):
     """UI logout view that clears JWT cookies and redirects to login."""
     
     def get(self, request, *args, **kwargs):
-        # Create redirect response to login page with logout indicator
-        logout_url = reverse('auth_login') + '?logout=1'
+        # Detect user type from JWT token before clearing
+        user_type = None
+        token_str = request.COOKIES.get('access_token')
+        if token_str:
+            try:
+                from rest_framework_simplejwt.tokens import AccessToken
+                access_token = AccessToken(token_str)
+                user_type = access_token.payload.get('user_type', 'staff')
+            except Exception:
+                pass
+        
+        # Create redirect response to appropriate login page
+        if user_type == 'employee':
+            logout_url = reverse('employee-login-shortcut') + '?logout=1'
+        else:
+            logout_url = reverse('auth_login') + '?logout=1'
+        
         response = redirect(logout_url)
         
         # Clear JWT cookies

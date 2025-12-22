@@ -9,6 +9,8 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 from .models import Employees, EmployeeOTP
 from .serializers import (
@@ -68,6 +70,7 @@ class IsEmployeeAuthenticated(BasePermission):
 
 # ==================== API Views ====================
 
+@method_decorator(csrf_exempt, name='dispatch')
 class EmployeeRegisterView(generics.CreateAPIView):
     """
     API endpoint for employee registration.
@@ -76,11 +79,19 @@ class EmployeeRegisterView(generics.CreateAPIView):
     queryset = Employees.objects.all()
     serializer_class = EmployeeRegistrationSerializer
     permission_classes = (AllowAny,)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def create(self, request, *args, **kwargs):
         """Create a new employee and send welcome notification."""
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            # Log detailed error messages for debugging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Employee registration validation errors: {serializer.errors}")
+            logger.error(f"Request data: {request.data}")
+            # Return detailed error messages
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         employee = serializer.save()
 
         # Send welcome notification
@@ -708,3 +719,25 @@ class MeView(APIView):
         except Exception:
             pass
         return None
+
+
+class EmployeeByIdView(generics.RetrieveAPIView):
+    """
+    Internal API endpoint to look up an employee by their ID.
+    Used by helpdesk backend to resolve employee data for tickets.
+    No authentication required - this is an internal service-to-service endpoint.
+    """
+    authentication_classes = []  # No authentication required
+    permission_classes = [AllowAny]
+    serializer_class = EmployeeProfileSerializer
+    
+    def get(self, request, employee_id):
+        try:
+            employee = Employees.objects.get(id=employee_id)
+            serializer = self.serializer_class(employee, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Employees.DoesNotExist:
+            return Response(
+                {'error': 'Employee not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )

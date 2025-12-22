@@ -98,8 +98,16 @@ const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
 
   const filteredAssets = useMemo(() => {
     if (!assetType) return [];
-    return assets.filter(a => String(a.productType).toLowerCase() === String(assetType).toLowerCase());
-  }, [assetType, assets]);
+    return assets.filter((a) => {
+      const matchesType = String(a.productType).toLowerCase() === String(assetType).toLowerCase();
+      if (!matchesType) return false;
+      // If this modal is approving an Asset Check Out, only show assets that are Available
+      if (ticket && ticket.category === 'Asset Check Out') {
+        return String(a.status).toLowerCase() === 'available';
+      }
+      return true;
+    });
+  }, [assetType, assets, ticket]);
 
   return (
     <ModalWrapper onClose={onClose}>

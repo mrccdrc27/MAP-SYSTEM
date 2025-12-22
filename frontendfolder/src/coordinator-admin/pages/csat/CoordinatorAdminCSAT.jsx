@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './CoordinatorAdminCSAT.module.css';
-import CSAT_MOCK from '../../../mock-data/csatData';
+import { backendTicketService } from '../../../services/backend/ticketService';
 
 import TablePagination from '../../../shared/table/TablePagination';
 import FilterPanel from '../../../shared/table/FilterPanel';
@@ -85,6 +85,7 @@ const SysAdminCSAT = () => {
     startDate: '',
     endDate: '',
   });
+  const [csatData, setCsatData] = useState([]);
 
   const handleFilterApply = (filters) => {
     setActiveFilters(filters);
@@ -98,8 +99,39 @@ const SysAdminCSAT = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCSAT, setSelectedCSAT] = useState(null);
+
+  // Fetch CSAT data from backend
+  useEffect(() => {
+    const fetchCSATData = async () => {
+      setIsLoading(true);
+      try {
+        const data = await backendTicketService.getCSATFeedback();
+        // Transform backend data to match expected format
+        const transformed = data.map((item) => ({
+          id: item.id,
+          ticketId: item.id,
+          ticketNumber: item.ticket_number,
+          subject: item.subject,
+          rating: item.rating,
+          comment: item.feedback || '',
+          feedback: item.feedback || '',
+          employeeName: item.employee_name || 'Unknown',
+          date: item.submitted_date,
+          ticketStatus: item.status,
+          profilePic: '', // Backend doesn't return this yet
+        }));
+        setCsatData(transformed);
+      } catch (err) {
+        console.error('Failed to fetch CSAT data:', err);
+        setCsatData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCSATData();
+  }, []);
 
   // Small Avatar component with initials fallback when image fails
   const Avatar = ({ src, name, size = 40 }) => {
@@ -137,7 +169,7 @@ const SysAdminCSAT = () => {
   const title = categoryLabels[key] || 'All Ratings';
 
   const filtered = useMemo(() => {
-    let rows = CSAT_MOCK.slice();
+    let rows = csatData.slice();
 
     // Role-based visibility: Ticket Coordinators only see CSATs for tickets they reviewed/approved
     const currentUser = authService.getCurrentUser?.();
@@ -156,9 +188,9 @@ const SysAdminCSAT = () => {
       rows = rows.filter((r) => r.rating === rating);
     }
 
-    // show only CSATs for tickets that are resolved (if ticketStatus present)
+    // show only CSATs for tickets that are closed (if ticketStatus present)
     rows = rows.filter(r => {
-      if (r.ticketStatus) return String(r.ticketStatus).toLowerCase() === 'resolved';
+      if (r.ticketStatus) return String(r.ticketStatus).toLowerCase() === 'closed';
       return true; // keep if no status available
     });
 
@@ -184,7 +216,7 @@ const SysAdminCSAT = () => {
     }
 
     return rows;
-  }, [key, searchTerm, activeFilters]);
+  }, [key, searchTerm, activeFilters, csatData]);
 
   const navigate = useNavigate();
 

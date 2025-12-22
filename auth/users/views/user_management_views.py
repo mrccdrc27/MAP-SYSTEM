@@ -142,26 +142,70 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsSystemAdminOrSuperUser]
 
+    def get_permissions(self):
+        """
+        Override permissions for specific actions.
+        - list action: Allow any authenticated user (for employee profile lookups)
+        - Other actions: Require admin/superuser permissions
+        """
+        if self.action == 'list':
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
     def get_queryset(self):
         """Filter users based on requesting user's permissions for all operations"""
         queryset = User.objects.all()
+        
+        # For list action, allow employees to see users
+        if self.action == 'list':
+            # Check if user is staff/admin
+            is_admin = self.request.user.is_staff or getattr(self.request.user, 'role', None) in ['System Admin', 'Ticket Coordinator']
+            
+            if is_admin:
+                # Admin can see users in their systems
+                return filter_users_by_system_access(queryset, self.request.user)
+            else:
+                # Employee can see active users
+                return queryset.filter(is_active=True)
+        
+        # For other actions, use the standard filtering
         return filter_users_by_system_access(queryset, self.request.user)
 
     def list(self, request):
-        """List users with filtering based on permissions and current system from session"""
+        """
+        List users with filtering based on permissions and current system from session.
+        Admins see users in their systems; employees see agents for profile lookups.
+        
+        Permission: Any authenticated user can access this endpoint.
+        """
+        # Check authentication - allow any authenticated user
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
         queryset = self.get_queryset()
         
-        # Get current system from session
-        current_system_slug = request.session.get('last_selected_system')
+        # Check if user is staff/admin
+        is_admin = request.user.is_staff or getattr(request.user, 'role', None) in ['System Admin', 'Ticket Coordinator']
         
-        if current_system_slug:
-            # Filter users who have a system role in the current system
-            queryset = queryset.filter(
-                system_roles__system__slug=current_system_slug
-            ).distinct()
-        elif not request.user.is_superuser:
-            # If no system in session and not superuser, return empty queryset
-            queryset = queryset.none()
+        if is_admin:
+            # Admin logic: filter by current system from session
+            current_system_slug = request.session.get('last_selected_system')
+            
+            if current_system_slug:
+                # Filter users who have a system role in the current system
+                queryset = queryset.filter(
+                    system_roles__system__slug=current_system_slug
+                ).distinct()
+            elif not request.user.is_superuser:
+                # If no system in session and not superuser, return empty queryset
+                queryset = queryset.none()
+        else:
+            # Employee logic: return agents/users (filter for privacy)
+            # Only return non-sensitive user data for employees
+            queryset = queryset.filter(is_active=True).distinct()
         
         serializer = self.get_serializer(queryset, many=True, context={'request': request})
         return Response({
@@ -599,3 +643,31 @@ def invite_agent_view(request):
         'current_system': current_system_slug,
     }
     return render(request, 'management/invite_agent.html', context)
+
+
+# Internal endpoint for service-to-service lookups (no auth required)
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+
+class UserByIdView(APIView):
+    """
+    Internal endpoint for service-to-service lookups.
+    Returns basic user info (first_name, last_name, email) by user ID.
+    No authentication required - for internal use only.
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(pk=user_id)
+            return Response({
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'full_name': f"{user.first_name} {user.last_name}".strip(),
+            })
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

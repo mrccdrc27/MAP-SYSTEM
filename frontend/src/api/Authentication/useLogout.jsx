@@ -9,39 +9,31 @@ export function useLogout() {
   const navigate = useNavigate();
 
   const logout = async () => {
-    try {
-      console.log("Attempting logout to", `${AUTH_URL}/logout/`);
-      
-      // Make the logout request with withCredentials to handle cookies properly
-      await axios.post(`${AUTH_URL}/logout/`, {}, {
-        withCredentials: true
-      });
-      
-      console.log("Logout API call successful");
-    } catch (err) {
-      console.error("Logout API call failed:", err.response?.data || err.message);
-      // Continue with local cleanup regardless of API success/failure
-    }
-
-    // Clear all tokens from localStorage
+    // Clear all tokens from localStorage first
     console.log("Clearing local storage tokens");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("tempToken");
     
-    // Also clear cookies (in case they're being used for auth)
+    // Clear cookies manually
     console.log("Clearing cookies");
-    document.cookie = 'access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    document.cookie = 'refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    try {
+      const cookies = document.cookie ? document.cookie.split(';').map(c => c.split('=')[0].trim()) : [];
+      cookies.forEach((name) => {
+        try {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+        } catch (e) {
+          // ignore
+        }
+      });
+    } catch (e) {
+      console.error("Failed to clear cookies:", e);
+    }
 
-    // First navigate to the root/login page
-    navigate("/", { replace: true });
-    
-    // Then refresh the page to ensure complete reset of application state
-    console.log("Refreshing page to complete logout");
-    setTimeout(() => {
-      window.location.reload();
-    }, 100); // Small delay to ensure navigation completes first
+    // Redirect directly to staff login page (admin/staff logout)
+    console.log("Redirecting to staff login page");
+    window.location.href = `${AUTH_URL}/staff/login/?logout=1`;
   };
 
   return { logout };

@@ -124,6 +124,8 @@ export default function SmartSupportEmployeeCreateAccount() {
     formData.append("suffix", data.suffix || "");
     formData.append("company_id", `MA${data.companyId}`);
     formData.append("department", data.department);
+    formData.append("username", data.username);
+    formData.append("phone_number", data.phoneNumber);
     formData.append("email", data.email);
     formData.append("password", data.password);
     formData.append("confirm_password", data.confirmPassword);
@@ -145,9 +147,15 @@ export default function SmartSupportEmployeeCreateAccount() {
         if (err.email) {
           setError("email", { type: "manual", message: "Invalid Email." });
         }
+        if (err.username) {
+          setError("username", { type: "manual", message: err.username[0] || "Invalid Username." });
+        }
+        if (err.phone_number) {
+          setError("phoneNumber", { type: "manual", message: err.phone_number[0] || "Invalid Phone Number." });
+        }
 
         // Show a toast for general errors or if no field-specific error
-        if (!err.company_id && !err.email) {
+        if (!err.company_id && !err.email && !err.username && !err.phone_number) {
           toast.error(
             err.error ||
               err.message ||
@@ -246,7 +254,7 @@ export default function SmartSupportEmployeeCreateAccount() {
               }
               return true;
             },
-            ...(name !== "email" && {
+            ...(name !== "email" && name !== "phoneNumber" && {
               onChange: (e) => {
                 let value = e.target.value;
                 if (
@@ -264,8 +272,14 @@ export default function SmartSupportEmployeeCreateAccount() {
                 }
               },
             }),
+            ...(name === "phoneNumber" && {
+              onChange: (e) => {
+                // Only allow digits for phone number
+                e.target.value = e.target.value.replace(/\D/g, "").slice(0, 11);
+              },
+            }),
           })}
-          {...(name === "email" ? { onChange: undefined } : {})}
+          {...(name === "email" || name === "phoneNumber" ? { onChange: undefined } : {})}
         />
         {errors[name] && <span className={styles.errorMsg}>{errors[name].message}</span>}
       </>
@@ -333,6 +347,45 @@ export default function SmartSupportEmployeeCreateAccount() {
                     </option>
                   ))}
                 </select>
+              </>
+            )}
+
+            {renderInput("username", "Username", "text", {
+              required: "Please fill in the required field.",
+              pattern: {
+                value: /^[a-zA-Z0-9_.-]+$/,
+                message: "Invalid characters. Only letters, numbers, underscores, dots, and hyphens allowed.",
+              },
+            })}
+
+            {renderFieldset(
+              <>
+                <label>
+                  Phone Number <span className={styles.required}> *</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="11"
+                  placeholder="09123456789"
+                  className={styles.input}
+                  autoComplete="off"
+                  {...register("phoneNumber", {
+                    required: "Please fill in the required field.",
+                    pattern: {
+                      value: /^09\d{9}$/,
+                      message: "Phone number must be 11 digits starting with 09 (e.g., 09123456789).",
+                    },
+                    validate: (value) => {
+                      // Ensure only digits
+                      if (!/^\d*$/.test(value)) {
+                        return "Only numbers allowed.";
+                      }
+                      return true;
+                    },
+                  })}
+                />
+                {errors.phoneNumber && <span className={styles.errorMsg}>{errors.phoneNumber.message}</span>}
               </>
             )}
 

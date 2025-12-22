@@ -39,6 +39,7 @@ class AuthenticationRoutingMiddleware:
         '/api/v1/users/register/',
         '/api/v1/hdts/employees/api/login/',
         '/api/v1/hdts/employees/api/register/',
+        '/api/v1/token/logout/',
         '/token/',
         '/admin/',
         '/api/schema/',
@@ -65,7 +66,6 @@ class AuthenticationRoutingMiddleware:
 
     # Employee-only endpoints
     EMPLOYEE_ENDPOINTS = {
-        '/login/',  # Employee login portal
         '/profile-settings/',
         '/change-password/',
         '/api/v1/hdts/employees/',
@@ -162,9 +162,16 @@ class AuthenticationRoutingMiddleware:
                         '/api/v1/users/password/reset/', # With trailing slash
                         '/api/v1/users/password/reset',  # Without trailing slash
                         '/api/v1/users/login/verify-otp/',
+                        '/api/v1/users/verify-password/',  # Allow authenticated users to verify password
+                        '/api/v1/users/change-password/',  # Allow authenticated users to change password
                         '/api/me/',  # Allow authenticated users to check their profile
                     }
                     if path in public_api_paths:
+                        return True
+                    # Allow internal service-to-service endpoints
+                    if path.startswith('/api/v1/hdts/employees/internal/'):
+                        return True
+                    if path.startswith('/api/v1/users/internal/'):
                         return True
 
         return False
@@ -200,7 +207,7 @@ class AuthenticationRoutingMiddleware:
             # Staff trying to access invalid endpoints
             if self._is_invalid_endpoint(path, user_type):
                 # Redirect to HDTS system (fallback for invalid paths)
-                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173')
                 return HttpResponseRedirect(hdts_url)
 
         # ============ EMPLOYEE USER ROUTING ============
@@ -213,7 +220,7 @@ class AuthenticationRoutingMiddleware:
             # Employee trying to access invalid endpoints
             if self._is_invalid_endpoint(path, user_type):
                 # Redirect to HDTS system
-                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+                hdts_url = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173')
                 return HttpResponseRedirect(hdts_url)
 
         return None

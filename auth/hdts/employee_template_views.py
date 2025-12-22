@@ -92,7 +92,7 @@ class EmployeeLoginView(EmployeeNotAuthenticatedMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Get HDTS system URL from settings
-        context['hdts_system_url'] = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:3000/hdts')
+        context['hdts_system_url'] = settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173')
         # Pass reCAPTCHA settings to template
         context['recaptcha_enabled'] = getattr(settings, 'RECAPTCHA_ENABLED', True)
         context['recaptcha_site_key'] = getattr(settings, 'RECAPTCHA_SITE_KEY', '')

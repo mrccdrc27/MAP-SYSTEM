@@ -21,7 +21,7 @@ const headingMap = {
   new: "New Tickets",
   pending: "Pending Tickets",
   open: "Open Tickets",
-  "In-progress": "In Progress Tickets",
+  "in-progress": "In Progress Tickets",
   "on-hold": "On Hold Tickets",
   resolved: "Resolved Tickets",
   closed: "Closed Tickets",
@@ -81,7 +81,7 @@ const CoordinatorAdminTicketManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [modalType, setModalType] = useState(null);
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
     status: null,
     priority: null,
@@ -460,7 +460,7 @@ const CoordinatorAdminTicketManagement = () => {
                         </button>
                         {isActionable(ticket.status) && (
                           <button
-                            title="Edit"
+                            title="Approve"
                             className={styles.actionButton}
                             onClick={() => openModal("open", ticket)}
                           >
@@ -469,7 +469,7 @@ const CoordinatorAdminTicketManagement = () => {
                         )}
                         {isActionable(ticket.status) && (
                           <button
-                            title="Delete"
+                            title="Reject"
                             className={styles.actionButton}
                             onClick={() => openModal("reject", ticket)}
                           >

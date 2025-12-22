@@ -53,61 +53,28 @@ const CoordinatorAdminNavBar = () => {
   useEffect(() => {
     const fetchProfileImage = async () => {
       try {
-        const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
+        const token = localStorage.getItem('access_token');
 
-        // Helper to normalize image URL
-        const normalizeImageUrl = (rawUrl, base) => {
-          if (!rawUrl) return null;
-          let imageUrl = rawUrl;
-          if (typeof imageUrl !== 'string') imageUrl = (imageUrl.url || imageUrl.image || '') + '';
-          imageUrl = imageUrl.trim();
+        if (token) {
+          // Try to fetch latest employee profile from backend
+          try {
+            const data = await backendEmployeeService.getCurrentEmployee();
+            // Server may return snake_case or camelCase keys
+            const merged = data || {};
 
-          // If already absolute or data URL, return as-is
-          if (imageUrl.startsWith('data:') || imageUrl.startsWith('http')) return imageUrl;
-
-          // If relative path, attach provided base
-          if (base) {
-            const pref = imageUrl.startsWith('/') ? '' : '/';
-            return `${base}${pref}${imageUrl}`;
-          }
-
-          return null;
-        };
-
-        // Try auth service profile endpoint with cookies (same as employee navbar)
-        try {
-          const resp = await fetch(`${AUTH_BASE}/api/v1/users/profile/`, { 
-            method: 'GET', 
-            credentials: 'include', 
-            headers: { 'Accept': 'application/json' } 
-          });
-          
-          if (resp && resp.ok) {
-            const profile = await resp.json();
-            const candidate = normalizeImageUrl(
-              profile.image || profile.profile_image || profile.image_url || profile.imageUrl || profile.profile_picture, 
-              AUTH_BASE
-            );
-            if (candidate) { 
-              setProfileImageUrl(candidate); 
-              return; 
+            // Resolve image URL similarly to settings page using resolveMediaUrl
+            const imgCandidate = merged.profile_image || merged.image || merged.profileImage || merged.image_url || merged.imageUrl;
+            const resolved = resolveMediaUrl(imgCandidate);
+            if (resolved) {
+              setProfileImageUrl(resolved);
+              return;
             }
+          } catch (err) {
+            console.error('[Admin Navbar] Employee profile fetch failed:', err);
           }
-        } catch (err) {
-          console.error('[Admin Navbar] Auth profile fetch failed:', err);
         }
 
-        // Fallback to backend employee service
-        try {
-          const profile = await backendEmployeeService.getCurrentEmployee();
-          const imgCandidate = profile?.image || profile?.profile_image || profile?.profile_picture || profile?.image_url || profile?.imageUrl;
-          if (imgCandidate) {
-            const candidate = normalizeImageUrl(imgCandidate, AUTH_BASE);
-            if (candidate) setProfileImageUrl(candidate);
-          }
-        } catch (err) {
-          console.error('Failed to fetch admin profile image:', err);
-        }
+        // Fallback: setProfileImageUrl stays as FALLBACK_SVG
       } catch (err) {
         console.error('Unexpected error fetching profile image:', err);
       }
@@ -121,10 +88,10 @@ const CoordinatorAdminNavBar = () => {
     const onProfileUpdated = (e) => {
       console.debug('[CoordinatorAdminNav] profile:updated event', e && e.detail);
       try {
-  const detail = e?.detail || {};
-  const eventUserId = detail.userId || detail.user_id || detail.companyId || detail.company_id || null;
-  const current = currentUser;
-  const currentId = current?.id || current?.companyId || current?.company_id || null;
+        const detail = e?.detail || {};
+        const eventUserId = detail.userId || detail.user_id || detail.companyId || detail.company_id || null;
+        const current = currentUser;
+        const currentId = current?.id || current?.companyId || current?.company_id || null;
 
         // If the event is for a different user, ignore it
         if (eventUserId && currentId && String(eventUserId) !== String(currentId)) return;
@@ -139,35 +106,28 @@ const CoordinatorAdminNavBar = () => {
         // fall through to re-fetch below
       }
 
-      // Fallback: re-fetch profile from auth service
-      const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
-      
-      fetch(`${AUTH_BASE}/api/v1/users/profile/`, { 
-        method: 'GET', 
-        credentials: 'include', 
-        headers: { 'Accept': 'application/json' } 
-      })
-        .then(resp => resp.ok ? resp.json() : null)
-        .then((profile) => {
-          if (!profile) return;
-          const imgCandidate = profile.image || profile.profile_image || profile.profile_picture || profile.image_url || profile.imageUrl;
-          if (imgCandidate) {
-            if (imgCandidate.startsWith('data:') || imgCandidate.startsWith('http')) {
-              setProfileImageUrl(imgCandidate);
-            } else {
-              const pref = imgCandidate.startsWith('/') ? '' : '/';
-              setProfileImageUrl(`${AUTH_BASE}${pref}${imgCandidate}`);
+      // Fallback: re-fetch profile from backend
+      const refetchProfile = async () => {
+        try {
+          const token = localStorage.getItem('access_token');
+          if (token) {
+            const data = await backendEmployeeService.getCurrentEmployee();
+            const imgCandidate = data?.profile_image || data?.image || data?.profileImage || data?.image_url || data?.imageUrl;
+            if (imgCandidate) {
+              const resolved = resolveMediaUrl(imgCandidate);
+              if (resolved) setProfileImageUrl(resolved);
             }
           }
-        })
-        .catch((err) => {
+        } catch (err) {
           console.warn('[CoordinatorAdminNav] failed to re-fetch profile after profile:updated', err);
-        });
+        }
+      };
+      refetchProfile();
     };
 
     window.addEventListener('profile:updated', onProfileUpdated);
     return () => window.removeEventListener('profile:updated', onProfileUpdated);
-  }, []);
+  }, [currentUser]);
   // Helper to build full name supporting camelCase and snake_case fields
   const getFullName = () => {
     const u = currentUser || (() => { try { return JSON.parse(localStorage.getItem('user')||'null'); } catch { return null; } })();

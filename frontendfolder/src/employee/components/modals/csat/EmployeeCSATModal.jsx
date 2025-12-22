@@ -4,6 +4,7 @@ import { FiThumbsUp } from "react-icons/fi";
 import { MdConfirmationNumber } from "react-icons/md";
 import ModalWrapper from "../../../../shared/modals/ModalWrapper";
 import styles from "./EmployeeCSATModal.module.css";
+import { backendTicketService } from "../../../../services/backend/ticketService";
 
 const EmployeeCSATModal = ({ ticket, onClose }) => {
   const [step, setStep] = useState("rating"); // 'rating', 'feedback', or 'thankyou'
@@ -14,6 +15,7 @@ const EmployeeCSATModal = ({ ticket, onClose }) => {
   const [resolution, setResolution] = useState(null); // 'resolved' | 'partial' | 'not_resolved'
   const [wantsFollowUp, setWantsFollowUp] = useState(null); // true | false | null
   const [wantsReopen, setWantsReopen] = useState(null); // true | false | null
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // MVP feedback tags for helpdesk context
   const feedbackOptions = [
@@ -47,28 +49,42 @@ const EmployeeCSATModal = ({ ticket, onClose }) => {
     );
   };
 
-  const handleSubmit = () => {
-    // Save CSAT data (API call)
-    const csatData = {
-      ticketNumber: ticket.ticketNumber,
-      rating: selectedRating,
-      feedback: selectedFeedback,
-      comment: comment.trim(),
-      resolution: resolution,
-      wantsFollowUp: wantsFollowUp,
-      wantsReopen: wantsReopen,
-      // Derived metadata if available on ticket
-      meta: {
-        timeToResolution: ticket.timeToResolution ?? ticket.time_to_resolution ?? null,
-        interactions: ticket.interactions ?? ticket.messageCount ?? null,
-        agent: ticket.assignedTo ?? ticket.assignedAgent ?? ticket.agent ?? null,
-      },
-      timestamp: new Date().toISOString(),
-    };
-    console.log("CSAT Data:", csatData);
-    // TODO: Send to API
-    // await saveCsatFeedback(csatData);
-    setStep("thankyou");
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Get ticket ID
+      let ticketId = ticket.id || ticket.ticketId;
+      if (!ticketId) {
+        // Try to get from ticket number lookup if needed
+        const ticketNumber = ticket.ticket_number || ticket.ticketNumber;
+        if (ticketNumber) {
+          const ticketData = await backendTicketService.getTicketByNumber(ticketNumber);
+          ticketId = ticketData.id;
+        }
+      }
+      
+      if (!ticketId) {
+        console.error("Could not determine ticket ID for CSAT submission");
+        setStep("thankyou");
+        return;
+      }
+      
+      // Convert feedback array to comma-separated string for backend
+      const feedbackString = selectedFeedback.join(', ');
+      
+      // Submit to backend
+      await backendTicketService.submitCSATRating(ticketId, selectedRating, feedbackString);
+      console.log("CSAT submitted successfully:", { ticketId, rating: selectedRating, feedback: feedbackString });
+      
+    } catch (err) {
+      console.error("Failed to submit CSAT rating:", err);
+      // Still show thank you even if API fails (graceful degradation)
+    } finally {
+      setIsSubmitting(false);
+      setStep("thankyou");
+    }
   };
 
   const handleClose = () => {

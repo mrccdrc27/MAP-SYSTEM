@@ -34,6 +34,8 @@ class UserRegistrationForm(forms.ModelForm):
             'first_name', 
             'middle_name', 
             'suffix',
+            'username',
+            'phone_number',
             'company_id',
             'department', 
             'profile_picture', 
@@ -49,6 +51,8 @@ class UserRegistrationForm(forms.ModelForm):
         self.fields['department'].required = True
         self.fields['email'].required = True
         self.fields['profile_picture'].required = True
+        self.fields['username'].required = True
+        self.fields['phone_number'].required = True
         
         # Make company_id optional; your model manager will auto-generate it if blank
         self.fields['company_id'].required = False
@@ -57,6 +61,25 @@ class UserRegistrationForm(forms.ModelForm):
         # Make middle_name and suffix optional
         self.fields['middle_name'].required = False
         self.fields['suffix'].required = False
+        
+        # Set phone_number help text and widget attributes
+        self.fields['phone_number'].help_text = "Must be 11 digits starting with 09 (e.g., 09123456789)."
+        self.fields['phone_number'].widget = forms.TextInput(attrs={
+            'type': 'text',
+            'inputMode': 'numeric',
+            'maxLength': '11',
+            'pattern': '[0-9]*',
+            'placeholder': '09123456789'
+        })
+        
+        # Set company_id widget attributes - only digits, max 4
+        self.fields['company_id'].widget = forms.TextInput(attrs={
+            'type': 'text',
+            'inputMode': 'numeric',
+            'maxLength': '4',
+            'pattern': '[0-9]*',
+            'placeholder': '0000'
+        })
 
     def clean_email(self):
         """Validate that the email is unique."""
@@ -79,11 +102,13 @@ class UserRegistrationForm(forms.ModelForm):
         """
         user = User.objects.create_user(
             email=self.cleaned_data['email'],
+            username=self.cleaned_data['username'],
             password=self.cleaned_data['password'],
             first_name=self.cleaned_data['first_name'],
             last_name=self.cleaned_data['last_name'],
             middle_name=self.cleaned_data.get('middle_name'),
             suffix=self.cleaned_data.get('suffix'),
+            phone_number=self.cleaned_data['phone_number'],
             company_id=self.cleaned_data.get('company_id'), # Manager handles if empty
             department=self.cleaned_data['department'],
             profile_picture=self.cleaned_data.get('profile_picture')

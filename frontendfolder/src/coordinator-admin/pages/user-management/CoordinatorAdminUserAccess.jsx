@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FaCheck, FaTimes, FaEye } from "react-icons/fa";
 
 import styles from "./CoordinatorAdminUserAccess.module.css";
-import ViewCard from "../../../shared/components/ViewCard";
 import Button from "../../../shared/components/Button";
 import TablePagination from "../../../shared/table/TablePagination";
 import FilterPanel from "../../../shared/table/FilterPanel";
@@ -41,7 +40,7 @@ const CoordinatorAdminUserAccess = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalType, setModalType] = useState(null);
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
     category: null,
     status: null,
@@ -70,22 +69,14 @@ const CoordinatorAdminUserAccess = () => {
     setCurrentUser(viewer);
 
           // Fetch real users from the AUTH service (HDTS user store)
-          // This pulls user records from the `auth` app/database instead of
-          // the main backend employees endpoint.
-          const fetched = await authUserService.getAllHdtsUsers();
-          // authUserService may return either an array or an object like
-          // { count: X, users: [...] } — handle both shapes and also
-          // { results: [...] } when applicable.
-          const raw = Array.isArray(fetched)
-            ? fetched
-            : (Array.isArray(fetched?.users)
-                ? fetched.users
-                : (Array.isArray(fetched?.results) ? fetched.results : (fetched || [])));
-
-          console.log('UserAccess - fetched raw users length:', Array.isArray(raw) ? raw.length : typeof raw, fetched);
+          // This pulls user records from both users_user and hdts_employees tables
+          // authUserService returns all_users array combined from both tables
+          const raw = await authUserService.getAllHdtsUsers();
+          // Ensure it's an array
+          const usersArray = Array.isArray(raw) ? raw : (raw || []);
 
           // Normalize to the UI shape expected by this page
-          const normalized = raw.map(u => {
+          const normalized = usersArray.map(u => {
             // Derive role: prefer explicit `role`, but many auth users store
             // roles inside `system_roles` array (with system_slug and role_name)
             let derivedRole = u.role || u.role_name || null;
@@ -216,6 +207,7 @@ const CoordinatorAdminUserAccess = () => {
           <FilterPanel
             hideToggleButton
             showDateFilters={false}
+            fields={['status', 'category']}
             categoryLabel="Department"
             statusLabel="Status"
             onApply={setActiveFilters}
@@ -231,7 +223,7 @@ const CoordinatorAdminUserAccess = () => {
             // No sub-categories for User Access filters
             subCategoryOptions={[]}
             statusOptions={[
-              { label: "Active" },
+              { label: "Approved" },
               { label: "Pending" },
               { label: "Rejected" },
               { label: "Inactive" },
@@ -243,9 +235,7 @@ const CoordinatorAdminUserAccess = () => {
           />
         )}
 
-        {/* Table Section */}
-        <ViewCard>
-          <div className={styles.tableSection}>
+        <div className={styles.tableSection}>
             <div className={styles.tableHeader}>
               <h2>{title}</h2>
               <div className={styles.tableActions}>
@@ -377,8 +367,7 @@ const CoordinatorAdminUserAccess = () => {
               )}
             </div>
           </div>
-        </ViewCard>
-      </div>
+        </div>
 
       {/* Modals */}
       {modalType === "approve" && selectedUser && (

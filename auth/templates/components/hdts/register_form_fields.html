@@ -40,6 +40,31 @@
     {% endif %}
 </div>
 
+<!-- Username Field -->
+<div class="fieldset">
+    <label for="{{ form.username.id_for_label }}">
+        Username <span class="required">*</span>
+    </label>
+    {{ form.username }}
+    {% if form.username.errors %}
+    <span class="error-msg">{{ form.username.errors.0 }}</span>
+    {% endif %}
+</div>
+
+<!-- Phone Number Field -->
+<div class="fieldset">
+    <label for="{{ form.phone_number.id_for_label }}">
+        Phone Number <span class="required">*</span>
+    </label>
+    {{ form.phone_number }}
+    {% if form.phone_number.help_text %}
+    <div class="help-text">{{ form.phone_number.help_text }}</div>
+    {% endif %}
+    {% if form.phone_number.errors %}
+    <span class="error-msg">{{ form.phone_number.errors.0 }}</span>
+    {% endif %}
+</div>
+
 <!-- Company ID Field -->
 <div class="fieldset">
     <label for="{{ form.company_id.id_for_label }}">
@@ -157,12 +182,12 @@
 <!-- Terms & Conditions Checkbox -->
 <div class="fieldset">
     <div class="checkbox-wrapper">
-        <input type="checkbox" id="termsCheckbox" name="terms" required>
-        <label for="termsCheckbox">
+        <input type="checkbox" id="termsCheckbox" name="terms" required disabled>
+        <label for="termsCheckbox" onclick="showModal('privacy')" style="cursor: pointer;">
             I agree to the 
-            <span class="link" onclick="showModal('privacy')">Privacy Policy</span>
+            <span class="link">Privacy Policy</span>
             and
-            <span class="link" onclick="showModal('terms')">Terms and Conditions</span>
+            <span class="link">Terms and Conditions</span>
             <span class="required">*</span>
         </label>
     </div>

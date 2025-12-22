@@ -2,7 +2,7 @@
 Password management views - handles password reset, change, and forgot password flows.
 """
 
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
@@ -173,7 +173,99 @@ class ProfilePasswordResetView(generics.GenericAPIView):
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    """Serializer for changing password with only current_password and new_password."""
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
 
+    def validate(self, attrs):
+        user = self.context['request'].user
+        current_password = attrs.get('current_password')
+        new_password = attrs.get('new_password')
+
+        if not user.check_password(current_password):
+            raise serializers.ValidationError({'current_password': 'Current password is incorrect.'})
+
+        # NIST 800-63B password requirements
+        min_length = 8
+        max_length = 128
+        if len(new_password) < min_length:
+            raise serializers.ValidationError({'new_password': f'Password must be at least {min_length} characters long.'})
+        if len(new_password) > max_length:
+            raise serializers.ValidationError({'new_password': f'Password must be at most {max_length} characters long.'})
+
+        # Check for username/email in password
+        username = user.username.lower() if user.username else ''
+        email = user.email.lower() if user.email else ''
+        if username and username in new_password.lower():
+            raise serializers.ValidationError({'new_password': 'Password must not contain your username.'})
+        if email and email.split('@')[0] in new_password.lower():
+            raise serializers.ValidationError({'new_password': 'Password must not contain part of your email address.'})
+
+        # Check against common passwords
+        common_passwords = {"password", "12345678", "qwerty", "letmein", "admin", "welcome", "admin123", "password123"}
+        if new_password.lower() in common_passwords:
+            raise serializers.ValidationError({'new_password': 'Password is too common.'})
+
+        return attrs
+
+
+@extend_schema(
+    tags=["User Profile"],
+    summary="Change password (alternative endpoint)",
+    description="Authenticated user can change their password. Used by external services.",
+    request=ChangePasswordSerializer,
+    responses={
+        200: OpenApiResponse(description="Password changed successfully"),
+        400: OpenApiResponse(description="Validation error")
+    }
+)
+class ChangePasswordView(generics.GenericAPIView):
+    """Allow authenticated user to change their password (alternative endpoint for external services)."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            print(f"[ChangePasswordView] Validation errors: {serializer.errors}")
+            serializer.is_valid(raise_exception=True)
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
+
+
+class VerifyPasswordSerializer(serializers.Serializer):
+    """Serializer for verifying current password."""
+    current_password = serializers.CharField(write_only=True)
+
+
+@extend_schema(
+    tags=["User Profile"],
+    summary="Verify current password",
+    description="Verify that the provided password matches the authenticated user's current password.",
+    request=VerifyPasswordSerializer,
+    responses={
+        200: OpenApiResponse(description="Password verified successfully"),
+        400: OpenApiResponse(description="Incorrect password")
+    }
+)
+class VerifyPasswordView(generics.GenericAPIView):
+    """Verify the current password for an authenticated user."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = VerifyPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        current_password = serializer.validated_data['current_password']
+        user = request.user
+        
+        if hasattr(user, 'check_password') and user.check_password(current_password):
+            return Response({"detail": "Password verified."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Incorrect password."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @method_decorator([never_cache], name='dispatch')  

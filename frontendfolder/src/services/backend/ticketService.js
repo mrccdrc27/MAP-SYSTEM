@@ -343,5 +343,44 @@ export const backendTicketService = {
       console.error('Error withdrawing ticket:', error);
       throw error;
     }
+  },
+
+  async submitCSATRating(ticketId, rating, feedback = '') {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/csat/`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ rating, feedback }),
+      });
+      handleAuthError(response);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || 'Failed to submit CSAT rating');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error submitting CSAT rating:', error);
+      throw error;
+    }
+  },
+
+  async getCSATFeedback() {
+    try {
+      const response = await fetch(`${BASE_URL}/api/csat/feedback/`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      handleAuthError(response);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || 'Failed to fetch CSAT feedback');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching CSAT feedback:', error);
+      throw error;
+    }
   }
 };

@@ -505,7 +505,13 @@ export default function FilterPanel({
                 onChange={(e) => {
                   // Filter the available sub-category options by selected category
                   const available = filters.category
-                    ? finalSubCategoryOptions.filter(opt => opt.category === filters.category.label)
+                    ? finalSubCategoryOptions.filter(opt => {
+                        // Asset Check Out uses the same sub-categories as Asset Check In
+                        if (filters.category.label === "Asset Check Out") {
+                          return opt.category === "Asset Check In";
+                        }
+                        return opt.category === filters.category.label;
+                      })
                     : finalSubCategoryOptions;
                   const selected = available.find(opt => opt.label === e.target.value);
                   handleDropdownChange("subCategory", selected);
@@ -513,7 +519,13 @@ export default function FilterPanel({
               >
                 <option value="">Select {finalSubCategoryLabel.toLowerCase()}</option>
                 {(filters.category
-                  ? finalSubCategoryOptions.filter(opt => opt.category === filters.category.label)
+                  ? finalSubCategoryOptions.filter(opt => {
+                      // Asset Check Out uses the same sub-categories as Asset Check In
+                      if (filters.category.label === "Asset Check Out") {
+                        return opt.category === "Asset Check In";
+                      }
+                      return opt.category === filters.category.label;
+                    })
                   : finalSubCategoryOptions
                 ).map((option) => (
                   <option key={option.label} value={option.label}>

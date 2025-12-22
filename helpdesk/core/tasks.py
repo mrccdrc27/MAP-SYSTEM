@@ -280,3 +280,58 @@ def process_hdts_employee_sync(employee_data):
             "error": str(e),
             "employee_id": employee_data.get('employee_id'),
         }
+
+
+@shared_task(name='core.tasks.prefetch_external_profiles')
+def prefetch_external_profiles(user_ids):
+    """
+    Given a list of external user IDs (external_user_id from auth), fetch each
+    from the auth internal endpoint and upsert into ExternalEmployee. This
+    runs asynchronously to warm the cache and avoid blocking web requests.
+    """
+    try:
+        from django.conf import settings
+        import requests
+        from .models import ExternalEmployee
+
+        auth_service = getattr(settings, 'DJANGO_AUTH_SERVICE', None)
+        if not auth_service:
+            return {'status': 'no-auth-service'}
+
+        results = []
+        for uid in (user_ids or []):
+            try:
+                api_url = f"{auth_service}/api/v1/hdts/employees/internal/{uid}/"
+                r = requests.get(api_url, timeout=5)
+                if r.status_code == 200:
+                    data = r.json()
+                    # Reuse existing sync processor to upsert
+                    try:
+                        process_hdts_employee_sync({
+                            'action': 'update',
+                            'employee_id': data.get('id'),
+                            'user_id': data.get('id'),
+                            'email': data.get('email'),
+                            'username': data.get('username'),
+                            'first_name': data.get('first_name'),
+                            'last_name': data.get('last_name'),
+                            'middle_name': data.get('middle_name'),
+                            'suffix': data.get('suffix'),
+                            'phone_number': data.get('phone_number'),
+                            'company_id': data.get('company_id'),
+                            'department': data.get('department'),
+                            'status': data.get('status'),
+                            'profile_picture': data.get('profile_picture'),
+                        })
+                        results.append({'id': uid, 'status': 'cached'})
+                    except Exception as _e:
+                        results.append({'id': uid, 'status': 'error', 'error': str(_e)})
+                else:
+                    results.append({'id': uid, 'status': 'not_found', 'code': r.status_code})
+            except Exception as e:
+                results.append({'id': uid, 'status': 'request_error', 'error': str(e)})
+
+        return {'status': 'completed', 'results': results}
+    except Exception as e:
+        logger.exception('prefetch_external_profiles failed')
+        return {'status': 'failed', 'error': str(e)}

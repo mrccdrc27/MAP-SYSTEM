@@ -59,7 +59,7 @@ const CoordinatorBMSTickets = () => {
 
 	const [currentUser, setCurrentUser] = useState(null);
 	const [allTickets, setAllTickets] = useState([]);
-	const [showFilter, setShowFilter] = useState(false);
+	const [showFilter, setShowFilter] = useState(true);
 	const [activeFilters, setActiveFilters] = useState({
 		status: null,
 		priority: null,

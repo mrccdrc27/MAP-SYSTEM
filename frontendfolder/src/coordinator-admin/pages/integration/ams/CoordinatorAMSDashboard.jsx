@@ -7,45 +7,14 @@ import TablePagination from '../../../../shared/table/TablePagination';
 import FilterPanel from '../../../../shared/table/FilterPanel';
 import Tabs from '../../../../shared/components/Tabs';
 import InputField from '../../../../shared/components/InputField';
-import { localTicketService } from '../../../../services/local/ticketService';
 
 const CoordinatorAMSDashboard = () => {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [activeFilter, setActiveFilter] = useState('All');
-	const [showFilter, setShowFilter] = useState(false);
+	const [showFilter, setShowFilter] = useState(true);
 	const [activeFilters, setActiveFilters] = useState({});
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
-
-	// Test function to create a "New" asset ticket
-	const handleCreateTestTicket = async () => {
-		try {
-			const result = await localTicketService.forceCreateTicket({
-				employeeId: 1,
-				employeeName: 'Jane Smith',
-				category: 'Asset Check Out',
-				subCategory: 'Projector',
-				status: 'New',
-				priority: 'Medium',
-				subject: 'Projector checkout for presentation',
-				description: 'Need to checkout Epson projector for client presentation',
-				assetName: 'Epson PowerLite 1795F',
-				location: 'Main Office - Room 301',
-				assignedTo: 'Asset Management'
-			});
-			
-			if (result.success) {
-				alert(`✅ Test ticket created successfully!\n\nTicket Number: ${result.data.ticketNumber}\nStatus: ${result.data.status}\n\nCheck console for details.`);
-				console.log('🎫 Created ticket:', result.data);
-				
-				// Reload to see the new ticket
-				window.location.reload();
-			}
-		} catch (error) {
-			console.error('❌ Error creating ticket:', error);
-			alert('Failed to create test ticket. Check console for details.');
-		}
-	};
 
 	const assets = useMemo(
 		() => [
@@ -146,21 +115,6 @@ const CoordinatorAMSDashboard = () => {
 
 			{/* Top bar with Show Filter button */}
 			<div className={ticketStyles.topBar}>
-				<button 
-					onClick={handleCreateTestTicket}
-					style={{
-						padding: '8px 16px',
-						backgroundColor: '#4CAF50',
-						color: 'white',
-						border: 'none',
-						borderRadius: '4px',
-						cursor: 'pointer',
-						fontSize: '14px',
-						fontWeight: '500'
-					}}
-				>
-					🧪 Create Test "New" Ticket
-				</button>
 				<button 
 					className={ticketStyles.showFilterButton}
 					onClick={() => setShowFilter(!showFilter)}

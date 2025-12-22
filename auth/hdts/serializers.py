@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 def validate_phone_number(phone_number):
     """
-    Validate phone number in E.164 format.
+    Validate phone number format.
+    Accepts both E.164 format and local 11-digit format starting with 09.
     Returns (is_valid, error_message)
     """
     if not phone_number or not phone_number.strip():
@@ -20,11 +21,14 @@ def validate_phone_number(phone_number):
     
     phone = phone_number.strip()
     
-    # E.164 format: +{country_code}{number}
+    # Accept E.164 format: +{country_code}{number}
     e164_pattern = r'^\+\d{1,3}\d{10,14}$'
     
-    if not re.match(e164_pattern, phone):
-        return False, "Phone number must be in E.164 format (e.g., +15551234567). Ensure country code is included."
+    # Accept local 11-digit format starting with 09 (Philippine format)
+    local_pattern = r'^09\d{9}$'
+    
+    if not (re.match(e164_pattern, phone) or re.match(local_pattern, phone)):
+        return False, "Phone number must be in E.164 format (e.g., +15551234567) or local format (09XXXXXXXXX)."
     
     return True, None
 
@@ -32,14 +36,14 @@ def validate_phone_number(phone_number):
 class EmployeeRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for employee registration."""
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    company_id = serializers.CharField(read_only=True)  # Auto-generated
+    company_id = serializers.CharField(required=False, allow_blank=True)  # Accept input; auto-generate if blank
     status = serializers.CharField(read_only=True)  # Auto-set to 'Pending'
     
     class Meta:
         model = Employees
         fields = (
             'email', 'username', 'password', 'first_name', 'middle_name', 'last_name',
-            'suffix', 'phone_number', 'company_id', 'department', 'status', 'notified'
+            'suffix', 'phone_number', 'company_id', 'department', 'status', 'notified', 'profile_picture'
         )
 
     def validate_password(self, value):
@@ -83,10 +87,39 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        """Create employee with hashed password."""
+        """Create employee with hashed password and convert phone number to E.164 format."""
         password = validated_data.pop('password')
+        
+        # Convert local Philippine format (09XXXXXXXXX) to E.164 format (+639XXXXXXXXX)
+        phone_number = validated_data.get('phone_number')
+        if phone_number and phone_number.startswith('09'):
+            # Remove leading 0 and add +63 prefix
+            validated_data['phone_number'] = '+63' + phone_number[1:]
+        
+        # Handle company_id: if provided (4 digits), prefix with 'MA'; if blank, auto-generate
+        company_id = validated_data.get('company_id', '')
+        if company_id and company_id.strip():
+            # User provided company_id (4 digits) - prefix with MA
+            validated_data['company_id'] = 'MA' + company_id.strip()
+        else:
+            # Auto-generate company_id using model manager
+            validated_data['company_id'] = None  # Let the model manager generate it
+        
         employee = Employees(**validated_data)
         employee.set_password(password)
+        
+        # If company_id is None, the model's save() should auto-generate it
+        # If not, we generate it here
+        if not employee.company_id:
+            from django.db.models import Max
+            max_id = Employees.objects.filter(company_id__startswith='MA').aggregate(Max('company_id'))['company_id__max']
+            if max_id:
+                # Extract number part and increment
+                num = int(max_id[2:]) + 1
+                employee.company_id = f'MA{num:04d}'
+            else:
+                employee.company_id = 'MA0001'
+        
         employee.save()
         return employee
 
@@ -292,6 +325,10 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
             employee.failed_login_attempts = 0
             employee.save(update_fields=['failed_login_attempts'])
 
+        # Check if employee account status is Pending
+        if employee.status == 'Pending':
+            raise serializers.ValidationError('Your account is pending approval. Please wait for admin approval before logging in.')
+
         # Check if 2FA is enabled
         if employee.otp_enabled:
             # Return a flag indicating OTP is required
@@ -356,19 +393,34 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
 class EmployeeProfileSerializer(serializers.ModelSerializer):
     """Serializer for retrieving employee profile information."""
     full_name = serializers.SerializerMethodField()
+    system_roles = serializers.SerializerMethodField()
     
     class Meta:
         model = Employees
         fields = (
             'id', 'email', 'username', 'first_name', 'middle_name', 'last_name', 'suffix',
             'phone_number', 'company_id', 'department', 'status', 'profile_picture',
-            'otp_enabled', 'last_login', 'created_at', 'updated_at', 'full_name'
+            'otp_enabled', 'last_login', 'created_at', 'updated_at', 'full_name', 'system_roles'
         )
-        read_only_fields = ('id', 'company_id', 'status', 'created_at', 'updated_at', 'full_name')
+        read_only_fields = ('id', 'company_id', 'status', 'created_at', 'updated_at', 'full_name', 'system_roles')
 
     def get_full_name(self, obj):
         """Return full name of employee."""
         return obj.get_full_name()
+    
+    def get_system_roles(self, obj):
+        """Return system roles for the employee. HDTS employees have the 'Employee' role."""
+        return [
+            {
+                'id': obj.id,
+                'system_name': 'Help Desk and Ticketing System',
+                'system_slug': 'hdts',
+                'role_name': 'Employee',
+                'assigned_at': obj.created_at.isoformat() if obj.created_at else None,
+                'last_logged_on': obj.last_login.isoformat() if obj.last_login else None,
+                'is_active': True
+            }
+        ]
 
 
 class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):

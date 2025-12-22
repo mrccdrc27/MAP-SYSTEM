@@ -306,6 +306,99 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
   const getUserStatus = (u) => (u.status || u.account_status || u.state || '').toString();
   const getUserJoinedDate = (u) => (u.date_joined || u.dateJoined || u.created_at || u.created || null);
 
+  // Aggregates user data into time-based buckets based on range parameter
+  const aggregateUserData = (usersList, range = 'month') => {
+    const now = new Date();
+    
+    if (range === 'days') {
+      // Create 7 day-level data points
+      const days = Array.from({ length: 7 }).map((_, i) => {
+        const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
+        day.setHours(0, 0, 0, 0);
+        return day;
+      });
+      
+      return days.map(d => {
+        const next = new Date(d);
+        next.setDate(d.getDate() + 1);
+        const joined = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= d && uj < next;
+        }).length;
+        const active = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= d && uj < next && /approved|active/i.test(getUserStatus(u));
+        }).length;
+        const label = `${String(d.getDate()).padStart(2, '0')} ${d.toLocaleString(undefined, { month: 'short' })}`;
+        return { month: label, dataset1: joined, dataset2: active };
+      });
+    }
+    
+    if (range === 'week') {
+      // Create 4 week-level data points
+      const weeks = [];
+      const curr = new Date(now);
+      const dayOfWeek = (curr.getDay() + 6) % 7;
+      const startOfThisWeek = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate() - dayOfWeek);
+      
+      for (let i = 3; i >= 0; i--) {
+        const start = new Date(startOfThisWeek);
+        start.setDate(start.getDate() - (i * 7));
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        weeks.push({ start, end });
+      }
+      
+      return weeks.map((w, idx) => {
+        const joined = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= w.start && uj < w.end;
+        }).length;
+        const active = usersList.filter(u => {
+          const dj = getUserJoinedDate(u);
+          if (!dj) return false;
+          const uj = new Date(dj);
+          return uj >= w.start && uj < w.end && /approved|active/i.test(getUserStatus(u));
+        }).length;
+        return { month: `W${idx + 1}`, dataset1: joined, dataset2: active };
+      });
+    }
+    
+    // For 'month' and 'yearly' ranges
+    const monthsCount = range === 'yearly' ? 12 : 6;
+    const months = Array.from({ length: monthsCount }).map((_, i) => {
+      const m = new Date(now.getFullYear(), now.getMonth() - (monthsCount - 1 - i), 1);
+      return m;
+    });
+    
+    return months.map(m => {
+      const start = new Date(m.getFullYear(), m.getMonth(), 1);
+      const end = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+      const joined = usersList.filter(u => {
+        const dj = getUserJoinedDate(u);
+        if (!dj) return false;
+        const uj = new Date(dj);
+        return uj >= start && uj < end;
+      }).length;
+      const active = usersList.filter(u => {
+        const dj = getUserJoinedDate(u);
+        if (!dj) return false;
+        const uj = new Date(dj);
+        return uj >= start && uj < end && /approved|active/i.test(getUserStatus(u));
+      }).length;
+      const label = range === 'yearly' ? String(m.getFullYear()) : m.toLocaleString('default', { month: 'short' });
+      return { month: label, dataset1: joined, dataset2: active };
+    });
+  };
+
+
   useEffect(() => {
     // Fetch once on mount. Avoid depending on a freshly-parsed currentUser object
     // (authService.getCurrentUser() returns a new object each call), which caused
@@ -316,7 +409,8 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
     // Read a stable snapshot of current user for local filtering
     const current = authService.getCurrentUser();
 
-    // Try fetching pending HDTS users and all HDTS users (for pie) in parallel
+    // Fetch pending HDTS employees (employees only, status = Pending) for main table
+    // AND all HDTS users (for pie and line charts) in parallel
     Promise.allSettled([
       backendUserService.getPendingHdtsUsers(),
       backendUserService.getAllHdtsUsers()
@@ -324,18 +418,19 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       if (!mounted) return;
       const [pendingRes, allHdtsRes] = results;
 
-      // normalize pending users
+      // normalize pending employees (employees only with Pending status - from hdts_employees table)
       let pendingRaw = [];
       if (pendingRes.status === 'fulfilled') {
         const pr = pendingRes.value;
         pendingRaw = Array.isArray(pr) ? pr : (pr.users || pr.results || []);
       }
 
-      // normalize hdts users (for pie)
+      // normalize all hdts users (from both hdts_employees and users_user tables - for statistics)
       let hdtsRaw = [];
       if (allHdtsRes.status === 'fulfilled') {
         const ar = allHdtsRes.value;
-        hdtsRaw = Array.isArray(ar) ? ar : (ar.users || ar.results || []);
+        // Use all_users if available (combined from both tables), otherwise fallback to users array
+        hdtsRaw = ar.all_users || (Array.isArray(ar) ? ar : (ar.users || ar.results || []));
       }
 
       const mapUser = (o) => ({
@@ -352,7 +447,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       const mappedPending = pendingRaw.map(mapUser);
       const mappedHdts = hdtsRaw.map(mapUser);
 
-      // apply visibility filter for Ticket Coordinators
+      // apply visibility filter for Ticket Coordinators (on pending employees)
       let visible = mappedPending;
       if (current) {
         if (current.role === 'Ticket Coordinator') {
@@ -405,7 +500,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       'Pending Users'
     ].map((label, i) => ({
       label,
-      count: pendingCount,
+      count: users.length, // Count of pending employees from users array
       isHighlight: false,
       position: i,
       path: userPaths.find(p => p.label === label)?.path
@@ -415,7 +510,6 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       lastName: u.lastName || '',
       firstName: u.firstName || '',
       department: u.department || '',
-      role: u.role || '',
       status: { text: (u.status || '').toString(), statusClass: (
         (/pending/i.test(u.status) ? 'statusPending' : (/approved|active/i.test(u.status) ? 'statusApproved' : (/reject|rejected/i.test(u.status) ? 'statusRejected' : (/inactive/i.test(u.status) ? 'statusInactive' : 'statusApproved'))))
       ) }
@@ -426,30 +520,10 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       { name: 'Rejected', value: rejectedCount, fill: '#EF4444' },
       { name: 'Inactive', value: inactiveCount, fill: '#9CA3AF' }
     ],
-    lineData: (function buildLineData() {
-      // Simple monthly buckets for the last 6 months as fallback
-      const now = new Date();
-      const months = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const label = d.toLocaleString('default', { month: 'short' });
-        months.push({ label, start: new Date(d.getFullYear(), d.getMonth(), 1), end: new Date(d.getFullYear(), d.getMonth() + 1, 1) });
-      }
-
-      return months.map(m => {
-        const inBucket = users.filter(u => {
-          const dj = getUserJoinedDate(u);
-          if (!dj) return false;
-          const d = new Date(dj);
-          return d >= m.start && d < m.end;
-        });
-        const activeInBucket = inBucket.filter(u => /approved|active/i.test(getUserStatus(u))).length;
-        return { month: m.label, dataset1: inBucket.length, dataset2: activeInBucket };
-      });
-    })()
+    lineData: aggregateUserData(users, chartRange)
   };
 
-  const userActivityTimeline = users
+  const userActivityTimeline = rawUsers
     .slice() // copy
     .sort((a, b) => new Date(getUserJoinedDate(b) || 0) - new Date(getUserJoinedDate(a) || 0))
     .slice(0, 4)
@@ -460,7 +534,19 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
         const d = new Date(dj);
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       })();
-      return { time, action: `User ${u.companyId || ''} account created`, type: 'user' };
+      
+      // Determine action based on status
+      const status = getUserStatus(u).toLowerCase();
+      let actionText = 'account created';
+      if (/reject|rejected/i.test(status)) {
+        actionText = 'account rejected';
+      } else if (/inactive/i.test(status)) {
+        actionText = 'account inactive';
+      } else if (/approved|active/i.test(status)) {
+        actionText = 'account approved';
+      }
+      
+      return { time, action: `User ${u.companyId || ''} ${actionText}`, type: 'user' };
     });
 
   return (
@@ -477,7 +563,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
 
       <DataTable
         title="User Approval"
-        headers={['Company ID', 'Last Name', 'First Name', 'Department', 'Role', 'Status']}
+        headers={['Company ID', 'Last Name', 'First Name', 'Department', 'Status']}
         data={userData.tableData}
         maxVisibleRows={5}
         loading={loadingUsers}
@@ -508,12 +594,7 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
             onBrowse={() => navigate('/admin/user-access/all-users')}
           />
           <TrendLineChart
-            data={(() => {
-              const source = userData.lineData;
-              if (chartRange === 'days') return source.slice(-7);
-              if (chartRange === 'week') return source.slice(-4);
-              return source;
-            })()}
+            data={userData.lineData}
             title="Users per Period"
             isTicketChart={false}
           />

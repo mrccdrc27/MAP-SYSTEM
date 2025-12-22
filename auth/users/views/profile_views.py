@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_seriali
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 import logging
@@ -80,6 +81,7 @@ logger = logging.getLogger(__name__)
         }
     )
 )
+@method_decorator(csrf_exempt, name='dispatch')
 class ProfileView(generics.RetrieveUpdateAPIView):
     """
     API view to retrieve and partially update the profile of the currently authenticated user.
@@ -104,19 +106,51 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         """Handle profile updates with custom response."""
+        print(f"\n[AUTH_PROFILE_UPDATE] START - Profile update request received")
+        print(f"{'='*80}")
+        
         partial = kwargs.get('partial', True)  # Default to partial update
         instance = self.get_object()
+        
+        print(f"[AUTH_PROFILE_UPDATE] User instance: {instance}")
+        print(f"[AUTH_PROFILE_UPDATE] User ID: {instance.id}")
+        print(f"[AUTH_PROFILE_UPDATE] User email: {instance.email}")
         
         # Check if user is admin or superuser
         user = request.user
         is_admin_or_superuser = user.is_superuser or user.is_staff
+        
+        print(f"[AUTH_PROFILE_UPDATE] Current user: {user}")
+        print(f"[AUTH_PROFILE_UPDATE] Is admin or superuser: {is_admin_or_superuser}")
+        print(f"[AUTH_PROFILE_UPDATE] Request method: {request.method}")
+        print(f"[AUTH_PROFILE_UPDATE] Request.data keys: {list(request.data.keys())}")
+        print(f"[AUTH_PROFILE_UPDATE] Request.FILES keys: {list(request.FILES.keys())}")
+        
+        # Log all request data
+        print(f"[AUTH_PROFILE_UPDATE] Request data (all fields):")
+        for key, value in request.data.items():
+            if key == 'profile_picture':
+                print(f"[AUTH_PROFILE_UPDATE]   - {key}: <FILE OBJECT>")
+            else:
+                print(f"[AUTH_PROFILE_UPDATE]   - {key}: {value}")
+        
+        print(f"[AUTH_PROFILE_UPDATE] Request files (all):")
+        for key, file_obj in request.FILES.items():
+            print(f"[AUTH_PROFILE_UPDATE]   - {key}: {file_obj.name} ({file_obj.content_type}, {file_obj.size} bytes)")
         
         # If not admin/superuser, restrict which fields can be updated
         if not is_admin_or_superuser:
             allowed_fields = {'username', 'phone_number', 'profile_picture'}
             restricted_fields = set(request.data.keys()) - allowed_fields
             
+            print(f"[AUTH_PROFILE_UPDATE] Non-admin user detected")
+            print(f"[AUTH_PROFILE_UPDATE] Allowed fields: {allowed_fields}")
+            print(f"[AUTH_PROFILE_UPDATE] Requested fields: {set(request.data.keys())}")
+            print(f"[AUTH_PROFILE_UPDATE] Restricted fields: {restricted_fields}")
+            
             if restricted_fields:
+                print(f"[AUTH_PROFILE_UPDATE] ✗ REJECTED: Restricted fields detected")
+                print(f"{'='*80}\n")
                 return Response(
                     {
                         'error': 'Permission denied',
@@ -126,13 +160,51 @@ class ProfileView(generics.RetrieveUpdateAPIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
         
+        print(f"[AUTH_PROFILE_UPDATE] Permission check: PASSED")
+        print(f"[AUTH_PROFILE_UPDATE] Creating serializer...")
+        
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
+        
+        print(f"[AUTH_PROFILE_UPDATE] Serializer created: {type(serializer).__name__}")
+        print(f"[AUTH_PROFILE_UPDATE] Validating serializer...")
+        
+        is_valid = serializer.is_valid(raise_exception=False)
+        print(f"[AUTH_PROFILE_UPDATE] Serializer valid: {is_valid}")
+        
+        if not is_valid:
+            print(f"[AUTH_PROFILE_UPDATE] ✗ VALIDATION ERRORS:")
+            for field, errors in serializer.errors.items():
+                print(f"[AUTH_PROFILE_UPDATE]   - {field}: {errors}")
+            print(f"{'='*80}\n")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        print(f"[AUTH_PROFILE_UPDATE] ✓ Validation passed")
+        print(f"[AUTH_PROFILE_UPDATE] Saving changes...")
+        
         self.perform_update(serializer)
+        
+        print(f"[AUTH_PROFILE_UPDATE] ✓ Serializer saved")
+        print(f"[AUTH_PROFILE_UPDATE] Refreshing instance from database...")
+        
+        instance.refresh_from_db()
+        
+        print(f"[AUTH_PROFILE_UPDATE] Instance refreshed from DB")
+        print(f"[AUTH_PROFILE_UPDATE] User.profile_picture value: {instance.profile_picture}")
+        print(f"[AUTH_PROFILE_UPDATE] User.profile_picture type: {type(instance.profile_picture)}")
+        if instance.profile_picture:
+            print(f"[AUTH_PROFILE_UPDATE] User.profile_picture.name: {instance.profile_picture.name}")
+            print(f"[AUTH_PROFILE_UPDATE] User.profile_picture.url: {instance.profile_picture.url}")
 
         # Return the updated user profile using the read serializer with request context
         response_serializer = UserProfileSerializer(instance, context={'request': request})
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
+        response_data = response_serializer.data
+        
+        print(f"[AUTH_PROFILE_UPDATE] Response data keys: {list(response_data.keys())}")
+        print(f"[AUTH_PROFILE_UPDATE] Response profile_picture: {response_data.get('profile_picture')}")
+        print(f"[AUTH_PROFILE_UPDATE] ✓✓✓ SUCCESS: Profile updated")
+        print(f"{'='*80}\n")
+        
+        return Response(response_data, status=status.HTTP_200_OK)
 
     def perform_update(self, serializer):
         """Save the updated user instance."""
@@ -218,3 +290,53 @@ def profile_settings_view(request):
         'user': user,
     }
     return render(request, 'users/profile_settings.html', context)
+
+
+class UserByCompanyIdView(generics.RetrieveAPIView):
+    """
+    API view to retrieve a user's profile by their company ID.
+    Searches both User table (system users) and hdts.Employees table (employees).
+    
+    GET: Returns the user's profile information matching the company_id
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+    lookup_field = 'company_id'
+    lookup_value_regex = r'[A-Za-z0-9\-_]+'
+
+    def get_queryset(self):
+        # Return users filtered by company_id
+        return User.objects.filter(company_id=self.kwargs.get('company_id'))
+
+    def get_serializer_class(self):
+        """Dynamically select serializer based on object type."""
+        if hasattr(self, '_employee_obj') and self._employee_obj:
+            from hdts.serializers import EmployeeProfileSerializer
+            return EmployeeProfileSerializer
+        return UserProfileSerializer
+
+    def get_object(self):
+        """Get the user by company_id. Searches User table first, then Employees table."""
+        from rest_framework.exceptions import NotFound
+        
+        company_id = self.kwargs.get('company_id')
+        
+        # First, try to find in User table (system users)
+        queryset = self.get_queryset()
+        obj = queryset.first()
+        
+        if obj:
+            # Check object permissions
+            self.check_object_permissions(self.request, obj)
+            self._employee_obj = False
+            return obj
+        
+        # If not found in User table, search in hdts.Employees table (newly registered employees)
+        try:
+            from hdts.models import Employees
+            
+            employee = Employees.objects.get(company_id=company_id)
+            self._employee_obj = True
+            return employee
+        except Employees.DoesNotExist:
+            raise NotFound(f"User with company_id {company_id} not found.")
