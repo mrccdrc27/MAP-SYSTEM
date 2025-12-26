@@ -6,7 +6,6 @@ on:
       - documentations
     paths:
       - 'map-docs/**'
-
   workflow_dispatch:
 
 permissions:
@@ -16,7 +15,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true # ✅ CHANGED: Cancels old builds to save time
 
 jobs:
   build:
@@ -27,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # ✅ ADDED: Only fetches the latest commit (faster cloning)
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,8 +36,20 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: map-docs/yarn.lock
 
+      # ✅ ADDED: Caches the Docusaurus/Webpack build output
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: map-docs/node_modules/.cache
+          # Key includes OS and hash of lockfile.
+          key: ${{ runner.os }}-docusaurus-build-${{ hashFiles('map-docs/yarn.lock') }}
+          # If exact match fails, restore the most recent cache anyway
+          restore-keys: |
+            ${{ runner.os }}-docusaurus-build-
+
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        # ✅ CHANGED: Added --prefer-offline to speed up install if cache exists
+        run: yarn install --frozen-lockfile --prefer-offline
 
       - name: Build website
         run: yarn build

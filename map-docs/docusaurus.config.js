@@ -10,7 +10,7 @@ const config = {
   favicon: 'img/map-logo.png',
 
   url: 'http://localhost',
-  baseUrl: '/',
+  baseUrl: '/MAP-SYSTEM/',
 
   organizationName: 'Capstone', 
   projectName: 'ticket-tracking-system', 
