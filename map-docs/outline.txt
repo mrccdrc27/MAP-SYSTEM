@@ -1,3 +1,5 @@
+tests
+
 This is a crucial distinction. If **AMS, BMS, TTS, and HDTS** are fully-fledged systems (micro-enterprises) rather than just "modules," your documentation strategy must shift from a "Monolithic App" style to a **"Federated Platform"** style.
 
 Each system needs its own complete lifecycle documentation (Installation, Architecture, DB Schema, API), while a **Global Layer** explains how they authenticate and exchange data.
