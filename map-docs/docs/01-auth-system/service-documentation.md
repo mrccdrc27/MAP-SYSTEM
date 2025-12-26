@@ -16,7 +16,7 @@ Welcome to the comprehensive documentation for the Authentication Service. This 
 | [Auth Mechanisms](./service-documentation/auth-mechanisms) | Login flows, JWT tokens, 2FA |
 | [Middleware & Security](./service-documentation/middleware-security) | Route protection, permissions |
 | [API Reference](./service-documentation/api-reference) | Complete endpoint documentation |
-| [Development Guide](./service-documentation/development) | Setup, testing, configuration |
+| [Development Guide](./getting-started/quick-start) | Setup, testing, configuration |
 | [Integration Points](./service-documentation/integration-points) | Cross-system integration patterns |
 
 ## System Boundaries
@@ -84,6 +84,6 @@ Welcome to the comprehensive documentation for the Authentication Service. This 
 
 ## Getting Started
 
-1. **For Developers:** Start with [Development Guide](./service-documentation/development)
+1. **For Developers:** Start with [Development Guide](./getting-started/quick-start)
 2. **For Integrators:** See [Integration Points](./service-documentation/integration-points)
 3. **For API Users:** Reference [API Documentation](./service-documentation/api-reference)
