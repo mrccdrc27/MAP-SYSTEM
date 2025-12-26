@@ -24,7 +24,7 @@ const sidebars = {
         'auth-system/overview',
         {
           type: 'category',
-          label: '� Getting Started',
+          label: '🚀 Getting Started',
           collapsed: false,
           items: [
             'auth-system/getting-started/quick-start',
@@ -88,11 +88,33 @@ const sidebars = {
   // 4. TTS System Sidebar
   ttsSidebar: [
     'tts/intro',
+    'tts/overview',
     {
       type: 'category',
-      label: 'Modules',
-      items: ['tts/workflow-engine', 'tts/sla-configuration'],
-    }
+      label: '🚀 Getting Started',
+      collapsed: false,
+      items: [
+        'tts/getting-started/quick-start',
+        'tts/getting-started/configuration',
+        'tts/getting-started/seeding',
+        'tts/getting-started/docker',
+      ]
+    },
+    {
+      type: 'category',
+      label: '📖 Service Documentation',
+      collapsed: true,
+      items: [
+        'tts/service-documentation/architecture',
+        'tts/service-documentation/workflow-engine',
+        'tts/service-documentation/task-management',
+        'tts/service-documentation/api-reference',
+        'tts/service-documentation/integration-points',
+        'tts/service-documentation/development',
+      ]
+    },
+    'tts/workflow-engine',
+    'tts/sla-configuration',
   ],
 
   // 5. HDTS System Sidebar
