@@ -22,6 +22,12 @@ export const API_CONFIG = {
   AUTH: {
     BASE_URL: import.meta.env.VITE_AUTH_URL || 'http://localhost:8003',
     TIMEOUT: 10000
+  },
+  
+  // TTS Workflow API settings (port 8002)
+  TTS_WORKFLOW: {
+    BASE_URL: import.meta.env.VITE_TTS_WORKFLOW_URL || 'http://localhost:8002',
+    TIMEOUT: 10000
   }
 };
 

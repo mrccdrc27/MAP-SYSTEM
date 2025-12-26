@@ -55,7 +55,7 @@ module.exports = {
         DJANGO_USER_SERVICE_URL: "http://localhost:3000",
         DJANGO_BASE_URL: "http://localhost:8002",
         DJANGO_FRONTEND_URL: "http://localhost:1000/register",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
       }
     },
     {
@@ -131,7 +131,8 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
         DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
       }

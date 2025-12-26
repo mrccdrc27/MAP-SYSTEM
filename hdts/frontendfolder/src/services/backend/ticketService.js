@@ -3,6 +3,7 @@ import { API_CONFIG } from '../../config/environment.js';
 import { backendAuthService } from './authService.js';
 
 const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
+const WORKFLOW_URL = API_CONFIG.TTS_WORKFLOW?.BASE_URL || 'http://localhost:8002';
 
 // Helper function to get headers for cookie-based auth
 const getAuthHeaders = () => {
@@ -380,6 +381,126 @@ export const backendTicketService = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching CSAT feedback:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get tickets owned by the current user (Ticket Coordinator).
+   * Calls the workflow_api at port 8002.
+   * @param {Object} options - Query options
+   * @param {string} options.tab - 'active' or 'inactive' filter
+   * @param {string} options.search - Search term
+   * @param {number} options.page - Page number
+   * @param {number} options.pageSize - Items per page
+   * @returns {Promise<{results: Array, count: number}>}
+   */
+  async getOwnedTickets({ tab = '', search = '', page = 1, pageSize = 10 } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (tab) params.append('tab', tab);
+      if (search) params.append('search', search);
+      params.append('page', page.toString());
+      params.append('page_size', pageSize.toString());
+      
+      const url = `${WORKFLOW_URL}/tasks/owned-tickets/?${params.toString()}`;
+      console.log('Fetching owned tickets from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch owned tickets: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // API returns paginated response: { count, next, previous, results }
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous
+      };
+    } catch (error) {
+      console.error('Error fetching owned tickets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a specific owned ticket by ticket number from workflow_api.
+   * @param {string} ticketNumber - The ticket number (e.g., TX20251222801173)
+   * @returns {Promise<Object>} Task/ticket data
+   */
+  async getOwnedTicketByNumber(ticketNumber) {
+    try {
+      // First get the task by ticket number from workflow API
+      const url = `${WORKFLOW_URL}/tasks/?ticket_number=${encodeURIComponent(ticketNumber)}`;
+      console.log('Fetching owned ticket by number from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch ticket: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // API returns paginated results, get the first match
+      const results = data.results || data;
+      if (Array.isArray(results) && results.length > 0) {
+        return results[0];
+      }
+      
+      // If results is a single object
+      if (results && !Array.isArray(results)) {
+        return results;
+      }
+      
+      throw new Error('Ticket not found');
+    } catch (error) {
+      console.error('Error fetching owned ticket by number:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get full ticket details from helpdesk backend by ticket number.
+   * @param {string} ticketNumber - The ticket number
+   * @returns {Promise<Object>} Full helpdesk ticket data
+   */
+  async getHelpdeskTicketByNumber(ticketNumber) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/number/${encodeURIComponent(ticketNumber)}/`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch helpdesk ticket: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching helpdesk ticket by number:', error);
       throw error;
     }
   }
