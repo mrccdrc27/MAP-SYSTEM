@@ -1,0 +1,51 @@
+# Docker Compose for Auth Service API Tests
+# This configuration sets up an isolated test environment
+# Run: docker-compose -f docker-compose.test.yml up test-runner
+
+services:
+  # Test Database
+  test-db:
+    image: postgres:15-alpine
+    container_name: auth-test-db
+    environment:
+      POSTGRES_DB: auth_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d auth_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Test Runner - runs tests directly against test database
+  test-runner:
+    build:
+      context: ../..
+      dockerfile: testing/api_tests/Dockerfile.test
+    container_name: auth-test-runner
+    environment:
+      - DJANGO_ENV=testing
+      - DJANGO_DEBUG=True
+      - DJANGO_SECRET_KEY=test-secret-key-for-testing-only
+      - DATABASE_URL=postgres://test_user:test_password@test-db:5432/auth_test
+      - RECAPTCHA_ENABLED=False
+      - EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+    depends_on:
+      test-db:
+        condition: service_healthy
+    volumes:
+      - ../..:/app
+      - ./reports:/app/testing/api_tests/reports
+    working_dir: /app
+    command: >
+      sh -c "
+        pip install pytest pytest-django pytest-html pytest-cov &&
+        python manage.py migrate --noinput &&
+        python -m pytest testing/api_tests/ -v --junitxml=testing/api_tests/reports/junit_report.xml --html=testing/api_tests/reports/report.html --self-contained-html 2>&1 | tee testing/api_tests/reports/test_output.log
+      "
+
+networks:
+  default:
+    name: auth-test-network

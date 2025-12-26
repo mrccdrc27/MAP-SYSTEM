@@ -1,0 +1,196 @@
+Good instinct. You’re thinking about this the right way.
+
+When you want AI-generated documentation to stay **accurate, calm, and structured**, the key is to **stage the prompts** so context grows gradually instead of dumping everything at once.
+
+Below is a **safe, repeatable prompting flow** you can reuse for any service, especially auth.
+
+---
+
+## Golden rule
+
+**One responsibility per prompt.**
+Each step *locks structure* before adding detail.
+
+Think of it as scaffolding first, walls later.
+
+---
+
+## Phase 1 — Frame the documentation (no implementation yet)
+
+Start by fixing **scope and audience**.
+
+**Prompt**
+
+```
+You are helping document an authentication service.
+
+Audience:
+- backend developers
+- devops / infra
+- security reviewers
+
+Goal:
+- explain what the auth service does
+- how other services interact with it
+- not implementation details yet
+
+Create a high-level documentation outline with section titles only.
+```
+
+Do not allow content yet. Only headings.
+
+---
+
+## Phase 2 — Define system boundaries
+
+Now clarify **what it is and is not**.
+
+**Prompt**
+
+```
+Using the outline above, fill in:
+- Purpose of the auth service
+- Responsibilities
+- Explicit non-responsibilities
+
+Keep it conceptual, no code, no framework specifics.
+```
+
+This prevents scope creep later.
+
+---
+
+## Phase 3 — Actors & trust model (critical for auth)
+
+Before flows, define **who trusts whom**.
+
+**Prompt**
+
+```
+Add a section describing:
+- actors (users, services, external systems)
+- trust boundaries
+- what identities exist (user, service, token, etc.)
+
+No protocols yet.
+```
+
+This stabilizes security reasoning.
+
+---
+
+## Phase 4 — Authentication flows (one at a time)
+
+Never dump all flows at once.
+
+Example:
+
+**Prompt**
+
+```
+Document the "user login" flow only.
+
+Include:
+- preconditions
+- step-by-step flow
+- success outcome
+- failure cases
+
+No token formats or crypto details yet.
+```
+
+Then repeat for:
+
+* service-to-service auth
+* token refresh
+* logout / revocation
+
+One prompt per flow.
+
+---
+
+## Phase 5 — Authorization model (separate from auth)
+
+People mix these. Don’t.
+
+**Prompt**
+
+```
+Document how authorization works in this system.
+
+Explain:
+- roles vs permissions
+- who evaluates access
+- how other services rely on auth decisions
+
+Conceptual level only.
+```
+
+---
+
+## Phase 6 — Security considerations
+
+Only after flows are stable.
+
+**Prompt**
+
+```
+Add a security considerations section:
+- attack surfaces
+- mitigations
+- assumptions
+- things that must never be done
+
+No implementation details.
+```
+
+---
+
+## Phase 7 — Integration guide (for other services)
+
+This is where clarity matters most.
+
+**Prompt**
+
+```
+Write an integration guide for another backend service
+that needs to authenticate requests via the auth service.
+
+Explain:
+- when to call auth
+- what is trusted
+- what errors to expect
+- operational expectations
+```
+
+---
+
+## Phase 8 — Optional deep dives (appendix-style)
+
+Only if needed:
+
+* token lifecycle
+* rotation
+* audit logs
+* compliance
+
+Each as a separate prompt.
+
+---
+
+## Why this works
+
+* You cap context growth
+* Each step constrains the next
+* Security reasoning stays consistent
+* The doc becomes deployable, not rambly
+
+This approach also maps perfectly to:
+
+* Docusaurus
+* VitePress
+* MkDocs
+
+Each phase = one markdown file or section.
+
+---

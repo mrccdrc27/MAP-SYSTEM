@@ -1,0 +1,38 @@
+# Dockerfile for Auth Service API Tests
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+COPY testing/api_tests/requirements-test.txt ./testing/api_tests/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r testing/api_tests/requirements-test.txt
+
+# Copy project files
+COPY . .
+
+# Create reports directory
+RUN mkdir -p /app/testing/api_tests/reports
+
+# Default command runs all tests
+CMD ["python", "-m", "pytest", "testing/api_tests/", "-v", "--junitxml=testing/api_tests/reports/junit_report.xml"]

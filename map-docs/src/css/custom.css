@@ -1,0 +1,53 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+:root {
+  /* TTS Colors */
+  --tts-bg-color: #fcfcfc;
+  --tts-primary-color: #007bff;
+  --tts-text-color: #242424;
+  --tts-heading-color: #333;
+
+  /* Docusaurus Primary Color (Blue #007bff generated) */
+  --ifm-color-primary: #007bff;
+  --ifm-color-primary-dark: #006fe6;
+  --ifm-color-primary-darker: #0069d9;
+  --ifm-color-primary-darkest: #0056b3;
+  --ifm-color-primary-light: #1a88ff;
+  --ifm-color-primary-lighter: #268eff;
+  --ifm-color-primary-lightest: #4da3ff;
+
+  --ifm-font-family-base: "Poppins", sans-serif;
+  --ifm-heading-font-family: "Poppins", sans-serif;
+  
+  --ifm-background-color: var(--tts-bg-color);
+  --ifm-font-color-base: var(--tts-text-color);
+  
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  /* Adjust for dark mode if needed, for now keeping it simple or inverting logic where appropriate */
+  --ifm-color-primary: #4da3ff;
+  --ifm-color-primary-dark: #268eff;
+  --ifm-color-primary-darker: #1a88ff;
+  --ifm-color-primary-darkest: #007bff;
+  --ifm-color-primary-light: #0069d9;
+  --ifm-color-primary-lighter: #006fe6;
+  --ifm-color-primary-lightest: #0056b3;
+  
+  --ifm-background-color: #1b1b1d;
+  --ifm-font-color-base: #fcfcfc;
+  
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Global Styles matching TTS */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+}

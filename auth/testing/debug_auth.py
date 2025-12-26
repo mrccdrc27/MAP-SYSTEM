@@ -27,13 +27,13 @@ def test_authentication():
     # Check if user exists
     try:
         user = User.objects.get(email=email)
-        print(f"✓ User found: {user.username} (ID: {user.id})")
+        print(f"[OK] User found: {user.username} (ID: {user.id})")
         print(f"  - Is active: {user.is_active}")
         print(f"  - Is locked: {user.is_locked}")
         print(f"  - Failed attempts: {user.failed_login_attempts}")
         print(f"  - 2FA enabled: {user.otp_enabled}")
     except User.DoesNotExist:
-        print("✗ User not found in database")
+        print("[FAIL] User not found in database")
         return
     
     # Test password verification
@@ -89,9 +89,9 @@ def test_authentication():
         print(f"  - Error testing form: {e}")
     
     if authenticated_user:
-        print("\n✓ Basic authentication successful!")
+        print("\n[OK] Basic authentication successful!")
     else:
-        print("\n✗ Basic authentication failed!")
+        print("\n[FAIL] Basic authentication failed!")
         
         # Additional debugging
         print("\n6. Additional checks:")

@@ -176,7 +176,7 @@ class Command(BaseCommand):
                     employee.save()
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'✓ Created employee: {employee.email} ({employee.get_full_name()})'
+                            f'Created employee: {employee.email} ({employee.get_full_name()})'
                         )
                     )
                     created_count += 1
@@ -190,7 +190,7 @@ class Command(BaseCommand):
                     employee.save()
                     self.stdout.write(
                         self.style.WARNING(
-                            f'⟳ Updated employee: {employee.email} ({employee.get_full_name()})'
+                            f'Updated employee: {employee.email} ({employee.get_full_name()})'
                         )
                     )
                     updated_count += 1
@@ -198,7 +198,7 @@ class Command(BaseCommand):
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(
-                        f'✗ Error creating employee {emp_data.get("email")}: {str(e)}'
+                        f'Error creating employee {emp_data.get("email")}: {str(e)}'
                     )
                 )
                 logger.error(f'Error seeding employee: {str(e)}', exc_info=True)
