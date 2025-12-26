@@ -83,8 +83,8 @@ python manage.py runserver 0.0.0.0:8000
 
 ## Documentation Sections
 
-- [Architecture & Tech Stack](./service-documentation/01-architecture) - Detailed architecture
-- [Authentication Mechanisms](./service-documentation/02-auth-mechanisms) - Login flows
-- [Middleware & Security](./service-documentation/03-middleware-security) - Route protection
-- [API Reference](./service-documentation/04-api-reference) - Endpoint documentation
-- [Development Guide](./service-documentation/05-development) - Setup & testing
+- [Architecture & Tech Stack](./service-documentation/architecture) - Detailed architecture
+- [Authentication Mechanisms](./service-documentation/auth-mechanisms) - Login flows
+- [Middleware & Security](./service-documentation/middleware-security) - Route protection
+- [API Reference](./service-documentation/api-reference) - Endpoint documentation
+- [Development Guide](./service-documentation/development) - Setup & testing

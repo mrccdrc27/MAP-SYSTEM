@@ -12,12 +12,12 @@ Welcome to the comprehensive documentation for the Authentication Service. This 
 
 | Section | Description |
 |---------|-------------|
-| [Architecture](./service-documentation/01-architecture) | System design, tech stack, data models |
-| [Auth Mechanisms](./service-documentation/02-auth-mechanisms) | Login flows, JWT tokens, 2FA |
-| [Middleware & Security](./service-documentation/03-middleware-security) | Route protection, permissions |
-| [API Reference](./service-documentation/04-api-reference) | Complete endpoint documentation |
-| [Development Guide](./service-documentation/05-development) | Setup, testing, configuration |
-| [Integration Points](./service-documentation/06-integration-points) | Cross-system integration patterns |
+| [Architecture](./service-documentation/architecture) | System design, tech stack, data models |
+| [Auth Mechanisms](./service-documentation/auth-mechanisms) | Login flows, JWT tokens, 2FA |
+| [Middleware & Security](./service-documentation/middleware-security) | Route protection, permissions |
+| [API Reference](./service-documentation/api-reference) | Complete endpoint documentation |
+| [Development Guide](./service-documentation/development) | Setup, testing, configuration |
+| [Integration Points](./service-documentation/integration-points) | Cross-system integration patterns |
 
 ## System Boundaries
 
@@ -84,6 +84,6 @@ Welcome to the comprehensive documentation for the Authentication Service. This 
 
 ## Getting Started
 
-1. **For Developers:** Start with [Development Guide](./service-documentation/05-development)
-2. **For Integrators:** See [Integration Points](./service-documentation/06-integration-points)
-3. **For API Users:** Reference [API Documentation](./service-documentation/04-api-reference)
+1. **For Developers:** Start with [Development Guide](./service-documentation/development)
+2. **For Integrators:** See [Integration Points](./service-documentation/integration-points)
+3. **For API Users:** Reference [API Documentation](./service-documentation/api-reference)

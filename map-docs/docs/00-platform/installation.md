@@ -193,4 +193,4 @@ curl -X POST http://localhost:8000/api/v1/users/login/api/ \
 
 - [Authentication Flow](./authentication-flow) - Understand how auth works
 - [Auth System Overview](../auth-system/overview) - Deep dive into auth service
-- [Development Guide](../auth-system/service-documentation/05-development) - Detailed dev setup
+- [Development Guide](../auth-system/service-documentation/development) - Detailed dev setup
