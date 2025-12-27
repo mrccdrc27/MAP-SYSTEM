@@ -105,33 +105,56 @@
 .tdpTitle {
   color: var(--heading-color);
   font-size: var(--h3-font-size);
+  margin-bottom: 0.75rem;
 }
 
 .tdpMeta {
-  font-size: var(--table-head-size);
-  color: var(--table-color);
+  font-size: var(--default-font-size);
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.tdpMeta span {
+  font-weight: 600;
+  color: var(--heading-color);
 }
 
 /* Owner Description */
 .tdpOwnerDescWrapper {
-  display: flex;
-  flex-direction: column;
+  /* display: flex;
+  flex-direction: column; */
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .tdpODWItem {
+  /* display: flex;
+  justify-content: space-between; */
+
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .tdpODWLabel {
-  font-weight: 600;
+  /* font-weight: 600;
   color: #444;
-  font-size: 0.9rem;
+  font-size: 0.9rem; */
+
+  font-size: var(--default-font-size);
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .tdpODWValue {
-  font-size: 0.9rem;
+  font-size: var(--default-font-size);
   color: #222;
+  font-weight: 500;
 }
 
 .tdpDescription {
@@ -297,10 +320,18 @@
   justify-content: space-between;
   margin-bottom: 10px;
   align-items: center;
-  padding: 10px;
+
+  width: 100%;
+  background-color: var(--bg1-color);
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  border: 1px solid #e8e8e8;
 }
 
-.tdStatusLabel {
+.tdStatusCard h4,
+.actionLogs h4,
+.tdSLA h4 {
   font-size: var(--default-font-size);
   color: var(--heading-color);
   font-weight: bold;
@@ -379,11 +410,22 @@
   color: var(--heading-color);
 }
 
+/* SLA STATUS SECTION */
+.slaStatusSection {
+  margin: 1rem 0;
+  transition: all 0.3s ease;
+}
+
+.slaStatusSection:hover {
+  transform: translateY(-2px);
+}
+
 /* ACTION LOGS */
 .actionLogs {
   font-size: var(--default-font-size);
   color: var(--heading-color);
 }
+
 
 /* ANIMATION */
 @keyframes fadeInUp {

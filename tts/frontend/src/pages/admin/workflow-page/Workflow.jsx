@@ -3,9 +3,9 @@ import general from "../../../style/general.module.css";
 
 // components
 import AdminNav from "../../../components/navigation/AdminNav";
-import WorkflowFilterPanel from "../../../components/component/WorkflowFilterPanel";
 import AddWorkflow from "./modals/AddWorkflow";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
+import FilterPanel from "../../../components/component/FilterPanel";
 
 // react
 import { useEffect, useState } from "react";
@@ -115,7 +115,7 @@ export default function Workflow() {
         <section className={styles.wpBody}>
           {/* Filters */}
           <div className={styles.wpFilterSection}>
-            <WorkflowFilterPanel
+            <FilterPanel
               filters={filters}
               onFilterChange={handleFilterChange}
               categoryOptions={categoryOptions}
@@ -144,7 +144,6 @@ export default function Workflow() {
               />
             )}
           </div>
-
         </section>
       </main>
 

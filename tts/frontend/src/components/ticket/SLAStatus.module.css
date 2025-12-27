@@ -1,0 +1,361 @@
+/* SLA Status Component Styles */
+.slaContainer {
+  background: #fff;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.slaContainer:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Header */
+.slaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.slaTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+}
+
+.slaTitle i {
+  font-size: 16px;
+}
+
+/* Status Badge */
+.slaBadge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slaBadge.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.slaBadge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.slaBadge.caution {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.slaBadge.danger {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+.slaBadge.neutral {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Progress Bar */
+.slaProgress {
+  margin-bottom: 16px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.progressFill.success {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.progressFill.warning {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.progressFill.caution {
+  background: linear-gradient(90deg, #f97316, #ea580c);
+}
+
+.progressFill.danger {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.progressText {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+}
+
+/* Details */
+.slaDetails {
+  margin-bottom: 16px;
+}
+
+.slaMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.slaMessage i {
+  font-size: 14px;
+}
+
+/* Priority Info */
+.priorityInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.priorityLabel {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.priorityBadge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.priorityBadge.priority-critical {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.priorityBadge.priority-high {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.priorityBadge.priority-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.priorityBadge.priority-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Priority Indicator Dots */
+.priorityIndicator {
+  display: flex;
+  gap: 3px;
+}
+
+.priorityDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.priorityDot.active {
+  background: #3b82f6;
+}
+
+.priorityDot.inactive {
+  background: #e5e7eb;
+}
+
+/* Timestamps */
+.slaTimestamps {
+  margin-bottom: 16px;
+}
+
+.timestampRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.timestampRow:last-child {
+  border-bottom: none;
+}
+
+.timestampLabel {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.timestampValue {
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Footer */
+.slaFooter {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
+}
+
+.slaPerformance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.performanceGood {
+  color: #059669;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.performanceWarning {
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.performancePoor {
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slaPerformance i {
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .slaContainer {
+    padding: 12px;
+  }
+
+  .slaHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .priorityInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .timestampRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
+/* Dark Mode Support */
+/* @media (prefers-color-scheme: dark) {
+  .slaContainer {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .slaTitle {
+    color: #f3f4f6;
+  }
+
+  .slaMessage,
+  .priorityInfo {
+    background: #374151;
+  }
+
+  .slaMessage {
+    color: #f3f4f6;
+  }
+
+  .timestampLabel {
+    color: #9ca3af;
+  }
+
+  .timestampValue {
+    color: #f3f4f6;
+  }
+
+  .timestampRow {
+    border-color: #4b5563;
+  }
+
+  .slaFooter {
+    border-color: #4b5563;
+  }
+
+  .progressBar {
+    background: #374151;
+  }
+} */
+
+/* Animation for progress bar */
+@keyframes progressAnimation {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--progress-width);
+  }
+}
+
+.progressFill {
+  animation: progressAnimation 1s ease-out;
+}
+
+/* Focus and accessibility */
+.slaContainer:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .slaContainer {
+    box-shadow: none;
+    border: 1px solid #000;
+    break-inside: avoid;
+  }
+}
