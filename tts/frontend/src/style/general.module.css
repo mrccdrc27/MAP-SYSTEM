@@ -194,6 +194,23 @@
 tr:hover {
   background-color: #fcfcfc;
 }
+
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.clickableRow:hover {
+  /* background-color: #bedfff !important; */
+  background-color: #d6f2ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.clickableRow:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
 .btn {
   border: none;
   border: var(--border-very-light-gray);

@@ -140,14 +140,14 @@ export default function AdminNav() {
           >
             Workflow
           </NavLink>
-          <NavLink
+          {/* <NavLink
             to="/admin/agent"
             className={({ isActive }) =>
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }
           >
             Agent
-          </NavLink>
+          </NavLink> */}
           <NavLink
             to="/admin/archive"
             className={({ isActive }) =>
@@ -162,7 +162,7 @@ export default function AdminNav() {
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }
           >
-            Reporting
+            Reports
           </NavLink>
         </div>
 

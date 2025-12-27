@@ -84,7 +84,7 @@ function TicketItem({ item }) {
 
       <td>
         {item.target_resolution && !isNaN(new Date(item.target_resolution))
-          ? format(new Date(item.target_resolution), "MMMM dd, yyyy")
+          ? format(new Date(item.target_resolution), "EEEE, MMM d")
           : "—"}
       </td>
 
@@ -100,11 +100,28 @@ function TicketItem({ item }) {
   );
 }
 
+function SkeletonRow({ columns }) {
+  return (
+    <tr className={general.item}>
+      {Array.from({ length: columns }).map((_, i) => (
+        <td key={i} className={general.skeletonCell}>
+          <div
+            className={`${general.skeleton} ${
+              i === 1 ? general.skeletonSmall : ""
+            }`}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
 export default function TicketTable({
   tickets = [],
   searchValue = "",
   onSearchChange,
   activeTab,
+  loading = false,
 }) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -117,6 +134,12 @@ export default function TicketTable({
   // 👇 Add this to inspect data
   // console.log("Fetched tickets:", JSON.stringify(tickets, null, 2));
 
+   // 👇 Log the first item if it exists
+  if (tickets.length > 0) {
+    console.log("First ticket item:", tickets[0]);
+  }
+
+
   return (
     <div className={general.ticketTableSection}>
       <div className={general.tableHeader}>
@@ -125,7 +148,6 @@ export default function TicketTable({
         </h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          {/* <button className={general.exportButton}>Export</button> */}
         </div>
       </div>
       <div className={general.ticketTableWrapper}>
@@ -134,7 +156,11 @@ export default function TicketTable({
             <TicketHeader />
           </thead>
           <tbody>
-            {tickets.length > 0 ? (
+            {loading ? (
+              Array.from({ length: pageSize }).map((_, idx) => (
+                <SkeletonRow key={idx} columns={ticketHeaders.length} />
+              ))
+            ) : tickets.length > 0 ? (
               paginatedTickets.map((ticket) => (
                 <TicketItem key={ticket.id} item={ticket} />
               ))

@@ -31,8 +31,16 @@ function WorkflowHeader() {
 
 function WorkflowItem({ item }) {
   const navigate = useNavigate();
+
+  const handleRowClick = () => {
+    navigate(`/admin/workflow/${item.workflow_id}`);
+  };
+
   return (
-    <tr className={general.item}>
+    <tr
+      className={`${general.item} ${general.clickableRow}`}
+      onClick={handleRowClick}
+    >
       <td>{item.name}</td>
       <td>{item.category}</td>
       <td>{item.sub_category}</td>
@@ -74,7 +82,10 @@ export default function WorkflowTable({
         <h2>Workflow</h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          <button className={general.addButton} onClick={() => navigate('/admin/workflows/create')}>
+          <button
+            className={general.addButton}
+            onClick={() => navigate("/admin/workflows/create")}
+          >
             + Create Workflow
           </button>
         </div>

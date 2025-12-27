@@ -16,6 +16,7 @@ import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLogList from "../../../components/ticket/ActionLogList";
 import Messaging from "../../../components/messaging";
+import SLAStatus from "../../../components/ticket/SLAStatus";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
@@ -367,6 +368,9 @@ export default function TicketDetail() {
                   </span>
                 </div>
               </div>
+
+              {/* SLA Status Component */}
+
               {/* Ticket Owner */}
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
@@ -544,7 +548,7 @@ export default function TicketDetail() {
 
               <div className={styles.layoutSection}>
                 <div className={styles.tdpTabs}>
-                  {["Details", "Messages", "Logs"].map((tab) => (
+                  {["Details", "Messages"].map((tab) => (
                     <button
                       style={{ flex: 1 }}
                       key={tab}
@@ -562,8 +566,12 @@ export default function TicketDetail() {
                 {/* Detail Section */}
                 {activeTab === "Details" && (
                   <>
+                    {/* workflow */}
+                    <WorkflowTracker2 workflowData={tracker} />
+                    <br />
+                    {/* status */}
                     <div className={styles.tdStatusCard}>
-                      <div className={styles.tdStatusLabel}>Status</div>
+                      <h4>Status</h4>
                       <div
                         className={
                           general[
@@ -576,88 +584,29 @@ export default function TicketDetail() {
                         {state.ticket?.status}
                       </div>
                     </div>
-                    <WorkflowTracker2 workflowData={tracker} />
-                    {/* <div className={styles.tdInfoWrapper}>
-                      <div className={styles.tdInfoHeader}>
-                        <h3>Details</h3>
-                        <button
-                          className={styles.tdArrow}
-                          onClick={toggTicketInfosVisibility}
-                          aria-label={
-                            showTicketInfo ? "Hide details" : "Show details"
-                          }
-                          type="button"
-                        >
-                          <i
-                            className={`fa-solid fa-caret-${
-                              showTicketInfo ? "down" : "up"
-                            }`}
-                          ></i>
-                        </button>
-                      </div>
-                      {showTicketInfo && (
-                        <div className={styles.tdInfoItem}>
-                          <div className={styles.tdInfoLabelValue}>
-                            <div className={styles.tdInfoLabel}>
-                              Ticket Owner
-                            </div>
-                            <div className={styles.tdInfoValue}>
-                              {state.ticket?.user_assignment?.first_name
-                                ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
-                                : state.ticket?.user_assignment?.username ||
-                                  state.ticket?.user_assignment?.email ||
-                                  "N/A"}
-                            </div>
-                          </div>
-                          <div className={styles.tdInfoLabelValue}>
-                            <div className={styles.tdInfoLabel}>Role</div>
-                            <div className={styles.tdInfoValue}>
-                              {state.ticket?.user_assignment?.role || "N/A"}
-                            </div>
-                          </div>
-                          {state.currentOwner && (
-                            <>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Current Owner
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.user_full_name || "N/A"}
-                                </div>
-                              </div>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Owner Role
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.role || "N/A"}
-                                </div>
-                              </div>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Assignment Status
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.status || "N/A"}
-                                </div>
-                              </div>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Assigned On
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.assigned_on
-                                    ? new Date(
-                                        state.currentOwner.assigned_on
-                                      ).toLocaleString()
-                                    : "N/A"}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div> */}
+                    <br />
+                    {/* sla */}
+                    <div className={styles.tdSLA}>
+                      <h4>SLA Information</h4>
+                      {/* Here */}
+                      <SLAStatus
+                        ticket={state.ticket}
+                        targetResolution={state.ticket?.target_resolution}
+                        className={styles.slaStatusSection}
+                      />
+                    </div>
+                    <br />
+                    {/* action logs */}
+                    <div className={styles.actionLogs}>
+                      <h4>Action Logs</h4>
+                      <ActionLogList
+                        logs={
+                          logs && logs.length > 0 ? [...logs].reverse() : []
+                        }
+                        loading={loading}
+                        error={error}
+                      />
+                    </div>
                   </>
                 )}
 
@@ -668,20 +617,6 @@ export default function TicketDetail() {
                     <Messaging
                       ticket_id={state.ticket?.ticket_id}
                       ticket_owner={state.ticket?.user_assignment}
-                    />
-                  </div>
-                )}
-
-                {/* Logs Section */}
-                {activeTab === "Logs" && (
-                  <div className={styles.actionLogs}>
-                    <h4>Action Logs</h4>
-                    <ActionLogList
-                      logs={
-                        logs && logs.length > 0 ? [...logs].reverse() : []
-                      }
-                      loading={loading}
-                      error={error}
                     />
                   </div>
                 )}
