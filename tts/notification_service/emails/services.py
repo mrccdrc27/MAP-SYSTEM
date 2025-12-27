@@ -62,7 +62,7 @@ class EmailService:
         Args:
             to_email: Recipient email address
             subject: Email subject
-            template_name: Template file name (e.g., 'password_reset.html')
+            template_name: Template file name (e.g., 'task_assignment.html')
             context: Dictionary of context variables for the template
         
         Returns:

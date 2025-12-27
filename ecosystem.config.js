@@ -26,7 +26,15 @@ module.exports = {
         AMS_SYSTEM_URL: "http://localhost:3000/ams",
         HDTS_SYSTEM_URL: "http://localhost:3000/hdts",
         BMS_SYSTEM_URL: "http://localhost:3000/bms",
-        DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard"
+        DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard",
+        DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
+        DJANGO_EMAIL_HOST: "localhost",
+        DJANGO_EMAIL_PORT: "1025",
+        DJANGO_EMAIL_HOST_USER: "",
+        DJANGO_EMAIL_HOST_PASSWORD: "",
+        DJANGO_EMAIL_USE_TLS: "False",
+        DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
+
       }
     },
 
@@ -98,14 +106,25 @@ module.exports = {
         DJANGO_API_KEY: "in-app-notification-api-key-secure",
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
-        DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+        DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
+        // TTS frontend deep-linking
+        TTS_FRONTEND_URL: "http://localhost:1000",
+        TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}",
+        // Mailpit SMTP Configuration
+        DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
+        DJANGO_EMAIL_HOST: "localhost",
+        DJANGO_EMAIL_PORT: "1025",
+        DJANGO_EMAIL_HOST_USER: "",
+        DJANGO_EMAIL_HOST_PASSWORD: "",
+        DJANGO_EMAIL_USE_TLS: "False",
+        DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
       }
     },
     {
       name: 'notification-worker',
       cwd: './tts/notification_service',
       script: pythonInterpreter,
-      args: '-m celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue',
+      args: '-m celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue,user-email-sync-queue',
       interpreter: 'none',
       windowsHide: true,
       env: {
@@ -113,7 +132,18 @@ module.exports = {
         DJANGO_DEBUG: "True",
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
-        DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+        DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
+        // TTS frontend deep-linking
+        TTS_FRONTEND_URL: "http://localhost:1000",
+        TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}",
+        // Mailpit SMTP Configuration
+        DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
+        DJANGO_EMAIL_HOST: "localhost",
+        DJANGO_EMAIL_PORT: "1025",
+        DJANGO_EMAIL_HOST_USER: "",
+        DJANGO_EMAIL_HOST_PASSWORD: "",
+        DJANGO_EMAIL_USE_TLS: "False",
+        DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
       }
     },
 

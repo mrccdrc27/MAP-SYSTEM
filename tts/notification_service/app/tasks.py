@@ -6,6 +6,33 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _send_email_for_notification(user_id, subject, message, notification_type, context=None):
+    """
+    Helper to send email counterpart for in-app notification.
+    Runs in a try-except to not fail the main task if email fails.
+    """
+    try:
+        from .email_service import send_notification_email, get_template_for_notification
+        
+        template = get_template_for_notification(notification_type)
+        success, error = send_notification_email(
+            user_id=user_id,
+            subject=subject,
+            message=message,
+            notification_type=notification_type,
+            template_name=template,
+            context=context
+        )
+        
+        if not success:
+            logger.warning(f"Email notification failed for user {user_id}: {error}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Error sending email notification: {str(e)}", exc_info=True)
+        return False
+
+
 # =============================================================================
 # TASK ASSIGNMENT NOTIFICATIONS
 # =============================================================================
@@ -44,6 +71,21 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
         )
         
         logger.info(f"✅ Created assignment notification {notification.id} for user {user_id} to task item {task_item_id}")
+        
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"You have been assigned to task '{task_title}' as {role_name}.",
+            notification_type='task_assignment',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'role_name': role_name,
+                'task_item_id': task_item_id
+            }
+        )
         
         return {
             "status": "success",
@@ -141,6 +183,39 @@ def send_task_transfer_notification(
         )
         notifications_created.append(str(notification_in.id))
         logger.info(f"✅ Created transfer-in notification {notification_in.id} for user {to_user_id}")
+        
+        # Send email counterparts
+        _send_email_for_notification(
+            user_id=from_user_id,
+            subject=subject_out,
+            message=f"Your task '{task_title}' has been transferred to another team member by {transfer_by}." + (f" Reason: {transfer_notes}" if transfer_notes else ""),
+            notification_type='task_transfer_out',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': from_task_item_id,
+                'transferred_by': transfer_by,
+                'transfer_notes': transfer_notes,
+                'direction': 'out'
+            }
+        )
+        
+        _send_email_for_notification(
+            user_id=to_user_id,
+            subject=subject_in,
+            message=f"Task '{task_title}' has been transferred to you by {transfer_by}." + (f" Notes: {transfer_notes}" if transfer_notes else ""),
+            notification_type='task_transfer_in',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': to_task_item_id,
+                'transferred_by': transfer_by,
+                'transfer_notes': transfer_notes,
+                'direction': 'in'
+            }
+        )
         
         return {
             "status": "success",
@@ -249,6 +324,41 @@ def send_escalation_notification(
         notifications_created.append(str(notification_in.id))
         logger.info(f"✅ Created escalation-in notification {notification_in.id} for user {to_user_id}")
         
+        # Send email counterparts
+        _send_email_for_notification(
+            user_id=from_user_id,
+            subject=subject_out,
+            message=f"Task '{task_title}' has been escalated from {escalated_from_role} to {escalated_to_role}." + (f" Reason: {escalation_reason}" if escalation_reason else ""),
+            notification_type='task_escalation_out',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': from_task_item_id,
+                'escalated_from_role': escalated_from_role,
+                'escalated_to_role': escalated_to_role,
+                'escalation_reason': escalation_reason,
+                'direction': 'out'
+            }
+        )
+        
+        _send_email_for_notification(
+            user_id=to_user_id,
+            subject=subject_in,
+            message=f"You have received an escalated task '{task_title}' as {escalated_to_role}." + (f" Reason: {escalation_reason}" if escalation_reason else ""),
+            notification_type='task_escalation_in',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': to_task_item_id,
+                'escalated_from_role': escalated_from_role,
+                'escalated_to_role': escalated_to_role,
+                'escalation_reason': escalation_reason,
+                'direction': 'in'
+            }
+        )
+        
         return {
             "status": "success",
             "notifications_created": notifications_created,
@@ -313,6 +423,21 @@ def send_task_completed_notification(
         )
         
         logger.info(f"✅ Created task completed notification {notification.id} for user {user_id}")
+        
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"Task '{task_title}' has been completed" + (f" by {completed_by}" if completed_by else "") + ".",
+            notification_type='task_completed',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': task_item_id,
+                'completed_by': completed_by
+            }
+        )
         
         return {
             "status": "success",
@@ -382,6 +507,23 @@ def send_workflow_step_notification(
         
         logger.info(f"✅ Created workflow step notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"Task '{task_title}' has moved from '{previous_step}' to '{current_step}'.",
+            notification_type='workflow_step_change',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': task_item_id,
+                'previous_step': previous_step,
+                'current_step': current_step,
+                'action_by_name': action_by_name
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
@@ -443,6 +585,22 @@ def send_sla_warning_notification(
         
         logger.info(f"✅ Created SLA warning notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"SLA Warning: Task '{task_title}' has {time_remaining} remaining. Target resolution: {target_resolution}.",
+            notification_type='sla_warning',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': task_item_id,
+                'time_remaining': time_remaining,
+                'target_resolution': target_resolution
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
@@ -499,6 +657,22 @@ def send_sla_breach_notification(
         )
         
         logger.info(f"✅ Created SLA breach notification {notification.id} for user {user_id}")
+        
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"SLA Breached: Task '{task_title}' is overdue" + (f" by {breach_duration}" if breach_duration else "") + f". Target was: {target_resolution}.",
+            notification_type='sla_breach',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': task_item_id,
+                'target_resolution': target_resolution,
+                'breach_duration': breach_duration
+            }
+        )
         
         return {
             "status": "success",
@@ -575,6 +749,22 @@ def send_ticket_status_notification(
         )
         
         logger.info(f"✅ Created ticket status notification {notification.id} for user {user_id}")
+        
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"Ticket {ticket_number} status changed from '{old_status}' to '{new_status}'" + (f" by {changed_by_name}" if changed_by_name else "") + ".",
+            notification_type=notification_type,
+            context={
+                'ticket_number': ticket_number,
+                'ticket_subject': ticket_number,
+                'task_item_id': task_item_id,
+                'old_status': old_status,
+                'new_status': new_status,
+                'changed_by_name': changed_by_name
+            }
+        )
         
         return {
             "status": "success",
@@ -777,6 +967,22 @@ def send_comment_notification(
         
         logger.info(f"✅ Created comment notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"{commenter_name} commented on task '{task_title}': {comment_preview[:100] + '...' if comment_preview and len(comment_preview) > 100 else comment_preview or ''}",
+            notification_type='comment_added',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': task_item_id,
+                'commenter_name': commenter_name,
+                'comment_preview': comment_preview
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
@@ -835,6 +1041,22 @@ def send_mention_notification(
         
         logger.info(f"✅ Created mention notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"You were mentioned by {mentioned_by_name} in task '{task_title}': {comment_preview[:100] + '...' if comment_preview and len(comment_preview) > 100 else comment_preview or ''}",
+            notification_type='mention',
+            context={
+                'task_title': task_title,
+                'ticket_number': task_title,
+                'ticket_subject': task_title,
+                'task_item_id': task_item_id,
+                'mentioned_by_name': mentioned_by_name,
+                'comment_preview': comment_preview
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
@@ -848,3 +1070,15 @@ def send_mention_notification(
             "error": str(e),
             "task_item_id": task_item_id
         }
+
+
+# =============================================================================
+# USER EMAIL SYNC TASKS - Imported from sync_tasks module
+# =============================================================================
+
+# Import sync tasks so they are discovered by Celery autodiscover
+from .sync_tasks import (
+    sync_user_email,
+    bulk_sync_user_emails,
+    delete_user_email_cache,
+)

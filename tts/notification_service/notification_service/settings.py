@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     
     # Local apps
     'notifications',
+    'emails',
     'app',
 ]
 
@@ -82,7 +83,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'notifications', 'templates'),
+            os.path.join(BASE_DIR, 'emails', 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -222,6 +223,10 @@ EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default=SENDGRID_API_
 NOTIFICATION_SERVICE_PORT = config('DJANGO_NOTIFICATION_SERVICE_PORT', default=8001, cast=int)
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8000')
 
+# Frontend links for ticket deep-links
+TTS_FRONTEND_URL = config('TTS_FRONTEND_URL', default='http://localhost:1000')
+TTS_TICKET_PATH_TEMPLATE = config('TTS_TICKET_PATH_TEMPLATE', default='/ticket/{id}')
+
 # API Key Authentication for v2 endpoints
 NOTIFICATION_API_KEYS = config(
     'DJANGO_NOTIFICATION_API_KEYS',
@@ -255,8 +260,13 @@ CELERY_TIMEZONE = 'UTC'
 # Queues configuration for notification service
 NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-queue')
 INAPP_NOTIFICATION_QUEUE = config('DJANGO_INAPP_NOTIFICATION_QUEUE', default='inapp-notification-queue')
+USER_SYNC_QUEUE = config('DJANGO_USER_SYNC_QUEUE', default='user-email-sync-queue')
 
 CELERY_TASK_ROUTES = {
+    # User email sync tasks (from auth service)
+    'notifications.sync_user_email': {'queue': USER_SYNC_QUEUE},
+    'notifications.bulk_sync_user_emails': {'queue': USER_SYNC_QUEUE},
+    'notifications.delete_user_email_cache': {'queue': USER_SYNC_QUEUE},
     # In-app notification tasks
     'task.send_assignment_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.create_inapp_notification': {'queue': INAPP_NOTIFICATION_QUEUE},

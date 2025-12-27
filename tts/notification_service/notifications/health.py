@@ -73,7 +73,7 @@ def health_check(request):
     
     # Email service check (just verify the service can be instantiated)
     try:
-        from .email_service import get_email_service
+        from emails.services import get_email_service
         email_svc = get_email_service()
         checks['email_service'] = True
         details['email_service'] = 'initialized'

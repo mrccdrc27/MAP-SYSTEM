@@ -2,7 +2,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.template import Template, Context
 from .models import NotificationTemplate, NotificationLog, NotificationRequest
-from .email_service import get_email_service
+from emails.services import get_email_service
 import logging
 
 logger = logging.getLogger(__name__)

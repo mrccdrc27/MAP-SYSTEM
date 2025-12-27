@@ -6,7 +6,7 @@ from celery import shared_task
 from django.utils import timezone
 from django.core.cache import cache
 import logging
-from .email_service import get_email_service
+from emails.services import get_email_service
 from .models import NotificationLog
 
 logger = logging.getLogger(__name__)
