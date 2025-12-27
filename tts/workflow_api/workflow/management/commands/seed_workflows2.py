@@ -72,12 +72,21 @@ class Command(BaseCommand):
             action='store_true',
             help='Run the command without making database changes',
         )
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Force recreate by deleting existing transitions before seeding',
+        )
 
     def handle(self, *args, **options):
         dry_run = options.get('dry_run', False)
+        force = options.get('force', False)
         
         if dry_run:
             self.stdout.write(self.style.WARNING('Running in DRY RUN mode - no changes will be made'))
+        
+        if force:
+            self.stdout.write(self.style.WARNING('Running in FORCE mode - existing transitions will be deleted'))
         
         self.stdout.write(self.style.MIGRATE_HEADING('Starting 3-step workflow seeding process...'))
         
@@ -94,6 +103,11 @@ class Command(BaseCommand):
                     self.stdout.write(f'  • {role_key}: {role_obj.name} (ID: {role_obj.role_id})')
             except Roles.DoesNotExist as e:
                 raise CommandError(f"Missing expected role: {e}. Please ensure the following roles exist in the database: Admin, Asset Manager, Budget Manager")
+
+            # If force mode, delete all existing transitions to start fresh
+            if force:
+                deleted_count = StepTransition.objects.all().delete()[0]
+                self.stdout.write(self.style.WARNING(f'✓ Deleted {deleted_count} existing transitions'))
 
             # Define the standardized 3-step configuration generator
             def create_3_step_config(resolver_role, resolver_instruction, resolve_desc):
@@ -344,6 +358,17 @@ class Command(BaseCommand):
                     
                     for frm, to in transitions:
                         try:
+                            # Check if transition already exists before creating
+                            existing_transition = StepTransition.objects.filter(
+                                from_step_id=frm,
+                                to_step_id=to,
+                                workflow_id=wf
+                            ).first()
+                            
+                            if existing_transition:
+                                # Transition already exists, skip
+                                continue
+                            
                             # Create transition without triggering initialization checks
                             trans = StepTransition(
                                 from_step_id=frm,
