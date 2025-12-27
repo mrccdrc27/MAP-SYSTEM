@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Status Update</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .status-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .ticket-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .status-info {
+            margin: 8px 0;
+            color: #555;
+        }
+        .status-info strong {
+            color: #333;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .status-open { background-color: #17a2b8; color: white; }
+        .status-in-progress { background-color: #ffc107; color: #333; }
+        .status-resolved { background-color: #28a745; color: white; }
+        .status-closed { background-color: #6c757d; color: white; }
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #3498db;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎫 Ticket Status Update</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello {{ user_name|default:"User" }},</p>
+            
+            <p>The status of a ticket you're involved with has been updated:</p>
+            
+            <div class="status-box">
+                <div class="ticket-title">{{ ticket_number|default:"Ticket" }}: {{ ticket_subject|default:"" }}</div>
+                <div class="status-info">
+                    <strong>Previous Status:</strong> {{ previous_status|default:"N/A" }}
+                </div>
+                <div class="status-info">
+                    <strong>New Status:</strong> 
+                    <span class="status-badge status-{{ new_status|lower|default:'open' }}">{{ new_status|default:"Updated" }}</span>
+                </div>
+                {% if updated_by %}
+                <div class="status-info">
+                    <strong>Updated By:</strong> {{ updated_by }}
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if ticket_url %}
+            <p style="text-align: center;">
+                <a href="{{ ticket_url }}" class="button">View Ticket</a>
+            </p>
+            {% endif %}
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification from {{ site_name|default:"TicketFlow" }}</p>
+            <p>&copy; {{ current_year|default:"2025" }} {{ site_name|default:"TicketFlow" }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

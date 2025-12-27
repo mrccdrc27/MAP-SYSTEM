@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Comment</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .comment-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .comment-header {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .commenter-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .comment-time {
+            font-size: 12px;
+            color: #888;
+        }
+        .comment-content {
+            background-color: #ffffff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .ticket-info {
+            margin: 8px 0;
+            color: #555;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #3498db;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 New Comment</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello {{ user_name|default:"User" }},</p>
+            
+            <p>A new comment has been added to a ticket you're involved with:</p>
+            
+            <div class="ticket-info">
+                <strong>Ticket:</strong> {{ ticket_number|default:"N/A" }}
+            </div>
+            
+            <div class="comment-box">
+                <div class="comment-header">
+                    <span class="commenter-name">{{ commenter_name|default:"Someone" }}</span>
+                    {% if comment_time %}
+                    <span class="comment-time"> • {{ comment_time }}</span>
+                    {% endif %}
+                </div>
+                <div class="comment-content">
+                    {{ comment_text|default:"" }}
+                </div>
+            </div>
+            
+            {% if ticket_url %}
+            <p style="text-align: center;">
+                <a href="{{ ticket_url }}" class="button">View Conversation</a>
+            </p>
+            {% endif %}
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification from {{ site_name|default:"TicketFlow" }}</p>
+            <p>&copy; {{ current_year|default:"2025" }} {{ site_name|default:"TicketFlow" }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

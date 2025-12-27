@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 import logging
+from authentication import SystemRolePermission
 
 logger = logging.getLogger(__name__)
 

@@ -27,7 +27,7 @@ def health_check(request):
         'database': False,
         'cache': False,
         'celery': False,
-        'gmail_api': False
+        'email_service': False
     }
     
     details = {}
@@ -71,20 +71,16 @@ def health_check(request):
         details['celery'] = str(e)
         logger.error(f"Celery health check failed: {e}")
     
-    # Gmail API check
+    # Email service check (just verify the service can be instantiated)
     try:
-        from .gmail_service import get_gmail_service
-        gmail = get_gmail_service()
-        if gmail.service is not None:
-            checks['gmail_api'] = True
-            details['gmail_api'] = 'initialized'
-        else:
-            checks['gmail_api'] = False
-            details['gmail_api'] = 'not initialized'
+        from .email_service import get_email_service
+        email_svc = get_email_service()
+        checks['email_service'] = True
+        details['email_service'] = 'initialized'
     except Exception as e:
-        checks['gmail_api'] = False
-        details['gmail_api'] = str(e)
-        logger.error(f"Gmail API health check failed: {e}")
+        checks['email_service'] = False
+        details['email_service'] = str(e)
+        logger.error(f"Email service health check failed: {e}")
     
     # Overall health status
     all_healthy = all(checks.values())
