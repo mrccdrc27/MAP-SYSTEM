@@ -530,11 +530,69 @@ class BudgetAllocation(models.Model):
             date__month=month
         ).aggregate(total=models.Sum('amount'))['total'] or 0
 
+# --- NEW MODELS: Budget Caps (Added for Governance) ---
+class DepartmentBudgetCap(models.Model):
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='budget_caps')
+    fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.CASCADE)
+    percentage_of_total = models.DecimalField(
+        max_digits=5, decimal_places=2, 
+        help_text="Percentage of total organizational budget allocated to this department"
+    )
+    cap_type = models.CharField(
+        max_length=10,
+        choices=[('HARD', 'Hard Cap'), ('SOFT', 'Soft Cap')],
+        default='SOFT',
+        help_text="Hard Cap blocks submission; Soft Cap requires justification."
+    )
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        unique_together = ['department', 'fiscal_year']
+        verbose_name = "Department Budget Cap"
+
+    def __str__(self):
+        return f"{self.department.code} - {self.fiscal_year.name} ({self.cap_type})"
+
+
+class SubCategoryBudgetCap(models.Model):
+    expense_category = models.ForeignKey(ExpenseCategory, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.CASCADE)
+    percentage_of_department = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        help_text="Percentage of the department's budget allocated to this category"
+    )
+    cap_type = models.CharField(
+        max_length=10,
+        choices=[('HARD', 'Hard Cap'), ('SOFT', 'Soft Cap')],
+        default='SOFT'
+    )
+    # Redundant classification field removed (it exists on ExpenseCategory), 
+    # but we can retain it there is a need for specific overrides per department/year
+    # For now, relying on ExpenseCategory.classification is cleaner database design
+    
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        unique_together = ['expense_category', 'department', 'fiscal_year']
+        verbose_name = "Sub-Category Budget Cap"
+
+    def __str__(self):
+        return f"{self.department.code} - {self.expense_category.name} ({self.cap_type})"
+# ------------------------------------------------------
 
 class BudgetTransfer(models.Model):
     fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.PROTECT)
+    # MODIFIED: source_allocation is now nullable to support Supplemental Budgets (Additions)
     source_allocation = models.ForeignKey(
-        BudgetAllocation, on_delete=models.PROTECT, related_name='transfers_from')
+        BudgetAllocation, 
+        on_delete=models.PROTECT, 
+        related_name='transfers_from',
+        null=True, 
+        blank=True,
+        help_text="The allocation money is taken from. If NULL, this is a Supplemental Budget (new money)."
+    )
+    
     destination_allocation = models.ForeignKey(
         BudgetAllocation, on_delete=models.PROTECT, related_name='transfers_to')
 
@@ -567,8 +625,9 @@ class BudgetTransfer(models.Model):
     rejection_date = models.DateTimeField(null=True, blank=True)
     # ... (__str__, validate_sufficient_funds methods need Expense model to be updated) ...
     def __str__(
-        self): return f"Transfer of {self.amount} from {self.source_allocation.department.name} to {self.destination_allocation.department.name}"
-
+        self): 
+        source = self.source_allocation.department.name if self.source_allocation else "Treasury/External"
+        return f"Transfer of {self.amount} from {source} to {self.destination_allocation.department.name}"
 
 class JournalEntry(models.Model):
     STATUS_CHOICES = [
