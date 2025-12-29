@@ -13,7 +13,13 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
     """
     ticket_id = serializers.CharField(
         write_only=True, source='transaction_id', required=True)
-    project_id = serializers.IntegerField(write_only=True, required=True)
+    
+    # MODIFIED: Changed from project_id to order_number to match AMS flow
+    order_number = serializers.CharField(
+        write_only=True, 
+        required=True,
+        help_text="The Reference ID (e.g. from TTS) of the approved Budget Proposal."
+    )
     account_code = serializers.CharField(write_only=True, required=True)
     category_code = serializers.CharField(write_only=True, required=True)
     submitted_by_name = serializers.CharField(write_only=True, required=True)
@@ -21,19 +27,24 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = [
-            'ticket_id', 'project_id', 'account_code', 'category_code', 'submitted_by_name',
+            'ticket_id', 'order_number', 'account_code', 'category_code', 'submitted_by_name',
             'amount', 'date', 'description', 'vendor', 'notes'
         ]
 
     def create(self, validated_data):
+        order_number = validated_data.pop('order_number')
+        
         try:
-            project = Project.objects.get(id=validated_data['project_id'])
+            # Logic: Find the Project linked to the Proposal with this External ID
+            # AMS calls this 'Order Number', BMS calls it 'external_system_id' or 'reference
+            project = Project.objects.get(budget_proposal__external_system_id=order_number)
+            
             account = Account.objects.get(code=validated_data['account_code'])
             category = ExpenseCategory.objects.get(
                 code=validated_data['category_code'])
         except Project.DoesNotExist:
             raise serializers.ValidationError(
-                {'project_id': 'Project not found.'})
+                {'order_number': f'No approved project found for Order Number "{order_number}".'})
         except Account.DoesNotExist:
             raise serializers.ValidationError(
                 {'account_code': 'Account not found.'})
