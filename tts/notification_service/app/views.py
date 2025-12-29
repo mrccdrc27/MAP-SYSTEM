@@ -509,3 +509,80 @@ class MyNotificationsByTicketView(generics.ListAPIView):
             user_id=user_id,
             related_ticket_number=ticket_number
         ).order_by('-created_at')
+
+
+# =============================================================================
+# INTERNAL ENDPOINTS FOR WEBSOCKET BROADCASTING
+# These are called by Celery workers to trigger broadcasts within Daphne process
+# =============================================================================
+
+class InternalBroadcastView(APIView):
+    """
+    Internal endpoint for triggering WebSocket broadcasts.
+    Called by Celery workers after creating notifications.
+    
+    This runs within the Daphne process, so it can access the
+    InMemoryChannelLayer directly.
+    """
+    authentication_classes = []  # No auth for internal calls
+    permission_classes = []  # Allow all (should be firewalled in production)
+    
+    def post(self, request):
+        from .websocket_utils import broadcast_notification_direct
+        
+        user_id = request.data.get('user_id')
+        notification_data = request.data.get('notification')
+        action = request.data.get('action', 'new')
+        
+        if not user_id or not notification_data:
+            return Response(
+                {'error': 'user_id and notification are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        success = broadcast_notification_direct(user_id, notification_data, action)
+        
+        return Response({
+            'success': success,
+            'user_id': user_id,
+            'action': action
+        })
+
+
+class InternalBroadcastCountView(APIView):
+    """
+    Internal endpoint for broadcasting unread count updates.
+    Called by Celery workers after marking notifications as read.
+    """
+    authentication_classes = []
+    permission_classes = []
+    
+    def post(self, request):
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        from datetime import datetime
+        
+        user_id = request.data.get('user_id')
+        unread_count = request.data.get('unread_count', 0)
+        
+        if not user_id:
+            return Response(
+                {'error': 'user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                group_name = f'notifications_{user_id}'
+                message = {
+                    'type': 'notification_count_update',
+                    'unread_count': unread_count,
+                    'timestamp': datetime.now().isoformat()
+                }
+                async_to_sync(channel_layer.group_send)(group_name, message)
+                return Response({'success': True, 'user_id': user_id})
+            else:
+                return Response({'success': False, 'error': 'No channel layer'})
+        except Exception as e:
+            return Response({'success': False, 'error': str(e)})

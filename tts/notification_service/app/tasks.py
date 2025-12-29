@@ -6,6 +6,35 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _broadcast_notification_websocket(notification):
+    """
+    Broadcast a notification via WebSocket after creation.
+    This is a helper function that wraps the WebSocket broadcast logic.
+    """
+    try:
+        from .websocket_utils import broadcast_notification, serialize_notification
+        notification_data = serialize_notification(notification)
+        broadcast_notification(notification.user_id, notification_data, action='new')
+    except Exception as e:
+        # Don't fail the task if WebSocket broadcast fails
+        logger.warning(f"WebSocket broadcast failed for notification {notification.id}: {e}")
+
+
+def _create_and_broadcast_notification(**kwargs):
+    """
+    Create an InAppNotification and broadcast it via WebSocket.
+    
+    Args:
+        **kwargs: All fields for InAppNotification.objects.create()
+    
+    Returns:
+        InAppNotification instance
+    """
+    notification = InAppNotification.objects.create(**kwargs)
+    _broadcast_notification_websocket(notification)
+    return notification
+
+
 def _send_email_for_notification(user_id, subject, message, notification_type, context=None):
     """
     Helper to send email counterpart for in-app notification.
@@ -58,7 +87,7 @@ def send_assignment_notification(user_id, ticket_number, task_title, role_name):
         subject = f"Task Assignment: {task_title}"
         message = f"Assigned as {role_name}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -169,7 +198,7 @@ def send_task_transfer_notification(
                 + (f" Notes: {transfer_notes}" if transfer_notes else "")
             )
         
-        notification_out = InAppNotification.objects.create(
+        notification_out = _create_and_broadcast_notification(
             user_id=from_user_id,
             subject=subject_out,
             message=message_out,
@@ -194,7 +223,7 @@ def send_task_transfer_notification(
             + (f" Notes: {transfer_notes}" if transfer_notes else "")
         )
         
-        notification_in = InAppNotification.objects.create(
+        notification_in = _create_and_broadcast_notification(
             user_id=to_user_id,
             subject=subject_in,
             message=message_in,
@@ -307,7 +336,7 @@ def send_escalation_notification(
         escalated_by = escalated_by_name or f'User {escalated_by_id}' if escalated_by_id else None
         message_out = f"Escalated to {escalated_to_role}" + (f" by {escalated_by}" if escalated_by else "") + (f" - {escalation_reason}" if escalation_reason else "")
         
-        notification_out = InAppNotification.objects.create(
+        notification_out = _create_and_broadcast_notification(
             user_id=from_user_id,
             subject=subject_out,
             message=message_out,
@@ -330,7 +359,7 @@ def send_escalation_notification(
         subject_in = f"Escalated Task: {task_title}"
         message_in = f"From {escalated_from_role} as {escalated_to_role}" + (f" - {escalation_reason}" if escalation_reason else "")
         
-        notification_in = InAppNotification.objects.create(
+        notification_in = _create_and_broadcast_notification(
             user_id=to_user_id,
             subject=subject_in,
             message=message_in,
@@ -432,7 +461,7 @@ def send_task_completed_notification(
         completed_by = completed_by_name or f'User {completed_by_id}' if completed_by_id else None
         message = f"Completed by {completed_by}" if completed_by else "Task has been finalized"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -512,7 +541,7 @@ def send_workflow_step_notification(
         subject = f"Workflow Update: {task_title}"
         message = f"{previous_step} → {current_step}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -591,7 +620,7 @@ def send_sla_warning_notification(
         subject = f"SLA Warning: {task_title}"
         message = f"{time_remaining} remaining until {target_resolution}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -663,7 +692,7 @@ def send_sla_breach_notification(
         subject = f"SLA Breached: {task_title}"
         message = f"Overdue by {breach_duration}" if breach_duration else f"Target was {target_resolution}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -750,7 +779,7 @@ def send_ticket_status_notification(
         subject = f"Ticket {new_status}: {ticket_number}"
         message = f"{old_status} → {new_status}" + (f" by {changed_by_name}" if changed_by_name else "")
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -817,7 +846,7 @@ def create_inapp_notification(user_id, subject, message, notification_type='syst
         dict: Status of the operation
     """
     try:
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -963,7 +992,7 @@ def send_comment_notification(
         preview = comment_preview[:80] + "..." if comment_preview and len(comment_preview) > 80 else comment_preview
         message = f"{commenter_name}: {preview}" if preview else f"Comment from {commenter_name}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
@@ -1036,7 +1065,7 @@ def send_mention_notification(
         preview = comment_preview[:80] + "..." if comment_preview and len(comment_preview) > 80 else comment_preview
         message = f"{mentioned_by_name}: {preview}" if preview else f"Mentioned by {mentioned_by_name}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,

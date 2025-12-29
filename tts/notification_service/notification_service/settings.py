@@ -46,6 +46,7 @@ ALLOWED_HOSTS = config(
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # Add daphne for ASGI/WebSocket support
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
     'django_celery_results',  # Add Celery results backend
     'whitenoise',  # Add Whitenoise for static file serving
     'corsheaders',  # Enable CORS handling
+    'channels',  # Add Django Channels for WebSocket support
     
     # Local apps
     'notifications',
@@ -97,6 +99,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'notification_service.wsgi.application'
+ASGI_APPLICATION = 'notification_service.asgi.application'
+
+# Channel layers configuration for WebSocket support
+# Using InMemoryChannelLayer - broadcasts must happen within the Daphne process
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 
 # Database

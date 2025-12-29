@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// hook
-import { useNotifications } from "../../api/useNotification";
+// Notification context (shared WebSocket connection)
+import { useNotificationContext } from "../../context/NotificationContext";
 
 // styles
 import styles from "./notification.module.css";
@@ -12,9 +12,10 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 
 export default function Notification({
   closeNotifAction,
-  parentFetchNotifications,
 }) {
   const navigate = useNavigate();
+  
+  // Use shared notification context (single WebSocket, shared state)
   const {
     notifications,
     loading,
@@ -22,12 +23,13 @@ export default function Notification({
     fetchNotifications,
     markAsRead,
     markAllAsRead,
-  } = useNotifications();
+    wsConnected,
+  } = useNotificationContext();
 
   // Active tab: show 'unread' by default
   const [activeTab, setActiveTab] = useState("unread");
 
-  // Prefetch all lists on mount so counts are available and tabs are responsive
+  // Fetch all lists on mount so counts are available and tabs are responsive
   useEffect(() => {
     fetchNotifications("unread");
     fetchNotifications("read");
@@ -36,31 +38,12 @@ export default function Notification({
 
   const handleMarkAsRead = async (id) => {
     await markAsRead(id);
-    // hook already refreshes lists after marking; no extra fetch needed here
-    // But the parent (nav) uses its own hook instance -> ask parent to refresh
-    if (typeof parentFetchNotifications === "function") {
-      try {
-        parentFetchNotifications("unread");
-      } catch (e) {
-        // swallow - best-effort
-        // eslint-disable-next-line no-console
-        console.warn("parentFetchNotifications failed:", e);
-      }
-    }
+    // Context state is shared across all consumers, no need to refresh parent
   };
 
   const handleClearAll = async () => {
     await markAllAsRead();
-    // hook already refreshes lists after marking all; no extra fetch needed here
-    // Tell parent nav to refresh its unread count too (best-effort)
-    if (typeof parentFetchNotifications === "function") {
-      try {
-        parentFetchNotifications("unread");
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn("parentFetchNotifications failed:", e);
-      }
-    }
+    // Context state is shared across all consumers, no need to refresh parent
   };
 
   // Handle notification click - navigate to task if related_ticket_number exists
@@ -74,23 +57,6 @@ export default function Notification({
     if (notification.related_ticket_number) {
       closeNotifAction(false);
       navigate(`/ticket/${notification.related_ticket_number}`);
-    } else if (notification.related_task_item_id) {
-      closeNotifAction(false);
-      
-      // Handle special format for ticket owner: "task_<task_id>_owner"
-      // For owners, we need to navigate differently since they don't have a task_item_id
-      const taskItemId = notification.related_task_item_id;
-      if (taskItemId.startsWith('task_') && taskItemId.endsWith('_owner')) {
-        // Extract task_id from "task_<task_id>_owner" format
-        const taskId = taskItemId.replace('task_', '').replace('_owner', '');
-        // Navigate to the task overview page instead of task item detail
-        navigate(`/ticket?task=${taskId}`);
-      } else {
-        // Fallback - use task_item_id directly (old behavior for legacy notifications)
-        // This should rarely happen if related_ticket_number is properly set
-        console.warn('Notification missing related_ticket_number, using task_item_id fallback');
-        navigate(`/ticket/${taskItemId}`);
-      }
     }
   };
 
@@ -179,9 +145,9 @@ export default function Notification({
             list.map((n) => (
               <div 
                 key={n.id} 
-                className={`${styles.nItem} ${n.related_task_item_id ? styles.nItemClickable : ''}`}
-                onClick={() => n.related_task_item_id && handleNotificationClick(n)}
-                style={{ cursor: n.related_task_item_id ? 'pointer' : 'default' }}
+                className={`${styles.nItem} ${n.related_ticket_number ? styles.nItemClickable : ''}`}
+                onClick={() => n.related_ticket_number && handleNotificationClick(n)}
+                style={{ cursor: n.related_ticket_number ? 'pointer' : 'default' }}
               >
                 <div className={styles.nUserAvatar}>
                   <img

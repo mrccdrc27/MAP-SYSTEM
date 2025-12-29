@@ -92,9 +92,9 @@ module.exports = {
     {
       name: 'notification-service',
       cwd: path.join(projectRoot, 'tts/notification_service'),
-      script: 'manage.py',
-      args: 'runserver 0.0.0.0:8006',
-      interpreter: pythonInterpreter,
+      script: pythonInterpreter,
+      args: '-m daphne -b 0.0.0.0 -p 8006 notification_service.asgi:application',
+      interpreter: 'none',
       windowsHide: true,
       env: {
         DJANGO_ENV: "development",
@@ -155,9 +155,9 @@ module.exports = {
     {
       name: 'messaging-service',
       cwd: path.join(projectRoot, 'tts/messaging'),
-      script: 'manage.py',
-      args: 'runserver 0.0.0.0:8005',
-      interpreter: pythonInterpreter,
+      script: pythonInterpreter,
+      args: '-m daphne -b 0.0.0.0 -p 8005 messaging.asgi:application',
+      interpreter: 'none',
       windowsHide: true,
       env: {
         DJANGO_ENV: "development",
@@ -254,7 +254,11 @@ module.exports = {
       env: {
         VITE_AUTH_URL: "http://localhost:8003",
         VITE_WORKFLOW_API: "http://localhost:8002/workflow",
-        VITE_BACKEND_API: "http://localhost:8002/"
+        VITE_BACKEND_API: "http://localhost:8002/",
+        VITE_NOTIFICATION_API: "http://localhost:8006",
+        VITE_NOTIFICATION_WS: "ws://localhost:8006",
+        VITE_MESSAGING_API: "http://localhost:8005",
+        VITE_MESSAGING_WS: "ws://localhost:8005"
       }
     }
   ]

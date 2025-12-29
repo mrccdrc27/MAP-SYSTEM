@@ -27,7 +27,11 @@ from .views import (
     
     # New notification type views
     NotificationTypesView,
-    MyNotificationsByTicketView
+    MyNotificationsByTicketView,
+    
+    # Internal endpoints for WebSocket broadcasting
+    InternalBroadcastView,
+    InternalBroadcastCountView,
 )
 
 @api_view(['GET'])
@@ -105,4 +109,8 @@ urlpatterns = [
     
     # Notification types endpoint
     path('notification-types/', NotificationTypesView.as_view(), name='notification-types'),
+    
+    # Internal endpoints for WebSocket broadcasting (called by Celery workers)
+    path('internal/broadcast/', InternalBroadcastView.as_view(), name='internal-broadcast'),
+    path('internal/broadcast-count/', InternalBroadcastCountView.as_view(), name='internal-broadcast-count'),
 ]
