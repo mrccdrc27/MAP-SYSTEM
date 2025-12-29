@@ -1,51 +1,25 @@
 #!/usr/bin/env node
 
-require('dotenv').config({ path: __dirname + '/.env' }); // Load .env from this directory
+require('dotenv').config({ path: __dirname + '/.env', quiet: true });
 const { program } = require('commander');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
-const spawn = require('cross-spawn'); // Cross-platform spawn
+const spawn = require('cross-spawn');
 const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
+const ora = require('ora');
+
+// --- Constants & Configuration ---
 
 const SCRIPTS_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(SCRIPTS_ROOT, '..');
 const ENV_FILE = path.join(__dirname, '.env');
 
-/**
- * Check if .env file exists, if not run setup
- */
-function ensureEnvironmentSetup() {
-  if (!fs.existsSync(ENV_FILE)) {
-    console.log(chalk.yellow('\n⚠️  Environment configuration not found!'));
-    console.log(chalk.cyan('Running setup to detect your environment...\n'));
-    
-    try {
-      execSync('node setup-env.js', {
-        cwd: __dirname,
-        stdio: 'inherit',
-        shell: true
-      });
-      console.log(chalk.cyan('\nReloading environment configuration...\n'));
-      // Reload dotenv after setup
-      require('dotenv').config({ path: ENV_FILE, override: true });
-    } catch (err) {
-      console.log(chalk.red(`\n✗ Setup failed: ${err.message}`));
-      console.log(chalk.yellow('Please run setup manually: node Scripts/cli/setup-env.js\n'));
-      process.exit(1);
-    }
-  }
-}
-
-// Run setup check before anything else
+// Ensure environment is set up before defining commands
 ensureEnvironmentSetup();
 
-/**
- * CONFIGURATION
- * Default to command names (assumes they're in PATH).
- * Users can override in a .env file: PYTHON_CMD=python3
- */
+// Default commands (can be overridden in .env)
 const CMD = {
   python: process.env.PYTHON_CMD || 'python',
   bash: process.env.BASH_CMD || 'bash',
@@ -53,37 +27,31 @@ const CMD = {
   powershell: process.env.POWERSHELL_CMD || 'powershell'
 };
 
-// Check for Python Venv
-if (!process.env.VIRTUAL_ENV && !process.env.PYTHON_CMD) {
-  console.log(chalk.yellow('⚠️  Warning: No Virtual Environment detected.'));
-  console.log(chalk.gray('   If your scripts require dependencies, please activate your venv first.'));
-  console.log(chalk.gray('   Example: .\\venv\\Scripts\\activate\n'));
-}
+// --- Script Definitions ---
 
-// Script categories and their scripts
 const SCRIPTS = {
   services: {
-    name: '🚀 Services',
-    description: 'Start individual services',
+    name: 'Services',
+    description: 'Start individual backend/frontend services',
     scripts: {
-      'auth': { file: 'start_auth.ps1', desc: 'Auth Service (port 8003)' },
+      'auth': { file: 'start_auth.ps1', desc: 'Auth Service (Port 8003)' },
     },
     subcategories: {
       tts: {
-        name: '🎫 TTS',
+        name: 'TTS',
         description: 'Ticket Tracking System',
         scripts: {
-          'workflow': { file: 'tts/start_workflow.ps1', desc: 'Workflow API (port 8002)' },
+          'workflow': { file: 'tts/start_workflow.ps1', desc: 'Workflow API (Port 8002)' },
           'workflow-worker': { file: 'tts/start_workflow_worker.ps1', desc: 'Workflow Celery Worker' },
-          'notification': { file: 'tts/start_notification.ps1', desc: 'Notification Service (port 8006)' },
+          'notification': { file: 'tts/start_notification.ps1', desc: 'Notification Service (Port 8006)' },
           'notification-worker': { file: 'tts/start_notification_worker.ps1', desc: 'Notification Celery Worker' },
-          'messaging': { file: 'tts/start_messaging.ps1', desc: 'Messaging Service (port 8005)' },
-          'ticket': { file: 'tts/start_ticket.ps1', desc: 'Ticket Service (port 8004)' },
-          'frontend': { file: 'tts/start_frontend.ps1', desc: 'Frontend (port 1000)' },
+          'messaging': { file: 'tts/start_messaging.ps1', desc: 'Messaging Service (Port 8005)' },
+          'ticket': { file: 'tts/start_ticket.ps1', desc: 'Ticket Service (Port 8004)' },
+          'frontend': { file: 'tts/start_frontend.ps1', desc: 'Frontend (Port 1000)' },
         }
       },
       hdts: {
-        name: '🛠️ HDTS',
+        name: 'HDTS',
         description: 'Help Desk Tracking System',
         scripts: {
           'backend': { file: 'hdts/start_helpdesk_backend.ps1', desc: 'Helpdesk Backend' },
@@ -94,216 +62,199 @@ const SCRIPTS = {
     }
   },
   docker: {
-    name: '🐳 Docker',
-    description: 'Docker-related commands',
+    name: 'Docker',
+    description: 'Container management',
     scripts: {
-      'rabbitmq': { file: 'start_rabbitmq.ps1', desc: 'Start RabbitMQ container' },
-      'tts-docker-compose': { file: 'tts-docker-compose.sh', desc: 'TTS docker compose', shell: 'bash' },
-    }
-  },
-  setup: {
-    name: '⚙️ Setup',
-    description: 'Setup and seeding scripts',
-    scripts: {},
+      'rabbitmq': { file: 'start_rabbitmq.ps1', desc: 'Start RabbitMQ Container' },
+    },
     subcategories: {
       tts: {
-        name: '🎫 TTS',
-        description: 'Ticket Tracking System Setup',
+        name: 'TTS Docker',
+        description: 'TTS Docker Compose Commands',
         scripts: {
-          'seed': { file: 'restart_all_services.ps1', desc: 'Migrate & Seed all services', args: ['-Seed'] },
-          'flush-seed': { file: 'restart_all_services.ps1', desc: 'Flush DBs, Migrate & Seed', args: ['-FlushDB', '-Seed'] },
-          'migrate': { file: 'restart_all_services.ps1', desc: 'Run migrations only' },
-          'seed-workflow-hdts': { file: 'seed_workflow_helpdesk.ps1', desc: 'Seed Workflow & Helpdesk data' },
+          'start': { file: 'tts/start.sh', desc: 'Start (Build & Up)', shell: 'bash' },
+          'stop': { file: 'tts/stop.sh', desc: 'Stop (Down)', shell: 'bash' },
+          'restart': { file: 'tts/restart.sh', desc: 'Restart Containers', shell: 'bash' },
+          'reset': { file: 'tts/reset.sh', desc: 'Reset (Down -v)', shell: 'bash' },
+          'logs': { file: 'tts/logs.sh', desc: 'Follow Logs', shell: 'bash' },
         }
-      },
-      ams: {
-        name: '🏢 AMS',
-        description: 'Asset Management System Setup',
-        scripts: {
-          'setup': { file: 'setup_and_test_ams.ps1', desc: 'Setup and test AMS' }
-        }
-      },
-      hdts: {
-        name: '🛠️ HDTS',
-        description: 'Help Desk Tracking System Setup',
-        scripts: {}
-      },
-      bms: {
-        name: '💰 BMS',
-        description: 'Budget Management System Setup',
-        scripts: {}
       }
     }
   },
+  setup: {
+    name: 'Setup',
+    description: 'Database seeding and configuration',
+    subcategories: {
+      tts: {
+        name: 'TTS',
+        description: 'Ticket Tracking System Setup',
+        scripts: {
+          'seed': { file: 'restart_all_services.ps1', desc: 'Migrate & Seed All Services', args: ['-Seed'] },
+          'flush-seed': { file: 'restart_all_services.ps1', desc: 'Flush DBs, Migrate & Seed', args: ['-FlushDB', '-Seed'] },
+          'migrate': { file: 'restart_all_services.ps1', desc: 'Run Migrations Only' },
+          'seed-workflow-hdts': { file: 'seed_workflow_helpdesk.ps1', desc: 'Seed Workflow & Helpdesk Data' },
+        }
+      },
+      ams: {
+        name: 'AMS',
+        description: 'Asset Management System Setup',
+        scripts: {
+          'setup': { file: 'setup_and_test_ams.ps1', desc: 'Setup & Test AMS' }
+        }
+      },
+    }
+  },
   testing: {
-    name: '🧪 Testing',
-    description: 'Test scripts',
+    name: 'Testing',
+    description: 'Run automated tests',
     scripts: {
-      'test-ams': { file: 'test_ams_api.py', desc: 'Test AMS API', shell: 'python' },
-      'test-bms': { file: 'test_bms_api.py', desc: 'Test BMS API', shell: 'python' },
+      'test-ams': { file: 'test_ams_api.py', desc: 'Test AMS API (Python)', shell: 'python' },
+      'test-bms': { file: 'test_bms_api.py', desc: 'Test BMS API (Python)', shell: 'python' },
       'test-bms-ps': { file: 'test_bms_api.ps1', desc: 'Test BMS API (PowerShell)' },
     }
   },
   utils: {
-    name: '🔧 Utilities',
-    description: 'Utility scripts',
+    name: 'Utilities',
+    description: 'Maintenance scripts',
     scripts: {
-      'delete-migrations': { file: 'delete_migrations_workflow_api.sh', desc: 'Delete workflow API migrations', shell: 'bash' },
+      'seed-tickets': { file: 'seed_tickets_open.ps1', desc: 'Seed Open Tickets (HDTS)' },
+      'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees (Auth)' },
+      'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees (HDTS)' },
     }
   },
   pm2: {
-    name: '📦 PM2',
-    description: 'PM2 process manager commands',
-    scripts: {}, // Generic scripts moved to subcategories
+    name: 'PM2',
+    description: 'Process Manager commands',
     subcategories: {
       tts: {
-        name: '🎫 TTS',
-        description: 'Ticket Tracking System Processes',
+        name: 'TTS',
+        description: 'Ticket Tracking System Ecosystem',
         scripts: {
-          'start': { cmd: 'pm2 start Scripts/processes/tts-ecosystem.config.js', desc: 'Start TTS ecosystem' },
-          'stop': { cmd: 'pm2 stop all', desc: 'Stop all PM2 services' },
-          'restart': { cmd: 'pm2 restart all', desc: 'Restart all PM2 services' },
-          'logs': { cmd: 'pm2 logs', desc: 'View PM2 logs' },
-          'status': { cmd: 'pm2 list', desc: 'Show PM2 process status' },
-          'delete': { cmd: 'pm2 delete all', desc: 'Delete all PM2 processes' },
+          'start': { cmd: 'pm2 start Scripts/processes/tts-ecosystem.config.js', desc: 'Start Ecosystem' },
+          'stop': { cmd: 'pm2 stop all', desc: 'Stop All Services' },
+          'restart': { cmd: 'pm2 restart all', desc: 'Restart All Services' },
+          'logs': { cmd: 'pm2 logs', desc: 'View Realtime Logs' },
+          'status': { cmd: 'pm2 list', desc: 'View Process Status' },
+          'delete': { cmd: 'pm2 delete all', desc: 'Delete All Processes' },
         }
-      },
-      ams: {
-        name: '🏢 AMS',
-        description: 'Asset Management System Processes',
-        scripts: {}
-      },
-      hdts: {
-        name: '🛠️ HDTS',
-        description: 'Help Desk Tracking System Processes',
-        scripts: {}
-      },
-      bms: {
-        name: '💰 BMS',
-        description: 'Budget Management System Processes',
-        scripts: {}
       }
     }
   }
 };
 
-// Helper to fix line endings in script file (useful for cross-platform git usage)
+// --- Helper Functions ---
+
+/**
+ * Ensure .env exists and environment is configured
+ */
+function ensureEnvironmentSetup() {
+  if (!fs.existsSync(ENV_FILE)) {
+    console.log(chalk.yellow('Environment configuration not found.'));
+    
+    const spinner = ora('Configuring environment...').start();
+    
+    try {
+      execSync('node setup-env.js', {
+        cwd: __dirname,
+        stdio: 'ignore',
+        shell: true
+      });
+      spinner.succeed(chalk.green('Environment configured.'));
+      require('dotenv').config({ path: ENV_FILE, override: true });
+    } catch (err) {
+      spinner.fail(chalk.red('Configuration failed.'));
+      console.error(chalk.red(`Error: ${err.message}`));
+      process.exit(1);
+    }
+  }
+}
+
+/**
+ * Fix line endings for shell scripts (CRLF -> LF)
+ */
 function fixLineEndings(scriptPath) {
   try {
     if (fs.existsSync(scriptPath)) {
       const content = fs.readFileSync(scriptPath, 'utf8');
-      // Only write if we actually find CRLF to save IO
       if (content.includes('\r\n')) {
         const fixed = content.replace(/\r\n/g, '\n');
         fs.writeFileSync(scriptPath, fixed, 'utf8');
       }
     }
   } catch (err) {
-    // Silent fail
+    // Ignore errors here
   }
 }
 
-// Unified command executor using cross-spawn
+/**
+ * Execute a system command
+ */
 function executeCommand(command, args, cwd = PROJECT_ROOT) {
-  console.log(chalk.gray(`> ${command} ${args.join(' ')}\n`));
+  console.log(chalk.gray(`[Exec] ${command} ${args.join(' ')}`));
 
   const child = spawn(command, args, {
     cwd,
     stdio: 'inherit',
-    env: { ...process.env } // Pass current env (vital for venv)
+    env: { ...process.env }
   });
 
   child.on('error', (err) => {
-    console.log(chalk.red(`Failed to start command: ${command}`));
-    console.log(chalk.yellow(`Error: ${err.message}`));
-    if (err.code === 'ENOENT') {
-      console.log(chalk.yellow(`Hint: Is '${command}' installed and in your PATH?`));
-    }
+    console.log(chalk.red(`Error: Failed to start '${command}'`));
+    console.log(chalk.red(`Details: ${err.message}`));
   });
 
   child.on('close', (code) => {
     if (code === 0) {
-      console.log(chalk.green(`\n✓ Completed successfully`));
+      console.log(chalk.green('Success.'));
     } else {
-      console.log(chalk.yellow(`\n⚠ Exited with code ${code}`));
+      console.log(chalk.yellow(`Exit Code: ${code}`));
     }
+    console.log('');
   });
 }
 
-// Helper to run a script
-function runScript(category, scriptKey, extraArgs = []) {
-  const script = SCRIPTS[category]?.scripts[scriptKey];
-  if (!script) {
-    console.log(chalk.red(`Script '${scriptKey}' not found in category '${category}'`));
+/**
+ * Resolve and execute a script by category, subcategory (optional), and key
+ */
+function executeScript(categoryKey, subOrScriptKey, scriptKeyOnly) {
+  const category = SCRIPTS[categoryKey];
+  if (!category) {
+    console.log(chalk.red(`Category '${categoryKey}' not found.`));
     return;
   }
 
-  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
+  let script;
+  let subcategoryKey;
 
-  // Case A: Direct command (PM2 commands)
-  if (script.cmd) {
-    const [exec, ...args] = script.cmd.split(' ');
-    // Use CMD config if it's a known command
-    const finalExec = exec === 'pm2' ? CMD.pm2 : exec;
-    executeCommand(finalExec, [...args, ...extraArgs]);
-    return;
-  }
-
-  // Case B: Script file execution
-  const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
-  if (!fs.existsSync(scriptPath)) {
-    console.log(chalk.red(`Script file not found: ${scriptPath}`));
-    return;
-  }
-
-  // Determine execution based on shell type or file extension
-  if (script.shell === 'bash' || script.file.endsWith('.sh')) {
-    fixLineEndings(scriptPath);
-    // Convert to forward slashes for bash compatibility
-    const posixPath = scriptPath.split(path.sep).join('/');
-    executeCommand(CMD.bash, [posixPath, ...extraArgs]);
-
-  } else if (script.shell === 'python' || script.file.endsWith('.py')) {
-    executeCommand(CMD.python, [scriptPath, ...extraArgs]);
-
-  } else if (script.file.endsWith('.ps1')) {
-    executeCommand(CMD.powershell, [
-      '-ExecutionPolicy', 'Bypass',
-      '-File', scriptPath,
-      ...(script.args || []),
-      ...extraArgs
-    ]);
+  if (scriptKeyOnly) {
+    subcategoryKey = subOrScriptKey;
+    script = category.subcategories?.[subcategoryKey]?.scripts?.[scriptKeyOnly];
   } else {
-    console.log(chalk.red(`Unknown script type for: ${script.file}`));
+    script = category.scripts?.[subOrScriptKey];
   }
-}
 
-// Helper to run a script from a subcategory
-function runScriptFromSubcategory(category, subcategoryKey, scriptKey, extraArgs = []) {
-  const script = SCRIPTS[category]?.subcategories?.[subcategoryKey]?.scripts?.[scriptKey];
   if (!script) {
-    console.log(chalk.red(`Script '${scriptKey}' not found in subcategory '${subcategoryKey}'`));
+    const target = scriptKeyOnly ? `${subcategoryKey}:${scriptKeyOnly}` : subOrScriptKey;
+    console.log(chalk.red(`Script '${target}' not found.`));
     return;
   }
 
-  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
-
-  // Case A: Direct command (PM2 commands)
   if (script.cmd) {
     const [exec, ...args] = script.cmd.split(' ');
-    // Use CMD config if it's a known command
     const finalExec = exec === 'pm2' ? CMD.pm2 : exec;
-    executeCommand(finalExec, [...args, ...extraArgs]);
+    executeCommand(finalExec, args);
     return;
   }
 
-  const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
+  const scriptPath = path.join(SCRIPTS_ROOT, categoryKey, script.file);
+  
   if (!fs.existsSync(scriptPath)) {
-    console.log(chalk.red(`Script file not found: ${scriptPath}`));
+    console.log(chalk.red(`File missing: ${scriptPath}`));
     return;
   }
 
-  // Determine execution based on shell type or file extension
+  const extraArgs = script.args || [];
+
   if (script.shell === 'bash' || script.file.endsWith('.sh')) {
     fixLineEndings(scriptPath);
     const posixPath = scriptPath.split(path.sep).join('/');
@@ -316,222 +267,169 @@ function runScriptFromSubcategory(category, subcategoryKey, scriptKey, extraArgs
     executeCommand(CMD.powershell, [
       '-ExecutionPolicy', 'Bypass',
       '-File', scriptPath,
-      ...(script.args || []),
       ...extraArgs
     ]);
+
   } else {
-    console.log(chalk.red(`Unknown script type for: ${script.file}`));
+    console.log(chalk.red(`Extension not supported: ${script.file}`));
   }
 }
 
-// Interactive menu
+// --- Interactive Menus ---
+
 async function interactiveMenu() {
-  console.log(chalk.bold.cyan('\n╔════════════════════════════════════════════════════╗'));
-  console.log(chalk.bold.cyan('║     Capstone System Script Manager CLI             ║'));
-  console.log(chalk.bold.cyan('╚════════════════════════════════════════════════════╝\n'));
-
-  const categoryChoices = Object.entries(SCRIPTS).map(([key, cat]) => ({
-    name: `${cat.name} - ${cat.description}`,
+  console.clear();
+  const choices = Object.entries(SCRIPTS).map(([key, cat]) => ({
+    name: `${cat.name.padEnd(12)} | ${cat.description}`,
     value: key
   }));
-  categoryChoices.push({ name: chalk.red('✖ Exit'), value: 'exit' });
+  
+  choices.push(new inquirer.Separator());
+  choices.push({ name: 'Exit', value: 'exit' });
 
   const { category } = await inquirer.prompt([
     {
       type: 'list',
       name: 'category',
-      message: 'Select a category:',
-      choices: categoryChoices
+      message: 'Select category:',
+      loop: false,
+      choices
     }
   ]);
 
-  if (category === 'exit') {
-    console.log(chalk.gray('Goodbye!'));
-    process.exit(0);
-  }
+  if (category === 'exit') process.exit(0);
 
-  await showCategoryMenu(category);
+  await showSubMenu(category);
 }
 
-// Show category menu (handles subcategories)
-async function showCategoryMenu(category) {
-  const cat = SCRIPTS[category];
+async function showSubMenu(categoryKey) {
+  console.clear();
+  const cat = SCRIPTS[categoryKey];
   const choices = [];
 
-  // Add direct scripts first
   if (cat.scripts) {
     Object.entries(cat.scripts).forEach(([key, script]) => {
       choices.push({
-        name: `${key} - ${script.desc}`,
+        name: `${key.padEnd(20)} | ${script.desc}`,
         value: { type: 'script', key }
       });
     });
   }
 
-  // Add subcategories
   if (cat.subcategories) {
+    if (choices.length > 0) choices.push(new inquirer.Separator('Subcategories'));
+    
     Object.entries(cat.subcategories).forEach(([key, subcat]) => {
       choices.push({
-        name: `${subcat.name} - ${subcat.description} >`,
+        name: `${subcat.name.padEnd(20)} | ${subcat.description}`,
         value: { type: 'subcategory', key }
       });
     });
   }
 
-  choices.push({ name: chalk.yellow('< Back'), value: { type: 'back' } });
+  choices.push(new inquirer.Separator());
+  choices.push({ name: 'Back', value: { type: 'back' } });
 
   const { selection } = await inquirer.prompt([
     {
       type: 'list',
       name: 'selection',
-      message: `Select from ${cat.name}:`,
+      message: `Category: ${cat.name}`,
+      loop: false,
       choices
     }
   ]);
 
-  if (selection.type === 'back') {
-    return interactiveMenu();
-  }
-
-  if (selection.type === 'subcategory') {
-    return showSubcategoryMenu(category, selection.key);
-  }
-
-  if (selection.type === 'script') {
-    runScript(category, selection.key);
-  }
+  if (selection.type === 'back') return interactiveMenu();
+  if (selection.type === 'subcategory') return showSubcategoryItems(categoryKey, selection.key);
+  if (selection.type === 'script') executeScript(categoryKey, selection.key);
 }
 
-// Show subcategory menu
-async function showSubcategoryMenu(category, subcategoryKey) {
-  const subcat = SCRIPTS[category].subcategories[subcategoryKey];
+async function showSubcategoryItems(categoryKey, subcatKey) {
+  console.clear();
+  const cat = SCRIPTS[categoryKey];
+  const subcat = cat.subcategories[subcatKey];
   
   const choices = Object.entries(subcat.scripts).map(([key, script]) => ({
-    name: `${key} - ${script.desc}`,
+    name: `${key.padEnd(20)} | ${script.desc}`,
     value: key
   }));
-  choices.push({ name: chalk.yellow('< Back'), value: 'back' });
+
+  choices.push(new inquirer.Separator());
+  choices.push({ name: 'Back', value: 'back' });
 
   const { script } = await inquirer.prompt([
     {
       type: 'list',
       name: 'script',
-      message: `Select from ${subcat.name}:`,
+      message: `${cat.name} > ${subcat.name}`,
+      loop: false,
       choices
     }
   ]);
 
-  if (script === 'back') {
-    return showCategoryMenu(category);
-  }
-
-  runScriptFromSubcategory(category, subcategoryKey, script);
+  if (script === 'back') return showSubMenu(categoryKey);
+  executeScript(categoryKey, subcatKey, script);
 }
 
-// List all scripts
-function listScripts() {
-  console.log(chalk.bold.cyan('\n📋 Available Scripts:\n'));
-  
-  for (const [catKey, category] of Object.entries(SCRIPTS)) {
-    console.log(chalk.bold.yellow(`\n${category.name}`));
-    console.log(chalk.gray(`  ${category.description}`));
+// --- List Command ---
+
+function listAllScripts() {
+  console.log('Available Scripts:\n');
+
+  for (const [catKey, cat] of Object.entries(SCRIPTS)) {
+    console.log(`[${cat.name}]`);
     
-    if (category.scripts) {
-      for (const [scriptKey, script] of Object.entries(category.scripts)) {
-        console.log(chalk.white(`    ${catKey}:${scriptKey}`));
-        console.log(chalk.gray(`      ${script.desc}`));
+    if (cat.scripts) {
+      for (const [sKey, script] of Object.entries(cat.scripts)) {
+        console.log(`  ${sKey}: ${script.desc}`);
       }
     }
-    
-    if (category.subcategories) {
-      for (const [subKey, subcat] of Object.entries(category.subcategories)) {
-        for (const [scriptKey, script] of Object.entries(subcat.scripts)) {
-          console.log(chalk.white(`    ${catKey}:${subKey}:${scriptKey}`));
-          console.log(chalk.gray(`      ${script.desc}`));
+
+    if (cat.subcategories) {
+      for (const [subKey, subcat] of Object.entries(cat.subcategories)) {
+        console.log(`  (${subcat.name})`);
+        for (const [sKey, script] of Object.entries(subcat.scripts)) {
+          console.log(`    ${sKey}: ${script.desc}`);
         }
       }
     }
+    console.log('');
   }
-  
-  console.log(chalk.cyan('\n💡 Usage: scripts run <category>:[subcategory:]<script>'));
-  console.log(chalk.gray('   Example: scripts run services:auth\n'));
 }
 
-// CLI Setup
+// --- CLI Initialization ---
+
 program
   .name('scripts')
-  .description('CLI Manager for Ticket Tracking System')
-  .version('1.0.0');
+  .description('Capstone System Management CLI')
+  .version(require('./package.json').version);
+
+program.command('menu').alias('m').description('Open interactive menu').action(interactiveMenu);
+program.command('list').alias('ls').description('List all available scripts').action(listAllScripts);
 
 program
-  .command('menu')
-  .alias('m')
-  .description('Open interactive menu')
-  .action(interactiveMenu);
-
-program
-  .command('list')
-  .alias('ls')
-  .description('List all available scripts')
-  .action(listScripts);
-
-program
-  .command('run <script>')
+  .command('run <category> [subcategory] [script]')
   .alias('r')
-  .description('Run a script (format: category:[subcategory:]script)')
-  .action((scriptName) => {
-    const parts = scriptName.split(':');
-    if (parts.length === 2) {
-      runScript(parts[0], parts[1]);
-    } else if (parts.length === 3) {
-      runScriptFromSubcategory(parts[0], parts[1], parts[2]);
+  .description('Run a specific script')
+  .action((category, subcategory, script) => {
+    if (subcategory && !script) {
+      const isDirectScript = SCRIPTS[category]?.scripts?.[subcategory];
+      if (isDirectScript) {
+        executeScript(category, subcategory);
+      } else {
+        executeScript(category, subcategory);
+      }
     } else {
-      console.log(chalk.red('Invalid format. Use: category:script OR category:subcategory:script'));
-      console.log(chalk.gray('Example: scripts run services:auth'));
-      return;
+      executeScript(category, subcategory, script);
     }
   });
 
-// Quick commands
-program
-  .command('start')
-  .description('Start TTS services with PM2')
-  .action(() => runScriptFromSubcategory('pm2', 'tts', 'start'));
+program.command('start').description('Start ecosystem').action(() => executeScript('pm2', 'tts', 'start'));
+program.command('stop').description('Stop ecosystem').action(() => executeScript('pm2', 'tts', 'stop'));
+program.command('status').description('Show status').action(() => executeScript('pm2', 'tts', 'status'));
+program.command('seed').description('Seed data').action(() => executeScript('setup', 'tts', 'seed'));
 
-program
-  .command('stop')
-  .description('Stop all PM2 services')
-  .action(() => runScriptFromSubcategory('pm2', 'tts', 'stop'));
-
-program
-  .command('restart')
-  .description('Restart all PM2 services')
-  .action(() => runScriptFromSubcategory('pm2', 'tts', 'restart'));
-
-program
-  .command('logs [service]')
-  .description('View PM2 logs')
-  .action((service) => {
-    const args = service ? ['logs', service] : ['logs'];
-    spawn(CMD.pm2, args, { stdio: 'inherit' });
-  });
-
-program
-  .command('status')
-  .description('Show PM2 process status')
-  .action(() => runScriptFromSubcategory('pm2', 'tts', 'status'));
-
-program
-  .command('seed')
-  .description('Run TTS migrations and seed data')
-  .action(() => runScriptFromSubcategory('setup', 'tts', 'seed'));
-
-program
-  .command('flush')
-  .description('Flush TTS DBs, migrate, and seed')
-  .action(() => runScriptFromSubcategory('setup', 'tts', 'flush-seed'));
-
-// Default to interactive menu if no command
 if (process.argv.length <= 2) {
   interactiveMenu();
 } else {

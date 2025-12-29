@@ -17,6 +17,12 @@ class Command(BaseCommand):
             dest='clear',
             help='Clear existing employees before seeding',
         )
+        parser.add_argument(
+            '--count',
+            type=int,
+            default=0,
+            help='Number of additional random employees to seed',
+        )
 
     def handle(self, *args, **options):
         self.stdout.write('Seeding test employees for HDTS system...')
@@ -25,6 +31,10 @@ class Command(BaseCommand):
             self.clear_employees()
         
         self.create_employees()
+        
+        if options['count'] > 0:
+            self.create_random_employees(options['count'])
+            
         self.stdout.write(self.style.SUCCESS('Done seeding test employees.'))
 
     def clear_employees(self):
@@ -208,3 +218,55 @@ class Command(BaseCommand):
                 f'\nSummary: {created_count} created, {updated_count} updated'
             )
         )
+
+    def create_random_employees(self, count):
+        """Create random employees."""
+        first_names = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth']
+        last_names = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez']
+        departments = ['IT Department', 'Asset Department', 'Budget Department']
+
+        created_count = 0
+        
+        for i in range(count):
+            try:
+                first = random.choice(first_names)
+                last = random.choice(last_names)
+                username = f"{first.lower()}{last.lower()}{random.randint(100, 999)}"
+                email = f"{username}@gmail.com"
+                
+                # Check if exists
+                if Employees.objects.filter(email=email).exists():
+                    continue
+
+                employee = Employees(
+                    email=email,
+                    username=username,
+                    first_name=first,
+                    last_name=last,
+                    phone_number=f"+639{random.randint(100000000, 999999999)}",
+                    department=random.choice(departments),
+                    status='Approved',
+                    otp_enabled=False
+                )
+                
+                # Generate unique company ID
+                for _ in range(10000):
+                    num = random.randint(0, 9999)
+                    cid = f"MA{num:04d}"
+                    if not Employees.objects.filter(company_id=cid).exists():
+                        employee.company_id = cid
+                        break
+                else:
+                    employee.company_id = f"MA{int(timezone.now().timestamp()) % 10000:04d}"
+
+                employee.set_password('TestPassword123!')
+                employee.save()
+                created_count += 1
+                
+                if created_count % 10 == 0:
+                    self.stdout.write(f"Created {created_count} random employees...")
+
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error creating random employee: {e}"))
+
+        self.stdout.write(self.style.SUCCESS(f'Successfully created {created_count} random employees.'))

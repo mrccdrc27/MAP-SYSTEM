@@ -8,7 +8,6 @@ services:
   # RabbitMQ for message queueing - No sleep
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: rabbitmq
     ports:
       - "5672:5672"       # AMQP protocol
       - "15672:15672"     # Management UI
@@ -24,10 +23,17 @@ services:
       timeout: 10s
       retries: 5
 
+  # Mailpit for email testing
+  mailpit:
+    image: axllent/mailpit
+    restart: always
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
   # Single PostgreSQL database instance - No sleep
   db:
     image: postgres:15
-    container_name: postgres_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespass
@@ -107,6 +113,25 @@ services:
         condition: service_started
     command: sh -c "sleep 30 && ./start.sh"
 
+  # Helpdesk worker - Added from ecosystem config
+  helpdesk-worker:
+    build:
+      context: ../../hdts/helpdesk
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: "secret-key-1234"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+    command: >
+      sh -c "sleep 15 && 
+             celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo"
+
   # Workflow API service - 10 seconds sleep
   workflow-api:
     build:
@@ -156,13 +181,13 @@ services:
       DJANGO_SECRET_KEY: "your-auth-service-secret-key-here"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service"
-      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
-      DJANGO_EMAIL_HOST: "smtp.gmail.com"
-      DJANGO_EMAIL_PORT: "587"
-      DJANGO_EMAIL_HOST_USER: "your-email@gmail.com"
-      DJANGO_EMAIL_HOST_PASSWORD: "your-app-password"
-      DJANGO_EMAIL_USE_TLS: "True"
-      DJANGO_DEFAULT_FROM_EMAIL: "noreply@yourdomain.com"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "False"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
       FRONTEND_URL: "http://localhost:1000"
       COOKIE_DOMAIN: "localhost"
       DJANGO_SESSION_COOKIE_SECURE: "False"
@@ -180,6 +205,28 @@ services:
       rabbitmq:
         condition: service_healthy
     command: sh -c "sleep 10 && ./entrypoint.sh"
+
+  # Auth Worker - Added to handle async sync tasks
+  auth-worker:
+    build:
+      context: ../../auth
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: "your-auth-service-secret-key-here"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+    command: >
+      sh -c "sleep 15 && 
+             celery -A auth worker --pool=solo --loglevel=info -Q auth-sync-queue"
     
   # Messaging service - 10 seconds sleep
   messaging-service:
@@ -216,13 +263,15 @@ services:
       POSTGRES_DB: "notification_db"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgrespass"
-      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
-      DJANGO_EMAIL_HOST: "smtp.gmail.com"
-      DJANGO_EMAIL_PORT: "587"
-      DJANGO_EMAIL_HOST_USER: "your-email@gmail.com"
-      DJANGO_EMAIL_HOST_PASSWORD: "your-app-password"
-      DJANGO_EMAIL_USE_TLS: "True"
-      DJANGO_DEFAULT_FROM_EMAIL: "noreply@notifications.com"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "False"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
+      TTS_FRONTEND_URL: "http://localhost:1000"
+      TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}"
       DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
       DJANGO_CORS_ALLOW_CREDENTIALS: "True"
       DJANGO_NOTIFICATION_SERVICE_PORT: "8001"
@@ -256,13 +305,15 @@ services:
       POSTGRES_DB: "notification_db"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgrespass"
-      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
-      DJANGO_EMAIL_HOST: "smtp.gmail.com"
-      DJANGO_EMAIL_PORT: "587"
-      DJANGO_EMAIL_HOST_USER: "your-email@gmail.com"
-      DJANGO_EMAIL_HOST_PASSWORD: "your-app-password"
-      DJANGO_EMAIL_USE_TLS: "True"
-      DJANGO_DEFAULT_FROM_EMAIL: "noreply@notifications.com"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "False"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
+      TTS_FRONTEND_URL: "http://localhost:1000"
+      TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}"
       DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
       DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456"
       DJANGO_API_KEY: "in-app-notification-api-key-secure"
@@ -276,7 +327,7 @@ services:
         condition: service_started
     command: >
       sh -c "sleep 5 && 
-             celery -A notification_service worker --loglevel=info -Q notification-queue-default,inapp-notification-queue"
+             celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue,user-email-sync-queue"
 
   # frontend:
   # frontend:

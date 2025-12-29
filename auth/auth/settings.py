@@ -342,8 +342,8 @@ CELERY_TASK_ROUTES = {
     'hdts.tasks.sync_hdts_role_to_tts': {'queue': 'tts.role.sync'},
     'hdts.tasks.sync_hdts_user_to_tts': {'queue': 'tts.user_system_role.sync'},
     # User email sync to notification service
-    'users.tasks.sync_user_email_to_notification_service': {'queue': 'user-email-sync-queue'},
-    'users.tasks.bulk_sync_user_emails_to_notification_service': {'queue': 'user-email-sync-queue'},
+    'users.tasks.sync_user_email_to_notification_service': {'queue': 'auth-sync-queue'},
+    'users.tasks.bulk_sync_user_emails_to_notification_service': {'queue': 'auth-sync-queue'},
 }
 
 CELERY_TASK_DEFAULT_QUEUE = 'default'
