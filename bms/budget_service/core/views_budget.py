@@ -24,6 +24,8 @@ from drf_spectacular.utils import (
     extend_schema, OpenApiParameter, OpenApiResponse, OpenApiTypes, OpenApiExample
 )
 
+from bms.budget_service.core.service_authentication import APIKeyAuthentication
+
 from .models import (
     Account, AccountType, BudgetProposal, Department, ExpenseCategory,
     FiscalYear, BudgetAllocation, Expense, JournalEntry, JournalEntryLine,
@@ -729,16 +731,19 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                 comments=comment_text or f"Status changed to {new_status}."
             )
 
-        # Outbound notification logic
+        # MODIFICATION START: Outbound notification logic updated for Integration
             try:
                 dts_callback_url = settings.DTS_STATUS_UPDATE_URL
                 if dts_callback_url:
                     payload = {
                         'ticket_id': proposal.external_system_id,
-                        'status': new_status,
+                        'status': new_status,  # 'APPROVED' or 'REJECTED'
                         'comment': comment_text,
                         'reviewed_by': reviewer_name,
-                        'reviewed_at': timezone.now().isoformat()
+                        'reviewed_at': timezone.now().isoformat(),
+                        
+                        # NEW FIELD: This is the key AMS needs
+                        'order_number': proposal.external_system_id 
                     }
                     headers = {
                         'Content-Type': 'application/json',
@@ -1647,3 +1652,20 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         self.perform_create(serializer)
         response_serializer = JournalEntryListSerializer(self.created_instance)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    
+class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for EXTERNAL services (e.g., AMS Disposal) to create Journal Entries.
+    Protected by API Key.
+    """
+    queryset = JournalEntry.objects.all()
+    serializer_class = JournalEntryCreateSerializer
+    # TODO: Double check to TTS, regarding API authentication
+    authentication_classes = [APIKeyAuthentication] # Defined in core/service_authentication.py 
+    permission_classes = [IsTrustedService]
+    http_method_names = ['post']
+
+    def perform_create(self, serializer):
+        # Service users don't have a standard user ID, assign a system ID (e.g. 0)
+        # or handle gracefully in the serializer if user context is missing
+        serializer.save()
