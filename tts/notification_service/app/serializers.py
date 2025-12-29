@@ -18,7 +18,7 @@ class InAppNotificationCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = InAppNotification
-        fields = ['user_id', 'subject', 'message', 'notification_type', 'related_task_item_id', 'related_ticket_number', 'metadata']
+        fields = ['user_id', 'subject', 'message', 'notification_type', 'related_ticket_number', 'metadata']
         
 class InAppNotificationUpdateSerializer(serializers.ModelSerializer):
     """

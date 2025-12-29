@@ -440,9 +440,164 @@
   }
 }
 
+/* ERROR STATES */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.errorBox {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+  border: 2px solid #ff6b6b;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15);
+}
+
+.errorIcon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.errorTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #c92a2a;
+  margin: 1rem 0;
+}
+
+.errorMessage {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+
+.errorSubtext {
+  font-size: 0.85rem;
+  color: #999;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.errorActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.errorBackButton,
+.errorRefreshButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.errorBackButton {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.errorBackButton:hover {
+  background-color: #e0e0e0;
+  transform: translateX(-2px);
+}
+
+.errorRefreshButton {
+  background-color: #ff6b6b;
+  color: white;
+}
+
+.errorRefreshButton:hover {
+  background-color: #ff5252;
+  transform: scale(1.02);
+}
+
+/* ERROR TYPE VARIANTS */
+.errorBox.notFound {
+  border-color: #ff6b6b;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+}
+
+.errorBox.unauthorized {
+  border-color: #ffa94d;
+  background: linear-gradient(135deg, #fff8f3 0%, #ffe8cc 100%);
+}
+
+.errorBox.forbidden {
+  border-color: #fd7e14;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+}
+
+.errorBox.unassigned {
+  border-color: #748ffc;
+  background: linear-gradient(135deg, #f3f5ff 0%, #e0e7ff 100%);
+}
+
+.errorBox.notFound .errorTitle {
+  color: #c92a2a;
+}
+
+.errorBox.unauthorized .errorTitle {
+  color: #d9480f;
+}
+
+.errorBox.forbidden .errorTitle {
+  color: #d9480f;
+}
+
+.errorBox.unassigned .errorTitle {
+  color: #364fc7;
+}
+
+.errorBox.notFound .errorIcon {
+  color: #c92a2a;
+}
+
+.errorBox.unauthorized .errorIcon {
+  color: #d9480f;
+}
+
+.errorBox.forbidden .errorIcon {
+  color: #d9480f;
+}
+
+.errorBox.unassigned .errorIcon {
+  color: #364fc7;
+}
+
 /* RESPONSIVE */
 @media screen and (max-width: 768px) {
   .layoutFlex {
     flex-direction: column;
+  }
+
+  .errorBox {
+    padding: 2rem 1.5rem;
+  }
+
+  .errorIcon {
+    font-size: 2.5rem;
+  }
+
+  .errorTitle {
+    font-size: 1.25rem;
   }
 }

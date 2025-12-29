@@ -28,17 +28,16 @@ import { useAuth } from "../../../context/AuthContext";
 import TicketAction from "./modals/TicketAction";
 import EscalateTicket from "./modals/EscalateTicket";
 import TransferTask from "../../../components/modal/TransferTask";
-import { min } from "date-fns";
 
 export default function TicketDetail() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const { id: taskItemId } = useParams();
+  const { ticketNumber } = useParams();
   const {
     stepInstance,
     loading: instanceLoading,
     error: instanceError,
-  } = useTicketDetail(taskItemId);
+  } = useTicketDetail(ticketNumber);
 
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
@@ -53,6 +52,7 @@ export default function TicketDetail() {
     instruction: "",
     taskid: null,
     currentOwner: null,
+    canAct: true,  // Can user take any action on this task item?
   };
 
   function reducer(state, action) {
@@ -66,6 +66,7 @@ export default function TicketDetail() {
           instance: action.payload.instance,
           taskid: action.payload.taskid,
           currentOwner: action.payload.currentOwner,
+          canAct: action.payload.canAct,
         };
       case "RESET":
         return initialState;
@@ -164,16 +165,14 @@ export default function TicketDetail() {
 
     // Handle successful data
     if (stepInstance) {
-      // Console log before normalizing the data
-      // console.log('Raw stepInstance data before normalization:', JSON.stringify(stepInstance, null, 2));
-
-      // Map new ticket fields from the provided structure
+      // Map ticket fields from the API response
       const t = stepInstance.task.ticket;
+      
       dispatch({
         type: "SET_TICKET",
         payload: {
           ticket: {
-            ticket_id: t.ticket_number || t.ticket_id || t.id, // Use ticket_number as primary ID
+            ticket_id: t.ticket_number || t.ticket_id || t.id,
             ticket_number: t.ticket_number,
             ticket_subject: t.subject,
             ticket_description: t.description,
@@ -184,9 +183,13 @@ export default function TicketDetail() {
             current_step_role: stepInstance.step.role_id,
             status: t.status,
             user_assignment: t.employee || { username: t.assigned_to },
+            // Action state flags from API
+            current_status: stepInstance.current_status,
             has_acted: stepInstance.has_acted,
             is_escalated: stepInstance.is_escalated,
             is_transferred: stepInstance.is_transferred,
+            origin: stepInstance.origin,
+            // Dates
             created_at: t.created_at,
             updated_at: t.updated_at,
             fetched_at: t.fetched_at,
@@ -199,6 +202,8 @@ export default function TicketDetail() {
           instance: stepInstance.step_instance_id,
           taskid: stepInstance.task.task_id,
           currentOwner: stepInstance.current_owner,
+          // Use the simplified can_act flag from backend
+          canAct: stepInstance.can_act ?? true,
         },
       });
       setError("");
@@ -219,33 +224,41 @@ export default function TicketDetail() {
     }
   }, [state.ticket?.ticket_id, fetchActionLogs]);
 
-  // check ticket data after normalization
-  // console.log("ticket data", JSON.stringify(state.ticket, null, 2));
-
   const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
 
   // Helper function to get button text based on ticket state
+  // Uses the simplified canAct flag from backend + specific status for messaging
   const getButtonText = (buttonType) => {
     const ticket = state.ticket;
+    const canAct = state.canAct;
 
     if (buttonType === "action") {
-      if (ticket?.is_escalated) return "Can't Make Action After Escalation";
-      if (ticket?.is_transferred) return "Can't Make Action After Transfer";
-      if (ticket?.has_acted) return "Action Already Taken";
+      if (!canAct) {
+        if (ticket?.is_escalated) return "Already Escalated";
+        if (ticket?.is_transferred) return "Already Transferred";
+        if (ticket?.has_acted) return "Action Already Taken";
+        return "Action Not Available";
+      }
       return "Make an Action";
     }
 
     if (buttonType === "escalate") {
-      if (ticket?.is_escalated) return "Already Escalated";
-      if (ticket?.has_acted) return "Can't Escalate After Action";
-      if (ticket?.is_transferred) return "Can't Escalate After Transfer";
+      if (!canAct) {
+        if (ticket?.is_escalated) return "Already Escalated";
+        if (ticket?.is_transferred) return "Already Transferred";
+        if (ticket?.has_acted) return "Already Resolved";
+        return "Escalation Not Available";
+      }
       return "Escalate";
     }
 
     if (buttonType === "transfer") {
-      if (ticket?.is_transferred) return "Already Transferred";
-      if (ticket?.is_escalated) return "Can't Transfer After Escalation";
-      if (ticket?.has_acted) return "Can't Transfer After Action";
+      if (!canAct) {
+        if (ticket?.is_transferred) return "Already Transferred";
+        if (ticket?.is_escalated) return "Already Escalated";
+        if (ticket?.has_acted) return "Already Resolved";
+        return "Transfer Not Available";
+      }
       return "Transfer";
     }
 
@@ -276,23 +289,87 @@ export default function TicketDetail() {
     );
   }
   if (error) {
+    // Determine error type and customize messaging
+    let errorType = "notFound";
+    let errorIcon = "fa-exclamation-circle";
+    let errorTitle = "Ticket Not Found";
+    let errorMessage = error;
+    let errorSubtext = "The ticket you're looking for doesn't exist or has been removed.";
+
+    if (error.includes("no authorization") || error.includes("not assigned to you")) {
+      errorType = "unauthorized";
+      errorIcon = "fa-lock";
+      errorTitle = "Access Denied";
+      errorMessage = "You don't have permission to view this ticket.";
+      errorSubtext = "Only the assigned agent can view this ticket detail.";
+    } else if (error.includes("no assignment") || error.includes("You have no")) {
+      errorType = "unassigned";
+      errorIcon = "fa-user-slash";
+      errorTitle = "No Assignment";
+      errorMessage = "You have no assigned task for this ticket.";
+      errorSubtext = "This ticket has not been assigned to you. Please check the ticket list.";
+    } else if (error.includes("Authentication required") || error.includes("401")) {
+      errorType = "unauthorized";
+      errorIcon = "fa-user-circle";
+      errorTitle = "Authentication Required";
+      errorMessage = "Your session has expired or you are not logged in.";
+      errorSubtext = "Please log in again to continue.";
+    } else if (error.includes("not found") || error.includes("404")) {
+      errorType = "notFound";
+      errorIcon = "fa-search";
+      errorTitle = "Ticket Not Found";
+      errorMessage = error;
+      errorSubtext = "The ticket you're looking for doesn't exist.";
+    } else if (error.includes("Failed to fetch")) {
+      errorType = "forbidden";
+      errorIcon = "fa-network-wired";
+      errorTitle = "Connection Error";
+      errorMessage = "Failed to fetch ticket data. Please try again.";
+      errorSubtext = "Check your internet connection and try refreshing the page.";
+    }
+
     return (
       <>
         <Nav />
         <main className={styles.ticketDetailPage}>
           <section className={styles.tdpHeader}>
             <button
-              className={styles.tdBack}
+              className={styles.wpdBack}
               onClick={handleBack}
-              aria-label="Go back"
+              aria-label="Go back to tickets"
               type="button"
             >
-              <i className="fa fa-chevron-left"></i>
+              Tickets
             </button>
-            <h1>Error</h1>
+            <span className={styles.wpdCurrent}> / Error</span>
           </section>
-          <section className={styles.tdpBody}>
-            <div style={{ padding: "2rem", color: "red" }}>{error}</div>
+
+          <section className={styles.errorContainer}>
+            <div className={`${styles.errorBox} ${styles[errorType]}`}>
+              <i className={`fa-solid ${errorIcon} ${styles.errorIcon}`}></i>
+              <h2 className={styles.errorTitle}>{errorTitle}</h2>
+              <p className={styles.errorMessage}>{errorMessage}</p>
+              <p className={styles.errorSubtext}>{errorSubtext}</p>
+
+              <div className={styles.errorActions}>
+                <button
+                  className={styles.errorBackButton}
+                  onClick={handleBack}
+                  type="button"
+                >
+                  <i className="fa-solid fa-chevron-left"></i>
+                  Go Back
+                </button>
+                <button
+                  className={styles.errorRefreshButton}
+                  onClick={() => window.location.reload()}
+                  type="button"
+                >
+                  <i className="fa-solid fa-arrows-rotate"></i>
+                  Refresh
+                </button>
+              </div>
+            </div>
           </section>
         </main>
       </>
@@ -477,21 +554,15 @@ export default function TicketDetail() {
               style={{ flex: 1, minWidth: "300px" }}
             >
               <div className={styles.layoutFlexButton}>
-                {/* Make an Action */}
+                {/* Make an Action - disabled when canAct is false */}
                 <button
                   className={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
+                    !state.canAct
                       ? styles.ticketActionButtonDisabled
                       : styles.ticketActionButton
                   }
                   onClick={() => setOpenTicketAction(true)}
-                  disabled={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
-                  }
+                  disabled={!state.canAct}
                 >
                   <span className={styles.iconTextWrapper}>
                     <i className="fa fa-check-circle"></i>
@@ -499,21 +570,15 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Escalate */}
+                {/* Escalate - disabled when canAct is false */}
                 <button
                   className={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
+                    !state.canAct
                       ? styles.escalateButtonDisabled
                       : styles.escalateButton
                   }
                   onClick={() => setOpenEscalateModal(true)}
-                  disabled={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
-                  }
+                  disabled={!state.canAct}
                 >
                   <span className={styles.iconTextWrapper}>
                     <i className="fa fa-arrow-up"></i>
@@ -521,22 +586,16 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Transfer (Admin only) */}
+                {/* Transfer (Admin only) - disabled when canAct is false */}
                 {isAdmin() && (
                   <button
                     className={
-                      state.ticket?.has_acted ||
-                      state.ticket?.is_escalated ||
-                      state.ticket?.is_transferred
+                      !state.canAct
                         ? styles.transferButtonDisabled
                         : styles.transferButton
                     }
                     onClick={() => setOpenTransferModal(true)}
-                    disabled={
-                      state.ticket?.has_acted ||
-                      state.ticket?.is_escalated ||
-                      state.ticket?.is_transferred
-                    }
+                    disabled={!state.canAct}
                   >
                     <span className={styles.iconTextWrapper}>
                       <i className="fa fa-exchange"></i>
@@ -638,14 +697,14 @@ export default function TicketDetail() {
         <EscalateTicket
           closeEscalateModal={setOpenEscalateModal}
           ticket={state.ticket}
-          taskItemId={taskItemId}
+          taskItemId={stepInstance?.task_item_id}
         />
       )}
       {openTransferModal && (
         <TransferTask
           closeTransferModal={setOpenTransferModal}
           ticket={state.ticket}
-          taskItemId={taskItemId}
+          taskItemId={stepInstance?.task_item_id}
           currentOwner={state.currentOwner}
         />
       )}

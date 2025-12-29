@@ -56,7 +56,7 @@ class MyNotificationsListView(generics.ListAPIView):
     
     Query Parameters (optional):
     - notification_type: Filter by notification type (e.g., 'task_assignment', 'task_transfer_in')
-    - related_task_item_id: Filter by related task item ID
+    - related_ticket_number: Filter by related ticket number
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -71,10 +71,10 @@ class MyNotificationsListView(generics.ListAPIView):
         if notification_type:
             queryset = queryset.filter(notification_type=notification_type)
         
-        # Optional filtering by related task item ID
-        related_task_item_id = self.request.query_params.get('related_task_item_id')
-        if related_task_item_id:
-            queryset = queryset.filter(related_task_item_id=related_task_item_id)
+        # Optional filtering by related ticket number
+        related_ticket_number = self.request.query_params.get('related_ticket_number')
+        if related_ticket_number:
+            queryset = queryset.filter(related_ticket_number=related_ticket_number)
         
         return queryset
 
@@ -491,12 +491,12 @@ class NotificationTypesView(APIView):
         })
 
 
-class MyNotificationsByTaskItemView(generics.ListAPIView):
+class MyNotificationsByTicketView(generics.ListAPIView):
     """
-    List all notifications for the authenticated user related to a specific task item.
+    List all notifications for the authenticated user related to a specific ticket.
     
     Path Parameters:
-    - task_item_id: The task item ID to filter notifications by
+    - ticket_number: The ticket number to filter notifications by
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -504,8 +504,8 @@ class MyNotificationsByTaskItemView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        task_item_id = self.kwargs.get('task_item_id')
+        ticket_number = self.kwargs.get('ticket_number')
         return InAppNotification.objects.filter(
             user_id=user_id,
-            related_task_item_id=task_item_id
+            related_ticket_number=ticket_number
         ).order_by('-created_at')

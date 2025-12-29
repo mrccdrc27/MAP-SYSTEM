@@ -39,7 +39,7 @@ function TicketItem({ item }) {
   // console.log("id", item);
   
   const handleRowClick = () => {
-    navigate(`/ticket/${item.task_item_id}`);
+    navigate(`/ticket/${item.ticket_number}`);
   };
   
   return (
@@ -96,7 +96,7 @@ function TicketItem({ item }) {
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/ticket/${item.task_item_id}`)}
+          onClick={() => navigate(`/ticket/${item.ticket_number}`)}
         >
           👁
         </button>

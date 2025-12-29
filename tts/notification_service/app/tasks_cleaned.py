@@ -37,7 +37,7 @@ def _send_email_for_notification(user_id, subject, message, notification_type, c
 # TASK ASSIGNMENT NOTIFICATIONS
 # =============================================================================
 
-@shared_task(name="notifications.send_assignment_notification")
+@shared_task(name="task.send_assignment_notification")
 def send_assignment_notification(user_id, ticket_number, task_title, role_name):
     """
     Handle assignment notifications sent from the workflow API.
@@ -209,6 +209,7 @@ def send_task_transfer_notification(
             notification_type='task_transfer_out',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': from_ticket_number,
                 'transferred_by': transfer_by,
@@ -224,6 +225,7 @@ def send_task_transfer_notification(
             notification_type='task_transfer_in',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': to_ticket_number,
                 'transferred_by': transfer_by,
@@ -347,6 +349,7 @@ def send_escalation_notification(
             notification_type='task_escalation_out',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': from_ticket_number,
                 'escalated_from_role': escalated_from_role,
@@ -363,6 +366,7 @@ def send_escalation_notification(
             notification_type='task_escalation_in',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': to_ticket_number,
                 'escalated_from_role': escalated_from_role,
@@ -445,6 +449,7 @@ def send_task_completed_notification(
             notification_type='task_completed',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': ticket_number,
                 'completed_by': completed_by
@@ -527,6 +532,7 @@ def send_workflow_step_notification(
             notification_type='workflow_step_change',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': ticket_number,
                 'previous_step': previous_step,
@@ -604,6 +610,7 @@ def send_sla_warning_notification(
             notification_type='sla_warning',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': ticket_number,
                 'time_remaining': time_remaining,
@@ -676,6 +683,7 @@ def send_sla_breach_notification(
             notification_type='sla_breach',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': ticket_number,
                 'target_resolution': target_resolution,
@@ -706,6 +714,7 @@ def send_sla_breach_notification(
 def send_ticket_status_notification(
     user_id,
     ticket_number,
+    ticket_number,
     old_status,
     new_status,
     changed_by_name=None
@@ -715,7 +724,8 @@ def send_ticket_status_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The ticket number for navigation
+        ticket_number (str): The ticket number
+        ticket_number (str): Associated task item ID
         old_status (str): Previous status
         new_status (str): New status
         changed_by_name (str): Name of user who changed the status
@@ -746,6 +756,7 @@ def send_ticket_status_notification(
             message=message,
             notification_type=notification_type,
             related_ticket_number=str(ticket_number),
+            related_ticket_number=ticket_number,
             metadata={
                 'old_status': old_status,
                 'new_status': new_status,
@@ -765,6 +776,7 @@ def send_ticket_status_notification(
             context={
                 'ticket_number': ticket_number,
                 'ticket_subject': ticket_number,
+                'ticket_number': ticket_number,
                 'old_status': old_status,
                 'new_status': new_status,
                 'changed_by_name': changed_by_name
@@ -877,6 +889,7 @@ def bulk_create_notifications(notifications_data):
             - message (required)
             - notification_type (optional)
             - related_ticket_number (optional)
+            - related_ticket_number (optional)
             - metadata (optional)
         
     Returns:
@@ -894,6 +907,7 @@ def bulk_create_notifications(notifications_data):
                     subject=data['subject'],
                     message=data['message'],
                     notification_type=data.get('notification_type', 'system'),
+                    related_ticket_number=data.get('related_ticket_number'),
                     related_ticket_number=data.get('related_ticket_number'),
                     metadata=data.get('metadata', {})
                 ))
@@ -976,6 +990,7 @@ def send_comment_notification(
             notification_type='comment_added',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': ticket_number,
                 'commenter_name': commenter_name,
@@ -1049,6 +1064,7 @@ def send_mention_notification(
             notification_type='mention',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
                 'ticket_number': ticket_number,
                 'mentioned_by_name': mentioned_by_name,
@@ -1081,4 +1097,3 @@ from .sync_tasks import (
     bulk_sync_user_emails,
     delete_user_email_cache,
 )
-

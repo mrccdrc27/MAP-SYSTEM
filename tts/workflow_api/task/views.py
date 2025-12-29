@@ -471,206 +471,255 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         return Response(response_data, status=status.HTTP_200_OK)
     
-    @action(detail=False, methods=['get'], url_path='detail/(?P<task_item_id>[0-9]+)')
-    def task_details(self, request, task_item_id=None):
+    @action(detail=False, methods=['get'], url_path='detail/by-ticket/(?P<ticket_number>[A-Za-z0-9]+)')
+    def task_details_by_ticket(self, request, ticket_number=None):
         """
-        GET endpoint to retrieve complete task details with step information and available transitions.
+        GET endpoint to retrieve TaskItem details by ticket_number.
         
-        URL Path:
-        - /tasks/detail/{task_item_id}/
+        URL Path: /tasks/detail/by-ticket/{ticket_number}/
+        
+        This endpoint finds the current user's TaskItem for the given ticket.
+        Each user will get their own TaskItem for the same ticket.
         
         Example:
-        - /tasks/detail/4/
-        
-        Response includes:
-        - step_instance_id: UUID identifier for this task instance
-        - task_item_id: The TaskItem ID for this assignment
-        - user_id: Current authenticated user ID
-        - step_transition_id: UUID identifier for transitions
-        - has_acted: Boolean indicating if user has acted on this task
-        - current_owner: Most recent TaskItem details (user who currently owns the task)
-        - step: Detailed step information (name, description, instruction, etc.)
-        - task: Complete task details with nested ticket information
-        - available_actions: List of available transitions from current step
+        - User A calls /tasks/detail/by-ticket/TX20251227638396/ → returns TaskItem 70
+        - User B calls /tasks/detail/by-ticket/TX20251227638396/ → returns TaskItem 71
         """
-        if not task_item_id:
+        if not ticket_number:
             return Response(
-                {
-                    'error': 'task_item_id is required in URL path',
-                    'example': '/tasks/detail/4/'
-                },
+                {'error': 'ticket_number is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         user_id = request.user.user_id
         
-        # Fetch TaskItem by task_item_id
+        # Find the ticket by ticket_number
         try:
-            user_assignment = TaskItem.objects.select_related(
-                'task',
-                'task__ticket_id',
-                'task__workflow_id',
-                'task__current_step',
-                'task__current_step__role_id',
-                'role_user'
-            ).get(task_item_id=task_item_id)
-        except TaskItem.DoesNotExist:
+            from tickets.models import WorkflowTicket
+            ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
+        except WorkflowTicket.DoesNotExist:
+            # Try searching in ticket_data
+            try:
+                ticket = WorkflowTicket.objects.get(ticket_data__ticket_id=ticket_number)
+            except WorkflowTicket.DoesNotExist:
+                return Response(
+                    {'error': f'Ticket {ticket_number} not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Find the user's TaskItem for this ticket (most recent non-terminal one first, then any)
+        task_item = TaskItem.objects.filter(
+            task__ticket_id=ticket,
+            role_user__user_id=user_id
+        ).select_related(
+            'task__ticket_id',
+            'task__workflow_id',
+            'role_user',
+            'role_user__role_id',
+            'assigned_on_step',
+            'assigned_on_step__role_id',
+            'assigned_on_step__workflow_id',
+            'transferred_to',
+        ).prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
+        
+        if not task_item:
             return Response(
-                {
-                    'error': f'TaskItem {task_item_id} not found',
-                    'task_item_id': task_item_id
-                },
+                {'error': f'You have no assignment for ticket {ticket_number}'},
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Verify the TaskItem belongs to the current user, or user is an admin
-        is_admin = request.user.has_system_role('tts', 'Admin') or request.user.has_system_role('hdts', 'Admin')
+        # Delegate to the shared response building logic
+        return self._build_task_item_response(request, task_item)
+    
+    @action(detail=False, methods=['get'], url_path='detail/(?P<task_item_id>[0-9]+)')
+    def task_details(self, request, task_item_id=None):
+        """
+        GET endpoint to retrieve TaskItem details - fully TaskItem-centric.
         
-        if user_assignment.role_user.user_id != user_id and not is_admin:
+        URL Path: /tasks/detail/{task_item_id}/
+        
+        This endpoint is PURELY based on the TaskItem, NOT the parent Task.
+        - Uses TaskItem's assigned_on_step for step info (where this user was assigned)
+        - Uses TaskItem's own history for status flags
+        - Each TaskItem is independent - transfer/escalation creates new TaskItems
+        
+        Action flags (based on THIS TaskItem only):
+        - can_act: False if this TaskItem has terminal status (resolved, escalated, reassigned)
+        - is_escalated: True if THIS TaskItem's status is 'escalated'
+        - is_transferred: True if THIS TaskItem was transferred out
+        - has_acted: True if THIS TaskItem's status is 'resolved'
+        """
+        if not task_item_id:
             return Response(
-                {
-                    'error': 'You do not have permission to view this task item',
-                    'task_item_id': task_item_id
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        task = user_assignment.task
-        
-        # ✅ Set task_item status to 'in progress' only if it hasn't already been viewed
-        # Check if there's already an 'in progress' or later status (not just 'new')
-        latest_history = user_assignment.taskitemhistory_set.order_by('-created_at').first()
-        current_status = latest_history.status if latest_history else 'new'
-        
-        if current_status == 'new':
-            # Create history record for transition from 'new' to 'in progress'
-            from task.models import TaskItemHistory
-            TaskItemHistory.objects.create(
-                task_item=user_assignment,
-                status='in progress'
-            )
-            logger.info(
-                f"✅ Task {task.task_id} set to 'in progress' for user {user_id}"
-            )
-        
-        has_acted = user_assignment.taskitemhistory_set.filter(status__in=['resolved', 'escalated']).exists()
-        
-        # Get step information
-        current_step = task.current_step
-        if not current_step:
-            return Response(
-                {
-                    'error': 'Task has no current step assigned',
-                    'task_id': task.task_id
-                },
+                {'error': 'task_item_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Get available transitions from current step
+        user_id = request.user.user_id
+        
+        # Fetch TaskItem with its own related data (not Task-centric)
+        try:
+            task_item = TaskItem.objects.select_related(
+                'task__ticket_id',
+                'task__workflow_id',
+                'role_user',
+                'role_user__role_id',
+                'assigned_on_step',              # The step where THIS TaskItem was assigned
+                'assigned_on_step__role_id',
+                'assigned_on_step__workflow_id',
+                'transferred_to',
+            ).prefetch_related('taskitemhistory_set').get(task_item_id=task_item_id)
+        except TaskItem.DoesNotExist:
+            return Response(
+                {'error': f'TaskItem {task_item_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Strict permission check - ONLY the assigned user can view this TaskItem
+        # No admin bypass - each user must view their own TaskItem
+        if task_item.role_user.user_id != user_id:
+            return Response(
+                {'error': 'This task item is not assigned to you'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return self._build_task_item_response(request, task_item)
+    
+    def _build_task_item_response(self, request, task_item):
+        """
+        Helper method to build the response for a TaskItem.
+        Shared between task_details and task_details_by_ticket endpoints.
+        """
+        user_id = request.user.user_id
+        task_item_id = task_item.task_item_id
+        
+        # ========== TaskItem's OWN status from history ==========
+        latest_history = task_item.taskitemhistory_set.order_by('-created_at').first()
+        current_status = latest_history.status if latest_history else 'new'
+        
+        # Auto-mark as 'in progress' on first view
+        if current_status == 'new':
+            TaskItemHistory.objects.create(task_item=task_item, status='in progress')
+            current_status = 'in progress'
+            logger.info(f"✅ TaskItem {task_item_id} marked 'in progress' for user {user_id}")
+        
+        # ========== ACTION FLAGS - purely from THIS TaskItem ==========
+        terminal_statuses = ['resolved', 'escalated', 'reassigned', 'breached']
+        has_terminal_status = task_item.taskitemhistory_set.filter(status__in=terminal_statuses).exists()
+        
+        can_act = not has_terminal_status
+        has_acted = current_status == 'resolved'
+        is_escalated = current_status == 'escalated'
+        is_transferred = task_item.transferred_to is not None or current_status == 'reassigned'
+        
+        logger.info(
+            f"📋 TaskItem {task_item_id}: status={current_status}, "
+            f"can_act={can_act}, is_escalated={is_escalated}, is_transferred={is_transferred}"
+        )
+        
+        # ========== STEP INFO - from TaskItem's assigned_on_step ==========
+        # Use the step where THIS TaskItem was assigned, fallback to task.current_step
+        step = task_item.assigned_on_step or task_item.task.current_step
+        
+        if not step:
+            return Response(
+                {'error': 'TaskItem has no step information'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get transitions from THIS step
         available_transitions = StepTransition.objects.filter(
-            from_step_id=current_step
+            from_step_id=step
         ).select_related('to_step_id', 'to_step_id__role_id')
         
-        # Build available_actions list
-        available_actions = []
-        for transition in available_transitions:
-            action_data = {
-                'transition_id': str(transition.transition_id),
-                'id': transition.transition_id,
-                'name': transition.name or f'{current_step.name} → {transition.to_step_id.name if transition.to_step_id else "End"}',
-                'description': transition.to_step_id.description if transition.to_step_id else 'Complete workflow',
+        available_actions = [
+            {
+                'transition_id': str(t.transition_id),
+                'id': t.transition_id,
+                'name': t.name or f'{step.name} → {t.to_step_id.name if t.to_step_id else "End"}',
+                'description': t.to_step_id.description if t.to_step_id else 'Complete workflow',
             }
-            available_actions.append(action_data)
+            for t in available_transitions
+        ]
         
-        # If no transitions exist from this step, add default "Finalize Step" action
-        if not available_transitions.exists():
-            default_action = {
+        if not available_actions:
+            available_actions.append({
                 'transition_id': None,
                 'id': None,
-                'name': f'Finalize Step {current_step.name}',
-                'description': current_step.description or f'Complete {current_step.name}',
-            }
-            available_actions.append(default_action)
+                'name': f'Finalize {step.name}',
+                'description': step.description or f'Complete {step.name}',
+            })
         
-        # Get first step transition for step_transition_id (use from_step outgoing transitions)
-        step_transition_id = None
-        if available_transitions.exists():
-            step_transition_id = str(available_transitions.first().transition_id)
+        step_transition_id = str(available_transitions.first().transition_id) if available_transitions.exists() else None
         
-        # Flatten ticket data - merge ticket_data fields directly into ticket object
-        ticket_data = task.ticket_id.ticket_data.copy() if task.ticket_id.ticket_data else {}
+        # ========== TICKET DATA ==========
+        ticket = task_item.task.ticket_id
+        ticket_data = ticket.ticket_data.copy() if ticket.ticket_data else {}
         ticket_response = {
-            'id': task.ticket_id.id,
-            'ticket_number': task.ticket_id.ticket_number,
-            'is_task_allocated': task.ticket_id.is_task_allocated,
-            'fetched_at': task.ticket_id.fetched_at.isoformat() if task.ticket_id.fetched_at else None,
-            'created_at': task.ticket_id.created_at.isoformat() if task.ticket_id.created_at else None,
-            'updated_at': task.ticket_id.updated_at.isoformat() if task.ticket_id.updated_at else None,
+            'id': ticket.id,
+            'ticket_number': ticket.ticket_number,
+            'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
+            'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None,
         }
-        # Merge all ticket_data fields into the response
         ticket_response.update(ticket_data)
         
-        # Get the most recent TaskItem (current owner) for this task
-        most_recent_task_item = TaskItem.objects.filter(
-            task=task
+        # ========== CURRENT OWNER (most recent TaskItem for this ticket's task) ==========
+        most_recent = TaskItem.objects.filter(
+            task=task_item.task
         ).select_related('role_user', 'role_user__role_id').prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
         
-        # Calculate is_escalated and is_transferred based on actions taken on THIS task item (user_assignment)
-        # is_escalated = True if the user escalated this ticket from this task item
-        is_escalated = user_assignment.taskitemhistory_set.filter(status='escalated').exists()
-        # is_transferred = True if the user transferred this ticket from this task item
-        is_transferred = user_assignment.transferred_to is not None or user_assignment.taskitemhistory_set.filter(status='reassigned').exists()
-        
         current_owner = None
-        if most_recent_task_item:
-            
-            # Get latest status from history
-            latest_history = most_recent_task_item.taskitemhistory_set.order_by('-created_at').first()
-            status_value = latest_history.status if latest_history else 'new'
-            status_updated_on = latest_history.created_at if latest_history else most_recent_task_item.assigned_on
-            
+        if most_recent:
+            owner_status = most_recent.taskitemhistory_set.order_by('-created_at').first()
             current_owner = {
-                'task_item_id': most_recent_task_item.task_item_id,
-                'user_id': most_recent_task_item.role_user.user_id,
-                'user_full_name': most_recent_task_item.role_user.user_full_name,
-                'role': most_recent_task_item.role_user.role_id.name if most_recent_task_item.role_user.role_id else None,
-                'status': status_value,
-                'origin': most_recent_task_item.origin,
-                'assigned_on': most_recent_task_item.assigned_on.isoformat() if most_recent_task_item.assigned_on else None,
-                'status_updated_on': status_updated_on.isoformat() if status_updated_on else None,
-                'acted_on': most_recent_task_item.acted_on.isoformat() if most_recent_task_item.acted_on else None,
+                'task_item_id': most_recent.task_item_id,
+                'user_id': most_recent.role_user.user_id,
+                'user_full_name': most_recent.role_user.user_full_name,
+                'role': most_recent.role_user.role_id.name if most_recent.role_user.role_id else None,
+                'status': owner_status.status if owner_status else 'new',
+                'origin': most_recent.origin,
+                'assigned_on': most_recent.assigned_on.isoformat() if most_recent.assigned_on else None,
             }
         
-        # Build response
+        # ========== BUILD RESPONSE ==========
         response_data = {
-            'step_instance_id': str(task.task_id),
+            # Primary identifier - this is a TaskItem view
             'task_item_id': int(task_item_id),
             'user_id': user_id,
-            'step_transition_id': step_transition_id,
+            
+            # Action flags - ONLY based on THIS TaskItem
+            'can_act': can_act,
             'has_acted': has_acted,
             'is_escalated': is_escalated,
             'is_transferred': is_transferred,
-            'target_resolution': task.target_resolution.isoformat() if task.target_resolution else None,
-            'current_owner': current_owner,
+            'current_status': current_status,
+            'origin': task_item.origin,
+            
+            # TaskItem's target resolution (may differ from Task's)
+            'target_resolution': (task_item.target_resolution or task_item.task.target_resolution).isoformat() 
+                if (task_item.target_resolution or task_item.task.target_resolution) else None,
+            
+            # Step info - from THIS TaskItem's assigned step
+            'step_transition_id': step_transition_id,
             'step': {
-                'id': current_step.step_id,
-                'step_id': str(current_step.step_id),
-                'workflow_id': str(current_step.workflow_id.workflow_id) if current_step.workflow_id else None,
-                'role_id': str(current_step.role_id.role_id) if current_step.role_id else None,
-                'name': current_step.name,
-                'description': current_step.description,
-                'is_initialized': current_step.is_initialized,
-                'created_at': current_step.created_at.isoformat() if current_step.created_at else None,
-                'updated_at': current_step.updated_at.isoformat() if current_step.updated_at else None,
-                'instruction': current_step.instruction,
-            },
-            'task': {
-                'task_id': str(task.task_id),
-                'workflow_id': task.workflow_id.workflow_id,
-                'ticket': ticket_response,
-                'fetched_at': task.fetched_at.isoformat() if task.fetched_at else None,
+                'id': step.step_id,
+                'step_id': str(step.step_id),
+                'workflow_id': str(step.workflow_id.workflow_id) if step.workflow_id else None,
+                'role_id': str(step.role_id.role_id) if step.role_id else None,
+                'name': step.name,
+                'description': step.description,
+                'instruction': step.instruction,
             },
             'available_actions': available_actions,
+            
+            # Related data
+            'current_owner': current_owner,
+            'step_instance_id': str(task_item.task.task_id),  # For backwards compatibility
+            'task': {
+                'task_id': str(task_item.task.task_id),
+                'workflow_id': task_item.task.workflow_id.workflow_id,
+                'ticket': ticket_response,
+            },
         }
         
         return Response(response_data, status=status.HTTP_200_OK)
@@ -1095,13 +1144,14 @@ class TaskViewSet(viewsets.ModelViewSet):
             status='reassigned'
         )
         
-        # Create new TaskItem for target user (no notes)
+        # Create new TaskItem for target user - inherit assigned_on_step from original
         new_task_item = TaskItem.objects.create(
             task=task_item.task,
             role_user=target_role_user,
             origin='Transferred',
             notes='',
-            target_resolution=task_item.target_resolution
+            target_resolution=task_item.target_resolution,
+            assigned_on_step=task_item.assigned_on_step or task_item.task.current_step  # Inherit step
         )
         
         # Create history record for new assignment
@@ -1132,6 +1182,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             from django.conf import settings
             
             task_title = str(task_item.task.ticket_id.ticket_number) if hasattr(task_item.task, 'ticket_id') else f"Task {task_item.task.task_id}"
+            ticket_number = str(task_item.task.ticket_id.ticket_number) if hasattr(task_item.task, 'ticket_id') and hasattr(task_item.task.ticket_id, 'ticket_number') else task_title
             inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
             
             current_app.send_task(
@@ -1139,7 +1190,8 @@ class TaskViewSet(viewsets.ModelViewSet):
                 args=(
                     task_item.role_user.user_id,
                     target_user_id,
-                    str(task_item.task.task_id),
+                    ticket_number,  # Use ticket_number for URL routing
+                    ticket_number,  # Both users navigate to the same ticket
                     task_title,
                     request.user.user_id,
                     getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'User {request.user.user_id}'),

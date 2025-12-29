@@ -37,7 +37,7 @@ def _send_email_for_notification(user_id, subject, message, notification_type, c
 # TASK ASSIGNMENT NOTIFICATIONS
 # =============================================================================
 
-@shared_task(name="notifications.send_assignment_notification")
+@shared_task(name="task.send_assignment_notification")
 def send_assignment_notification(user_id, ticket_number, task_title, role_name):
     """
     Handle assignment notifications sent from the workflow API.
@@ -110,8 +110,8 @@ def send_assignment_notification(user_id, ticket_number, task_title, role_name):
 def send_task_transfer_notification(
     from_user_id, 
     to_user_id, 
-    from_ticket_number,
-    to_ticket_number,
+    from_task_item_id,
+    to_task_item_id,
     task_title, 
     transferred_by_id,
     transferred_by_name=None,
@@ -126,8 +126,8 @@ def send_task_transfer_notification(
     Args:
         from_user_id (int): Original assignee user ID
         to_user_id (int): New assignee user ID
-        from_ticket_number (str): The original task item ID (for the user losing the task)
-        to_ticket_number (str): The new task item ID (for the user receiving the task)
+        from_task_item_id (str): The original task item ID (for the user losing the task)
+        to_task_item_id (str): The new task item ID (for the user receiving the task)
         task_title (str): The task title/ticket number
         transferred_by_id (int): User ID who initiated the transfer
         transferred_by_name (str): Name of user who initiated the transfer
@@ -164,7 +164,7 @@ def send_task_transfer_notification(
             subject=subject_out,
             message=message_out,
             notification_type='task_transfer_out',
-            related_ticket_number=str(from_ticket_number),
+            related_task_item_id=str(from_task_item_id),
             metadata={
                 'transferred_to_user_id': to_user_id,
                 'transferred_by_id': transferred_by_id,
@@ -189,7 +189,7 @@ def send_task_transfer_notification(
             subject=subject_in,
             message=message_in,
             notification_type='task_transfer_in',
-            related_ticket_number=str(to_ticket_number),
+            related_task_item_id=str(to_task_item_id),
             metadata={
                 'transferred_from_user_id': from_user_id,
                 'transferred_by_id': transferred_by_id,
@@ -209,8 +209,9 @@ def send_task_transfer_notification(
             notification_type='task_transfer_out',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': from_ticket_number,
+                'task_item_id': from_task_item_id,
                 'transferred_by': transfer_by,
                 'transfer_notes': transfer_notes,
                 'direction': 'out'
@@ -224,8 +225,9 @@ def send_task_transfer_notification(
             notification_type='task_transfer_in',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': to_ticket_number,
+                'task_item_id': to_task_item_id,
                 'transferred_by': transfer_by,
                 'transfer_notes': transfer_notes,
                 'direction': 'in'
@@ -237,16 +239,16 @@ def send_task_transfer_notification(
             "notifications_created": notifications_created,
             "from_user_id": from_user_id,
             "to_user_id": to_user_id,
-            "from_ticket_number": from_ticket_number,
-            "to_ticket_number": to_ticket_number
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create transfer notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "from_ticket_number": from_ticket_number,
-            "to_ticket_number": to_ticket_number
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
 
 
@@ -258,8 +260,8 @@ def send_task_transfer_notification(
 def send_escalation_notification(
     from_user_id,
     to_user_id,
-    from_ticket_number,
-    to_ticket_number,
+    from_task_item_id,
+    to_task_item_id,
     task_title,
     escalated_from_role,
     escalated_to_role,
@@ -276,8 +278,8 @@ def send_escalation_notification(
     Args:
         from_user_id (int): Original assignee user ID
         to_user_id (int): New assignee user ID (escalated to)
-        from_ticket_number (str): The original task item ID (for the user losing the task)
-        to_ticket_number (str): The new task item ID (for the user receiving the task)
+        from_task_item_id (str): The original task item ID (for the user losing the task)
+        to_task_item_id (str): The new task item ID (for the user receiving the task)
         task_title (str): The task title/ticket number
         escalated_from_role (str): Original role name
         escalated_to_role (str): Escalated role name
@@ -302,7 +304,7 @@ def send_escalation_notification(
             subject=subject_out,
             message=message_out,
             notification_type='task_escalation_out',
-            related_ticket_number=str(from_ticket_number),
+            related_task_item_id=str(from_task_item_id),
             metadata={
                 'escalated_to_user_id': to_user_id,
                 'escalated_to_role': escalated_to_role,
@@ -325,7 +327,7 @@ def send_escalation_notification(
             subject=subject_in,
             message=message_in,
             notification_type='task_escalation_in',
-            related_ticket_number=str(to_ticket_number),
+            related_task_item_id=str(to_task_item_id),
             metadata={
                 'escalated_from_user_id': from_user_id,
                 'escalated_from_role': escalated_from_role,
@@ -347,8 +349,9 @@ def send_escalation_notification(
             notification_type='task_escalation_out',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': from_ticket_number,
+                'task_item_id': from_task_item_id,
                 'escalated_from_role': escalated_from_role,
                 'escalated_to_role': escalated_to_role,
                 'escalation_reason': escalation_reason,
@@ -363,8 +366,9 @@ def send_escalation_notification(
             notification_type='task_escalation_in',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': to_ticket_number,
+                'task_item_id': to_task_item_id,
                 'escalated_from_role': escalated_from_role,
                 'escalated_to_role': escalated_to_role,
                 'escalation_reason': escalation_reason,
@@ -377,16 +381,16 @@ def send_escalation_notification(
             "notifications_created": notifications_created,
             "from_user_id": from_user_id,
             "to_user_id": to_user_id,
-            "from_ticket_number": from_ticket_number,
-            "to_ticket_number": to_ticket_number
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create escalation notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "from_ticket_number": from_ticket_number,
-            "to_ticket_number": to_ticket_number
+            "from_task_item_id": from_task_item_id,
+            "to_task_item_id": to_task_item_id
         }
 
 
@@ -397,7 +401,7 @@ def send_escalation_notification(
 @shared_task(name="notifications.send_task_completed_notification")
 def send_task_completed_notification(
     user_id,
-    ticket_number,
+    task_item_id,
     task_title,
     completed_by_id=None,
     completed_by_name=None
@@ -407,7 +411,7 @@ def send_task_completed_notification(
     
     Args:
         user_id (int): User to notify (e.g., ticket owner)
-        ticket_number (str): The task item ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         completed_by_id (int): User who completed the task
         completed_by_name (str): Name of user who completed the task
@@ -427,7 +431,7 @@ def send_task_completed_notification(
             subject=subject,
             message=message,
             notification_type='task_completed',
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
             metadata={
                 'completed_by_id': completed_by_id,
                 'completed_by_name': completed_by_name,
@@ -445,8 +449,9 @@ def send_task_completed_notification(
             notification_type='task_completed',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': ticket_number,
+                'task_item_id': task_item_id,
                 'completed_by': completed_by
             }
         )
@@ -455,14 +460,14 @@ def send_task_completed_notification(
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create task completed notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
 
 
@@ -473,7 +478,7 @@ def send_task_completed_notification(
 @shared_task(name="notifications.send_workflow_step_notification")
 def send_workflow_step_notification(
     user_id,
-    ticket_number,
+    task_item_id,
     task_title,
     previous_step,
     current_step,
@@ -486,7 +491,7 @@ def send_workflow_step_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The task item ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         previous_step (str): Previous step name
         current_step (str): Current step name
@@ -507,7 +512,7 @@ def send_workflow_step_notification(
             subject=subject,
             message=message,
             notification_type='workflow_step_change',
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
             metadata={
                 'previous_step': previous_step,
                 'current_step': current_step,
@@ -527,8 +532,9 @@ def send_workflow_step_notification(
             notification_type='workflow_step_change',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': ticket_number,
+                'task_item_id': task_item_id,
                 'previous_step': previous_step,
                 'current_step': current_step,
                 'action_by_name': action_by_name
@@ -539,14 +545,14 @@ def send_workflow_step_notification(
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create workflow step notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
 
 
@@ -557,7 +563,7 @@ def send_workflow_step_notification(
 @shared_task(name="notifications.send_sla_warning_notification")
 def send_sla_warning_notification(
     user_id,
-    ticket_number,
+    task_item_id,
     task_title,
     time_remaining,
     target_resolution
@@ -567,7 +573,7 @@ def send_sla_warning_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The task item ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         time_remaining (str): Human-readable time remaining
         target_resolution (str): Target resolution datetime
@@ -586,7 +592,7 @@ def send_sla_warning_notification(
             subject=subject,
             message=message,
             notification_type='sla_warning',
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
             metadata={
                 'time_remaining': time_remaining,
                 'target_resolution': target_resolution,
@@ -604,8 +610,9 @@ def send_sla_warning_notification(
             notification_type='sla_warning',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': ticket_number,
+                'task_item_id': task_item_id,
                 'time_remaining': time_remaining,
                 'target_resolution': target_resolution
             }
@@ -615,21 +622,21 @@ def send_sla_warning_notification(
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create SLA warning notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
 
 
 @shared_task(name="notifications.send_sla_breach_notification")
 def send_sla_breach_notification(
     user_id,
-    ticket_number,
+    task_item_id,
     task_title,
     target_resolution,
     breach_duration=None
@@ -639,7 +646,7 @@ def send_sla_breach_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The task item ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         target_resolution (str): Target resolution datetime
         breach_duration (str): How long past the deadline
@@ -658,7 +665,7 @@ def send_sla_breach_notification(
             subject=subject,
             message=message,
             notification_type='sla_breach',
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
             metadata={
                 'target_resolution': target_resolution,
                 'breach_duration': breach_duration,
@@ -676,8 +683,9 @@ def send_sla_breach_notification(
             notification_type='sla_breach',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': ticket_number,
+                'task_item_id': task_item_id,
                 'target_resolution': target_resolution,
                 'breach_duration': breach_duration
             }
@@ -687,14 +695,14 @@ def send_sla_breach_notification(
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create SLA breach notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
 
 
@@ -706,6 +714,7 @@ def send_sla_breach_notification(
 def send_ticket_status_notification(
     user_id,
     ticket_number,
+    task_item_id,
     old_status,
     new_status,
     changed_by_name=None
@@ -715,7 +724,8 @@ def send_ticket_status_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The ticket number for navigation
+        ticket_number (str): The ticket number
+        task_item_id (str): Associated task item ID
         old_status (str): Previous status
         new_status (str): New status
         changed_by_name (str): Name of user who changed the status
@@ -745,7 +755,8 @@ def send_ticket_status_notification(
             subject=subject,
             message=message,
             notification_type=notification_type,
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
+            related_ticket_number=ticket_number,
             metadata={
                 'old_status': old_status,
                 'new_status': new_status,
@@ -765,6 +776,7 @@ def send_ticket_status_notification(
             context={
                 'ticket_number': ticket_number,
                 'ticket_subject': ticket_number,
+                'task_item_id': task_item_id,
                 'old_status': old_status,
                 'new_status': new_status,
                 'changed_by_name': changed_by_name
@@ -876,6 +888,7 @@ def bulk_create_notifications(notifications_data):
             - subject (required)
             - message (required)
             - notification_type (optional)
+            - related_task_item_id (optional)
             - related_ticket_number (optional)
             - metadata (optional)
         
@@ -894,6 +907,7 @@ def bulk_create_notifications(notifications_data):
                     subject=data['subject'],
                     message=data['message'],
                     notification_type=data.get('notification_type', 'system'),
+                    related_task_item_id=data.get('related_task_item_id'),
                     related_ticket_number=data.get('related_ticket_number'),
                     metadata=data.get('metadata', {})
                 ))
@@ -928,7 +942,7 @@ def bulk_create_notifications(notifications_data):
 @shared_task(name="notifications.send_comment_notification")
 def send_comment_notification(
     user_id,
-    ticket_number,
+    task_item_id,
     task_title,
     commenter_name,
     comment_preview=None
@@ -938,7 +952,7 @@ def send_comment_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The task item ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         commenter_name (str): Name of the person who commented
         comment_preview (str): First few characters of the comment
@@ -958,7 +972,7 @@ def send_comment_notification(
             subject=subject,
             message=message,
             notification_type='comment_added',
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
             metadata={
                 'commenter_name': commenter_name,
                 'comment_preview': comment_preview[:200] if comment_preview else None,
@@ -976,8 +990,9 @@ def send_comment_notification(
             notification_type='comment_added',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': ticket_number,
+                'task_item_id': task_item_id,
                 'commenter_name': commenter_name,
                 'comment_preview': comment_preview
             }
@@ -987,21 +1002,21 @@ def send_comment_notification(
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create comment notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
 
 
 @shared_task(name="notifications.send_mention_notification")
 def send_mention_notification(
     user_id,
-    ticket_number,
+    task_item_id,
     task_title,
     mentioned_by_name,
     comment_preview=None
@@ -1011,7 +1026,7 @@ def send_mention_notification(
     
     Args:
         user_id (int): User who was mentioned
-        ticket_number (str): The task item ID
+        task_item_id (str): The task item ID
         task_title (str): The task title/ticket number
         mentioned_by_name (str): Name of the person who mentioned them
         comment_preview (str): First few characters of the comment
@@ -1031,7 +1046,7 @@ def send_mention_notification(
             subject=subject,
             message=message,
             notification_type='mention',
-            related_ticket_number=str(ticket_number),
+            related_task_item_id=str(task_item_id),
             metadata={
                 'mentioned_by_name': mentioned_by_name,
                 'comment_preview': comment_preview[:200] if comment_preview else None,
@@ -1049,8 +1064,9 @@ def send_mention_notification(
             notification_type='mention',
             context={
                 'task_title': task_title,
+                'ticket_number': task_title,
                 'ticket_subject': task_title,
-                'ticket_number': ticket_number,
+                'task_item_id': task_item_id,
                 'mentioned_by_name': mentioned_by_name,
                 'comment_preview': comment_preview
             }
@@ -1060,14 +1076,14 @@ def send_mention_notification(
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
     except Exception as e:
         logger.error(f"❌ Failed to create mention notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "ticket_number": ticket_number
+            "task_item_id": task_item_id
         }
 
 
@@ -1081,4 +1097,3 @@ from .sync_tasks import (
     bulk_sync_user_emails,
     delete_user_email_cache,
 )
-

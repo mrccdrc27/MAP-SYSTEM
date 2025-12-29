@@ -63,15 +63,18 @@ export default function Notification({
     }
   };
 
-  // Handle notification click - navigate to task if related_task_item_id exists
+  // Handle notification click - navigate to task if related_ticket_number exists
   const handleNotificationClick = async (notification) => {
     // Mark as read first
     if (!notification.is_read) {
       await handleMarkAsRead(notification.id);
     }
     
-    // Navigate to task detail if related_task_item_id exists
-    if (notification.related_task_item_id) {
+    // Navigate to ticket detail if related_ticket_number exists
+    if (notification.related_ticket_number) {
+      closeNotifAction(false);
+      navigate(`/ticket/${notification.related_ticket_number}`);
+    } else if (notification.related_task_item_id) {
       closeNotifAction(false);
       
       // Handle special format for ticket owner: "task_<task_id>_owner"
@@ -83,7 +86,9 @@ export default function Notification({
         // Navigate to the task overview page instead of task item detail
         navigate(`/ticket?task=${taskId}`);
       } else {
-        // Regular task item - navigate directly
+        // Fallback - use task_item_id directly (old behavior for legacy notifications)
+        // This should rarely happen if related_ticket_number is properly set
+        console.warn('Notification missing related_ticket_number, using task_item_id fallback');
         navigate(`/ticket/${taskItemId}`);
       }
     }

@@ -107,11 +107,10 @@ def send_notification_email(
         if user_info:
             full_name = user_info.get('full_name') or user_info.get('name')
             template_context.setdefault('user_name', full_name or user_info.get('email') or 'User')
-        # Prefer task/item identifiers for deep-linking, avoid titles
+        # Use ticket_number for deep-linking
         ticket_identifier = (
-            template_context.get('task_item_id')
+            template_context.get('ticket_number')
             or template_context.get('ticket_id')
-            or template_context.get('ticket_number')
         )
         ticket_url = build_ticket_url(ticket_identifier, explicit_url=template_context.get('ticket_url'))
         if ticket_url:

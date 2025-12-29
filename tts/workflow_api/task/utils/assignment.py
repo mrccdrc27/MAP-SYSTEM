@@ -116,10 +116,11 @@ def apply_round_robin_assignment(task, user_ids, role_name):
         logger.info(f"👤 Created TaskItem: User {user_id} assigned to Task {task.task_id}")
         # Send assignment notification via Celery
         task_title = str(task.ticket_id.subject) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
+        ticket_number = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') and hasattr(task.ticket_id, 'ticket_number') else task_title
         try:
             notify_task.delay(
                 user_id=user_id,
-                task_item_id=str(task_item.task_item_id),
+                ticket_number=ticket_number,
                 task_title=task_title,
                 role_name=role_name
             )
@@ -248,23 +249,17 @@ def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=Non
         # Use the passed from_user_role, fallback to step's role if not provided
         original_role = from_user_role or (task.current_step.role_id.name if task.current_step and task.current_step.role_id else 'Unknown')
         
-        # Get from_task_item_id if not provided
-        if not from_task_item_id:
-            # Try to find the original task item for from_user_id
-            original_task_item = TaskItem.objects.filter(
-                task=task,
-                role_user__user_id=from_user_id
-            ).order_by('-assigned_on').first()
-            from_task_item_id = str(original_task_item.task_item_id) if original_task_item else f"task_{task.task_id}_escalation"
+        # Get ticket_number for email URL routing
+        ticket_number = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') and hasattr(task.ticket_id, 'ticket_number') else f"Task {task.task_id}"
         
         current_app.send_task(
             'notifications.send_escalation_notification',
             kwargs={
                 'from_user_id': from_user_id,
                 'to_user_id': selected_role_user.user_id,
-                'from_task_item_id': str(from_task_item_id),
-                'to_task_item_id': str(task_item.task_item_id),
-                'task_title': str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}",
+                'from_ticket_number': ticket_number,  # Use ticket_number for URL routing
+                'to_ticket_number': ticket_number,    # Both users navigate to the same ticket
+                'task_title': ticket_number,
                 'escalated_from_role': original_role,
                 'escalated_to_role': escalate_to_role.name,
                 'escalation_reason': reason,
@@ -273,7 +268,7 @@ def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=Non
             },
             queue=inapp_queue
         )
-        logger.info(f"📧 Escalation notification queued: task item {from_task_item_id} from user {from_user_id} to user {selected_role_user.user_id} (new task item {task_item.task_item_id})")
+        logger.info(f"📧 Escalation notification queued: ticket {ticket_number} from user {from_user_id} to user {selected_role_user.user_id}")
     except Exception as e:
         logger.error(f"⚠️ Failed to send escalation notification: {e}")
     

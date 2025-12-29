@@ -140,12 +140,6 @@ class InAppNotification(models.Model):
         default='system',
         help_text="Type of notification for filtering and display"
     )
-    related_task_item_id = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True,
-        help_text="Related task item ID for navigation (links to user's specific assignment)"
-    )
     related_ticket_number = models.CharField(
         max_length=100,
         null=True,

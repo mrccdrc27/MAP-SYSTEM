@@ -63,7 +63,7 @@ export default function MainRoute() {
       <Route element={<ProtectedRoute requireAgent={true} />}>
         <Route path="/agent/track" element={<Track />} />
         <Route path="/agent/archive" element={<Archive />} />
-        <Route path="/agent/ticket/:id" element={<TicketDetail />} />
+        <Route path="/agent/ticket/:ticketNumber" element={<TicketDetail />} />
         <Route path="/agent/profile" element={<AgentProfile />} />
       </Route>
 
@@ -94,7 +94,7 @@ export default function MainRoute() {
       <Route element={<ProtectedRoute requireAuth={true} />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/ticket" element={<Ticket />} />
-        <Route path="/ticket/:id" element={<TicketDetail />} />
+        <Route path="/ticket/:ticketNumber" element={<TicketDetail />} />
         <Route path="/archive" element={<Archive />} />
       </Route>
 
