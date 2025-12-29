@@ -102,6 +102,16 @@ def send_assignment_notification(user_id, ticket_number, task_title, role_name):
         }
 
 
+# Alias for backward compatibility with workflow_api task routing
+@shared_task(name="task.send_assignment_notification")
+def send_assignment_notification_alias(user_id, ticket_number, task_title, role_name):
+    """
+    Alias task for backward compatibility.
+    Routes to the main send_assignment_notification function.
+    """
+    return send_assignment_notification(user_id, ticket_number, task_title, role_name)
+
+
 # =============================================================================
 # TASK TRANSFER NOTIFICATIONS
 # =============================================================================

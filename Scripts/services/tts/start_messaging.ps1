@@ -10,9 +10,9 @@ $env:DJANGO_CORS_ALLOW_CREDENTIALS = "True"
 $env:DJANGO_MEDIA_BASE_URL = "http://localhost:8005"
 
 # Activate Venv
-$VenvPath = "$PSScriptRoot\..\venv\Scripts\Activate.ps1"
+$VenvPath = "$PSScriptRoot\..\..\..\venv\Scripts\Activate.ps1"
 if (Test-Path $VenvPath) { . $VenvPath } else { Write-Warning "Venv not found at $VenvPath" }
 
 # Navigate and Run
-Set-Location "$PSScriptRoot\..\tts\messaging"
+Set-Location "$PSScriptRoot\..\..\..\tts\messaging"
 python manage.py runserver 0.0.0.0:8005

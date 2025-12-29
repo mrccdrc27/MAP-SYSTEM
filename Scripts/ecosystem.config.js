@@ -1,8 +1,10 @@
 const path = require('path');
 
-const venvPath = path.join(__dirname, 'venv', 'Scripts');
+// Go up one directory from Scripts to project root
+const projectRoot = path.resolve(__dirname, '..');
+const venvPath = path.join(projectRoot, 'venv', 'Scripts');
 const pythonInterpreter = path.join(venvPath, 'pythonw.exe');
-const celeryScript = path.join(__dirname, 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');
+const celeryScript = path.join(projectRoot, 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');
 
 module.exports = {
   apps: [
@@ -11,7 +13,7 @@ module.exports = {
     // -------------------
     {
       name: 'auth-service',
-      cwd: './auth',
+      cwd: path.join(projectRoot, 'auth'),
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8003',
       interpreter: pythonInterpreter,
@@ -43,7 +45,7 @@ module.exports = {
     // -------------------
     {
       name: 'workflow-api',
-      cwd: './tts/workflow_api',
+      cwd: path.join(projectRoot, 'tts/workflow_api'),
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8002',
       interpreter: pythonInterpreter,
@@ -68,7 +70,7 @@ module.exports = {
     },
     {
       name: 'workflow-worker',
-      cwd: './tts/workflow_api',
+      cwd: path.join(projectRoot, 'tts/workflow_api'),
       script: pythonInterpreter,
       args: '-m celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed',
       interpreter: 'none',
@@ -89,7 +91,7 @@ module.exports = {
     // -------------------
     {
       name: 'notification-service',
-      cwd: './tts/notification_service',
+      cwd: path.join(projectRoot, 'tts/notification_service'),
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8006',
       interpreter: pythonInterpreter,
@@ -122,7 +124,7 @@ module.exports = {
     },
     {
       name: 'notification-worker',
-      cwd: './tts/notification_service',
+      cwd: path.join(projectRoot, 'tts/notification_service'),
       script: pythonInterpreter,
       args: '-m celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue,user-email-sync-queue',
       interpreter: 'none',
@@ -152,7 +154,7 @@ module.exports = {
     // -------------------
     {
       name: 'messaging-service',
-      cwd: './tts/messaging',
+      cwd: path.join(projectRoot, 'tts/messaging'),
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8005',
       interpreter: pythonInterpreter,
@@ -187,7 +189,7 @@ module.exports = {
     */
     {
       name: 'ticket-worker',
-      cwd: './tts/ticket_service',
+      cwd: path.join(projectRoot, 'tts/ticket_service'),
       script: pythonInterpreter,
       args: '-m celery -A ticket_service worker --pool=solo --loglevel=info -Q ticket_tasks-default',
       interpreter: 'none',
@@ -204,7 +206,7 @@ module.exports = {
     // -------------------
     {
       name: 'helpdesk-backend',
-      cwd: './hdts/helpdesk',
+      cwd: path.join(projectRoot, 'hdts/helpdesk'),
       script: 'manage.py',
       args: 'runserver 0.0.0.0:8000', 
       interpreter: pythonInterpreter,
@@ -216,7 +218,7 @@ module.exports = {
     },
     {
       name: 'helpdesk-worker',
-      cwd: './hdts/helpdesk',
+      cwd: path.join(projectRoot, 'hdts/helpdesk'),
       script: pythonInterpreter,
       args: '-m celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo',
       interpreter: 'none',
@@ -232,7 +234,7 @@ module.exports = {
     // -------------------
     {
       name: 'helpdesk-frontend',
-      cwd: './hdts/frontendfolder',
+      cwd: path.join(projectRoot, 'hdts/frontendfolder'),
       script: './node_modules/vite/bin/vite.js',
       interpreter: 'node',
       watch: false,
@@ -244,7 +246,7 @@ module.exports = {
     // -------------------
     {
       name: 'main-frontend',
-      cwd: './tts/frontend',
+      cwd: path.join(projectRoot, 'tts/frontend'),
       script: './node_modules/vite/bin/vite.js',
       interpreter: 'node',
       watch: false,

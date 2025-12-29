@@ -19,9 +19,9 @@ $env:DJANGO_FRONTEND_URL = "http://localhost:1000/register"
 $env:DJANGO_CORS_ALLOWED_ORIGINS = "http://localhost:1000,http://127.0.0.1:1000"
 
 # Activate Venv
-$VenvPath = "$PSScriptRoot\..\venv\Scripts\Activate.ps1"
+$VenvPath = "$PSScriptRoot\..\..\..\venv\Scripts\Activate.ps1"
 if (Test-Path $VenvPath) { . $VenvPath } else { Write-Warning "Venv not found at $VenvPath" }
 
 # Navigate and Run
-Set-Location "$PSScriptRoot\..\tts\workflow_api"
+Set-Location "$PSScriptRoot\..\..\..\tts\workflow_api"
 python manage.py runserver 0.0.0.0:8002

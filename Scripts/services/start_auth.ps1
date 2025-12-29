@@ -14,9 +14,9 @@ $env:BMS_SYSTEM_URL = "http://localhost:3000/bms"
 $env:DEFAULT_SYSTEM_URL = "http://localhost:3000/dashboard"
 
 # Activate Venv
-$VenvPath = "$PSScriptRoot\..\venv\Scripts\Activate.ps1"
+$VenvPath = "$PSScriptRoot\..\..\venv\Scripts\Activate.ps1"
 if (Test-Path $VenvPath) { . $VenvPath } else { Write-Warning "Venv not found at $VenvPath" }
 
 # Navigate and Run
-Set-Location "$PSScriptRoot\..\auth"
+Set-Location "$PSScriptRoot\..\..\auth"
 python manage.py runserver 0.0.0.0:8003

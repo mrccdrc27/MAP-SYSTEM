@@ -19,10 +19,10 @@ This project uses [PM2](https://pm2.keymetrics.io/) to manage the development se
 To start all configured services (Auth, Workflow, Notification, Messaging, Helpdesk, Frontends):
 
 ```bash
-pm2 start ecosystem.config.js
+pm2 start Scripts/ecosystem.config.js
 ```
 
-**Note:** The `ticket-service` is intentionally excluded from this setup.
+**Note:** The `ticket-service` is intentionally excluded from this setup. The `ecosystem.config.js` file is now located in the `Scripts/` directory.
 
 ## Managing Processes
 vvv

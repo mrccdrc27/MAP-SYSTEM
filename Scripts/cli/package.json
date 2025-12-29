@@ -1,0 +1,21 @@
+{
+  "name": "tts-cli",
+  "version": "1.0.0",
+  "description": "CLI Manager for Ticket Tracking System scripts",
+  "main": "index.js",
+  "bin": {
+    "tts": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
+  },
+  "keywords": ["cli", "tts", "scripts"],
+  "author": "TTS Team",
+  "license": "MIT"
+}

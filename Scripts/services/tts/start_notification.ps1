@@ -16,9 +16,9 @@ $env:DJANGO_NOTIFICATION_QUEUE = "notification-queue"
 $env:DJANGO_INAPP_NOTIFICATION_QUEUE = "inapp-notification-queue"
 
 # Activate Venv
-$VenvPath = "$PSScriptRoot\..\venv\Scripts\Activate.ps1"
+$VenvPath = "$PSScriptRoot\..\..\..\venv\Scripts\Activate.ps1"
 if (Test-Path $VenvPath) { . $VenvPath } else { Write-Warning "Venv not found at $VenvPath" }
 
 # Navigate and Run
-Set-Location "$PSScriptRoot\..\tts\notification_service"
+Set-Location "$PSScriptRoot\..\..\..\tts\notification_service"
 python manage.py runserver 0.0.0.0:8006

@@ -417,6 +417,10 @@ function Run-Seeding {
             & $PythonExe manage.py seed_employees
             if ($LASTEXITCODE -ne 0) { throw "seed_employees failed with exit code $LASTEXITCODE" }
             
+            Print-Step "Syncing user emails to notification service..."
+            & $PythonExe manage.py sync_user_emails
+            if ($LASTEXITCODE -ne 0) { Print-Error "sync_user_emails failed with exit code $LASTEXITCODE" }
+            
             Print-Success "Auth seeding complete"
         }
         catch {

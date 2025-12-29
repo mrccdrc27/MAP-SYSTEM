@@ -7,5 +7,5 @@ $env:VITE_WORKFLOW_API = "http://localhost:8002/workflow"
 $env:VITE_BACKEND_API = "http://localhost:8002/"
 
 # Navigate and Run
-Set-Location "$PSScriptRoot\..\tts\frontend"
+Set-Location "$PSScriptRoot\..\..\..\tts\frontend"
 npm run dev
