@@ -22,6 +22,14 @@
     <script>
         window.RECAPTCHA_ENABLED = {{ recaptcha_enabled|yesno:"true,false" }};
         window.RECAPTCHA_SITE_KEY = "{{ recaptcha_site_key|default:'' }}";
+        // System URLs from environment configuration
+        window.SYSTEM_URLS = {
+            tts: "{{ tts_system_url|default:'http://localhost:1000' }}",
+            ams: "{{ ams_system_url|default:'http://localhost:3000/ams' }}",
+            hdts: "{{ hdts_system_url|default:'http://localhost:5173' }}",
+            bms: "{{ bms_system_url|default:'http://localhost:3000/bms' }}",
+            default: "{{ default_system_url|default:'http://localhost:3000/dashboard' }}"
+        };
     </script>
     
     <style>
@@ -550,9 +558,10 @@
                         document.cookie = `access_token=${data.access_token}; path=/`;
                         document.cookie = `refresh_token=${data.refresh_token}; path=/`;
 
-                        // Redirect to frontend - let the frontend handle routing based on JWT
+                        // Redirect to the appropriate system URL from response or default
+                        const redirectUrl = data.redirect?.url || window.SYSTEM_URLS.default;
                         setTimeout(() => {
-                            window.location.href = 'http://localhost:5173';
+                            window.location.href = redirectUrl;
                         }, 1500);
                     } else {
                         // Login failed
@@ -631,9 +640,10 @@
                         document.cookie = `access_token=${data.access_token}; path=/`;
                         document.cookie = `refresh_token=${data.refresh_token}; path=/`;
 
-                        // Redirect to frontend - let the frontend handle routing based on JWT
+                        // Redirect to the appropriate system URL from response or default
+                        const redirectUrl = data.redirect?.url || window.SYSTEM_URLS.default;
                         setTimeout(() => {
-                            window.location.href = 'http://localhost:5173';
+                            window.location.href = redirectUrl;
                         }, 1500);
                     } else if (data.otp_expired) {
                         ToastNotification.error('OTP Expired', data.error || 'Your OTP has expired. Please log in again.');

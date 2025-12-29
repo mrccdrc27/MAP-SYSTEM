@@ -40,8 +40,8 @@ Scripts/
 ├── utils/            # Utility scripts
 │   └── delete_migrations_workflow_api.sh
 ├── ecosystem.config.js  # PM2 ecosystem configuration
-├── map.cmd              # Windows CLI launcher
-└── map                  # Unix CLI launcher
+├── scripts.cmd          # Windows CLI launcher
+└── scripts.txt          # Quick reference scripts list
 ```
 
 ## 🚀 CLI Manager
@@ -61,7 +61,7 @@ npm install
 ```bash
 node Scripts/cli/index.js
 # or
-.\Scripts\map.cmd
+.\Scripts\scripts.cmd
 ```
 
 **List all scripts:**

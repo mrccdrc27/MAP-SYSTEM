@@ -1,13 +1,34 @@
 {
-  "name": "tts-cli",
+  "name": "scripts-cli",
   "version": "1.0.0",
   "description": "CLI Manager for Ticket Tracking System scripts",
   "main": "index.js",
   "bin": {
-    "tts": "./index.js"
+    "scripts": "./index.js"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "menu": "node index.js",
+    "auth": "node index.js run services auth",
+    "tts:frontend": "node index.js run services tts frontend",
+    "tts:ticket": "node index.js run services tts ticket",
+    "tts:workflow": "node index.js run services tts workflow",
+    "tts:workflow-worker": "node index.js run services tts workflow-worker",
+    "tts:messaging": "node index.js run services tts messaging",
+    "tts:notification": "node index.js run services tts notification",
+    "tts:notification-worker": "node index.js run services tts notification-worker",
+    "hdts:backend": "node index.js run services hdts backend",
+    "hdts:worker": "node index.js run services hdts worker",
+    "hdts:frontend": "node index.js run services hdts frontend",
+    "rabbitmq": "node index.js run docker rabbitmq",
+    "setup:migrate-seed": "node index.js run setup migrate-seed",
+    "setup:flush-seed": "node index.js run setup flush-migrate-seed",
+    "setup:migrate": "node index.js run setup migrate-only",
+    "pm2:start": "node index.js run pm2 start-all",
+    "pm2:stop": "node index.js run pm2 stop-all",
+    "pm2:logs": "node index.js run pm2 logs",
+    "pm2:status": "node index.js run pm2 status",
+    "list": "node index.js list"
   },
   "dependencies": {
     "chalk": "^4.1.2",
@@ -15,7 +36,7 @@
     "inquirer": "^8.2.6",
     "ora": "^5.4.1"
   },
-  "keywords": ["cli", "tts", "scripts"],
-  "author": "TTS Team",
+  "keywords": ["cli", "map", "scripts"],
+  "author": "MAP Team",
   "license": "MIT"
 }

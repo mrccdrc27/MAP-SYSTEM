@@ -52,10 +52,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --- Configuration ---
-$ProjectRoot = Resolve-Path "$PSScriptRoot\.."
+# PSScriptRoot is Scripts\setup, so go up 2 levels to get project root
+$ProjectRoot = Resolve-Path "$PSScriptRoot\..\.."
 $VenvPath = "$ProjectRoot\venv\Scripts\Activate.ps1"
 $PythonExe = "$ProjectRoot\venv\Scripts\python.exe"
-$LogDir = "$ProjectRoot\logs"
+$LogDir = "$PSScriptRoot\..\logs"
 
 # Service directories
 $AuthDir = "$ProjectRoot\auth"
@@ -182,6 +183,15 @@ function Start-RabbitMQ {
 function Flush-Databases {
     Print-Header "FLUSHING DATABASES"
     
+    Write-Host "WARNING: This will PERMANENTLY DELETE all local SQLite database files!" -ForegroundColor Red
+    Write-Host "This action cannot be undone." -ForegroundColor Red
+    $confirmation = Read-Host "Are you sure you want to proceed? (yes/no)"
+    
+    if ($confirmation -notmatch "^y(es)?$") {
+        Print-Info "Database flush cancelled by user."
+        return
+    }
+
     # List of database files to delete
     $dbFiles = @(
         "$AuthDir\db.sqlite3",
