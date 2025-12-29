@@ -1,15 +1,64 @@
 #!/usr/bin/env node
 
+require('dotenv').config({ path: __dirname + '/.env' }); // Load .env from this directory
 const { program } = require('commander');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
-const ora = require('ora');
-const { spawn } = require('child_process');
+const spawn = require('cross-spawn'); // Cross-platform spawn
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const SCRIPTS_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(SCRIPTS_ROOT, '..');
+const ENV_FILE = path.join(__dirname, '.env');
+
+/**
+ * Check if .env file exists, if not run setup
+ */
+function ensureEnvironmentSetup() {
+  if (!fs.existsSync(ENV_FILE)) {
+    console.log(chalk.yellow('\n⚠️  Environment configuration not found!'));
+    console.log(chalk.cyan('Running setup to detect your environment...\n'));
+    
+    try {
+      execSync('node setup-env.js', {
+        cwd: __dirname,
+        stdio: 'inherit',
+        shell: true
+      });
+      console.log(chalk.cyan('\nReloading environment configuration...\n'));
+      // Reload dotenv after setup
+      require('dotenv').config({ path: ENV_FILE, override: true });
+    } catch (err) {
+      console.log(chalk.red(`\n✗ Setup failed: ${err.message}`));
+      console.log(chalk.yellow('Please run setup manually: node Scripts/cli/setup-env.js\n'));
+      process.exit(1);
+    }
+  }
+}
+
+// Run setup check before anything else
+ensureEnvironmentSetup();
+
+/**
+ * CONFIGURATION
+ * Default to command names (assumes they're in PATH).
+ * Users can override in a .env file: PYTHON_CMD=python3
+ */
+const CMD = {
+  python: process.env.PYTHON_CMD || 'python',
+  bash: process.env.BASH_CMD || 'bash',
+  pm2: process.env.PM2_CMD || 'pm2',
+  powershell: process.env.POWERSHELL_CMD || 'powershell'
+};
+
+// Check for Python Venv
+if (!process.env.VIRTUAL_ENV && !process.env.PYTHON_CMD) {
+  console.log(chalk.yellow('⚠️  Warning: No Virtual Environment detected.'));
+  console.log(chalk.gray('   If your scripts require dependencies, please activate your venv first.'));
+  console.log(chalk.gray('   Example: .\\venv\\Scripts\\activate\n'));
+}
 
 // Script categories and their scripts
 const SCRIPTS = {
@@ -49,7 +98,7 @@ const SCRIPTS = {
     description: 'Docker-related commands',
     scripts: {
       'rabbitmq': { file: 'start_rabbitmq.ps1', desc: 'Start RabbitMQ container' },
-      'docker-compose': { file: 'docker.sh', desc: 'Run Docker Compose setup (bash)', shell: 'bash' },
+      'tts-docker-compose': { file: 'tts-docker-compose.sh', desc: 'TTS docker compose', shell: 'bash' },
     }
   },
   setup: {
@@ -86,7 +135,7 @@ const SCRIPTS = {
     name: '📦 PM2',
     description: 'PM2 process manager commands',
     scripts: {
-      'start-all': { cmd: 'pm2 start ecosystem.config.js', desc: 'Start all services with PM2' },
+      'start-all': { cmd: 'pm2 start Scripts/ecosystem.config.js', desc: 'Start all services with PM2' },
       'stop-all': { cmd: 'pm2 stop all', desc: 'Stop all PM2 services' },
       'restart-all': { cmd: 'pm2 restart all', desc: 'Restart all PM2 services' },
       'logs': { cmd: 'pm2 logs', desc: 'View PM2 logs' },
@@ -96,23 +145,47 @@ const SCRIPTS = {
   }
 };
 
-// Helper to convert Windows path to POSIX path for bash (Git Bash/MINGW64)
-function toPosixPath(windowsPath) {
-  // Handle Git Bash MINGW64 style paths (e.g., C:\path -> /c/path)
-  return windowsPath
-    .replace(/\\/g, '/')           // Replace backslashes with forward slashes
-    .replace(/^([A-Za-z]):/, (match, drive) => `/${drive.toLowerCase()}`); // Convert C: to /c (Git Bash style)
-}
-
-// Helper to fix line endings in script file
+// Helper to fix line endings in script file (useful for cross-platform git usage)
 function fixLineEndings(scriptPath) {
   try {
-    const content = fs.readFileSync(scriptPath, 'utf8');
-    const fixed = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    fs.writeFileSync(scriptPath, fixed, 'utf8');
+    if (fs.existsSync(scriptPath)) {
+      const content = fs.readFileSync(scriptPath, 'utf8');
+      // Only write if we actually find CRLF to save IO
+      if (content.includes('\r\n')) {
+        const fixed = content.replace(/\r\n/g, '\n');
+        fs.writeFileSync(scriptPath, fixed, 'utf8');
+      }
+    }
   } catch (err) {
-    console.log(chalk.yellow(`Warning: Could not fix line endings: ${err.message}`));
+    // Silent fail
   }
+}
+
+// Unified command executor using cross-spawn
+function executeCommand(command, args, cwd = PROJECT_ROOT) {
+  console.log(chalk.gray(`> ${command} ${args.join(' ')}\n`));
+
+  const child = spawn(command, args, {
+    cwd,
+    stdio: 'inherit',
+    env: { ...process.env } // Pass current env (vital for venv)
+  });
+
+  child.on('error', (err) => {
+    console.log(chalk.red(`Failed to start command: ${command}`));
+    console.log(chalk.yellow(`Error: ${err.message}`));
+    if (err.code === 'ENOENT') {
+      console.log(chalk.yellow(`Hint: Is '${command}' installed and in your PATH?`));
+    }
+  });
+
+  child.on('close', (code) => {
+    if (code === 0) {
+      console.log(chalk.green(`\n✓ Completed successfully`));
+    } else {
+      console.log(chalk.yellow(`\n⚠ Exited with code ${code}`));
+    }
+  });
 }
 
 // Helper to run a script
@@ -123,64 +196,44 @@ function runScript(category, scriptKey, extraArgs = []) {
     return;
   }
 
-  let command, args, cwd;
+  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
 
+  // Case A: Direct command (PM2 commands)
   if (script.cmd) {
-    // Direct command (PM2 commands)
-    const parts = script.cmd.split(' ');
-    command = parts[0];
-    args = [...parts.slice(1), ...extraArgs];
-    cwd = PROJECT_ROOT;
-  } else {
-    // Script file
-    const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
-    
-    if (!fs.existsSync(scriptPath)) {
-      console.log(chalk.red(`Script file not found: ${scriptPath}`));
-      return;
-    }
-
-    cwd = PROJECT_ROOT;
-
-    if (script.shell === 'bash') {
-      // Fix line endings before running
-      fixLineEndings(scriptPath);
-      command = 'bash';
-      // Convert Windows path to POSIX for bash and quote it
-      const posixPath = toPosixPath(scriptPath);
-      args = [`"${posixPath}"`, ...extraArgs];
-    } else if (script.shell === 'python') {
-      command = path.join(PROJECT_ROOT, 'venv', 'Scripts', 'python.exe');
-      args = [scriptPath, ...extraArgs];
-    } else {
-      // PowerShell script
-      command = 'powershell';
-      // Quote the script path if it contains spaces
-      const quotedPath = scriptPath.includes(' ') ? `"${scriptPath}"` : scriptPath;
-      args = ['-ExecutionPolicy', 'Bypass', '-File', quotedPath, ...(script.args || []), ...extraArgs];
-    }
+    const [exec, ...args] = script.cmd.split(' ');
+    // Use CMD config if it's a known command
+    const finalExec = exec === 'pm2' ? CMD.pm2 : exec;
+    executeCommand(finalExec, [...args, ...extraArgs]);
+    return;
   }
 
-  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
-  console.log(chalk.gray(`  Command: ${command} ${args.join(' ')}\n`));
+  // Case B: Script file execution
+  const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
+  if (!fs.existsSync(scriptPath)) {
+    console.log(chalk.red(`Script file not found: ${scriptPath}`));
+    return;
+  }
 
-  const child = spawn(command, args, {
-    cwd,
-    stdio: 'inherit',
-    shell: true
-  });
+  // Determine execution based on shell type or file extension
+  if (script.shell === 'bash' || script.file.endsWith('.sh')) {
+    fixLineEndings(scriptPath);
+    // Convert to forward slashes for bash compatibility
+    const posixPath = scriptPath.split(path.sep).join('/');
+    executeCommand(CMD.bash, [posixPath, ...extraArgs]);
 
-  child.on('error', (err) => {
-    console.log(chalk.red(`Error: ${err.message}`));
-  });
+  } else if (script.shell === 'python' || script.file.endsWith('.py')) {
+    executeCommand(CMD.python, [scriptPath, ...extraArgs]);
 
-  child.on('close', (code) => {
-    if (code === 0) {
-      console.log(chalk.green(`\n✓ Completed successfully`));
-    } else {
-      console.log(chalk.yellow(`\n⚠ Exited with code ${code}`));
-    }
-  });
+  } else if (script.file.endsWith('.ps1')) {
+    executeCommand(CMD.powershell, [
+      '-ExecutionPolicy', 'Bypass',
+      '-File', scriptPath,
+      ...(script.args || []),
+      ...extraArgs
+    ]);
+  } else {
+    console.log(chalk.red(`Unknown script type for: ${script.file}`));
+  }
 }
 
 // Helper to run a script from a subcategory
@@ -191,53 +244,33 @@ function runScriptFromSubcategory(category, subcategoryKey, scriptKey, extraArgs
     return;
   }
 
-  let command, args, cwd;
+  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
 
-  // Script file
   const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
-  
   if (!fs.existsSync(scriptPath)) {
     console.log(chalk.red(`Script file not found: ${scriptPath}`));
     return;
   }
 
-  cwd = PROJECT_ROOT;
-
-  if (script.shell === 'bash') {
+  // Determine execution based on shell type or file extension
+  if (script.shell === 'bash' || script.file.endsWith('.sh')) {
     fixLineEndings(scriptPath);
-    command = 'bash';
-    const posixPath = toPosixPath(scriptPath);
-    args = [`"${posixPath}"`, ...extraArgs];
-  } else if (script.shell === 'python') {
-    command = path.join(PROJECT_ROOT, 'venv', 'Scripts', 'python.exe');
-    args = [scriptPath, ...extraArgs];
+    const posixPath = scriptPath.split(path.sep).join('/');
+    executeCommand(CMD.bash, [posixPath, ...extraArgs]);
+
+  } else if (script.shell === 'python' || script.file.endsWith('.py')) {
+    executeCommand(CMD.python, [scriptPath, ...extraArgs]);
+
+  } else if (script.file.endsWith('.ps1')) {
+    executeCommand(CMD.powershell, [
+      '-ExecutionPolicy', 'Bypass',
+      '-File', scriptPath,
+      ...(script.args || []),
+      ...extraArgs
+    ]);
   } else {
-    // PowerShell script
-    command = 'powershell';
-    const quotedPath = scriptPath.includes(' ') ? `"${scriptPath}"` : scriptPath;
-    args = ['-ExecutionPolicy', 'Bypass', '-File', quotedPath, ...(script.args || []), ...extraArgs];
+    console.log(chalk.red(`Unknown script type for: ${script.file}`));
   }
-
-  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
-  console.log(chalk.gray(`  Command: ${command} ${args.join(' ')}\n`));
-
-  const child = spawn(command, args, {
-    cwd,
-    stdio: 'inherit',
-    shell: true
-  });
-
-  child.on('error', (err) => {
-    console.log(chalk.red(`Error: ${err.message}`));
-  });
-
-  child.on('close', (code) => {
-    if (code === 0) {
-      console.log(chalk.green(`\n✓ Completed successfully`));
-    } else {
-      console.log(chalk.yellow(`\n⚠ Exited with code ${code}`));
-    }
-  });
 }
 
 // Interactive menu
@@ -352,19 +385,30 @@ function listScripts() {
     console.log(chalk.bold.yellow(`\n${category.name}`));
     console.log(chalk.gray(`  ${category.description}`));
     
-    for (const [scriptKey, script] of Object.entries(category.scripts)) {
-      console.log(chalk.white(`    ${catKey}:${scriptKey}`));
-      console.log(chalk.gray(`      ${script.desc}`));
+    if (category.scripts) {
+      for (const [scriptKey, script] of Object.entries(category.scripts)) {
+        console.log(chalk.white(`    ${catKey}:${scriptKey}`));
+        console.log(chalk.gray(`      ${script.desc}`));
+      }
+    }
+    
+    if (category.subcategories) {
+      for (const [subKey, subcat] of Object.entries(category.subcategories)) {
+        for (const [scriptKey, script] of Object.entries(subcat.scripts)) {
+          console.log(chalk.white(`    ${catKey}:${subKey}:${scriptKey}`));
+          console.log(chalk.gray(`      ${script.desc}`));
+        }
+      }
     }
   }
   
-  console.log(chalk.cyan('\n💡 Usage: tts run <category>:<script>'));
-  console.log(chalk.gray('   Example: tts run services:auth\n'));
+  console.log(chalk.cyan('\n💡 Usage: scripts run <category>:[subcategory:]<script>'));
+  console.log(chalk.gray('   Example: scripts run services:auth\n'));
 }
 
 // CLI Setup
 program
-  .name('tts')
+  .name('scripts')
   .description('CLI Manager for Ticket Tracking System')
   .version('1.0.0');
 
@@ -383,15 +427,18 @@ program
 program
   .command('run <script>')
   .alias('r')
-  .description('Run a script (format: category:script)')
-  .action((script) => {
-    const [category, scriptKey] = script.split(':');
-    if (!category || !scriptKey) {
-      console.log(chalk.red('Invalid format. Use: category:script'));
-      console.log(chalk.gray('Example: tts run services:auth'));
+  .description('Run a script (format: category:[subcategory:]script)')
+  .action((scriptName) => {
+    const parts = scriptName.split(':');
+    if (parts.length === 2) {
+      runScript(parts[0], parts[1]);
+    } else if (parts.length === 3) {
+      runScriptFromSubcategory(parts[0], parts[1], parts[2]);
+    } else {
+      console.log(chalk.red('Invalid format. Use: category:script OR category:subcategory:script'));
+      console.log(chalk.gray('Example: scripts run services:auth'));
       return;
     }
-    runScript(category, scriptKey);
   });
 
 // Quick commands
@@ -414,8 +461,8 @@ program
   .command('logs [service]')
   .description('View PM2 logs')
   .action((service) => {
-    const cmd = service ? `pm2 logs ${service}` : 'pm2 logs';
-    spawn('powershell', ['-Command', cmd], { stdio: 'inherit', shell: true });
+    const args = service ? ['logs', service] : ['logs'];
+    spawn(CMD.pm2, args, { stdio: 'inherit' });
   });
 
 program
