@@ -30,18 +30,14 @@ Scripts/
 │   ├── restart_all_services.ps1  # Main setup script
 │   ├── seed_workflow_helpdesk.ps1
 │   ├── setup_and_test_ams.ps1
-│   ├── init.sh
-│   ├── reset.sh
-│   └── env.sh
 ├── testing/          # Test scripts
 │   ├── test_ams_api.py
 │   ├── test_bms_api.py
 │   └── test_bms_api.ps1
 ├── utils/            # Utility scripts
 │   └── delete_migrations_workflow_api.sh
-├── ecosystem.config.js  # PM2 ecosystem configuration
-├── scripts.cmd          # Windows CLI launcher
-└── scripts.txt          # Quick reference scripts list
+├── processes/        # Process management configurations
+│   └── tts-ecosystem.config.js
 ```
 
 ## 🚀 CLI Manager
@@ -110,7 +106,7 @@ node Scripts/cli/index.js flush
 
 # 3. Start all services with PM2
 node Scripts/cli/index.js start
-# Note: This reads from Scripts/ecosystem.config.js
+# Note: This reads from Scripts/processes/tts-ecosystem.config.js
 
 # 4. Check status
 node Scripts/cli/index.js status

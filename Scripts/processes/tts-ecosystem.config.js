@@ -1,7 +1,7 @@
 const path = require('path');
 
-// Go up one directory from Scripts to project root
-const projectRoot = path.resolve(__dirname, '..');
+// Go up two directories from Scripts/processes to project root
+const projectRoot = path.resolve(__dirname, '../..');
 const venvPath = path.join(projectRoot, 'venv', 'Scripts');
 const pythonInterpreter = path.join(venvPath, 'pythonw.exe');
 const celeryScript = path.join(projectRoot, 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');

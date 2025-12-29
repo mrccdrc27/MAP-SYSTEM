@@ -1,0 +1,27 @@
+(venv) PS C:\work\Capstone 2\Ticket-Tracking-System> .\Scripts\scripts.cmd
+[dotenv@17.2.3] injecting env (2) from Scripts\cli\.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+╔════════════════════════════════════════════════════╗
+║     Capstone System Script Manager CLI             ║
+╚════════════════════════════════════════════════════╝
+
+? Select a category: 📦 PM2 - PM2 process manager commands
+? Select from 📦 PM2: 🎫 TTS - Ticket Tracking System Processes →
+? Select from 🎫 TTS: start - Start TTS ecosystem
+
+▶ Running: Start TTS ecosystem
+node:path:478
+      validateString(arg, 'path');
+      ^
+
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+    at Object.join (node:path:478:7)
+    at runScriptFromSubcategory (C:\work\Capstone 2\Ticket-Tracking-System\Scripts\cli\index.js:271:27)
+    at showSubcategoryMenu (C:\work\Capstone 2\Ticket-Tracking-System\Scripts\cli\index.js:399:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async interactiveMenu (C:\work\Capstone 2\Ticket-Tracking-System\Scripts\cli\index.js:324:3) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+
+Node.js v22.14.0
+(venv) PS C:\work\Capstone 2\Ticket-Tracking-System> 

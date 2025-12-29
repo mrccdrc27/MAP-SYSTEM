@@ -14,51 +14,19 @@ This project uses [PM2](https://pm2.keymetrics.io/) to manage the development se
     docker run --rm --name rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin -e RABBITMQ_DEFAULT_VHOST=/ rabbitmq:3.13-management-alpine
     ```
 
-## Starting Services
+## Quick Start
 
-To start all configured services (Auth, Workflow, Notification, Messaging, Helpdesk, Frontends):
+To start all services:
 
 ```bash
-pm2 start Scripts/ecosystem.config.js
+pm2 start Scripts/processes/tts-ecosystem.config.js
 ```
 
-**Note:** The `ticket-service` is intentionally excluded from this setup. The `ecosystem.config.js` file is now located in the `Scripts/` directory.
-
-## Managing Processes
-vvv
--   **List all running processes:**
-    ```bash
-    pm2 list
-    ```
-
--   **View logs (stream all logs):**
-    ```bash
-    pm2 logs
-    ```
-
--   **View logs for a specific app:**
-    ```bash
-    pm2 logs workflow-api
-    ```
-
--   **Restart all services:**
-    ```bash
-    pm2 restart all
-    ```
-
--   **Stop all services:**
-    ```bash
-    pm2 stop all
-    ```
-
--   **Delete all processes:**
-    ```bash
-    pm2 delete all
-    ```
+**Note:** The `ticket-service` is intentionally excluded from this setup. The `tts-ecosystem.config.js` file is now located in the `Scripts/processes/` directory.
 
 ## Configuration Details
 
-The configuration is located in `ecosystem.config.js`. It sets up the following:
+The configuration is located in `Scripts/processes/tts-ecosystem.config.js`. It sets up the following:
 
 -   **Python Services**: Uses the virtual environment at `venv/Scripts/python.exe`.
 -   **Celery Workers**: Runs using `venv/Scripts/celery.exe`.

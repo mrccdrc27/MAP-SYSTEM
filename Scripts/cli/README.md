@@ -37,11 +37,6 @@ If you want to re-run setup or configure manually:
 .\Scripts\cli\setup-env.ps1
 ```
 
-### Bash / Git Bash
-```bash
-bash Scripts/cli/setup-env.sh
-```
-
 ### Direct Node
 ```bash
 node Scripts/cli/setup-env.js
@@ -160,7 +155,6 @@ Scripts/cli/
 ├── index.js              # Main CLI entry point
 ├── setup-env.js          # Environment detection script
 ├── setup-env.ps1         # PowerShell wrapper
-├── setup-env.sh          # Bash wrapper
 ├── .env                  # Auto-generated configuration
 ├── package.json          # Dependencies
 └── node_modules/         # Installed packages

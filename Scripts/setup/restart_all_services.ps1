@@ -494,7 +494,7 @@ function Run-Seeding {
 # --- Main Execution ---
 
 Print-Header "TTS SERVICE MANAGER"
-Print-Info "Process: 1. Infra Check → 2. Cleanup/Migrate → 3. Start Workers → 4. Seed → 5. Monitor & Stop Workers"
+Print-Info "Process: 1. Infra Check -> 2. Cleanup/Migrate -> 3. Start Workers -> 4. Seed -> 5. Monitor & Stop Workers"
 
 try {
     # 1. INFRASTRUCTURE CHECK

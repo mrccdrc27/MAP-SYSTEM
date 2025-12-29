@@ -72,11 +72,11 @@
                     "overrideName": true,
                     "args": ["-NoExit", "-File", "${workspaceFolder}/Scripts/services/hdts/start_helpdesk_backend_worker.ps1"]
                 },
-                        "13. PM2 Run & Logs": {
-                            "source": "PowerShell",
-                            "icon": "server-process",
-                            "overrideName": true,
-                            "args": ["-NoExit", "-Command", "pm2 start Scripts/ecosystem.config.js; pm2 logs"]
-                        }
+        "13. PM2 Run & Logs": {
+            "source": "PowerShell",
+            "icon": "server-process",
+            "overrideName": true,
+            "args": ["-NoExit", "-Command", "pm2 start Scripts/processes/tts-ecosystem.config.js; pm2 logs"]
+        }
                     }
                 }        

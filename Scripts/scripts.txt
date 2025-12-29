@@ -5,9 +5,8 @@ ssh -i "rivo_rsa" root@152.42.185.245
 
 ./Scripts/docker.sh
 ./Scripts/dos2unix.sh
-./Scripts/env.sh
-./Scripts/init.sh
-./Scripts/reset.sh
+./Scripts/restart_all_services.ps1
+./Scripts/start_rabbitmq.ps1
 ./Scripts/start_servers.sh
 
 celery -A notification_service worker --loglevel=info -Q notification-queue,inapp-notification-queue --pool=solo

@@ -104,15 +104,35 @@ const SCRIPTS = {
   setup: {
     name: '⚙️ Setup',
     description: 'Setup and seeding scripts',
-    scripts: {
-      'migrate-seed': { file: 'restart_all_services.ps1', desc: 'Migrate & Seed all services', args: ['-Seed'] },
-      'flush-migrate-seed': { file: 'restart_all_services.ps1', desc: 'Flush DBs, Migrate & Seed', args: ['-FlushDB', '-Seed'] },
-      'migrate-only': { file: 'restart_all_services.ps1', desc: 'Run migrations only' },
-      'seed-workflow-hdts': { file: 'seed_workflow_helpdesk.ps1', desc: 'Seed Workflow & Helpdesk data' },
-      'setup-ams': { file: 'setup_and_test_ams.ps1', desc: 'Setup and test AMS' },
-      'init': { file: 'init.sh', desc: 'Initialize project (bash)', shell: 'bash' },
-      'reset': { file: 'reset.sh', desc: 'Reset project (bash)', shell: 'bash' },
-      'env': { file: 'env.sh', desc: 'Setup environment (bash)', shell: 'bash' },
+    scripts: {},
+    subcategories: {
+      tts: {
+        name: '🎫 TTS',
+        description: 'Ticket Tracking System Setup',
+        scripts: {
+          'seed': { file: 'restart_all_services.ps1', desc: 'Migrate & Seed all services', args: ['-Seed'] },
+          'flush-seed': { file: 'restart_all_services.ps1', desc: 'Flush DBs, Migrate & Seed', args: ['-FlushDB', '-Seed'] },
+          'migrate': { file: 'restart_all_services.ps1', desc: 'Run migrations only' },
+          'seed-workflow-hdts': { file: 'seed_workflow_helpdesk.ps1', desc: 'Seed Workflow & Helpdesk data' },
+        }
+      },
+      ams: {
+        name: '🏢 AMS',
+        description: 'Asset Management System Setup',
+        scripts: {
+          'setup': { file: 'setup_and_test_ams.ps1', desc: 'Setup and test AMS' }
+        }
+      },
+      hdts: {
+        name: '🛠️ HDTS',
+        description: 'Help Desk Tracking System Setup',
+        scripts: {}
+      },
+      bms: {
+        name: '💰 BMS',
+        description: 'Budget Management System Setup',
+        scripts: {}
+      }
     }
   },
   testing: {
@@ -134,13 +154,35 @@ const SCRIPTS = {
   pm2: {
     name: '📦 PM2',
     description: 'PM2 process manager commands',
-    scripts: {
-      'start-all': { cmd: 'pm2 start Scripts/ecosystem.config.js', desc: 'Start all services with PM2' },
-      'stop-all': { cmd: 'pm2 stop all', desc: 'Stop all PM2 services' },
-      'restart-all': { cmd: 'pm2 restart all', desc: 'Restart all PM2 services' },
-      'logs': { cmd: 'pm2 logs', desc: 'View PM2 logs' },
-      'status': { cmd: 'pm2 list', desc: 'Show PM2 process status' },
-      'delete-all': { cmd: 'pm2 delete all', desc: 'Delete all PM2 processes' },
+    scripts: {}, // Generic scripts moved to subcategories
+    subcategories: {
+      tts: {
+        name: '🎫 TTS',
+        description: 'Ticket Tracking System Processes',
+        scripts: {
+          'start': { cmd: 'pm2 start Scripts/processes/tts-ecosystem.config.js', desc: 'Start TTS ecosystem' },
+          'stop': { cmd: 'pm2 stop all', desc: 'Stop all PM2 services' },
+          'restart': { cmd: 'pm2 restart all', desc: 'Restart all PM2 services' },
+          'logs': { cmd: 'pm2 logs', desc: 'View PM2 logs' },
+          'status': { cmd: 'pm2 list', desc: 'Show PM2 process status' },
+          'delete': { cmd: 'pm2 delete all', desc: 'Delete all PM2 processes' },
+        }
+      },
+      ams: {
+        name: '🏢 AMS',
+        description: 'Asset Management System Processes',
+        scripts: {}
+      },
+      hdts: {
+        name: '🛠️ HDTS',
+        description: 'Help Desk Tracking System Processes',
+        scripts: {}
+      },
+      bms: {
+        name: '💰 BMS',
+        description: 'Budget Management System Processes',
+        scripts: {}
+      }
     }
   }
 };
@@ -246,6 +288,15 @@ function runScriptFromSubcategory(category, subcategoryKey, scriptKey, extraArgs
 
   console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
 
+  // Case A: Direct command (PM2 commands)
+  if (script.cmd) {
+    const [exec, ...args] = script.cmd.split(' ');
+    // Use CMD config if it's a known command
+    const finalExec = exec === 'pm2' ? CMD.pm2 : exec;
+    executeCommand(finalExec, [...args, ...extraArgs]);
+    return;
+  }
+
   const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
   if (!fs.existsSync(scriptPath)) {
     console.log(chalk.red(`Script file not found: ${scriptPath}`));
@@ -321,13 +372,13 @@ async function showCategoryMenu(category) {
   if (cat.subcategories) {
     Object.entries(cat.subcategories).forEach(([key, subcat]) => {
       choices.push({
-        name: `${subcat.name} - ${subcat.description} →`,
+        name: `${subcat.name} - ${subcat.description} >`,
         value: { type: 'subcategory', key }
       });
     });
   }
 
-  choices.push({ name: chalk.yellow('← Back'), value: { type: 'back' } });
+  choices.push({ name: chalk.yellow('< Back'), value: { type: 'back' } });
 
   const { selection } = await inquirer.prompt([
     {
@@ -359,7 +410,7 @@ async function showSubcategoryMenu(category, subcategoryKey) {
     name: `${key} - ${script.desc}`,
     value: key
   }));
-  choices.push({ name: chalk.yellow('← Back'), value: 'back' });
+  choices.push({ name: chalk.yellow('< Back'), value: 'back' });
 
   const { script } = await inquirer.prompt([
     {
@@ -444,18 +495,18 @@ program
 // Quick commands
 program
   .command('start')
-  .description('Start all services with PM2')
-  .action(() => runScript('pm2', 'start-all'));
+  .description('Start TTS services with PM2')
+  .action(() => runScriptFromSubcategory('pm2', 'tts', 'start'));
 
 program
   .command('stop')
   .description('Stop all PM2 services')
-  .action(() => runScript('pm2', 'stop-all'));
+  .action(() => runScriptFromSubcategory('pm2', 'tts', 'stop'));
 
 program
   .command('restart')
   .description('Restart all PM2 services')
-  .action(() => runScript('pm2', 'restart-all'));
+  .action(() => runScriptFromSubcategory('pm2', 'tts', 'restart'));
 
 program
   .command('logs [service]')
@@ -468,17 +519,17 @@ program
 program
   .command('status')
   .description('Show PM2 process status')
-  .action(() => runScript('pm2', 'status'));
+  .action(() => runScriptFromSubcategory('pm2', 'tts', 'status'));
 
 program
   .command('seed')
-  .description('Run migrations and seed data')
-  .action(() => runScript('setup', 'migrate-seed'));
+  .description('Run TTS migrations and seed data')
+  .action(() => runScriptFromSubcategory('setup', 'tts', 'seed'));
 
 program
   .command('flush')
-  .description('Flush DBs, migrate, and seed')
-  .action(() => runScript('setup', 'flush-migrate-seed'));
+  .description('Flush TTS DBs, migrate, and seed')
+  .action(() => runScriptFromSubcategory('setup', 'tts', 'flush-seed'));
 
 // Default to interactive menu if no command
 if (process.argv.length <= 2) {
