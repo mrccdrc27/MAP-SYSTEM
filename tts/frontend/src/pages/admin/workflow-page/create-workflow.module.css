@@ -1,15 +1,25 @@
 .createWorkflowPage {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: calc(100vh - 60px); /* Account for navbar height */
   background-color: var(--bg-content-color);
-  overflow: hidden;
+  animation: fadeInUp 0.5s ease-in-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .editorContainer {
   display: flex;
   flex: 1;
-  overflow: hidden;
   position: relative;
 }
 
@@ -396,6 +406,27 @@
   gap: 20px;
 }
 
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-content-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background: var(--bg1-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateX(-2px);
+}
+
 .topToolbar .toolbarLeft h2 {
   margin: 0;
   font-size: 1.125rem;
@@ -472,6 +503,34 @@
   background: var(--bg-content-color);
 }
 
+.layoutBtn {
+  padding: 8px 16px;
+  border: 1px solid var(--success-color);
+  border-radius: 6px;
+  background: var(--bg1-color);
+  color: var(--success-color);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.layoutBtn:hover:not(:disabled) {
+  background: var(--success-color);
+  color: white;
+}
+
+.layoutBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--border-color);
+  color: var(--muted-text-color);
+  background: var(--bg-content-color);
+}
+
 .helpBtn {
   padding: 8px 16px;
   border: 1px solid var(--border-color);
@@ -539,15 +598,27 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   background: var(--bg-content-color);
 }
 
-/* Templates Ribbon - Collapsible */
-.templatesRibbon {
+/* Split Top Ribbon: Templates + SLA */
+.topRibbon {
   background: var(--bg1-color);
   border-bottom: var(--border-bottom);
   flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.ribbonSection {
+  display: flex;
+  flex-direction: column;
+  border-right: var(--border-bottom);
+}
+
+.ribbonSection:last-child {
+  border-right: none;
 }
 
 .ribbonToggle {
@@ -555,13 +626,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 24px;
+  padding: 8px 20px;
   background: transparent;
   border: none;
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--heading-color);
+  transition: background 0.15s ease;
 }
 
 .ribbonToggle:hover {
@@ -576,9 +648,9 @@
 .templateStrip {
   display: flex;
   gap: 8px;
-  padding: 8px 24px 12px;
+  padding: 8px 20px 12px;
   overflow-x: auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .templatePill {
@@ -607,9 +679,94 @@
   background: var(--primary-color);
   color: white;
 }
+
 .templatePillActive:hover {
   background: var(--primary-color);
   color: white;
+}
+
+/* SLA Ribbon Configuration */
+.slaRibbonHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  border-bottom: var(--border-bottom);
+}
+
+.slaHintInline {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--muted-text-color);
+  font-style: italic;
+}
+
+.slaRibbonGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 12px 20px;
+}
+
+.slaRibbonItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slaRibbonLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  border-left: 3px solid;
+  padding-left: 8px;
+}
+
+.slaTimeInputs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.slaTimeGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.slaTimeInput {
+  width: 100%;
+  padding: 6px 8px;
+  border: var(--border-bottom);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  background: var(--bg-content-color);
+  color: var(--text-color);
+  transition: all 0.2s ease;
+}
+
+.slaTimeInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.slaTimeInput::-webkit-inner-spin-button,
+.slaTimeInput::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.slaTimeUnit {
+  font-size: 0.7rem;
+  color: var(--muted-text-color);
+  font-weight: 500;
+  min-width: 14px;
 }
 
 
@@ -619,15 +776,13 @@
   display: grid;
   grid-template-columns: 240px 1fr 280px;
   gap: 0;
-  overflow: hidden;
-  min-height: 0;
+  min-height: 500px;
 }
 
 /* Left Sidebar */
 .leftSidebar {
   background: var(--bg1-color);
   border-right: var(--border-bottom);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -695,30 +850,79 @@
 .slaCompact {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+
+.slaHint {
+  font-size: 0.7rem;
+  color: var(--muted-text-color);
+  margin: -4px 0 8px 0;
+  line-height: 1.4;
 }
 
 .slaRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
+  gap: 12px;
 }
 
-.slaRow span {
-  font-size: 0.75rem;
-  font-weight: 500;
+.slaLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+  border-left: 3px solid;
+  padding-left: 8px;
 }
 
-.slaRow input {
-  width: 60px;
-  padding: 4px 8px;
+.slaLabelText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.slaExample {
+  font-size: 0.65rem;
+  color: var(--muted-text-color);
+  font-style: italic;
+}
+
+.slaInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.slaInput {
+  width: 70px;
+  padding: 6px 10px;
   border: var(--border-bottom);
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   text-align: center;
   background: var(--bg-content-color);
   color: var(--text-color);
+  transition: all 0.2s ease;
+}
+
+.slaInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.slaInput::-webkit-inner-spin-button,
+.slaInput::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.slaUnit {
+  font-size: 0.75rem;
+  color: var(--muted-text-color);
+  font-weight: 500;
+  min-width: 40px;
 }
 
 .slaLow span { color: var(--success-color); }
@@ -730,16 +934,14 @@
 .centerPanel {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   background: var(--bg-content-color);
+  overflow-y: auto;
 }
 
 .panelSection {
-  flex: 1;
   display: flex;
   flex-direction: column;
   padding: 16px;
-  min-height: 0;
   border-bottom: var(--border-bottom);
 }
 
@@ -1140,7 +1342,6 @@
 .rightSidebar {
   background: var(--bg1-color);
   border-left: var(--border-bottom);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0;

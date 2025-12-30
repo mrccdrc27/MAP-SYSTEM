@@ -4,13 +4,13 @@ import 'reactflow/dist/style.css';
 import styles from './create-workflow.module.css';
 import WorkflowCreationConfirmation from './modals/WorkflowCreationConfirmation';
 import SequenceDiagramModal from './modals/SequenceDiagramModal';
-import AdminNav from '../../../components/navigation/AdminNav';
 import { useCreateWorkflow } from '../../../api/useCreateWorkflow';
 import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
 import StepNode from '../../../components/workflow/WorkflowEditor/StepNode';
 import { v4 as uuidv4 } from 'uuid';
+import { layoutWorkflow } from '../../../utils/workflowAutoLayout';
 import { 
   ClipboardList, 
   FileText, 
@@ -36,6 +36,7 @@ import {
   Lightbulb, 
   Link, 
   ArrowRight,
+  ArrowLeft,
   Layout,
   MoreVertical,
   ArrowUpRight,
@@ -234,6 +235,28 @@ export default function CreateWorkflowPage() {
   const { createWorkflow, loading: isCreating, error: createError } = useCreateWorkflow();
   const { roles } = useWorkflowRoles();
 
+  // Helper to parse ISO 8601 duration (PT24H30M) to {hours, minutes}
+  const parseDuration = (duration) => {
+    if (!duration) return { hours: '', minutes: '' };
+    const hoursMatch = duration.match(/PT(\d+)H/);
+    const minutesMatch = duration.match(/(\d+)M/);
+    return {
+      hours: hoursMatch ? hoursMatch[1] : '',
+      minutes: minutesMatch ? minutesMatch[1] : ''
+    };
+  };
+
+  // Helper to create ISO 8601 duration from hours and minutes
+  const createDuration = (hours, minutes) => {
+    const h = parseInt(hours) || 0;
+    const m = parseInt(minutes) || 0;
+    if (h === 0 && m === 0) return null;
+    let duration = 'PT';
+    if (h > 0) duration += `${h}H`;
+    if (m > 0) duration += `${m}M`;
+    return duration;
+  };
+
   // ============================================
   // TEMPLATE HANDLING
   // ============================================
@@ -278,8 +301,8 @@ export default function CreateWorkflowPage() {
     setSimpleNodes(newNodes);
     setSimpleEdges(newEdges);
     
-    // Also set ReactFlow state for advanced mode
-    const rfNodes = newNodes.map((node, idx) => ({
+    // Also set ReactFlow state for advanced mode with auto-layout
+    const rfNodes = newNodes.map((node) => ({
       id: node.id,
       data: {
         label: node.name,
@@ -291,7 +314,7 @@ export default function CreateWorkflowPage() {
         is_start: node.is_start,
         is_end: node.is_end,
       },
-      position: { x: (idx % 3) * 250, y: Math.floor(idx / 3) * 180 },
+      position: { x: 0, y: 0 }, // Will be auto-layouted
       type: 'step',
     }));
     
@@ -299,11 +322,15 @@ export default function CreateWorkflowPage() {
       id: edge.id,
       source: edge.from,
       target: edge.to,
-      data: { label: edge.name }
+      data: { label: edge.name },
+      type: 'smoothstep',
     }));
     
-    setNodes(rfNodes);
-    setEdges(rfEdges);
+    // Apply auto-layout to prevent tangles
+    const { nodes: layoutedNodes, edges: layoutedEdges } = layoutWorkflow(rfNodes, rfEdges);
+    
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
     
     setEditingSimpleNodeIndex(null);
   }, [roles, setNodes, setEdges]);
@@ -408,12 +435,13 @@ export default function CreateWorkflowPage() {
     };
     setSimpleEdges(prev => [...prev, newEdge]);
     
-    // Sync to ReactFlow
+    // Sync to ReactFlow with smoothstep type
     setEdges(prev => [...prev, {
       id: newEdge.id,
       source: newEdge.from,
       target: newEdge.to,
-      data: { label: newEdge.name }
+      data: { label: newEdge.name },
+      type: 'smoothstep',
     }]);
   }, [simpleNodes, simpleEdges.length, setEdges]);
 
@@ -424,14 +452,14 @@ export default function CreateWorkflowPage() {
       return updated;
     });
     
-    // Sync to ReactFlow
+    // Sync to ReactFlow (preserve smoothstep type)
     const edge = simpleEdges[index];
     if (edge) {
       setEdges(prev => prev.map(e => {
         if (e.id === edge.id) {
-          if (field === 'from') return { ...e, source: value };
-          if (field === 'to') return { ...e, target: value };
-          if (field === 'name') return { ...e, data: { ...e.data, label: value } };
+          if (field === 'from') return { ...e, source: value, type: 'smoothstep' };
+          if (field === 'to') return { ...e, target: value, type: 'smoothstep' };
+          if (field === 'name') return { ...e, data: { ...e.data, label: value }, type: 'smoothstep' };
         }
         return e;
       }));
@@ -498,13 +526,16 @@ export default function CreateWorkflowPage() {
         is_start: nodes.length === 0,
         is_end: false,
       },
-      position: {
-        x: (nodes.length % 3) * 250,
-        y: Math.floor(nodes.length / 3) * 200,
-      },
+      position: { x: 0, y: 0 }, // Will be auto-layouted
       type: 'step',
     };
-    setNodes((nds) => [...nds, newNode]);
+    
+    // Add node and re-layout
+    setNodes((nds) => {
+      const updatedNodes = [...nds, newNode];
+      const { nodes: layoutedNodes } = layoutWorkflow(updatedNodes, edges);
+      return layoutedNodes;
+    });
     
     // Sync to simple mode
     setSimpleNodes(prev => [...prev, {
@@ -519,7 +550,7 @@ export default function CreateWorkflowPage() {
       is_end: newNode.data.is_end,
       expanded: false
     }]);
-  }, [nodes.length, setNodes, roles]);
+  }, [nodes.length, setNodes, roles, edges]);
 
   const handleNodeClick = useCallback((event, node) => {
     setEditingNode(node);
@@ -587,13 +618,66 @@ export default function CreateWorkflowPage() {
     setEditingNode(null);
   }, [editingNode, setNodes, setEdges]);
 
+  // Re-layout function for manually triggering auto-layout
+  const handleAutoLayout = useCallback(() => {
+    if (nodes.length === 0) return;
+    
+    const { nodes: layoutedNodes, edges: layoutedEdges } = layoutWorkflow(nodes, edges);
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  // Auto-layout when switching to advanced mode
+  const handleModeChange = useCallback((newMode) => {
+    if (newMode === 'advanced' && simpleNodes.length > 0) {
+      // Sync simple mode data to ReactFlow and apply layout
+      const rfNodes = simpleNodes.map((node) => ({
+        id: node.id,
+        data: {
+          label: node.name,
+          role: node.role,
+          escalate_to: node.escalate_to,
+          description: node.description,
+          instruction: node.instruction,
+          weight: node.weight,
+          is_start: node.is_start,
+          is_end: node.is_end,
+        },
+        position: { x: 0, y: 0 },
+        type: 'step',
+      }));
+      
+      const rfEdges = simpleEdges.map(edge => ({
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        data: { label: edge.name },
+        type: 'smoothstep',
+      }));
+      
+      // Apply auto-layout
+      const { nodes: layoutedNodes, edges: layoutedEdges } = layoutWorkflow(rfNodes, rfEdges);
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+    }
+    setEditorMode(newMode);
+  }, [simpleNodes, simpleEdges, setNodes, setEdges]);
+
   const onConnect = useCallback((connection) => {
     const edgeId = `temp-${uuidv4()}`;
     const newEdge = {
       ...connection,
       id: edgeId,
+      type: 'smoothstep',
     };
-    setEdges((eds) => addEdge(newEdge, eds));
+    
+    // Add edge and re-layout to optimize routing
+    setEdges((eds) => {
+      const updatedEdges = addEdge(newEdge, eds);
+      // Get optimized edges after adding new connection
+      const { edges: optimizedEdges } = layoutWorkflow(nodes, updatedEdges);
+      return optimizedEdges;
+    });
     
     // Sync to simple mode
     setSimpleEdges(prev => [...prev, {
@@ -602,7 +686,7 @@ export default function CreateWorkflowPage() {
       to: connection.target,
       name: ''
     }]);
-  }, [setEdges]);
+  }, [setEdges, nodes]);
 
   // ============================================
   // VALIDATION & SUBMISSION
@@ -611,10 +695,59 @@ export default function CreateWorkflowPage() {
     const errors = [];
     const currentNodes = editorMode === 'simple' ? simpleNodes : nodes;
 
+    // Required field validations
     if (!workflowMetadata.name.trim()) errors.push('Workflow name is required');
+    if (workflowMetadata.name.length > 64) errors.push('Workflow name must be 64 characters or less');
     if (!workflowMetadata.category.trim()) errors.push('Category is required');
+    if (workflowMetadata.category.length > 64) errors.push('Category must be 64 characters or less');
     if (!workflowMetadata.sub_category.trim()) errors.push('Sub-category is required');
+    if (workflowMetadata.sub_category.length > 64) errors.push('Sub-category must be 64 characters or less');
     if (!workflowMetadata.department.trim()) errors.push('Department is required');
+    if (workflowMetadata.department.length > 64) errors.push('Department must be 64 characters or less');
+    
+    // Description max length validation
+    if (workflowMetadata.description && workflowMetadata.description.length > 256) {
+      errors.push('Description must be 256 characters or less');
+    }
+
+    // SLA ordering validation: urgent < high < medium < low
+    // Extract total minutes from ISO 8601 duration format (PT<hours>H<minutes>M or PT<hours>H or PT<minutes>M)
+    const extractTotalMinutes = (sla) => {
+      if (!sla) return null;
+      let totalMinutes = 0;
+      const hoursMatch = sla.match(/PT(\d+)H/);
+      const minutesMatch = sla.match(/(\d+)M/);
+      if (hoursMatch) totalMinutes += parseInt(hoursMatch[1]) * 60;
+      if (minutesMatch) totalMinutes += parseInt(minutesMatch[1]);
+      return totalMinutes > 0 ? totalMinutes : null;
+    };
+
+    const urgent_mins = extractTotalMinutes(workflowMetadata.urgent_sla);
+    const high_mins = extractTotalMinutes(workflowMetadata.high_sla);
+    const medium_mins = extractTotalMinutes(workflowMetadata.medium_sla);
+    const low_mins = extractTotalMinutes(workflowMetadata.low_sla);
+
+    // Validate SLA ordering if any are provided
+    if (urgent_mins !== null && high_mins !== null && urgent_mins >= high_mins) {
+      errors.push('Urgent SLA must be less than High SLA');
+    }
+    if (high_mins !== null && medium_mins !== null && high_mins >= medium_mins) {
+      errors.push('High SLA must be less than Medium SLA');
+    }
+    if (medium_mins !== null && low_mins !== null && medium_mins >= low_mins) {
+      errors.push('Medium SLA must be less than Low SLA');
+    }
+
+    // Additional SLA validation: if urgent is set, high should be set, etc.
+    if (urgent_mins !== null && high_mins === null) {
+      errors.push('If Urgent SLA is set, High SLA should also be set');
+    }
+    if (high_mins !== null && medium_mins === null) {
+      errors.push('If High SLA is set, Medium SLA should also be set');
+    }
+    if (medium_mins !== null && low_mins === null) {
+      errors.push('If Medium SLA is set, Low SLA should also be set');
+    }
 
     if (currentNodes.length > 0) {
       const startNodes = editorMode === 'simple' 
@@ -786,30 +919,94 @@ export default function CreateWorkflowPage() {
   // ============================================
   const renderSimpleMode = () => (
     <div className={styles.simpleMode}>
-      {/* Templates Ribbon - Collapsible */}
-      <div className={styles.templatesRibbon}>
-        <button 
-          className={styles.ribbonToggle}
-          onClick={() => setTemplatesCollapsed(!templatesCollapsed)}
-        >
-          <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><ClipboardList size={16} /> Templates</span>
-          <span className={styles.toggleIcon}>{templatesCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</span>
-        </button>
-        {!templatesCollapsed && (
-          <div className={styles.templateStrip}>
-            {Object.entries(WORKFLOW_TEMPLATES).map(([key, template]) => (
-              <button
-                key={key}
-                className={`${styles.templatePill} ${selectedTemplate === key ? styles.templatePillActive : ''}`}
-                onClick={() => applyTemplate(key)}
-                title={template.description}
-              >
-                <span>{template.icon}</span>
-                <span>{template.name}</span>
-              </button>
-            ))}
+      {/* Split Top Ribbon: Templates + SLA Configuration */}
+      <div className={styles.topRibbon}>
+        {/* Left: Templates */}
+        <div className={styles.ribbonSection}>
+          <button 
+            className={styles.ribbonToggle}
+            onClick={() => setTemplatesCollapsed(!templatesCollapsed)}
+          >
+            <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><ClipboardList size={16} /> Templates</span>
+            <span className={styles.toggleIcon}>{templatesCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</span>
+          </button>
+          {!templatesCollapsed && (
+            <div className={styles.templateStrip}>
+              {Object.entries(WORKFLOW_TEMPLATES).map(([key, template]) => (
+                <button
+                  key={key}
+                  className={`${styles.templatePill} ${selectedTemplate === key ? styles.templatePillActive : ''}`}
+                  onClick={() => applyTemplate(key)}
+                  title={template.description}
+                >
+                  <span>{template.icon}</span>
+                  <span>{template.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right: SLA Configuration */}
+        <div className={styles.ribbonSection}>
+          <div className={styles.slaRibbonHeader}>
+            <Clock size={14} />
+            <span>SLA Configuration</span>
+            <span className={styles.slaHintInline}>Set response time limits (Urgent &lt; High &lt; Medium &lt; Low)</span>
           </div>
-        )}
+          <div className={styles.slaRibbonGrid}>
+            {[
+              { key: 'urgent', label: 'Urgent', color: '#ef4444' },
+              { key: 'high', label: 'High', color: '#f97316' },
+              { key: 'medium', label: 'Medium', color: '#eab308' },
+              { key: 'low', label: 'Low', color: '#22c55e' }
+            ].map(({ key, label, color }) => {
+              const { hours, minutes } = parseDuration(workflowMetadata[`${key}_sla`]);
+              return (
+                <div key={key} className={styles.slaRibbonItem}>
+                  <label className={styles.slaRibbonLabel} style={{ borderLeftColor: color }}>
+                    {label}
+                  </label>
+                  <div className={styles.slaTimeInputs}>
+                    <div className={styles.slaTimeGroup}>
+                      <input
+                        type="number"
+                        value={hours}
+                        onChange={(e) => {
+                          const newHours = e.target.value;
+                          const duration = createDuration(newHours, minutes);
+                          setWorkflowMetadata({ ...workflowMetadata, [`${key}_sla`]: duration });
+                        }}
+                        placeholder="0"
+                        min="0"
+                        step="1"
+                        className={styles.slaTimeInput}
+                      />
+                      <span className={styles.slaTimeUnit}>h</span>
+                    </div>
+                    <div className={styles.slaTimeGroup}>
+                      <input
+                        type="number"
+                        value={minutes}
+                        onChange={(e) => {
+                          const newMinutes = e.target.value;
+                          const duration = createDuration(hours, newMinutes);
+                          setWorkflowMetadata({ ...workflowMetadata, [`${key}_sla`]: duration });
+                        }}
+                        placeholder="0"
+                        min="0"
+                        max="59"
+                        step="1"
+                        className={styles.slaTimeInput}
+                      />
+                      <span className={styles.slaTimeUnit}>m</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Main Layout - 3 Column */}
@@ -866,34 +1063,6 @@ export default function CreateWorkflowPage() {
                   rows={2}
                 />
               </div>
-            </div>
-          </div>
-
-          <div className={styles.sidebarSection}>
-            <h3 className={styles.sidebarTitle}><Clock size={14} /> SLA (Hours)</h3>
-            <div className={styles.slaCompact}>
-              {['low', 'medium', 'high', 'urgent'].map((priority) => {
-                const slaValue = workflowMetadata[`${priority}_sla`];
-                const displayValue = slaValue ? parseInt(slaValue.match(/\d+/)?.[0] || '0') : '';
-                return (
-                  <div key={priority} className={`${styles.slaRow} ${styles[`sla${priority.charAt(0).toUpperCase() + priority.slice(1)}`]}`}>
-                    <span>{priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
-                    <input
-                      type="number"
-                      value={displayValue}
-                      onChange={(e) => {
-                        const hours = e.target.value ? parseInt(e.target.value) : null;
-                        setWorkflowMetadata({
-                          ...workflowMetadata,
-                          [`${priority}_sla`]: hours ? `PT${hours}H` : null,
-                        });
-                      }}
-                      placeholder="-"
-                      min="0"
-                    />
-                  </div>
-                );
-              })}
             </div>
           </div>
         </aside>
@@ -1382,9 +1551,16 @@ export default function CreateWorkflowPage() {
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             onNodeClick={handleNodeClick}
+            defaultEdgeOptions={{
+              type: 'smoothstep',
+              style: { strokeWidth: 2 },
+              animated: false,
+            }}
+            connectionLineType="smoothstep"
             fitView
+            fitViewOptions={{ padding: 0.2 }}
           >
-            <Background />
+            <Background variant="dots" gap={16} size={1} />
             <Controls />
           </ReactFlow>
         </div>
@@ -1396,30 +1572,45 @@ export default function CreateWorkflowPage() {
   // MAIN RENDER
   // ============================================
   return (
-    <>
-      <AdminNav />
-      <main className={styles.createWorkflowPage}>
-        <ReactFlowProvider>
-          {/* Top Toolbar */}
-          <div className={styles.topToolbar}>
-            <div className={styles.toolbarLeft}>
-              <h2>Create Workflow</h2>
-              <div className={styles.modeToggle}>
+    <main className={styles.createWorkflowPage}>
+      <ReactFlowProvider>
+        {/* Top Toolbar */}
+        <div className={styles.topToolbar}>
+          <div className={styles.toolbarLeft}>
+            <button
+              className={styles.backBtn}
+              onClick={() => navigate('/admin/workflows')}
+              title="Back to Workflows"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h2>Create Workflow</h2>
+            <div className={styles.modeToggle}>
                 <button 
                   className={`${styles.modeBtn} ${editorMode === 'simple' ? styles.modeBtnActive : ''}`}
-                  onClick={() => setEditorMode('simple')}
+                  onClick={() => handleModeChange('simple')}
                 >
                   <FileText size={16} /> Simple
                 </button>
                 <button 
                   className={`${styles.modeBtn} ${editorMode === 'advanced' ? styles.modeBtnActive : ''}`}
-                  onClick={() => setEditorMode('advanced')}
+                  onClick={() => handleModeChange('advanced')}
                 >
                   <Settings size={16} /> Advanced
                 </button>
               </div>
             </div>
             <div className={styles.toolbarRight}>
+              {editorMode === 'advanced' && (
+                <button
+                  className={styles.layoutBtn}
+                  onClick={handleAutoLayout}
+                  disabled={nodes.length === 0}
+                  title="Auto-arrange nodes"
+                >
+                  <GitBranch size={16} /> Auto Layout
+                </button>
+              )}
               <button
                 className={styles.diagramBtn}
                 onClick={() => setShowSequenceDiagram(true)}
@@ -1443,7 +1634,8 @@ export default function CreateWorkflowPage() {
               <button
                 className={styles.saveBtn}
                 onClick={handleCreateWorkflow}
-                disabled={isCreating}
+                disabled={isCreating || validationErrors.length > 0}
+                title={validationErrors.length > 0 ? `Cannot create: ${validationErrors.length} validation error(s)` : ''}
               >
                 <Save size={16} /> {isCreating ? 'Creating...' : 'Create Workflow'}
               </button>
@@ -1466,10 +1658,9 @@ export default function CreateWorkflowPage() {
             </div>
           )}
 
-          {/* Editor Content */}
-          {editorMode === 'simple' ? renderSimpleMode() : renderAdvancedMode()}
-        </ReactFlowProvider>
-      </main>
+        {/* Editor Content */}
+        {editorMode === 'simple' ? renderSimpleMode() : renderAdvancedMode()}
+      </ReactFlowProvider>
 
       {showConfirmation && createdWorkflow && (
         <WorkflowCreationConfirmation
@@ -1487,6 +1678,6 @@ export default function CreateWorkflowPage() {
         edges={getDiagramData().edges}
         workflowName={workflowMetadata.name || 'New Workflow'}
       />
-    </>
+    </main>
   );
 }
