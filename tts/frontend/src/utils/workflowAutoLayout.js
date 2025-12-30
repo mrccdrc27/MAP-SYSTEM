@@ -194,7 +194,7 @@ export function getWorkflowLayout(nodes, edges, options = {}) {
 }
 
 /**
- * Creates optimized edges with proper routing
+ * Creates optimized edges while preserving existing handle IDs (6-handle system)
  * @param {Array} edges - Original edges
  * @param {Array} nodes - Layouted nodes
  * @returns {Array} - Edges with optimized properties
@@ -211,35 +211,34 @@ export function getOptimizedEdges(edges, nodes) {
     
     if (!sourcePos || !targetPos) return edge;
 
-    // Determine best handle positions based on relative positions
-    const dx = targetPos.x - sourcePos.x;
-    const dy = targetPos.y - sourcePos.y;
+    // IMPORTANT: Preserve existing handle IDs from templates (6-handle system)
+    // Only set defaults if handles are not already specified
+    let sourceHandle = edge.sourceHandle;
+    let targetHandle = edge.targetHandle;
     
-    let sourceHandle = 'bottom';
-    let targetHandle = 'top';
-    
-    // If target is to the left/right more than up/down, use side handles
-    if (Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if (dx > 0) {
-        sourceHandle = 'right';
-        targetHandle = 'left';
-      } else {
-        sourceHandle = 'left';
-        targetHandle = 'right';
+    // Only auto-determine if not already set (for backwards compatibility)
+    if (!sourceHandle || !targetHandle) {
+      const dx = targetPos.x - sourcePos.x;
+      const dy = targetPos.y - sourcePos.y;
+      
+      // Default to vertical flow with new 6-handle IDs
+      sourceHandle = sourceHandle || 'out-B';
+      targetHandle = targetHandle || 'in-T';
+      
+      // If target is significantly to the right, use horizontal handles
+      if (Math.abs(dx) > Math.abs(dy) * 1.5 && dx > 0) {
+        sourceHandle = sourceHandle || 'out-R';
+        targetHandle = targetHandle || 'in-L';
       }
-    } else if (dy < 0) {
-      // Target is above source
-      sourceHandle = 'top';
-      targetHandle = 'bottom';
     }
 
     return {
       ...edge,
       sourceHandle,
       targetHandle,
-      type: 'smoothstep', // Use smooth step edges to avoid straight line overlaps
-      animated: false,
-      style: { strokeWidth: 2 },
+      type: edge.type || 'smoothstep',
+      animated: edge.animated !== undefined ? edge.animated : false,
+      style: edge.style || { strokeWidth: 2 },
     };
   });
 }

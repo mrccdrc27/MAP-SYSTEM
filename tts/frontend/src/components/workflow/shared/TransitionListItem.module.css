@@ -1,0 +1,109 @@
+.transitionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--bg1-color);
+  border: var(--border-bottom);
+  border-radius: 10px;
+  transition: var(--transition);
+  position: relative;
+}
+
+.transitionItem.clickable {
+  cursor: pointer;
+}
+
+.transitionItem.clickable:hover {
+  background: var(--bg-content-color);
+  border-color: var(--border-color);
+}
+
+.transitionItem.selected {
+  background: rgba(0, 123, 255, 0.08);
+  border-color: rgba(0, 123, 255, 0.4);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+/* Route */
+.route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stepName {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(0, 123, 255, 0.08);
+  border-radius: 6px;
+  font-size: var(--table-font-size);
+  font-weight: 500;
+  color: var(--primary-color);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--muted-text-color);
+}
+
+/* Label */
+.label {
+  font-size: var(--table-font-size);
+  color: var(--secondary-color);
+  font-style: italic;
+  padding-left: 4px;
+}
+
+/* Actions */
+.actions {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.transitionItem:hover .actions {
+  opacity: 1;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-content-color);
+  border: var(--border-bottom);
+  color: var(--secondary-color);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.actionBtn:hover {
+  background: var(--bg-color);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+.deleteBtn:hover {
+  background: rgba(174, 19, 27, 0.1);
+  color: var(--error-color);
+  border-color: rgba(174, 19, 27, 0.3);
+}

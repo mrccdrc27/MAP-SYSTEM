@@ -1,0 +1,228 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Form Group */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: var(--table-head-size);
+  font-weight: 500;
+  color: var(--heading-color);
+}
+
+.required {
+  color: var(--error-color);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--muted-text-color);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--table-font-size);
+  color: var(--error-color);
+}
+
+/* Input */
+.input {
+  padding: 10px 14px;
+  background: var(--bg-content-color);
+  border: var(--border-bottom);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: var(--default-font-size);
+  transition: var(--transition);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.input::placeholder {
+  color: var(--muted-text-color);
+}
+
+.inputError {
+  border-color: rgba(174, 19, 27, 0.5);
+}
+
+.inputError:focus {
+  border-color: var(--error-color);
+  box-shadow: 0 0 0 3px rgba(174, 19, 27, 0.15);
+}
+
+/* Select */
+.select {
+  padding: 10px 14px;
+  background: var(--bg-content-color);
+  border: var(--border-bottom);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: var(--default-font-size);
+  cursor: pointer;
+  transition: var(--transition);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  padding-right: 36px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.select option {
+  background: var(--bg1-color);
+  color: var(--text-color);
+}
+
+/* Textarea */
+.textarea {
+  padding: 10px 14px;
+  background: var(--bg-content-color);
+  border: var(--border-bottom);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: var(--default-font-size);
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.textarea::placeholder {
+  color: var(--muted-text-color);
+}
+
+/* Type Grid */
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.typeBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: var(--bg-content-color);
+  border: var(--border-bottom);
+  border-radius: 8px;
+  color: var(--secondary-color);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.typeBtn:hover {
+  background: var(--bg-color);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.typeBtnActive {
+  background: var(--type-bg);
+  border-color: var(--type-border);
+  color: var(--type-color);
+}
+
+.typeBtnActive:hover {
+  background: var(--type-bg);
+  border-color: var(--type-border);
+  color: var(--type-color);
+}
+
+/* Advanced Toggle */
+.advancedToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: transparent;
+  border: var(--border-bottom);
+  border-radius: 8px;
+  color: var(--secondary-color);
+  font-size: var(--table-head-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.advancedToggle:hover {
+  background: var(--bg-content-color);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+/* Advanced Panel */
+.advancedPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-content-color);
+  border-radius: 8px;
+  border: var(--border-bottom);
+}
+
+/* Checkbox Label */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--table-head-size);
+  color: var(--heading-color);
+  cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+/* Hide number spinners */
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .typeGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
