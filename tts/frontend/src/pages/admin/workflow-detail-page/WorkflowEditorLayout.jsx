@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ReactFlowProvider } from 'reactflow';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import 'reactflow/dist/style.css';
 
 // Use shared styles from CreateWorkflowPage for consistency
@@ -10,7 +10,6 @@ import styles from '../workflow-page/create-workflow.module.css';
 import WorkflowEditorContent from './WorkflowEditorContent';
 import WorkflowEditorSidebar from './WorkflowEditorSidebar';
 import WorkflowInfoSidebar from './WorkflowInfoSidebar';
-import SLAWeightEditor from './SLAWeightEditor';
 import WorkflowConfigPanel from './WorkflowConfigPanel';
 import ConfirmDialog from './ConfirmDialog';
 import { LoadingState, UnsavedChangesWarning } from './components';
@@ -77,17 +76,34 @@ function useGraphValidation(nodes = [], edges = [], isDataLoaded = false) {
 
 export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, isNameBased = false }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { triggerRefresh } = useWorkflowRefresh();
   const { roles, error: rolesError } = useWorkflowRoles();
   
   // Use workflowIdentifier if provided (new style), otherwise fall back to workflowId (backward compatibility)
   const identifier = workflowIdentifier || workflowId;
   
+  // Read initial tab from URL params, default to 'editor'
+  const urlTab = searchParams.get('tab');
+  const initialTab = (urlTab === 'configure' || urlTab === 'config') ? 'config' : 'editor';
+  
   // UI state
-  const [showSLAModal, setShowSLAModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('editor'); // 'editor' or 'config'
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [currentNodes, setCurrentNodes] = useState([]);
   const [currentEdges, setCurrentEdges] = useState([]);
+
+  // Sync tab state with URL
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    // Update URL without navigation
+    const newParams = new URLSearchParams(searchParams);
+    if (newTab === 'config') {
+      newParams.set('tab', 'configure');
+    } else {
+      newParams.delete('tab'); // editor is default, no need for param
+    }
+    setSearchParams(newParams, { replace: true });
+  };
 
   // Workflow editor state and handlers
   const {
@@ -182,68 +198,53 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
           onSave={handleSave}
           onBack={() => navigate('/admin/workflows')}
           onToggleEditing={() => setIsEditingGraph(!isEditingGraph)}
-          onOpenSLAModal={() => setShowSLAModal(true)}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
 
-        {/* Editor Content - Using same layout as CreateWorkflowPage */}
-        <div className={styles.simpleMode}>
-          <div className={styles.simpleLayout}>
-            {/* LEFT SIDEBAR - Workflow Info (only show in editor tab) */}
-            {activeTab === 'editor' && (
+        {/* Content Area */}
+        {activeTab === 'editor' ? (
+          /* Editor View - Three column layout */
+          <div className={styles.simpleMode}>
+            <div className={styles.simpleLayout}>
+              {/* LEFT SIDEBAR - Workflow Info */}
               <WorkflowInfoSidebar workflowData={workflowData} />
-            )}
 
-            {/* CENTER PANEL - Switches between Flow Editor and Config */}
-            <main className={styles.centerPanel} style={activeTab === 'config' ? { maxWidth: '800px', margin: '0 auto' } : {}}>
-              {activeTab === 'editor' ? (
-                <>
-                  {/* Add Step Button (when editing) */}
-                  {isEditingGraph && (
-                    <div className={styles.panelSection} style={{ borderBottom: 'var(--border-bottom)', paddingBottom: '12px' }}>
-                      <div className={styles.panelHeader}>
-                        <h3><GitBranch size={16} /> Quick Actions</h3>
-                      </div>
-                      <button 
-                        className={styles.addBtnSmall}
-                        onClick={() => handleAddStep()}
-                        style={{ marginTop: '8px' }}
-                      >
-                        <Plus size={14} /> Add New Step
-                      </button>
+              {/* CENTER PANEL - Flow Editor */}
+              <main className={styles.centerPanel}>
+                {/* Add Step Button (when editing) */}
+                {isEditingGraph && (
+                  <div className={styles.panelSection} style={{ borderBottom: 'var(--border-bottom)', paddingBottom: '12px' }}>
+                    <div className={styles.panelHeader}>
+                      <h3><GitBranch size={16} /> Quick Actions</h3>
                     </div>
-                  )}
-
-                  {/* Flow Canvas */}
-                  <div className={styles.flowContainer} style={{ flex: 1, minHeight: '400px' }}>
-                    <WorkflowEditorContent
-                      ref={contentRef}
-                      workflowId={actualWorkflowId}
-                      workflowData={workflowData}
-                      roles={roles}
-                      onStepClick={onStepClick}
-                      onEdgeClick={onEdgeClick}
-                      onPaneClick={onPaneClick}
-                      isEditingGraph={isEditingGraph}
-                      setHasUnsavedChanges={setHasUnsavedChanges}
-                    />
+                    <button 
+                      className={styles.addBtnSmall}
+                      onClick={() => handleAddStep()}
+                      style={{ marginTop: '8px' }}
+                    >
+                      <Plus size={14} /> Add New Step
+                    </button>
                   </div>
-                </>
-              ) : (
-                /* Configuration Panel */
-                <div style={{ padding: '20px', background: 'var(--bg1-color)', borderRadius: '8px', margin: '20px' }}>
-                  <WorkflowConfigPanel
-                    workflow={workflowData?.workflow}
+                )}
+
+                {/* Flow Canvas */}
+                <div className={styles.flowContainer} style={{ flex: 1, minHeight: '400px' }}>
+                  <WorkflowEditorContent
+                    ref={contentRef}
                     workflowId={actualWorkflowId}
-                    onUpdate={handleWorkflowConfigUpdate}
+                    workflowData={workflowData}
+                    roles={roles}
+                    onStepClick={onStepClick}
+                    onEdgeClick={onEdgeClick}
+                    onPaneClick={onPaneClick}
+                    isEditingGraph={isEditingGraph}
+                    setHasUnsavedChanges={setHasUnsavedChanges}
                   />
                 </div>
-              )}
-            </main>
+              </main>
 
-            {/* RIGHT SIDEBAR - Selection Editor & Validation (only show in editor tab) */}
-            {activeTab === 'editor' && (
+              {/* RIGHT SIDEBAR - Selection Editor & Validation */}
               <aside className={styles.rightSidebar}>
                 {/* Validation Panel - Using shared component */}
                 <ValidationPanel errors={validationErrors} />
@@ -262,18 +263,31 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                   />
                 </div>
               </aside>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Configuration View - Full screen */
+          <div style={{ 
+            flex: 1, 
+            overflow: 'auto', 
+            padding: 0,
+            background: 'var(--bg-content-color)'
+          }}>
+            <div style={{ 
+              background: 'var(--bg1-color)',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow)',
+              overflow: 'hidden'
+            }}>
+              <WorkflowConfigPanel
+                workflow={workflowData?.workflow}
+                workflowId={actualWorkflowId}
+                onUpdate={handleWorkflowConfigUpdate}
+              />
+            </div>
+          </div>
+        )}
       </ReactFlowProvider>
-
-      {/* SLA Weight Modal */}
-      {showSLAModal && (
-        <SLAWeightEditor
-          workflowId={actualWorkflowId}
-          onClose={() => setShowSLAModal(false)}
-        />
-      )}
 
       {/* Confirmation Dialog */}
       {confirmDialog && (

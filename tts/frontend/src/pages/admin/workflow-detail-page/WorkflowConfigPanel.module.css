@@ -3,13 +3,13 @@
 }
 
 .errorBanner {
-  padding: 12px 16px;
-  background-color: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid #ef4444;
-  color: #ef4444;
-  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: var(--critical-bg-color);
+  border-left: 3px solid var(--error-color);
+  color: var(--error-color);
+  margin-bottom: 12px;
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .form {
@@ -19,7 +19,7 @@
 }
 
 .formSection {
-  padding: 16px;
+  padding: 12px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -33,11 +33,11 @@
   color: var(--muted-text-color);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .formGroup {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .formGroup:last-child {
@@ -46,18 +46,18 @@
 
 .formLabel {
   display: block;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-color);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .formInput,
 .formTextarea,
 .formSelect {
   width: 100%;
-  padding: 8px 10px;
-  font-size: 0.875rem;
+  padding: 4px 8px;
+  font-size: 0.8125rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-input-color, var(--bg-color));
@@ -82,60 +82,130 @@
 
 .formTextarea {
   resize: vertical;
-  min-height: 60px;
+  min-height: 48px;
 }
 
 .gridTwo {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
 /* SLA Input Group */
 .slaGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .slaLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8125rem;
+  gap: 6px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-color);
 }
 
 .slaDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .slaInputRow {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
+}
+
+/* SLA Input Group - contains input + controls + unit */
+.slaInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .slaInputWrapper {
-  flex: 1;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
 }
 
 .slaInput {
-  width: 100%;
-  padding: 6px 8px;
+  width: 48px;
+  min-width: 48px;
+  padding: 4px 4px;
+  padding-right: 18px;
   font-size: 0.8125rem;
+  font-weight: 500;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-input-color, var(--bg-color));
   color: var(--text-color);
   text-align: center;
+  -moz-appearance: textfield;
+}
+
+.slaInput::-webkit-outer-spin-button,
+.slaInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.slaInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-shadow-color);
+}
+
+/* Increment/Decrement controls */
+.slaControls {
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.slaControlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted-text-color);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.slaControlBtn:hover {
+  background: var(--bg-hover-color, rgba(0, 0, 0, 0.06));
+  color: var(--text-color);
+}
+
+.slaControlBtn:active {
+  background: var(--bg-active-color, rgba(0, 0, 0, 0.1));
+}
+
+.slaInput:disabled {
+  background: var(--bg-content-color);
+  cursor: default;
+  opacity: 0.7;
+}
+
+.slaUnit {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-text-color);
+  min-width: 14px;
 }
 
 .slaInput:focus {
@@ -149,26 +219,20 @@
   opacity: 0.8;
 }
 
-.slaUnit {
-  font-size: 0.75rem;
-  color: var(--muted-text-color);
-  min-width: 14px;
-}
-
 /* Actions */
 .actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  padding: 16px;
+  padding: 12px;
   border-top: 1px solid var(--border-color);
   background: var(--bg-content-color);
 }
 
 .btnPrimary,
 .btnSecondary {
-  padding: 8px 16px;
-  font-size: 0.8125rem;
+  padding: 6px 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   border-radius: 4px;
   cursor: pointer;
@@ -178,7 +242,7 @@
 
 .btnPrimary {
   background: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
 }
 
 .btnPrimary:hover:not(:disabled) {
@@ -203,10 +267,10 @@
 
 /* Read-only display */
 .displayValue {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--text-color);
-  padding: 8px 0;
-  line-height: 1.5;
+  padding: 4px 0;
+  line-height: 1.4;
 }
 
 .displayValue.muted {
@@ -218,30 +282,500 @@
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 4px;
+  padding: 2px 8px;
   border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
 .statusDraft {
-  background: var(--warning-bg-color, rgba(245, 158, 11, 0.1));
-  color: var(--warning-color, #f59e0b);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-color);
 }
 
 .statusDeployed {
-  background: var(--success-bg-color, rgba(34, 197, 94, 0.1));
-  color: var(--success-color, #22c55e);
+  background: var(--status-success-bg);
+  color: var(--status-success-color);
 }
 
 .statusPaused {
-  background: var(--muted-bg-color, rgba(107, 114, 128, 0.1));
-  color: var(--muted-text-color, #6b7280);
+  background: var(--status-info-bg);
+  color: var(--status-info-color);
 }
 
 .statusInitialized {
-  background: var(--info-bg-color, rgba(59, 130, 246, 0.1));
-  color: var(--info-color, #3b82f6);
+  background: var(--status-open-bg);
+  color: var(--status-open-color);
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-content-color);
+}
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerActions .btnPrimary,
+.headerActions .btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Content Grid Layout */
+.content {
+  display: grid;
+  grid-template-columns: 0.7fr 0.3fr;
+  gap: 24px;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0; /* Prevent flex items from overflowing */
+}
+
+.column:first-child {
+  border-right: 1px solid var(--border-color);
+}
+
+@media (max-width: 900px) {
+  .column:first-child {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+/* Cards */
+.card {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card:last-child {
+  border-bottom: none;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-text-color);
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cardBody {
+  padding: 12px 16px;
+}
+
+/* Field Styles */
+.field {
+  margin-bottom: 8px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.fieldLabel {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 4px;
+}
+
+.fieldValue {
+  font-size: 0.8125rem;
+  color: var(--text-color);
+  line-height: 1.4;
+  padding: 4px 0;
+}
+
+.fieldValue.muted {
+  color: var(--muted-text-color);
+  font-style: italic;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.fieldRow:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Input Styles */
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-input-color, var(--bg-color));
+  color: var(--text-color);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-shadow-color);
+}
+
+.input:disabled,
+.textarea:disabled,
+.select:disabled {
+  background: var(--bg-content-color);
+  cursor: default;
+  opacity: 0.7;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.select {
+  cursor: pointer;
+}
+
+/* SLA Grid */
+.slaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .slaGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.slaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Hint Text */
+.hint {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--muted-text-color);
+  font-style: italic;
+}
+
+/* ========================================
+   Step Weight Distribution Section
+   ======================================== */
+
+.stepWeightSection {
+  background: var(--bg-content-color);
+  flex: 1; /* Fill the column height */
+}
+
+.stepWeightHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-color);
+}
+
+.stepWeightTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.stepWeightCount {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--muted-text-color);
+  background: var(--bg-content-color);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.stepWeightActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saveSuccess {
+  font-size: 0.75rem;
+  color: var(--success-color, #22c55e);
+  font-weight: 500;
+}
+
+.saveError {
+  font-size: 0.75rem;
+  color: var(--error-color, #ef4444);
+  font-weight: 500;
+}
+
+.stepWeightInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  color: var(--muted-text-color);
+  background: var(--bg1-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.stepWeightLoading,
+.stepWeightError,
+.stepWeightEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  font-size: 0.8125rem;
+  color: var(--muted-text-color);
+}
+
+.stepWeightError {
+  color: var(--error-color, #ef4444);
+}
+
+.loadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Steps List */
+.stepWeightList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+
+@media (max-width: 700px) {
+  .stepWeightList {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Step Weight Card */
+.stepWeightCard {
+  background: var(--bg1-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stepWeightCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stepWeightCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stepWeightCardName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepWeightCardMeta {
+  font-size: 0.6875rem;
+  color: var(--muted-text-color);
+}
+
+.stepWeightCardPercent {
+  flex-shrink: 0;
+}
+
+.stepWeightCardPercentValue {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* Slider and Input */
+.stepWeightCardSlider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weightSlider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border-color);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.weightSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg1-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+
+.weightSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.weightSlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg1-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.weightInput {
+  width: 50px;
+  padding: 4px 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-input-color, var(--bg-color));
+  color: var(--text-color);
+  -moz-appearance: textfield;
+}
+
+.weightInput::-webkit-outer-spin-button,
+.weightInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.weightInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* SLA Breakdown per step */
+.stepWeightCardSLA {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color);
+}
+
+.stepWeightCardSLAItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6875rem;
+  background: var(--bg-color);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.stepWeightCardSLADot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stepWeightCardSLALabel {
+  color: var(--muted-text-color);
+}
+
+.stepWeightCardSLAValue {
+  font-weight: 600;
+  color: var(--text-color);
 }

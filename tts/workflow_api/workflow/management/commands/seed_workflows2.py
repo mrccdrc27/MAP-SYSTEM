@@ -229,22 +229,12 @@ class Command(BaseCommand):
                     "broken_type": "deadend_and_orphan"
                 },
             ]
-
-            # End logic options mapped to departments
-            end_logic_map = {
-                'Asset Department': 'asset',
-                'Budget Department': 'budget',
-                'IT Department': 'notification',
-            }
             
             total_workflows = 0
             total_steps = 0
             total_transitions = 0
 
             for wf_data in workflows_to_create:
-                # Assign end logic based on department
-                end_logic = end_logic_map.get(wf_data['department'], 'notification')
-
                 self.stdout.write(f'\n{self.style.MIGRATE_LABEL("Processing workflow:")} {wf_data["name"]}')
 
                 wf, created = Workflows.objects.get_or_create(
@@ -254,7 +244,6 @@ class Command(BaseCommand):
                         'description': wf_data.get("description", f'{wf_data["name"]} workflow'),
                         'category': wf_data["category"],
                         'sub_category': wf_data["sub_category"],
-                        'end_logic': end_logic,
                         'department': wf_data["department"],
                         'is_published': True,
                         'status': 'deployed',  # Set status to deployed so workflows are active
@@ -268,11 +257,11 @@ class Command(BaseCommand):
                 if created:
                     total_workflows += 1
                     self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ Created workflow with end_logic="{end_logic}" for {wf_data["department"]}'
+                        f'  ✓ Created workflow for {wf_data["department"]}'
                     ))
                 else:
                     self.stdout.write(self.style.WARNING(
-                        f'  ⚠ Workflow already exists (end_logic="{end_logic}")'
+                        f'  ⚠ Workflow already exists'
                     ))
 
                 # Get workflow-specific step configuration
@@ -408,11 +397,11 @@ class Command(BaseCommand):
             self.stdout.write(f'{self.style.MIGRATE_LABEL("Total Transitions Created:")} {total_transitions}')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflow Structure Summary:'))
-            self.stdout.write('  • Asset Department (end_logic: asset)')
+            self.stdout.write('  • Asset Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
-            self.stdout.write('  • Budget Department (end_logic: budget)')
+            self.stdout.write('  • Budget Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin)')
-            self.stdout.write('  • IT Department (end_logic: notification)')
+            self.stdout.write('  • IT Department')
             self.stdout.write(f'    - Process (Asset Manager) [Single Step]')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflows Created:'))

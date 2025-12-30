@@ -5,7 +5,7 @@
   width: 100%;
   height: 100%;
   backdrop-filter: blur(2px);
-  background: rgba(13, 13, 13, 0.1);
+  background: var(--overlay-light-bg, rgba(13, 13, 13, 0.1));
   z-index: 999;
   display: flex;
   justify-content: center;
@@ -24,7 +24,7 @@
   overflow: hidden;
   padding: 20px;
   border-radius: 20px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--box-shadow);
   animation: fadeInScale 0.3s ease-out;
 }
 
@@ -85,7 +85,7 @@
 }
 
 .inputGroup input:focus {
-  border-color: #007bff;
+  border-color: var(--primary-color);
   outline: none;
 }
 

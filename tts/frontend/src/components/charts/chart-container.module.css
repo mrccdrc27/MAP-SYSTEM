@@ -2,13 +2,13 @@
   background-color: var(--bg-content-color);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .chartContainer h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--heading-color);
   margin: 0 0 1rem 0;
 }
 

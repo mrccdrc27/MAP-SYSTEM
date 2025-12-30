@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.3);
+  background: var(--overlay-dark-bg, rgba(0,0,0,0.3));
   backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
@@ -13,12 +13,12 @@
 }
 
 .alertBox {
-  background-color: white;
+  background-color: var(--bg1-color);
   min-width: 300px;
   max-width: 90vw;
   padding: 20px 30px;
   border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  box-shadow: var(--box-shadow, 0 0 20px rgba(0,0,0,0.2));
   position: relative;
   font-size: 1rem;
   white-space: pre-wrap;
@@ -26,21 +26,21 @@
 }
 
 .success {
-  border-left: 6px solid #28a745;
-  color: #155724;
-  background-color: #d4edda;
+  border-left: 6px solid var(--success-color);
+  color: var(--success-text, #155724);
+  background-color: var(--success-bg, #d4edda);
 }
 
 .error {
-  border-left: 6px solid #dc3545;
-  color: #721c24;
-  background-color: #f8d7da;
+  border-left: 6px solid var(--error-color);
+  color: var(--error-text, #721c24);
+  background-color: var(--error-bg, #f8d7da);
 }
 
 .info {
-  border-left: 6px solid #17a2b8;
-  color: #0c5460;
-  background-color: #d1ecf1;
+  border-left: 6px solid var(--info-color, #17a2b8);
+  color: var(--info-text, #0c5460);
+  background-color: var(--info-bg, #d1ecf1);
 }
 
 .closeBtn {
@@ -50,11 +50,11 @@
   background: transparent;
   border: none;
   font-size: 1.5rem;
-  color: #555;
+  color: var(--table-color);
   cursor: pointer;
   font-weight: bold;
   line-height: 1;
 }
 .closeBtn:hover {
-  color: #000;
+  color: var(--text-color);
 }

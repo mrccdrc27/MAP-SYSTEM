@@ -567,10 +567,30 @@ class TaskViewSet(viewsets.ModelViewSet):
         ).prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
         
         if not task_item:
-            return Response(
-                {'error': f'You have no assignment for ticket {ticket_number}'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            # Check if user is admin and allow viewing any task item for the ticket
+            is_admin = False
+            if hasattr(request.user, 'has_tts_role'):
+                is_admin = request.user.has_tts_role('Admin') or request.user.has_tts_role('Super Admin')
+            
+            if is_admin:
+                 task_item = TaskItem.objects.filter(
+                    task__ticket_id=ticket
+                 ).select_related(
+                    'task__ticket_id',
+                    'task__workflow_id',
+                    'role_user',
+                    'role_user__role_id',
+                    'assigned_on_step',
+                    'assigned_on_step__role_id',
+                    'assigned_on_step__workflow_id',
+                    'transferred_to',
+                 ).prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
+
+            if not task_item:
+                return Response(
+                    {'error': f'You have no assignment for ticket {ticket_number}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         
         # Delegate to the shared response building logic
         return self._build_task_item_response(request, task_item)

@@ -1,9 +1,9 @@
 /* === TABLE STYLES === */
 .dtSection {
-  background-color: #ffffff;
+  background-color: var(--bg1-color);
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #cccccc;
+  box-shadow: var(--box-shadow, 0 4px 10px rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--border-color);
 }
 
 .dtHeader {
@@ -50,7 +50,7 @@
   color: var(--table-color);
   border-top: var(--border-very-light-gray);
   border-bottom: var(--border-very-light-gray);
-  background-color: #f0f1f2;
+  background-color: var(--bg-content-color);
 }
 
 .dtTable td {
@@ -61,17 +61,17 @@
 }
 
 tr:hover {
-  background-color: #fcfcfc;
+  background-color: var(--bg-color);
 }
 
 .dtBtn {
-  border: 1px solid #cccccc;
+  border: 1px solid var(--border-color);
   padding: 6px 12px;
   border-radius: 4px;
   color: var(--table-color);
   font-size: var(--base-font-size);
   cursor: pointer;
-  background-color: #ffffff;
+  background-color: var(--bg1-color);
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -81,9 +81,9 @@ tr:hover {
 }
 
 .dtBtn:hover {
-  background-color: #e3f2fd;
-  border-color: #2196f3;
-  color: #1976d2;
+  background-color: var(--primary-bg, #e3f2fd);
+  border-color: var(--primary-color);
+  color: var(--primary-color-hover);
 }
 
 .dtBtn:active {
@@ -108,7 +108,7 @@ tr:hover {
 }
 
 .dtBtn:hover {
-  color: #111827;
+  color: var(--text-color);
 }
 
 /* ==== STATUS & PRIO COLOR ===== */
@@ -229,7 +229,7 @@ tr:hover {
   left: 0;
   width: 100%;
   height: 100vh;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--overlay-light-bg, rgba(255, 255, 255, 0.7));
   display: flex;
   justify-content: center;
   align-items: center;
@@ -237,8 +237,8 @@ tr:hover {
 }
 
 .loader {
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #3498db;
+  border: 6px solid var(--border-color);
+  border-top: 6px solid var(--primary-color);
   border-radius: 50%;
   width: 40px;
   height: 40px;

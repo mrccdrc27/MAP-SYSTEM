@@ -348,7 +348,7 @@ export default function AdminArchiveDetail() {
               className={styles.layoutColumn}
               style={{ flex: 1, minWidth: "300px" }}
             >
-              {state.currentOwner?.user_id !== user?.user_id && (
+              {state.currentOwner && state.currentOwner?.user_id !== user?.user_id && (
                 <button
                   className={styles.transferButton}
                   onClick={() => setOpenTransferModal(true)}
@@ -359,7 +359,7 @@ export default function AdminArchiveDetail() {
               {state.currentOwner?.user_id === user?.user_id && (
                 <button
                   className={styles.transferButton}
-                  onClick={() => navigate(`/admin/ticket/${taskItemId}`)}
+                  onClick={() => navigate(`/ticket/${taskItemId}`)}
                 >
                   Go to Ticket
                 </button>
@@ -513,7 +513,7 @@ export default function AdminArchiveDetail() {
         <TransferTask
           closeTransferModal={setOpenTransferModal}
           ticket={state.ticket}
-          taskItemId={taskItemId}
+          taskItemId={state.currentOwner?.task_item_id}
           currentOwner={state.currentOwner}
         />
       )}

@@ -16,6 +16,8 @@ import { useNotificationContext } from "../../context/NotificationContext";
 // hooks
 import { useAuth } from "../../context/AuthContext";
 
+import ThemeToggle from "../component/ThemeToggle";
+
 export default function AdminNav() {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -169,7 +171,7 @@ export default function AdminNav() {
             userMenuOpen ? styles.userSectionOpen : ""
           }`}
         >
-          {" "}
+          <ThemeToggle />
           <div className={styles.notifBell} onClick={handleNotifClick}>
             <i className="fa fa-bell"></i>
             {unreadCount > 0 && (

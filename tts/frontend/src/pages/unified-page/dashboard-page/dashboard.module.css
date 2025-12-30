@@ -37,8 +37,8 @@
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .layoutSection h2 {

@@ -15,7 +15,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--box-shadow, 0 0 10px rgba(0, 0, 0, 0.05));
 }
 
 .headerCell,
@@ -30,7 +30,7 @@
 }
 
 .headerRow {
-  background-color: #f8f8f8;
+  background-color: var(--bg-content-color);
 }
 
 .status {
@@ -42,16 +42,16 @@
 }
 
 .statusConnected {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: var(--success-bg, #d4edda);
+  color: var(--success-text, #155724);
 }
 
 .statusError {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: var(--error-bg, #f8d7da);
+  color: var(--error-text, #721c24);
 }
 
 .statusDisconnected {
-  background-color: #e2e3e5;
-  color: #6c757d;
+  background-color: var(--bg-content-color);
+  color: var(--muted-text-color);
 }

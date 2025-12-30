@@ -19,13 +19,13 @@
 }
 
 .stepItem.selected {
-  background: rgba(0, 123, 255, 0.08);
-  border-color: rgba(0, 123, 255, 0.4);
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  background: var(--primary-light-bg, rgba(0, 123, 255, 0.08));
+  border-color: var(--primary-border, rgba(0, 123, 255, 0.4));
+  box-shadow: 0 0 0 2px var(--primary-shadow-color);
 }
 
 .stepItem.hasError {
-  border-color: rgba(174, 19, 27, 0.4);
+  border-color: var(--error-border, rgba(174, 19, 27, 0.4));
 }
 
 /* Drag Handle */

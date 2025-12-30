@@ -20,9 +20,9 @@
 }
 
 .transitionItem.selected {
-  background: rgba(0, 123, 255, 0.08);
-  border-color: rgba(0, 123, 255, 0.4);
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  background: var(--primary-light-bg, rgba(0, 123, 255, 0.08));
+  border-color: var(--primary-border, rgba(0, 123, 255, 0.4));
+  box-shadow: 0 0 0 2px var(--primary-shadow-color, rgba(0, 123, 255, 0.1));
 }
 
 /* Route */
@@ -37,7 +37,7 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  background: rgba(0, 123, 255, 0.08);
+  background: var(--primary-light-bg, rgba(0, 123, 255, 0.08));
   border-radius: 6px;
   font-size: var(--table-font-size);
   font-weight: 500;

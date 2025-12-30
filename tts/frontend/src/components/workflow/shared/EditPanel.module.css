@@ -84,7 +84,7 @@
 }
 
 .closeBtn:hover {
-  background: rgba(174, 19, 27, 0.1);
+  background: var(--delete-btn-hover-bg, rgba(174, 19, 27, 0.1));
   color: var(--error-color);
 }
 

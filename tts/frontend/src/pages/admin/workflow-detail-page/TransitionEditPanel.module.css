@@ -24,13 +24,13 @@
 }
 
 .errorText {
-  color: #ef4444;
+  color: var(--error-color);
   font-size: 12px;
   margin-top: 4px;
 }
 
 .charCount {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted-text-color);
   margin-top: 2px;
 }

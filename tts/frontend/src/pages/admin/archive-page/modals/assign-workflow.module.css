@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,13 +12,13 @@
 }
 
 .modalContent {
-  background: white;
+  background: var(--bg1-color);
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--box-shadow);
 }
 
 .modalHeader {
@@ -26,28 +26,28 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modalHeader h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--heading-color);
 }
 
 .closeButton {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--muted-text-color);
   cursor: pointer;
   padding: 0;
   line-height: 1;
 }
 
 .closeButton:hover {
-  color: #1f2937;
+  color: var(--heading-color);
 }
 
 .modalBody {
@@ -55,7 +55,7 @@
 }
 
 .ticketInfo {
-  background: #f9fafb;
+  background: var(--bg-content-color);
   border-radius: 6px;
   padding: 12px 16px;
   margin-bottom: 20px;
@@ -73,26 +73,26 @@
 
 .label {
   font-weight: 500;
-  color: #6b7280;
+  color: var(--muted-text-color);
   min-width: 80px;
 }
 
 .value {
-  color: #1f2937;
+  color: var(--heading-color);
 }
 
 .priority-high,
 .priority-critical {
-  color: #dc2626;
+  color: var(--critical-color);
   font-weight: 500;
 }
 
 .priority-medium {
-  color: #d97706;
+  color: var(--high-color);
 }
 
 .priority-low {
-  color: #059669;
+  color: var(--low-color);
 }
 
 .formGroup {
@@ -102,45 +102,45 @@
 .formGroup label {
   display: block;
   font-weight: 500;
-  color: #374151;
+  color: var(--table-color);
   margin-bottom: 8px;
 }
 
 .workflowSelect {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.95rem;
-  color: #1f2937;
-  background-color: white;
+  color: var(--text-color);
+  background-color: var(--bg1-color);
   cursor: pointer;
 }
 
 .workflowSelect:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: var(--box-shadow-hover, 0 0 0 3px rgba(59, 130, 246, 0.1));
 }
 
 .workflowSelect:disabled {
-  background-color: #f3f4f6;
+  background-color: var(--bg-content-color);
   cursor: not-allowed;
 }
 
 .loadingText,
 .noWorkflows {
-  color: #6b7280;
+  color: var(--muted-text-color);
   font-style: italic;
   padding: 8px 0;
 }
 
 .errorMessage {
-  color: #dc2626;
+  color: var(--error-color);
   font-size: 0.875rem;
   margin-top: 12px;
   padding: 8px 12px;
-  background: #fef2f2;
+  background: var(--error-bg, #fef2f2);
   border-radius: 4px;
 }
 
@@ -149,7 +149,7 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
 }
 
 .cancelButton,
@@ -163,23 +163,23 @@
 }
 
 .cancelButton {
-  background: white;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: var(--bg1-color);
+  border: 1px solid var(--border-color);
+  color: var(--table-color);
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--bg-content-color);
 }
 
 .assignButton {
-  background: #3b82f6;
-  border: 1px solid #3b82f6;
-  color: white;
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: var(--bg1-color);
 }
 
 .assignButton:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--primary-color-hover);
 }
 
 .assignButton:disabled,

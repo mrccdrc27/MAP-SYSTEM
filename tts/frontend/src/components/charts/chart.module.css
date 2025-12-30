@@ -8,9 +8,9 @@
   padding: 1.5rem;
   box-sizing: border-box;
 
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e0e0e0;
-  background-color: #ffffff;
+  box-shadow: var(--box-shadow, 0 4px 10px rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--border-color);
+  background-color: var(--bg1-color);
 }
 
 .clickable {
@@ -19,8 +19,8 @@
 }
 
 .clickable:hover {
-  box-shadow: 0 6px 16px rgba(74, 144, 226, 0.15);
-  border-color: #4a90e2;
+  box-shadow: var(--primary-shadow-color, 0 6px 16px rgba(74, 144, 226, 0.15));
+  border-color: var(--primary-color);
 }
 
 .clickable canvas {

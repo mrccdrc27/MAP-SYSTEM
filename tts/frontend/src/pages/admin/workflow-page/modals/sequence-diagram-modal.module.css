@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-dark-bg, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,12 +164,12 @@
   flex: 1;
   overflow: auto;
   padding: 0;
-  background: #1e1e1e;
+  background: var(--code-bg, #1e1e1e);
 }
 
 .codeBlock {
   background: transparent;
-  color: #d4d4d4;
+  color: var(--code-text, #d4d4d4);
   padding: 24px;
   margin: 0;
   overflow-x: auto;

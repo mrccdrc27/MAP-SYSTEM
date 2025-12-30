@@ -4,8 +4,8 @@
   border-radius: 12px;
   padding: 10px;
   transition: all 0.3s ease;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--box-shadow, 0 4px 12px rgba(0, 0, 0, 0.03));
 }
 
 .taskItemHeader {
@@ -36,13 +36,13 @@
   font-size: 14px;
   font-weight: 700;
   margin: 0;
-  color: #2c3e50;
+  color: var(--heading-color);
 }
 
 .role {
   font-size: 12px;
   font-weight: 500;
-  color: #7f8c8d;
+  color: var(--muted-text-color);
 }
 
 .stepsSection {
@@ -52,7 +52,7 @@
 .stepName {
   font-size: 12px;
   font-weight: 600;
-  color: #34495e;
+  color: var(--table-color);
   display: block;
   word-break: break-word;
 }
@@ -115,7 +115,7 @@
 .alLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #7f8c8d;
+  color: var(--muted-text-color);
   min-width: 100px;
 }
 
@@ -195,13 +195,13 @@
 
 .alTimestamp {
   font-size: 11px;
-  color: #7f8c8d;
+  color: var(--muted-text-color);
 }
 
 .alComment {
-  background-color: #fef5e7;
+  background-color: var(--warning-bg, #fef5e7);
   padding: 10px;
-  border-left: 3px solid #f39c12;
+  border-left: 3px solid var(--warning-color, #f39c12);
   border-radius: 4px;
   max-height: 100px;
   overflow-y: auto;
@@ -213,22 +213,22 @@
   font-weight: 400;
   font-style: italic;
   margin: 0;
-  color: #34495e;
+  color: var(--table-color);
 }
 
 /* History Section Styles */
 .historySection {
   margin-top: 12px;
   padding: 12px;
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--bg-content-color);
   border-radius: 6px;
-  border: 1px solid #ecf0f1;
+  border: 1px solid var(--border-color);
 }
 
 .historyTitle {
   font-size: 11px;
   font-weight: 700;
-  color: #7f8c8d;
+  color: var(--muted-text-color);
   text-transform: uppercase;
   margin-bottom: 8px;
 }
@@ -282,12 +282,12 @@
 
 .historyTime {
   font-size: 10px;
-  color: #95a5a6;
+  color: var(--muted-text-color);
   white-space: nowrap;
 }
 
 .historyArrow {
-  color: #bdc3c7;
+  color: var(--border-color);
   font-weight: bold;
   font-size: 12px;
 }
@@ -299,14 +299,14 @@
   flex-wrap: wrap;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #ecf0f1;
+  border-top: 1px solid var(--border-color);
 }
 
 .metaTag {
   display: inline-block;
   padding: 4px 8px;
-  background-color: #ecf0f1;
-  color: #7f8c8d;
+  background-color: var(--bg-content-color);
+  color: var(--muted-text-color);
   font-size: 10px;
   border-radius: 4px;
   white-space: nowrap;

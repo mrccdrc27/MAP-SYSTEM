@@ -104,18 +104,7 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
           </button>
         )}
 
-        {/* SLA Modal (edit mode) */}
-        {!isCreateMode && onOpenSLAModal && (
-          <>
-            <div className={styles.divider} />
-            <button
-              onClick={onOpenSLAModal}
-              className={styles.secondaryBtn}
-            >
-              <Settings size={16} /> Manage SLA
-            </button>
-          </>
-        )}
+        {/* SLA Modal removed - SLA config is now in Configure tab */}
 
         {/* Tab Switcher (edit mode) - Editor / Configure */}
         {!isCreateMode && onTabChange && (

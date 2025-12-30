@@ -45,7 +45,7 @@
 }
 
 .bucketEmpty {
-  color: #6b7280;
+  color: var(--muted-text-color);
   font-size: 0.9rem;
 }
 
@@ -60,13 +60,13 @@
 
   background-color: var(--bg1-color);
   transition: all 0.3s ease;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--border-color);
   /* border-left: 4px solid var(--primary-color); */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow);
 }
 
 .taskRow:hover {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--row-hover-color, rgba(0, 0, 0, 0.02));
   transform: scale(1.05) translateY(-3px);
   box-shadow: var(--box-shadow-as);
 }
@@ -143,9 +143,9 @@
 }
 
 .activeTab {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background: var(--primary-color);
+  color: var(--bg1-color);
+  border-color: var(--primary-color);
 }
 
 .tabContent {
@@ -158,8 +158,8 @@
   margin-top: 0.5rem;
   padding: 0.35rem 0.75rem;
   border: none;
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--primary-color);
+  color: var(--bg1-color);
   font-size: 0.8rem;
   font-weight: 500;
   border-radius: 6px;
@@ -167,5 +167,5 @@
 }
 
 .viewAllBtn:hover {
-  background-color: #2563eb;
+  background-color: var(--primary-color-hover);
 }

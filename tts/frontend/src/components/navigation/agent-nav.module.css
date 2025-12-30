@@ -6,7 +6,7 @@
   height: 60px;
   width: 100%;
   background-color: var(--bg-color);
-  box-shadow: 0 0 10px #d3d3d3;
+  box-shadow: var(--box-shadow, 0 0 10px #d3d3d3);
   /* position: fixed; */
   z-index: 100;
   padding: 0px 38px;
@@ -51,7 +51,7 @@
 }
 
 .logoSection .anAdminLogo {
-  color: white;
+  color: var(--bg1-color);
   font-family: monospace;
   background-color: var(--primary-color);
   padding: 2px 5px;
@@ -119,14 +119,14 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: #e74c3c;
+  background: var(--error-color);
   /* red */
-  color: #fff;
+  color: var(--bg1-color);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
 }

@@ -23,9 +23,9 @@
 
   font-size: 0.95rem;
   font-weight: 600;
-  color: #FCFCFC;
+  color: var(--bg-color);
 
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  box-shadow: var(--box-shadow, 0 8px 24px rgba(15, 23, 42, 0.25));
 
   animation: fadeSlide 5s ease-in-out forwards;
 }
@@ -51,14 +51,14 @@
 .toastMessage {
   flex: 1;
   line-height: 1.2;
-  color: #FFFFFF;
+  color: var(--bg1-color);
 }
 
 /* Close button */
 .toastClose {
   background: transparent;
   border: none;
-  color: #FFFFFF;
+  color: var(--bg1-color);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -69,10 +69,10 @@
 }
 
 /* Toast type colors */
-.success { background-color: #039855; }
-.error   { background-color: #D92D20; }
-.info    { background-color: #175CD3; }
-.warning { background-color: #FDB022; }
+.success { background-color: var(--success-color); }
+.error   { background-color: var(--error-color); }
+.info    { background-color: var(--info-color, #175CD3); }
+.warning { background-color: var(--warning-color, #FDB022); }
 
 /* Appear + disappear animation */
 @keyframes fadeSlide {

@@ -734,7 +734,7 @@ export default function AdminArchive() {
                                           title="View ticket details"
                                           onClick={() =>
                                             navigate(
-                                              `/admin/archive/${mainTask.task_item_id}`
+                                              `/admin/archive/${mainTask.ticket_number}`
                                             )
                                           }
                                         >

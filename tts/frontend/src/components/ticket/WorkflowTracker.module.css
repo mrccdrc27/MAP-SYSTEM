@@ -11,7 +11,7 @@
   margin-bottom: 2rem;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--heading-color);
   opacity: 0;
   animation: fadeInDown 0.8s ease-out forwards;
 }
@@ -50,16 +50,16 @@
   justify-content: center;
   font-size: 2rem;
   font-weight: bold;
-  color: white;
+  color: var(--bg1-color);
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--box-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .circle:hover {
   transform: scale(1.1);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--box-shadow-hover, 0 8px 20px rgba(0, 0, 0, 0.2));
 }
 
 .circle.done {
@@ -124,24 +124,24 @@
 .nodeLabel {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #333;
+  color: var(--heading-color);
   margin-bottom: 0.25rem;
   line-height: 1.2;
 }
 
 .nodeRole {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--muted-text-color);
   margin-bottom: 0.25rem;
 }
 
 .nodeInstruction {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--secondary-color);
   line-height: 1.3;
   margin-top: 0.25rem;
   padding: 0.25rem;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-content-color);
   border-radius: 4px;
   max-height: 0;
   overflow: hidden;
@@ -156,7 +156,7 @@
   text-align: center;
   padding: 2rem;
   font-size: 1.1rem;
-  color: #666;
+  color: var(--muted-text-color);
   animation: pulse 1.5s infinite;
 }
 

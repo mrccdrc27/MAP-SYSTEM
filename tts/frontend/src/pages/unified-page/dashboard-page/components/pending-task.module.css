@@ -4,9 +4,9 @@
   border-radius: 8px;
   padding: 10px 15px;
   transition: all 0.3s ease;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--border-color);
   border-left: 4px solid var(--primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow);
 
   margin-bottom: 10px;
 }
@@ -52,12 +52,12 @@
 .viewAllBtn {
   background-color: transparent;
   border: none;
-  color: #124559;
+  color: var(--primary-color-hover);
   font-weight: bold;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .viewAllBtn:hover {
-  color: #598392;
+  color: var(--secondary-color);
 }

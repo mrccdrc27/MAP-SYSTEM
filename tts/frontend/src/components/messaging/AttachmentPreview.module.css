@@ -4,7 +4,7 @@
   overflow: hidden;
   max-width: 300px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
   transition: transform 0.2s ease;
 }
 
@@ -39,13 +39,13 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-content-color);
   max-width: 300px;
   transition: background 0.2s ease;
 }
 
 .filePreview:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--border-color);
 }
 
 .fileOwn {
@@ -69,19 +69,19 @@
 .fileName {
   font-size: 13px;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--text-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .fileOwn .fileName {
-  color: white;
+  color: var(--bg1-color);
 }
 
 .fileSize {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted-text-color);
   margin-top: 2px;
 }
 

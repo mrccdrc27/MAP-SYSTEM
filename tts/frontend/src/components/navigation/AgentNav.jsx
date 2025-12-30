@@ -13,6 +13,8 @@ import ProfileModal from "../modal/ProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { useNotificationContext } from "../../context/NotificationContext";
 
+import ThemeToggle from "../component/ThemeToggle";
+
 export default function AgentNav() {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -149,7 +151,7 @@ export default function AgentNav() {
             userMenuOpen ? styles.userSectionOpen : ""
           }`}
         >
-          {" "}
+          <ThemeToggle />
           <div className={styles.notifBell} onClick={handleNotifClick}>
             <i className="fa fa-bell"></i>
             {unreadCount > 0 && (
