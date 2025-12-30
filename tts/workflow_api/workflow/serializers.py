@@ -127,6 +127,10 @@ class WorkflowBasicSerializer(serializers.ModelSerializer):
             'department',
             'is_published',
             'status',
+            'low_sla',
+            'medium_sla',
+            'high_sla',
+            'urgent_sla',
             'created_at',
             'updated_at',
         ]

@@ -1,9 +1,10 @@
 .createWorkflowPage {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 60px); /* Account for navbar height */
+  height: 100vh;
   background-color: var(--bg-content-color);
   animation: fadeInUp 0.5s ease-in-out;
+  overflow: hidden;
 }
 
 @keyframes fadeInUp {
@@ -599,6 +600,8 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-content-color);
+  overflow: hidden;
+  min-height: 0; /* Important for flex children to respect overflow */
 }
 
 /* Split Top Ribbon: Templates + SLA */
@@ -776,7 +779,8 @@
   display: grid;
   grid-template-columns: 240px 1fr 280px;
   gap: 0;
-  min-height: 500px;
+  min-height: 0; /* Allow grid to shrink and respect parent's overflow */
+  overflow: hidden;
 }
 
 /* Left Sidebar */
@@ -786,6 +790,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
 }
 
 .sidebarSection {
@@ -936,6 +941,7 @@
   flex-direction: column;
   background: var(--bg-content-color);
   overflow-y: auto;
+  min-height: 0; /* Important for proper scrolling in grid/flex layouts */
 }
 
 .panelSection {
@@ -1345,6 +1351,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
 }
 
 /* Validation Box */

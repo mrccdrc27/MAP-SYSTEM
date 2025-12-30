@@ -65,13 +65,29 @@ tr:hover {
 }
 
 .dtBtn {
-  border: none;
-  border: var(--border-very-light-gray);
-  padding: 5px 10px;
+  border: 1px solid #cccccc;
+  padding: 6px 12px;
   border-radius: 4px;
   color: var(--table-color);
   font-size: var(--base-font-size);
   cursor: pointer;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.dtBtn:hover {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
+}
+
+.dtBtn:active {
+  transform: scale(0.98);
 }
 
 .img {

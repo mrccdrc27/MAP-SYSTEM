@@ -16,6 +16,7 @@ export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased
   const [isEditingGraph, setIsEditingGraph] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [refreshCounter, setRefreshCounter] = useState(0);
   
   const contentRef = useRef();
   const { getWorkflowDetail, getWorkflowDetailByName } = useWorkflowAPI();
@@ -43,7 +44,7 @@ export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased
       }
     };
     loadWorkflow();
-  }, [identifier, isNameBased, getWorkflowDetail, getWorkflowDetailByName]);
+  }, [identifier, isNameBased, getWorkflowDetail, getWorkflowDetailByName, refreshCounter]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -137,6 +138,25 @@ export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased
     setHasUnsavedChanges(true);
   }, []);
 
+  // Handle workflow configuration update (from WorkflowConfigPanel)
+  const handleWorkflowConfigUpdate = useCallback((updatedWorkflow) => {
+    // Update local workflow data with the new configuration
+    setWorkflowData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        workflow: {
+          ...prev.workflow,
+          ...updatedWorkflow,
+        },
+      };
+    });
+    // Trigger a refresh of the workflow list in parent components
+    triggerRefresh?.();
+    // Force reload the workflow data to get fresh data from server
+    setRefreshCounter(c => c + 1);
+  }, [triggerRefresh]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -167,5 +187,6 @@ export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased
     onPaneClick,
     handleUpdateStep,
     handleUpdateTransition,
+    handleWorkflowConfigUpdate,
   };
 }

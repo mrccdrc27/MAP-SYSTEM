@@ -6,6 +6,8 @@ export { default as WorkflowEditorToolbar } from './WorkflowEditorToolbar';
 export { default as StepEditPanel } from './StepEditPanel';
 export { default as TransitionEditPanel } from './TransitionEditPanel';
 export { default as WorkflowEditPanel } from './WorkflowEditPanel';
+export { default as WorkflowConfigPanel } from './WorkflowConfigPanel';
+export { default as WorkflowConfigModal } from './WorkflowConfigModal';
 export { default as SLAWeightEditor } from './SLAWeightEditor';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as StepNode } from './StepNode';

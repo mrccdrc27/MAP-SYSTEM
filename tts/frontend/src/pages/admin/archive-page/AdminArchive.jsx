@@ -1,6 +1,7 @@
 // components
 import AdminNav from "../../../components/navigation/AdminNav";
 import Pagination from "../../../components/component/Pagination";
+import AssignWorkflow from "./modals/AssignWorkflow";
 
 // style
 import styles from "./admin-archive.module.css";
@@ -45,6 +46,10 @@ export default function AdminArchive() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  
+  // Modal state for assigning workflow to unassigned tickets
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedTicketForAssign, setSelectedTicketForAssign] = useState(null);
 
   // Debounce search term to avoid too many API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
@@ -227,11 +232,26 @@ export default function AdminArchive() {
     }));
   };
 
-  // Get summary stats
+  // Get summary stats based on active tab
   const getSummaryStats = () => {
     const filtered = getFilteredData();
+    
+    if (activeTab === "Unassigned") {
+      // For unassigned tickets, show different stats
+      return {
+        total: pagination.count || filtered.length,
+        unassigned: filtered.length,
+        pending: filtered.filter(
+          (i) => (i.ticket_status || "").toLowerCase() === "pending" || (i.ticket_status || "").toLowerCase() === "new"
+        ).length,
+        high_priority: filtered.filter(
+          (i) => (i.ticket_priority || "").toLowerCase() === "high" || (i.ticket_priority || "").toLowerCase() === "critical"
+        ).length,
+      };
+    }
+    
     return {
-      total: filtered.length,
+      total: pagination.count || filtered.length,
       active: filtered.filter(
         (i) =>
           i.task_status === "in progress" ||
@@ -401,24 +421,43 @@ export default function AdminArchive() {
                 <span className={styles.statLabel}>Total:</span>
                 <span className={styles.statValue}>{stats.total}</span>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Active:</span>
-                <span className={`${styles.statValue} ${styles.activeCount}`}>
-                  {stats.active}
-                </span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Pending:</span>
-                <span className={`${styles.statValue} ${styles.pendingCount}`}>
-                  {stats.pending}
-                </span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Blocked:</span>
-                <span className={`${styles.statValue} ${styles.blockedCount}`}>
-                  {stats.blocked}
-                </span>
-              </div>
+              {activeTab === "Unassigned" ? (
+                <>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Unassigned:</span>
+                    <span className={`${styles.statValue} ${styles.blockedCount}`}>
+                      {stats.unassigned}
+                    </span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>High Priority:</span>
+                    <span className={`${styles.statValue} ${styles.pendingCount}`}>
+                      {stats.high_priority}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Active:</span>
+                    <span className={`${styles.statValue} ${styles.activeCount}`}>
+                      {stats.active}
+                    </span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Pending:</span>
+                    <span className={`${styles.statValue} ${styles.pendingCount}`}>
+                      {stats.pending}
+                    </span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Blocked:</span>
+                    <span className={`${styles.statValue} ${styles.blockedCount}`}>
+                      {stats.blocked}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -677,17 +716,31 @@ export default function AdminArchive() {
                                       </span>
                                     </td>
                                     <td className={styles.action}>
-                                      <button
-                                        className={styles.btn}
-                                        title="View ticket details"
-                                        onClick={() =>
-                                          navigate(
-                                            `/admin/archive/${mainTask.task_item_id}`
-                                          )
-                                        }
-                                      >
-                                        👁
-                                      </button>
+                                      {/* For unassigned tickets, show Assign button; for others, show View button */}
+                                      {activeTab === "Unassigned" ? (
+                                        <button
+                                          className={styles.btn}
+                                          title="Assign ticket to workflow"
+                                          onClick={() => {
+                                            setSelectedTicketForAssign(mainTask);
+                                            setShowAssignModal(true);
+                                          }}
+                                        >
+                                          ➕
+                                        </button>
+                                      ) : (
+                                        <button
+                                          className={styles.btn}
+                                          title="View ticket details"
+                                          onClick={() =>
+                                            navigate(
+                                              `/admin/archive/${mainTask.task_item_id}`
+                                            )
+                                          }
+                                        >
+                                          👁
+                                        </button>
+                                      )}
                                     </td>
                                   </tr>
 
@@ -847,6 +900,21 @@ export default function AdminArchive() {
           </div>
         </section>
       </main>
+
+      {/* Assign Workflow Modal for Unassigned Tickets */}
+      {showAssignModal && selectedTicketForAssign && (
+        <AssignWorkflow
+          ticket={selectedTicketForAssign}
+          onClose={() => {
+            setShowAssignModal(false);
+            setSelectedTicketForAssign(null);
+          }}
+          onSuccess={() => {
+            // Refresh the tickets list after successful assignment
+            fetchTickets(currentPage, pageSize, activeTab.toLowerCase(), debouncedSearchTerm);
+          }}
+        />
+      )}
     </>
   );
 }

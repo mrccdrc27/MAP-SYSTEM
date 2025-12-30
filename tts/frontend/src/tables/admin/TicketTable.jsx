@@ -66,8 +66,9 @@ function TicketItem({ item }) {
       <td>{format(new Date(item.target_resolution), "MMMM dd, yyyy")}</td>
       <td>
         <button
-          className={general.btn}
+          className={general.btnView}
           onClick={() => navigate(`/admin/ticket/${item.task_item_id}`)}
+          title="View ticket details"
         >
           👁
         </button>

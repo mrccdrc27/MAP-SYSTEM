@@ -55,14 +55,15 @@ function WorkflowItem({ item }) {
       <td>{item.status}</td>
       <td>
         <button
-          className={general.btn}
+          className={general.btnEdit}
           onClick={(e) => {
             e.stopPropagation();
             const slug = workflowNameToSlug(item.name);
             navigate(`/admin/workflow/${slug}`);
           }}
+          title="Edit workflow"
         >
-          <i className="fa-solid fa-pen-to-square"></i>
+          ✏️
         </button>
       </td>
     </tr>

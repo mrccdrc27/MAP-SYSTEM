@@ -13,7 +13,7 @@ from copy import deepcopy
 
 from audit.utils import log_action, compare_models
 from .models import Task, TaskItem, TaskItemHistory
-from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, TaskItemSerializer
+from .serializers import TaskSerializer, UserTaskListSerializer, TaskCreateSerializer, TaskItemSerializer, UnassignedTicketSerializer
 from authentication import JWTCookieAuthentication, SystemRolePermission
 from step.models import Steps, StepTransition
 from tickets.models import WorkflowTicket
@@ -93,10 +93,12 @@ class AllTasksListView(ListAPIView):
     Each row represents a TaskItem with associated task and ticket data.
     
     Query Parameters:
-        - tab: 'active', 'inactive', 'unassigned' - filters by task status
+        - tab: 'active', 'inactive' - filters by task status
         - search: search term for ticket subject/description/number or assignee name
         - page: page number
         - page_size: items per page (default 10, max 100)
+    
+    Note: For 'unassigned' tab, use the /tasks/unassigned-tickets/ endpoint instead.
     """
     serializer_class = UserTaskListSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -105,6 +107,11 @@ class AllTasksListView(ListAPIView):
     ordering_fields = ['assigned_on']
     ordering = ['-assigned_on']
     pagination_class = TaskPagination
+    
+    # Define which statuses are considered "inactive" (resolved/closed/completed)
+    INACTIVE_STATUSES = ['closed', 'resolved', 'completed', 'cancelled', 'rejected']
+    # Define which statuses are considered "active" (open/in progress/pending)
+    ACTIVE_STATUSES = ['open', 'in progress', 'in_progress', 'pending', 'new', 'on_hold']
     
     def get_queryset(self):
         """Return all TaskItems with tab-based filtering and search."""
@@ -121,22 +128,22 @@ class AllTasksListView(ListAPIView):
         if role:
             queryset = queryset.filter(role_user__role_id__name=role)
         
-        # Apply tab filter (active, inactive, unassigned)
+        # Apply tab filter (active, inactive)
         tab = self.request.query_params.get('tab', '').lower()
         if tab == 'active':
-            queryset = queryset.filter(
-                Q(task__status__in=['in progress', 'open', 'pending', 'in_progress']) |
-                Q(task__ticket_id__status__in=['in progress', 'open', 'pending', 'in_progress'])
+            # Active tickets: task status OR ticket status is NOT in inactive statuses
+            # Also include tasks where status is in active statuses
+            queryset = queryset.exclude(
+                Q(task__status__in=self.INACTIVE_STATUSES) |
+                Q(task__ticket_id__status__in=self.INACTIVE_STATUSES)
             )
         elif tab == 'inactive':
+            # Inactive tickets: task status OR ticket status is resolved, closed, completed, etc.
             queryset = queryset.filter(
-                Q(task__status__in=['closed', 'resolved', 'completed']) |
-                Q(task__ticket_id__status__in=['closed', 'resolved', 'completed'])
+                Q(task__status__in=self.INACTIVE_STATUSES) |
+                Q(task__ticket_id__status__in=self.INACTIVE_STATUSES)
             )
-        elif tab == 'unassigned':
-            queryset = queryset.filter(
-                Q(role_user__user_id__isnull=True) | Q(role_user__isnull=True)
-            )
+        # Note: 'unassigned' tab is handled by UnassignedTicketsListView
         
         # Apply custom search filter (searches in JSONField ticket_data)
         search = self.request.query_params.get('search', '').strip()
@@ -170,6 +177,43 @@ class AllTasksListView(ListAPIView):
                 if status == assignment_status:
                     filtered_list.append(item.id)
             queryset = queryset.filter(id__in=filtered_list)
+        
+        return queryset
+
+
+class UnassignedTicketsListView(ListAPIView):
+    """
+    View to list WorkflowTickets that have NOT been assigned to any workflow.
+    These are tickets where is_task_allocated=False (no Task created for them).
+    
+    Query Parameters:
+        - search: search term for ticket number, subject, or description
+        - page: page number
+        - page_size: items per page (default 10, max 100)
+    """
+    serializer_class = UnassignedTicketSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [OrderingFilter]
+    ordering_fields = ['created_at', 'fetched_at']
+    ordering = ['-created_at']
+    pagination_class = TaskPagination
+    
+    def get_queryset(self):
+        """Return WorkflowTickets that are not assigned to any workflow."""
+        queryset = WorkflowTicket.objects.filter(
+            is_task_allocated=False
+        ).order_by('-created_at')
+        
+        # Apply custom search filter
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(ticket_number__icontains=search) |
+                Q(ticket_data__subject__icontains=search) |
+                Q(ticket_data__description__icontains=search) |
+                Q(ticket_data__ticket_id__icontains=search)
+            )
         
         return queryset
 

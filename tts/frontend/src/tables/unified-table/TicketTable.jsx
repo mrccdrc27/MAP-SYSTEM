@@ -95,8 +95,12 @@ function TicketItem({ item }) {
 
       <td>
         <button
-          className={general.btn}
-          onClick={() => navigate(`/ticket/${item.ticket_number}`)}
+          className={general.btnView}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/ticket/${item.ticket_number}`);
+          }}
+          title="View ticket details"
         >
           👁
         </button>

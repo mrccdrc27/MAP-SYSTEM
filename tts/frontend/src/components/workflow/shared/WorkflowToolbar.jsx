@@ -18,6 +18,8 @@ import styles from './WorkflowToolbar.module.css';
  * @param {function} props.onBack - Back navigation handler
  * @param {function} props.onToggleEditing - Toggle graph editing mode
  * @param {function} props.onOpenSLAModal - Open SLA configuration modal
+ * @param {string} props.activeTab - Current active tab ('editor' or 'config')
+ * @param {function} props.onTabChange - Tab change handler
  * @param {function} props.onOpenDiagram - Open sequence diagram (create mode only)
  * @param {function} props.onToggleHelp - Toggle help panel
  * @param {boolean} props.showHelp - Help panel visible state
@@ -36,6 +38,8 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
   onBack,
   onToggleEditing,
   onOpenSLAModal,
+  activeTab = 'editor',
+  onTabChange,
   onOpenDiagram,
   onToggleHelp,
   showHelp = false,
@@ -111,6 +115,26 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
               <Settings size={16} /> Manage SLA
             </button>
           </>
+        )}
+
+        {/* Tab Switcher (edit mode) - Editor / Configure */}
+        {!isCreateMode && onTabChange && (
+          <div className={styles.tabGroup}>
+            <button
+              onClick={() => onTabChange('editor')}
+              className={`${styles.tabBtn} ${activeTab === 'editor' ? styles.tabBtnActive : ''}`}
+              title="Workflow Editor"
+            >
+              Editor
+            </button>
+            <button
+              onClick={() => onTabChange('config')}
+              className={`${styles.tabBtn} ${activeTab === 'config' ? styles.tabBtnActive : ''}`}
+              title="Configure workflow settings"
+            >
+              <Settings size={14} /> Configure
+            </button>
+          </div>
         )}
 
         {/* Edit/Lock toggle (edit mode) */}

@@ -211,15 +211,76 @@ tr:hover {
   transform: translateY(0);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* ============ ACTION BUTTON STYLES ============ */
 .btn {
-  border: none;
-  border: var(--border-very-light-gray);
-  padding: 5px 10px;
+  border: 1px solid #cccccc;
+  padding: 6px 12px;
   border-radius: 4px;
   color: var(--table-color);
   font-size: var(--base-font-size);
   cursor: pointer;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 32px;
+  min-height: 32px;
 }
+
+.btn:hover {
+  background-color: #f5f5f5;
+  border-color: var(--table-color);
+  color: #111827;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Action button variants */
+.btnView {
+  composes: btn;
+}
+
+.btnView:hover {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
+}
+
+.btnEdit {
+  composes: btn;
+}
+
+.btnEdit:hover {
+  background-color: #fff3e0;
+  border-color: #ff9800;
+  color: #f57c00;
+}
+
+.btnAdd {
+  composes: btn;
+}
+
+.btnAdd:hover {
+  background-color: #e8f5e9;
+  border-color: #4caf50;
+  color: #388e3c;
+}
+
+.btnDelete {
+  composes: btn;
+}
+
+.btnDelete:hover {
+  background-color: #ffebee;
+  border-color: #f44336;
+  color: #d32f2f;
+}
+
 .img {
   width: 40px;
   height: 40px;
@@ -241,10 +302,6 @@ tr:hover {
 /* PAGINATION - TABLE */
 .ttPagination {
   padding: 0 20px;
-}
-
-.btn:hover {
-  color: #111827;
 }
 
 /* ==== STATUS & PRIO COLOR ===== */

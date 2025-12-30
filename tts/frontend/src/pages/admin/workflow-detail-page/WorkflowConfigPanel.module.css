@@ -1,0 +1,247 @@
+.configPanel {
+  padding: 0;
+}
+
+.errorBanner {
+  padding: 12px 16px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid #ef4444;
+  color: #ef4444;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.formSection {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.formSection:last-child {
+  border-bottom: none;
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.formGroup {
+  margin-bottom: 12px;
+}
+
+.formGroup:last-child {
+  margin-bottom: 0;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 4px;
+}
+
+.formInput,
+.formTextarea,
+.formSelect {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-input-color, var(--bg-color));
+  color: var(--text-color);
+  transition: border-color 0.2s;
+}
+
+.formInput:focus,
+.formTextarea:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.formInput:disabled,
+.formTextarea:disabled,
+.formSelect:disabled {
+  background: var(--bg-content-color);
+  cursor: default;
+  opacity: 0.8;
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* SLA Input Group */
+.slaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slaLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.slaDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.slaInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.slaInputWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.slaInput {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.8125rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-input-color, var(--bg-color));
+  color: var(--text-color);
+  text-align: center;
+}
+
+.slaInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.slaInput:disabled {
+  background: var(--bg-content-color);
+  cursor: default;
+  opacity: 0.8;
+}
+
+.slaUnit {
+  font-size: 0.75rem;
+  color: var(--muted-text-color);
+  min-width: 14px;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-content-color);
+}
+
+.btnPrimary,
+.btnSecondary {
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btnPrimary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: var(--primary-hover-color, var(--primary-color));
+  opacity: 0.9;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.btnSecondary:hover {
+  background: var(--bg-hover-color, var(--bg-content-color));
+}
+
+/* Read-only display */
+.displayValue {
+  font-size: 0.875rem;
+  color: var(--text-color);
+  padding: 8px 0;
+  line-height: 1.5;
+}
+
+.displayValue.muted {
+  color: var(--muted-text-color);
+  font-style: italic;
+}
+
+/* Status badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.statusDraft {
+  background: var(--warning-bg-color, rgba(245, 158, 11, 0.1));
+  color: var(--warning-color, #f59e0b);
+}
+
+.statusDeployed {
+  background: var(--success-bg-color, rgba(34, 197, 94, 0.1));
+  color: var(--success-color, #22c55e);
+}
+
+.statusPaused {
+  background: var(--muted-bg-color, rgba(107, 114, 128, 0.1));
+  color: var(--muted-text-color, #6b7280);
+}
+
+.statusInitialized {
+  background: var(--info-bg-color, rgba(59, 130, 246, 0.1));
+  color: var(--info-color, #3b82f6);
+}

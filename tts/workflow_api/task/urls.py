@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TaskViewSet, UserTaskListView, AllTasksListView, OwnedTicketsListView, FailedNotificationViewSet
+from .views import TaskViewSet, UserTaskListView, AllTasksListView, OwnedTicketsListView, FailedNotificationViewSet, UnassignedTicketsListView
 
 # Create a router and register the TaskViewSet
 router = DefaultRouter()
@@ -17,6 +17,10 @@ urlpatterns = [
     # Dedicated endpoint for getting all tasks (before router to avoid conflicts)
     # GET /tasks/all-tasks/
     path('all-tasks/', AllTasksListView.as_view(), name='all-task-list'),
+    
+    # Dedicated endpoint for getting unassigned tickets (tickets not assigned to any workflow)
+    # GET /tasks/unassigned-tickets/
+    path('unassigned-tickets/', UnassignedTicketsListView.as_view(), name='unassigned-tickets-list'),
     
     # Dedicated endpoint for getting tickets owned by the current user (Ticket Coordinator)
     # GET /tasks/owned-tickets/

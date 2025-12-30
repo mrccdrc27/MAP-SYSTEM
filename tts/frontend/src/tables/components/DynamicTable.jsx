@@ -34,6 +34,7 @@ function TableItem({ item, columns }) {
           <button
             className={styles.dtBtn}
             onClick={() => navigate(`/admin/archive/${item.id}`)}
+            title="View details"
           >
             👁
           </button>

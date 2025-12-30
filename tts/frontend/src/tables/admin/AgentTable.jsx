@@ -47,8 +47,12 @@ function AgentItem({ item, onActivateClick }) {
       <td>{item.role}</td>
       <td>{item.is_active ? "🟢 Active" : "🔴 Inactive"}</td>
       <td>
-        <button className={general.btn} onClick={() => onActivateClick(item)}>
-          <i className="fa-solid fa-pen-to-square"></i>
+        <button 
+          className={general.btnEdit} 
+          onClick={() => onActivateClick(item)}
+          title="Edit agent"
+        >
+          ✏️
         </button>
       </td>
     </tr>

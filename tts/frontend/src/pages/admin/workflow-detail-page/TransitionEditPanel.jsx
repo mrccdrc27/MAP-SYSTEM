@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-// Use shared styles from CreateWorkflowPage for consistency
+// Use shared styles from CreateWorkflowPage for form elements
 import styles from '../workflow-page/create-workflow.module.css';
+import panelStyles from './TransitionEditPanel.module.css';
 import { validateTransitionName, VALIDATION_RULES } from '../../../utils/workflowValidation';
 
 export default function TransitionEditPanel({ transition, onUpdate, onDelete }) {
@@ -50,24 +51,22 @@ export default function TransitionEditPanel({ transition, onUpdate, onDelete }) 
           maxLength={VALIDATION_RULES.TRANSITION_NAME_MAX_LENGTH}
         />
         {validationError && (
-          <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-            {validationError}
-          </p>
+          <p className={panelStyles.errorText}>{validationError}</p>
         )}
-        <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+        <p className={panelStyles.charCount}>
           {formData.label.length}/{VALIDATION_RULES.TRANSITION_NAME_MAX_LENGTH} characters (optional)
         </p>
       </div>
 
-      {/* Transition Info using inline styles for simplicity */}
-      <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-        <div style={{ fontSize: '0.8125rem', marginBottom: '8px' }}>
-          <span style={{ color: 'var(--muted-text-color)' }}>From:</span>
-          <span style={{ marginLeft: '8px', color: 'var(--text-color)' }}>Step {transition.source}</span>
+      {/* Transition Info */}
+      <div className={panelStyles.transitionInfo}>
+        <div className={panelStyles.infoRow}>
+          <span className={panelStyles.infoLabel}>From:</span>
+          <span className={panelStyles.infoValue}>Step {transition.source}</span>
         </div>
-        <div style={{ fontSize: '0.8125rem' }}>
-          <span style={{ color: 'var(--muted-text-color)' }}>To:</span>
-          <span style={{ marginLeft: '8px', color: 'var(--text-color)' }}>Step {transition.target}</span>
+        <div className={panelStyles.infoRow}>
+          <span className={panelStyles.infoLabel}>To:</span>
+          <span className={panelStyles.infoValue}>Step {transition.target}</span>
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { MousePointer } from 'lucide-react';
 import StepEditPanel from './StepEditPanel';
 import TransitionEditPanel from './TransitionEditPanel';
 import { EditPanel } from '../../../components/workflow/shared';
+import { EmptySelection } from './components';
 
 export default function WorkflowEditorSidebar({
   selectedElement,
@@ -49,41 +49,7 @@ export default function WorkflowEditorSidebar({
 
   // No selection state OR workflow selection (clicking on canvas)
   if (!selectedElement || selectedElement.type === 'workflow') {
-    return (
-      <div style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '32px',
-        textAlign: 'center',
-        background: 'var(--bg1-color)'
-      }}>
-        <div style={{
-          width: '64px',
-          height: '64px',
-          background: 'var(--bg-content-color)',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '16px'
-        }}>
-          <MousePointer size={32} style={{ color: 'var(--muted-text-color)' }} />
-        </div>
-        <p style={{ 
-          color: 'var(--muted-text-color)', 
-          fontSize: '0.875rem',
-          margin: '0 0 8px 0'
-        }}>No selection</p>
-        <p style={{ 
-          fontSize: '0.75rem', 
-          color: 'var(--muted-text-color)',
-          margin: 0
-        }}>Click on a step or transition to edit</p>
-      </div>
-    );
+    return <EmptySelection />;
   }
 
   // Get panel title and subtitle

@@ -1,0 +1,39 @@
+/* EmptySelection component styles */
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  background: var(--bg1-color);
+}
+
+.iconWrapper {
+  width: 64px;
+  height: 64px;
+  background: var(--bg-content-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.icon {
+  color: var(--muted-text-color);
+}
+
+.title {
+  color: var(--muted-text-color);
+  font-size: 0.875rem;
+  margin: 0 0 8px 0;
+}
+
+.message {
+  font-size: 0.75rem;
+  color: var(--muted-text-color);
+  margin: 0;
+}

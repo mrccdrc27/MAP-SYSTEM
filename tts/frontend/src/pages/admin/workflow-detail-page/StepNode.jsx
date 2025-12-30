@@ -1,7 +1,8 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
-import { Circle, Flag, ChevronDown, ChevronUp, Trash2, AlertCircle, X, Check } from 'lucide-react';
+import { Circle, Flag, ChevronDown, ChevronUp } from 'lucide-react';
 import styles from '../workflow-page/create-workflow.module.css';
+import StepNodeInlineForm from './StepNodeInlineForm';
 
 /**
  * 6-Handle Step Node for Complex Workflow State Machines
@@ -208,151 +209,18 @@ export default function StepNode({ data, selected }) {
           
           {/* Expanded View - Inline Edit Form */}
           {isExpanded && (
-            <div 
-              className={styles.stepNodeEditForm} 
+            <StepNodeInlineForm
+              formData={formData}
+              roles={roles}
+              hasChanges={hasChanges}
+              isStartNode={isStartNode}
+              isEndNode={isEndNode}
+              onChange={handleChange}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              onDelete={data.onDeleteStep ? handleDelete : null}
               onMouseDown={handleInputMouseDown}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Step Name */}
-              <div className={styles.stepNodeFormGroup}>
-                <label className={styles.stepNodeFormLabel}>Name</label>
-                <input
-                  type="text"
-                  value={formData.label}
-                  onChange={(e) => handleChange('label', e.target.value)}
-                  onMouseDown={handleInputMouseDown}
-                  className={styles.stepNodeFormInput}
-                  placeholder="Step name"
-                />
-              </div>
-              
-              {/* Role Select */}
-              <div className={styles.stepNodeFormGroup}>
-                <label className={styles.stepNodeFormLabel}>Role</label>
-                {roles.length > 0 ? (
-                  <select
-                    value={formData.role}
-                    onChange={(e) => handleChange('role', e.target.value)}
-                    onMouseDown={handleInputMouseDown}
-                    className={styles.stepNodeFormSelect}
-                  >
-                    <option value="">-- Select Role --</option>
-                    {roles.map((role) => (
-                      <option key={role.role_id || role.id || role.name} value={role.name}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={formData.role}
-                    onChange={(e) => handleChange('role', e.target.value)}
-                    onMouseDown={handleInputMouseDown}
-                    className={styles.stepNodeFormInput}
-                    placeholder="Role name"
-                  />
-                )}
-              </div>
-              
-              {/* Description */}
-              <div className={styles.stepNodeFormGroup}>
-                <label className={styles.stepNodeFormLabel}>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleChange('description', e.target.value)}
-                  onMouseDown={handleInputMouseDown}
-                  className={styles.stepNodeFormTextarea}
-                  placeholder="Step description"
-                  rows={2}
-                />
-              </div>
-              
-              {/* Instruction */}
-              <div className={styles.stepNodeFormGroup}>
-                <label className={styles.stepNodeFormLabel}>Instruction</label>
-                <textarea
-                  value={formData.instruction}
-                  onChange={(e) => handleChange('instruction', e.target.value)}
-                  onMouseDown={handleInputMouseDown}
-                  className={styles.stepNodeFormTextarea}
-                  placeholder="Instructions for users"
-                  rows={2}
-                />
-              </div>
-              
-              {/* Start/End Toggles - Show for all nodes, mutually exclusive */}
-              <div className={styles.stepNodeFormGroup}>
-                <label className={styles.stepNodeFormCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={formData.is_start}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      handleChange('is_start', checked);
-                      // Mutually exclusive: if setting as start, unset end
-                      if (checked && formData.is_end) {
-                        handleChange('is_end', false);
-                      }
-                    }}
-                    onMouseDown={handleInputMouseDown}
-                  />
-                  <span>Mark as START</span>
-                </label>
-                <label className={styles.stepNodeFormCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={formData.is_end}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      handleChange('is_end', checked);
-                      // Mutually exclusive: if setting as end, unset start
-                      if (checked && formData.is_start) {
-                        handleChange('is_start', false);
-                      }
-                    }}
-                    onMouseDown={handleInputMouseDown}
-                  />
-                  <span>Mark as END</span>
-                </label>
-              </div>
-              
-              {/* Action Buttons */}
-              <div className={styles.stepNodeFormActions}>
-                {hasChanges && (
-                  <>
-                    <button
-                      onClick={handleSave}
-                      onMouseDown={handleInputMouseDown}
-                      className={styles.stepNodeFormBtnSave}
-                      title="Save changes"
-                    >
-                      <Check size={14} />
-                      Save
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      onMouseDown={handleInputMouseDown}
-                      className={styles.stepNodeFormBtnCancel}
-                      title="Cancel changes"
-                    >
-                      <X size={14} />
-                      Cancel
-                    </button>
-                  </>
-                )}
-                {data.onDeleteStep && !isStartNode && !isEndNode && (
-                  <button
-                    onClick={handleDelete}
-                    onMouseDown={handleInputMouseDown}
-                    className={styles.stepNodeFormBtnDelete}
-                    title="Delete step"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
+            />
           )}
         </div>
       </div>
