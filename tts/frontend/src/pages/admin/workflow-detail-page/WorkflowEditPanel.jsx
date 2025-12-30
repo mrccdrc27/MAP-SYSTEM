@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styles from './WorkflowEditorLayout.module.css';
+import styles from '../workflow-page/create-workflow.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }) {
@@ -85,7 +85,7 @@ export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }
 
   if (!workflow) {
     return (
-      <div className={styles.workflowPanelEmpty}>
+      <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted-text-color)' }}>
         <p>Click on the canvas to view workflow properties</p>
       </div>
     );
@@ -94,12 +94,19 @@ export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }
   return (
     <div>
       {error && (
-        <div className={styles.workflowPanelError}>
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+          borderLeft: '3px solid #ef4444',
+          color: '#ef4444',
+          marginBottom: '16px',
+          borderRadius: '4px'
+        }}>
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={styles.workflowPanelForm}>
+      <form onSubmit={handleSubmit}>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Workflow Name</label>
           <input
@@ -124,7 +131,7 @@ export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }
           />
         </div>
 
-        <div className={styles.workflowPanelGrid}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Category</label>
             <input
@@ -162,9 +169,9 @@ export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }
         </div>
 
         {/* SLA Section */}
-        <div className={styles.workflowPanelSlaSection}>
-          <h4 className={styles.workflowPanelSlaTitle}>SLA Settings (seconds)</h4>
-          <div className={styles.workflowPanelGrid}>
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-color)', marginBottom: '12px' }}>SLA Settings (seconds)</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Urgent SLA</label>
               <input
@@ -213,7 +220,7 @@ export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }
         </div>
 
         {!readOnly && (
-          <div className={styles.workflowPanelActions}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '20px', justifyContent: 'flex-end' }}>
             {!isEditing ? (
               <button
                 type="button"

@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { RefreshCw } from 'lucide-react';
-import styles from '../WorkflowEditorLayout.module.css';
+import styles from '../../workflow-page/create-workflow.module.css';
 
 /**
  * Loading state component

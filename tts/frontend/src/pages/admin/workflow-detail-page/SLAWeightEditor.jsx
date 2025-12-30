@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { X, Info } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
+// Use shared styles from CreateWorkflowPage for consistency
+import styles from '../workflow-page/create-workflow.module.css';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 export default function SLAWeightEditor({ workflowId, onClose }) {

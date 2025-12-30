@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import { Circle, Flag } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
+import styles from '../workflow-page/create-workflow.module.css';
 
 /**
  * 6-Handle Step Node for Complex Workflow State Machines

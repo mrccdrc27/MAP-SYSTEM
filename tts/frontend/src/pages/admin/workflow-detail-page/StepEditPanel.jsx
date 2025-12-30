@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, AlertCircle } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
+// Use shared styles from CreateWorkflowPage for consistency
+import styles from '../workflow-page/create-workflow.module.css';
 import {
   validateStepName,
   validateStepRole,

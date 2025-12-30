@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
+import styles from '../workflow-page/create-workflow.module.css';
 
 export default function ConfirmDialog({
   title,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
+// Use shared styles from CreateWorkflowPage for consistency
+import styles from '../workflow-page/create-workflow.module.css';
 import { validateTransitionName, VALIDATION_RULES } from '../../../utils/workflowValidation';
 
 export default function TransitionEditPanel({ transition, onUpdate, onDelete }) {
@@ -58,14 +59,15 @@ export default function TransitionEditPanel({ transition, onUpdate, onDelete }) 
         </p>
       </div>
 
-      <div className={styles.transitionInfo}>
-        <div className={styles.transitionInfoItem}>
-          <span className={styles.transitionInfoLabel}>From:</span>
-          <span className={styles.transitionInfoValue}>Step {transition.source}</span>
+      {/* Transition Info using inline styles for simplicity */}
+      <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ fontSize: '0.8125rem', marginBottom: '8px' }}>
+          <span style={{ color: 'var(--muted-text-color)' }}>From:</span>
+          <span style={{ marginLeft: '8px', color: 'var(--text-color)' }}>Step {transition.source}</span>
         </div>
-        <div className={styles.transitionInfoItem}>
-          <span className={styles.transitionInfoLabel}>To:</span>
-          <span className={styles.transitionInfoValue}>Step {transition.target}</span>
+        <div style={{ fontSize: '0.8125rem' }}>
+          <span style={{ color: 'var(--muted-text-color)' }}>To:</span>
+          <span style={{ marginLeft: '8px', color: 'var(--text-color)' }}>Step {transition.target}</span>
         </div>
       </div>
 

@@ -1,9 +1,7 @@
 import React, { useMemo } from 'react';
 import { MousePointer } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
 import StepEditPanel from './StepEditPanel';
 import TransitionEditPanel from './TransitionEditPanel';
-import WorkflowEditPanel from './WorkflowEditPanel';
 import { EditPanel } from '../../../components/workflow/shared';
 
 export default function WorkflowEditorSidebar({
@@ -49,17 +47,41 @@ export default function WorkflowEditorSidebar({
     };
   }, [selectedElement, workflowData]);
 
-  // No selection state
-  if (!selectedElement) {
+  // No selection state OR workflow selection (clicking on canvas)
+  if (!selectedElement || selectedElement.type === 'workflow') {
     return (
-      <div className={styles.sidebarEmpty}>
-        <div className={styles.sidebarEmptyContent}>
-          <div className={styles.sidebarEmptyIcon}>
-            <MousePointer size={32} />
-          </div>
-          <p className={styles.sidebarEmptyTitle}>No selection</p>
-          <p className={styles.sidebarEmptySubtitle}>Click on a step, transition, or the canvas to edit properties</p>
+      <div style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px',
+        textAlign: 'center',
+        background: 'var(--bg1-color)'
+      }}>
+        <div style={{
+          width: '64px',
+          height: '64px',
+          background: 'var(--bg-content-color)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '16px'
+        }}>
+          <MousePointer size={32} style={{ color: 'var(--muted-text-color)' }} />
         </div>
+        <p style={{ 
+          color: 'var(--muted-text-color)', 
+          fontSize: '0.875rem',
+          margin: '0 0 8px 0'
+        }}>No selection</p>
+        <p style={{ 
+          fontSize: '0.75rem', 
+          color: 'var(--muted-text-color)',
+          margin: 0
+        }}>Click on a step or transition to edit</p>
       </div>
     );
   }
@@ -68,7 +90,6 @@ export default function WorkflowEditorSidebar({
   const getPanelTitle = () => {
     if (selectedElement.type === 'step') return 'Edit Step';
     if (selectedElement.type === 'transition') return 'Edit Transition';
-    if (selectedElement.type === 'workflow') return 'Workflow Properties';
     return 'Properties';
   };
 
@@ -89,7 +110,6 @@ export default function WorkflowEditorSidebar({
       isOpen={true}
       showCloseButton={true}
       onClose={onClose}
-      className={styles.sidebar}
     >
       {selectedElement.type === 'step' && selectedElement.id && (
         <StepEditPanel
@@ -105,13 +125,6 @@ export default function WorkflowEditorSidebar({
           transition={transitionData}
           onUpdate={(updates) => onUpdateTransition(selectedElement.id, updates)}
           onDelete={onDeleteTransition ? () => onDeleteTransition(selectedElement.id) : undefined}
-        />
-      )}
-
-      {selectedElement.type === 'workflow' && (
-        <WorkflowEditPanel
-          workflow={workflowData?.workflow}
-          readOnly={true}
         />
       )}
     </EditPanel>

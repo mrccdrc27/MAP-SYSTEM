@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRe
 import ReactFlow, {
   Background,
   Controls,
-  MiniMap,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -11,7 +10,7 @@ import ReactFlow, {
   BackgroundVariant,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import styles from './WorkflowEditorLayout.module.css';
+import styles from '../workflow-page/create-workflow.module.css';
 import StepNode from './StepNode';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
@@ -372,6 +371,9 @@ const WorkflowEditorContent = forwardRef(({
   // Handle edge connection with 6-handle system support
   const onConnect = useCallback(
     (connection) => {
+      // Block new connections when not in edit mode
+      if (!isEditingGraph) return;
+      
       saveToHistory();
       
       const sourceHandle = normalizeHandleName(connection.sourceHandle, 'source');
@@ -401,7 +403,7 @@ const WorkflowEditorContent = forwardRef(({
       setUnsavedChanges(true);
       if (setHasUnsavedChanges) setHasUnsavedChanges(true);
     },
-    [setEdges, setHasUnsavedChanges, saveToHistory]
+    [setEdges, setHasUnsavedChanges, saveToHistory, isEditingGraph]
   );
 
   // Handle node click
@@ -527,16 +529,15 @@ const WorkflowEditorContent = forwardRef(({
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#d1d5db" />
         <Controls className="bg-white border border-gray-200 rounded-lg shadow-sm" />
-        <MiniMap
-          className="bg-white border border-gray-200 rounded-lg shadow-sm"
-          nodeColor="#3b82f6"
-          maskColor="rgba(0, 0, 0, 0.1)"
-        />
       </ReactFlow>
       
       {/* Helper text */}
       <div className="absolute bottom-4 left-4 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 text-xs text-gray-600 max-w-xs">
-        <p><strong>Tip:</strong> Click nodes to edit, drag to reposition, or connect handles to create transitions.</p>
+        {isEditingGraph ? (
+          <p><strong>Edit Mode:</strong> Drag nodes to reposition, connect handles to create transitions.</p>
+        ) : (
+          <p><strong>View Mode:</strong> Click nodes/edges to view details. Switch to Edit Mode to make changes.</p>
+        )}
       </div>
 
       {/* Unsaved Changes Indicator */}

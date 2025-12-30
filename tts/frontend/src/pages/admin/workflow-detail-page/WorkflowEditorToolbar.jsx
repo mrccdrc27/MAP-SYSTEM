@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, BarChart3, Grid3x3, Zap, AlertCircle } from 'lucide-react';
-import styles from './WorkflowEditorLayout.module.css';
+import styles from '../workflow-page/create-workflow.module.css';
 import { getDefaultRole, VALIDATION_RULES } from '../../../utils/workflowValidation';
 
 export default function WorkflowEditorToolbar({

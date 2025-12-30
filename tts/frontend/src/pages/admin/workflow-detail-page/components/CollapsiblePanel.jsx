@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import styles from '../WorkflowEditorLayout.module.css';
+import styles from '../../workflow-page/create-workflow.module.css';
 
 /**
  * Collapsible panel wrapper with toggle buttons
