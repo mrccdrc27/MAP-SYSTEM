@@ -38,7 +38,36 @@ def _create_and_broadcast_notification(**kwargs):
 def _send_email_for_notification(user_id, subject, message, notification_type, context=None):
     """
     Helper to send email counterpart for in-app notification.
-    Runs in a try-except to not fail the main task if email fails.
+    Fires off an async email task to avoid blocking the main notification task.
+    """
+    try:
+        # Import the Celery app to send task
+        from notification_service.celery import app
+        
+        # Fire off async email task - don't wait for result
+        app.send_task(
+            'notifications.send_email_async',
+            kwargs={
+                'user_id': user_id,
+                'subject': subject,
+                'message': message,
+                'notification_type': notification_type,
+                'context': context
+            },
+            queue='notification-queue-default'
+        )
+        
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to queue email task for user {user_id}: {e}")
+        return False
+
+
+@shared_task(name="notifications.send_email_async")
+def send_email_async(user_id, subject, message, notification_type, context=None):
+    """
+    Async task to send email notification.
+    This runs separately so it doesn't block the main notification task.
     """
     try:
         from .email_service import send_notification_email, get_template_for_notification
@@ -53,7 +82,9 @@ def _send_email_for_notification(user_id, subject, message, notification_type, c
             context=context
         )
         
-        if not success:
+        if success:
+            logger.info(f"📧 Email sent to user {user_id} for notification type: {notification_type}")
+        else:
             logger.warning(f"Email notification failed for user {user_id}: {error}")
         
         return success

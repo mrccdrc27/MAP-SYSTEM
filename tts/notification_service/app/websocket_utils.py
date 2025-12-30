@@ -3,6 +3,7 @@ WebSocket utilities for broadcasting notifications in real-time.
 """
 import json
 import logging
+import threading
 from datetime import datetime
 import requests
 from django.conf import settings
@@ -29,45 +30,44 @@ def get_channel_layer():
 def broadcast_notification_internal(user_id, notification_data, action='new'):
     """
     Broadcast a notification via the internal HTTP endpoint.
-    This is called from Celery workers to trigger WebSocket broadcast
-    within the Daphne process.
+    Uses fire-and-forget pattern to avoid blocking the caller.
     
     Args:
         user_id: The user ID to send the notification to
         notification_data: Dictionary containing notification data
         action: The action type ('new', 'read', 'deleted')
     """
-    try:
-        # Get the notification service URL (self-call to Daphne)
-        base_url = getattr(settings, 'NOTIFICATION_SERVICE_INTERNAL_URL', 'http://localhost:8006')
-        url = f"{base_url}/api/v1/app/internal/broadcast/"
-        
-        payload = {
-            'user_id': user_id,
-            'notification': notification_data,
-            'action': action
-        }
-        
-        response = requests.post(
-            url,
-            json=payload,
-            headers={'Content-Type': 'application/json'},
-            timeout=5
-        )
-        
-        if response.status_code == 200:
-            logger.info(f"[WebSocket] Broadcast triggered for user {user_id}")
-            return True
-        else:
-            logger.warning(f"[WebSocket] Broadcast failed: {response.status_code} - {response.text}")
-            return False
+    def _do_broadcast():
+        try:
+            base_url = getattr(settings, 'NOTIFICATION_SERVICE_INTERNAL_URL', 'http://localhost:8006')
+            url = f"{base_url}/api/v1/app/internal/broadcast/"
             
-    except requests.exceptions.ConnectionError:
-        logger.debug("[WebSocket] Could not connect to notification service for broadcast")
-        return False
-    except Exception as e:
-        logger.error(f"[WebSocket] Error triggering broadcast: {e}")
-        return False
+            payload = {
+                'user_id': user_id,
+                'notification': notification_data,
+                'action': action
+            }
+            
+            response = requests.post(
+                url,
+                json=payload,
+                headers={'Content-Type': 'application/json'},
+                timeout=5.0
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"[WebSocket] Broadcast triggered for user {user_id}")
+            else:
+                logger.warning(f"[WebSocket] Broadcast failed: {response.status_code}")
+                
+        except Exception as e:
+            logger.debug(f"[WebSocket] Broadcast error: {e}")
+    
+    # Fire-and-forget: launch in background thread
+    thread = threading.Thread(target=_do_broadcast, daemon=True)
+    thread.start()
+    logger.info(f"[WebSocket] Broadcast queued for user {user_id}")
+    return True
 
 
 def broadcast_notification_direct(user_id, notification_data, action='new'):

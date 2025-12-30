@@ -1267,7 +1267,7 @@ class FailedNotificationViewSet(viewsets.ReadOnlyModelViewSet):
             # Attempt to send notification
             notify_task.delay(
                 user_id=notification.user_id,
-                task_item_id=notification.task_item_id,
+                ticket_number=notification.task_item_id,
                 task_title=notification.task_title,
                 role_name=notification.role_name
             )
