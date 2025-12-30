@@ -246,3 +246,5 @@ auth/auth/__pycache__/settings.cpython-313.pyc
 *media
 
 *vite
+.vscode/settings.json
+.vscode/settings.json

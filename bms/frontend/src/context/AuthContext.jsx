@@ -19,6 +19,7 @@ import {
   isTokenExpired,
   getSystemRole,
 } from "../API/TokenUtils";
+import { AuthProvider as LocalAuthProvider } from './AuthContextLocal';
 
 const AuthContext = createContext();
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
@@ -304,6 +305,17 @@ export const useAuth = () => {
   }
   return context;
 };
+
+const USE_CENTRAL_AUTH = import.meta.env.VITE_USE_CENTRAL_AUTH === 'true';
+
+let ActualAuthProvider;
+if (USE_CENTRAL_AUTH) {
+  ActualAuthProvider = AuthProvider; // The centralized version (this file)
+} else {
+  ActualAuthProvider = LocalAuthProvider;
+}
+
+export { ActualAuthProvider as AuthProvider };
 
 /*
 import React, { createContext, useState, useContext, useEffect } from 'react';
