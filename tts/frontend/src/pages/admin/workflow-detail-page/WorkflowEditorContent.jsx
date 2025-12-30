@@ -13,7 +13,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import styles from './WorkflowEditorLayout.module.css';
 import StepNode from './StepNode';
-import { useWorkflowAPI } from '../../../../api/useWorkflowAPI';
+import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 const nodeTypes = {
   stepNode: StepNode,

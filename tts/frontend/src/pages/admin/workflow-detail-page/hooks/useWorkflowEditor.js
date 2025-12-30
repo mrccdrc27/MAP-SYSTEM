@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { useWorkflowAPI } from '../../../../../api/useWorkflowAPI';
-import { validateWorkflowGraph, formatValidationErrors, getDefaultRole } from '../../../../../utils/workflowValidation';
+import { useWorkflowAPI } from '../../../../api/useWorkflowAPI';
+import { validateWorkflowGraph, formatValidationErrors, getDefaultRole } from '../../../../utils/workflowValidation';
 
 /**
  * Hook for managing workflow editor state and operations

@@ -65,7 +65,6 @@ export default function WorkflowTable({
   workflows,
   searchValue = "",
   onSearchChange,
-  onAddWorkflow,
 }) {
   const navigate = useNavigate();
   // Pagination state

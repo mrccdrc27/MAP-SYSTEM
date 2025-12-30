@@ -1,7 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import ReactFlow, { Background, Controls, MarkerType } from 'reactflow';
 import { GitBranch, Play } from 'lucide-react';
-import StepNode from '../WorkflowDetails/StepNode';
+import StepNode from '../../workflow-detail-page/StepNode';
 import styles from '../create-workflow.module.css';
 
 const nodeTypes = { step: StepNode };

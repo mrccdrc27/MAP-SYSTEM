@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import 'reactflow/dist/style.css';
 import styles from './WorkflowEditorLayout.module.css';
@@ -9,7 +9,7 @@ import WorkflowEditorSidebar from './WorkflowEditorSidebar';
 import WorkflowEditorToolbar from './WorkflowEditorToolbar';
 import SLAWeightEditor from './SLAWeightEditor';
 import ConfirmDialog from './ConfirmDialog';
-import AdminNav from '../../../../components/navigation/AdminNav';
+import AdminNav from '../../../components/navigation/AdminNav';
 import { 
   EditorRibbon, 
   UnsavedChangesWarning, 
@@ -19,12 +19,12 @@ import {
 
 // Hooks
 import { useWorkflowEditor, useDeleteConfirmation } from './hooks';
-import { useWorkflowRoles } from '../../../../api/useWorkflowRoles';
-import { useWorkflowRefresh } from '../../../../components/workflow/WorkflowRefreshContext';
+import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
+import { useWorkflowRefresh } from '../../../components/workflow/WorkflowRefreshContext';
 
 export default function WorkflowEditorLayout({ workflowId }) {
   const { triggerRefresh } = useWorkflowRefresh();
-  const { roles, loading: rolesLoading, error: rolesError } = useWorkflowRoles();
+  const { roles, error: rolesError } = useWorkflowRoles();
   
   // UI state
   const [showSLAModal, setShowSLAModal] = useState(false);

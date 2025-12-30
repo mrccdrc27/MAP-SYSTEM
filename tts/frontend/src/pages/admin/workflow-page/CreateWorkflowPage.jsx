@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { ReactFlowProvider, useNodesState, useEdgesState, addEdge } from 'reactflow';
+import { ReactFlowProvider, useNodesState, useEdgesState } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import { GitBranch, Link, Plus, Edit3, Eye } from 'lucide-react';
 
 // Styles

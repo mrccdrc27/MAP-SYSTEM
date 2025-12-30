@@ -5,7 +5,6 @@ import { Check } from 'lucide-react';
 export default function WorkflowCreationConfirmation({
   workflow,
   onClose,
-  onViewWorkflow,
   onEditWorkflow,
 }) {
   const formatDate = (dateString) => {

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { WorkflowToolbar } from '../../../../../components/workflow/shared';
+import { WorkflowToolbar } from '../../../../components/workflow/shared';
 
 /**
  * Top ribbon/header for the workflow editor

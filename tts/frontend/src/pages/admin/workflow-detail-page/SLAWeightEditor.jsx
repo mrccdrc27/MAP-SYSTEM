@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { X, Info } from 'lucide-react';
 import styles from './WorkflowEditorLayout.module.css';
-import { useWorkflowAPI } from '../../../../api/useWorkflowAPI';
+import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 export default function SLAWeightEditor({ workflowId, onClose }) {
   const [workflowData, setWorkflowData] = useState(null);

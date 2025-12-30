@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { WORKFLOW_TEMPLATES } from '../constants/workflowTemplates';
 import { layoutWorkflow } from '../../../../utils/workflowAutoLayout';

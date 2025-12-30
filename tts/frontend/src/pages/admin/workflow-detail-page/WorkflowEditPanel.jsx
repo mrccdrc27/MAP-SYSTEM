@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './WorkflowEditorLayout.module.css';
-import { useWorkflowAPI } from '../../../../api/useWorkflowAPI';
+import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 export default function WorkflowEditPanel({ workflow, onSave, readOnly = false }) {
   const [formData, setFormData] = useState({

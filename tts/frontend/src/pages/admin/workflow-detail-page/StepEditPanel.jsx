@@ -6,7 +6,7 @@ import {
   validateStepRole,
   validateStepDescription,
   VALIDATION_RULES,
-} from '../../../../utils/workflowValidation';
+} from '../../../utils/workflowValidation';
 
 export default function StepEditPanel({ step, roles = [], onUpdate, onDelete }) {
   const [formData, setFormData] = useState({

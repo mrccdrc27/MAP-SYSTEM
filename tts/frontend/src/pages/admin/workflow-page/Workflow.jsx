@@ -3,7 +3,6 @@ import general from "../../../style/general.module.css";
 
 // components
 import AdminNav from "../../../components/navigation/AdminNav";
-import AddWorkflow from "./modals/AddWorkflow";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
 import FilterPanel from "../../../components/component/FilterPanel";
 
@@ -17,9 +16,8 @@ import WorkflowTable from "../../../tables/admin/WorkflowTable";
 import useFetchWorkflows from "../../../api/useFetchWorkflows";
 
 export default function Workflow() {
-  const [openAddWorkflow, setOpenAddWorkflow] = useState(false);
   // const { workflows, refetch } = useFetchWorkflows();
-  const { workflows, refetch, loading } = useFetchWorkflows();
+  const { workflows } = useFetchWorkflows();
   const isLoading = workflows.length === 0;
   const [allWorkflow, setAllWorkflow] = useState([]);
 
@@ -140,16 +138,11 @@ export default function Workflow() {
                   }))
                 }
                 workflows={filteredWorkflows}
-                onAddWorkflow={setOpenAddWorkflow}
               />
             )}
           </div>
         </section>
       </main>
-
-      {openAddWorkflow && (
-        <AddWorkflow closeAddWorkflow={() => setOpenAddWorkflow(false)} />
-      )}
     </>
   );
 }

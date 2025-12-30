@@ -1,19 +1,25 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const WorkflowRefreshContext = createContext();
 
 export function WorkflowRefreshProvider({ children }) {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const triggerRefresh = () => setRefreshKey(prev => prev + 1);
+  const triggerRefresh = useCallback(() => {
+    setRefreshTrigger((prev) => prev + 1);
+  }, []);
 
   return (
-    <WorkflowRefreshContext.Provider value={{ refreshKey, triggerRefresh }}>
+    <WorkflowRefreshContext.Provider value={{ refreshTrigger, triggerRefresh }}>
       {children}
     </WorkflowRefreshContext.Provider>
   );
 }
 
 export function useWorkflowRefresh() {
-  return useContext(WorkflowRefreshContext);
+  const context = useContext(WorkflowRefreshContext);
+  if (!context) {
+    throw new Error('useWorkflowRefresh must be used within a WorkflowRefreshProvider');
+  }
+  return context;
 }

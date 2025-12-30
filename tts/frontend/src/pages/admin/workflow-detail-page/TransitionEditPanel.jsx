@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import styles from './WorkflowEditorLayout.module.css';
-import { validateTransitionName, VALIDATION_RULES } from '../../../../utils/workflowValidation';
+import { validateTransitionName, VALIDATION_RULES } from '../../../utils/workflowValidation';
 
 export default function TransitionEditPanel({ transition, onUpdate, onDelete }) {
   const [formData, setFormData] = useState({

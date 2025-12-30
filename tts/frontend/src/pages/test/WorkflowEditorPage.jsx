@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import WorkflowEditorLayout from '../admin/workflow-page/WorkflowDetails/WorkflowEditorLayout';
+import WorkflowEditorLayout from '../admin/workflow-detail-page/WorkflowEditorLayout';
 import styles from './WorkflowEditorPage.module.css';
  
 export default function WorkflowEditorPage() {

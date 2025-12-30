@@ -4,7 +4,7 @@ import styles from './WorkflowEditorLayout.module.css';
 import StepEditPanel from './StepEditPanel';
 import TransitionEditPanel from './TransitionEditPanel';
 import WorkflowEditPanel from './WorkflowEditPanel';
-import { EditPanel } from '../../../../components/workflow/shared';
+import { EditPanel } from '../../../components/workflow/shared';
 
 export default function WorkflowEditorSidebar({
   selectedElement,
