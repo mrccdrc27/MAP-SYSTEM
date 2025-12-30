@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Save, RefreshCw, Undo, Redo, Settings, ArrowLeft, HelpCircle, X, Layout } from 'lucide-react';
+import { Save, RefreshCw, Settings, ArrowLeft, HelpCircle, X, Layout } from 'lucide-react';
 import styles from './WorkflowToolbar.module.css';
 
 /**
@@ -10,15 +10,11 @@ import styles from './WorkflowToolbar.module.css';
  * @param {string} props.mode - 'create' or 'edit'
  * @param {boolean} props.isSaving - Loading state for save
  * @param {boolean} props.hasUnsavedChanges - Whether there are pending changes
- * @param {boolean} props.canUndo - Undo available
- * @param {boolean} props.canRedo - Redo available
  * @param {boolean} props.isEditingGraph - Graph editing mode
  * @param {number} props.validationErrorCount - Number of validation errors
  * @param {number} props.stepCount - Number of steps
  * @param {number} props.transitionCount - Number of transitions
  * @param {function} props.onSave - Save handler
- * @param {function} props.onUndo - Undo handler
- * @param {function} props.onRedo - Redo handler
  * @param {function} props.onBack - Back navigation handler
  * @param {function} props.onToggleEditing - Toggle graph editing mode
  * @param {function} props.onOpenSLAModal - Open SLA configuration modal
@@ -32,15 +28,11 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
   mode = 'edit',
   isSaving = false,
   hasUnsavedChanges = false,
-  canUndo = false,
-  canRedo = false,
   isEditingGraph = false,
   validationErrorCount = 0,
   stepCount = 0,
   transitionCount = 0,
   onSave,
-  onUndo,
-  onRedo,
   onBack,
   onToggleEditing,
   onOpenSLAModal,
@@ -106,29 +98,6 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
           >
             {showHelp ? <X size={16} /> : <HelpCircle size={16} />}
           </button>
-        )}
-
-        {/* Undo/Redo (edit mode) */}
-        {!isCreateMode && (
-          <>
-            <div className={styles.divider} />
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              title="Undo (Ctrl+Z)"
-              className={styles.iconBtn}
-            >
-              <Undo size={18} />
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              title="Redo (Ctrl+Y)"
-              className={styles.iconBtn}
-            >
-              <Redo size={18} />
-            </button>
-          </>
         )}
 
         {/* SLA Modal (edit mode) */}

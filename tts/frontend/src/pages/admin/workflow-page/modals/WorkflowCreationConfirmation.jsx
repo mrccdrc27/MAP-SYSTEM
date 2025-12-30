@@ -69,7 +69,7 @@ export default function WorkflowCreationConfirmation({
           <button className={styles.btnSecondary} onClick={onClose}>
             Back to Workflows
           </button>
-          <button className={styles.btnPrimary} onClick={() => onEditWorkflow(workflow.workflow_id)}>
+          <button className={styles.btnPrimary} onClick={() => onEditWorkflow(workflow.workflow_id, workflow.name)}>
             Edit Workflow
           </button>
         </div>

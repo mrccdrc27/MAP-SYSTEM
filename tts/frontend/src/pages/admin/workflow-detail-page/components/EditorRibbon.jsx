@@ -9,12 +9,8 @@ const EditorRibbon = memo(function EditorRibbon({
   workflowData,
   hasUnsavedChanges,
   isSaving,
-  canUndo,
-  canRedo,
   isEditingGraph,
   onSave,
-  onUndo,
-  onRedo,
   onToggleEditing,
   onOpenSLAModal,
   stepCount,
@@ -33,14 +29,10 @@ const EditorRibbon = memo(function EditorRibbon({
       mode="edit"
       isSaving={isSaving}
       hasUnsavedChanges={hasUnsavedChanges}
-      canUndo={canUndo}
-      canRedo={canRedo}
       isEditingGraph={isEditingGraph}
       stepCount={stepCount}
       transitionCount={transitionCount}
       onSave={onSave}
-      onUndo={onUndo}
-      onRedo={onRedo}
       onToggleEditing={onToggleEditing}
       onOpenSLAModal={onOpenSLAModal}
     />

@@ -9,6 +9,9 @@ import Pagination from "../../components/component/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+// utils
+import { workflowNameToSlug } from "../../api/useWorkflowAPI";
+
 // headers for the table
 const workflowHeaders = [
   "WORKFLOW",
@@ -33,7 +36,8 @@ function WorkflowItem({ item }) {
   const navigate = useNavigate();
 
   const handleRowClick = () => {
-    navigate(`/admin/workflow/${item.workflow_id}`);
+    const slug = workflowNameToSlug(item.name);
+    navigate(`/admin/workflow/${slug}`);
   };
 
   return (
@@ -52,7 +56,11 @@ function WorkflowItem({ item }) {
       <td>
         <button
           className={general.btn}
-          onClick={() => navigate(`/admin/workflow/${item.workflow_id}`)}
+          onClick={(e) => {
+            e.stopPropagation();
+            const slug = workflowNameToSlug(item.name);
+            navigate(`/admin/workflow/${slug}`);
+          }}
         >
           <i className="fa-solid fa-pen-to-square"></i>
         </button>

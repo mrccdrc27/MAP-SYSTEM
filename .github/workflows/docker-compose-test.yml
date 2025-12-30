@@ -34,7 +34,7 @@ jobs:
 
       - name: Build all services (no cache)
         id: build
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           echo "Building all Docker services..."
           docker compose build --no-cache 2>&1 | tee build.log
@@ -54,7 +54,7 @@ jobs:
           docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep -E "docker-|rabbitmq|postgres" || true
           
           # Check each expected image
-          expected_images=("docker-auth-service" "docker-ticket-service" "docker-workflow-api" "docker-workflow-worker" "docker-messaging-service" "docker-notification-service" "docker-notification-worker")
+          expected_images=("docker-auth-service" "docker-workflow-api" "docker-workflow-worker" "docker-messaging-service" "docker-notification-service" "docker-notification-worker")
           
           missing_images=()
           for img in "${expected_images[@]}"; do
@@ -75,7 +75,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
-          path: Docker/build.log
+          path: tts/Docker/build.log
           retention-days: 7
 
   orchestration-test:
@@ -90,11 +90,11 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker images
-        working-directory: Docker
+        working-directory: tts/Docker
         run: docker compose build
 
       - name: Start all services
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           echo "Starting Docker Compose services..."
           docker compose up -d
@@ -205,20 +205,6 @@ jobs:
             echo "⚠️ Workflow API returned HTTP $response"
           fi
 
-      - name: Test Ticket Service
-        continue-on-error: true
-        run: |
-          echo "Testing Ticket Service (port 8004)..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8004/api/ 2>/dev/null || echo "000")
-          
-          if [ "$response" = "000" ]; then
-            echo "⚠️ Ticket Service not responding (may still be starting)"
-          elif [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
-            echo "✅ Ticket Service responding (HTTP $response)"
-          else
-            echo "⚠️ Ticket Service returned HTTP $response"
-          fi
-
       - name: Test Messaging Service
         continue-on-error: true
         run: |
@@ -273,14 +259,14 @@ jobs:
 
       - name: Collect service logs on failure
         if: failure()
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
-          mkdir -p ../logs
+          mkdir -p ../../logs
           
-          for service in rabbitmq postgres_db auth-service ticket-service workflow-api workflow-worker messaging-service notification-service notification-worker; do
-            echo "=== $service ===" >> ../logs/all-services.log
-            docker logs $service 2>&1 >> ../logs/all-services.log 2>/dev/null || echo "No logs for $service" >> ../logs/all-services.log
-            echo "" >> ../logs/all-services.log
+          for service in rabbitmq postgres_db auth-service workflow-api workflow-worker messaging-service notification-service notification-worker; do
+            echo "=== $service ===" >> ../../logs/all-services.log
+            docker logs $service 2>&1 >> ../../logs/all-services.log 2>/dev/null || echo "No logs for $service" >> ../../logs/all-services.log
+            echo "" >> ../../logs/all-services.log
           done
 
       - name: Upload logs on failure
@@ -300,7 +286,7 @@ jobs:
 
       - name: Stop all services
         if: always()
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           echo "Stopping all services..."
           docker compose down -v
@@ -318,7 +304,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and start services briefly
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           docker compose build
           docker compose up -d
@@ -338,10 +324,6 @@ jobs:
           docker logs workflow-worker 2>&1 | head -50 || true
           
           echo ""
-          echo "=== Ticket Service Startup ==="
-          docker logs ticket-service 2>&1 | head -50 || true
-          
-          echo ""
           echo "=== Notification Service Startup ==="
           docker logs notification-service 2>&1 | head -50 || true
           
@@ -355,7 +337,7 @@ jobs:
           
           error_count=0
           
-          for service in auth-service ticket-service workflow-api workflow-worker notification-service notification-worker; do
+          for service in auth-service workflow-api workflow-worker notification-service notification-worker; do
             errors=$(docker logs $service 2>&1 | grep -iE "error|exception|failed|traceback" | head -10 || true)
             if [ -n "$errors" ]; then
               echo "⚠️ Potential issues in $service:"
@@ -373,7 +355,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        working-directory: Docker
+        working-directory: tts/Docker
         run: docker compose down -v
 
   test-summary:

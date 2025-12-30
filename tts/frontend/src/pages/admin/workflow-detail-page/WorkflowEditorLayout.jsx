@@ -283,10 +283,13 @@ function ValidationSummary({ nodes = [], edges = [] }) {
   );
 }
 
-export default function WorkflowEditorLayout({ workflowId }) {
+export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, isNameBased = false }) {
   const navigate = useNavigate();
   const { triggerRefresh } = useWorkflowRefresh();
   const { roles, error: rolesError } = useWorkflowRoles();
+  
+  // Use workflowIdentifier if provided (new style), otherwise fall back to workflowId (backward compatibility)
+  const identifier = workflowIdentifier || workflowId;
   
   // UI state
   const [showSLAModal, setShowSLAModal] = useState(false);
@@ -296,6 +299,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
   // Workflow editor state and handlers
   const {
     workflowData,
+    resolvedWorkflowId,
     selectedElement,
     setSelectedElement,
     isEditingGraph,
@@ -303,11 +307,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
     hasUnsavedChanges,
     setHasUnsavedChanges,
     isSaving,
-    canUndo,
-    canRedo,
     contentRef,
-    handleUndo,
-    handleRedo,
     handleSave,
     handleAddStep,
     onStepClick,
@@ -315,8 +315,10 @@ export default function WorkflowEditorLayout({ workflowId }) {
     onPaneClick,
     handleUpdateStep,
     handleUpdateTransition,
-    handleHistoryChange,
-  } = useWorkflowEditor(workflowId, roles, triggerRefresh);
+  } = useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased);
+  
+  // The actual workflow_id to use for API calls (resolved from name if needed)
+  const actualWorkflowId = resolvedWorkflowId || workflowData?.workflow?.workflow_id || identifier;
 
   // Delete confirmation
   const {
@@ -370,15 +372,11 @@ export default function WorkflowEditorLayout({ workflowId }) {
           subtitle={[workflowData?.workflow?.category, workflowData?.workflow?.sub_category].filter(Boolean).join(' • ')}
           isSaving={isSaving}
           hasUnsavedChanges={hasUnsavedChanges}
-          canUndo={canUndo}
-          canRedo={canRedo}
           isEditingGraph={isEditingGraph}
           stepCount={stepCount}
           transitionCount={transitionCount}
           onSave={handleSave}
           onBack={() => navigate('/admin/workflows')}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
           onToggleEditing={() => setIsEditingGraph(!isEditingGraph)}
           onOpenSLAModal={() => setShowSLAModal(true)}
         />
@@ -411,14 +409,14 @@ export default function WorkflowEditorLayout({ workflowId }) {
               <div className={styles.flowContainer} style={{ flex: 1, minHeight: '400px' }}>
                 <WorkflowEditorContent
                   ref={contentRef}
-                  workflowId={workflowId}
+                  workflowId={actualWorkflowId}
                   workflowData={workflowData}
+                  roles={roles}
                   onStepClick={onStepClick}
                   onEdgeClick={onEdgeClick}
                   onPaneClick={onPaneClick}
                   isEditingGraph={isEditingGraph}
                   setHasUnsavedChanges={setHasUnsavedChanges}
-                  onHistoryChange={handleHistoryChange}
                 />
               </div>
             </main>
@@ -452,7 +450,7 @@ export default function WorkflowEditorLayout({ workflowId }) {
       {/* SLA Weight Modal */}
       {showSLAModal && (
         <SLAWeightEditor
-          workflowId={workflowId}
+          workflowId={actualWorkflowId}
           onClose={() => setShowSLAModal(false)}
         />
       )}

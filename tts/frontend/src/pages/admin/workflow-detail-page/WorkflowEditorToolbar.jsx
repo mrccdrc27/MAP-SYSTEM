@@ -183,14 +183,6 @@ export default function WorkflowEditorToolbar({
             <span>Save</span>
             <kbd className={styles.toolbarShortcutKey}>Ctrl+S</kbd>
           </div>
-          <div className={styles.toolbarShortcutItem}>
-            <span>Undo</span>
-            <kbd className={styles.toolbarShortcutKey}>Ctrl+Z</kbd>
-          </div>
-          <div className={styles.toolbarShortcutItem}>
-            <span>Redo</span>
-            <kbd className={styles.toolbarShortcutKey}>Ctrl+Y</kbd>
-          </div>
         </div>
       </div>
     </div>

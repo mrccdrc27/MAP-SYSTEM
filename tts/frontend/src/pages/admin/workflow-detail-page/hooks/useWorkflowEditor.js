@@ -1,34 +1,49 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { useWorkflowAPI } from '../../../../api/useWorkflowAPI';
+import { useWorkflowAPI, slugToWorkflowName } from '../../../../api/useWorkflowAPI';
 import { validateWorkflowGraph, formatValidationErrors, getDefaultRole } from '../../../../utils/workflowValidation';
 
 /**
  * Hook for managing workflow editor state and operations
+ * @param {string} identifier - Workflow ID or name (slug)
+ * @param {Array} roles - Available roles for the workflow
+ * @param {Function} triggerRefresh - Callback to trigger workflow list refresh
+ * @param {boolean} isNameBased - Whether the identifier is a name (slug) or ID
  */
-export function useWorkflowEditor(workflowId, roles, triggerRefresh) {
+export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased = false) {
   const [workflowData, setWorkflowData] = useState(null);
+  const [resolvedWorkflowId, setResolvedWorkflowId] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isEditingGraph, setIsEditingGraph] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
   
   const contentRef = useRef();
-  const { getWorkflowDetail } = useWorkflowAPI();
+  const { getWorkflowDetail, getWorkflowDetailByName } = useWorkflowAPI();
 
   // Load workflow data
   useEffect(() => {
     const loadWorkflow = async () => {
       try {
-        const data = await getWorkflowDetail(workflowId);
+        let data;
+        if (isNameBased) {
+          // Convert slug back to name and fetch by name
+          const workflowName = slugToWorkflowName(identifier);
+          data = await getWorkflowDetailByName(workflowName);
+        } else {
+          // Fetch by ID (backward compatibility)
+          data = await getWorkflowDetail(identifier);
+        }
         setWorkflowData(data);
+        // Store the resolved workflow ID for subsequent API calls
+        if (data?.workflow?.workflow_id) {
+          setResolvedWorkflowId(data.workflow.workflow_id);
+        }
       } catch (err) {
         console.error('Failed to load workflow:', err);
       }
     };
     loadWorkflow();
-  }, [workflowId, getWorkflowDetail]);
+  }, [identifier, isNameBased, getWorkflowDetail, getWorkflowDetailByName]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -41,16 +56,6 @@ export function useWorkflowEditor(workflowId, roles, triggerRefresh) {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
-
-  // Undo handler
-  const handleUndo = useCallback(() => {
-    contentRef.current?.undo?.();
-  }, []);
-
-  // Redo handler
-  const handleRedo = useCallback(() => {
-    contentRef.current?.redo?.();
-  }, []);
 
   // Save handler with validation
   const handleSave = useCallback(async () => {
@@ -132,31 +137,9 @@ export function useWorkflowEditor(workflowId, roles, triggerRefresh) {
     setHasUnsavedChanges(true);
   }, []);
 
-  // History change handler
-  const handleHistoryChange = useCallback((canUndoVal, canRedoVal) => {
-    setCanUndo(canUndoVal);
-    setCanRedo(canRedoVal);
-  }, []);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault();
-          handleSave();
-        }
-        return;
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      }
-      if ((e.ctrlKey || e.metaKey) && ((e.shiftKey && e.key === 'z') || e.key === 'y')) {
-        e.preventDefault();
-        handleRedo();
-      }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         handleSave();
@@ -164,10 +147,11 @@ export function useWorkflowEditor(workflowId, roles, triggerRefresh) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, handleSave]);
+  }, [handleSave]);
 
   return {
     workflowData,
+    resolvedWorkflowId,
     selectedElement,
     setSelectedElement,
     isEditingGraph,
@@ -175,11 +159,7 @@ export function useWorkflowEditor(workflowId, roles, triggerRefresh) {
     hasUnsavedChanges,
     setHasUnsavedChanges,
     isSaving,
-    canUndo,
-    canRedo,
     contentRef,
-    handleUndo,
-    handleRedo,
     handleSave,
     handleAddStep,
     onStepClick,
@@ -187,6 +167,5 @@ export function useWorkflowEditor(workflowId, roles, triggerRefresh) {
     onPaneClick,
     handleUpdateStep,
     handleUpdateTransition,
-    handleHistoryChange,
   };
 }

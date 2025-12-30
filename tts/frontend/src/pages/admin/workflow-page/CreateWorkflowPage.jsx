@@ -10,6 +10,7 @@ import styles from './create-workflow.module.css';
 // API hooks
 import { useCreateWorkflow } from '../../../api/useCreateWorkflow';
 import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
+import { workflowNameToSlug } from '../../../api/useWorkflowAPI';
 
 // Shared Components
 import { WorkflowToolbar, ValidationPanel, SLAPanel } from '../../../components/workflow/shared';
@@ -147,8 +148,14 @@ export default function CreateWorkflowPage() {
     navigate('/admin/workflows');
   }, [navigate]);
 
-  const handleEditWorkflow = useCallback((workflowId) => {
-    navigate(`/admin/workflows/${workflowId}/edit`);
+  const handleEditWorkflow = useCallback((workflowId, workflowName) => {
+    // Use name-based navigation if name is available, otherwise fall back to ID
+    if (workflowName) {
+      const slug = workflowNameToSlug(workflowName);
+      navigate(`/admin/workflows/${slug}/edit`);
+    } else {
+      navigate(`/admin/workflows/${workflowId}/edit`);
+    }
   }, [navigate]);
 
   // Diagram data
