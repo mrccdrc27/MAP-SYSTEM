@@ -30,7 +30,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+  background: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,7 +38,7 @@
   font-weight: 600;
   font-size: 16px;
   flex-shrink: 0;
-  box-shadow: var(--box-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+  box-shadow: var(--shadow);
 }
 
 .messageContent {
@@ -81,18 +81,107 @@
   word-wrap: break-word;
   box-shadow: var(--box-shadow, 0 1px 2px rgba(0, 0, 0, 0.1));
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
 
 .bubbleOwn {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-hover) 100%);
+  background: var(--primary-color);
   color: var(--bg1-color);
   border-bottom-right-radius: 4px;
+}
+
+.bubbleOwn:hover {
+  background: var(--primary-color-hover);
 }
 
 .bubbleOther {
   background: var(--bg-content-color);
   color: var(--text-color);
   border-bottom-left-radius: 4px;
+}
+
+/* Inline reaction button inside bubble */
+.inlineReactionBtn {
+  position: absolute;
+  bottom: -12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.messageWrapper:hover .inlineReactionBtn {
+  opacity: 1;
+}
+
+.reactionLeft {
+  left: 8px;
+}
+
+.reactionRight {
+  right: 8px;
+}
+
+/* Reaction button for attachment-only messages */
+.attachmentReaction {
+  position: relative;
+  bottom: auto;
+  display: inline-flex;
+  margin-top: 4px;
+}
+
+.reactionTrigger {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg1-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted-text-color);
+  transition: var(--transition);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.reactionTrigger:hover {
+  background: var(--bg-content-color);
+  color: var(--primary-color);
+  transform: scale(1.15);
+}
+
+/* Menu wrapper and button */
+.menuWrapper {
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.messageWrapper:hover .menuWrapper {
+  opacity: 1;
+}
+
+.menuBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--muted-text-color);
+  transition: var(--transition);
+}
+
+.menuBtn:hover {
+  background: var(--bg-content-color);
+  color: var(--text-color);
 }
 
 .messageText {
@@ -116,38 +205,238 @@
   padding: 0 12px;
 }
 
-.messageActions {
+/* Bubble wrapper for positioning hover actions */
+.bubbleWrapper {
   display: flex;
-  gap: 8px;
-  margin-top: 4px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  align-items: center;
+  gap: 4px;
+  position: relative;
 }
 
-.messageWrapper:hover .messageActions {
-  opacity: 1;
+.messageWrapper.own .bubbleWrapper {
+  flex-direction: row-reverse;
+}
+
+
+
+/* Quick reaction picker */
+.quickReactionPicker {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--bg1-color);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: var(--box-shadow);
+  z-index: 100;
+  animation: popIn 0.15s ease-out;
+  white-space: nowrap;
+}
+
+/* Left-anchored for other messages */
+.quickReactionPicker.pickerLeft {
+  left: 0;
+}
+
+/* Right-anchored for own messages */
+.quickReactionPicker.pickerRight {
+  right: 0;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.quickReactionBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.quickReactionBtn:hover {
+  background: var(--bg-content-color);
+  transform: scale(1.15);
+}
+
+/* Dropdown menu */
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 160px;
+  background: var(--bg1-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow);
+  z-index: 100;
+  overflow: hidden;
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuItem {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-color);
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.menuItem i {
+  width: 16px;
+  color: var(--muted-text-color);
+}
+
+.menuItem:hover {
+  background: var(--bg-content-color);
+}
+
+.menuItem:hover i {
+  color: var(--primary-color);
+}
+
+.menuItemDanger {
+  color: var(--error-color);
+}
+
+.menuItemDanger i {
+  color: var(--error-color);
+}
+
+.menuItemDanger:hover {
+  background: var(--delete-btn-hover-bg);
+}
+
+.menuDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+/* Unsent message styles */
+.bubbleUnsent {
+  background: var(--bg-content-color);
+  border: 1px dashed var(--border-color);
+  padding: 10px 16px;
+  border-radius: 18px;
+}
+
+.unsentText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-text-color);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unsentText i {
+  font-size: 14px;
+}
+
+/* Legacy action styles - keeping for backwards compatibility */
+.messageActions {
+  display: none;
 }
 
 .actionBtn {
-  background: var(--bg-content-color);
-  border: none;
-  border-radius: 12px;
-  padding: 4px 10px;
-  font-size: 11px;
-  cursor: pointer;
-  color: var(--table-color);
-  transition: all 0.2s ease;
+  display: none;
 }
 
-.actionBtn:hover {
-  background: var(--border-color);
-  transform: scale(1.05);
+/* Attachment wrapper for layout with menu */
+.attachmentWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.attachmentOnly {
+  /* Attachment-only messages need the menu positioned */
+}
+
+.attachmentMenuLeft {
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  align-self: center;
+}
+
+.attachmentMenuRight {
+  width: 24px; /* Placeholder for symmetry */
+}
+
+.messageWrapper:hover .attachmentMenuLeft {
+  opacity: 1;
 }
 
 .attachmentsContainer {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
   max-width: 100%;
+  position: relative;
+}
+
+.attachmentsWithMenu {
+  position: relative;
+}
+
+.attachmentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachmentActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.messageWrapper:hover .attachmentActions {
+  opacity: 1;
 }

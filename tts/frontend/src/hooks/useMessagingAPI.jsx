@@ -229,6 +229,51 @@ export const useMessagingAPI = (ticketId, setMessages) => {
   }, [setMessages, getAuthHeaders]);
 
   /**
+   * Unsend a message (mark as unsent, optionally for everyone)
+   */
+  const unsendMessage = useCallback(async (messageId, forAll = false) => {
+    if (!messageId) {
+      throw new Error('Message ID required');
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${MESSAGING_API_BASE}/messages/${messageId}/unsend/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ for_all: forAll }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}`);
+      }
+
+      const updatedMessage = await response.json();
+      console.log('[useMessagingAPI] Message unsent:', updatedMessage);
+      
+      // Update message in local state
+      setMessages(prev => 
+        prev.map(msg => msg.message_id === messageId ? updatedMessage : msg)
+      );
+      
+      return updatedMessage;
+    } catch (err) {
+      console.error('[useMessagingAPI] Unsend error:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setMessages, getAuthHeaders]);
+
+  /**
    * Add a reaction to a message
    */
   const addReaction = useCallback(async (messageId, emoji) => {
@@ -368,6 +413,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
     sendMessage,
     editMessage,
     deleteMessage,
+    unsendMessage,
     addReaction,
     removeReaction,
     downloadAttachment,

@@ -1,5 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import styles from './MessageInput.module.css';
+
+// Common emoji categories for quick access
+const EMOJI_CATEGORIES = {
+  'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😍', '🥰', '😘'],
+  'Gestures': ['👍', '👎', '👏', '🙌', '🤝', '✌️', '🤞', '👌', '🤙', '💪', '🙏'],
+  'Hearts': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💕', '💗', '💖'],
+  'Objects': ['🔥', '⭐', '✨', '💡', '📌', '🎉', '🎊', '🏆', '💯', '✅', '❌']
+};
 
 const MessageInput = ({ 
   message, 
@@ -13,6 +21,15 @@ const MessageInput = ({
 }) => {
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef(null);
+
+  // Handle emoji selection
+  const handleEmojiSelect = (emoji) => {
+    setMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+    textareaRef.current?.focus();
+  };
 
   const handleInputChange = (e) => {
     setMessage(e.target.value);
@@ -62,7 +79,7 @@ const MessageInput = ({
           {attachments.map((file, index) => (
             <div key={index} className={styles.attachmentChip}>
               <span className={styles.attachmentIcon}>
-                {file.type.startsWith('image/') ? '🖼️' : '📎'}
+                <i className={file.type.startsWith('image/') ? 'fa-regular fa-image' : 'fa-solid fa-paperclip'}></i>
               </span>
               <span className={styles.attachmentName}>{file.name}</span>
               <button 
@@ -95,8 +112,55 @@ const MessageInput = ({
           type="button"
           title="Attach file"
         >
-          📎
+          <i className="fa-solid fa-paperclip"></i>
         </button>
+
+        {/* Emoji Picker Button */}
+        <div className={styles.emojiPickerWrapper} ref={emojiPickerRef}>
+          <button
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={styles.emojiBtn}
+            disabled={isLoading}
+            type="button"
+            title="Add emoji"
+          >
+            <i className="fa-regular fa-face-smile"></i>
+          </button>
+          
+          {showEmojiPicker && (
+            <div className={styles.emojiPicker}>
+              <div className={styles.emojiPickerHeader}>
+                <span>Emojis</span>
+                <button 
+                  onClick={() => setShowEmojiPicker(false)}
+                  className={styles.emojiPickerClose}
+                  type="button"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div className={styles.emojiPickerContent}>
+                {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
+                  <div key={category} className={styles.emojiCategory}>
+                    <div className={styles.emojiCategoryLabel}>{category}</div>
+                    <div className={styles.emojiGrid}>
+                      {emojis.map((emoji) => (
+                        <button
+                          key={emoji}
+                          className={styles.emojiOption}
+                          onClick={() => handleEmojiSelect(emoji)}
+                          type="button"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <textarea
           ref={textareaRef}
@@ -116,7 +180,7 @@ const MessageInput = ({
           disabled={isLoading || (!message.trim() && attachments.length === 0)}
           type="button"
         >
-          {isLoading ? '⏳' : '➤'}
+          {isLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-paper-plane"></i>}
         </button>
       </div>
     </div>

@@ -7,6 +7,9 @@ from .serializers import MessageSerializer
 
 
 class TicketMessagingConsumer(AsyncWebsocketConsumer):
+    # Class-level tracking of connected users per ticket
+    connected_users = {}  # {ticket_id: {channel_name: user_identifier}}
+    
     async def connect(self):
         self.ticket_id = self.scope['url_route']['kwargs']['ticket_id']
         
@@ -14,6 +17,7 @@ class TicketMessagingConsumer(AsyncWebsocketConsumer):
         user = self.scope.get('user')
         if isinstance(user, AnonymousUser) or not user:
             self.user_id = 'anonymous'
+            self.user_display_name = 'Anonymous'
         else:
             # Try different user identifier attributes
             self.user_id = (
@@ -24,6 +28,10 @@ class TicketMessagingConsumer(AsyncWebsocketConsumer):
                 str(user) or 
                 'anonymous'
             )
+            # Get display name for presence
+            first_name = getattr(user, 'first_name', '')
+            last_name = getattr(user, 'last_name', '')
+            self.user_display_name = f"{first_name} {last_name}".strip() or getattr(user, 'username', str(self.user_id))
         
         # Join ticket group
         self.ticket_group_name = f'ticket_{self.ticket_id}'
@@ -41,15 +49,55 @@ class TicketMessagingConsumer(AsyncWebsocketConsumer):
         
         await self.accept()
         
-        # Send connection confirmation
+        # Track connected user
+        if self.ticket_id not in self.connected_users:
+            self.connected_users[self.ticket_id] = {}
+        self.connected_users[self.ticket_id][self.channel_name] = self.user_display_name
+        
+        # Get list of all connected users for this ticket
+        connected_list = list(set(self.connected_users.get(self.ticket_id, {}).values()))
+        
+        # Send connection confirmation with online users
         await self.send(text_data=json.dumps({
             'type': 'connection_established',
             'ticket_id': self.ticket_id,
             'user_id': str(self.user_id),
-            'message': f'Connected to ticket {self.ticket_id}'
+            'message': f'Connected to ticket {self.ticket_id}',
+            'users': connected_list
         }))
+        
+        # Notify others that user joined
+        await self.channel_layer.group_send(
+            self.ticket_group_name,
+            {
+                'type': 'user_presence',
+                'user': self.user_display_name,
+                'status': 'online',
+                'users': connected_list
+            }
+        )
 
     async def disconnect(self, close_code):
+        # Remove user from connected users
+        if self.ticket_id in self.connected_users:
+            self.connected_users[self.ticket_id].pop(self.channel_name, None)
+            if not self.connected_users[self.ticket_id]:
+                del self.connected_users[self.ticket_id]
+        
+        # Get updated list of connected users
+        connected_list = list(set(self.connected_users.get(self.ticket_id, {}).values()))
+        
+        # Notify others that user left
+        await self.channel_layer.group_send(
+            self.ticket_group_name,
+            {
+                'type': 'user_presence',
+                'user': self.user_display_name,
+                'status': 'offline',
+                'users': connected_list
+            }
+        )
+        
         # Leave ticket group
         await self.channel_layer.group_discard(
             self.ticket_group_name,
@@ -110,6 +158,15 @@ class TicketMessagingConsumer(AsyncWebsocketConsumer):
             'type': 'typing_indicator',
             'user': event['user'],
             'is_typing': event['is_typing']
+        }))
+
+    # Handle user presence (online/offline)
+    async def user_presence(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'presence_update',
+            'user': event['user'],
+            'status': event['status'],
+            'users': event.get('users', [])
         }))
 
     @database_sync_to_async

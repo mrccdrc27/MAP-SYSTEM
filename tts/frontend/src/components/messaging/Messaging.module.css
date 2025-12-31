@@ -10,8 +10,8 @@
 
 .header {
   padding: 16px 20px;
-  background: linear-gradient(135deg, #007bff 0%, #3194ff 100%);
-  color: white;
+  background: var(--primary-color);
+  color: var(--bg1-color);
   flex-shrink: 0;
 }
 
@@ -23,7 +23,7 @@
 
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--base-font-size);
   font-weight: 600;
 }
 
@@ -42,11 +42,25 @@
 }
 
 .statusDot.connected {
-  background: #10b981;
+  background: var(--success-color);
 }
 
 .statusDot.disconnected {
-  background: #ef4444;
+  background: var(--error-color);
+  animation: none;
+}
+
+.statusDot.online {
+  background: var(--green-color);
+}
+
+.statusDot.offline {
+  background: var(--muted-text-color);
+  animation: none;
+}
+
+.statusDot.away {
+  background: var(--accent-color);
   animation: none;
 }
 

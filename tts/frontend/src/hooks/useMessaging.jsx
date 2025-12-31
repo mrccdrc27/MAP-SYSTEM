@@ -11,6 +11,7 @@ import { useWebSocketMessaging } from './useWebSocketMessaging';
  */
 export const useMessaging = (ticketId, userId = 'anonymous') => {
   const [messages, setMessages] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   // HTTP API operations
   const {
@@ -21,6 +22,7 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     sendMessage,
     editMessage,
     deleteMessage,
+    unsendMessage,
     addReaction,
     removeReaction,
     downloadAttachment,
@@ -31,10 +33,18 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     isConnected,
     error: wsError,
     typingUsers,
+    connectedUsers,
     startTyping,
     stopTyping,
     reconnect,
   } = useWebSocketMessaging(ticketId, userId, setMessages);
+
+  // Update online users when connectedUsers changes
+  useEffect(() => {
+    if (connectedUsers) {
+      setOnlineUsers(connectedUsers);
+    }
+  }, [connectedUsers]);
 
   // Auto-fetch messages when ticketId changes
   useEffect(() => {
@@ -60,12 +70,14 @@ export const useMessaging = (ticketId, userId = 'anonymous') => {
     isLoading,
     error: apiError || wsError,
     typingUsers,
+    onlineUsers,
     
     // HTTP API methods
     fetchMessages,
     sendMessage,
     editMessage,
     deleteMessage,
+    unsendMessage,
     addReaction,
     removeReaction,
     downloadAttachment,

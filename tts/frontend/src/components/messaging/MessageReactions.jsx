@@ -1,8 +1,6 @@
 import React from 'react';
 import styles from './MessageReactions.module.css';
 
-const AVAILABLE_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'];
-
 const MessageReactions = ({
   messageId,
   reactions,
@@ -10,8 +8,6 @@ const MessageReactions = ({
   currentUserId,
   currentUserData,
   onReaction,
-  showReactionModal,
-  setShowReactionModal,
   isOwn
 }) => {
   const hasReactions = Object.keys(reactionCounts).length > 0;
@@ -38,58 +34,32 @@ const MessageReactions = ({
       ?.join(', ');
   };
 
+  // Don't render anything if no reactions
+  if (!hasReactions) {
+    return null;
+  }
+
   return (
     <div className={`${styles.reactionsContainer} ${isOwn ? styles.reactionsOwn : styles.reactionsOther}`}>
       {/* Existing Reactions */}
-      {hasReactions && (
-        <div className={styles.reactionsList}>
-          {Object.entries(reactionCounts).map(([emoji, count]) => {
-            const userReacted = hasUserReacted(emoji);
-            const names = getReactorNames(emoji);
-            const moreCount = reactions?.filter(r => r.reaction === emoji).length - 3;
+      <div className={styles.reactionsList}>
+        {Object.entries(reactionCounts).map(([emoji, count]) => {
+          const userReacted = hasUserReacted(emoji);
+          const names = getReactorNames(emoji);
+          const moreCount = reactions?.filter(r => r.reaction === emoji).length - 3;
 
-            return (
-              <button
-                key={emoji}
-                className={`${styles.reactionBubble} ${userReacted ? styles.userReacted : ''}`}
-                onClick={() => onReaction(messageId, emoji)}
-                title={`${names}${moreCount > 0 ? ` and ${moreCount} others` : ''}`}
-              >
-                <span className={styles.reactionEmoji}>{emoji}</span>
-                <span className={styles.reactionCount}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add Reaction Button */}
-      <div className={styles.addReactionWrapper}>
-        <button
-          className={styles.addReactionBtn}
-          onClick={() => setShowReactionModal(showReactionModal === messageId ? null : messageId)}
-          title="Add reaction"
-        >
-          ➕
-        </button>
-
-        {/* Reaction Picker Modal */}
-        {showReactionModal === messageId && (
-          <div className={styles.reactionPicker}>
-            {AVAILABLE_REACTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                className={styles.reactionOption}
-                onClick={() => {
-                  onReaction(messageId, emoji);
-                  setShowReactionModal(null);
-                }}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
+          return (
+            <button
+              key={emoji}
+              className={`${styles.reactionBubble} ${userReacted ? styles.userReacted : ''}`}
+              onClick={() => onReaction(messageId, emoji)}
+              title={`${names}${moreCount > 0 ? ` and ${moreCount} others` : ''}`}
+            >
+              <span className={styles.reactionEmoji}>{emoji}</span>
+              <span className={styles.reactionCount}>{count}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
