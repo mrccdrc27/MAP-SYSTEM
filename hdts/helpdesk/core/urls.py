@@ -34,6 +34,11 @@ from .views import (
     serve_protected_media,
     serve_ticket_attachment,
 )
+from .views.internal_views import (
+    internal_attachment_metadata,
+    internal_attachment_file,
+    internal_health,
+)
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from .serializers import TicketSerializer
@@ -83,6 +88,11 @@ urlpatterns = [
     
     # Public ticket attachments - for TTS frontend access
     path('attachments/<path:file_path>', serve_ticket_attachment, name='serve_ticket_attachment'),
+
+    # Internal API endpoints (service-to-service, requires X-Service-Key)
+    path('internal/attachments/<int:attachment_id>/metadata', internal_attachment_metadata, name='internal_attachment_metadata'),
+    path('internal/attachments/<int:attachment_id>/file', internal_attachment_file, name='internal_attachment_file'),
+    path('internal/health', internal_health, name='internal_health'),
 
     # DRF router (should be last, and at the root for browsable API)
     path('', include(router.urls)),  # keep this LAST

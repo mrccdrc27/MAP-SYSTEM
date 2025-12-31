@@ -32,6 +32,10 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 # Service URLs for inter-service communication
 DJANGO_AUTH_SERVICE = os.environ.get('DJANGO_AUTH_SERVICE', 'http://localhost:8003')
 
+# Internal service-to-service API key (for workflow_api to call helpdesk)
+# This should be the same value in both helpdesk and workflow_api
+INTERNAL_SERVICE_KEY = os.environ.get('INTERNAL_SERVICE_KEY', 'change-me-in-production')
+
 # Application definition
 
 INSTALLED_APPS = [

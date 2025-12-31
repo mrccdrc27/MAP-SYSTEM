@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'role',
     'task',
     'tickets',
+    'attachments',  # PDF conversion and viewing
 
     'audit',
     'reporting',
@@ -237,6 +238,7 @@ HELPDESK_SERVICE_URL = config('DJANGO_HELPDESK_SERVICE_URL', default='http://loc
 DJANGO_NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-queue-default')
 DJANGO_TICKET_STATUS_QUEUE = config('DJANGO_TICKET_STATUS_QUEUE', default='ticket_status-default')
 INAPP_NOTIFICATION_QUEUE = config('DJANGO_INAPP_NOTIFICATION_QUEUE', default='inapp-notification-queue')
+PDF_CONVERSION_QUEUE = config('DJANGO_PDF_CONVERSION_QUEUE', default='pdf_conversion_queue')
 
 CELERY_TASK_DEFAULT_QUEUE = DJANGO_NOTIFICATION_QUEUE
 CELERY_TASK_ROUTES = {
@@ -255,12 +257,42 @@ CELERY_TASK_ROUTES = {
     # Ticket receive queue - tickets from helpdesk
     'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
     'tickets.tasks.create_task_for_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    # PDF conversion queue - attachment viewing
+    'attachments.tasks.convert_attachment_to_pdf': {'queue': PDF_CONVERSION_QUEUE},
+    'attachments.tasks.cleanup_pdf_cache': {'queue': PDF_CONVERSION_QUEUE},
 }
 
 # External Services
 USER_SERVICE_URL = config('DJANGO_USER_SERVICE_URL', default='http://localhost:8000')
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8000')
 BASE_URL = config('DJANGO_BASE_URL', default='http://localhost:8000')
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PDF CONVERSION CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Service-to-service authentication key for helpdesk internal API
+HELPDESK_SERVICE_KEY = config('HELPDESK_SERVICE_KEY', default='change-me-in-production')
+
+# Maximum file size allowed for PDF conversion (default: 50MB)
+PDF_CONVERSION_MAX_FILE_SIZE = config(
+    'PDF_CONVERSION_MAX_FILE_SIZE',
+    default=50 * 1024 * 1024,
+    cast=int
+)
+
+# Timeout for PDF conversion in seconds (default: 120s / 2 minutes)
+PDF_CONVERSION_TIMEOUT = config('PDF_CONVERSION_TIMEOUT', default=120, cast=int)
+
+# LibreOffice executable path (Windows default)
+LIBREOFFICE_PATH = config('LIBREOFFICE_PATH', default=r'C:\Program Files\LibreOffice\program\soffice.exe')
+
+# PDF cache cleanup settings
+PDF_CACHE_MAX_AGE_DAYS = config('PDF_CACHE_MAX_AGE_DAYS', default=30, cast=int)
+PDF_CACHE_MAX_SIZE_GB = config('PDF_CACHE_MAX_SIZE_GB', default=10, cast=int)
+
+# Helpdesk client timeout for fetching files
+HELPDESK_CLIENT_TIMEOUT = config('HELPDESK_CLIENT_TIMEOUT', default=60, cast=int)
 
 # Test Runner Configuration (Python 3.13 compatibility)
 TEST_RUNNER = 'workflow_api.test_runner.Python313CompatibleTestRunner'

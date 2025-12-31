@@ -66,14 +66,17 @@ module.exports = {
         DJANGO_USER_SERVICE_URL: "http://localhost:3000",
         DJANGO_BASE_URL: "http://localhost:8002",
         DJANGO_FRONTEND_URL: "http://localhost:1000/register",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
+        // PDF Conversion / Attachment viewing
+        LIBREOFFICE_PATH: "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+        HELPDESK_SERVICE_KEY: "dev-internal-service-key-12345"
       }
     },
     {
       name: 'workflow-worker',
       cwd: path.join(projectRoot, 'tts/workflow_api'),
       script: pythonInterpreter,
-      args: '-m celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed',
+      args: '-m celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed,pdf_conversion_queue',
       interpreter: 'none',
       windowsHide: true,
       env: {
@@ -83,6 +86,10 @@ module.exports = {
         DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
         DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8006",
+        DJANGO_HELPDESK_SERVICE_URL: "http://localhost:8000",
+        // PDF Conversion / Attachment viewing
+        LIBREOFFICE_PATH: "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+        HELPDESK_SERVICE_KEY: "dev-internal-service-key-12345",
         C_FORCE_ROOT: "false"
       }
     },
@@ -214,7 +221,9 @@ module.exports = {
       windowsHide: true,
       env: {
         DJANGO_ENV: "development",
-        DJANGO_DEBUG: "True"
+        DJANGO_DEBUG: "True",
+        // Service-to-service auth key (must match workflow-api's HELPDESK_SERVICE_KEY)
+        INTERNAL_SERVICE_KEY: "dev-internal-service-key-12345"
       }
     },
     {

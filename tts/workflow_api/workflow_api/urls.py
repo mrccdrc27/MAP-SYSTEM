@@ -56,6 +56,7 @@ def api_root(request, format=None):
         'transitions': request.build_absolute_uri('transitions/'),
         'roles': request.build_absolute_uri('roles/'),
         'steps': request.build_absolute_uri('steps/'),
+        'attachments': request.build_absolute_uri('api/attachments/'),
 
         'analytics': request.build_absolute_uri('analytics/'),
         'schema': reverse('schema', request=request, format=format),
@@ -77,6 +78,9 @@ urlpatterns = [
     path('transitions/', include('task.transitions_urls')),
     path('roles/', include('role.urls')),
     path('steps/', include('step.urls')),
+    
+    # Attachment viewing and PDF conversion
+    path('api/', include('attachments.urls', namespace='attachments')),
 
     path('audit/', include('audit.urls')),
     path('analytics/', include('reporting.urls')),

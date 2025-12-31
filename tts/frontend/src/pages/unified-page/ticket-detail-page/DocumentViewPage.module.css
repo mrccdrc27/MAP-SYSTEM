@@ -1,0 +1,138 @@
+/* DocumentViewPage Styles */
+
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-color, #fcfcfc);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: var(--bg1-color, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  box-shadow: var(--shadow, 0 4px 10px rgba(0, 0, 0, 0.05));
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--bg1-color, #ffffff);
+  color: var(--text-color, #242424);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background-color: var(--hover-bg, #f0f0f0);
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--heading-color, #333);
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.viewerContainer {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg1-color, #ffffff);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow, 4px 4px 20px 5px rgba(0, 0, 0, 0.15));
+  overflow: hidden;
+  position: relative;
+}
+
+.pdfFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-color, #242424);
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color, #e0e0e0);
+  border-top-color: var(--primary-color, #007bff);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-color, #242424);
+}
+
+.errorIcon {
+  font-size: 3rem;
+  color: var(--error-color, #ae131b);
+  margin-bottom: 1rem;
+}
+
+.errorMessage {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  max-width: 500px;
+}
+
+.actionButton {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color, #007bff);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+  background-color: var(--primary-color-hover, #0056b3);
+}

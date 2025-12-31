@@ -20,6 +20,7 @@ import AdminArchiveDetail from "../pages/admin/archive-page/archive-detail-page/
 import Dashboard from "../pages/unified-page/dashboard-page/Dashboard";
 import Ticket from "../pages/unified-page/ticket-page/Ticket";
 import TicketDetail from "../pages/unified-page/ticket-detail-page/TicketDetail";
+import DocumentViewPage from "../pages/unified-page/ticket-detail-page/DocumentViewPage";
 import Archive from "../pages/unified-page/archive-page/Archive";
 
 // reporting
@@ -64,6 +65,7 @@ export default function MainRoute() {
         <Route path="/agent/track" element={<Track />} />
         <Route path="/agent/archive" element={<Archive />} />
         <Route path="/agent/ticket/:ticketNumber" element={<TicketDetail />} />
+        <Route path="/agent/ticket/:ticketNumber/document/:attachmentId" element={<DocumentViewPage />} />
         <Route path="/agent/profile" element={<AgentProfile />} />
       </Route>
 
@@ -95,6 +97,7 @@ export default function MainRoute() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/ticket" element={<Ticket />} />
         <Route path="/ticket/:ticketNumber" element={<TicketDetail />} />
+        <Route path="/ticket/:ticketNumber/document/:attachmentId" element={<DocumentViewPage />} />
         <Route path="/archive" element={<Archive />} />
       </Route>
 

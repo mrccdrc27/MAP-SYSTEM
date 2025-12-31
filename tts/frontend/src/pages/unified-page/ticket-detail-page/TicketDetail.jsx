@@ -17,6 +17,7 @@ import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLogList from "../../../components/ticket/ActionLogList";
 import Messaging from "../../../components/messaging";
 import SLAStatus from "../../../components/ticket/SLAStatus";
+import AttachmentSection from "../../../components/attachment/AttachmentSection";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
@@ -513,76 +514,11 @@ export default function TicketDetail() {
                 </p>
               </div>
               
-              {/* Attachments Section */}
-              <div className={styles.tdAttachment}>
-                <h3>Attachments</h3>
-                {state.ticket?.attachments &&
-                state.ticket.attachments.length > 0 ? (
-                  <div className={styles.attachmentList}>
-                    {state.ticket.attachments.map((file) => {
-                      // Construct full URL for the attachment using helpdesk service URL
-                      // Uses /api/attachments/ endpoint for public access to ticket attachments
-                      const baseUrl = import.meta.env.VITE_HELPDESK_SERVICE_URL || 'http://localhost:8000';
-                      const fileUrl = `${baseUrl}/api/attachments/${file.file_path}`;
-                      
-                      // Determine icon based on file type
-                      const getFileIcon = (fileType) => {
-                        if (fileType?.includes('pdf')) return 'fa-file-pdf';
-                        if (fileType?.includes('image')) return 'fa-file-image';
-                        if (fileType?.includes('word') || fileType?.includes('document')) return 'fa-file-word';
-                        if (fileType?.includes('excel') || fileType?.includes('spreadsheet')) return 'fa-file-excel';
-                        if (fileType?.includes('powerpoint') || fileType?.includes('presentation')) return 'fa-file-powerpoint';
-                        if (fileType?.includes('zip') || fileType?.includes('archive')) return 'fa-file-zipper';
-                        if (fileType?.includes('text')) return 'fa-file-lines';
-                        return 'fa-file';
-                      };
-                      
-                      // Format file size
-                      const formatFileSize = (bytes) => {
-                        if (!bytes) return '';
-                        if (bytes < 1024) return `${bytes} B`;
-                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-                      };
-                      
-                      return (
-                        <div key={file.id} className={styles.attachmentItem}>
-                          <i className={`fa-solid ${getFileIcon(file.file_type)} ${styles.attachmentIcon}`}></i>
-                          <div className={styles.attachmentInfo}>
-                            <a
-                              href={fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.attachmentName}
-                              title={file.file_name}
-                            >
-                              {file.file_name}
-                            </a>
-                            <span className={styles.attachmentMeta}>
-                              {formatFileSize(file.file_size)}
-                            </span>
-                          </div>
-                          <a
-                            href={fileUrl}
-                            download={file.file_name}
-                            className={styles.attachmentDownload}
-                            title="Download file"
-                          >
-                            <i className="fa-solid fa-download"></i>
-                          </a>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className={styles.tdAttached}>
-                    <i className="fa-solid fa-paperclip"></i>
-                    <span className={styles.placeholderText}>
-                      No attachments available.
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* Attachments Section - Uses workflow_api for viewing/downloading */}
+              <AttachmentSection 
+                ticketNumber={state.ticket?.ticket_number || state.ticket?.ticket_id}
+                attachments={state.ticket?.attachments}
+              />
 
               {/* Comment */}
               <TicketComments ticketId={state.ticket?.ticket_id} />
