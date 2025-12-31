@@ -7,10 +7,10 @@ import { NotificationProvider } from './context/NotificationContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <AuthProvider>
-    <NotificationProvider>
-      <TicketsProvider>
+    <TicketsProvider>
+      <NotificationProvider>
         <App />
-      </TicketsProvider>
-    </NotificationProvider>
+      </NotificationProvider>
+    </TicketsProvider>
   </AuthProvider>
 )

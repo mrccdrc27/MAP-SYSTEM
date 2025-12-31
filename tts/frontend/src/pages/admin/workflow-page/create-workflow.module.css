@@ -2719,6 +2719,33 @@
   color: white;
 }
 
+/* Quick Delete Button - appears on node hover */
+.stepNodeQuickDelete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--critical-bg-color, #fee2e2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--critical-color, #dc2626);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stepNodeQuickDelete:hover {
+  background: var(--critical-color, #dc2626);
+  color: white;
+  border-color: var(--critical-color, #dc2626);
+  transform: scale(1.1);
+}
+
 /* ============================================
    6-HANDLE STEP NODE SYSTEM
    Color coding for connection type visualization:
@@ -3109,4 +3136,229 @@
   width: 16px;
   height: 16px;
   color: var(--muted-text-color, #4b5563);
+}
+
+/* ============================================
+   LOCK TOGGLE BUTTON (Inside ReactFlow canvas)
+   ============================================ */
+.lockToggleBtn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: var(--table-head-size, 0.8125rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lockToggleBtnEditing {
+  background: var(--low-bg-color, #dcfce7);
+  border-color: rgba(46, 125, 50, 0.3);
+  color: var(--low-color, #16a34a);
+}
+
+.lockToggleBtnEditing:hover {
+  background: rgba(46, 125, 50, 0.15);
+  border-color: rgba(46, 125, 50, 0.4);
+}
+
+.lockToggleBtnLocked {
+  background: var(--high-bg-color, #ffedd5);
+  border-color: rgba(179, 80, 0, 0.3);
+  color: var(--high-color, #c2410c);
+}
+
+.lockToggleBtnLocked:hover {
+  background: rgba(179, 80, 0, 0.15);
+  border-color: rgba(179, 80, 0, 0.4);
+}
+
+/* ============================================
+   ACTION PANEL (Inside ReactFlow - top left)
+   ============================================ */
+.actionPanel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: var(--table-head-size, 0.8125rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actionBtnEditing {
+  background: var(--low-bg-color, #dcfce7);
+  border-color: rgba(46, 125, 50, 0.3);
+  color: var(--low-color, #16a34a);
+}
+
+.actionBtnEditing:hover {
+  background: rgba(46, 125, 50, 0.15);
+  border-color: rgba(46, 125, 50, 0.4);
+}
+
+.actionBtnLocked {
+  background: var(--high-bg-color, #ffedd5);
+  border-color: rgba(179, 80, 0, 0.3);
+  color: var(--high-color, #c2410c);
+}
+
+.actionBtnLocked:hover {
+  background: rgba(179, 80, 0, 0.15);
+  border-color: rgba(179, 80, 0, 0.4);
+}
+
+.actionBtnAdd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: var(--table-head-size, 0.8125rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg1-color, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  color: var(--text-color, #374151);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actionBtnAdd:hover {
+  background: var(--bg-content-color, #f9fafb);
+  border-color: var(--primary-color, #3b82f6);
+  color: var(--primary-color, #3b82f6);
+}
+
+.actionBtnSave {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: var(--table-head-size, 0.8125rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--primary-color, #3b82f6);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.actionBtnSave:hover:not(:disabled) {
+  background: var(--primary-color-hover, #2563eb);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.actionBtnSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   EDITABLE EDGE STYLES
+   ============================================ */
+.edgeLabelWrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg1-color, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-color, #374151);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  min-width: 40px;
+  z-index: 1000;
+}
+
+.edgeLabelEditable {
+  cursor: pointer;
+}
+
+.edgeLabelEditable:hover {
+  border-color: var(--primary-color, #3b82f6);
+  background: var(--bg-content-color, #f9fafb);
+}
+
+.edgeLabelText {
+  color: var(--text-color, #374151);
+}
+
+.edgeLabelPlaceholder {
+  color: var(--muted-text-color, #9ca3af);
+  font-style: italic;
+  font-size: 10px;
+}
+
+/* Hide entire wrapper when not in edit mode and text is empty */
+.edgeLabelWrapper:not(.edgeLabelEditable):has(.edgeLabelText:empty) {
+  display: none;
+}
+
+.edgeLabelInput {
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  color: var(--text-color, #374151);
+  outline: none;
+  width: 100px;
+  padding: 0;
+  margin: 0;
+}
+
+.edgeDeleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--critical-bg-color, #fee2e2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--critical-color, #dc2626);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.edgeDeleteBtn:hover {
+  background: var(--critical-color, #dc2626);
+  color: white;
+  border-color: var(--critical-color, #dc2626);
 }

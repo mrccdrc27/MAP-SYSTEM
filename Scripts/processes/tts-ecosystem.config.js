@@ -220,7 +220,7 @@ module.exports = {
       name: 'helpdesk-worker',
       cwd: path.join(projectRoot, 'hdts/helpdesk'),
       script: pythonInterpreter,
-      args: '-m celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo',
+      args: '-m celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2,ticket_status-default --pool=solo',
       interpreter: 'none',
       windowsHide: true,
       env: {

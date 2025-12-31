@@ -17,12 +17,6 @@ import { LoadingState, UnsavedChangesWarning } from './components';
 // Shared Components
 import { WorkflowToolbar, ValidationPanel } from '../../../components/workflow/shared';
 
-// UI Components
-import { 
-  GitBranch, 
-  Plus
-} from 'lucide-react';
-
 // Hooks
 import { useWorkflowEditor, useDeleteConfirmation } from './hooks';
 import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
@@ -197,7 +191,6 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
           transitionCount={transitionCount}
           onSave={handleSave}
           onBack={() => navigate('/admin/workflows')}
-          onToggleEditing={() => setIsEditingGraph(!isEditingGraph)}
           activeTab={activeTab}
           onTabChange={handleTabChange}
         />
@@ -212,22 +205,6 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
 
               {/* CENTER PANEL - Flow Editor */}
               <main className={styles.centerPanel}>
-                {/* Add Step Button (when editing) */}
-                {isEditingGraph && (
-                  <div className={styles.panelSection} style={{ borderBottom: 'var(--border-bottom)', paddingBottom: '12px' }}>
-                    <div className={styles.panelHeader}>
-                      <h3><GitBranch size={16} /> Quick Actions</h3>
-                    </div>
-                    <button 
-                      className={styles.addBtnSmall}
-                      onClick={() => handleAddStep()}
-                      style={{ marginTop: '8px' }}
-                    >
-                      <Plus size={14} /> Add New Step
-                    </button>
-                  </div>
-                )}
-
                 {/* Flow Canvas */}
                 <div className={styles.flowContainer} style={{ flex: 1, minHeight: '400px' }}>
                   <WorkflowEditorContent
@@ -240,6 +217,11 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                     onPaneClick={onPaneClick}
                     isEditingGraph={isEditingGraph}
                     setHasUnsavedChanges={setHasUnsavedChanges}
+                    onToggleEditing={() => setIsEditingGraph(!isEditingGraph)}
+                    onSave={handleSave}
+                    onAddStep={() => handleAddStep()}
+                    isSaving={isSaving}
+                    hasUnsavedChanges={hasUnsavedChanges}
                   />
                 </div>
               </main>

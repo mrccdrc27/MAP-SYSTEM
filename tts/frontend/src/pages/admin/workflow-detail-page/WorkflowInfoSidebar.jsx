@@ -1,7 +1,24 @@
 import React, { useState, memo } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle, AlertCircle, Clock, Circle } from 'lucide-react';
 import styles from '../workflow-page/create-workflow.module.css';
 import sidebarStyles from './WorkflowInfoSidebar.module.css';
+
+/**
+ * Get status configuration based on workflow status
+ */
+function getStatusConfig(status) {
+  switch (status) {
+    case 'deployed':
+      return { icon: CheckCircle, className: 'statusActive', label: 'Deployed' };
+    case 'initialized':
+      return { icon: Circle, className: 'statusInitialized', label: 'Initialized' };
+    case 'paused':
+      return { icon: Clock, className: 'statusPaused', label: 'Paused' };
+    case 'draft':
+    default:
+      return { icon: AlertCircle, className: 'statusDraft', label: status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Draft' };
+  }
+}
 
 /**
  * Helper function to parse Django DurationField format and display as readable time
@@ -120,10 +137,16 @@ const WorkflowInfoSidebar = memo(function WorkflowInfoSidebar({ workflowData }) 
             )}
             <div className={styles.inputGroup}>
               <label>Status</label>
-              <div className={`${sidebarStyles.statusBadge} ${workflow.is_active ? sidebarStyles.statusActive : sidebarStyles.statusInactive}`}>
-                {workflow.is_active ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-                {workflow.is_active ? 'Active' : 'Inactive'}
-              </div>
+              {(() => {
+                const statusConfig = getStatusConfig(workflow.status);
+                const StatusIcon = statusConfig.icon;
+                return (
+                  <div className={`${sidebarStyles.statusBadge} ${sidebarStyles[statusConfig.className]}`}>
+                    <StatusIcon size={14} />
+                    {statusConfig.label}
+                  </div>
+                );
+              })()}
             </div>
             {workflow.description && (
               <div className={styles.inputGroup}>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import axios from 'axios';
 import { useNotificationWebSocket } from '../api/useNotificationWebSocket';
 import { useAuth } from './AuthContext';
+import { useTickets } from '../api/TicketsContext';
 
 // Ensure axios sends cookies for authentication
 axios.defaults.withCredentials = true;
@@ -29,6 +30,9 @@ const NotificationContext = createContext(null);
 export function NotificationProvider({ children }) {
     const { user } = useAuth();
     const userId = user?.id;
+    
+    // Get ticket context to refresh tickets when notifications arrive
+    const { refreshTickets } = useTickets();
     
     const [notifications, setNotifications] = useState({
         all: [],
@@ -63,6 +67,11 @@ export function NotificationProvider({ children }) {
                 unread: [notification, ...prev.unread],
                 read: prev.read
             }));
+            
+            // Refresh tickets when a new notification arrives
+            // This ensures the ticket itinerary is up-to-date
+            console.log('[NotificationContext] Refreshing tickets due to new notification');
+            refreshTickets();
         } else if (action === 'read') {
             setNotifications(prev => ({
                 all: prev.all.map(n => 
@@ -72,7 +81,7 @@ export function NotificationProvider({ children }) {
                 read: [notification, ...prev.read.filter(n => n.id !== notification.id)]
             }));
         }
-    }, []);
+    }, [refreshTickets]);
 
     /**
      * Handle unread count update from WebSocket

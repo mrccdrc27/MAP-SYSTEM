@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
-import { Circle, Flag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Circle, Flag, ChevronDown, ChevronUp, X } from 'lucide-react';
 import styles from '../workflow-page/create-workflow.module.css';
 import StepNodeInlineForm from './StepNodeInlineForm';
 
@@ -22,6 +22,7 @@ import StepNodeInlineForm from './StepNodeInlineForm';
  */
 export default function StepNode({ data, selected }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [formData, setFormData] = useState({
     label: data.label || '',
     role: data.role || '',
@@ -121,14 +122,31 @@ export default function StepNode({ data, selected }) {
   ].filter(Boolean).join(' ');
 
   const roles = data.availableRoles || [];
+  
+  // Check if we can delete this node (not start/end and delete handler exists)
+  const canDelete = data.onDeleteStep && !isStartNode && !isEndNode;
 
   return (
     <div 
       ref={nodeRef}
       className={nodeClasses} 
       onClick={handleNodeClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={isExpanded ? { minWidth: '320px', maxWidth: '400px' } : {}}
     >
+      {/* Quick Delete Button - visible on hover when not expanded */}
+      {canDelete && isHovered && !isExpanded && (
+        <button
+          onClick={handleDelete}
+          onMouseDown={handleInputMouseDown}
+          className={styles.stepNodeQuickDelete}
+          title="Delete step"
+        >
+          <X size={12} />
+        </button>
+      )}
+      
       {/* ===== TARGET HANDLES (Incoming) ===== */}
       
       {/* Top - Primary incoming (for END nodes: only handle, for REGULAR: one of many) */}

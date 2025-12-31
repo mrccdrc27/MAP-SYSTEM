@@ -259,30 +259,32 @@ class Command(BaseCommand):
                     step = step_objs[idx]
                     
                     # Determine transitions based on step position
+                    # Transition tuple format: (from_step, to_step, name)
                     transitions = []
                     
                     if idx == 0:  # Triage step
                         transitions = [
-                            (None, step),  # start
-                            (step, step_objs[idx + 1])  # submit -> Resolve
+                            (None, step, 'Start'),  # start
+                            (step, step_objs[idx + 1], 'Submit')  # submit -> Resolve
                         ]
                     elif idx == 1:  # Resolve step
                         transitions = [
-                            (step, step_objs[idx + 1]),  # approve -> Finalize
-                            (step, step_objs[idx - 1])   # reject -> Triage
+                            (step, step_objs[idx + 1], 'Approve'),  # approve -> Finalize
+                            (step, step_objs[idx - 1], 'Reject')   # reject -> Triage
                         ]
                     elif idx == 2:  # Finalize step
                         transitions = [
-                            (step, None)  # complete -> End
+                            (step, None, 'Complete')  # complete -> End
                         ]
                     
-                    for frm, to in transitions:
+                    for frm, to, trans_name in transitions:
                         try:
-                            # Create transition without triggering initialization checks
+                            # Create transition with name
                             trans = StepTransition(
                                 from_step_id=frm,
                                 to_step_id=to,
-                                workflow_id=wf
+                                workflow_id=wf,
+                                name=trans_name
                             )
                             trans.save()
                             total_transitions += 1

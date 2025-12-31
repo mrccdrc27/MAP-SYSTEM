@@ -8,14 +8,21 @@ import ReactFlow, {
   MarkerType,
   useReactFlow,
   BackgroundVariant,
+  Panel,
 } from 'reactflow';
+import { Plus, Save, RefreshCw } from 'lucide-react';
 import 'reactflow/dist/style.css';
 import styles from '../workflow-page/create-workflow.module.css';
 import StepNode from './StepNode';
+import EditableEdge from './EditableEdge';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 
 const nodeTypes = {
   stepNode: StepNode,
+};
+
+const edgeTypes = {
+  editableEdge: EditableEdge,
 };
 
 /**
@@ -63,6 +70,11 @@ const WorkflowEditorContent = forwardRef(({
   onPaneClick,
   isEditingGraph,
   setHasUnsavedChanges,
+  onToggleEditing,
+  onSave,
+  onAddStep,
+  isSaving = false,
+  hasUnsavedChanges = false,
 }, ref) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -88,7 +100,21 @@ const WorkflowEditorContent = forwardRef(({
       )
     );
     setUnsavedChanges(true);
-  }, [setEdges]);
+    if (setHasUnsavedChanges) setHasUnsavedChanges(true);
+  }, [setEdges, setHasUnsavedChanges]);
+
+  // Handle edge label change from inline editing
+  const handleEdgeLabelChange = useCallback((edgeId, newLabel) => {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? { ...e, label: newLabel }
+          : e
+      )
+    );
+    setUnsavedChanges(true);
+    if (setHasUnsavedChanges) setHasUnsavedChanges(true);
+  }, [setEdges, setHasUnsavedChanges]);
 
   // Handle node deletion
   const handleDeleteNode = useCallback((nodeId) => {
@@ -242,6 +268,21 @@ const WorkflowEditorContent = forwardRef(({
     };
   }, [handleInlineNodeUpdate, handleDeleteNode, roles]);
 
+  // Update edges when isEditingGraph changes to pass the updated prop
+  useEffect(() => {
+    setEdges((eds) =>
+      eds.map((e) => ({
+        ...e,
+        data: {
+          ...e.data,
+          isEditingGraph,
+          onLabelChange: handleEdgeLabelChange,
+          onDelete: handleDeleteEdge,
+        },
+      }))
+    );
+  }, [isEditingGraph, setEdges, handleEdgeLabelChange, handleDeleteEdge]);
+
   // Convert workflow data to ReactFlow format
   useEffect(() => {
     if (!workflowData?.graph) return;
@@ -288,20 +329,25 @@ const WorkflowEditorContent = forwardRef(({
           markerEnd: { type: MarkerType.ArrowClosed },
           sourceHandle,
           targetHandle,
-          data: { ...edge, isReturn },
-          type: 'smoothstep',
+          data: { 
+            ...edge, 
+            isReturn, 
+            isEditingGraph,
+            onLabelChange: handleEdgeLabelChange,
+            onDelete: handleDeleteEdge,
+          },
+          type: 'editableEdge',
           animated: true,
           style: isReturn 
             ? { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5,5' }
             : { stroke: '#3b82f6', strokeWidth: 2 },
-          labelStyle: { fill: '#1f2937' },
-          labelBgStyle: { fill: '#ffffff' },
           className: edge.to_delete ? 'deleted-edge' : '',
         };
       });
 
     setNodes(rnodes);
     setEdges(redges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowData, setNodes, setEdges, onStepClick]);
 
   // Handle edge connection with 6-handle system support
@@ -324,8 +370,13 @@ const WorkflowEditorContent = forwardRef(({
             label: 'New Transition',
             sourceHandle,
             targetHandle,
-            data: { isReturn },
-            type: 'smoothstep',
+            data: { 
+              isReturn, 
+              isEditingGraph,
+              onLabelChange: handleEdgeLabelChange,
+              onDelete: handleDeleteEdge,
+            },
+            type: 'editableEdge',
             animated: true,
             style: isReturn 
               ? { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5,5' }
@@ -441,6 +492,13 @@ const WorkflowEditorContent = forwardRef(({
         onEdgeClick={onEdgeClickHandler}
         onPaneClick={onPaneClickHandler}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        nodesDraggable={isEditingGraph}
+        nodesConnectable={isEditingGraph}
+        elementsSelectable={true}
+        deleteKeyCode={null}
+        selectionKeyCode={null}
+        multiSelectionKeyCode={null}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
@@ -449,6 +507,48 @@ const WorkflowEditorContent = forwardRef(({
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#d1d5db" />
         <Controls className="bg-white border border-gray-200 rounded-lg shadow-sm" />
+        
+        {/* Top-left action bar panel */}
+        <Panel position="top-left" className={styles.actionPanel}>
+          {/* Lock/Unlock Toggle Button */}
+          {onToggleEditing && (
+            <button
+              onClick={onToggleEditing}
+              className={`${styles.actionBtn} ${isEditingGraph ? styles.actionBtnEditing : styles.actionBtnLocked}`}
+              title={isEditingGraph ? 'Click to lock (view only)' : 'Click to unlock (enable editing)'}
+            >
+              {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
+            </button>
+          )}
+          
+          {/* Add Step Button - only when editing */}
+          {isEditingGraph && onAddStep && (
+            <button
+              onClick={onAddStep}
+              className={styles.actionBtnAdd}
+              title="Add new step"
+            >
+              <Plus size={14} /> Add Step
+            </button>
+          )}
+          
+          {/* Save Button - always visible when editing, disabled when no changes */}
+          {isEditingGraph && onSave && (
+            <button
+              onClick={onSave}
+              disabled={isSaving || !hasUnsavedChanges}
+              className={styles.actionBtnSave}
+              title={hasUnsavedChanges ? "Save changes" : "No changes to save"}
+            >
+              {isSaving ? (
+                <RefreshCw size={14} className={styles.spinner} />
+              ) : (
+                <Save size={14} />
+              )}
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          )}
+        </Panel>
       </ReactFlow>
       
       {/* Helper text */}

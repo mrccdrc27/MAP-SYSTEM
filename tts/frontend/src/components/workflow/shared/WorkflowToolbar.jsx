@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Save, RefreshCw, Settings, ArrowLeft, HelpCircle, X, Layout } from 'lucide-react';
+import { Save, RefreshCw, Settings, ArrowLeft, HelpCircle, X, Layout, Edit3 } from 'lucide-react';
 import styles from './WorkflowToolbar.module.css';
 
 /**
@@ -114,7 +114,7 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
               className={`${styles.tabBtn} ${activeTab === 'editor' ? styles.tabBtnActive : ''}`}
               title="Workflow Editor"
             >
-              Editor
+              <Edit3 size={14} /> Editor
             </button>
             <button
               onClick={() => onTabChange('config')}
@@ -124,16 +124,6 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
               <Settings size={14} /> Configure
             </button>
           </div>
-        )}
-
-        {/* Edit/Lock toggle (edit mode) */}
-        {!isCreateMode && onToggleEditing && (
-          <button
-            onClick={onToggleEditing}
-            className={`${styles.toggleBtn} ${isEditingGraph ? styles.toggleBtnActive : styles.toggleBtnInactive}`}
-          >
-            {isEditingGraph ? '🔓 Editing' : '🔒 Locked'}
-          </button>
         )}
 
         <div className={styles.divider} />
@@ -148,20 +138,22 @@ const WorkflowToolbar = memo(function WorkflowToolbar({
           </button>
         )}
 
-        {/* Save button */}
-        <button
-          onClick={onSave}
-          disabled={isSaving || !canSave}
-          className={styles.primaryBtn}
-          title={validationErrorCount > 0 ? `Cannot save: ${validationErrorCount} validation error(s)` : ''}
-        >
-          {isSaving ? (
-            <RefreshCw className={styles.spinner} size={16} />
-          ) : (
-            <Save size={16} />
-          )}
-          {isSaving ? 'Saving...' : (isCreateMode ? 'Create Workflow' : 'Save Changes')}
-        </button>
+        {/* Save button - only shown in create mode, edit mode has save inside canvas */}
+        {isCreateMode && (
+          <button
+            onClick={onSave}
+            disabled={isSaving || !canSave}
+            className={styles.primaryBtn}
+            title={validationErrorCount > 0 ? `Cannot save: ${validationErrorCount} validation error(s)` : ''}
+          >
+            {isSaving ? (
+              <RefreshCw className={styles.spinner} size={16} />
+            ) : (
+              <Save size={16} />
+            )}
+            {isSaving ? 'Saving...' : 'Create Workflow'}
+          </button>
+        )}
       </div>
     </div>
   );

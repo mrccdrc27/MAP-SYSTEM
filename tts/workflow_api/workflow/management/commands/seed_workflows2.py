@@ -245,8 +245,8 @@ class Command(BaseCommand):
                         'category': wf_data["category"],
                         'sub_category': wf_data["sub_category"],
                         'department': wf_data["department"],
-                        'is_published': True,
-                        'status': 'deployed',  # Set status to deployed so workflows are active
+                        'is_published': False,  # Let validation signals compute this
+                        'status': 'draft',  # Let validation signals compute final status
                         'urgent_sla': timedelta(hours=4),
                         'high_sla': timedelta(hours=8),
                         'medium_sla': timedelta(days=2),
@@ -328,24 +328,32 @@ class Command(BaseCommand):
                         elif idx == 1:
                             # Create a transition between orphaned steps (disconnected from start)
                             if idx + 1 < num_steps:
-                                transitions = [(step, step_objs[idx + 1])]
+                                transitions = [(step, step_objs[idx + 1], 'Forward')]
                     else:
                         # NORMAL workflow: Flexible transitions based on step count
-                        if idx == 0:  # First step
-                            transitions = [(None, step)]  # start
-                            if num_steps > 1:  # Only add outgoing transition if there are more steps
-                                transitions.append((step, step_objs[idx + 1]))
+                        # NOTE: Validation requires BOTH from_step_id and to_step_id to be set
+                        # so we don't create (None, step) or (step, None) transitions.
+                        # Transition tuple format: (from_step, to_step, name)
+                        if num_steps == 1:
+                            # Single step workflow: No transitions needed!
+                            # The step is both is_start=True and is_end=True
+                            # Validation allows end steps to have no outgoing transitions
+                            # and start step is already in reachable set
+                            transitions = []
+                        elif idx == 0:  # First step
+                            transitions = [(step, step_objs[idx + 1], 'Submit')]  # Forward to next step
                         elif idx == num_steps - 1:  # Last step
-                            transitions = [(step, None)]  # complete -> End
-                            if num_steps > 1 and idx > 0:  # Add reject transition if not single step and not first
-                                transitions.append((step, step_objs[idx - 1]))
+                            # Last step can go back (reject) but no need to create "end" transition
+                            # The is_end flag on the step marks it as terminal
+                            if idx > 0:
+                                transitions = [(step, step_objs[idx - 1], 'Reject')]  # Reject -> Previous
                         else:  # Middle steps
                             transitions = [
-                                (step, step_objs[idx + 1]),  # approve -> Next
-                                (step, step_objs[idx - 1])   # reject -> Previous
+                                (step, step_objs[idx + 1], 'Approve'),  # approve -> Next
+                                (step, step_objs[idx - 1], 'Reject')   # reject -> Previous
                             ]
                     
-                    for frm, to in transitions:
+                    for frm, to, trans_name in transitions:
                         try:
                             # Check if transition already exists before creating
                             existing_transition = StepTransition.objects.filter(
@@ -358,11 +366,12 @@ class Command(BaseCommand):
                                 # Transition already exists, skip
                                 continue
                             
-                            # Create transition without triggering initialization checks
+                            # Create transition with name
                             trans = StepTransition(
                                 from_step_id=frm,
                                 to_step_id=to,
-                                workflow_id=wf
+                                workflow_id=wf,
+                                name=trans_name
                             )
                             trans.save()
                             total_transitions += 1
@@ -372,20 +381,21 @@ class Command(BaseCommand):
                             ))
                             continue
 
-                # After all steps and transitions are created, force the workflow status
-                # Use update() to bypass signals that recalculate status
+                # After all steps and transitions are created, let signals compute status
+                # Manually trigger status recomputation by calling compute_workflow_status
+                from workflow.utils import compute_workflow_status
+                compute_workflow_status(wf.workflow_id)
+                
+                # Reload workflow to get updated status
+                wf.refresh_from_db()
                 is_broken = wf_data.get('broken_type') is not None
-                if not is_broken:
-                    Workflows.objects.filter(workflow_id=wf.workflow_id).update(
-                        status='deployed',
-                        is_published=True
-                    )
-                    self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ Workflow status set to deployed (bypassing validation signals)'
+                if is_broken:
+                    self.stdout.write(self.style.WARNING(
+                        f'  ⚠ Broken workflow status: {wf.status} (expected: draft)'
                     ))
                 else:
-                    self.stdout.write(self.style.WARNING(
-                        f'  ⚠ Broken workflow left in draft state intentionally'
+                    self.stdout.write(self.style.SUCCESS(
+                        f'  ✓ Workflow status computed by validation: {wf.status}, is_published: {wf.is_published}'
                     ))
 
             # Comprehensive summary output

@@ -31,6 +31,21 @@
   color: var(--critical-color);
 }
 
+.statusInitialized {
+  background: var(--primary-bg-color, rgba(59, 130, 246, 0.1));
+  color: var(--primary-color, #3b82f6);
+}
+
+.statusPaused {
+  background: var(--medium-bg-color, rgba(234, 179, 8, 0.1));
+  color: var(--medium-color, #ca8a04);
+}
+
+.statusDraft {
+  background: var(--bg-content-color, #f3f4f6);
+  color: var(--muted-text-color, #6b7280);
+}
+
 .slaTitle {
   margin-bottom: 12px;
   display: block;
