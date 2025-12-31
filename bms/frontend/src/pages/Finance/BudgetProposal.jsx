@@ -439,13 +439,13 @@ const BudgetProposal = () => {
     const abbreviations = {
       Department: "Dept.",
       Management: "Mgmt.",
-      Operations: "Ops.",
-      Merchandise: "Merch.",
-      Marketing: "Mktg.",
-      Logistics: "Log.",
-      "Human Resources": "HR",
+      Operations: "Operations.",
+      Merchandise: "Merchandising.",
+      Marketing: "Marketing.",
+      Logistics: "Logistics",
+      "Human Resources": "Human Resources",
       "Information Technology": "IT",
-      Finance: "Fin.",
+      Finance: "Finance Department",
     };
     let shortened = name;
     for (const [full, abbr] of Object.entries(abbreviations)) {
@@ -1429,9 +1429,10 @@ const BudgetProposal = () => {
         </div>
       </nav>
 
+      {/* UPDATED: Reduced margin size to match Dashboard */}
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -2015,6 +2016,7 @@ const BudgetProposal = () => {
                               textAlign: "center",
                             }}
                           >
+                            {/* UPDATED: Removed outline focus ring from View/Review buttons */}
                             <button
                               className="blue-button action-btn"
                               onClick={(e) => {
@@ -2034,7 +2036,10 @@ const BudgetProposal = () => {
                                 cursor: "pointer",
                                 fontSize: "12px",
                                 minWidth: "60px",
+                                outline: "none",
                               }}
+                              onFocus={(e) => e.currentTarget.style.outline = "none"}
+                              onMouseDown={(e) => e.preventDefault()}
                             >
                               {proposal.status === "SUBMITTED" &&
                               isFinanceManager
@@ -2418,9 +2423,9 @@ const BudgetProposal = () => {
                     border: "1px solid #e0e0e0",
                   }}
                 >
-                  {/* Finance Operator Name */}
+                  {/* Finance Manager Name */}
                   <div className="detail-item" style={{ marginBottom: "15px" }}>
-                    <strong>Finance Operator name:</strong>
+                    <strong>Finance Manager Name:</strong>
                     <div style={{ marginTop: "5px" }}>
                       <input
                         type="text"
@@ -2430,7 +2435,7 @@ const BudgetProposal = () => {
                         disabled={showReviewPopup.readOnly || !isFinanceManager}
                         placeholder={
                           isFinanceManager
-                            ? "Enter finance operator name"
+                            ? "Enter Finance Manager Name"
                             : "Pending Finance Review"
                         }
                         style={{

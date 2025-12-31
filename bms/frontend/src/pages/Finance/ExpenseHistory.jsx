@@ -26,6 +26,7 @@ import {
   LogOut,
   Bell,
   Settings,
+  Download,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LOGOMAP from "../../assets/MAP.jpg";
@@ -345,6 +346,98 @@ const ExpenseHistory = () => {
     if (showNotifications) setShowNotifications(false);
   };
 
+  // Helper function to get category display name
+  const getCategoryDisplay = () => {
+    if (!selectedCategory) return "All Categories";
+    return selectedCategory === "CAPEX" ? "CapEx" : "OpEx";
+  };
+
+  // Export Report Handler for Excel (.xlsx) - Fixed Version
+  const handleExportReport = () => {
+    if (!selectedExpense) return;
+    
+    try {
+      // Create CSV content that Excel can open as .xlsx
+      const csvRows = [];
+      
+      // Add UTF-8 BOM for Excel compatibility
+      const BOM = "\uFEFF";
+      
+      // Header with metadata
+      csvRows.push("EXPENSE REPORT");
+      csvRows.push(`"Generated on:", "${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}"`);
+      csvRows.push(""); // Empty row
+      
+      // Transaction Details section
+      csvRows.push("TRANSACTION DETAILS");
+      csvRows.push(`"Date:","${selectedExpense.date}"`);
+      csvRows.push(`"Description:","${selectedExpense.description.replace(/"/g, '""')}"`);
+      csvRows.push(`"Amount:","₱${parseFloat(selectedExpense.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
+      csvRows.push(`"Vendor:","${(selectedExpense.vendor || "N/A").replace(/"/g, '""')}"`);
+      csvRows.push(`"Department:","${(selectedExpense.department_name || "N/A").replace(/"/g, '""')}"`);
+      csvRows.push(`"Category:","${(selectedExpense.category_name || "N/A").replace(/"/g, '""')}"`);
+      csvRows.push(`"Sub-Category:","${(selectedExpense.sub_category_name || "N/A").replace(/"/g, '""')}"`);
+      csvRows.push(""); // Empty row
+      
+      if (selectedProposalDetails) {
+        // Project Details section
+        csvRows.push("PROJECT DETAILS");
+        csvRows.push(`"Project Title:","${selectedProposalDetails.title.replace(/"/g, '""')}"`);
+        csvRows.push(`"Performance End Date:","${selectedProposalDetails.performance_end_date}"`);
+        csvRows.push(""); // Empty row
+        csvRows.push(`"Project Summary:","${(selectedProposalDetails.project_summary || "").replace(/"/g, '""')}"`);
+        csvRows.push(""); // Empty row
+        csvRows.push(`"Project Description:","${(selectedProposalDetails.project_description || "").replace(/"/g, '""')}"`);
+        csvRows.push(""); // Empty row
+        
+        // Cost Elements section
+        csvRows.push("COST ELEMENTS");
+        csvRows.push(`"Type","Description","Estimated Cost"`);
+        
+        if (selectedProposalDetails.items && selectedProposalDetails.items.length > 0) {
+          selectedProposalDetails.items.forEach(item => {
+            csvRows.push(`"${item.cost_element.replace(/"/g, '""')}","${(item.description || "").replace(/"/g, '""')}","₱${parseFloat(item.estimated_cost).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
+          });
+        }
+        
+        csvRows.push(""); // Empty row
+        csvRows.push(`"TOTAL","","₱${parseFloat(selectedProposalDetails.total_cost || selectedProposalDetails.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
+      } else {
+        csvRows.push("PROJECT LINK");
+        csvRows.push(`"Status:","Not linked to a project proposal"`);
+      }
+      
+      // Convert to CSV string
+      const csvContent = BOM + csvRows.join('\n');
+      
+      // Create blob with proper Excel MIME type
+      const blob = new Blob([csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+      
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with .csv extension (Excel can open this and save as .xlsx)
+      const fileName = `Expense_Report_${selectedExpense.id}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = fileName;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      // Silent export - no alert message
+      
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      alert("Failed to export report. Please try again.");
+    }
+  };
+
   // Current Date State
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -391,16 +484,6 @@ const ExpenseHistory = () => {
     const fetchCategories = async () => {
       try {
         const res = await getExpenseCategories();
-        // Assume API returns list of categories.
-        // We can manually add "CapEx" and "OpEx" if the API returns subcategories,
-        // OR if the API supports filtering by Classification, we can just use static options for this page.
-        // For History, usually filtering by CapEx/OpEx is desired.
-
-        // Option A: Use API categories
-        // setCategories([{ code: "", name: "All Categories" }, ...res.data]);
-
-        // Option B: Use Static Main Classifications (Matches Requirement: Asset/Liability/Equity/Revenue/Expense)
-        // But for Expenses, it's usually CapEx vs OpEx.
         setCategories([
           { code: "", name: "All Categories" },
           { code: "CAPEX", name: "CapEx" },
@@ -422,7 +505,6 @@ const ExpenseHistory = () => {
           page: currentPage,
           page_size: pageSize,
           search: debouncedSearchTerm,
-          // MODIFICATION: Use the correct filter key for classification
           category__classification:
             selectedCategory !== "" ? selectedCategory : undefined,
         };
@@ -478,6 +560,10 @@ const ExpenseHistory = () => {
   const handleManageProfile = () => {
     setShowManageProfile(true);
     setShowProfileDropdown(false);
+  };
+
+  const handleCloseManageProfile = () => {
+    setShowManageProfile(false);
   };
 
   const handleViewExpense = async (expense) => {
@@ -540,13 +626,11 @@ const ExpenseHistory = () => {
       className="app-container"
       style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
     >
-      {/* Navbar (Same as before, simplified for brevity in this output, assumed present from previous code block or standard nav) */}
+      {/* Navbar */}
       <nav
         className="navbar"
         style={{ position: "static", marginBottom: "20px" }}
       >
-        {/* ... Navbar Content (Logo, Links, Profile) ... */}
-        {/* Copying navbar structure from previous file to ensure completeness if replacing whole file */}
         <div
           className="navbar-content"
           style={{
@@ -830,7 +914,7 @@ const ExpenseHistory = () => {
 
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -882,16 +966,19 @@ const ExpenseHistory = () => {
                       />
                     </div>
 
-                    {/* Category Filter - Updated Style */}
+                    {/* Updated Category Filter - Matching ExpenseTracking Layout */}
                     <div
                       className="filter-dropdown"
-                      style={{ position: "relative" }}
+                      style={{ position: "relative", width: "150px" }}
                     >
                       <button
                         className={`filter-dropdown-btn ${
                           showCategoryDropdown ? "active" : ""
                         }`}
-                        onClick={toggleCategoryDropdown}
+                        onClick={() =>
+                          setShowCategoryDropdown(!showCategoryDropdown)
+                        }
+                        onMouseDown={(e) => e.preventDefault()}
                         style={{
                           padding: "8px 12px",
                           border: "1px solid #ccc",
@@ -899,21 +986,24 @@ const ExpenseHistory = () => {
                           backgroundColor: "white",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          minWidth: "160px",
+                          gap: "5px",
                           outline: "none",
+                          minWidth: "140px",
+                          width: "100%",
+                          justifyContent: "space-between",
                         }}
                       >
-                        <span>
-                          {selectedCategory
-                            ? categories.find(
-                                (c) => c.code === selectedCategory
-                              )?.name
-                            : "All Categories"}
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getCategoryDisplay()}
                         </span>
                         <ChevronDown size={14} />
                       </button>
-
                       {showCategoryDropdown && (
                         <div
                           className="category-dropdown-menu"
@@ -926,27 +1016,61 @@ const ExpenseHistory = () => {
                             borderRadius: "4px",
                             width: "100%",
                             zIndex: 1000,
+                            maxHeight: "200px",
+                            overflowY: "auto",
                           }}
                         >
-                          {categories.map((category) => (
-                            <div
-                              key={category.code}
-                              className="category-dropdown-item"
-                              onClick={() =>
-                                handleCategorySelect(category.code)
-                              }
-                              style={{
-                                padding: "8px 12px",
-                                cursor: "pointer",
-                                backgroundColor:
-                                  selectedCategory === category.code
-                                    ? "#f0f0f0"
-                                    : "white",
-                              }}
-                            >
-                              {category.name}
-                            </div>
-                          ))}
+                          <div
+                            className={`category-dropdown-item ${
+                              !selectedCategory ? "active" : ""
+                            }`}
+                            onClick={() => handleCategorySelect("")}
+                            onMouseDown={(e) => e.preventDefault()}
+                            style={{
+                              padding: "8px 12px",
+                              cursor: "pointer",
+                              backgroundColor: !selectedCategory
+                                ? "#f0f0f0"
+                                : "white",
+                              outline: "none",
+                            }}
+                          >
+                            All Categories
+                          </div>
+                          <div
+                            className={`category-dropdown-item ${
+                              selectedCategory === "CAPEX" ? "active" : ""
+                            }`}
+                            onClick={() => handleCategorySelect("CAPEX")}
+                            onMouseDown={(e) => e.preventDefault()}
+                            style={{
+                              padding: "8px 12px",
+                              cursor: "pointer",
+                              backgroundColor:
+                                selectedCategory === "CAPEX"
+                                  ? "#f0f0f0"
+                                  : "white",
+                              outline: "none",
+                            }}
+                          >
+                            CapEx
+                          </div>
+                          <div
+                            className={`category-dropdown-item ${
+                              selectedCategory === "OPEX" ? "active" : ""
+                            }`}
+                            onClick={() => handleCategorySelect("OPEX")}
+                            onMouseDown={(e) => e.preventDefault()}
+                            style={{
+                              padding: "8px 12px",
+                              cursor: "pointer",
+                              backgroundColor:
+                                selectedCategory === "OPEX" ? "#f0f0f0" : "white",
+                              outline: "none",
+                            }}
+                          >
+                            OpEx
+                          </div>
                         </div>
                       )}
                     </div>
@@ -961,7 +1085,7 @@ const ExpenseHistory = () => {
                   }}
                 ></div>
 
-                {/* Table - Updated Columns to match ExpenseTracking */}
+                {/* Table */}
                 <div
                   style={{
                     flex: 1,
@@ -1011,7 +1135,6 @@ const ExpenseHistory = () => {
                         >
                           DESCRIPTION
                         </th>
-                        {/* Added Department Column */}
                         <th
                           style={{
                             width: "18%",
@@ -1034,7 +1157,6 @@ const ExpenseHistory = () => {
                         >
                           CATEGORY
                         </th>
-                        {/* Added Sub-Category Column */}
                         <th
                           style={{
                             width: "15%",
@@ -1107,8 +1229,6 @@ const ExpenseHistory = () => {
                             >
                               {expense.description}
                             </td>
-
-                            {/* FIX: Ensure these match ExpenseTrackingSerializer keys */}
                             <td
                               style={{
                                 padding: "0.75rem",
@@ -1117,8 +1237,6 @@ const ExpenseHistory = () => {
                             >
                               {expense.department_name || "N/A"}
                             </td>
-
-                            {/* Category (CapEx/OpEx) */}
                             <td
                               style={{
                                 padding: "0.75rem",
@@ -1127,8 +1245,6 @@ const ExpenseHistory = () => {
                             >
                               {expense.category_name || "N/A"}
                             </td>
-
-                            {/* Sub-Category (Specific Name) */}
                             <td
                               style={{
                                 padding: "0.75rem",
@@ -1137,7 +1253,6 @@ const ExpenseHistory = () => {
                             >
                               {expense.sub_category_name || "N/A"}
                             </td>
-
                             <td
                               style={{
                                 padding: "0.75rem",
@@ -1167,6 +1282,11 @@ const ExpenseHistory = () => {
                                   border: "none",
                                   borderRadius: "4px",
                                   cursor: "pointer",
+                                  outline: "none", // Removes default outline
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); // Prevents black circle on click
+                                  e.stopPropagation();
                                 }}
                               >
                                 View
@@ -1211,24 +1331,65 @@ const ExpenseHistory = () => {
                   overflow: "hidden",
                 }}
               >
-                <button
-                  className="back-button"
-                  onClick={handleBackToList}
+                {/* Top Bar with Back and Export Buttons */}
+                <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: "5px",
-                    padding: "8px 12px",
-                    backgroundColor: "#f8f9fa",
-                    border: "1px solid #dee2e6",
-                    borderRadius: "4px",
-                    cursor: "pointer",
                     marginBottom: "20px",
-                    alignSelf: "flex-start",
                   }}
                 >
-                  <ArrowLeft size={16} /> <span>Back to Expenses</span>
-                </button>
+                  <button
+                    className="back-button"
+                    onClick={handleBackToList}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "8px 12px",
+                      backgroundColor: "#f8f9fa",
+                      border: "1px solid #dee2e6",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      outline: "none", // Removes default outline
+                      fontSize: "13px",
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevents black circle on click
+                      e.stopPropagation();
+                    }}
+                  >
+                    <ArrowLeft size={14} /> <span>Back to Expenses</span>
+                  </button>
+
+                  {/* Updated Export Report Button - Blue with White Text, Icon on Right, No Hover Effect */}
+                  <button
+                    onClick={handleExportReport}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "6px 14px",
+                      backgroundColor: "#007bff",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontWeight: "500",
+                      fontSize: "13px",
+                      outline: "none", // Removes default outline
+                      flexDirection: "row-reverse", // Places icon on the right
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevents black circle on click
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Download size={14} />
+                    <span>Export Report</span>
+                  </button>
+                </div>
 
                 <div
                   style={{ flex: 1, overflow: "auto", paddingRight: "10px" }}
@@ -1289,7 +1450,7 @@ const ExpenseHistory = () => {
                         </div>
                       </div>
 
-                      {/* NEW: Show the specific expense details first */}
+                      {/* Transaction Details Section */}
                       <div
                         className="expense-summary-section"
                         style={{
@@ -1593,7 +1754,7 @@ const ExpenseHistory = () => {
                       </p>
                       <p>
                         <strong>Vendor:</strong>{" "}
-                        {selectedExpense.vendor || "N/A"} {/* ADD THIS LINE */}
+                        {selectedExpense.vendor || "N/A"}
                       </p>
                       <p>
                         <strong>Amount:</strong> ₱

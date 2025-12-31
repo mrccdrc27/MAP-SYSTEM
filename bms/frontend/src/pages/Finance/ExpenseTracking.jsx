@@ -1356,7 +1356,7 @@ const ExpenseTracking = () => {
 
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -1797,7 +1797,7 @@ const ExpenseTracking = () => {
                       </th>
                       <th
                         style={{
-                          width: "8%",
+                          width: "10%",
                           padding: "0.75rem",
                           textAlign: "left",
                           borderBottom: "2px solid #dee2e6",
@@ -1857,7 +1857,7 @@ const ExpenseTracking = () => {
                       </th>
                       <th
                         style={{
-                          width: "10%",
+                          width: "9%",
                           padding: "0.75rem",
                           textAlign: "left",
                           borderBottom: "2px solid #dee2e6",
@@ -1872,7 +1872,7 @@ const ExpenseTracking = () => {
                       </th>
                       <th
                         style={{
-                          width: "10%",
+                          width: "12%",
                           padding: "0.75rem",
                           textAlign: "left",
                           borderBottom: "2px solid #dee2e6",
@@ -1887,7 +1887,7 @@ const ExpenseTracking = () => {
                       </th>
                       <th
                         style={{
-                          width: "10%",
+                          width: "12%",
                           padding: "0.75rem",
                           textAlign: "left",
                           borderBottom: "2px solid #dee2e6",

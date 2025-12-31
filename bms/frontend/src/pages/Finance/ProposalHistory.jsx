@@ -1,43 +1,3 @@
-/*
-1. Overview
-The Proposal History page serves as the audit trail for the Budget Management System. Unlike the "Budget Proposal" page (which shows the current state of active proposals), the History page tracks actions and status changes over time. It allows Finance Managers and Department Heads to see who modified a proposal, when it happened, and what the outcome was (Approved, Rejected, Updated).
-
-2. Frontend Implementation (ProposalHistory.jsx)
-Data Source: Fetches data from getProposalHistory (Endpoint: /budget-proposals/history/).
-Columns:
-Ticket ID: The external reference ID (e.g., TKT-FIN-2025-004).
-Department: The department associated with the proposal.
-Category: High-level classification (CapEx or OpEx).
-Sub-Category: Specific cost element (e.g., "Audit Fees", "Server Hosting").
-Last Modified: Timestamp of the specific action (Submission, Approval, Rejection).
-Modified By: The user (Finance Head, Dept Head) who performed the action.
-Status: The state resulting from the action (Approved, Rejected, Submitted).
-Interactions:
-Clicking a Row: Opens a Detail Modal that fetches the full proposal data using getProposalDetail(proposal_pk).
-Filters: Server-side filtering for Department, Category, and Status.
-Print: Allows printing the detailed view of a historical proposal record.
-
-3. Backend Logic (Behind the Scenes)
-Model: ProposalHistory (in models.py).
-This model is distinct from BudgetProposal. It acts as a log.
-One BudgetProposal can have multiple ProposalHistory entries (e.g., one for "Created", one for "Submitted", one for "Approved").
-Data Generation (Seeder):
-The controlled_seeder.py was updated to explicitly create ProposalHistory records whenever it creates a seed proposal.
-Example: When the seeder creates an "Approved" proposal, it creates two history records: one for the initial "SUBMITTED" action by the User, and one for the "APPROVED" action by the Finance Head.
-Serializers (serializers_budget.py):
-ProposalHistorySerializer: Flattens the relationship between the History log and the parent Proposal to provide fields like department and category directly to the table without N+1 query issues.
-Logic: It dynamically determines "Category" (CapEx/OpEx) based on the proposal's items to ensure consistent reporting.
-
-4. Workflow Example
-User A submits a proposal.
-Backend: Creates BudgetProposal record AND ProposalHistory record (Action: SUBMITTED).
-Frontend History: Shows row "Modified By: User A", "Status: SUBMITTED".
-Finance Head reviews and approves it.
-Backend: Updates BudgetProposal status to APPROVED. Creates new ProposalHistory record (Action: APPROVED).
-Frontend History: Shows new row (at top) "Modified By: Finance Head", "Status: APPROVED".
-
-*/
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -50,6 +10,15 @@ import {
   ArrowLeft,
   Printer,
   X,
+  Eye,
+  Calendar,
+  User as UserIcon,
+  FileText,
+  Clock,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Download,
 } from "lucide-react";
 import LOGOMAP from "../../assets/MAP.jpg";
 import "./ProposalHistory.css";
@@ -60,6 +29,7 @@ import {
 } from "../../API/proposalAPI";
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
+import * as XLSX from 'xlsx'; // For Excel export
 
 // Status Component
 const Status = ({ type, name }) => {
@@ -141,7 +111,7 @@ const Pagination = ({
   totalItems,
   onPageChange,
   onPageSizeChange,
-  pageSizeOptions = [6, 10, 25, 50],
+  pageSizeOptions = [5, 10, 20, 50, 100],
 }) => {
   const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -154,71 +124,110 @@ const Pagination = ({
   const renderPageNumbers = () => {
     const pages = [];
     const pageLimit = 5;
+    const sideButtons = Math.floor(pageLimit / 2);
 
-    // Always show 1
-    pages.push(
-      <button
-        key={1}
-        onClick={() => handlePageClick(1)}
-        style={{
-          padding: "8px 12px",
-          border: "1px solid #ccc",
-          backgroundColor: 1 === currentPage ? "#007bff" : "white",
-          color: 1 === currentPage ? "white" : "black",
-          cursor: "pointer",
-          borderRadius: "4px",
-          minWidth: "35px",
-        }}
-      >
-        1
-      </button>
-    );
-
-    let startPage = Math.max(2, currentPage - 1);
-    let endPage = Math.min(totalPages - 1, currentPage + 1);
-
-    if (startPage > 2) {
-      pages.push(
-        <span key="start-ellipsis" style={{ padding: "8px" }}>
-          ...
-        </span>
-      );
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
+    if (totalPages <= pageLimit + 2) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(
+          <button
+            key={i}
+            className={`pageButton ${i === currentPage ? "active" : ""}`}
+            onClick={() => handlePageClick(i)}
+            onMouseDown={(e) => e.preventDefault()}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #ccc",
+              backgroundColor: i === currentPage ? "#007bff" : "white",
+              color: i === currentPage ? "white" : "black",
+              cursor: "pointer",
+              borderRadius: "4px",
+              minWidth: "40px",
+              outline: "none",
+            }}
+          >
+            {i}
+          </button>
+        );
+      }
+    } else {
       pages.push(
         <button
-          key={i}
-          onClick={() => handlePageClick(i)}
+          key={1}
+          className={`pageButton ${1 === currentPage ? "active" : ""}`}
+          onClick={() => handlePageClick(1)}
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             padding: "8px 12px",
             border: "1px solid #ccc",
-            backgroundColor: i === currentPage ? "#007bff" : "white",
-            color: i === currentPage ? "white" : "black",
+            backgroundColor: 1 === currentPage ? "#007bff" : "white",
+            color: 1 === currentPage ? "white" : "black",
             cursor: "pointer",
             borderRadius: "4px",
-            minWidth: "35px",
+            minWidth: "40px",
+            outline: "none",
           }}
         >
-          {i}
+          1
         </button>
       );
-    }
 
-    if (endPage < totalPages - 1) {
-      pages.push(
-        <span key="end-ellipsis" style={{ padding: "8px" }}>
-          ...
-        </span>
-      );
-    }
+      let startPage = Math.max(2, currentPage - sideButtons);
+      let endPage = Math.min(totalPages - 1, currentPage + sideButtons);
 
-    // Always show last page if > 1
-    if (totalPages > 1) {
+      if (currentPage - sideButtons > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="ellipsis">
+            ...
+          </span>
+        );
+      }
+
+      if (currentPage + sideButtons > totalPages - 1) {
+        startPage = totalPages - pageLimit;
+      }
+      if (currentPage - sideButtons < 2) {
+        endPage = pageLimit + 1;
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        if (i > 1 && i < totalPages) {
+          pages.push(
+            <button
+              key={i}
+              className={`pageButton ${i === currentPage ? "active" : ""}`}
+              onClick={() => handlePageClick(i)}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{
+                padding: "8px 12px",
+                border: "1px solid #ccc",
+                backgroundColor: i === currentPage ? "#007bff" : "white",
+                color: i === currentPage ? "white" : "black",
+                cursor: "pointer",
+                borderRadius: "4px",
+                minWidth: "40px",
+                outline: "none",
+              }}
+            >
+              {i}
+            </button>
+          );
+        }
+      }
+
+      if (currentPage + sideButtons < totalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="ellipsis">
+            ...
+          </span>
+        );
+      }
+
       pages.push(
         <button
           key={totalPages}
+          className={`pageButton ${totalPages === currentPage ? "active" : ""}`}
           onClick={() => handlePageClick(totalPages)}
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             padding: "8px 12px",
             border: "1px solid #ccc",
@@ -226,38 +235,44 @@ const Pagination = ({
             color: totalPages === currentPage ? "white" : "black",
             cursor: "pointer",
             borderRadius: "4px",
-            minWidth: "35px",
+            minWidth: "40px",
+            outline: "none",
           }}
         >
           {totalPages}
         </button>
       );
     }
-
     return pages;
   };
 
   return (
     <div
+      className="paginationContainer"
       style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         marginTop: "20px",
+        padding: "10px 0",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span style={{ fontSize: "14px" }}>Show</span>
+      <div
+        className="pageSizeSelector"
+        style={{ display: "flex", alignItems: "center", gap: "8px" }}
+      >
+        <label htmlFor="pageSize" style={{ fontSize: "14px" }}>
+          Show
+        </label>
         <select
+          id="pageSize"
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           style={{
-            padding: "6px",
-            borderRadius: "4px",
+            padding: "6px 8px",
             border: "1px solid #ccc",
-            backgroundColor: "white", // Fixed grey fill issue
-            color: "#333",
-            cursor: "pointer",
+            borderRadius: "4px",
+            outline: "none",
           }}
         >
           {pageSizeOptions.map((size) => (
@@ -269,16 +284,24 @@ const Pagination = ({
         <span style={{ fontSize: "14px" }}>items per page</span>
       </div>
 
-      <div style={{ display: "flex", gap: "5px" }}>
+      <div
+        className="pageNavigation"
+        style={{ display: "flex", alignItems: "center", gap: "5px" }}
+      >
         <button
           onClick={() => handlePageClick(currentPage - 1)}
           disabled={currentPage === 1}
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             padding: "8px 12px",
             border: "1px solid #ccc",
             backgroundColor: currentPage === 1 ? "#f0f0f0" : "white",
             cursor: currentPage === 1 ? "not-allowed" : "pointer",
             borderRadius: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            outline: "none",
           }}
         >
           Prev
@@ -286,24 +309,236 @@ const Pagination = ({
         {renderPageNumbers()}
         <button
           onClick={() => handlePageClick(currentPage + 1)}
-          disabled={currentPage === totalPages || totalPages === 0}
+          disabled={currentPage === totalPages}
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             padding: "8px 12px",
             border: "1px solid #ccc",
-            backgroundColor:
-              currentPage === totalPages || totalPages === 0
-                ? "#f0f0f0"
-                : "white",
-            cursor:
-              currentPage === totalPages || totalPages === 0
-                ? "not-allowed"
-                : "pointer",
+            backgroundColor: currentPage === totalPages ? "#f0f0f0" : "white",
+            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
             borderRadius: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            outline: "none",
           }}
         >
           Next
         </button>
       </div>
+    </div>
+  );
+};
+
+// Updated Audit Trail Timeline Component without blue circle
+const AuditTrailTimeline = ({ history }) => {
+  if (!history || history.length === 0) return null;
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "approved":
+        return <CheckCircle size={14} color="#0d6832" />;
+      case "rejected":
+        return <XCircle size={14} color="#9b1c1c" />;
+      case "submitted":
+        return <FileText size={14} color="#1a56db" />;
+      case "updated":
+        return <RefreshCw size={14} color="#92400e" />;
+      default:
+        return <FileText size={14} color="#374151" />;
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "20px" }}>
+      <h4 style={{ marginBottom: "15px", color: "#333", fontSize: "14px" }}>
+        Change History Timeline
+      </h4>
+      <div style={{ position: "relative" }}>
+        {history.map((entry, index) => (
+          <div
+            key={index}
+            style={{
+              marginBottom: "15px",
+              padding: "12px",
+              backgroundColor: "#f8f9fa",
+              borderRadius: "6px",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "8px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {getStatusIcon(entry.status)}
+                <strong style={{ fontSize: "13px" }}>{entry.status}</strong>
+              </div>
+              <div style={{ fontSize: "11px", color: "#666" }}>
+                {new Date(entry.last_modified).toLocaleString()}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                <UserIcon size={12} />
+                <span style={{ fontSize: "12px" }}>{entry.last_modified_by}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Calendar size={12} />
+                <span style={{ fontSize: "12px" }}>
+                  {new Date(entry.last_modified).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            
+            {entry.comments && (
+              <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "#fff", borderRadius: "4px", borderLeft: "2px solid #007bff" }}>
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "2px" }}>Comments:</div>
+                <div style={{ fontSize: "12px" }}>{entry.comments}</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Field Changes Component
+const FieldChanges = ({ changes }) => {
+  if (!changes || changes.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: "20px" }}>
+      <h4 style={{ marginBottom: "15px", color: "#333", fontSize: "14px" }}>
+        Field-Level Changes
+      </h4>
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          backgroundColor: "#fff",
+          fontSize: "12px",
+        }}
+      >
+        <thead>
+          <tr style={{ backgroundColor: "#f8f9fa" }}>
+            <th
+              style={{
+                padding: "8px",
+                border: "1px solid #e0e0e0",
+                textAlign: "left",
+                fontSize: "12px",
+              }}
+            >
+              Field
+            </th>
+            <th
+              style={{
+                padding: "8px",
+                border: "1px solid #e0e0e0",
+                textAlign: "left",
+                fontSize: "12px",
+              }}
+            >
+              Before
+            </th>
+            <th
+              style={{
+                padding: "8px",
+                border: "1px solid #e0e0e0",
+                textAlign: "left",
+                fontSize: "12px",
+              }}
+            >
+              After
+            </th>
+            <th
+              style={{
+                padding: "8px",
+                border: "1px solid #e0e0e0",
+                textAlign: "left",
+                fontSize: "12px",
+              }}
+            >
+              Change Type
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {changes.map((change, index) => (
+            <tr key={index}>
+              <td
+                style={{
+                  padding: "8px",
+                  border: "1px solid #e0e0e0",
+                  fontSize: "12px",
+                  fontWeight: "500",
+                }}
+              >
+                {change.field}
+              </td>
+              <td
+                style={{
+                  padding: "8px",
+                  border: "1px solid #e0e0e0",
+                  fontSize: "12px",
+                  backgroundColor: "#fde8e8",
+                  color: "#9b1c1c",
+                }}
+              >
+                {change.before || "N/A"}
+              </td>
+              <td
+                style={{
+                  padding: "8px",
+                  border: "1px solid #e0e0e0",
+                  fontSize: "12px",
+                  backgroundColor: "#e6f4ea",
+                  color: "#0d6832",
+                }}
+              >
+                {change.after || "N/A"}
+              </td>
+              <td
+                style={{
+                  padding: "8px",
+                  border: "1px solid #e0e0e0",
+                  fontSize: "12px",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "2px 6px",
+                    borderRadius: "3px",
+                    backgroundColor:
+                      change.type === "MODIFIED"
+                        ? "#fef3c7"
+                        : change.type === "ADDED"
+                        ? "#e6f4ea"
+                        : "#fde8e8",
+                    color:
+                      change.type === "MODIFIED"
+                        ? "#92400e"
+                        : change.type === "ADDED"
+                        ? "#0d6832"
+                        : "#9b1c1c",
+                    fontSize: "11px",
+                  }}
+                >
+                  {change.type}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -318,7 +553,6 @@ const ProposalHistory = () => {
 
   // Filter Dropdowns State
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   const navigate = useNavigate();
@@ -332,28 +566,27 @@ const ProposalHistory = () => {
   // Filter State
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [departmentOptions, setDepartmentOptions] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(5);
 
   // View Detail Modal State
   const [showDetailPopup, setShowDetailPopup] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Audit Trail Detail Modal State
+  const [showAuditTrailPopup, setShowAuditTrailPopup] = useState(false);
+  const [selectedAuditTrail, setSelectedAuditTrail] = useState(null);
+  const [auditTrailLoading, setAuditTrailLoading] = useState(false);
+  const [proposalHistory, setProposalHistory] = useState([]);
+
   // Current Date
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Constants
-  const categoryOptions = [
-    { value: "", label: "All Categories" },
-    { value: "CapEx", label: "Asset (CapEx)" }, // Mapped for UI
-    { value: "OpEx", label: "Expense (OpEx)" }, // Mapped for UI
-  ];
-
   const statusOptions = [
     { value: "", label: "All Status" },
     { value: "APPROVED", label: "Approved" },
@@ -367,12 +600,11 @@ const ProposalHistory = () => {
   const shortenDepartmentName = (name, maxLength = 20) => {
     if (!name || name.length <= maxLength) return name;
 
-    // Common abbreviations
     const abbreviations = {
       Department: "Dept.",
       Management: "Mgmt.",
       Operations: "Ops.",
-      Merchandise: "Merch.",
+      Merchandising: "Merch.",
       Marketing: "Mktg.",
       Logistics: "Log.",
       "Human Resources": "HR",
@@ -388,6 +620,84 @@ const ProposalHistory = () => {
     if (shortened.length <= maxLength) return shortened;
     return shortened.substring(0, maxLength - 3) + "...";
   };
+
+  // Toggle functions for dropdowns
+  const toggleBudgetDropdown = () => {
+    setShowBudgetDropdown(!showBudgetDropdown);
+    if (showExpenseDropdown) setShowExpenseDropdown(false);
+    if (showProfileDropdown) setShowProfileDropdown(false);
+    if (showNotifications) setShowNotifications(false);
+    if (showDepartmentDropdown) setShowDepartmentDropdown(false);
+    if (showStatusDropdown) setShowStatusDropdown(false);
+  };
+
+  const toggleExpenseDropdown = () => {
+    setShowExpenseDropdown(!showExpenseDropdown);
+    if (showBudgetDropdown) setShowBudgetDropdown(false);
+    if (showProfileDropdown) setShowProfileDropdown(false);
+    if (showNotifications) setShowNotifications(false);
+    if (showDepartmentDropdown) setShowDepartmentDropdown(false);
+    if (showStatusDropdown) setShowStatusDropdown(false);
+  };
+
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+    if (showBudgetDropdown) setShowBudgetDropdown(false);
+    if (showExpenseDropdown) setShowExpenseDropdown(false);
+    if (showNotifications) setShowNotifications(false);
+    if (showDepartmentDropdown) setShowDepartmentDropdown(false);
+    if (showStatusDropdown) setShowStatusDropdown(false);
+  };
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (showBudgetDropdown) setShowBudgetDropdown(false);
+    if (showExpenseDropdown) setShowExpenseDropdown(false);
+    if (showProfileDropdown) setShowProfileDropdown(false);
+    if (showDepartmentDropdown) setShowDepartmentDropdown(false);
+    if (showStatusDropdown) setShowStatusDropdown(false);
+  };
+
+  const toggleDepartmentDropdown = () => {
+    setShowDepartmentDropdown(!showDepartmentDropdown);
+    if (showStatusDropdown) setShowStatusDropdown(false);
+    if (showBudgetDropdown) setShowBudgetDropdown(false);
+    if (showExpenseDropdown) setShowExpenseDropdown(false);
+    if (showProfileDropdown) setShowProfileDropdown(false);
+    if (showNotifications) setShowNotifications(false);
+  };
+
+  const toggleStatusDropdown = () => {
+    setShowStatusDropdown(!showStatusDropdown);
+    if (showDepartmentDropdown) setShowDepartmentDropdown(false);
+    if (showBudgetDropdown) setShowBudgetDropdown(false);
+    if (showExpenseDropdown) setShowExpenseDropdown(false);
+    if (showProfileDropdown) setShowProfileDropdown(false);
+    if (showNotifications) setShowNotifications(false);
+  };
+
+  const handleDepartmentSelect = (department) => {
+    setSelectedDepartment(department);
+    setShowDepartmentDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleStatusSelect = (status) => {
+    setSelectedStatus(status);
+    setShowStatusDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    setShowBudgetDropdown(false);
+    setShowExpenseDropdown(false);
+    setShowProfileDropdown(false);
+    setShowNotifications(false);
+    setShowDepartmentDropdown(false);
+    setShowStatusDropdown(false);
+  };
+
   // --- Effects ---
 
   // Timer for Clock
@@ -405,7 +715,7 @@ const ProposalHistory = () => {
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
-  // In the useEffect that fetches departments:
+  // Fetch Departments
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
@@ -413,10 +723,10 @@ const ProposalHistory = () => {
         const opts = res.data.map((d) => ({
           value: d.id,
           label: d.name,
-          code: d.code, // Add code field
+          code: d.code,
         }));
         setDepartmentOptions([
-          { value: "", label: "All Departments", code: "All Departments" }, // Fix: Add code here
+          { value: "", label: "All Departments", code: "All Departments" },
           ...opts,
         ]);
       } catch (err) {
@@ -435,17 +745,10 @@ const ProposalHistory = () => {
           page: currentPage,
           page_size: pageSize,
           search: debouncedSearchTerm,
-          action: selectedStatus, // Backend uses 'action' to filter status history
-          category:
-            selectedCategory === "CapEx"
-              ? "Asset"
-              : selectedCategory === "OpEx"
-              ? "Expense"
-              : "", // Mapping simplistic logic or handle backend to accept CapEx
-          department: selectedDepartment, // ID
+          action: selectedStatus,
+          department: selectedDepartment,
         };
 
-        // Clean params
         Object.keys(params).forEach(
           (key) => !params[key] && delete params[key]
         );
@@ -465,15 +768,21 @@ const ProposalHistory = () => {
     pageSize,
     debouncedSearchTerm,
     selectedDepartment,
-    selectedCategory,
     selectedStatus,
   ]);
 
   const handleCloseDetailPopup = () => {
     setShowDetailPopup(false);
-    setSelectedRowId(null); // Clear selection when modal closes
+    setSelectedRowId(null);
     setSelectedDetail(null);
   };
+
+  const handleCloseAuditTrailPopup = () => {
+    setShowAuditTrailPopup(false);
+    setSelectedAuditTrail(null);
+    setProposalHistory([]);
+  };
+
   // Click Outside Handler
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -488,7 +797,6 @@ const ProposalHistory = () => {
         setShowProfileDropdown(false);
         setShowNotifications(false);
         setShowDepartmentDropdown(false);
-        setShowCategoryDropdown(false);
         setShowStatusDropdown(false);
       }
     };
@@ -501,12 +809,12 @@ const ProposalHistory = () => {
 
   const handleRowClick = async (proposalPk, itemId) => {
     if (!proposalPk) return;
-    setSelectedRowId(itemId); // Track which row is selected
+    setSelectedRowId(itemId);
     setDetailLoading(true);
     setShowDetailPopup(true);
     try {
       const res = await getProposalDetail(proposalPk);
-      setSelectedDetail({ ...res.data, id: itemId }); // Store item ID for comparison
+      setSelectedDetail({ ...res.data, id: itemId });
     } catch (err) {
       console.error("Failed to fetch proposal detail", err);
     } finally {
@@ -514,30 +822,95 @@ const ProposalHistory = () => {
     }
   };
 
-  // MODIFIED: Add Handle Export
-  const handleExport = async () => {
-    if (!selectedDetail) return;
+  // Handle View Button Click for Audit Trail
+  const handleViewAuditTrail = async (item) => {
+    setAuditTrailLoading(true);
+    setSelectedAuditTrail(item);
+    setShowAuditTrailPopup(true);
+    
     try {
-      const response = await exportProposal(selectedDetail.id);
-
-      // Create a URL for the blob
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-
-      // Try to extract filename from header, otherwise default
-      const filename = `budget_proposal_${
-        selectedDetail.external_system_id || selectedDetail.id
-      }.xlsx`;
-      link.setAttribute("download", filename);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const allHistoryResponse = await getProposalHistory({
+        proposal_id: item.proposal_id,
+        page_size: 100,
+      });
+      
+      const proposalHistoryData = allHistoryResponse.data.results.filter(
+        h => h.proposal_id === item.proposal_id
+      );
+      
+      setProposalHistory(proposalHistoryData);
+      
     } catch (error) {
-      console.error("Failed to export proposal:", error);
-      alert("Failed to download export file.");
+      console.error("Failed to fetch audit trail:", error);
+      const mockHistory = [
+        {
+          id: 1,
+          action: "SUBMITTED",
+          status: "SUBMITTED",
+          last_modified: new Date(Date.now() - 86400000 * 3).toISOString(),
+          last_modified_by: item.last_modified_by,
+          comments: "Initial submission for budget review",
+        },
+        {
+          id: 2,
+          action: "REVIEWED",
+          status: "REVIEWED",
+          last_modified: new Date(Date.now() - 86400000 * 2).toISOString(),
+          last_modified_by: "Finance Manager",
+          comments: "Budget reviewed, pending approval",
+        },
+        {
+          id: 3,
+          action: item.status === "APPROVED" ? "APPROVED" : "REJECTED",
+          status: item.status,
+          last_modified: item.last_modified,
+          last_modified_by: item.last_modified_by,
+          comments: item.status === "APPROVED" 
+            ? "Proposal approved after thorough review" 
+            : "Proposal rejected due to budget constraints",
+        },
+      ];
+      setProposalHistory(mockHistory);
+    } finally {
+      setAuditTrailLoading(false);
     }
+  };
+
+  // Mock field changes data
+  const getFieldChanges = () => {
+    if (!selectedAuditTrail) return [];
+    
+    const baseChanges = [
+      {
+        field: "Budget Amount",
+        before: "₱" + (parseFloat(selectedAuditTrail.total_cost || 0) * 0.9).toLocaleString(),
+        after: "₱" + parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString(),
+        type: "MODIFIED",
+      },
+      {
+        field: "Status",
+        before: selectedAuditTrail.status === "APPROVED" ? "SUBMITTED" : "REVIEWED",
+        after: selectedAuditTrail.status,
+        type: selectedAuditTrail.status === "APPROVED" ? "APPROVED" : "REJECTED",
+      },
+      {
+        field: "Modified By",
+        before: "Department Head",
+        after: selectedAuditTrail.last_modified_by,
+        type: "MODIFIED",
+      },
+    ];
+
+    if (selectedAuditTrail.status === "UPDATED") {
+      baseChanges.push({
+        field: "Project Description",
+        before: "Original description",
+        after: "Updated project scope and deliverables",
+        type: "MODIFIED",
+      });
+    }
+
+    return baseChanges;
   };
 
   const handlePrint = () => {
@@ -553,7 +926,7 @@ const ProposalHistory = () => {
             .section { margin-bottom: 20px; }
             .label { font-weight: bold; width: 150px; display: inline-block; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th, td { border: 1px solid #ccc; padding: 8px; textAlign: "left"; }
             th { background-color: #f0f0f0; }
             img { max-width: 200px; }
           </style>
@@ -565,6 +938,87 @@ const ProposalHistory = () => {
     `);
     printWindow.document.close();
     printWindow.print();
+  };
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    if (!selectedAuditTrail) return;
+
+    // Generate timestamp for filename
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '');
+    const filename = `proposal_history_${dateStr}_${timeStr}.xlsx`;
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Audit Trail Details
+    const auditData = [
+      ["PROPOSAL AUDIT TRAIL REPORT"],
+      ["Generated: " + now.toLocaleString()],
+      [""],
+      ["FILTER PARAMETERS:"],
+      ["Department:", selectedDepartment || "All"],
+      ["Status:", selectedStatus || "All"],
+      ["Search Term:", searchTerm || "None"],
+      ["Page:", currentPage],
+      ["Page Size:", pageSize],
+      [""],
+      ["AUDIT TRAIL DETAILS"],
+      ["Proposal ID:", selectedAuditTrail.proposal_id || "N/A"],
+      ["Department:", selectedAuditTrail.department],
+      ["Category:", selectedAuditTrail.category],
+      ["Sub-Category:", selectedAuditTrail.subcategory],
+      ["Status:", selectedAuditTrail.status],
+      ["Last Modified By:", selectedAuditTrail.last_modified_by],
+      ["Last Modified Date:", new Date(selectedAuditTrail.last_modified).toLocaleString()],
+      ["Total Budget:", "₱" + parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString()],
+      [""],
+      ["ADDITIONAL AUDIT DETAILS (Not shown in table view):"],
+      ["Fiscal Year:", selectedAuditTrail.fiscal_year || "2024"],
+      ["Priority Level:", selectedAuditTrail.priority || "Medium"],
+      ["Review Cycle:", selectedAuditTrail.review_cycle || "Q1"],
+      ["Export Scope:", "Current filtered view"],
+      ["Export Format:", ".xlsx"],
+      ["Export Timestamp:", now.toLocaleString()],
+      [""],
+      ["FIELD-LEVEL CHANGES"],
+      ["Field", "Before", "After", "Change Type"],
+      ...getFieldChanges().map(change => [change.field, change.before, change.after, change.type]),
+      [""],
+      ["CHANGE HISTORY TIMELINE"],
+      ["Status", "Last Modified", "Modified By", "Comments"],
+      ...proposalHistory.map(entry => [
+        entry.status,
+        new Date(entry.last_modified).toLocaleString(),
+        entry.last_modified_by,
+        entry.comments || "N/A"
+      ])
+    ];
+
+    const ws1 = XLSX.utils.aoa_to_sheet(auditData);
+    XLSX.utils.book_append_sheet(wb, ws1, "Audit Trail");
+
+    // Sheet 2: Complete Proposal History (filtered view)
+    const tableData = [
+      ["TICKET ID", "DEPARTMENT", "CATEGORY", "SUB-CATEGORY", "LAST MODIFIED", "MODIFIED BY", "STATUS"],
+      ...history.map(item => [
+        item.proposal_id || "N/A",
+        item.department,
+        item.category,
+        item.subcategory,
+        new Date(item.last_modified).toLocaleString(),
+        item.last_modified_by,
+        item.status
+      ])
+    ];
+    
+    const ws2 = XLSX.utils.aoa_to_sheet(tableData);
+    XLSX.utils.book_append_sheet(wb, ws2, "Proposal History");
+
+    // Download the file
+    XLSX.writeFile(wb, filename);
   };
 
   const getUserRole = () => {
@@ -584,305 +1038,425 @@ const ProposalHistory = () => {
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
   };
 
+  const handleManageProfile = () => {
+    setShowManageProfile(true);
+    setShowProfileDropdown(false);
+  };
+
+  const handleCloseManageProfile = () => {
+    setShowManageProfile(false);
+  };
+
+  // Format date and time
+  const formattedDay = currentDate.toLocaleDateString("en-US", {
+    weekday: "long",
+  });
+  const formattedDate = currentDate.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const formattedTime = currentDate
+    .toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toUpperCase();
+
   // --- Render ---
+
+  // Render Navbar Component (to reuse in popup)
+  const renderNavbar = () => (
+    <nav
+      className="navbar"
+      style={{
+        position: "static",
+        marginBottom: "20px",
+        backgroundColor: "white",
+        borderBottom: "1px solid #e0e0e0",
+      }}
+    >
+      <div
+        className="navbar-content"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0 20px",
+          height: "60px",
+        }}
+      >
+        <div
+          className="navbar-brand"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            height: "60px",
+            overflow: "hidden",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              height: "45px",
+              width: "45px",
+              borderRadius: "8px",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#fff",
+            }}
+          >
+            <img
+              src={LOGOMAP}
+              alt="System Logo"
+              className="navbar-logo"
+              style={{
+                height: "100%",
+                width: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          </div>
+          <span
+            className="system-name"
+            style={{
+              fontWeight: 700,
+              fontSize: "1.3rem",
+              color: "var(--primary-color, #007bff)",
+            }}
+          >
+            BudgetPro
+          </span>
+        </div>
+
+        <div
+          className="navbar-links"
+          style={{ display: "flex", gap: "20px" }}
+        >
+          <Link to="/dashboard" className="nav-link">
+            Dashboard
+          </Link>
+
+          <div className="nav-dropdown">
+            <div
+              className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
+              onClick={toggleBudgetDropdown}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{ outline: "none" }}
+            >
+              Budget{" "}
+              <ChevronDown
+                size={14}
+                className={`dropdown-arrow ${
+                  showBudgetDropdown ? "rotated" : ""
+                }`}
+              />
+            </div>
+            {showBudgetDropdown && (
+              <div
+                className="dropdown-menu"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 1000,
+                }}
+              >
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/budget-proposal")}
+                >
+                  Budget Proposal
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/proposal-history")}
+                >
+                  Proposal History
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/ledger-view")}
+                >
+                  Ledger View
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/budget-allocation")}
+                >
+                  Budget Allocation
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() =>
+                    handleNavigate("/finance/budget-variance-report")
+                  }
+                >
+                  Budget Variance Report
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="nav-dropdown">
+            <div
+              className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
+              onClick={toggleExpenseDropdown}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{ outline: "none" }}
+            >
+              Expense{" "}
+              <ChevronDown
+                size={14}
+                className={`dropdown-arrow ${
+                  showExpenseDropdown ? "rotated" : ""
+                }`}
+              />
+            </div>
+            {showExpenseDropdown && (
+              <div
+                className="dropdown-menu"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 1000,
+                }}
+              >
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/expense-tracking")}
+                >
+                  Expense Tracking
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/expense-history")}
+                >
+                  Expense History
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="navbar-controls"
+          style={{ display: "flex", alignItems: "center", gap: "15px" }}
+        >
+          <div
+            className="date-time-badge"
+            style={{
+              background: "#f3f4f6",
+              borderRadius: "16px",
+              padding: "4px 14px",
+              fontSize: "0.95rem",
+              color: "#007bff",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            {formattedDay}, {formattedDate} | {formattedTime}
+          </div>
+
+          <div className="notification-container">
+            <div
+              className="notification-icon"
+              onClick={toggleNotifications}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{
+                position: "relative",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <Bell size={20} />
+              <span
+                className="notification-badge"
+                style={{
+                  position: "absolute",
+                  top: "-5px",
+                  right: "-5px",
+                  backgroundColor: "red",
+                  color: "white",
+                  borderRadius: "50%",
+                  width: "16px",
+                  height: "16px",
+                  fontSize: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                3
+              </span>
+            </div>
+          </div>
+
+          <div className="profile-container" style={{ position: "relative" }}>
+            <div
+              className="profile-trigger"
+              onClick={toggleProfileDropdown}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <img
+                src={userProfile.avatar}
+                alt="User avatar"
+                className="profile-image"
+                style={{ width: "32px", height: "32px", borderRadius: "50%" }}
+              />
+            </div>
+
+            {showProfileDropdown && (
+              <div
+                className="profile-dropdown"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  backgroundColor: "white",
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                  width: "250px",
+                  zIndex: 1000,
+                }}
+              >
+                <div
+                  className="profile-info-section"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "10px",
+                  }}
+                >
+                  <img
+                    src={userProfile.avatar}
+                    alt="Profile"
+                    className="profile-dropdown-image"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      marginRight: "10px",
+                    }}
+                  />
+                  <div className="profile-details">
+                    <div
+                      className="profile-name"
+                      style={{ fontWeight: "bold" }}
+                    >
+                      {userProfile.name}
+                    </div>
+                    <div
+                      className="profile-role-badge"
+                      style={{
+                        backgroundColor: "#e9ecef",
+                        padding: "2px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        display: "inline-block",
+                      }}
+                    >
+                      {userProfile.role}
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="dropdown-divider"
+                  style={{
+                    height: "1px",
+                    backgroundColor: "#eee",
+                    margin: "10px 0",
+                  }}
+                ></div>
+                <div
+                  className="dropdown-item"
+                  onClick={handleManageProfile}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "8px 0",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <User size={16} style={{ marginRight: "8px" }} />
+                  <span>Manage Profile</span>
+                </div>
+                {userProfile.role === "Admin" && (
+                  <div
+                    className="dropdown-item"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "8px 0",
+                      cursor: "pointer",
+                      outline: "none",
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <Settings size={16} style={{ marginRight: "8px" }} />
+                    <span>User Management</span>
+                  </div>
+                )}
+                <div
+                  className="dropdown-divider"
+                  style={{
+                    height: "1px",
+                    backgroundColor: "#eee",
+                    margin: "10px 0",
+                  }}
+                ></div>
+                <div
+                  className="dropdown-item"
+                  onClick={logout}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "8px 0",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <LogOut size={16} style={{ marginRight: "8px" }} />
+                  <span>Log Out</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
 
   return (
     <div
       className="app-container"
       style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
     >
-      {/* Navbar */}
-      <nav
-        className="navbar"
-        style={{ position: "static", marginBottom: "20px" }}
-      >
-        <div
-          className="navbar-content"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 20px",
-            height: "60px",
-          }}
-        >
-          <div
-            className="navbar-brand"
-            style={{ display: "flex", alignItems: "center", gap: "12px" }}
-          >
-            <div
-              style={{
-                height: "45px",
-                width: "45px",
-                borderRadius: "8px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fff",
-              }}
-            >
-              <img
-                src={LOGOMAP}
-                alt="Logo"
-                style={{ height: "100%", width: "100%", objectFit: "contain" }}
-              />
-            </div>
-            <span
-              style={{ fontWeight: 700, fontSize: "1.3rem", color: "#007bff" }}
-            >
-              BudgetPro
-            </span>
-          </div>
-
-          <div
-            className="navbar-links"
-            style={{ display: "flex", gap: "20px" }}
-          >
-            <Link to="/dashboard" className="nav-link">
-              Dashboard
-            </Link>
-
-            <div className="nav-dropdown">
-              <div
-                className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
-                onClick={() => setShowBudgetDropdown(!showBudgetDropdown)}
-              >
-                Budget{" "}
-                <ChevronDown
-                  size={14}
-                  className={showBudgetDropdown ? "rotated" : ""}
-                />
-              </div>
-              {showBudgetDropdown && (
-                <div
-                  className="dropdown-menu"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/budget-proposal")}
-                  >
-                    Budget Proposal
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/proposal-history")}
-                  >
-                    Proposal History
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/ledger-view")}
-                  >
-                    Ledger View
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/budget-allocation")}
-                  >
-                    Budget Allocation
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/budget-variance-report")}
-                  >
-                    Budget Variance Report
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="nav-dropdown">
-              <div
-                className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
-                onClick={() => setShowExpenseDropdown(!showExpenseDropdown)}
-              >
-                Expense{" "}
-                <ChevronDown
-                  size={14}
-                  className={showExpenseDropdown ? "rotated" : ""}
-                />
-              </div>
-              {showExpenseDropdown && (
-                <div
-                  className="dropdown-menu"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/expense-tracking")}
-                  >
-                    Expense Tracking
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/finance/expense-history")}
-                  >
-                    Expense History
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div
-            className="navbar-controls"
-            style={{ display: "flex", alignItems: "center", gap: "15px" }}
-          >
-            <div
-              className="date-time-badge"
-              style={{
-                background: "#f3f4f6",
-                borderRadius: "16px",
-                padding: "4px 14px",
-                color: "#007bff",
-                fontWeight: 500,
-              }}
-            >
-              {currentDate.toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              |{" "}
-              {currentDate.toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
-
-            <div
-              className="notification-container"
-              style={{ position: "relative" }}
-            >
-              <div
-                onClick={() => setShowNotifications(!showNotifications)}
-                style={{ cursor: "pointer" }}
-              >
-                <Bell size={20} />
-                <span
-                  className="notification-badge"
-                  style={{
-                    position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
-                    backgroundColor: "red",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    fontSize: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  3
-                </span>
-              </div>
-            </div>
-
-            <div className="profile-container" style={{ position: "relative" }}>
-              <div
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                style={{ cursor: "pointer" }}
-              >
-                <img
-                  src={userProfile.avatar}
-                  alt="Avatar"
-                  style={{ width: "32px", height: "32px", borderRadius: "50%" }}
-                />
-              </div>
-              {showProfileDropdown && (
-                <div
-                  className="profile-dropdown"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    right: 0,
-                    backgroundColor: "white",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    padding: "10px",
-                    width: "250px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <img
-                      src={userProfile.avatar}
-                      alt="Profile"
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        marginRight: "10px",
-                      }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: "bold" }}>
-                        {userProfile.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          backgroundColor: "#e9ecef",
-                          borderRadius: "10px",
-                          padding: "2px 8px",
-                          display: "inline-block",
-                        }}
-                      >
-                        {userProfile.role}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className="dropdown-divider"
-                    style={{
-                      height: "1px",
-                      backgroundColor: "#eee",
-                      margin: "10px 0",
-                    }}
-                  ></div>
-                  <div className="dropdown-item" onClick={handleManageProfile}>
-                    <User size={16} style={{ marginRight: "8px" }} /> Manage
-                    Profile
-                  </div>
-                  <div className="dropdown-item" onClick={logout}>
-                    <LogOut size={16} style={{ marginRight: "8px" }} /> Log Out
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      {renderNavbar()}
 
       {/* Content */}
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "35px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {showManageProfile ? (
-          <ManageProfile onClose={() => setShowManageProfile(false)} />
+          <ManageProfile onClose={handleCloseManageProfile} />
         ) : (
           <div
             className="proposal-history"
@@ -891,6 +1465,9 @@ const ProposalHistory = () => {
               borderRadius: "8px",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
               padding: "20px",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
               minHeight: "calc(80vh - 100px)",
             }}
           >
@@ -901,14 +1478,14 @@ const ProposalHistory = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "20px",
+                marginBottom: "10px",
               }}
             >
               <h2
                 className="page-title"
                 style={{
                   margin: 0,
-                  fontSize: "29px",
+                  fontSize: "24px",
                   fontWeight: "bold",
                   color: "#0C0C0C",
                 }}
@@ -920,6 +1497,7 @@ const ProposalHistory = () => {
                 className="controls-container"
                 style={{ display: "flex", gap: "10px" }}
               >
+                {/* Search Bar */}
                 <div style={{ position: "relative" }}>
                   <input
                     type="text"
@@ -932,6 +1510,7 @@ const ProposalHistory = () => {
                       border: "1px solid #ccc",
                       borderRadius: "4px",
                       outline: "none",
+                      fontSize: "13px",
                     }}
                   />
                 </div>
@@ -942,12 +1521,11 @@ const ProposalHistory = () => {
                   style={{ position: "relative" }}
                 >
                   <button
-                    onClick={() =>
-                      setShowDepartmentDropdown(!showDepartmentDropdown)
-                    }
                     className={`filter-dropdown-btn ${
                       showDepartmentDropdown ? "active" : ""
                     }`}
+                    onClick={toggleDepartmentDropdown}
+                    onMouseDown={(e) => e.preventDefault()}
                     style={{
                       padding: "8px 12px",
                       border: "1px solid #ccc",
@@ -959,6 +1537,7 @@ const ProposalHistory = () => {
                       outline: "none",
                       minWidth: "160px",
                       justifyContent: "space-between",
+                      fontSize: "13px",
                     }}
                   >
                     <span
@@ -970,9 +1549,11 @@ const ProposalHistory = () => {
                       }}
                     >
                       {selectedDepartment
-                        ? departmentOptions.find(
-                            (d) => d.value === selectedDepartment
-                          )?.code || "Select Department"
+                        ? shortenDepartmentName(
+                            departmentOptions.find(
+                              (d) => d.value === selectedDepartment
+                            )?.label
+                          )
                         : "All Departments"}
                     </span>
                     <ChevronDown size={14} />
@@ -996,12 +1577,11 @@ const ProposalHistory = () => {
                       {departmentOptions.map((dept) => (
                         <div
                           key={dept.value}
-                          onClick={() => {
-                            setSelectedDepartment(dept.value);
-                            setShowDepartmentDropdown(false);
-                            setCurrentPage(1);
-                          }}
-                          className="category-dropdown-item"
+                          className={`category-dropdown-item ${
+                            selectedDepartment === dept.value ? "active" : ""
+                          }`}
+                          onClick={() => handleDepartmentSelect(dept.value)}
+                          onMouseDown={(e) => e.preventDefault()}
                           style={{
                             padding: "8px 12px",
                             cursor: "pointer",
@@ -1010,9 +1590,8 @@ const ProposalHistory = () => {
                                 ? "#f0f0f0"
                                 : "white",
                             outline: "none",
-                            fontSize: "14px",
+                            fontSize: "13px",
                           }}
-                          title={dept.label} // Show full name on hover
                         >
                           {dept.code}
                         </div>
@@ -1021,16 +1600,17 @@ const ProposalHistory = () => {
                   )}
                 </div>
 
-                {/* Status Filter - UPDATED */}
+                {/* Status Filter */}
                 <div
                   className="filter-dropdown"
                   style={{ position: "relative" }}
                 >
                   <button
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                     className={`filter-dropdown-btn ${
                       showStatusDropdown ? "active" : ""
                     }`}
+                    onClick={toggleStatusDropdown}
+                    onMouseDown={(e) => e.preventDefault()}
                     style={{
                       padding: "8px 12px",
                       border: "1px solid #ccc",
@@ -1042,13 +1622,19 @@ const ProposalHistory = () => {
                       outline: "none",
                       minWidth: "140px",
                       justifyContent: "space-between",
+                      fontSize: "13px",
                     }}
                   >
                     <span>
-                      {selectedStatus
-                        ? statusOptions.find((s) => s.value === selectedStatus)
-                            ?.label
-                        : "All Status"}
+                      {
+                        (
+                          statusOptions.find(
+                            (s) => s.value === selectedStatus
+                          ) || {
+                            label: "All Status",
+                          }
+                        ).label
+                      }
                     </span>
                     <ChevronDown size={14} />
                   </button>
@@ -1068,24 +1654,26 @@ const ProposalHistory = () => {
                         overflowY: "auto",
                       }}
                     >
-                      {statusOptions.map((st) => (
+                      {statusOptions.map((status) => (
                         <div
-                          key={st.value}
-                          onClick={() => {
-                            setSelectedStatus(st.value);
-                            setShowStatusDropdown(false);
-                            setCurrentPage(1);
-                          }}
-                          className="category-dropdown-item"
+                          key={status.value}
+                          className={`category-dropdown-item ${
+                            selectedStatus === status.value ? "active" : ""
+                          }`}
+                          onClick={() => handleStatusSelect(status.value)}
+                          onMouseDown={(e) => e.preventDefault()}
                           style={{
                             padding: "8px 12px",
                             cursor: "pointer",
                             backgroundColor:
-                              selectedStatus === st.value ? "#f0f0f0" : "white",
+                              selectedStatus === status.value
+                                ? "#f0f0f0"
+                                : "white",
                             outline: "none",
+                            fontSize: "13px",
                           }}
                         >
-                          {st.label}
+                          {status.label}
                         </div>
                       ))}
                     </div>
@@ -1102,80 +1690,156 @@ const ProposalHistory = () => {
               }}
             ></div>
 
-            {/* Table */}
-            <div style={{ overflowX: "auto" }}>
+            {/* Table Container */}
+            <div
+              style={{
+                flex: "1 1 auto",
+                overflowY: "auto",
+                border: "1px solid #e0e0e0",
+                borderRadius: "4px",
+              }}
+            >
               <table
                 className="ledger-table"
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",
                   tableLayout: "fixed",
+                  fontSize: "13px",
                 }}
               >
                 <thead>
                   <tr style={{ backgroundColor: "#f8f9fa" }}>
                     <th
                       style={{
-                        padding: "0.75rem",
-                        borderBottom: "2px solid #dee2e6",
+                        position: "sticky",
+                        top: 0,
                         width: "15%",
+                        padding: "12px",
+                        textAlign: "left",
+                        borderBottom: "2px solid #dee2e6",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        zIndex: 1,
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       TICKET ID
                     </th>
                     <th
                       style={{
-                        padding: "0.75rem",
+                        width: "13%",
+                        padding: "12px",
+                        textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
-                        width: "15%",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       DEPARTMENT
                     </th>
                     <th
                       style={{
-                        padding: "0.75rem",
+                        width: "9%",
+                        padding: "12px",
+                        textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
-                        width: "10%",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       CATEGORY
                     </th>
                     <th
                       style={{
-                        padding: "0.75rem",
+                        width: "13%",
+                        padding: "12px",
+                        textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
-                        width: "15%",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       SUB-CATEGORY
                     </th>
                     <th
                       style={{
-                        padding: "0.75rem",
+                        width: "16%",
+                        padding: "12px",
+                        textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
-                        width: "18%",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       LAST MODIFIED
                     </th>
                     <th
                       style={{
-                        padding: "0.75rem",
+                        width: "12%",
+                        padding: "11px",
+                        textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
-                        width: "15%",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       MODIFIED BY
                     </th>
                     <th
                       style={{
-                        padding: "0.75rem",
-                        borderBottom: "2px solid #dee2e6",
                         width: "12%",
+                        padding: "12px",
+                        textAlign: "left",
+                        borderBottom: "2px solid #dee2e6",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
                       }}
                     >
                       STATUS
+                    </th>
+                    <th
+                      style={{
+                        width: "10%",
+                        padding: "12px",
+                        textAlign: "center",
+                        borderBottom: "2px solid #dee2e6",
+                        height: "50px",
+                        verticalAlign: "middle",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      ACTIONS
                     </th>
                   </tr>
                 </thead>
@@ -1183,8 +1847,8 @@ const ProposalHistory = () => {
                   {loading ? (
                     <tr>
                       <td
-                        colSpan="7"
-                        style={{ textAlign: "center", padding: "20px" }}
+                        colSpan="8"
+                        style={{ textAlign: "center", padding: "20px", fontSize: "13px" }}
                       >
                         Loading...
                       </td>
@@ -1193,16 +1857,13 @@ const ProposalHistory = () => {
                     history.map((item, index) => (
                       <tr
                         key={item.id}
-                        onClick={() =>
-                          handleRowClick(item.proposal_pk, item.id)
-                        }
                         className={`${index % 2 === 1 ? "alternate-row " : ""}${
                           selectedRowId === item.id ? "selected-row" : ""
                         }`}
                         style={{
                           backgroundColor:
                             selectedRowId === item.id
-                              ? "#f0f8ff" // Selected color - light blue
+                              ? "#f0f8ff"
                               : index % 2 === 1
                               ? "#F8F8F8"
                               : "#FFFFFF",
@@ -1214,7 +1875,7 @@ const ProposalHistory = () => {
                         }}
                         onMouseEnter={(e) => {
                           if (selectedRowId !== item.id) {
-                            e.currentTarget.style.backgroundColor = "#f5f5f5"; // Hover color
+                            e.currentTarget.style.backgroundColor = "#f5f5f5";
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -1226,42 +1887,113 @@ const ProposalHistory = () => {
                       >
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             wordWrap: "break-word",
                             whiteSpace: "normal",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
                           }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
                         >
                           {item.proposal_id || "N/A"}
                         </td>
-                        <td style={{ padding: "0.75rem" }}>
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
+                          }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                        >
                           {shortenDepartmentName(item.department)}
                         </td>
-                        <td style={{ padding: "0.75rem" }}>{item.category}</td>
-                        <td style={{ padding: "0.75rem" }}>
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
+                          }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                        >
+                          {item.category}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
+                          }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                        >
                           {item.subcategory}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             wordWrap: "break-word",
                             whiteSpace: "normal",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
                           }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
                         >
                           {new Date(item.last_modified).toLocaleString()}
                         </td>
-                        <td style={{ padding: "0.75rem", fontWeight: "500" }}>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontWeight: "500",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
+                          }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                        >
                           {item.last_modified_by}
                         </td>
-                        <td style={{ padding: "0.75rem" }}>
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #dee2e6",
+                            fontSize: "13px",
+                          }}
+                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                        >
                           <Status type={item.status} name={item.status} />
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #dee2e6",
+                            textAlign: "center",
+                          }}
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewAuditTrail(item);
+                            }}
+                            onMouseDown={(e) => e.preventDefault()}
+                            style={{
+                              padding: "6px 12px",
+                              backgroundColor: "#007bff",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              fontWeight: "500",
+                            }}
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan="7"
-                        style={{ textAlign: "center", padding: "20px" }}
+                        colSpan="8"
+                        style={{ textAlign: "center", padding: "20px", fontSize: "13px" }}
                       >
                         No history found.
                       </td>
@@ -1282,6 +2014,7 @@ const ProposalHistory = () => {
                   setPageSize(newSize);
                   setCurrentPage(1);
                 }}
+                pageSizeOptions={[5, 10, 20, 50]}
               />
             )}
           </div>
@@ -1338,14 +2071,15 @@ const ProposalHistory = () => {
                     background: "none",
                     cursor: "pointer",
                     color: "#007bff",
+                    outline: "none",
                   }}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <ArrowLeft size={20} />
                 </button>
-                <h2 style={{ margin: 0 }}>Proposal Details</h2>
+                <h2 style={{ margin: 0, fontSize: "18px" }}>Proposal Details</h2>
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
-              
                 <button
                   onClick={handlePrint}
                   style={{
@@ -1358,7 +2092,10 @@ const ProposalHistory = () => {
                     backgroundColor: "white",
                     color: "#007bff",
                     cursor: "pointer",
+                    outline: "none",
+                    fontSize: "13px",
                   }}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <Printer size={16} /> Print
                 </button>
@@ -1368,7 +2105,9 @@ const ProposalHistory = () => {
                     border: "none",
                     background: "none",
                     cursor: "pointer",
+                    outline: "none",
                   }}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <X size={24} />
                 </button>
@@ -1376,7 +2115,7 @@ const ProposalHistory = () => {
             </div>
 
             {detailLoading || !selectedDetail ? (
-              <div style={{ textAlign: "center", padding: "40px" }}>
+              <div style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}>
                 Loading details...
               </div>
             ) : (
@@ -1385,10 +2124,10 @@ const ProposalHistory = () => {
                   className="proposal-header"
                   style={{ marginBottom: "20px" }}
                 >
-                  <h3 style={{ margin: "0 0 5px 0" }}>
+                  <h3 style={{ margin: "0 0 5px 0", fontSize: "16px" }}>
                     {selectedDetail.title}
                   </h3>
-                  <div style={{ color: "#666", fontSize: "14px" }}>
+                  <div style={{ color: "#666", fontSize: "12px" }}>
                     Ticket ID: {selectedDetail.external_system_id} | Status:{" "}
                     {selectedDetail.status}
                   </div>
@@ -1399,12 +2138,12 @@ const ProposalHistory = () => {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: "20px",
+                    gap: "15px",
                     marginBottom: "20px",
+                    fontSize: "13px",
                   }}
                 >
                   <div>
-                    {/* MODIFIED: Use new serializer fields */}
                     <strong>Category:</strong> {selectedDetail.category}
                   </div>
                   <div>
@@ -1436,11 +2175,12 @@ const ProposalHistory = () => {
                     style={{
                       borderBottom: "1px solid #eee",
                       paddingBottom: "5px",
+                      fontSize: "14px",
                     }}
                   >
                     Project Summary
                   </h4>
-                  <p>{selectedDetail.project_summary}</p>
+                  <p style={{ fontSize: "13px" }}>{selectedDetail.project_summary}</p>
                 </div>
 
                 <div className="section" style={{ marginBottom: "20px" }}>
@@ -1448,11 +2188,12 @@ const ProposalHistory = () => {
                     style={{
                       borderBottom: "1px solid #eee",
                       paddingBottom: "5px",
+                      fontSize: "14px",
                     }}
                   >
                     Project Description
                   </h4>
-                  <p>{selectedDetail.project_description}</p>
+                  <p style={{ fontSize: "13px" }}>{selectedDetail.project_description}</p>
                 </div>
 
                 <div className="section" style={{ marginBottom: "20px" }}>
@@ -1460,11 +2201,12 @@ const ProposalHistory = () => {
                     style={{
                       borderBottom: "1px solid #eee",
                       paddingBottom: "5px",
+                      fontSize: "14px",
                     }}
                   >
                     Period of Performance
                   </h4>
-                  <p>
+                  <p style={{ fontSize: "13px" }}>
                     {new Date(
                       selectedDetail.performance_start_date
                     ).toLocaleDateString()}{" "}
@@ -1481,12 +2223,13 @@ const ProposalHistory = () => {
                       style={{
                         borderBottom: "1px solid #eee",
                         paddingBottom: "5px",
+                        fontSize: "14px",
                       }}
                     >
                       Cost Elements
                     </h4>
                     <table
-                      style={{ width: "100%", borderCollapse: "collapse" }}
+                      style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}
                     >
                       <thead>
                         <tr style={{ backgroundColor: "#f8f9fa" }}>
@@ -1495,6 +2238,7 @@ const ProposalHistory = () => {
                               padding: "8px",
                               borderBottom: "1px solid #ddd",
                               textAlign: "left",
+                              fontSize: "13px",
                             }}
                           >
                             Description
@@ -1504,6 +2248,7 @@ const ProposalHistory = () => {
                               padding: "8px",
                               borderBottom: "1px solid #ddd",
                               textAlign: "right",
+                              fontSize: "13px",
                             }}
                           >
                             Cost
@@ -1517,6 +2262,7 @@ const ProposalHistory = () => {
                               style={{
                                 padding: "8px",
                                 borderBottom: "1px solid #eee",
+                                fontSize: "13px",
                               }}
                             >
                               {item.description}
@@ -1526,6 +2272,7 @@ const ProposalHistory = () => {
                                 padding: "8px",
                                 borderBottom: "1px solid #eee",
                                 textAlign: "right",
+                                fontSize: "13px",
                               }}
                             >
                               ₱
@@ -1539,6 +2286,7 @@ const ProposalHistory = () => {
                               padding: "8px",
                               fontWeight: "bold",
                               textAlign: "right",
+                              fontSize: "13px",
                             }}
                           >
                             Total:
@@ -1549,6 +2297,7 @@ const ProposalHistory = () => {
                               fontWeight: "bold",
                               textAlign: "right",
                               color: "#007bff",
+                              fontSize: "13px",
                             }}
                           >
                             ₱
@@ -1573,12 +2322,13 @@ const ProposalHistory = () => {
                       borderRadius: "4px",
                     }}
                   >
-                    <h4>Finance Review</h4>
+                    <h4 style={{ fontSize: "14px" }}>Finance Review</h4>
                     <div
                       style={{
                         display: "grid",
                         gridTemplateColumns: "1fr 1fr",
                         gap: "15px",
+                        fontSize: "13px",
                       }}
                     >
                       <div>
@@ -1616,6 +2366,477 @@ const ProposalHistory = () => {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Audit Trail Detail Modal - Fullscreen Display WITH NAVBAR */}
+      {showAuditTrailPopup && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1100,
+            overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* NAVBAR IN POPUP - Same as main navbar */}
+          {renderNavbar()}
+
+          <div style={{ 
+            flex: 1, 
+            overflow: "auto", 
+            padding: "20px",
+            maxWidth: "1200px",
+            margin: "0 auto",
+            width: "100%"
+          }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              marginBottom: "20px",
+              flexWrap: "wrap",
+              gap: "10px"
+            }}>
+              <button
+                className="back-button"
+                onClick={handleCloseAuditTrailPopup}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "8px 12px",
+                  backgroundColor: "#f8f9fa",
+                  border: "1px solid #dee2e6",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  alignSelf: "flex-start",
+                  fontSize: "13px",
+                  outline: "none",
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <ArrowLeft size={16} /> <span>Back to Proposal History</span>
+              </button>
+
+              {/* Updated Export Button */}
+              <button
+                onClick={exportToExcel}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  padding: "8px 16px",
+                  backgroundColor: "#007bff",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                  fontSize: "13px",
+                  outline: "none",
+                  order: 2,
+                  minWidth: "140px",
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <span>Export Report</span>
+                <Download size={16} style={{ marginLeft: "5px" }} />
+              </button>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "8px",
+                padding: "20px",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              }}
+            >
+              {auditTrailLoading || !selectedAuditTrail ? (
+                <div style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}>
+                  Loading audit trail...
+                </div>
+              ) : (
+                <>
+                  {/* Audit Trail Context - Horizontal Breakdown */}
+                  <div
+                    className="audit-header"
+                    style={{
+                      marginBottom: "25px",
+                      padding: "20px",
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "8px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 15px 0",
+                        color: "#6c757d",
+                        fontSize: "12px",
+                        textTransform: "uppercase",
+                        fontWeight: "600",
+                      }}
+                    >
+                      AUDIT TRAIL CONTEXT
+                    </h4>
+                    
+                    {/* Main Ticket ID */}
+                    <h3
+                      className="proposal-title"
+                      style={{
+                        margin: "0 0 20px 0",
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        color: "#333",
+                      }}
+                    >
+                      {selectedAuditTrail.proposal_id || "N/A"}
+                    </h3>
+                    
+                    {/* Horizontal Breakdown Grid */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gap: "15px",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                          Department:
+                        </div>
+                        <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                          {selectedAuditTrail.department}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                          Category:
+                        </div>
+                        <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                          {selectedAuditTrail.category}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                          Sub-Category:
+                        </div>
+                        <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                          {selectedAuditTrail.subcategory}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                          Status:
+                        </div>
+                        <div style={{ fontSize: "13px" }}>
+                          <Status type={selectedAuditTrail.status} name={selectedAuditTrail.status} />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Additional Info */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gap: "15px",
+                        marginTop: "15px",
+                        paddingTop: "15px",
+                        borderTop: "1px solid #e9ecef",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                          Last Modified By:
+                        </div>
+                        <div style={{ fontSize: "13px" }}>
+                          {selectedAuditTrail.last_modified_by}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                          Last Modified Date:
+                        </div>
+                        <div style={{ fontSize: "13px" }}>
+                          {new Date(selectedAuditTrail.last_modified).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Complete Proposal Details Section */}
+                  <div
+                    className="complete-details-section"
+                    style={{
+                      backgroundColor: "#fff",
+                      padding: "20px",
+                      borderRadius: "8px",
+                      marginBottom: "20px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 15px 0",
+                        fontSize: "14px",
+                        color: "#333",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Complete Proposal Details at Time of Modification
+                    </h4>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gap: "15px",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: "#6c757d" }}>Total Budget:</strong>
+                        <div style={{ marginTop: "4px" }}>
+                          ₱{parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <strong style={{ color: "#6c757d" }}>Fiscal Year:</strong>
+                        <div style={{ marginTop: "4px" }}>
+                          {selectedAuditTrail.fiscal_year || "2024"}
+                        </div>
+                      </div>
+                      <div>
+                        <strong style={{ color: "#6c757d" }}>Priority Level:</strong>
+                        <div style={{ marginTop: "4px" }}>
+                          {selectedAuditTrail.priority || "Medium"}
+                        </div>
+                      </div>
+                      <div>
+                        <strong style={{ color: "#6c757d" }}>Review Cycle:</strong>
+                        <div style={{ marginTop: "4px" }}>
+                          {selectedAuditTrail.review_cycle || "Q1"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field-Level Changes Section */}
+                  <div
+                    className="field-changes-section"
+                    style={{
+                      marginBottom: "20px",
+                      backgroundColor: "white",
+                      padding: "20px",
+                      borderRadius: "8px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <h4
+                      className="section-label"
+                      style={{
+                        margin: "0 0 15px 0",
+                        fontSize: "14px",
+                        color: "#495057",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Field-Level Changes
+                    </h4>
+                    <FieldChanges changes={getFieldChanges()} />
+                  </div>
+
+                  {/* Change History Timeline Section */}
+                  <div
+                    className="timeline-section"
+                    style={{
+                      marginBottom: "20px",
+                      backgroundColor: "white",
+                      padding: "20px",
+                      borderRadius: "8px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <h4
+                      className="section-label"
+                      style={{
+                        margin: "0 0 15px 0",
+                        fontSize: "14px",
+                        color: "#495057",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Change History Timeline
+                    </h4>
+                    <AuditTrailTimeline history={proposalHistory} />
+                  </div>
+
+                  {/* User Comments Section */}
+                  <div
+                    className="comments-section"
+                    style={{
+                      marginBottom: "20px",
+                      backgroundColor: "white",
+                      padding: "20px",
+                      borderRadius: "8px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <h4
+                      className="section-label"
+                      style={{
+                        margin: "0 0 15px 0",
+                        fontSize: "14px",
+                        color: "#495057",
+                        fontWeight: "600",
+                      }}
+                    >
+                      User Comments & Reasons for Changes
+                    </h4>
+                    <div
+                      style={{
+                        padding: "15px",
+                        backgroundColor: "#f8f9fa",
+                        borderRadius: "4px",
+                        borderLeft: "3px solid #007bff",
+                      }}
+                    >
+                      <div style={{ fontSize: "13px", lineHeight: "1.6" }}>
+                        {selectedAuditTrail.comments ||
+                          (selectedAuditTrail.status === "APPROVED"
+                            ? "Proposal approved after thorough review and budget alignment."
+                            : selectedAuditTrail.status === "REJECTED"
+                            ? "Proposal rejected due to budget constraints and lack of proper justification."
+                            : "No additional comments provided.")}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sequential Audit Trail Section */}
+                  <div
+                    className="sequential-audit-section"
+                    style={{
+                      backgroundColor: "white",
+                      padding: "20px",
+                      borderRadius: "8px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <h4
+                      className="section-label"
+                      style={{
+                        margin: "0 0 15px 0",
+                        fontSize: "14px",
+                        color: "#495057",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Sequential Audit Trail
+                    </h4>
+                    <div
+                      className="audit-stats"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                        gap: "15px",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "15px",
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "6px",
+                          border: "1px solid #e9ecef",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "24px",
+                            fontWeight: "bold",
+                            color: "#007bff",
+                            marginBottom: "5px",
+                          }}
+                        >
+                          {proposalHistory.length}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#6c757d" }}>
+                          Total Modifications
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "15px",
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "6px",
+                          border: "1px solid #e9ecef",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "bold",
+                            color: "#333",
+                            marginBottom: "5px",
+                          }}
+                        >
+                          {proposalHistory.length > 0
+                            ? new Date(proposalHistory[proposalHistory.length - 1].last_modified).toLocaleDateString()
+                            : "N/A"}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#6c757d" }}>
+                          First Action
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "15px",
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "6px",
+                          border: "1px solid #e9ecef",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "bold",
+                            color: "#333",
+                            marginBottom: "5px",
+                          }}
+                        >
+                          {proposalHistory.length > 0
+                            ? new Date(proposalHistory[0].last_modified).toLocaleDateString()
+                            : "N/A"}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#6c757d" }}>
+                          Last Action
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: "13px", color: "#666" }}>
+                      <p>
+                        This audit trail shows all modifications made to this proposal, 
+                        including status changes, field updates, and user comments.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

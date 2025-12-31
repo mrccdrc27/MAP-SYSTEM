@@ -902,7 +902,7 @@ const BudgetVarianceReport = () => {
       {/* Main Content */}
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {/* Conditionally render either Dashboard content or ManageProfile */}
         {showManageProfile ? (
@@ -918,7 +918,6 @@ const BudgetVarianceReport = () => {
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
-              minHeight: "calc(80vh - 100px)",
             }}
           >
             {/* Header Section */}
