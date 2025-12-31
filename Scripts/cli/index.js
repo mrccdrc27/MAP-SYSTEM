@@ -111,6 +111,38 @@ const SCRIPTS = {
       'test-ams': { file: 'test_ams_api.py', desc: 'Test AMS API (Python)', shell: 'python' },
       'test-bms': { file: 'test_bms_api.py', desc: 'Test BMS API (Python)', shell: 'python' },
       'test-bms-ps': { file: 'test_bms_api.ps1', desc: 'Test BMS API (PowerShell)' },
+    },
+    subcategories: {
+      integration: {
+        name: 'Integration Tests',
+        description: 'End-to-end integration tests',
+        scripts: {
+          'hdts-tts': { 
+            file: '../testing/test_hdts_tts_integration.py', 
+            desc: 'HDTS-TTS Full Integration Test', 
+            shell: 'python',
+            args: ['--verbose']
+          },
+          'hdts-tts-quick': { 
+            file: '../testing/test_hdts_tts_integration.py', 
+            desc: 'HDTS-TTS Quick Test (IT Support)', 
+            shell: 'python',
+            args: ['--category', 'IT Support', '--department', 'IT Department']
+          },
+          'hdts-tts-infra': { 
+            file: '../testing/test_hdts_tts_integration.py', 
+            desc: 'HDTS-TTS with Test Infrastructure', 
+            shell: 'python',
+            args: ['--use-test-infra', '--verbose']
+          },
+          'hdts-tts-asset': { 
+            file: '../testing/test_hdts_tts_integration.py', 
+            desc: 'HDTS-TTS Asset Check Out Test', 
+            shell: 'python',
+            args: ['--category', 'Asset Check Out', '--department', 'Asset Department', '--verbose']
+          },
+        }
+      }
     }
   },
   utils: {

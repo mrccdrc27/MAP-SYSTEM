@@ -276,6 +276,89 @@ def check_service_health(url: str, timeout: int = 5) -> Tuple[bool, str]:
         return False, str(e)
 
 
+def check_rabbitmq_health(host: str = "localhost", port: int = 15672, timeout: int = 5) -> Tuple[bool, str]:
+    """
+    Check if RabbitMQ is running by hitting the management API.
+    Default credentials: admin/admin
+    """
+    try:
+        url = f"http://{host}:{port}/api/overview"
+        resp = requests.get(url, auth=("admin", "admin"), timeout=timeout)
+        if resp.status_code == 200:
+            data = resp.json()
+            version = data.get("rabbitmq_version", "unknown")
+            return True, f"OK (RabbitMQ {version})"
+        return False, f"HTTP {resp.status_code}"
+    except requests.exceptions.ConnectionError:
+        return False, "Connection refused (is RabbitMQ running?)"
+    except requests.exceptions.Timeout:
+        return False, "Timeout"
+    except Exception as e:
+        return False, str(e)
+
+
+def check_celery_workers(required_workers: List[str] = None) -> Tuple[bool, str, Dict[str, bool]]:
+    """
+    Check if required Celery workers are running via PM2.
+    Returns (all_healthy, message, worker_status_dict)
+    """
+    import json as json_module  # Local import to avoid scope issues
+    
+    if required_workers is None:
+        required_workers = ["workflow-worker", "helpdesk-worker"]
+    
+    worker_status = {}
+    
+    try:
+        # Use PM2 to check worker status (shell=True needed on Windows)
+        result = subprocess.run(
+            "pm2 jlist",
+            capture_output=True,
+            text=True,
+            timeout=10,
+            shell=True
+        )
+        
+        if result.returncode != 0:
+            return False, "PM2 not available", worker_status
+        
+        processes = json_module.loads(result.stdout)
+        
+        # Build a map of process name -> status
+        pm2_status = {}
+        for proc in processes:
+            name = proc.get("name", "")
+            status = proc.get("pm2_env", {}).get("status", "unknown")
+            pm2_status[name] = status
+        
+        # Check each required worker
+        all_online = True
+        for worker in required_workers:
+            if worker in pm2_status:
+                is_online = pm2_status[worker] == "online"
+                worker_status[worker] = is_online
+                if not is_online:
+                    all_online = False
+            else:
+                worker_status[worker] = False
+                all_online = False
+        
+        if all_online:
+            return True, f"All {len(required_workers)} workers online", worker_status
+        else:
+            missing = [w for w, ok in worker_status.items() if not ok]
+            return False, f"Workers not running: {', '.join(missing)}", worker_status
+            
+    except subprocess.TimeoutExpired:
+        return False, "PM2 command timed out", worker_status
+    except json_module.JSONDecodeError:
+        return False, "Failed to parse PM2 output", worker_status
+    except FileNotFoundError:
+        return False, "PM2 not installed", worker_status
+    except Exception as e:
+        return False, str(e), worker_status
+
+
 def setup_test_infrastructure(verbose: bool = False, dry_run: bool = False) -> Dict[str, Any]:
     """
     Set up test infrastructure (role, user, workflow) for controlled integration testing.
@@ -322,16 +405,20 @@ def setup_test_infrastructure(verbose: bool = False, dry_run: bool = False) -> D
 
 def test_service_health(
     services: Dict[str, str],
-    verbose: bool = False
+    verbose: bool = False,
+    check_rabbitmq: bool = True,
+    check_workers: bool = True
 ) -> TestResult:
     """
     Test 1: Check if all required services are running.
+    Also checks RabbitMQ and Celery workers.
     """
     start_time = time.time()
     all_healthy = True
     details = {}
     failed_services = []
     
+    # Check HTTP services
     for name, url in services.items():
         healthy, message = check_service_health(url)
         details[name] = {"url": url, "healthy": healthy, "message": message}
@@ -344,13 +431,46 @@ def test_service_health(
             all_healthy = False
             failed_services.append(name)
     
+    # Check RabbitMQ
+    if check_rabbitmq:
+        rabbitmq_healthy, rabbitmq_msg = check_rabbitmq_health()
+        details["rabbitmq"] = {"healthy": rabbitmq_healthy, "message": rabbitmq_msg}
+        
+        if rabbitmq_healthy:
+            if verbose:
+                print_pass(f"rabbitmq: http://localhost:15672 - {rabbitmq_msg}")
+        else:
+            print_fail(f"rabbitmq: http://localhost:15672 - {rabbitmq_msg}")
+            all_healthy = False
+            failed_services.append("rabbitmq")
+    
+    # Check Celery workers
+    if check_workers:
+        required_workers = ["workflow-worker", "helpdesk-worker"]
+        workers_healthy, workers_msg, worker_status = check_celery_workers(required_workers)
+        details["celery-workers"] = {
+            "healthy": workers_healthy, 
+            "message": workers_msg,
+            "workers": worker_status
+        }
+        
+        if workers_healthy:
+            if verbose:
+                print_pass(f"celery-workers: {workers_msg}")
+        else:
+            print_fail(f"celery-workers: {workers_msg}")
+            all_healthy = False
+            failed_services.append("celery-workers")
+    
     duration = time.time() - start_time
+    
+    total_checks = len(services) + (1 if check_rabbitmq else 0) + (1 if check_workers else 0)
     
     if all_healthy:
         return TestResult(
             name="Service Health Check",
             status=TestStatus.PASSED,
-            message=f"All {len(services)} services are healthy",
+            message=f"All {total_checks} services are healthy",
             duration=duration,
             details=details
         )
@@ -743,7 +863,28 @@ def main():
         
         if result.status == TestStatus.FAILED:
             print_fail("Aborting: Required services are not running")
-            print_warn("Start services with: pm2 start Scripts/processes/tts-ecosystem.config.js")
+            failed = result.details
+            
+            # Provide specific guidance based on what failed
+            if "rabbitmq" in failed and not failed.get("rabbitmq", {}).get("healthy", True):
+                print_warn("RabbitMQ not running. Start with:")
+                print_warn("  docker start rabbitmq")
+                print_warn("  OR: node Scripts/cli/index.js run docker rabbitmq")
+            
+            if "celery-workers" in failed and not failed.get("celery-workers", {}).get("healthy", True):
+                worker_info = failed.get("celery-workers", {}).get("workers", {})
+                missing = [w for w, ok in worker_info.items() if not ok]
+                if missing:
+                    print_warn(f"Celery workers not running: {', '.join(missing)}")
+                    print_warn("  Start all services: pm2 start Scripts/processes/tts-ecosystem.config.js")
+            
+            # Check for HTTP service failures
+            http_failed = [k for k, v in failed.items() 
+                          if k not in ["rabbitmq", "celery-workers"] and not v.get("healthy", True)]
+            if http_failed:
+                print_warn(f"HTTP services not running: {', '.join(http_failed)}")
+                print_warn("  Start all services: pm2 start Scripts/processes/tts-ecosystem.config.js")
+            
             sys.exit(1)
     else:
         print_warn("Skipping health check")

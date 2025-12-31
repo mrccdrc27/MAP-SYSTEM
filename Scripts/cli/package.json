@@ -28,6 +28,10 @@
     "pm2:stop": "node index.js run pm2 stop-all",
     "pm2:logs": "node index.js run pm2 logs",
     "pm2:status": "node index.js run pm2 status",
+    "test:hdts-tts": "node index.js run testing integration hdts-tts",
+    "test:hdts-tts-infra": "node index.js run testing integration hdts-tts-infra",
+    "test:hdts-tts-asset": "node index.js run testing integration hdts-tts-asset",
+    "test:integration": "node index.js run testing integration hdts-tts-infra",
     "list": "node index.js list"
   },
   "dependencies": {
