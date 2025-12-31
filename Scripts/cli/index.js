@@ -150,6 +150,7 @@ const SCRIPTS = {
     description: 'Maintenance scripts',
     scripts: {
       'seed-tickets': { file: 'seed_tickets_open.ps1', desc: 'Seed Open Tickets (HDTS)' },
+      'seed-tickets-attachments': { file: 'seed_tickets_with_attachments.ps1', desc: 'Seed Tickets with File Attachments (PDF/DOCX/XLSX/PNG)' },
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees (Auth)' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees (HDTS)' },
     }

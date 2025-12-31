@@ -62,6 +62,7 @@ module.exports = {
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
         DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8006",
         DJANGO_TTS_SERVICE_URL: "http://localhost:8002",
+        DJANGO_HELPDESK_SERVICE_URL: "http://localhost:8000",
         DJANGO_USER_SERVICE_URL: "http://localhost:3000",
         DJANGO_BASE_URL: "http://localhost:8002",
         DJANGO_FRONTEND_URL: "http://localhost:1000/register",
@@ -258,7 +259,8 @@ module.exports = {
         VITE_NOTIFICATION_API: "http://localhost:8006",
         VITE_NOTIFICATION_WS: "ws://localhost:8006",
         VITE_MESSAGING_API: "http://localhost:8005",
-        VITE_MESSAGING_WS: "ws://localhost:8005"
+        VITE_MESSAGING_WS: "ws://localhost:8005",
+        VITE_HELPDESK_SERVICE_URL: "http://localhost:8000"
       }
     }
   ]

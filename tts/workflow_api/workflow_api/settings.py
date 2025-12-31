@@ -230,6 +230,9 @@ NOTIFICATION_SERVICE_BROKER_URL = config('DJANGO_NOTIFICATION_SERVICE_BROKER_URL
 # TTS (Ticket Tracking Service) Configuration for round-robin assignment
 TTS_SERVICE_URL = config('DJANGO_TTS_SERVICE_URL', default='http://localhost:8002')
 
+# Helpdesk Service Configuration (for media/attachments)
+HELPDESK_SERVICE_URL = config('DJANGO_HELPDESK_SERVICE_URL', default='http://localhost:8000')
+
 # Queue Configuration
 DJANGO_NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-queue-default')
 DJANGO_TICKET_STATUS_QUEUE = config('DJANGO_TICKET_STATUS_QUEUE', default='ticket_status-default')
