@@ -24,7 +24,7 @@ from drf_spectacular.utils import (
     extend_schema, OpenApiParameter, OpenApiResponse, OpenApiTypes, OpenApiExample
 )
 
-from bms.budget_service.core.service_authentication import APIKeyAuthentication
+from .service_authentication import APIKeyAuthentication
 
 from .models import (
     Account, AccountType, BudgetProposal, Department, ExpenseCategory,

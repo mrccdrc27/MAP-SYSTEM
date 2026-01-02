@@ -1,42 +1,50 @@
 import axios from 'axios';
 import { getAccessToken, removeAccessToken } from './TokenUtils';
 
-// Auth service URL - centralized authentication
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
+const AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:18001").replace(/\/$/, "");
 
-// Create axios instance for auth service
 const authApi = axios.create({
-    baseURL: `${AUTH_URL}/api/v1`,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    baseURL: `${AUTH_URL}/api/v1`, // Using V1
+    headers: { 'Content-Type': 'application/json' },
     withCredentials: true,
 });
 
-// Add auth header to requests
 authApi.interceptors.request.use(
     (config) => {
         const token = getAccessToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+        if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-/**
- * Logs in a user using email.
- * Note: Login is handled by AuthContext directly, this is for backwards compatibility.
- * @param {string} email - The user's email.
- * @param {string} password - The user's password.
- * @returns {Promise<object>} - The response data from the API.
- */
 export const login = async (email, password) => {
     const response = await authApi.post('/token/obtain/', { email, password });
     return response.data;
+};
+
+export const verifyToken = async (token) => {
+    try {
+        const response = await authApi.post('/token/verify/', { token });
+        return response.status === 200;
+    } catch (e) {
+        return false;
+    }
+};
+
+export const refreshToken = async () => {
+    const response = await authApi.post('/token/refresh/');
+    return response.data;
+};
+
+export const logout = async () => {
+    try {
+        // Logout is at root /logout/
+        const response = await axios.post(`${AUTH_URL}/logout/`, {}, { withCredentials: true });
+        return response.data;
+    } finally {
+        removeAccessToken();
+    }
 };
 
 /**
@@ -69,38 +77,5 @@ export const confirmPasswordReset = async (uid, token, password) => {
  */
 export const updateProfile = async (profileData) => {
     const response = await authApi.patch('/users/profile/', profileData);
-    return response.data;
-};
-
-/**
- * Logs out the user by telling the auth service to invalidate the session.
- * @returns {Promise<object>} - The success message from the API.
- */
-export const logout = async () => {
-    try {
-        const response = await authApi.post('/logout/');
-        return response.data;
-    } finally {
-        // Always clear local tokens
-        removeAccessToken();
-    }
-};
-
-/**
- * Verifies if the current token is valid.
- * @param {string} token - The access token to verify.
- * @returns {Promise<boolean>} - True if token is valid.
- */
-export const verifyToken = async (token) => {
-    const response = await authApi.post('/token/verify/', { token });
-    return response.status === 200;
-};
-
-/**
- * Uses the refresh token to get a new access token.
- * @returns {Promise<object>} - The response containing the new access token.
- */
-export const refreshToken = async () => {
-    const response = await authApi.post('/token/refresh/');
     return response.data;
 };

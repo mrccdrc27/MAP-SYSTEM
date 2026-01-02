@@ -248,3 +248,4 @@ auth/auth/__pycache__/settings.cpython-313.pyc
 *vite
 .vscode/settings.json
 .vscode/settings.json
+bms/auth_service/.env.docker

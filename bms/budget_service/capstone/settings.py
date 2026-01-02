@@ -98,9 +98,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_spectacular',
     'debug_toolbar',
+    'django_extensions',
 
     # Local apps
-    # Add your project apps here, e.g.:
     # 'users',
     # 'finance',
     # 'budgeting',
