@@ -1,4 +1,5 @@
-// src/api/AuthContext.jsx
+// src/context/AuthContext.jsx
+// Cookie-based authentication - NO localStorage for JWT tokens
 import React, {
   createContext,
   useContext,
@@ -6,29 +7,31 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import axios from "axios";
 
 const AuthContext = createContext();
 // Default to backend running on localhost:8003 when VITE_AUTH_URL is not provided
-// This prevents the frontend dev server from answering API requests with HTML
-// during local development.
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
-const ME_URL = `${AUTH_URL}/api/me/`; // New unified endpoint
-const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`; // Fallback
+const ME_URL = `${AUTH_URL}/api/me/`; // Unified endpoint for both User and Employee
 const LOGIN_URL = `${AUTH_URL}/api/v1/token/obtain/`;
-const LOGOUT_URL = `${AUTH_URL}/api/v1/token/logout/`; // optional
+const LOGOUT_URL = `${AUTH_URL}/api/v1/token/logout/`;
+const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/cookie/`; // New unified refresh endpoint
+
+// Default refresh interval (fallback if server doesn't provide expires_in)
+const DEFAULT_TOKEN_LIFETIME_SECONDS = 300; // 5 minutes
+// Refresh buffer: refresh token when 80% of its lifetime has passed
+const REFRESH_BUFFER_RATIO = 0.8;
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [tokenExpiresIn, setTokenExpiresIn] = useState(DEFAULT_TOKEN_LIFETIME_SECONDS);
+  const refreshTimeoutRef = useRef(null);
 
-  // ✅ Keep axios instance stable with useMemo
+  // Stable axios instance with credentials (cookies)
   const api = useMemo(() => {
     return axios.create({
       baseURL: AUTH_URL,
@@ -38,107 +41,172 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const clearAuth = useCallback(() => {
-    localStorage.removeItem("user");
     setUser(null);
+    // Clear refresh timeout when logging out
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+    }
   }, []);
+
+  // Calculate next refresh time based on token expiration
+  const calculateRefreshInterval = useCallback((expiresInSeconds) => {
+    // Refresh at 80% of token lifetime to ensure we refresh before expiry
+    const refreshMs = Math.max(expiresInSeconds * REFRESH_BUFFER_RATIO * 1000, 5000); // Min 5 seconds
+    if (import.meta.env.DEV) {
+      console.debug(`AuthContext: Token expires in ${expiresInSeconds}s, will refresh in ${refreshMs / 1000}s`);
+    }
+    return refreshMs;
+  }, []);
+
+  // Schedule next token refresh
+  const scheduleTokenRefresh = useCallback((expiresInSeconds) => {
+    // Clear any existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    
+    const refreshMs = calculateRefreshInterval(expiresInSeconds);
+    
+    refreshTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await api.post(TOKEN_REFRESH_URL);
+        if (response.status === 200) {
+          const newExpiresIn = response.data.expires_in || DEFAULT_TOKEN_LIFETIME_SECONDS;
+          setTokenExpiresIn(newExpiresIn);
+          if (import.meta.env.DEV) {
+            console.debug('AuthContext: Token refreshed successfully, expires_in:', newExpiresIn);
+          }
+          // Schedule next refresh based on new expiration
+          scheduleTokenRefresh(newExpiresIn);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.debug('AuthContext: Token refresh failed:', error.response?.status);
+        }
+        // If refresh fails (401), clear auth state
+        if (error.response?.status === 401) {
+          clearAuth();
+        } else {
+          // Retry sooner on network errors
+          scheduleTokenRefresh(10); // Retry in ~8 seconds
+        }
+      }
+    }, refreshMs);
+    
+    if (import.meta.env.DEV) {
+      console.debug(`AuthContext: Token refresh scheduled in ${refreshMs / 1000}s`);
+    }
+  }, [api, clearAuth, calculateRefreshInterval]);
+
+  // Initial token refresh to get expiration time
+  const initializeTokenRefresh = useCallback(async () => {
+    try {
+      const response = await api.post(TOKEN_REFRESH_URL);
+      if (response.status === 200) {
+        const expiresIn = response.data.expires_in || DEFAULT_TOKEN_LIFETIME_SECONDS;
+        setTokenExpiresIn(expiresIn);
+        if (import.meta.env.DEV) {
+          console.debug('AuthContext: Initial token refresh, expires_in:', expiresIn);
+        }
+        // Schedule next refresh
+        scheduleTokenRefresh(expiresIn);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.debug('AuthContext: Initial token refresh failed:', error.response?.status);
+      }
+      return false;
+    }
+  }, [api, scheduleTokenRefresh]);
 
   const fetchUserProfile = useCallback(async () => {
     try {
       if (import.meta.env.DEV) {
         console.debug('AuthContext: Fetching user profile from:', ME_URL);
-        console.debug('AuthContext: Cookies:', typeof document !== 'undefined' ? document.cookie : 'n/a');
       }
       
-      let response;
-      let userType = 'user'; // default to staff user
-      let profileData;
+      const response = await api.get(ME_URL);
       
-      try {
-        // Try new unified endpoint first (/api/me/)
-        response = await api.get(ME_URL);
-        if (response.status === 200 && response.data.type && response.data.data) {
-          userType = response.data.type; // 'user' or 'employee'
-          profileData = response.data.data;
-          if (import.meta.env.DEV) {
-            console.debug('AuthContext: Fetched from /api/me/, type:', userType);
-            console.debug('AuthContext: Profile response:', profileData);
-          }
-        }
-      } catch (meError) {
-        // Fallback to old endpoint if /api/me/ fails
+      if (response.status === 200 && response.data.type && response.data.data) {
+        const userType = response.data.type; // 'user' or 'employee'
+        const profileData = response.data.data;
+        
         if (import.meta.env.DEV) {
-          console.debug('AuthContext: /api/me/ failed, trying fallback:', PROFILE_URL);
+          console.debug('AuthContext: Fetched profile, type:', userType);
         }
-        response = await api.get(PROFILE_URL);
-        profileData = response.data;
-        userType = 'user'; // assume staff user for legacy endpoint
-        if (import.meta.env.DEV) {
-          console.debug('AuthContext: Fetched from fallback endpoint');
-        }
-      }
-      
-      if (response.status === 200) {
-        // Extract role for hdts system
+        
+        // Extract role for HDTS system
         let hdtsRole = null;
         
         if (userType === 'employee') {
-          // Employee type: set role to 'Employee'
           hdtsRole = 'Employee';
-          if (import.meta.env.DEV) console.debug('AuthContext: Employee user, role set to Employee');
         } else if (userType === 'user') {
-          // User (staff) type: extract from system_roles
           if (profileData && Array.isArray(profileData.system_roles)) {
-            if (import.meta.env.DEV) console.debug('AuthContext: System roles:', profileData.system_roles);
             const hdts = profileData.system_roles.find(r => r.system_slug === "hdts");
             if (hdts) {
               hdtsRole = hdts.role_name;
-              if (import.meta.env.DEV) console.debug('AuthContext: Found HDTS role:', hdtsRole);
-            } else {
-              console.warn('AuthContext: No HDTS system role found in:', profileData.system_roles);
             }
-          } else if (profileData && profileData.system_roles !== undefined) {
-            console.warn('AuthContext: system_roles is not an array:', profileData.system_roles);
           }
         }
         
         // Normalize role label for UI: map backend 'Admin' to 'System Admin'
-        const normalizedRole = (hdtsRole && typeof hdtsRole === 'string' && hdtsRole.trim().toLowerCase() === 'admin') ? 'System Admin' : hdtsRole;
+        const normalizedRole = (hdtsRole && typeof hdtsRole === 'string' && hdtsRole.trim().toLowerCase() === 'admin') 
+          ? 'System Admin' 
+          : hdtsRole;
         
-        // Save user with hdtsRole and userType
         const userWithRole = { 
           ...profileData, 
           role: normalizedRole,
-          userType: userType // track whether they're a 'user' or 'employee'
+          userType: userType
         };
-        localStorage.setItem("user", JSON.stringify(userWithRole));
+        
         setUser(userWithRole);
-        if (import.meta.env.DEV) console.debug('AuthContext: User set with role:', normalizedRole, 'type:', userType);
+        
+        // Initialize dynamic token refresh when user is authenticated
+        initializeTokenRefresh();
+        
+        if (import.meta.env.DEV) {
+          console.debug('AuthContext: User set with role:', normalizedRole, 'type:', userType);
+        }
+        
+        return true;
       }
+      
+      return false;
     } catch (error) {
-      console.error("AuthContext: Failed to fetch user profile:", error);
-      if (error?.response) {
-        console.error("AuthContext: Error response:", error.response?.data);
-        console.error("AuthContext: Error status:", error.response?.status);
+      if (import.meta.env.DEV) {
+        console.debug('AuthContext: Failed to fetch user profile:', error.response?.status);
       }
       clearAuth();
+      return false;
     } finally {
       setLoading(false);
       setInitialized(true);
     }
-  }, [api, clearAuth]);
+  }, [api, clearAuth, initializeTokenRefresh]);
 
-  // 🔁 Always check session on mount
+  // Check session on mount
   useEffect(() => {
     fetchUserProfile();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, [fetchUserProfile]);
 
   const login = async (email, password) => {
     try {
       const response = await api.post(LOGIN_URL, { email, password });
       if (response.status === 200) {
-        // Cookie set by server, just fetch profile
-        await fetchUserProfile();
-        return { success: true };
+        // Cookie set by server, fetch profile
+        const success = await fetchUserProfile();
+        return { success };
       }
       return { success: false, error: "Invalid login response" };
     } catch (error) {
@@ -154,82 +222,47 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.post(LOGOUT_URL);
     } catch (e) {
-      console.warn("Logout endpoint not available:", e);
+      console.warn("Logout endpoint error:", e);
     }
     clearAuth();
     window.location.href = "/login";
   };
 
-  // --- HasSystemAccess is the access to the system (i.e. agent access)
-  // --- isAdmin checks the designated Admin role for the system (i.e. responsible for the admin functionalities)
-  // --- if a much more nuanced role system is needed, this logic can be expanded,
-
   // Check if user has Admin role for HDTS (staff users only)
   const isAdmin = useMemo(() => {
     if (!user) return false;
-    
-    // For employee type, they don't have admin access
     if (user.userType === 'employee') return false;
-    
-    // For staff users, check system_roles
     if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
-  
     return user.system_roles.some(
-      (r) =>
-        r.system_slug === "hdts" &&
-        r.role_name === "Admin"
+      (r) => r.system_slug === "hdts" && r.role_name === "Admin"
     );
   }, [user]);
 
   const isTicketCoordinator = useMemo(() => {
     if (!user) return false;
-    
-    // For employee type, they're not ticket coordinators
     if (user.userType === 'employee') return false;
-    
-    // For staff users, check system_roles
     if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
-  
     return user.system_roles.some(
-      (r) =>
-        r.system_slug === "hdts" &&
-        r.role_name === "Ticket Coordinator"
+      (r) => r.system_slug === "hdts" && r.role_name === "Ticket Coordinator"
     );
   }, [user]);
 
-  // Check if user is an HDTS employee
   const isEmployee = useMemo(() => {
     if (!user) return false;
-    
-    // Employee type: always true
     if (user.userType === 'employee') return true;
-    
-    // Staff user: check system_roles for Employee role
     if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
-  
     return user.system_roles.some(
-      (r) =>
-        r.system_slug === "hdts" &&
-        r.role_name === "Employee"
+      (r) => r.system_slug === "hdts" && r.role_name === "Employee"
     );
   }, [user]);
   
-  // Check system access - employees have access via userType, staff users via system_roles
   const hasSystemAccess = useMemo(() => {
     if (!user) return false;
-  
-    // Employee type always has system access
     if (user.userType === 'employee') return true;
-    
-    // Staff user: check for any HDTS system role
     if (!user.system_roles || !Array.isArray(user.system_roles)) return false;
-  
-    return user.system_roles.some(
-      (r) => r.system_slug === "hdts"
-    );
+    return user.system_roles.some((r) => r.system_slug === "hdts");
   }, [user]);
 
-  // ✅ Memoize the context value
   const value = useMemo(
     () => ({
       user,
@@ -243,8 +276,9 @@ export const AuthProvider = ({ children }) => {
       loading,
       initialized,
       hasAuth: !!user,
+      tokenExpiresIn, // Expose current token expiration for debugging
     }),
-    [user, loading, isAdmin, isTicketCoordinator, isEmployee, hasSystemAccess]
+    [user, loading, initialized, isAdmin, isTicketCoordinator, isEmployee, hasSystemAccess, tokenExpiresIn]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

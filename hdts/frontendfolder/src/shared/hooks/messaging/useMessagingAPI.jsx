@@ -12,20 +12,15 @@ export const useMessagingAPI = (ticketId, setMessages) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  };
-
+  // Cookie-based auth - no localStorage tokens
   const apiCall = async (endpoint, options = {}) => {
     const url = `${MESSAGING_API_BASE}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeaders(),
         ...options.headers,
       },
-      credentials: 'include',
+      credentials: 'include', // Send cookies for authentication
       ...options,
     };
 
