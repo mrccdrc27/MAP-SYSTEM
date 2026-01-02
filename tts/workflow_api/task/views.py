@@ -595,6 +595,392 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Delegate to the shared response building logic
         return self._build_task_item_response(request, task_item)
     
+    @action(detail=False, methods=['get'], url_path='admin/view/(?P<ticket_number>[A-Za-z0-9]+)')
+    def admin_view_ticket(self, request, ticket_number=None):
+        """
+        GET endpoint for admins to view any ticket's details (read-only).
+        
+        URL Path: /tasks/admin/view/{ticket_number}/
+        
+        This endpoint is for ADMIN ARCHIVE VIEW ONLY - allows admins to view ticket details
+        without ownership restrictions. Does NOT grant action permissions.
+        
+        Permission: TTS Admin or Super Admin role required.
+        
+        Returns:
+        - Ticket info
+        - Workflow info
+        - Current owner (most recent TaskItem holder)
+        - Admin's ownership status (is_owner: true/false)
+        - Available admin actions (transfer_to_self if not owner, navigate if owner)
+        """
+        if not ticket_number:
+            return Response(
+                {'error': 'ticket_number is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check admin permission using multiple methods for robustness
+        is_admin = False
+        
+        # Method 1: Use has_tts_role if available
+        if hasattr(request.user, 'has_tts_role'):
+            is_admin = request.user.has_tts_role('Admin') or request.user.has_tts_role('Super Admin')
+        
+        # Method 2: Direct check on tts_roles list (case-insensitive)
+        if not is_admin and hasattr(request.user, 'tts_roles'):
+            for role in request.user.tts_roles:
+                role_name = role.get('role', '') if isinstance(role, dict) else str(role)
+                if role_name.lower() in ['admin', 'super admin', 'superadmin']:
+                    is_admin = True
+                    break
+        
+        # Method 3: Check the full roles list for TTS admin roles
+        if not is_admin and hasattr(request.user, 'roles'):
+            for role in request.user.roles:
+                if isinstance(role, dict):
+                    system = role.get('system', '').lower()
+                    role_name = role.get('role', '').lower()
+                    if system == 'tts' and role_name in ['admin', 'super admin', 'superadmin']:
+                        is_admin = True
+                        break
+                elif isinstance(role, str) and ':' in role:
+                    parts = role.split(':', 1)
+                    if len(parts) == 2 and parts[0].lower() == 'tts' and parts[1].lower() in ['admin', 'super admin', 'superadmin']:
+                        is_admin = True
+                        break
+        
+        if not is_admin:
+            user_roles = getattr(request.user, 'roles', [])
+            # If roles are empty, suggest re-login
+            if not user_roles:
+                return Response(
+                    {'error': 'Admin access required. Your session may not have updated roles. Please log out and log back in.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            return Response(
+                {'error': 'Admin access required to view ticket archive. You need TTS Admin or Super Admin role.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user_id = request.user.user_id
+        
+        # Find the ticket by ticket_number
+        try:
+            from tickets.models import WorkflowTicket
+            ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
+        except WorkflowTicket.DoesNotExist:
+            # Try searching in ticket_data
+            try:
+                ticket = WorkflowTicket.objects.get(ticket_data__ticket_id=ticket_number)
+            except WorkflowTicket.DoesNotExist:
+                return Response(
+                    {'error': f'Ticket {ticket_number} not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Get the task for this ticket
+        try:
+            task = Task.objects.select_related('workflow_id', 'current_step').get(ticket_id=ticket)
+        except Task.DoesNotExist:
+            # Ticket exists but has no workflow assigned
+            ticket_data = ticket.ticket_data.copy() if ticket.ticket_data else {}
+            ticket_response = {
+                'id': ticket.id,
+                'ticket_id': ticket.ticket_id,
+                'ticket_number': ticket.ticket_number,
+                'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
+                'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None,
+            }
+            ticket_response.update(ticket_data)
+            
+            return Response({
+                'ticket': ticket_response,
+                'workflow': None,
+                'current_step': None,
+                'current_owner': None,
+                'is_owner': False,
+                'has_workflow': False,
+                'admin_actions': ['assign_workflow'],
+                'message': 'Ticket has no workflow assigned'
+            }, status=status.HTTP_200_OK)
+        
+        # Get the most recent TaskItem (current owner)
+        most_recent_task_item = TaskItem.objects.filter(
+            task=task
+        ).select_related(
+            'role_user', 
+            'role_user__role_id',
+            'assigned_on_step'
+        ).prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
+        
+        current_owner = None
+        is_owner = False
+        user_task_item = None
+        
+        if most_recent_task_item:
+            owner_status = most_recent_task_item.taskitemhistory_set.order_by('-created_at').first()
+            current_owner = {
+                'task_item_id': most_recent_task_item.task_item_id,
+                'user_id': most_recent_task_item.role_user.user_id,
+                'user_full_name': most_recent_task_item.role_user.user_full_name,
+                'role': most_recent_task_item.role_user.role_id.name if most_recent_task_item.role_user.role_id else None,
+                'status': owner_status.status if owner_status else 'new',
+                'origin': most_recent_task_item.origin,
+                'assigned_on': most_recent_task_item.assigned_on.isoformat() if most_recent_task_item.assigned_on else None,
+            }
+            
+            # Check if current user is the owner
+            is_owner = most_recent_task_item.role_user.user_id == user_id
+            
+            # Get the user's task item if they own it
+            if is_owner:
+                user_task_item = most_recent_task_item
+        
+        # Build ticket response
+        ticket_data = ticket.ticket_data.copy() if ticket.ticket_data else {}
+        ticket_response = {
+            'id': ticket.id,
+            'ticket_id': ticket.ticket_id,
+            'ticket_number': ticket.ticket_number,
+            'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
+            'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None,
+        }
+        ticket_response.update(ticket_data)
+        
+        # Build workflow response
+        workflow_response = None
+        if task.workflow_id:
+            workflow_response = {
+                'workflow_id': str(task.workflow_id.workflow_id),
+                'name': task.workflow_id.name,
+                'description': task.workflow_id.description,
+            }
+        
+        # Build step response
+        step_response = None
+        if task.current_step:
+            step_response = {
+                'step_id': str(task.current_step.step_id),
+                'name': task.current_step.name,
+                'description': task.current_step.description,
+                'instruction': task.current_step.instruction,
+                'role_id': str(task.current_step.role_id.role_id) if task.current_step.role_id else None,
+                'role_name': task.current_step.role_id.name if task.current_step.role_id else None,
+            }
+        
+        # Determine admin actions
+        admin_actions = []
+        if is_owner:
+            admin_actions.append('navigate')  # Can navigate to their ticket detail
+        else:
+            admin_actions.append('transfer_to_self')  # Can transfer to themselves
+        
+        # Build response
+        response_data = {
+            'ticket': ticket_response,
+            'workflow': workflow_response,
+            'current_step': step_response,
+            'current_owner': current_owner,
+            'is_owner': is_owner,
+            'has_workflow': True,
+            'admin_actions': admin_actions,
+            'task_id': str(task.task_id),
+            'task_item_id': most_recent_task_item.task_item_id if most_recent_task_item else None,
+            'user_task_item_id': user_task_item.task_item_id if user_task_item else None,
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'], url_path='admin/transfer-to-self')
+    def admin_transfer_to_self(self, request):
+        """
+        POST endpoint for admins to transfer a ticket to themselves.
+        
+        URL Path: /tasks/admin/transfer-to-self/
+        
+        Request Body:
+        {
+            "task_item_id": 10,
+            "notes": "Reason for taking over this ticket"
+        }
+        
+        Permission: TTS Admin or Super Admin role required.
+        
+        This creates a new TaskItem assigned to the admin, marking the original as 'reassigned'.
+        """
+        # Check admin permission using multiple methods for robustness
+        is_admin = False
+        
+        # Method 1: Use has_tts_role if available
+        if hasattr(request.user, 'has_tts_role'):
+            is_admin = request.user.has_tts_role('Admin') or request.user.has_tts_role('Super Admin')
+        
+        # Method 2: Direct check on tts_roles list (case-insensitive)
+        if not is_admin and hasattr(request.user, 'tts_roles'):
+            for role in request.user.tts_roles:
+                role_name = role.get('role', '') if isinstance(role, dict) else str(role)
+                if role_name.lower() in ['admin', 'super admin', 'superadmin']:
+                    is_admin = True
+                    break
+        
+        # Method 3: Check the full roles list for TTS admin roles
+        if not is_admin and hasattr(request.user, 'roles'):
+            for role in request.user.roles:
+                if isinstance(role, dict):
+                    system = role.get('system', '').lower()
+                    role_name = role.get('role', '').lower()
+                    if system == 'tts' and role_name in ['admin', 'super admin', 'superadmin']:
+                        is_admin = True
+                        break
+                elif isinstance(role, str) and ':' in role:
+                    parts = role.split(':', 1)
+                    if len(parts) == 2 and parts[0].lower() == 'tts' and parts[1].lower() in ['admin', 'super admin', 'superadmin']:
+                        is_admin = True
+                        break
+        
+        if not is_admin:
+            return Response(
+                {'error': 'Admin access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        task_item_id = request.data.get('task_item_id')
+        transfer_notes = request.data.get('notes', 'Transferred to self by admin')
+        
+        if not task_item_id:
+            return Response(
+                {'error': 'task_item_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user_id = request.user.user_id
+        
+        # Get the task item
+        try:
+            task_item = TaskItem.objects.select_related(
+                'task__ticket_id',
+                'role_user',
+                'assigned_on_step'
+            ).get(task_item_id=task_item_id)
+        except TaskItem.DoesNotExist:
+            return Response(
+                {'error': f'TaskItem {task_item_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if already owner
+        if task_item.role_user.user_id == user_id:
+            return Response(
+                {'error': 'You already own this ticket'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate task item status - can only transfer unacted, non-escalated items
+        latest_history = task_item.taskitemhistory_set.order_by('-created_at').first()
+        current_status = latest_history.status if latest_history else 'new'
+        
+        if current_status in ['resolved', 'escalated', 'reassigned', 'breached']:
+            return Response(
+                {'error': f'Cannot transfer task item with status "{current_status}"'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get admin's RoleUsers entry
+        try:
+            admin_role_user = RoleUsers.objects.get(
+                user_id=user_id,
+                is_active=True
+            )
+        except RoleUsers.DoesNotExist:
+            return Response(
+                {'error': 'Admin user is not registered in RoleUsers'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except RoleUsers.MultipleObjectsReturned:
+            admin_role_user = RoleUsers.objects.filter(
+                user_id=user_id,
+                is_active=True
+            ).first()
+        
+        # Mark original assignment as transferred
+        task_item.transferred_to = admin_role_user
+        task_item.transferred_by = user_id
+        task_item.notes = transfer_notes
+        task_item.acted_on = timezone.now()
+        task_item.save()
+        
+        # Create history record for reassignment
+        TaskItemHistory.objects.create(
+            task_item=task_item,
+            status='reassigned'
+        )
+        
+        # Create new TaskItem for admin
+        new_task_item = TaskItem.objects.create(
+            task=task_item.task,
+            role_user=admin_role_user,
+            origin='Admin Transfer',
+            notes=transfer_notes,
+            target_resolution=task_item.target_resolution,
+            assigned_on_step=task_item.assigned_on_step or task_item.task.current_step
+        )
+        
+        # Create history record for new assignment
+        TaskItemHistory.objects.create(
+            task_item=new_task_item,
+            status='new'
+        )
+        
+        # Log audit event
+        try:
+            log_action(
+                request.user,
+                'admin_transfer_to_self',
+                target=task_item.task,
+                changes={
+                    'transferred_from_user': task_item.role_user.user_id,
+                    'transferred_to_user': user_id,
+                    'task_item_id': task_item_id,
+                    'reason': transfer_notes
+                },
+                request=request
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit for admin_transfer_to_self: {e}")
+        
+        # Send transfer notification
+        try:
+            from celery import current_app
+            from django.conf import settings
+            
+            ticket_number = str(task_item.task.ticket_id.ticket_number) if hasattr(task_item.task, 'ticket_id') and hasattr(task_item.task.ticket_id, 'ticket_number') else f"Task {task_item.task.task_id}"
+            inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
+            
+            current_app.send_task(
+                'notifications.send_task_transfer_notification',
+                args=(
+                    task_item.role_user.user_id,
+                    user_id,
+                    ticket_number,
+                    ticket_number,
+                    f"Ticket {ticket_number}",
+                    user_id,
+                    getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'Admin User {user_id}'),
+                    transfer_notes
+                ),
+                queue=inapp_queue
+            )
+        except Exception as e:
+            logger.error(f"Failed to send transfer notification: {e}")
+        
+        # Return success with new task item details
+        return Response({
+            'message': 'Ticket transferred to you successfully',
+            'new_task_item_id': new_task_item.task_item_id,
+            'ticket_number': task_item.task.ticket_id.ticket_number,
+        }, status=status.HTTP_200_OK)
+    
     @action(detail=False, methods=['get'], url_path='detail/(?P<task_item_id>[0-9]+)')
     def task_details(self, request, task_item_id=None):
         """
