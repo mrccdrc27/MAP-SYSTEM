@@ -3,7 +3,7 @@ import EmployeeLayout from '../employee/layouts/EmployeeLayout';
 import EmployeeHome from '../employee/pages/home/EmployeeHome';
 import EmployeeActiveTickets from '../employee/pages/active-tickets/EmployeeActiveTickets';
 import EmployeeTicketRecords from '../employee/pages/ticket-records/EmployeeTicketRecords';
-import EmployeeTicketSubmissionForm from '../employee/pages/ticket-submission-form/EmployeeTicketSubmissionForm';
+import EmployeeTicketSubmissionForm from '../employee/pages/ticket-submission-form/EnhancedTicketSubmissionForm';
 import EmployeeTicketTracker from '../employee/pages/ticket-tracker/EmployeeTicketTracker';
 import EmployeeSettings from '../employee/pages/settings/EmployeeSettings';
 import ErrorBoundary from '../shared/components/ErrorBoundary';

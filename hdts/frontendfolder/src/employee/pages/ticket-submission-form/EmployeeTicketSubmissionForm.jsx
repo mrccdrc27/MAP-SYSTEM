@@ -16,6 +16,11 @@ import ITSupportForm from './ITSupportForm';
 import AssetCheckInForm, { mockAssets } from './AssetCheckInForm';
 import AssetCheckOutForm from './AssetCheckOutForm';
 import BudgetProposalForm from './BudgetProposalForm';
+import AssetRequestForm from './AssetRequestForm';
+import AssetRegistrationForm from './AssetRegistrationForm';
+import AssetRepairForm from './AssetRepairForm';
+import AssetIncidentForm from './AssetIncidentForm';
+import AssetDisposalForm from './AssetDisposalForm';
 
 const ALLOWED_FILE_TYPES = [
   'image/png',
@@ -52,7 +57,62 @@ export default function EmployeeTicketSubmissionForm() {
     softwareAffected: '',
     performanceStartDate: '',
     performanceEndDate: '',
-    preparedBy: ''
+    preparedBy: '',
+    // Asset Request fields
+    assetCategory: '',
+    productName: '',
+    modelNumber: '',
+    manufacturer: '',
+    supplier: '',
+    specs: {},
+    unitCost: '',
+    quantity: 1,
+    eolDate: '',
+    depreciationMonths: '',
+    justification: '',
+    // Asset Registration fields
+    requestReference: '',
+    orderNumber: '',
+    purchaseCost: '',
+    purchaseDate: '',
+    warrantyExpiry: '',
+    department: '',
+    // Asset Repair fields
+    assetId: '',
+    repairName: '',
+    startDate: '',
+    endDate: '',
+    serviceCost: '',
+    componentId: '',
+    componentName: '',
+    componentCategory: '',
+    componentQuantity: 1,
+    componentCost: '',
+    newComponentName: '',
+    newComponentCategory: '',
+    newComponentSupplier: '',
+    newComponentManufacturer: '',
+    newComponentLocation: '',
+    newComponentModelNumber: '',
+    newComponentPurchaseDate: '',
+    newComponentQuantity: 1,
+    newComponentCost: '',
+    repairNotes: '',
+    // Asset Incident fields
+    assignedTo: '',
+    incidentDate: '',
+    damageDescription: '',
+    policeReportNumber: '',
+    lastKnownLocation: '',
+    employeeName: '',
+    lastWorkingDay: '',
+    // Asset Disposal fields
+    assetAge: '',
+    eolStatus: '',
+    utilizationAvg: '',
+    repairCount: '',
+    totalRepairCost: '',
+    lastAuditResult: ''
   });
 
   // If navigated with prefill state, populate initial fields
@@ -100,7 +160,13 @@ export default function EmployeeTicketSubmissionForm() {
   const isAssetCheckIn = formData.category === 'Asset Check In';
   const isAssetCheckOut = formData.category === 'Asset Check Out';
   const isBudgetProposal = formData.category === 'New Budget Proposal';
+  const isAssetRequest = formData.category === 'Asset Request';
+  const isAssetRegistration = formData.category === 'Asset Registration';
+  const isAssetRepair = formData.category === 'Asset Repair';
+  const isAssetIncident = formData.category === 'Asset Incident';
+  const isAssetDisposal = formData.category === 'Asset Disposal';
   const isAnyAssetCategory = isAssetCheckIn || isAssetCheckOut;
+  const isAnyAssetManagementCategory = isAssetRequest || isAssetRegistration || isAssetRepair || isAssetIncident || isAssetDisposal;
 
   const validateField = (field, value) => {
     let error = '';
@@ -121,7 +187,7 @@ export default function EmployeeTicketSubmissionForm() {
         break;
       
       case 'subCategory':
-        if ((isITSupport || isAnyAssetCategory || isBudgetProposal) && !value) {
+        if ((isITSupport || isAnyAssetCategory || isBudgetProposal || isAssetRequest || isAssetRepair || isAssetIncident) && !value) {
           error = 'Sub-Category is required';
         }
         break;
@@ -141,7 +207,7 @@ export default function EmployeeTicketSubmissionForm() {
         break;
       
       case 'location':
-        if (isAnyAssetCategory && !value) {
+        if ((isAnyAssetCategory || isAssetRegistration) && !value) {
           error = 'Location is required';
         }
         break;
@@ -149,6 +215,88 @@ export default function EmployeeTicketSubmissionForm() {
       case 'issueType':
         if (isAssetCheckIn && !value) {
           error = 'Issue Type is required';
+        }
+        break;
+
+      // Asset Request validations
+      case 'assetCategory':
+        if ((isAssetRequest || isAssetRegistration) && !value) {
+          error = 'Asset Category is required';
+        }
+        break;
+      
+      case 'productName':
+        if ((isAssetRequest || isAssetRegistration) && !value) {
+          error = 'Product Name is required';
+        }
+        break;
+      
+      case 'unitCost':
+        if (isAssetRequest && !value) {
+          error = 'Unit Cost is required';
+        }
+        break;
+
+      // Asset Registration validations
+      case 'serialNumber':
+        if (isAssetRegistration && !value) {
+          error = 'Serial Number is required';
+        }
+        break;
+      
+      case 'purchaseCost':
+        if (isAssetRegistration && !value) {
+          error = 'Purchase Cost is required';
+        }
+        break;
+      
+      case 'purchaseDate':
+        if (isAssetRegistration && !value) {
+          error = 'Purchase Date is required';
+        }
+        break;
+      
+      case 'warrantyExpiry':
+        if (isAssetRegistration && !value) {
+          error = 'Warranty Expiry is required';
+        }
+        break;
+      
+      case 'department':
+        if (isAssetRegistration && !value) {
+          error = 'Department is required';
+        }
+        break;
+
+      // Asset Repair validations
+      case 'assetId':
+        if ((isAssetRepair || isAssetIncident || isAssetDisposal) && !value) {
+          error = 'Asset ID is required';
+        }
+        break;
+      
+      case 'repairName':
+        if (isAssetRepair && !value) {
+          error = 'Repair/Service Name is required';
+        }
+        break;
+      
+      case 'startDate':
+        if (isAssetRepair && !value) {
+          error = 'Start Date is required';
+        }
+        break;
+
+      // Asset Incident validations
+      case 'incidentDate':
+        if (isAssetIncident && !value) {
+          error = 'Incident Date is required';
+        }
+        break;
+      
+      case 'justification':
+        if ((isAssetIncident || isAssetDisposal) && !value?.trim()) {
+          error = 'Justification is required';
         }
         break;
 
@@ -237,7 +385,62 @@ export default function EmployeeTicketSubmissionForm() {
         softwareAffected: '',
         performanceStartDate: '',
         performanceEndDate: '',
-        preparedBy: ''
+        preparedBy: '',
+        // Reset Asset Request fields
+        assetCategory: '',
+        productName: '',
+        modelNumber: '',
+        manufacturer: '',
+        supplier: '',
+        specs: {},
+        unitCost: '',
+        quantity: 1,
+        eolDate: '',
+        depreciationMonths: '',
+        justification: '',
+        // Reset Asset Registration fields
+        requestReference: '',
+        orderNumber: '',
+        purchaseCost: '',
+        purchaseDate: '',
+        warrantyExpiry: '',
+        department: '',
+        // Reset Asset Repair fields
+        assetId: '',
+        repairName: '',
+        startDate: '',
+        endDate: '',
+        serviceCost: '',
+        componentId: '',
+        componentName: '',
+        componentCategory: '',
+        componentQuantity: 1,
+        componentCost: '',
+        newComponentName: '',
+        newComponentCategory: '',
+        newComponentSupplier: '',
+        newComponentManufacturer: '',
+        newComponentLocation: '',
+        newComponentModelNumber: '',
+        newComponentPurchaseDate: '',
+        newComponentQuantity: 1,
+        newComponentCost: '',
+        repairNotes: '',
+        // Reset Asset Incident fields
+        assignedTo: '',
+        incidentDate: '',
+        damageDescription: '',
+        policeReportNumber: '',
+        lastKnownLocation: '',
+        employeeName: '',
+        lastWorkingDay: '',
+        // Reset Asset Disposal fields
+        assetAge: '',
+        eolStatus: '',
+        utilizationAvg: '',
+        repairCount: '',
+        totalRepairCost: '',
+        lastAuditResult: ''
       }));
       setBudgetItems([{ cost_element: '', estimated_cost: '', description: '', account: 2 }]);
     }
@@ -276,6 +479,16 @@ export default function EmployeeTicketSubmissionForm() {
     setTouched({ ...touched, [field]: true });
     const fieldError = validateField(field, formData[field]);
     setErrors({ ...errors, [field]: fieldError });
+  };
+
+  // Prevent form submission on Enter key in input fields
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      // Only prevent if it's not a textarea or if it's a textarea with Ctrl+Enter for submit
+      if (e.target.tagName === 'INPUT' || (e.target.tagName === 'TEXTAREA' && !e.ctrlKey)) {
+        e.preventDefault();
+      }
+    }
   };
 
   const handleFileChange = (e) => {
@@ -323,10 +536,6 @@ export default function EmployeeTicketSubmissionForm() {
     const fieldsToValidate = ['subject', 'category', 'description'];
     
     // Add category-specific required fields
-    if (isITSupport || isAnyAssetCategory || isBudgetProposal) {
-      fieldsToValidate.push('subCategory');
-    }
-
     if (isITSupport) {
       // Device type and software affected are required for IT Support
       fieldsToValidate.push('deviceType');
@@ -349,6 +558,31 @@ export default function EmployeeTicketSubmissionForm() {
 
     if (isBudgetProposal) {
       fieldsToValidate.push('performanceStartDate', 'performanceEndDate', 'preparedBy');
+    }
+
+    // Asset Request validations
+    if (isAssetRequest) {
+      fieldsToValidate.push('assetCategory', 'productName', 'unitCost');
+    }
+
+    // Asset Registration validations
+    if (isAssetRegistration) {
+      fieldsToValidate.push('assetCategory', 'productName', 'serialNumber', 'purchaseCost', 'purchaseDate', 'warrantyExpiry', 'location', 'department');
+    }
+
+    // Asset Repair validations
+    if (isAssetRepair) {
+      fieldsToValidate.push('assetId', 'repairName', 'startDate');
+    }
+
+    // Asset Incident validations
+    if (isAssetIncident) {
+      fieldsToValidate.push('assetId', 'incidentDate', 'justification');
+    }
+
+    // Asset Disposal validations
+    if (isAssetDisposal) {
+      fieldsToValidate.push('assetId', 'justification');
     }
 
     fieldsToValidate.forEach(field => {
@@ -439,6 +673,110 @@ export default function EmployeeTicketSubmissionForm() {
         dynamicData.preparedBy = formData.preparedBy;
       }
 
+      // Add Asset Request specific data
+      if (isAssetRequest) {
+        dynamicData.assetCategory = formData.assetCategory;
+        dynamicData.productName = formData.productName;
+        dynamicData.modelNumber = formData.modelNumber;
+        dynamicData.manufacturer = formData.manufacturer;
+        dynamicData.supplier = formData.supplier;
+        dynamicData.specs = formData.specs;
+        dynamicData.unitCost = formData.unitCost;
+        dynamicData.quantity = formData.quantity || 1;
+        dynamicData.totalCost = (formData.unitCost || 0) * (formData.quantity || 1);
+        dynamicData.eolDate = formData.eolDate;
+        dynamicData.depreciationMonths = formData.depreciationMonths;
+        dynamicData.justification = formData.justification;
+      }
+
+      // Add Asset Registration specific data
+      if (isAssetRegistration) {
+        dynamicData.requestReference = formData.requestReference;
+        dynamicData.assetCategory = formData.assetCategory;
+        dynamicData.productName = formData.productName;
+        dynamicData.modelNumber = formData.modelNumber;
+        dynamicData.orderNumber = formData.orderNumber;
+        dynamicData.serialNumber = formData.serialNumber;
+        dynamicData.purchaseCost = formData.purchaseCost;
+        dynamicData.purchaseDate = formData.purchaseDate;
+        dynamicData.warrantyExpiry = formData.warrantyExpiry;
+        dynamicData.location = formData.location;
+        dynamicData.department = formData.department;
+        dynamicData.justification = formData.justification;
+      }
+
+      // Add Asset Repair specific data
+      if (isAssetRepair) {
+        dynamicData.assetId = formData.assetId;
+        dynamicData.assetName = formData.assetName;
+        dynamicData.serialNumber = formData.serialNumber;
+        dynamicData.repairName = formData.repairName;
+        dynamicData.startDate = formData.startDate;
+        dynamicData.endDate = formData.endDate;
+        dynamicData.serviceCost = formData.serviceCost;
+        dynamicData.orderNumber = formData.orderNumber;
+        dynamicData.repairNotes = formData.repairNotes;
+        // Component data if applicable
+        if (formData.componentId) {
+          dynamicData.component = {
+            id: formData.componentId,
+            name: formData.componentName,
+            category: formData.componentCategory,
+            quantity: formData.componentQuantity,
+            cost: formData.componentCost
+          };
+        }
+        if (formData.newComponentName) {
+          dynamicData.newComponent = {
+            name: formData.newComponentName,
+            category: formData.newComponentCategory,
+            supplier: formData.newComponentSupplier,
+            manufacturer: formData.newComponentManufacturer,
+            location: formData.newComponentLocation,
+            modelNumber: formData.newComponentModelNumber,
+            purchaseDate: formData.newComponentPurchaseDate,
+            quantity: formData.newComponentQuantity,
+            cost: formData.newComponentCost
+          };
+        }
+      }
+
+      // Add Asset Incident specific data
+      if (isAssetIncident) {
+        dynamicData.assetId = formData.assetId;
+        dynamicData.assetName = formData.assetName;
+        dynamicData.serialNumber = formData.serialNumber;
+        dynamicData.assignedTo = formData.assignedTo;
+        dynamicData.incidentDate = formData.incidentDate;
+        dynamicData.justification = formData.justification;
+        if (formData.subCategory === 'Stolen') {
+          dynamicData.policeReportNumber = formData.policeReportNumber;
+          dynamicData.lastKnownLocation = formData.lastKnownLocation;
+        }
+        if (formData.subCategory === 'Damage') {
+          dynamicData.damageDescription = formData.damageDescription;
+        }
+        if (formData.subCategory === 'Employee Resign') {
+          dynamicData.employeeName = formData.employeeName;
+          dynamicData.lastWorkingDay = formData.lastWorkingDay;
+        }
+      }
+
+      // Add Asset Disposal specific data
+      if (isAssetDisposal) {
+        dynamicData.assetId = formData.assetId;
+        dynamicData.assetName = formData.assetName;
+        dynamicData.serialNumber = formData.serialNumber;
+        dynamicData.assetCategory = formData.assetCategory;
+        dynamicData.assetAge = formData.assetAge;
+        dynamicData.eolStatus = formData.eolStatus;
+        dynamicData.utilizationAvg = formData.utilizationAvg;
+        dynamicData.repairCount = formData.repairCount;
+        dynamicData.totalRepairCost = formData.totalRepairCost;
+        dynamicData.lastAuditResult = formData.lastAuditResult;
+        dynamicData.justification = formData.justification;
+      }
+
       // Add dynamic data as JSON string
       if (Object.keys(dynamicData).length > 0) {
         formDataToSend.append('dynamic_data', JSON.stringify(dynamicData));
@@ -488,7 +826,62 @@ export default function EmployeeTicketSubmissionForm() {
       softwareAffected: '',
       performanceStartDate: '',
       performanceEndDate: '',
-      preparedBy: ''
+      preparedBy: '',
+      // Asset Request fields
+      assetCategory: '',
+      productName: '',
+      modelNumber: '',
+      manufacturer: '',
+      supplier: '',
+      specs: {},
+      unitCost: '',
+      quantity: 1,
+      eolDate: '',
+      depreciationMonths: '',
+      justification: '',
+      // Asset Registration fields
+      requestReference: '',
+      orderNumber: '',
+      purchaseCost: '',
+      purchaseDate: '',
+      warrantyExpiry: '',
+      department: '',
+      // Asset Repair fields
+      assetId: '',
+      repairName: '',
+      startDate: '',
+      endDate: '',
+      serviceCost: '',
+      componentId: '',
+      componentName: '',
+      componentCategory: '',
+      componentQuantity: 1,
+      componentCost: '',
+      newComponentName: '',
+      newComponentCategory: '',
+      newComponentSupplier: '',
+      newComponentManufacturer: '',
+      newComponentLocation: '',
+      newComponentModelNumber: '',
+      newComponentPurchaseDate: '',
+      newComponentQuantity: 1,
+      newComponentCost: '',
+      repairNotes: '',
+      // Asset Incident fields
+      assignedTo: '',
+      incidentDate: '',
+      damageDescription: '',
+      policeReportNumber: '',
+      lastKnownLocation: '',
+      employeeName: '',
+      lastWorkingDay: '',
+      // Asset Disposal fields
+      assetAge: '',
+      eolStatus: '',
+      utilizationAvg: '',
+      repairCount: '',
+      totalRepairCost: '',
+      lastAuditResult: ''
     });
     setErrors({});
     setTouched({});
@@ -502,7 +895,7 @@ export default function EmployeeTicketSubmissionForm() {
     <main className={styles.registration}>
       <section>
   <FormCard>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
           {/* Main Form Fields */}
           <FormField
             id="subject"
@@ -586,6 +979,66 @@ export default function EmployeeTicketSubmissionForm() {
               FormField={FormField}
               budgetItems={budgetItems}
               setBudgetItems={setBudgetItems}
+            />
+          )}
+
+          {/* Asset Request Form */}
+          {isAssetRequest && (
+            <AssetRequestForm
+              formData={formData}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              errors={errors}
+              FormField={FormField}
+              setFormData={setFormData}
+            />
+          )}
+
+          {/* Asset Registration Form */}
+          {isAssetRegistration && (
+            <AssetRegistrationForm
+              formData={formData}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              errors={errors}
+              FormField={FormField}
+              setFormData={setFormData}
+            />
+          )}
+
+          {/* Asset Repair Form */}
+          {isAssetRepair && (
+            <AssetRepairForm
+              formData={formData}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              errors={errors}
+              FormField={FormField}
+              setFormData={setFormData}
+            />
+          )}
+
+          {/* Asset Incident Form */}
+          {isAssetIncident && (
+            <AssetIncidentForm
+              formData={formData}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              errors={errors}
+              FormField={FormField}
+              setFormData={setFormData}
+            />
+          )}
+
+          {/* Asset Disposal Form */}
+          {isAssetDisposal && (
+            <AssetDisposalForm
+              formData={formData}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              errors={errors}
+              FormField={FormField}
+              setFormData={setFormData}
             />
           )}
 

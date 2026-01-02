@@ -44,26 +44,6 @@ const mockAssets = {
 export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField }) {
   return (
     <>
-      {/* Sub-Category (Type of Product) */}
-      <FormField
-        id="subCategory"
-        label="Sub-Category (Type of Product)"
-        required
-        error={errors.subCategory}
-        render={() => (
-          <select
-            value={formData.subCategory}
-            onChange={onChange('subCategory')}
-            onBlur={onBlur('subCategory')}
-          >
-            <option value="">Select Product Type</option>
-            {assetSubCategories.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        )}
-      />
-
       {/* Asset Name */}
       <FormField
         id="assetName"
@@ -72,7 +52,6 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         error={errors.assetName}
         render={() => (
           <select
-            disabled={!formData.subCategory}
             value={formData.assetName}
             onChange={onChange('assetName')}
             onBlur={onBlur('assetName')}

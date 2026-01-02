@@ -24,26 +24,6 @@ const deviceTypes = [
 export default function ITSupportForm({ formData, onChange, onBlur, errors, FormField }) {
   return (
     <>
-      {/* Sub-Category */}
-      <FormField
-        id="subCategory"
-        label="Sub-Category"
-        required
-        error={errors.subCategory}
-        render={() => (
-          <select
-            value={formData.subCategory}
-            onChange={onChange('subCategory')}
-            onBlur={onBlur('subCategory')}
-          >
-            <option value="">Select Sub-Category</option>
-            {itSupportSubCategories.map(sub => (
-              <option key={sub} value={sub}>{sub}</option>
-            ))}
-          </select>
-        )}
-      />
-
       {/* Device Type */}
       <FormField
         id="deviceType"
