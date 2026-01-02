@@ -16,7 +16,6 @@ echo "Preparing scripts..."
 # Step 1: Convert script files to Unix-style line endings
 # These paths are relative to PROJECT_ROOT
 convert_line_endings "tts/frontend/start.sh"
-convert_line_endings "tts/ticket_service/start.sh"
 convert_line_endings "tts/workflow_api/start.sh"
 convert_line_endings "hdts/helpdesk/entrypoint.sh"
 convert_line_endings "hdts/helpdesk/start.sh"

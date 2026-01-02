@@ -172,8 +172,8 @@ export default function StepNode({ data, selected }) {
         />
       )}
       
-      {/* Right Target @ 70% - Only for regular nodes */}
-      {isRegularNode && (
+      {/* Right Target @ 70% - For regular and start nodes (to receive return/reject flows) */}
+      {(isRegularNode || isStartNode) && (
         <Handle 
           type="target" 
           position={Position.Right} 

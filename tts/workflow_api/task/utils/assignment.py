@@ -29,17 +29,17 @@ def fetch_users_for_role(role_name):
             role_id=role,
             is_active=True
         ).values_list('user_id', flat=True))
-        logger.info(f"✅ Found {len(user_ids)} users for role '{role_name}'")
+        logger.info(f"[OK] Found {len(user_ids)} users for role '{role_name}'")
         return user_ids
     except Roles.DoesNotExist:
-        logger.warning(f"❌ Role '{role_name}' not found")
+        logger.warning(f"[ERROR] Role '{role_name}' not found")
         return []
     except Exception as e:
-        logger.error(f"❌ Error fetching users: {e}")
+        logger.error(f"[ERROR] Error fetching users: {e}")
         return []
 
 
-def apply_round_robin_assignment(task, user_ids, role_name):
+def apply_round_robin_assignment(task, user_ids, role_name, step=None):
     """
     Apply round-robin logic to assign users to tasks.
     
@@ -47,6 +47,7 @@ def apply_round_robin_assignment(task, user_ids, role_name):
         task: Task instance
         user_ids: List of user IDs to assign
         role_name: Role name for tracking
+        step: Steps instance - the step to assign users to (defaults to task.current_step if not provided)
     
     Returns:
         List of created TaskItem instances
@@ -54,6 +55,9 @@ def apply_round_robin_assignment(task, user_ids, role_name):
     if not user_ids:
         logger.warning(f"No users for role '{role_name}'")
         return []
+    
+    # Use provided step or fall back to task.current_step
+    target_step = step or task.current_step
 
     round_robin_state, _ = RoundRobin.objects.get_or_create(
         role_name=role_name,
@@ -68,22 +72,22 @@ def apply_round_robin_assignment(task, user_ids, role_name):
     # TaskItem target = now + (SLA * step_weight_percentage)
     target_resolution = None
     try:
-        if task.ticket_id and task.workflow_id and task.current_step:
+        if task.ticket_id and task.workflow_id and target_step:
             from task.utils.target_resolution import calculate_target_resolution_for_task_item
             target_resolution = calculate_target_resolution_for_task_item(
                 ticket=task.ticket_id,
-                step=task.current_step,
+                step=target_step,
                 workflow=task.workflow_id
             )
             if target_resolution:
-                logger.info(f"✅ Calculated TASK ITEM target resolution: {target_resolution}")
+                logger.info(f"[OK] Calculated TASK ITEM target resolution: {target_resolution}")
             else:
-                logger.warning(f"⚠️ Failed to calculate TaskItem target resolution")
+                logger.warning(f"[WARNING] Failed to calculate TaskItem target resolution")
         else:
-            logger.warning(f"⚠️ Missing required fields for target resolution calculation (ticket_id, workflow_id, or current_step)")
+            logger.warning(f"[WARNING] Missing required fields for target resolution calculation (ticket_id, workflow_id, or target_step)")
 
     except Exception as e:
-        logger.error(f"❌ Failed to calculate TaskItem target resolution: {e}", exc_info=True)
+        logger.error(f"[ERROR] Failed to calculate TaskItem target resolution: {e}", exc_info=True)
 
     # Get RoleUsers record for this user and role
     try:
@@ -93,17 +97,18 @@ def apply_round_robin_assignment(task, user_ids, role_name):
             is_active=True
         )
     except RoleUsers.DoesNotExist:
-        logger.error(f"❌ RoleUsers record not found for user {user_id} and role '{role_name}'")
+        logger.error(f"[ERROR] RoleUsers record not found for user {user_id} and role '{role_name}'")
         return []
 
     # Create TaskItem for the assigned user
+    # Include assigned_on_step in lookup to allow same user to be assigned at different steps
     task_item, created = TaskItem.objects.get_or_create(
         task=task,
         role_user=role_users,
+        assigned_on_step=target_step,
         defaults={
             'origin': 'System',
             'target_resolution': target_resolution,
-            'assigned_on_step': task.current_step
         }
     )
     
@@ -113,7 +118,7 @@ def apply_round_robin_assignment(task, user_ids, role_name):
             task_item=task_item,
             status='new'
         )
-        logger.info(f"👤 Created TaskItem: User {user_id} assigned to Task {task.task_id}")
+        logger.info(f"[OK] Created TaskItem: User {user_id} assigned to Task {task.task_id}")
         # Send assignment notification via Celery
         task_title = str(task.ticket_id.subject) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
         ticket_number = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') and hasattr(task.ticket_id, 'ticket_number') else task_title
@@ -127,7 +132,7 @@ def apply_round_robin_assignment(task, user_ids, role_name):
         except Exception as e:
             # Store failed notification for later retry
             # (e.g., RabbitMQ is not running or connection issues)
-            logger.warning(f"⚠️ Failed to send assignment notification: {e}")
+            logger.warning(f"[WARNING] Failed to send assignment notification: {e}")
             FailedNotification.objects.create(
                 user_id=user_id,
                 task_item_id=str(task_item.task_item_id),
@@ -136,15 +141,15 @@ def apply_round_robin_assignment(task, user_ids, role_name):
                 error_message=str(e),
                 status='pending'
             )
-            logger.info("✅ Task assignment succeeded, notification queued for retry")
+            logger.info("[OK] Task assignment succeeded, notification queued for retry")
     else:
-        logger.info(f"⚠️ TaskItem already exists: User {user_id} for Task {task.task_id}")
+        logger.info(f"[WARNING] TaskItem already exists: User {user_id} for Task {task.task_id}")
 
     # Update round-robin state for next assignment
     round_robin_state.current_index = (current_index + 1) % len(user_ids)
     round_robin_state.save()
     
-    logger.info(f"👤 Assigned user {user_id} from role '{role_name}' (round-robin index: {user_index})")
+    logger.info(f"[OK] Assigned user {user_id} from role '{role_name}' (round-robin index: {user_index})")
 
     return [task_item]
 
@@ -155,7 +160,7 @@ def assign_users_for_step(task, step, role_name):
     
     Args:
         task: Task instance
-        step: Steps instance
+        step: Steps instance - the step to assign users to
         role_name: Role name
     
     Returns:
@@ -165,7 +170,7 @@ def assign_users_for_step(task, step, role_name):
     if not user_ids:
         logger.warning(f"No users for role '{role_name}'")
         return []
-    return apply_round_robin_assignment(task, user_ids, role_name)
+    return apply_round_robin_assignment(task, user_ids, role_name, step=step)
 
 
 def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=None, from_user_role=None, from_task_item_id=None, escalated_by_id=None, escalated_by_name=None):

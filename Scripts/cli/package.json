@@ -32,6 +32,7 @@
     "test:hdts-tts-infra": "node index.js run testing integration hdts-tts-infra",
     "test:hdts-tts-asset": "node index.js run testing integration hdts-tts-asset",
     "test:integration": "node index.js run testing integration hdts-tts-infra",
+    "bypass-transition": "node index.js run utils bypass-transition",
     "list": "node index.js list"
   },
   "dependencies": {

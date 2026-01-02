@@ -174,38 +174,6 @@ module.exports = {
         DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
       }
     },
-    // specifically excluding the ticket service for now
-    /*
-    {
-      name: 'ticket-service',
-      cwd: './tts/ticket_service',
-      script: 'manage.py',
-      args: 'runserver 0.0.0.0:8004',
-      interpreter: pythonInterpreter,
-      windowsHide: true,
-      env: {
-        DJANGO_ENV: "development",
-        DJANGO_DEBUG: "True",
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,ticket-service",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
-        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
-      }
-    },
-    */
-    {
-      name: 'ticket-worker',
-      cwd: path.join(projectRoot, 'tts/ticket_service'),
-      script: pythonInterpreter,
-      args: '-m celery -A ticket_service worker --pool=solo --loglevel=info -Q ticket_tasks-default',
-      interpreter: 'none',
-      windowsHide: true,
-      env: {
-        DJANGO_ENV: "development",
-        DJANGO_DEBUG: "True",
-        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
-      }
-    },
-
     // -------------------
     // Helpdesk (Backend)
     // -------------------

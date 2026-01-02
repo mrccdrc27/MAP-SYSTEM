@@ -342,11 +342,11 @@ class Command(BaseCommand):
                             transitions = []
                         elif idx == 0:  # First step
                             transitions = [(step, step_objs[idx + 1], 'Submit')]  # Forward to next step
-                        elif idx == num_steps - 1:  # Last step
-                            # Last step can go back (reject) but no need to create "end" transition
-                            # The is_end flag on the step marks it as terminal
-                            if idx > 0:
-                                transitions = [(step, step_objs[idx - 1], 'Reject')]  # Reject -> Previous
+                        elif idx == num_steps - 1:  # Last step (End node)
+                            # End nodes (is_end=True) should NOT have outgoing transitions
+                            # The is_end flag marks the step as terminal - workflow completes here
+                            # No reject from end node - tickets must be finalized/closed, not sent back
+                            transitions = []
                         else:  # Middle steps
                             transitions = [
                                 (step, step_objs[idx + 1], 'Approve'),  # approve -> Next

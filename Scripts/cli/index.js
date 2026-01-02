@@ -153,6 +153,7 @@ const SCRIPTS = {
       'seed-tickets-attachments': { file: 'seed_tickets_with_attachments.ps1', desc: 'Seed Tickets with File Attachments (PDF/DOCX/XLSX/PNG)' },
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees (Auth)' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees (HDTS)' },
+      'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass user transition (Admin workflow tool)' },
     }
   },
   pm2: {
