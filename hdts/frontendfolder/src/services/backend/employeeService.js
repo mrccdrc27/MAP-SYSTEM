@@ -1,40 +1,22 @@
 // Backend employee service
 import { API_CONFIG } from '../../config/environment.js';
 import { backendAuthService } from './authService.js';
-import { getAccessToken } from '../../utilities/secureMedia.js';
 
 const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
 
-// Helper function to get headers for cookie-based auth.
-// Development convenience: if a token is available in localStorage or
-// readable cookies, attach it as an Authorization header. This helps
-// when cookies are not sent or the backend expects a Bearer token.
-// NOTE: This is a dev-time convenience; do not rely on it for production
-// unless you're intentionally using localStorage-based tokens.
-const getAuthHeaders = () => {
-  const headers = { 'Content-Type': 'application/json' };
-  let token = null;
-  try {
-    token = localStorage.getItem('access_token') || null;
-  } catch (e) {
-    // localStorage may be unavailable in some environments
-    token = null;
+// Helper function to get fetch options with proper cookie-based authentication
+const getFetchOptions = (method = 'GET', body = null) => {
+  const options = {
+    method,
+    credentials: 'include', // Essential for httpOnly cookie-based auth
+    headers: { 'Content-Type': 'application/json' },
+  };
+  
+  if (body) {
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
-
-  // If no token in localStorage, try to read a non-httpOnly cookie named access_token
-  if (!token && typeof document !== 'undefined' && document.cookie) {
-    try {
-      const match = document.cookie.match(/(?:^|; )access_token=([^;]+)/);
-      if (match && match[1]) token = decodeURIComponent(match[1]);
-    } catch (e) {
-      // ignore cookie parsing errors
-    }
-  }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
+  
+  return options;
 };
 
 // Helper to handle 401 errors by logging out immediately
@@ -49,11 +31,7 @@ const handleAuthError = (response) => {
 export const backendEmployeeService = {
   async getAllEmployees() {
     try {
-      const response = await fetch(`${BASE_URL}/api/employees/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include', // Send cookies
-      });
+      const response = await fetch(`${BASE_URL}/api/employees/`, getFetchOptions());
       handleAuthError(response);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -69,11 +47,7 @@ export const backendEmployeeService = {
 
   async getEmployeeById(employeeId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, getFetchOptions());
       handleAuthError(response);
       if (!response.ok) {
         throw new Error('Failed to fetch employee');
@@ -87,11 +61,7 @@ export const backendEmployeeService = {
 
   async getCurrentEmployee() {
     try {
-      const response = await fetch(`${BASE_URL}/api/employee/profile/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/employee/profile/`, getFetchOptions());
       handleAuthError(response);
       if (!response.ok) {
         throw new Error('Failed to fetch current employee');
@@ -105,12 +75,8 @@ export const backendEmployeeService = {
 
   async verifyCurrentPassword(currentPassword) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employee/verify-password/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ current_password: currentPassword }),
-      });
+      const response = await fetch(`${BASE_URL}/api/employee/verify-password/`, 
+        getFetchOptions('POST', { current_password: currentPassword }));
       handleAuthError(response);
       if (!response.ok) {
         const err = await response.text();
@@ -125,22 +91,14 @@ export const backendEmployeeService = {
 
   async updateEmployee(employeeId, employeeData) {
     try {
-      let response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(employeeData),
-      });
+      let response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, 
+        getFetchOptions('PATCH', employeeData));
 
       // If the route doesn't exist (404) some deployments don't expose /api/employees/:id/
       // so fall back to updating the current authenticated user at /api/employee/profile/
       if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/employee/profile/`, {
-          method: 'PATCH',
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(employeeData),
-        });
+        response = await fetch(`${BASE_URL}/api/employee/profile/`, 
+          getFetchOptions('PATCH', employeeData));
       }
 
       handleAuthError(response);
@@ -169,12 +127,8 @@ export const backendEmployeeService = {
 
   async createEmployee(employeeData) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employees/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(employeeData),
-      });
+      const response = await fetch(`${BASE_URL}/api/employees/`, 
+        getFetchOptions('POST', employeeData));
       handleAuthError(response);
       if (!response.ok) {
         const errorData = await response.json();
@@ -189,11 +143,8 @@ export const backendEmployeeService = {
 
   async deleteEmployee(employeeId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, 
+        getFetchOptions('DELETE'));
       handleAuthError(response);
       if (!response.ok) {
         throw new Error('Failed to delete employee');
@@ -207,11 +158,8 @@ export const backendEmployeeService = {
 
   async getActivityLogs(userId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/activity-logs/user/${userId}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/activity-logs/user/${userId}/`, 
+        getFetchOptions());
       if (response.status === 401) {
         // session expired
         window.location.href = '/';
@@ -234,11 +182,8 @@ export const backendEmployeeService = {
 
   async getEmployeesByDepartment(department) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employees/?department=${department}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/employees/?department=${department}`, 
+        getFetchOptions());
       handleAuthError(response);
       if (!response.ok) {
         throw new Error('Failed to fetch employees by department');
@@ -252,12 +197,8 @@ export const backendEmployeeService = {
 
   async updateEmployeeStatus(employeeId, status) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ status }),
-      });
+      const response = await fetch(`${BASE_URL}/api/employees/${employeeId}/`, 
+        getFetchOptions('PATCH', { status }));
       handleAuthError(response);
       if (!response.ok) {
         const errorData = await response.json();
@@ -282,25 +223,11 @@ export const backendEmployeeService = {
       console.log('🚀 [FRONTEND] Image file:', imageFile.name, imageFile.type, imageFile.size);
       console.log('🚀 [FRONTEND] BASE_URL:', BASE_URL);
       
-      // Get authorization token from cookies
-      const token = getAccessToken();
-      console.log('🚀 [FRONTEND] Token present:', !!token, token ? `length: ${token.length}` : '');
-      
-      // Build headers - include Authorization if token exists
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('🚀 [FRONTEND] Authorization header will be sent');
-      } else {
-        console.log('⚠️ [FRONTEND] No token found - request will rely on cookies');
-      }
-      
       // Backend endpoint expects authenticated user and does not require an employeeId in the path
       const response = await fetch(endpoint, {
         method: 'POST',
-        credentials: 'include',
-        headers: headers,
-        body: formData,
+        credentials: 'include', // Essential for httpOnly cookie-based auth
+        body: formData, // Don't set Content-Type for FormData - let browser set it with boundary
       });
       
       console.log('🚀 [FRONTEND] Response received');
@@ -347,15 +274,11 @@ export const backendEmployeeService = {
 
   async changePassword(currentPassword, newPassword) {
     try {
-      const response = await fetch(`${BASE_URL}/api/employee/change-password/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({
+      const response = await fetch(`${BASE_URL}/api/employee/change-password/`, 
+        getFetchOptions('POST', {
           current_password: currentPassword,
           new_password: newPassword,
-        }),
-      });
+        }));
       handleAuthError(response);
       if (!response.ok) {
         // Try JSON first, fall back to text for better error visibility

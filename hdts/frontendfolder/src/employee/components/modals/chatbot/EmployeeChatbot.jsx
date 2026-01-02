@@ -303,33 +303,14 @@ const EmployeeChatbot = ({ closeModal }) => {
   useEffect(() => {
     const fetchFAQs = async () => {
       try {
-        // Try to get token from localStorage first, then cookies
-        let token = localStorage.getItem("access_token");
-        if (!token && typeof document !== 'undefined' && document.cookie) {
-          try {
-            const match = document.cookie.match(/(?:^|; )access_token=([^;]+)/);
-            if (match && match[1]) token = decodeURIComponent(match[1]);
-          } catch (e) {
-            // ignore cookie parsing errors
-          }
-        }
-        if (!token) {
-          console.warn("No access token found. FAQs may not load.");
-          // Continue anyway — the request might work with session cookies
-        }
+        const baseUrl = API_CONFIG.BACKEND.BASE_URL || '';
+        const articlesUrl = `${baseUrl.replace(/\/$/, '')}/api/articles/`;
 
-    const baseUrl = API_CONFIG.BACKEND.BASE_URL || '';
-    const articlesUrl = `${baseUrl.replace(/\/$/, '')}/api/articles/`;
+        // If BASE_URL is empty string, fall back to relative path
+        const requestUrl = baseUrl ? articlesUrl : '/api/articles/';
 
-    // If BASE_URL is empty string, fall back to relative path
-    const requestUrl = baseUrl ? articlesUrl : '/api/articles/';
-
-    const headers = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const response = await axios.get(requestUrl, {
-          headers,
-          withCredentials: true,
+        const response = await axios.get(requestUrl, {
+          withCredentials: true, // Use cookie-based auth
           validateStatus: (status) => status < 500, // Accept all 2xx and 4xx responses
         });
 

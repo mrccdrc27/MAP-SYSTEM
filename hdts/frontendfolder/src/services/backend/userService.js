@@ -4,18 +4,19 @@ import { API_CONFIG } from '../../config/environment.js';
 // Prefer the AUTH service base URL for user endpoints (auth app serves /api/v1/users/)
 const AUTH_BASE = API_CONFIG.AUTH.BASE_URL || API_CONFIG.BACKEND.BASE_URL;
 
-const getAuthHeaders = () => {
-  const headers = { 'Content-Type': 'application/json' };
-  let token = null;
-  try { token = localStorage.getItem('access_token') || null; } catch (e) { token = null; }
-  if (!token && typeof document !== 'undefined' && document.cookie) {
-    try {
-      const match = document.cookie.match(/(?:^|; )access_token=([^;]+)/);
-      if (match && match[1]) token = decodeURIComponent(match[1]);
-    } catch (e) {}
+// Helper function to get fetch options with proper cookie-based authentication
+const getFetchOptions = (method = 'GET', body = null) => {
+  const options = {
+    method,
+    credentials: 'include', // Essential for httpOnly cookie-based auth
+    headers: { 'Content-Type': 'application/json' },
+  };
+  
+  if (body) {
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
+  
+  return options;
 };
 
 const handleAuthError = (response) => {
@@ -35,11 +36,7 @@ export const backendUserService = {
 
     for (const url of candidates) {
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
+        const response = await fetch(url, getFetchOptions());
         handleAuthError(response);
         if (!response.ok) {
           // try next candidate on 404/other errors
@@ -67,11 +64,7 @@ export const backendUserService = {
 
     for (const url of candidates) {
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
+        const response = await fetch(url, getFetchOptions());
         handleAuthError(response);
         if (!response.ok) {
           const txt = await response.text().catch(() => '');
@@ -94,11 +87,7 @@ export const backendUserService = {
 
     for (const url of candidates) {
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
+        const response = await fetch(url, getFetchOptions());
         handleAuthError(response);
         if (!response.ok) {
           const txt = await response.text().catch(() => '');
@@ -122,11 +111,7 @@ export const backendUserService = {
 
     for (const url of candidates) {
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
+        const response = await fetch(url, getFetchOptions());
         handleAuthError(response);
         if (!response.ok) {
           const txt = await response.text().catch(() => '');

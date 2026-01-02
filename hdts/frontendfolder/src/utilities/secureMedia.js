@@ -121,17 +121,9 @@ export function convertToSecureUrl(existingUrl) {
  * @returns {Promise} - Promise that resolves with the download
  */
 export async function downloadSecureFile(url, filename) {
-  const token = getAccessToken();
-  
-  if (!token) {
-    throw new Error('No authentication token available');
-  }
-  
   try {
     const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      credentials: 'include', // Use cookie-based auth
     });
     
     if (!response.ok) {
