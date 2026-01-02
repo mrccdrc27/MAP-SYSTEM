@@ -172,8 +172,8 @@ class UnifiedTokenRefreshView(APIView):
     
     def _refresh_user_token(self, payload, request):
         """Refresh access token for a staff user."""
-        from rest_framework_simplejwt.tokens import RefreshToken
         from users.models import User
+        from users.serializers import CustomTokenObtainPairSerializer
         
         user_id = payload.get('user_id')
         
@@ -191,8 +191,9 @@ class UnifiedTokenRefreshView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
-        # Generate new access token using simplejwt
-        refresh = RefreshToken.for_user(user)
+        # Generate new access token using CustomTokenObtainPairSerializer
+        # This includes custom claims: email, username, full_name, roles
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
         access_token = str(refresh.access_token)
         
         access_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('ACCESS_TOKEN_LIFETIME')
