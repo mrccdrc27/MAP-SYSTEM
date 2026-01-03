@@ -4,13 +4,13 @@ on:
   push:
     branches: [ '**' ]
     paths:
-      - 'Docker/**'
+      - 'tts/Docker/**'
       - 'auth/**'
-      - 'ticket_service/**'
-      - 'workflow_api/**'
-      - 'messaging/**'
-      - 'notification_service/**'
-      - 'frontend/**'
+      - 'tts/workflow_api/**'
+      - 'tts/messaging/**'
+      - 'tts/notification_service/**'
+      - 'tts/frontend/**'
+      - '.github/workflows/docker-compose-test.yml'
   pull_request:
     branches: [ '**' ]
   workflow_dispatch:
