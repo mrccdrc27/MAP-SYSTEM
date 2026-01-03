@@ -19,6 +19,7 @@ const Button = ({
   size = 'medium',
   isLoading = false,
   disabled = false,
+  fullWidth = false,
   children,
   onClick,
   className = '',
@@ -29,6 +30,7 @@ const Button = ({
     styles.button,
     styles[variant],
     styles[size],
+    fullWidth ? styles.fullWidth : '',
     className,
   ].join(' ');
 

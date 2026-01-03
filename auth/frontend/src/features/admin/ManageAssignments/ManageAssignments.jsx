@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { apiRequest } from '../../../services/api';
-import { useToast, Button, Modal } from '../../../components/common';
+import { useToast, Button, Modal, Table, Badge, Card, Input } from '../../../components/common';
 import styles from './ManageAssignments.module.css';
 
 const defaultAvatar = 'https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg';
 
 const ManageAssignments = () => {
-  const { user } = useAuth();
   const { ToastContainer, success, error } = useToast();
 
   const [assignments, setAssignments] = useState([]);
@@ -17,282 +15,105 @@ const ManageAssignments = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
-  const [editForm, setEditForm] = useState({
-    is_active: false,
-    is_deployed: false,
-  });
+  const [editForm, setEditForm] = useState({ is_active: false, is_deployed: false });
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    loadAssignments();
-  }, []);
-
-  useEffect(() => {
-    filterAssignments();
-  }, [searchQuery, assignments]);
+  useEffect(() => { loadAssignments(); }, []);
+  useEffect(() => { filterAssignments(); }, [searchQuery, assignments]);
 
   const loadAssignments = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('/api/v1/tts/manage-assignments-api/', {
-        method: 'GET',
-        includeAuth: true,
-      });
-
-      if (response.ok) {
-        setAssignments(response.data || []);
-      } else {
-        error('Error', 'Failed to load assignments');
-      }
-    } catch (err) {
-      console.error('Error loading assignments:', err);
-      error('Error', 'Failed to load assignments');
-    } finally {
-      setIsLoading(false);
-    }
+      const response = await apiRequest('/api/v1/tts/manage-assignments-api/', { method: 'GET', includeAuth: true });
+      if (response.ok) setAssignments(response.data || []);
+    } finally { setIsLoading(false); }
   };
 
   const filterAssignments = () => {
-    if (!searchQuery.trim()) {
-      setFilteredAssignments(assignments);
-      return;
-    }
-
     const query = searchQuery.toLowerCase();
-    const filtered = assignments.filter(assignment => {
-      const fullName = `${assignment.first_name || ''} ${assignment.last_name || ''}`.toLowerCase();
-      const email = (assignment.email || '').toLowerCase();
-      const role = (assignment.role || '').toLowerCase();
-      
-      return fullName.includes(query) || 
-             email.includes(query) || 
-             role.includes(query);
-    });
-    
-    setFilteredAssignments(filtered);
-  };
-
-  const handleEdit = (assignment) => {
-    setSelectedAssignment(assignment);
-    setEditForm({
-      is_active: assignment.is_active !== false,
-      is_deployed: assignment.settings?.is_deployed || false,
-    });
-    setEditModalOpen(true);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, checked } = e.target;
-    setEditForm(prev => ({
-      ...prev,
-      [name]: checked
-    }));
+    setFilteredAssignments(assignments.filter(a => 
+      `${a.first_name} ${a.last_name}`.toLowerCase().includes(query) || 
+      a.email.toLowerCase().includes(query) || 
+      a.role.toLowerCase().includes(query)
+    ));
   };
 
   const handleSaveEdit = async () => {
-    if (!selectedAssignment) return;
-    
     setIsSaving(true);
     try {
-      // Note: The update endpoint expects the UserSystemRole ID, not user ID
-      // We need to find the assignment ID from the backend or store it
-      const response = await apiRequest(`/api/v1/tts/update-assignment/${selectedAssignment.assignment_id || selectedAssignment.id}/`, {
+      const id = selectedAssignment.assignment_id || selectedAssignment.id;
+      const response = await apiRequest(`/api/v1/tts/update-assignment/${id}/`, {
         method: 'PUT',
         includeAuth: true,
-        body: JSON.stringify({
-          is_active: editForm.is_active,
-          settings: { is_deployed: editForm.is_deployed }
-        }),
+        body: JSON.stringify({ is_active: editForm.is_active, settings: { is_deployed: editForm.is_deployed } }),
       });
-
       if (response.ok) {
-        success('Success', 'Assignment updated successfully');
+        success('Success', 'Updated');
         setEditModalOpen(false);
         loadAssignments();
-      } else {
-        error('Error', response.data?.message || 'Failed to update assignment');
       }
-    } catch (err) {
-      console.error('Error updating assignment:', err);
-      error('Error', 'Failed to update assignment');
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading assignments...</p>
-        </div>
-      </main>
-    );
-  }
 
   return (
-    <main className={styles.page}>
+    <div className="page-wrapper">
       <ToastContainer />
       
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h2>Manage TTS Assignments</h2>
-          <p className={styles.subtitle}>
-            Manage role assignments and deployment status for TTS agents
-          </p>
+      <header className="page-header">
+        <div className="page-title-section">
+          <h1>TTS Assignments</h1>
+          <p className="page-subtitle">Manage agent availability and deployment for the Ticket Tracking System.</p>
         </div>
+      </header>
 
-        <div className={styles.toolbar}>
-          <div className={styles.search}>
-            <input
-              type="search"
-              placeholder="Search by name, email, or role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                className={styles.clearBtn}
-                onClick={() => setSearchQuery('')}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
+      <div className="page-content">
+        <Card className={styles.toolbar} flat>
+          <Input 
+            placeholder="Filter agents by name, email, or role..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)}
+            icon={<i className="fa-solid fa-search"></i>}
+          />
+        </Card>
 
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Assigned At</th>
-                <th>Deployed</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAssignments.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className={styles.emptyRow}>
-                    {searchQuery ? 'No assignments found matching your search.' : 'No assignments found.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredAssignments.map(assignment => (
-                  <tr key={assignment.id}>
-                    <td>
-                      <img 
-                        src={assignment.profile_picture || defaultAvatar} 
-                        alt={assignment.first_name}
-                        className={styles.avatar}
-                        onError={(e) => { e.target.src = defaultAvatar; }}
-                      />
-                    </td>
-                    <td>
-                      <div className={styles.nameCell}>
-                        <strong>{assignment.first_name} {assignment.last_name}</strong>
-                        <span className={styles.username}>@{assignment.username}</span>
-                      </div>
-                    </td>
-                    <td>{assignment.email}</td>
-                    <td>
-                      <span className={styles.roleBadge}>
-                        {assignment.role}
-                      </span>
-                    </td>
-                    <td>{formatDate(assignment.assigned_at)}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${assignment.settings?.is_deployed ? styles.deployed : styles.notDeployed}`}>
-                        {assignment.settings?.is_deployed ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${assignment.is_active ? styles.active : styles.inactive}`}>
-                        {assignment.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className={styles.actions}>
-                        <button 
-                          className={styles.actionBtn}
-                          onClick={() => handleEdit(assignment)}
-                          title="Edit Assignment"
-                        >
-                          <i className="fa-solid fa-edit"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table headers={['Agent', 'Role', 'Assigned At', 'Deployed', 'Status', 'Actions']} loading={isLoading}>
+          {filteredAssignments.map(a => (
+            <tr key={a.id}>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <img src={a.profile_picture || defaultAvatar} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{a.first_name} {a.last_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-text-color)' }}>{a.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td><Badge variant="info">{a.role}</Badge></td>
+              <td style={{ fontSize: '0.875rem' }}>{a.assigned_at ? new Date(a.assigned_at).toLocaleDateString() : '-'}</td>
+              <td><Badge variant={a.settings?.is_deployed ? 'success' : 'secondary'}>{a.settings?.is_deployed ? 'Yes' : 'No'}</Badge></td>
+              <td><Badge variant={a.is_active ? 'success' : 'danger'}>{a.is_active ? 'Active' : 'Inactive'}</Badge></td>
+              <td>
+                <Button size="small" variant="outline" onClick={() => { setSelectedAssignment(a); setEditForm({ is_active: a.is_active !== false, is_deployed: a.settings?.is_deployed || false }); setEditModalOpen(true); }} icon={<i className="fa-solid fa-edit"></i>}>Edit</Button>
+              </td>
+            </tr>
+          ))}
+        </Table>
       </div>
 
-      {/* Edit Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title="Edit Assignment"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setEditModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit} isLoading={isSaving}>
-              Save Changes
-            </Button>
-          </>
-        }
-      >
-        <div className={styles.infoGroup}>
-          <label className={styles.label}>Agent</label>
-          <p className={styles.infoText}>
-            {selectedAssignment?.first_name} {selectedAssignment?.last_name} ({selectedAssignment?.role})
-          </p>
-        </div>
-
-        <div className={styles.formGroupCheckbox}>
-          <input
-            type="checkbox"
-            id="is_active"
-            name="is_active"
-            checked={editForm.is_active}
-            onChange={handleEditChange}
-          />
-          <label htmlFor="is_active">Active</label>
-        </div>
-
-        <div className={styles.formGroupCheckbox}>
-          <input
-            type="checkbox"
-            id="is_deployed"
-            name="is_deployed"
-            checked={editForm.is_deployed}
-            onChange={handleEditChange}
-          />
-          <label htmlFor="is_deployed">Deployed</label>
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Assignment" footer={<><Button variant="secondary" onClick={() => setEditModalOpen(false)}>Cancel</Button><Button onClick={handleSaveEdit} isLoading={isSaving}>Save Changes</Button></>}>
+        <p style={{marginBottom: '1.5rem'}}>Updating <strong>{selectedAssignment?.first_name} {selectedAssignment?.last_name}</strong>.</p>
+        <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+          <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+            <input type="checkbox" checked={editForm.is_active} onChange={e => setEditForm({...editForm, is_active: e.target.checked})} />
+            <span>Enable Assignment</span>
+          </label>
+          <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+            <input type="checkbox" checked={editForm.is_deployed} onChange={e => setEditForm({...editForm, is_deployed: e.target.checked})} />
+            <span>Mark as Deployed</span>
+          </label>
         </div>
       </Modal>
-    </main>
+    </div>
   );
 };
 

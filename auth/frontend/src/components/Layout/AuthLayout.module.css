@@ -1,0 +1,50 @@
+.authLayout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-content-color);
+  padding: var(--space-md);
+}
+
+.authContainer {
+  width: 100%;
+  max-width: 450px;
+  transition: max-width 0.3s ease;
+}
+
+.authContainer.wide {
+  max-width: 700px;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.logo h1 {
+  font-size: var(--font-3xl);
+  color: var(--color-primary);
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.card {
+  background: var(--card-bg);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.footer {
+  margin-top: var(--space-lg);
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--muted-text-color);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-xl);
+  }
+}

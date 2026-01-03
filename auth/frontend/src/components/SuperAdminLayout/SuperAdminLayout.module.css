@@ -1,175 +1,152 @@
-:root {
-  --primary-color: #1a1a2e;
-  --secondary-color: #16213e;
-  --accent-color: #0f3460;
-  --highlight-color: #e94560;
-  --text-color: #eaeaea;
-  --text-muted: #a0a0a0;
-  --success-color: #4caf50;
-  --warning-color: #ff9800;
-  --danger-color: #f44336;
-  --info-color: #2196f3;
-  --border-color: #2a2a3e;
-}
-
 .superAdminWrapper {
   display: flex;
   min-height: 100vh;
-  background-color: var(--primary-color);
-  color: var(--text-color);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
 }
 
-/* Sidebar */
 .sidebar {
   position: fixed;
-  left: 0;
   top: 0;
+  left: 0;
   bottom: 0;
-  width: 260px;
-  background-color: var(--secondary-color);
-  padding: 20px 0;
-  overflow-y: auto;
+  width: 280px;
+  background-color: var(--bg1-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
   z-index: 1000;
+  padding: var(--space-md) 0;
 }
 
 .sidebarHeader {
-  padding: 0 20px 20px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 20px;
+  padding: 0 var(--space-lg) var(--space-xl);
 }
 
 .sidebarHeader h1 {
-  font-size: 1.5rem;
-  color: var(--highlight-color);
-  margin-bottom: 5px;
+  font-size: var(--font-xl);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: 2px;
 }
 
 .sidebarHeader p {
-  font-size: 0.875rem;
-  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-text-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .navMenu {
   list-style: none;
-  padding: 0;
-  margin: 0 0 20px 0;
+  padding: 0 var(--space-sm);
+  flex: 1;
 }
 
 .navMenu li {
-  margin: 0;
+  margin-bottom: 2px;
 }
 
-.navMenu a,
-.logoutBtn {
+.navMenu a, .logoutBtn {
   display: flex;
   align-items: center;
-  padding: 12px 20px;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   color: var(--text-color);
   text-decoration: none;
-  transition: all 0.3s ease;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
   border: none;
   background: none;
   width: 100%;
-  text-align: left;
   cursor: pointer;
-  font-size: 0.95rem;
+  text-align: left;
 }
 
-.navMenu a:hover,
-.logoutBtn:hover {
-  background-color: rgba(233, 69, 96, 0.1);
-  border-left: 3px solid var(--highlight-color);
-  padding-left: 17px;
+.navMenu a:hover, .logoutBtn:hover {
+  background-color: var(--hover-bg);
+  color: var(--color-primary);
 }
 
 .navMenu a.active {
-  background-color: rgba(233, 69, 96, 0.15);
-  border-left: 3px solid var(--highlight-color);
-  padding-left: 17px;
-  color: var(--highlight-color);
+  background-color: var(--primary-shadow-light);
+  color: var(--color-primary);
 }
 
-.navMenu a i,
-.logoutBtn i {
-  margin-right: 12px;
+.navMenu i {
   width: 20px;
-  font-size: 1.1rem;
+  font-size: var(--font-base);
 }
 
 .navDivider {
   height: 1px;
   background-color: var(--border-color);
-  margin: 20px 0;
+  margin: var(--space-md) var(--space-lg);
 }
 
 .userInfo {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20px;
-  background-color: rgba(15, 52, 96, 0.3);
+  padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border-color);
 }
 
 .userInfoContent {
   display: flex;
   align-items: center;
+  gap: var(--space-md);
 }
 
 .userAvatar {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--highlight-color) 0%, #d63050 100%);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 1rem;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.userDetails {
-  flex: 1;
-  min-width: 0;
+  font-weight: 700;
+  font-size: var(--font-sm);
 }
 
 .userDetails p {
-  margin: 0 0 4px 0;
-  font-weight: 500;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: var(--font-sm);
+  color: var(--heading-color);
+  margin: 0;
 }
 
 .userDetails span {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 11px;
+  color: var(--muted-text-color);
+  font-weight: 600;
 }
 
-/* Main Content */
 .mainContent {
   flex: 1;
-  margin-left: 260px;
-  padding: 30px;
-  min-height: 100vh;
+  margin-left: 280px;
+  padding: var(--space-xl);
+  min-width: 0;
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: 240px;
+  }
+  .mainContent {
+    margin-left: 240px;
+  }
 }
 
 @media (max-width: 768px) {
   .sidebar {
-    width: 100%;
-    position: relative;
+    display: none; /* Simplification for now, should use toggle like main Layout */
   }
-
   .mainContent {
     margin-left: 0;
-  }
-
-  .userInfo {
-    position: relative;
+    padding: var(--space-md);
   }
 }

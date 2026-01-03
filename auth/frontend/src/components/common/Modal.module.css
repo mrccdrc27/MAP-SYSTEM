@@ -4,94 +4,86 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
+  z-index: 2000;
+  padding: var(--space-md);
+  backdrop-filter: blur(4px);
 }
 
 .modal {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   width: 100%;
+  max-width: 600px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  animation: modalIn 0.3s ease-out;
+  animation: modalEnter 0.3s ease-out;
 }
 
-@keyframes modalIn {
+@keyframes modalEnter {
   from {
-    transform: translateY(20px);
     opacity: 0;
+    transform: translateY(-20px);
   }
   to {
-    transform: translateY(0);
     opacity: 1;
+    transform: translateY(0);
   }
-}
-
-.small {
-  max-width: 400px;
-}
-
-.medium {
-  max-width: 600px;
-}
-
-.large {
-  max-width: 800px;
 }
 
 .header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
 
-.title {
+.header h2 {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
+  font-size: var(--font-xl);
+  color: var(--heading-color);
 }
 
 .closeBtn {
   background: none;
   border: none;
   font-size: 1.5rem;
-  line-height: 1;
-  color: #6c757d;
+  color: var(--muted-text-color);
   cursor: pointer;
   padding: 0;
-  margin-left: auto;
+  line-height: 1;
+  transition: var(--transition);
 }
 
 .closeBtn:hover {
-  color: #333;
+  color: var(--color-danger);
 }
 
 .body {
-  padding: 1.5rem;
+  padding: var(--space-lg);
   overflow-y: auto;
-  flex: 1;
+  color: var(--text-color);
 }
 
 .footer {
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid #dee2e6;
+  padding: var(--space-lg);
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: var(--space-md);
 }
 
-@media (max-width: 576px) {
-  .modal {
-    max-width: 100%;
-  }
+/* Modal Sizes */
+.small {
+  max-width: 400px;
+}
+
+.large {
+  max-width: 800px;
 }

@@ -1,0 +1,65 @@
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--font-sm);
+}
+
+.table th {
+  background-color: var(--bg-content-color);
+  padding: var(--space-md);
+  font-weight: 600;
+  color: var(--heading-color);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-color);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background-color: var(--hover-bg);
+}
+
+/* Empty State */
+.empty {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--muted-text-color);
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--primary-shadow-light);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--space-md);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

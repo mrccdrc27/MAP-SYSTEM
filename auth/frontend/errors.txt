@@ -1,0 +1,30 @@
+﻿
+hook.js:608 
+ The above error occurred in the <Profile> component:
+
+    at Profile (http://localhost:3001/src/features/user/Profile/Profile.jsx?t=1767457032181:29:20)
+    at RenderedRoute (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4106:5)
+    at Outlet (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4512:26)
+    at main
+    at div
+    at Layout (http://localhost:3001/src/components/Layout/Layout.jsx?t=1767456256220:21:19)
+    at RenderedRoute (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4106:5)
+    at Outlet (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4512:26)
+    at ProtectedRoute (http://localhost:3001/src/components/ProtectedRoute/ProtectedRoute.jsx:20:27)
+    at RenderedRoute (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4106:5)
+    at Outlet (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4512:26)
+    at AuthProvider (http://localhost:3001/src/context/AuthContext.jsx:33:32)
+    at RenderedRoute (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4106:5)
+    at RenderErrorBoundary (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4066:5)
+    at DataRoutes (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:5257:5)
+    at Router (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:4519:15)
+    at RouterProvider (http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=05f268a7:5071:5)
+    at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary.
+hook.js:608 
+ React Router caught the following error during render ReferenceError: Card is not defined
+    at Profile (Profile.jsx:98:14)
+ 
+Object
+ Error Component Stack

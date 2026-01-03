@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
-import { Button, Input, Modal } from '../../../components/common';
+import { Button, Input, Modal, Table, Badge, Card, Alert } from '../../../components/common';
 import styles from './UserMasterlist.module.css';
 
 const UserMasterlist = () => {
@@ -48,17 +48,10 @@ const UserMasterlist = () => {
         setError('Failed to load users');
       }
     } catch (err) {
-      console.error('Error loading users:', err);
       setError('An error occurred while loading users');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    loadUsers();
   };
 
   const handleReset = () => {
@@ -71,19 +64,13 @@ const UserMasterlist = () => {
     setCurrentPage(1);
   };
 
-  const handleDeleteClick = (user) => {
-    setDeleteModalUser(user);
-  };
-
   const handleDeleteConfirm = async () => {
     if (!deleteModalUser) return;
-
     try {
       const response = await fetch(`http://localhost:8003/superadmin/api/users/${deleteModalUser.id}/`, {
         method: 'DELETE',
         credentials: 'include',
       });
-
       if (response.ok) {
         setDeleteModalUser(null);
         loadUsers();
@@ -92,7 +79,6 @@ const UserMasterlist = () => {
         alert(data.error || 'Failed to delete user');
       }
     } catch (err) {
-      console.error('Error deleting user:', err);
       alert('An error occurred while deleting user');
     }
   };
@@ -102,7 +88,6 @@ const UserMasterlist = () => {
       const response = await fetch('http://localhost:8003/superadmin/api/users/export/', {
         credentials: 'include',
       });
-
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -113,250 +98,106 @@ const UserMasterlist = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-      } else {
-        alert('Failed to export users');
       }
     } catch (err) {
-      console.error('Error exporting users:', err);
       alert('An error occurred while exporting users');
     }
   };
 
+  const tableHeaders = ['User', 'Username', 'Status', 'Active', 'Staff', 'Superuser', 'Last Login', 'Actions'];
+
   return (
     <SuperAdminLayout>
-      <div className={styles.pageHeader}>
-        <h2>User Masterlist</h2>
-        <div className={styles.btnGroup}>
-          <Button variant="secondary" onClick={handleExport} icon={<i className="fa fa-file-export"></i>}>
-            Export CSV
-          </Button>
-          <Link to="/superadmin/users/create" className={styles.btnPrimaryLink}>
-            <Button icon={<i className="fa fa-user-plus"></i>}>
-              Add User
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {error && (
-        <div className={styles.alert}>
-          <i className="fa fa-exclamation-circle"></i> {error}
-        </div>
-      )}
-
-      {/* Search and Filter */}
-      <div className={styles.card}>
-        <form onSubmit={handleSearch} className={styles.filterForm}>
-          <div className={styles.formGrid}>
-            <Input
-              label="Email"
-              type="text"
-              placeholder="Search by email"
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
-            />
-
-            <Input
-              label="Name"
-              type="text"
-              placeholder="Search by name"
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-            />
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Status</label>
-              <select
-                className={styles.formControl}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Active</label>
-              <select
-                className={styles.formControl}
-                value={isActiveFilter}
-                onChange={(e) => setIsActiveFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Staff</label>
-              <select
-                className={styles.formControl}
-                value={isStaffFilter}
-                onChange={(e) => setIsStaffFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Staff</option>
-                <option value="false">Non-Staff</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Superuser</label>
-              <select
-                className={styles.formControl}
-                value={isSuperuserFilter}
-                onChange={(e) => setIsSuperuserFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Superusers</option>
-                <option value="false">Non-Superusers</option>
-              </select>
-            </div>
+      <div className="page-wrapper">
+        <header className="page-header">
+          <div className="page-title-section">
+            <h1>User Masterlist</h1>
+            <p className="page-subtitle">Comprehensive list of all registered users in the system.</p>
           </div>
-
-          <div className={styles.formActions}>
-            <Button type="submit" icon={<i className="fa fa-search"></i>}>
-              Search
+          <div className="page-actions">
+            <Button variant="secondary" onClick={handleExport} icon={<i className="fa fa-file-export"></i>}>
+              Export CSV
             </Button>
-            <Button variant="secondary" onClick={handleReset} icon={<i className="fa fa-redo"></i>}>
-              Reset
-            </Button>
+            <Link to="/superadmin/users/create">
+              <Button icon={<i className="fa fa-user-plus"></i>}>
+                Add User
+              </Button>
+            </Link>
           </div>
-        </form>
-      </div>
+        </header>
 
-      {/* User Table */}
-      <div className={styles.card}>
-        {loading ? (
-          <div className={styles.loading}>
-            <i className="fa fa-spinner fa-spin"></i> Loading users...
-          </div>
-        ) : (
-          <>
-            <div className={styles.tableContainer}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Active</th>
-                    <th>Staff</th>
-                    <th>Superuser</th>
-                    <th>Last Login</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.length > 0 ? (
-                    users.map((user) => (
-                      <tr key={user.id}>
-                        <td>{user.email}</td>
-                        <td>{user.username || '-'}</td>
-                        <td>{user.first_name} {user.last_name}</td>
-                        <td>
-                          <span className={`${styles.badge} ${styles[user.status?.toLowerCase() || 'pending']}`}>
-                            {user.status || 'Pending'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`${styles.badge} ${user.is_active ? styles.success : styles.secondary}`}>
-                            {user.is_active ? 'Yes' : 'No'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`${styles.badge} ${user.is_staff ? styles.info : styles.secondary}`}>
-                            {user.is_staff ? 'Yes' : 'No'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`${styles.badge} ${user.is_superuser ? styles.danger : styles.secondary}`}>
-                            {user.is_superuser ? 'Yes' : 'No'}
-                          </span>
-                        </td>
-                        <td>{user.last_login ? new Date(user.last_login).toLocaleString() : '-'}</td>
-                        <td>
-                          <div className={styles.btnGroup}>
-                            <Link
-                              to={`/superadmin/users/${user.id}/edit`}
-                              className={styles.btnIconSecondary}
-                              title="Edit"
-                            >
-                              <i className="fa fa-edit"></i>
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteClick(user)}
-                              className={styles.btnIconDanger}
-                              title="Delete"
-                            >
-                              <i className="fa fa-trash"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="9" className={styles.noData}>
-                        No users found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <Button
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  variant="secondary"
-                  size="small"
-                  icon={<i className="fa fa-chevron-left"></i>}
-                >
-                  Previous
-                </Button>
-                <span className={styles.paginationInfo}>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  variant="secondary"
-                  size="small"
-                >
-                  Next <i className="fa fa-chevron-right"></i>
-                </Button>
-              </div>
-            )}
-          </>
+        {error && (
+          <Alert type="error" onClose={() => setError('')}>
+            {error}
+          </Alert>
         )}
+
+        <div className="page-content">
+          <Card className={styles.filterCard} flat>
+            <div className={styles.filterGrid}>
+              <Input label="Email" placeholder="Search email..." value={searchEmail} onChange={(e) => setSearchEmail(e.target.value)} />
+              <Input label="Name" placeholder="Search name..." value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <div className={styles.selectGroup}>
+                <label>Status</label>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+              <div className={styles.selectGroup}>
+                <label>Is Active</label>
+                <select value={isActiveFilter} onChange={(e) => setIsActiveFilter(e.target.value)}>
+                  <option value="">All</option>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div className={styles.filterActions}>
+              <Button variant="secondary" onClick={handleReset}>Reset Filters</Button>
+            </div>
+          </Card>
+
+          <Table headers={tableHeaders} loading={loading}>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td>
+                  <div className={styles.userCell}>
+                    <div className={styles.userName}>{user.first_name} {user.last_name}</div>
+                    <div className={styles.userEmail}>{user.email}</div>
+                  </div>
+                </td>
+                <td>{user.username || '-'}</td>
+                <td><Badge variant={user.status === 'Approved' ? 'success' : user.status === 'Rejected' ? 'danger' : 'warning'}>{user.status || 'Pending'}</Badge></td>
+                <td><Badge variant={user.is_active ? 'success' : 'secondary'}>{user.is_active ? 'Yes' : 'No'}</Badge></td>
+                <td><Badge variant={user.is_staff ? 'info' : 'secondary'}>{user.is_staff ? 'Yes' : 'No'}</Badge></td>
+                <td><Badge variant={user.is_superuser ? 'danger' : 'secondary'}>{user.is_superuser ? 'Yes' : 'No'}</Badge></td>
+                <td className={styles.dateCell}>{user.last_login ? new Date(user.last_login).toLocaleDateString() : '-'}</td>
+                <td>
+                  <div className={styles.actions}>
+                    <Link to={`/superadmin/users/${user.id}/edit`} className={styles.actionBtn}><i className="fa fa-edit"></i></Link>
+                    <button onClick={() => setDeleteModalUser(user)} className={`${styles.actionBtn} ${styles.danger}`}><i className="fa fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </Table>
+
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <Button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} variant="secondary" size="small"><i className="fa fa-chevron-left"></i> Previous</Button>
+              <span className={styles.paginationText}>Page <strong>{currentPage}</strong> of {totalPages}</span>
+              <Button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages} variant="secondary" size="small">Next <i className="fa fa-chevron-right"></i></Button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={Boolean(deleteModalUser)}
-        onClose={() => setDeleteModalUser(null)}
-        title="Confirm Delete"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDeleteModalUser(null)}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleDeleteConfirm}>
-              Delete
-            </Button>
-          </>
-        }
-      >
-        <p>Are you sure you want to delete user <strong>{deleteModalUser?.email}</strong>?</p>
+      <Modal isOpen={Boolean(deleteModalUser)} onClose={() => setDeleteModalUser(null)} title="Delete User Account" footer={<><Button variant="secondary" onClick={() => setDeleteModalUser(null)}>Cancel</Button><Button variant="danger" onClick={handleDeleteConfirm}>Delete Permanently</Button></>}>
+        <p>Are you sure you want to delete <strong>{deleteModalUser?.email}</strong>?</p>
+        <p className={styles.modalWarning}>This action cannot be undone. All user data will be removed.</p>
       </Modal>
     </SuperAdminLayout>
   );

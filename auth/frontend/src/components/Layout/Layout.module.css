@@ -1,41 +1,50 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  background-color: var(--bg-color);
 }
 
 .content {
   flex: 1;
-  margin-left: 250px;
-  min-height: 100vh;
-  background-color: #f5f5f5;
+  margin-left: 280px;
+  min-width: 0;
+  transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .content {
+    margin-left: 0;
+  }
 }
 
 .toggle {
-  display: none;
   position: fixed;
-  top: 20px;
-  left: 20px;
-  flex-direction: column;
-  cursor: pointer;
-  gap: 6px;
-  z-index: 101;
-  background: white;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-primary);
   border: none;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
 }
 
 .toggle span {
-  width: 25px;
-  height: 3px;
-  background-color: #333;
-  border-radius: 2px;
-  transition: all 0.3s ease;
+  width: 20px;
+  height: 2px;
+  background-color: white;
+  transition: var(--transition);
 }
 
 .toggle.active span:nth-child(1) {
-  transform: rotate(45deg) translate(6px, 6px);
+  transform: translateY(6px) rotate(45deg);
 }
 
 .toggle.active span:nth-child(2) {
@@ -43,15 +52,5 @@
 }
 
 .toggle.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(6px, -6px);
-}
-
-@media (max-width: 768px) {
-  .content {
-    margin-left: 0;
-  }
-
-  .toggle {
-    display: flex;
-  }
+  transform: translateY(-6px) rotate(-45deg);
 }

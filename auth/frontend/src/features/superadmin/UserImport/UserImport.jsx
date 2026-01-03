@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
-import { Button } from '../../../components/common';
+import { Button, Alert, Card } from '../../../components/common';
 import styles from './UserImport.module.css';
 
 const UserImport = () => {
@@ -99,33 +99,32 @@ const UserImport = () => {
 
   return (
     <SuperAdminLayout>
-      <div className={styles.pageHeader}>
-        <h2>Import Users</h2>
-        <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
-          Back to List
-        </Button>
-      </div>
-
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h3 className={styles.cardTitle}>
-            <i className="fa fa-file-csv"></i> CSV File Import
-          </h3>
-        </div>
-
-        <div className={styles.alertInfo}>
-          <i className="fa fa-info-circle"></i>
-          <div>
-            <strong>Instructions:</strong>
-            <ul>
-              <li>Upload a CSV file with user data</li>
-              <li>The first row should contain headers</li>
-              <li>Email is required; password will be auto-generated if not provided</li>
-              <li>Existing emails will be skipped</li>
-              <li>Download the template below for the correct format</li>
-            </ul>
+      <div className="page-wrapper">
+        <header className="page-header">
+          <div className="page-title-section">
+            <h1>Import Users</h1>
+            <p className="page-subtitle">Batch create user accounts using a CSV file upload.</p>
           </div>
-        </div>
+          <div className="page-actions">
+            <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
+              Back to List
+            </Button>
+          </div>
+        </header>
+
+        <div className="page-content">
+          <Card title="CSV File Import" flat>
+
+        <Alert type="info">
+          <strong>Instructions:</strong>
+          <ul style={{ paddingLeft: 'var(--space-md)', marginTop: 'var(--space-xs)' }}>
+            <li>Upload a CSV file with user data</li>
+            <li>The first row should contain headers</li>
+            <li>Email is required; password will be auto-generated if not provided</li>
+            <li>Existing emails will be skipped</li>
+            <li>Download the template below for the correct format</li>
+          </ul>
+        </Alert>
 
         <div className={styles.templateSection}>
           <h4>Sample CSV Headers:</h4>
@@ -142,15 +141,15 @@ const UserImport = () => {
         </div>
 
         {error && (
-          <div className={styles.alertDanger}>
-            <i className="fa fa-exclamation-circle"></i> {error}
-          </div>
+          <Alert type="error" onClose={() => setError('')}>
+            {error}
+          </Alert>
         )}
 
         {success && (
-          <div className={styles.alertSuccess}>
-            <i className="fa fa-check-circle"></i> {success}
-          </div>
+          <Alert type="success" onClose={() => setSuccess('')}>
+            {success}
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit} className={styles.uploadForm}>
@@ -237,7 +236,9 @@ const UserImport = () => {
             )}
           </div>
         )}
+      </Card>
       </div>
+    </div>
     </SuperAdminLayout>
   );
 };

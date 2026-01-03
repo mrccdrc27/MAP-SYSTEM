@@ -3,6 +3,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { resetPassword } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
+import { AuthLayout } from '../../../components/layout';
 import styles from './ResetPassword.module.css';
 
 const ResetPassword = ({ userType = 'staff' }) => {
@@ -10,12 +11,12 @@ const ResetPassword = ({ userType = 'staff' }) => {
   const navigate = useNavigate();
   const { ToastContainer, success, error } = useToast();
 
-  // Determine if this is staff or employee
   const isEmployee = userType === 'employee';
   const currentUserType = isEmployee ? USER_TYPES.EMPLOYEE : USER_TYPES.STAFF;
   const loginLink = isEmployee ? '/employee/login' : '/login';
   const forgotPasswordLink = isEmployee ? '/employee/forgot-password' : '/forgot-password';
-  const pageTitle = isEmployee ? 'Employee Password Reset' : 'Staff Password Reset';
+  const pageTitle = isEmployee ? 'Employee Reset' : 'Staff Reset';
+  const pageSubtitle = 'Please enter your new password below.';
 
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
@@ -38,18 +39,11 @@ const ResetPassword = ({ userType = 'staff' }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    if (!password) newErrors.password = 'Password is required';
+    else if (password.length < 8) newErrors.password = 'Min 8 characters';
 
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
+    if (!confirmPassword) newErrors.confirmPassword = 'Please confirm';
+    else if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -57,38 +51,29 @@ const ResetPassword = ({ userType = 'staff' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
-
     try {
       const response = await resetPassword(token, password, confirmPassword, currentUserType);
 
       if (response.ok) {
         setIsSuccess(true);
-        success('Success', 'Password has been reset successfully!');
+        success('Success', 'Password reset successfully!');
         setTimeout(() => navigate(loginLink), 3000);
       } else {
         if (response.data.token || response.data.detail?.includes('token')) {
           setIsTokenValid(false);
-          error('Invalid Token', 'The reset link is invalid or has expired.');
+          error('Invalid Link', 'The reset link is invalid or expired.');
         } else {
           const apiErrors = {};
           for (const [field, messages] of Object.entries(response.data)) {
-            if (Array.isArray(messages)) {
-              apiErrors[field] = messages[0];
-            } else if (typeof messages === 'string') {
-              apiErrors[field] = messages;
-            }
+            apiErrors[field] = Array.isArray(messages) ? messages[0] : messages;
           }
           setErrors(apiErrors);
         }
       }
     } catch (err) {
-      console.error('Reset password error:', err);
       error('Error', 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -97,105 +82,89 @@ const ResetPassword = ({ userType = 'staff' }) => {
 
   if (!isTokenValid) {
     return (
-      <main className={styles.resetPasswordPage}>
+      <AuthLayout title="Invalid Link" subtitle="This password reset link is invalid or has expired.">
         <ToastContainer />
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <h1>{pageTitle}</h1>
+        <div className={styles.content}>
+          <div className={styles.errorBox}>
+            <i className="fa-solid fa-circle-xmark"></i>
+            <p>Please request a new password reset link to continue.</p>
           </div>
-          <div className={styles.alertDanger}>
-            <strong>Invalid or expired reset link.</strong>
-            <p>Please request a new password reset link.</p>
-          </div>
-          <div className={styles.backLink}>
-            <Link to={forgotPasswordLink}>
-              <i className="fa-solid fa-arrow-left"></i> Request New Link
-            </Link>
-          </div>
+          <Link to={forgotPasswordLink} className={styles.backButton}>
+            <i className="fa-solid fa-arrow-left"></i> Request New Link
+          </Link>
         </div>
-      </main>
+      </AuthLayout>
     );
   }
 
   if (isSuccess) {
     return (
-      <main className={styles.resetPasswordPage}>
+      <AuthLayout title="Success!" subtitle="Your password has been reset successfully.">
         <ToastContainer />
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <h1>Password Reset Successful</h1>
-          </div>
-          <div className={styles.alertSuccess}>
-            <strong>Your password has been reset successfully!</strong>
+        <div className={styles.content}>
+          <div className={styles.successBox}>
+            <i className="fa-solid fa-circle-check"></i>
             <p>You will be redirected to the login page shortly.</p>
           </div>
-          <div className={styles.backLink}>
-            <Link to={loginLink}>
-              <i className="fa-solid fa-arrow-left"></i> Go to Login
-            </Link>
-          </div>
+          <Link to={loginLink} className={styles.backButton}>
+            <i className="fa-solid fa-arrow-left"></i> Go to Login
+          </Link>
         </div>
-      </main>
+      </AuthLayout>
     );
   }
 
   return (
-    <main className={styles.resetPasswordPage}>
+    <AuthLayout title={pageTitle} subtitle={pageSubtitle}>
       <ToastContainer />
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1>{pageTitle}</h1>
-        </div>
+      <form onSubmit={handleSubmit}>
+        <Input
+          label="New Password"
+          type={showPassword ? 'text' : 'password'}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+          }}
+          placeholder="••••••••"
+          error={errors.password}
+          hint="Min 8 characters"
+          icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+          onIconClick={() => setShowPassword(!showPassword)}
+          required
+        />
 
-        <form className={styles.resetForm} onSubmit={handleSubmit}>
-          <Input
-            label="New Password"
-            type={showPassword ? 'text' : 'password'}
-            id="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
-            }}
-            placeholder="Enter new password"
-            error={errors.password}
-            hint="Password must be at least 8 characters long."
-            icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
-            onIconClick={() => setShowPassword(!showPassword)}
-          />
+        <Input
+          label="Confirm New Password"
+          type={showConfirmPassword ? 'text' : 'password'}
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
+          }}
+          placeholder="••••••••"
+          error={errors.confirmPassword}
+          icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+          onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          required
+        />
 
-          <Input
-            label="Confirm Password"
-            type={showConfirmPassword ? 'text' : 'password'}
-            id="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
-            }}
-            placeholder="Confirm new password"
-            error={errors.confirmPassword}
-            icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
-            onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
-          />
+        <Button 
+          type="submit" 
+          className={styles.submitButton}
+          isLoading={isLoading}
+          variant="primary"
+          size="large"
+          fullWidth
+        >
+          Reset Password
+        </Button>
 
-          <Button 
-            type="submit" 
-            className={styles.submitButton}
-            isLoading={isLoading}
-            icon={<i className="fa-solid fa-key"></i>}
-          >
-            Reset Password
-          </Button>
-        </form>
-
-        <div className={styles.backLink}>
-          <Link to={loginLink}>
-            <i className="fa-solid fa-arrow-left"></i> Back to Login
-          </Link>
-        </div>
-      </div>
-    </main>
+        <Link to={loginLink} className={styles.backButton}>
+          <i className="fa-solid fa-arrow-left"></i> Back to Login
+        </Link>
+      </form>
+    </AuthLayout>
   );
 };
 

@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../../../services/api';
-import { useToast, Button, Modal } from '../../../components/common';
+import { useToast, Button, Modal, Table, Badge, Card, Input } from '../../../components/common';
 import styles from './InviteAgent.module.css';
 
 const defaultAvatar = 'https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg';
 
 const InviteAgent = () => {
-  const navigate = useNavigate();
   const { ToastContainer, success, error } = useToast();
 
   const [availableUsers, setAvailableUsers] = useState([]);
@@ -19,303 +18,111 @@ const InviteAgent = () => {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    system_id: '',
-    role_id: '',
-  });
+  const [formData, setFormData] = useState({ system_id: '', role_id: '' });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [searchQuery, availableUsers]);
+  useEffect(() => { loadData(); }, []);
+  useEffect(() => { filterUsers(); }, [searchQuery, availableUsers]);
 
   useEffect(() => {
     if (formData.system_id) {
       const selectedSystem = systems.find(s => s.id.toString() === formData.system_id);
-      if (selectedSystem) {
-        setRoles(selectedSystem.roles || []);
-      }
-    } else {
-      setRoles([]);
-    }
+      setRoles(selectedSystem ? selectedSystem.roles : []);
+    } else setRoles([]);
     setFormData(prev => ({ ...prev, role_id: '' }));
   }, [formData.system_id, systems]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Get available users and systems from the invite endpoint
-      const response = await apiRequest('/api/v1/users/invite-agent/', {
-        method: 'GET',
-        includeAuth: true,
-      });
-
+      const response = await apiRequest('/api/v1/users/invite-agent/', { method: 'GET', includeAuth: true });
       if (response.ok) {
-        const data = response.data;
-        setAvailableUsers(data.available_users || []);
-        setSystems(data.systems || []);
-      } else {
-        error('Error', 'Failed to load data');
+        setAvailableUsers(response.data.available_users || []);
+        setSystems(response.data.systems || []);
       }
-    } catch (err) {
-      console.error('Error loading data:', err);
-      error('Error', 'Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
   const filterUsers = () => {
-    if (!searchQuery.trim()) {
-      setFilteredUsers(availableUsers);
-      return;
-    }
-
     const query = searchQuery.toLowerCase();
-    const filtered = availableUsers.filter(user => {
-      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-      const email = (user.email || '').toLowerCase();
-      const phone = (user.phone_number || '').toLowerCase();
-      
-      return fullName.includes(query) || 
-             email.includes(query) || 
-             phone.includes(query);
-    });
-    
-    setFilteredUsers(filtered);
-  };
-
-  const handleInviteClick = (user) => {
-    setSelectedUser(user);
-    setFormData({ system_id: '', role_id: '' });
-    setInviteModalOpen(true);
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFilteredUsers(availableUsers.filter(u => 
+      `${u.first_name} ${u.last_name}`.toLowerCase().includes(query) || 
+      u.email.toLowerCase().includes(query)
+    ));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!selectedUser || !formData.system_id || !formData.role_id) {
-      error('Error', 'Please fill in all required fields');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const response = await apiRequest('/api/v1/users/invite-agent/', {
         method: 'POST',
         includeAuth: true,
-        body: JSON.stringify({
-          user_id: selectedUser.id,
-          system_id: parseInt(formData.system_id),
-          role_id: parseInt(formData.role_id),
-        }),
+        body: JSON.stringify({ user_id: selectedUser.id, system_id: parseInt(formData.system_id), role_id: parseInt(formData.role_id) }),
       });
-
       if (response.ok) {
-        const result = response.data;
-        success('Success', result.message || 'User invited successfully!');
+        success('Success', 'User invited');
         setInviteModalOpen(false);
-        loadData(); // Refresh the list
-      } else {
-        const errorMessage = response.data?.error || response.data?.message || 'Failed to invite user';
-        error('Error', errorMessage);
+        loadData();
       }
-    } catch (err) {
-      console.error('Error inviting user:', err);
-      error('Error', 'Failed to invite user');
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { setIsSubmitting(false); }
   };
 
-  if (isLoading) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading users...</p>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main className={styles.page}>
+    <div className="page-wrapper">
       <ToastContainer />
       
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <Link to="/agents" className={styles.backLink}>
-            <i className="fa-solid fa-arrow-left"></i>
-            Back to Agents
+      <header className="page-header">
+        <div className="page-title-section">
+          <h1>Invite Agent</h1>
+          <p className="page-subtitle">Assign system roles to existing user accounts.</p>
+        </div>
+        <div className="page-actions">
+          <Link to="/agents">
+            <Button variant="outline" icon={<i className="fa-solid fa-arrow-left"></i>}>Back to Agents</Button>
           </Link>
-          <h2>Invite Agent to System</h2>
-          <p className={styles.subtitle}>
-            Grant system access to existing users by assigning roles
-          </p>
         </div>
+      </header>
 
-        <div className={styles.toolbar}>
-          <div className={styles.search}>
-            <input
-              type="search"
-              placeholder="Search users by name, email, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                className={styles.clearBtn}
-                onClick={() => setSearchQuery('')}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
+      <div className="page-content">
+        <Card className={styles.toolbar} flat>
+          <Input 
+            placeholder="Search by name or email..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)}
+            icon={<i className="fa-solid fa-search"></i>}
+          />
+        </Card>
 
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className={styles.emptyRow}>
-                    {searchQuery ? 'No users found matching your search.' : 'No users available to invite.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map(user => (
-                  <tr key={user.id}>
-                    <td>
-                      <img 
-                        src={user.profile_picture || defaultAvatar} 
-                        alt={user.first_name}
-                        className={styles.avatar}
-                        onError={(e) => { e.target.src = defaultAvatar; }}
-                      />
-                    </td>
-                    <td>
-                      <div className={styles.nameCell}>
-                        <strong>{user.first_name} {user.last_name}</strong>
-                        <span className={styles.username}>@{user.username}</span>
-                      </div>
-                    </td>
-                    <td>{user.email}</td>
-                    <td>{user.phone_number || '-'}</td>
-                    <td>{user.department || '-'}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${user.is_active ? styles.active : styles.inactive}`}>
-                        {user.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className={styles.inviteBtn}
-                        onClick={() => handleInviteClick(user)}
-                      >
-                        <i className="fa-solid fa-user-plus"></i>
-                        Invite
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table headers={['User', 'Contact', 'Department', 'Status', 'Actions']} loading={isLoading}>
+          {filteredUsers.map(user => (
+            <tr key={user.id}>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <img src={user.profile_picture || defaultAvatar} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{user.first_name} {user.last_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-text-color)' }}>@{user.username}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div style={{ fontSize: '0.875rem' }}>{user.email}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted-text-color)' }}>{user.phone_number || '-'}</div>
+              </td>
+              <td>{user.department || 'N/A'}</td>
+              <td><Badge variant={user.is_active ? 'success' : 'secondary'}>{user.is_active ? 'Active' : 'Inactive'}</Badge></td>
+              <td><Button size="small" onClick={() => { setSelectedUser(user); setInviteModalOpen(true); }}>Invite</Button></td>
+            </tr>
+          ))}
+        </Table>
       </div>
 
-      {/* Invite Modal */}
-      <Modal
-        isOpen={inviteModalOpen}
-        onClose={() => setInviteModalOpen(false)}
-        title="Invite User to System"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setInviteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} isLoading={isSubmitting}>
-              Invite
-            </Button>
-          </>
-        }
-      >
-        <div className={styles.formGroup}>
-          <label className={styles.label}>User</label>
-          <p className={styles.selectedUser}>
-            {selectedUser?.first_name} {selectedUser?.last_name}
-          </p>
-        </div>
-        
-        <div className={styles.formGroup}>
-          <label htmlFor="system_id" className={styles.label}>System <span className={styles.required}>*</span></label>
-          <select
-            id="system_id"
-            name="system_id"
-            value={formData.system_id}
-            onChange={handleFormChange}
-            className={styles.select}
-            required
-          >
-            <option value="">Select a system...</option>
-            {systems.map(system => (
-              <option key={system.id} value={system.id}>
-                {system.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className={styles.formGroup}>
-          <label htmlFor="role_id" className={styles.label}>Role <span className={styles.required}>*</span></label>
-          <select
-            id="role_id"
-            name="role_id"
-            value={formData.role_id}
-            onChange={handleFormChange}
-            className={styles.select}
-            disabled={!formData.system_id || roles.length === 0}
-            required
-          >
-            <option value="">
-              {!formData.system_id 
-                ? 'Select a system first' 
-                : roles.length === 0 
-                  ? 'No roles available' 
-                  : 'Select a role...'}
-            </option>
-            {roles.map(role => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-          {formData.system_id && roles.length === 0 && (
-            <small className={styles.hintText}>Roles will be populated based on selected system</small>
-          )}
-        </div>
+      <Modal isOpen={inviteModalOpen} onClose={() => setInviteModalOpen(false)} title="Invite User" footer={<><Button variant="secondary" onClick={() => setInviteModalOpen(false)}>Cancel</Button><Button onClick={handleSubmit} isLoading={isSubmitting}>Confirm Invite</Button></>}>
+        <div className={styles.infoBox}><i className="fa-solid fa-info-circle"></i><p>Select a system and role for <strong>{selectedUser?.first_name} {selectedUser?.last_name}</strong>.</p></div>
+        <div className={styles.selectGroup} style={{marginBottom:'1rem'}}><label>Target System</label><select value={formData.system_id} onChange={e => setFormData({...formData, system_id: e.target.value})}><option value="">Select system...</option>{systems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+        <div className={styles.selectGroup}><label>Assigned Role</label><select value={formData.role_id} onChange={e => setFormData({...formData, role_id: e.target.value})} disabled={!formData.system_id}><option value="">Select role...</option>{roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
       </Modal>
-    </main>
+    </div>
   );
 };
 

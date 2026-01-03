@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
-import { Button, Input } from '../../../components/common';
+import { Button, Input, Alert } from '../../../components/common';
 import styles from './UserForm.module.css';
 
 const UserForm = () => {
@@ -84,7 +84,6 @@ const UserForm = () => {
     setError('');
     setSuccess('');
 
-    // Validation
     if (!formData.email) {
       setError('Email is required');
       return;
@@ -109,7 +108,6 @@ const UserForm = () => {
 
       const method = isEditMode ? 'PUT' : 'POST';
 
-      // Prepare data - don't send password fields if empty in edit mode
       const submitData = { ...formData };
       if (isEditMode && !formData.password) {
         delete submitData.password;
@@ -145,227 +143,92 @@ const UserForm = () => {
 
   return (
     <SuperAdminLayout>
-      <div className={styles.pageHeader}>
-        <h2>{isEditMode ? 'Edit User' : 'Create New User'}</h2>
-        <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
-          Back to List
-        </Button>
-      </div>
-
-      {error && (
-        <div className={styles.alertDanger}>
-          <i className="fa fa-exclamation-circle"></i> {error}
-        </div>
-      )}
-
-      {success && (
-        <div className={styles.alertSuccess}>
-          <i className="fa fa-check-circle"></i> {success}
-        </div>
-      )}
-
-      <div className={styles.card}>
-        <form onSubmit={handleSubmit}>
-          <h3 className={styles.cardTitle}>
-            <i className="fa fa-user"></i> Account Information
-          </h3>
-
-          <div className={styles.formGrid}>
-            <Input
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              disabled={loading}
-            />
-
-            <Input
-              label="Username"
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              disabled={loading}
-            />
-
-            <Input
-              label={`Password ${!isEditMode ? '*' : ''}`}
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required={!isEditMode}
-              disabled={loading}
-              placeholder={isEditMode ? 'Leave blank to keep current password' : ''}
-            />
-
-            <Input
-              label={`Confirm Password ${!isEditMode ? '*' : ''}`}
-              type="password"
-              name="confirm_password"
-              value={formData.confirm_password}
-              onChange={handleChange}
-              required={!isEditMode}
-              disabled={loading}
-            />
+      <div className="page-wrapper">
+        <header className="page-header">
+          <div className="page-title-section">
+            <h1>{isEditMode ? 'Edit User' : 'Create New User'}</h1>
+            <p className="page-subtitle">{isEditMode ? `Updating user account for ${formData.email}` : 'Add a new user to the system masterlist.'}</p>
           </div>
-
-          <h3 className={styles.cardTitle}>
-            <i className="fa fa-id-card"></i> Personal Information
-          </h3>
-
-          <div className={styles.formGrid}>
-            <Input
-              label="First Name"
-              type="text"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              disabled={loading}
-            />
-
-            <Input
-              label="Middle Name"
-              type="text"
-              name="middle_name"
-              value={formData.middle_name}
-              onChange={handleChange}
-              disabled={loading}
-            />
-
-            <Input
-              label="Last Name"
-              type="text"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              disabled={loading}
-            />
-
-            <Input
-              label="Suffix"
-              type="text"
-              name="suffix"
-              value={formData.suffix}
-              onChange={handleChange}
-              placeholder="Jr., Sr., III, etc."
-              disabled={loading}
-            />
-
-            <Input
-              label="Phone Number"
-              type="tel"
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleChange}
-              disabled={loading}
-            />
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Department</label>
-              <select
-                name="department"
-                className={styles.formControl}
-                value={formData.department}
-                onChange={handleChange}
-                disabled={loading}
-              >
-                <option value="">Select Department</option>
-                <option value="IT Department">IT Department</option>
-                <option value="Asset Department">Asset Department</option>
-                <option value="Budget Department">Budget Department</option>
-              </select>
-            </div>
-          </div>
-
-          <h3 className={styles.cardTitle}>
-            <i className="fa fa-cog"></i> Account Settings
-          </h3>
-
-          <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Status</label>
-              <select
-                name="status"
-                className={styles.formControl}
-                value={formData.status}
-                onChange={handleChange}
-                disabled={loading}
-              >
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <span>Active Account</span>
-              </label>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  name="is_staff"
-                  checked={formData.is_staff}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <span>Staff Access</span>
-              </label>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  name="is_superuser"
-                  checked={formData.is_superuser}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <span>Superuser Privileges</span>
-              </label>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  name="is_locked"
-                  checked={formData.is_locked}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <span>Lock Account</span>
-              </label>
-            </div>
-          </div>
-
-          <div className={styles.formActions}>
-            <Button
-              variant="secondary"
-              onClick={() => navigate('/superadmin/users')}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={loading}>
-              {isEditMode ? 'Update User' : 'Create User'}
+          <div className="page-actions">
+            <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
+              Back to List
             </Button>
           </div>
-        </form>
+        </header>
+
+        {error && (
+          <Alert type="error" onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert type="success" onClose={() => setSuccess('')}>
+            {success}
+          </Alert>
+        )}
+
+        <div className="page-content">
+          <div className={styles.card}>
+            <form onSubmit={handleSubmit}>
+              <h3 className={styles.cardTitle}>
+                <i className="fa fa-user"></i> Account Information
+              </h3>
+
+              <div className={styles.formGrid}>
+                <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} required disabled={loading} />
+                <Input label="Username" type="text" name="username" value={formData.username} onChange={handleChange} disabled={loading} />
+                <Input label={`Password ${!isEditMode ? '*' : ''}`} type="password" name="password" value={formData.password} onChange={handleChange} required={!isEditMode} disabled={loading} placeholder={isEditMode ? 'Leave blank to keep current password' : ''} />
+                <Input label={`Confirm Password ${!isEditMode ? '*' : ''}`} type="password" name="confirm_password" value={formData.confirm_password} onChange={handleChange} required={!isEditMode} disabled={loading} />
+              </div>
+
+              <h3 className={styles.cardTitle}>
+                <i className="fa fa-id-card"></i> Personal Information
+              </h3>
+
+              <div className={styles.formGrid}>
+                <Input label="First Name" type="text" name="first_name" value={formData.first_name} onChange={handleChange} disabled={loading} />
+                <Input label="Middle Name" type="text" name="middle_name" value={formData.middle_name} onChange={handleChange} disabled={loading} />
+                <Input label="Last Name" type="text" name="last_name" value={formData.last_name} onChange={handleChange} disabled={loading} />
+                <Input label="Suffix" type="text" name="suffix" value={formData.suffix} onChange={handleChange} placeholder="Jr., Sr., III, etc." disabled={loading} />
+                <Input label="Phone Number" type="tel" name="phone_number" value={formData.phone_number} onChange={handleChange} disabled={loading} />
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Department</label>
+                  <select name="department" className={styles.formControl} value={formData.department} onChange={handleChange} disabled={loading}>
+                    <option value="">Select Department</option>
+                    <option value="IT Department">IT Department</option>
+                    <option value="Asset Department">Asset Department</option>
+                    <option value="Budget Department">Budget Department</option>
+                  </select>
+                </div>
+              </div>
+
+              <h3 className={styles.cardTitle}>
+                <i className="fa fa-cog"></i> Account Settings
+              </h3>
+
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Status</label>
+                  <select name="status" className={styles.formControl} value={formData.status} onChange={handleChange} disabled={loading}>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}><label className={styles.checkboxLabel}><input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleChange} disabled={loading} /><span>Active Account</span></label></div>
+                <div className={styles.formGroup}><label className={styles.checkboxLabel}><input type="checkbox" name="is_staff" checked={formData.is_staff} onChange={handleChange} disabled={loading} /><span>Staff Access</span></label></div>
+                <div className={styles.formGroup}><label className={styles.checkboxLabel}><input type="checkbox" name="is_superuser" checked={formData.is_superuser} onChange={handleChange} disabled={loading} /><span>Superuser Privileges</span></label></div>
+                <div className={styles.formGroup}><label className={styles.checkboxLabel}><input type="checkbox" name="is_locked" checked={formData.is_locked} onChange={handleChange} disabled={loading} /><span>Lock Account</span></label></div>
+              </div>
+
+              <div className={styles.formActions}>
+                <Button variant="secondary" onClick={() => navigate('/superadmin/users')} disabled={loading}>Cancel</Button>
+                <Button type="submit" isLoading={loading}>{isEditMode ? 'Update User' : 'Create User'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </SuperAdminLayout>
   );

@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
 import { getUserSystemRoles, deleteUserSystemRole, updateUserByAdmin } from '../../../services/adminService';
-import { useToast, Button, Input, Modal } from '../../../components/common';
+import { useToast, Button, Input, Modal, Table, Badge, Card } from '../../../components/common';
 import styles from './AgentManagement.module.css';
 
 const defaultAvatar = 'https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg';
 
 const AgentManagement = () => {
-  const { user } = useAuth();
   const { ToastContainer, success, error } = useToast();
 
   const [agents, setAgents] = useState([]);
@@ -21,422 +19,135 @@ const AgentManagement = () => {
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    loadAgents();
-  }, []);
-
-  useEffect(() => {
-    filterAgents();
-  }, [searchQuery, agents]);
+  useEffect(() => { loadAgents(); }, []);
+  useEffect(() => { filterAgents(); }, [searchQuery, agents]);
 
   const loadAgents = async () => {
     setIsLoading(true);
     try {
       const response = await getUserSystemRoles();
       if (response.ok) {
-        // Transform the data to show unique users with their roles
         const usersMap = new Map();
         const rolesData = response.data || [];
-        
         rolesData.forEach(item => {
-          const userId = item.id;
-          if (!userId) return; // Skip if no user ID found
-          
-          if (!usersMap.has(userId)) {
-            usersMap.set(userId, {
-              id: userId,
-              email: item.email,
-              username: item.username,
-              first_name: item.first_name,
-              last_name: item.last_name,
-              is_active: item.is_active,
-              is_staff: item.is_staff,
-              date_joined: item.date_joined,
-              last_login: item.last_logged_on,
-              profile_picture: item.profile_picture,
-              system_roles: [],
-              role_assignments: []
-            });
+          if (!item.id) return;
+          if (!usersMap.has(item.id)) {
+            usersMap.set(item.id, { ...item, system_roles: [] });
           }
-          
-          const userEntry = usersMap.get(userId);
-          userEntry.system_roles.push({
-            id: `${userId}-${item.system_slug}-${item.role}`,
-            system: item.system_slug,
-            role: item.role,
+          usersMap.get(item.id).system_roles.push({
+            id: `${item.id}-${item.system_slug}-${item.role}`,
             system_name: item.system_slug?.toUpperCase() || 'Unknown',
             role_name: item.role || 'Unknown'
           });
-          userEntry.role_assignments.push(`${userId}-${item.system_slug}-${item.role}`);
         });
-        
         setAgents(Array.from(usersMap.values()));
-      } else {
-        error('Error', 'Failed to load agents');
       }
-    } catch (err) {
-      console.error('Error loading agents:', err);
-      error('Error', 'Failed to load agents');
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
   const filterAgents = () => {
-    if (!searchQuery.trim()) {
-      setFilteredAgents(agents);
-      return;
-    }
-
+    if (!searchQuery.trim()) return setFilteredAgents(agents);
     const query = searchQuery.toLowerCase();
-    const filtered = agents.filter(agent => {
-      const fullName = `${agent.first_name || ''} ${agent.last_name || ''}`.toLowerCase();
-      const email = (agent.email || '').toLowerCase();
-      const phone = (agent.phone_number || '').toLowerCase();
-      const roles = agent.system_roles?.map(r => r.role_name || '').join(' ').toLowerCase();
-      
-      return fullName.includes(query) || 
-             email.includes(query) || 
-             phone.includes(query) ||
-             roles.includes(query);
-    });
-    
-    setFilteredAgents(filtered);
-  };
-
-  const handleEdit = (agent) => {
-    setSelectedAgent(agent);
-    setEditForm({
-      first_name: agent.first_name || '',
-      middle_name: agent.middle_name || '',
-      last_name: agent.last_name || '',
-      suffix: agent.suffix || '',
-      username: agent.username || '',
-      phone_number: agent.phone_number || '',
-      email: agent.email || '',
-      company_id: agent.company_id || '',
-      department: agent.department || '',
-      is_active: agent.is_active !== false,
-    });
-    setEditModalOpen(true);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFilteredAgents(agents.filter(a => 
+      `${a.first_name} ${a.last_name}`.toLowerCase().includes(query) || 
+      a.email.toLowerCase().includes(query) || 
+      a.system_roles?.some(r => r.role_name.toLowerCase().includes(query))
+    ));
   };
 
   const handleSaveEdit = async () => {
-    if (!selectedAgent) return;
-    
     setIsSaving(true);
     try {
-      const response = await updateUserByAdmin(selectedAgent.id, editForm);
-      if (response.ok) {
-        success('Success', 'Agent updated successfully');
+      if ((await updateUserByAdmin(selectedAgent.id, editForm)).ok) {
+        success('Success', 'Agent updated');
         setEditModalOpen(false);
         loadAgents();
-      } else {
-        error('Error', response.data?.message || 'Failed to update agent');
       }
-    } catch (err) {
-      console.error('Error updating agent:', err);
-      error('Error', 'Failed to update agent');
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
 
-  const handleDeleteClick = (agent) => {
-    setSelectedAgent(agent);
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedAgent || !selectedAgent.role_assignments?.length) return;
-
+  const handleDeleteConfirm = async () => {
     setIsSaving(true);
     try {
-      // Delete all role assignments for this user
-      for (const roleId of selectedAgent.role_assignments) {
-        await deleteUserSystemRole(roleId);
-      }
-      success('Success', 'Agent removed from all systems');
+      for (const sr of selectedAgent.system_roles) await deleteUserSystemRole(sr.id);
+      success('Success', 'Access revoked');
       setDeleteModalOpen(false);
       loadAgents();
-    } catch (err) {
-      console.error('Error deleting agent:', err);
-      error('Error', 'Failed to remove agent');
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading agents...</p>
-        </div>
-      </main>
-    );
-  }
 
   return (
-    <main className={styles.page}>
+    <div className="page-wrapper">
       <ToastContainer />
       
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h2>Agent Management</h2>
+      <header className="page-header">
+        <div className="page-title-section">
+          <h1>Agent Management</h1>
+          <p className="page-subtitle">Manage system access and roles for all service agents.</p>
         </div>
-
-        <div className={styles.toolbar}>
-          <div className={styles.search}>
-            <input
-              type="search"
-              placeholder="Search agents by name, email, phone, or role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                className={styles.clearBtn}
-                onClick={() => setSearchQuery('')}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <Link to="/invite-agent" className={styles.inviteBtn}>
-            <i className="fa-solid fa-user-plus"></i>
-            Invite Agent
+        <div className="page-actions">
+          <Link to="/invite-agent">
+            <Button icon={<i className="fa-solid fa-user-plus"></i>}>Invite Agent</Button>
           </Link>
         </div>
+      </header>
 
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Name</th>
-                <th>Role(s)</th>
-                <th>System(s)</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Last Login</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAgents.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className={styles.emptyRow}>
-                    {searchQuery ? 'No agents found matching your search.' : 'No agents found.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredAgents.map(agent => (
-                  <tr key={agent.id}>
-                    <td>
-                      <img 
-                        src={agent.profile_picture || defaultAvatar} 
-                        alt={agent.first_name}
-                        className={styles.avatar}
-                        onError={(e) => { e.target.src = defaultAvatar; }}
-                      />
-                    </td>
-                    <td>
-                      <div className={styles.nameCell}>
-                        <strong>{agent.first_name} {agent.last_name}</strong>
-                        <span className={styles.username}>@{agent.username}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.rolesList}>
-                        {agent.system_roles?.map((sr) => (
-                          <span key={sr.id} className={styles.roleBadge}>
-                            {sr.role_name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.systemsList}>
-                        {agent.system_roles?.map((sr) => (
-                          <span key={sr.id} className={styles.systemBadge}>
-                            {sr.system_name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>{agent.email}</td>
-                    <td>{agent.phone_number || '-'}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${agent.is_active !== false ? styles.active : styles.inactive}`}>
-                        {agent.is_active !== false ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>{formatDate(agent.last_login)}</td>
-                    <td>
-                      <div className={styles.actions}>
-                        <button 
-                          className={styles.actionBtn}
-                          onClick={() => handleEdit(agent)}
-                          title="Edit"
-                        >
-                          <i className="fa-solid fa-edit"></i>
-                        </button>
-                        <button 
-                          className={`${styles.actionBtn} ${styles.danger}`}
-                          onClick={() => handleDeleteClick(agent)}
-                          title="Remove"
-                        >
-                          <i className="fa-solid fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="page-content">
+        <Card className={styles.toolbar} flat>
+          <div className={styles.searchContainer}>
+            <i className={`fa-solid fa-search ${styles.searchIcon}`}></i>
+            <input className={styles.searchInput} type="search" placeholder="Search by name, email, or role..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+        </Card>
+
+        <Table headers={['Agent', 'Roles', 'Systems', 'Contact', 'Status', 'Last Login', 'Actions']} loading={isLoading}>
+          {filteredAgents.map(agent => (
+            <tr key={agent.id}>
+              <td>
+                <div className={styles.agentCell}>
+                  <img src={agent.profile_picture || defaultAvatar} alt="" className={styles.avatar} onError={(e) => { e.target.src = defaultAvatar; }} />
+                  <div>
+                    <div className={styles.name}>{agent.first_name} {agent.last_name}</div>
+                    <div className={styles.username}>@{agent.username}</div>
+                  </div>
+                </div>
+              </td>
+              <td><div className={styles.badgeList}>{agent.system_roles?.map((sr, i) => <Badge key={i} variant="info">{sr.role_name}</Badge>)}</div></td>
+              <td><div className={styles.badgeList}>{agent.system_roles?.map((sr, i) => <Badge key={i} variant="secondary">{sr.system_name}</Badge>)}</div></td>
+              <td>
+                <div className={styles.contactCell}>
+                  <div className={styles.email}>{agent.email}</div>
+                  <div className={styles.phone}>{agent.phone_number || '-'}</div>
+                </div>
+              </td>
+              <td><Badge variant={agent.is_active !== false ? 'success' : 'danger'}>{agent.is_active !== false ? 'Active' : 'Inactive'}</Badge></td>
+              <td className={styles.dateCell}>{agent.last_logged_on ? new Date(agent.last_logged_on).toLocaleDateString() : '-'}</td>
+              <td>
+                <div className={styles.actions}>
+                  <button className={styles.actionBtn} onClick={() => { setSelectedAgent(agent); setEditForm(agent); setEditModalOpen(true); }}><i className="fa-solid fa-pen"></i></button>
+                  <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => { setSelectedAgent(agent); setDeleteModalOpen(true); }}><i className="fa-solid fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </Table>
       </div>
 
-      {/* Edit Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title="Edit Agent"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setEditModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit} isLoading={isSaving}>
-              Save Changes
-            </Button>
-          </>
-        }
-      >
-        <div className={styles.formRow}>
-          <Input
-            label="First Name"
-            name="first_name"
-            value={editForm.first_name}
-            onChange={handleEditChange}
-            className={styles.flex1}
-          />
-          <Input
-            label="Last Name"
-            name="last_name"
-            value={editForm.last_name}
-            onChange={handleEditChange}
-            className={styles.flex1}
-          />
-        </div>
-        <div className={styles.formRow}>
-          <Input
-            label="Middle Name"
-            name="middle_name"
-            value={editForm.middle_name}
-            onChange={handleEditChange}
-            className={styles.flex1}
-          />
-          <div className={`${styles.formGroup} ${styles.flex1}`}>
-            <label className={styles.label}>Suffix</label>
-            <select name="suffix" value={editForm.suffix} onChange={handleEditChange} className={styles.select}>
-              <option value="">---------</option>
-              <option value="Jr.">Jr.</option>
-              <option value="Sr.">Sr.</option>
-              <option value="II">II</option>
-              <option value="III">III</option>
-              <option value="IV">IV</option>
-            </select>
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Agent" footer={<><Button variant="secondary" onClick={() => setEditModalOpen(false)}>Cancel</Button><Button onClick={handleSaveEdit} isLoading={isSaving}>Save</Button></>}>
+        <div className={styles.modalGrid}>
+          <Input label="First Name" name="first_name" value={editForm.first_name || ''} onChange={e => setEditForm({...editForm, first_name: e.target.value})} />
+          <Input label="Last Name" name="last_name" value={editForm.last_name || ''} onChange={e => setEditForm({...editForm, last_name: e.target.value})} />
+          <div className={styles.checkboxContainer}>
+            <input type="checkbox" id="is_active" checked={editForm.is_active} onChange={e => setEditForm({...editForm, is_active: e.target.checked})} />
+            <label htmlFor="is_active">Active Account</label>
           </div>
-        </div>
-        <Input
-          label="Username"
-          name="username"
-          value={editForm.username}
-          onChange={handleEditChange}
-        />
-        <Input
-          label="Email"
-          type="email"
-          name="email"
-          value={editForm.email}
-          onChange={handleEditChange}
-        />
-        <Input
-          label="Phone Number"
-          type="tel"
-          name="phone_number"
-          value={editForm.phone_number}
-          onChange={handleEditChange}
-        />
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Department</label>
-          <select name="department" value={editForm.department} onChange={handleEditChange} className={styles.select}>
-            <option value="">---------</option>
-            <option value="IT Department">IT Department</option>
-            <option value="Asset Department">Asset Department</option>
-            <option value="Budget Department">Budget Department</option>
-          </select>
-        </div>
-        <div className={styles.formGroupCheckbox}>
-          <input
-            type="checkbox"
-            id="is_active"
-            name="is_active"
-            checked={editForm.is_active}
-            onChange={handleEditChange}
-          />
-          <label htmlFor="is_active">Active</label>
         </div>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        title="Remove Agent"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleConfirmDelete} isLoading={isSaving}>
-              Remove Agent
-            </Button>
-          </>
-        }
-      >
-        <p>
-          Are you sure you want to remove <strong>{selectedAgent?.first_name} {selectedAgent?.last_name}</strong> from all systems?
-        </p>
-        <p className={styles.warningText}>
-          This will revoke their access but will not delete their account.
-        </p>
+      <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Revoke Access" footer={<><Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</Button><Button variant="danger" onClick={handleDeleteConfirm} isLoading={isSaving}>Revoke</Button></>}>
+        <p>Revoke access for <strong>{selectedAgent?.first_name} {selectedAgent?.last_name}</strong> from all systems?</p>
       </Modal>
-    </main>
+    </div>
   );
 };
 

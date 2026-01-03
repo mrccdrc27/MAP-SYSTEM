@@ -64,14 +64,14 @@ const Sidebar = ({ isOpen, onClose }) => {
               className={({ isActive }) => `${styles.menuLink} ${isActive ? styles.active : ''}`}
               onClick={handleLinkClick}
             >
-              <i className="fa fa-user"></i> Manage Profile
+              <i className="fa fa-user"></i> My Profile
             </NavLink>
             <NavLink 
               to="/change-password" 
               className={({ isActive }) => `${styles.menuLink} ${isActive ? styles.active : ''}`}
               onClick={handleLinkClick}
             >
-              <i className="fa fa-lock"></i> Change Password
+              <i className="fa fa-lock"></i> Account Security
             </NavLink>
           </div>
 
