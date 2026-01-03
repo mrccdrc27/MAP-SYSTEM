@@ -86,7 +86,9 @@ class LoginView(FormView):
         
         # If user is authenticated, middleware will handle routing
         # Just show the login page (user shouldn't see it if already authenticated)
-        
+        if user:
+             return redirect('system-welcome')
+
         # Proceed with normal dispatch and clear invalid cookies from response
         response = super().dispatch(request, *args, **kwargs)
         if invalid_token:
@@ -513,7 +515,40 @@ class LoginAPIView(APIView):
             
             # Use Response Serializer to ensure consistent output format
             response_serializer = LoginResponseSerializer(response_data)
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
+            response = Response(response_serializer.data, status=status.HTTP_200_OK)
+
+            # Set cookies if tokens are present (for successful login)
+            if response_data.get('access_token'):
+                access_token = response_data.get('access_token')
+                refresh_token = response_data.get('refresh_token')
+                
+                access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+                refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
+
+                response.set_cookie(
+                    'access_token',
+                    access_token,
+                    max_age=access_max_age,
+                    httponly=False,
+                    secure=settings.SESSION_COOKIE_SECURE,
+                    samesite='Lax',
+                    path='/',
+                    domain=None
+                )
+
+                if refresh_token:
+                    response.set_cookie(
+                        'refresh_token',
+                        refresh_token,
+                        max_age=refresh_max_age,
+                        httponly=False,
+                        secure=settings.SESSION_COOKIE_SECURE,
+                        samesite='Lax',
+                        path='/',
+                        domain=None
+                    )
+
+            return response
         else:
             email = request.data.get('email', '')
             if email:
@@ -561,7 +596,40 @@ class VerifyOTPLoginView(APIView):
                 logger.info(f"User {user.email} successfully logged in with OTP verification")
             
             response_serializer = LoginResponseSerializer(response_data)
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
+            response = Response(response_serializer.data, status=status.HTTP_200_OK)
+
+            # Set cookies if tokens are present
+            if response_data.get('access_token'):
+                access_token = response_data.get('access_token')
+                refresh_token = response_data.get('refresh_token')
+                
+                access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+                refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
+
+                response.set_cookie(
+                    'access_token',
+                    access_token,
+                    max_age=access_max_age,
+                    httponly=False,
+                    secure=settings.SESSION_COOKIE_SECURE,
+                    samesite='Lax',
+                    path='/',
+                    domain=None
+                )
+
+                if refresh_token:
+                    response.set_cookie(
+                        'refresh_token',
+                        refresh_token,
+                        max_age=refresh_max_age,
+                        httponly=False,
+                        secure=settings.SESSION_COOKIE_SECURE,
+                        samesite='Lax',
+                        path='/',
+                        domain=None
+                    )
+
+            return response
         
         return Response({
             'success': False,

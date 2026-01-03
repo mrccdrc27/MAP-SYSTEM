@@ -27,6 +27,10 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'signing-key-1234')
 # JWT Signing Key - should match auth service for token validation
 JWT_SIGNING_KEY = os.environ.get('DJANGO_JWT_SIGNING_KEY', SECRET_KEY)
 
+# Kong Gateway Integration
+# Set to True when running behind Kong API Gateway to skip redundant JWT verification
+KONG_TRUSTED = os.environ.get('KONG_TRUSTED', 'False').lower() in ('true', '1', 'yes')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') in ('True', 'true', '1')
 

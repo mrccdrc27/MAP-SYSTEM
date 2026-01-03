@@ -28,6 +28,39 @@ from ..decorators import jwt_cookie_required
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    tags=['Authentication'],
+    summary="Get current authenticated user",
+    description="Returns the current authenticated user's basic information. Used by frontends to check authentication status on page load.",
+    responses={
+        200: OpenApiResponse(
+            response=UserProfileSerializer,
+            description="User is authenticated. Returns user data."
+        ),
+        401: OpenApiResponse(
+            response=inline_serializer(
+                name='MeUnauthorizedError',
+                fields={'detail': drf_serializers.CharField()}
+            ),
+            description="Not authenticated. No valid JWT cookie present."
+        )
+    }
+)
+class MeView(generics.RetrieveAPIView):
+    """
+    Simple endpoint to check if user is authenticated.
+    GET /api/v1/users/me/
+    
+    Returns user data if authenticated, 401 if not.
+    This is the primary endpoint for frontend auth checks.
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+    
+    def get_object(self):
+        return self.request.user
+
+
 @extend_schema_view(
     get=extend_schema(
         tags=['User Profile'],

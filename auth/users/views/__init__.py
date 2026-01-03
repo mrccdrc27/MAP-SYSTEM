@@ -25,6 +25,7 @@ from .auth_views import (
 
 # User Profile
 from .profile_views import (
+    MeView,
     ProfileView,
     profile_settings_view,
 )

@@ -165,6 +165,10 @@ JWT_SIGNING_KEY = config(
     default=SECRET_KEY  # Fallback to SECRET_KEY if not explicitly set
 )
 
+# Kong Gateway Integration
+# Set to True when running behind Kong API Gateway to skip redundant JWT verification
+KONG_TRUSTED = config('KONG_TRUSTED', default=False, cast=bool)
+
 SIMPLE_JWT = {
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': JWT_SIGNING_KEY,

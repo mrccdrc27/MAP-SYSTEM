@@ -260,6 +260,10 @@ JWT_SIGNING_KEY = config(
 # Legacy: JWT_SHARED_SECRET_KEY kept for backward compatibility
 JWT_SHARED_SECRET_KEY = JWT_SIGNING_KEY
 
+# Kong Gateway Integration
+# Set to True when running behind Kong API Gateway to skip redundant JWT verification
+KONG_TRUSTED = config('KONG_TRUSTED', default=False, cast=bool)
+
 # Celery Configuration
 CELERY_BROKER_URL = config('DJANGO_CELERY_BROKER_URL', default='amqp://admin:admin@localhost:5672/')
 CELERY_RESULT_BACKEND = 'django-db'

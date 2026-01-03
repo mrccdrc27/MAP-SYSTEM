@@ -148,6 +148,23 @@ urlpatterns = [
     
     # API shortcut for current user profile (works for both staff and employees)
     path('api/me/', MeView.as_view(), name='api-me'),
+    
+    # ==================== REACT FRONTEND SPA ====================
+    # React SPA frontend - handles its own routing via react-router-dom
+    # Access via /app/ prefix to avoid conflict with existing Django templates
+    path('app/', TemplateView.as_view(template_name='frontend/index.html'), name='react-app'),
+    path('app/login/', TemplateView.as_view(template_name='frontend/index.html'), name='react-staff-login'),
+    path('app/staff/login/', TemplateView.as_view(template_name='frontend/index.html'), name='react-staff-login-alt'),
+    path('app/employee/login/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-login'),
+    path('app/register/', TemplateView.as_view(template_name='frontend/index.html'), name='react-register'),
+    path('app/staff/register/', TemplateView.as_view(template_name='frontend/index.html'), name='react-staff-register'),
+    path('app/employee/register/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-register'),
+    path('app/forgot-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-forgot-password'),
+    path('app/employee/forgot-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-forgot-password'),
+    path('app/reset-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-reset-password'),
+    path('app/employee/reset-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-reset-password'),
+    path('app/profile/', TemplateView.as_view(template_name='frontend/index.html'), name='react-profile'),
+    path('app/change-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-change-password'),
 ]
 
 # Include API documentation URLs only in DEBUG mode

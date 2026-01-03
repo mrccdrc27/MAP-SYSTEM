@@ -1,0 +1,390 @@
+# Docker Compose with Kong API Gateway for TTS Ecosystem
+# This file adds Kong as the central gateway, routing all API traffic
+#
+# Architecture:
+#   Frontend -> Kong (8000) -> Backend Services (internal network only)
+#
+# Usage:
+#   docker-compose -f docker-compose-kong.yml build
+#   docker-compose -f docker-compose-kong.yml up -d
+
+services:
+  # =============================================================================
+  # KONG API GATEWAY
+  # =============================================================================
+  kong:
+    build:
+      context: ../../kong
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_LOG_LEVEL: info
+      # JWT secret must match auth service signing key
+      KONG_JWT_SECRET: "signing-key-1234"
+    ports:
+      - "8000:8000"   # Proxy - public traffic
+      - "8001:8001"   # Admin API - for debugging (remove in production)
+    volumes:
+      - ../../kong/kong.yml:/kong/kong.yml:ro
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - tts-network
+
+  # =============================================================================
+  # INFRASTRUCTURE SERVICES
+  # =============================================================================
+  
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    # Internal only - no exposed ports when behind Kong
+    expose:
+      - "5672"
+      - "15672"
+    ports:
+      # Keep management UI accessible for debugging
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - tts-network
+
+  mailpit:
+    image: axllent/mailpit
+    restart: always
+    ports:
+      - "8025:8025"  # Web UI
+    expose:
+      - "1025"       # SMTP (internal)
+    networks:
+      - tts-network
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespass
+      POSTGRES_DB: postgres
+    expose:
+      - "5432"
+    ports:
+      - "5433:5432"  # Keep for debugging
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - tts-network
+
+  # =============================================================================
+  # AUTH SERVICE (Port 8003 internal)
+  # =============================================================================
+  auth-service:
+    build:
+      context: ../../auth
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service,kong"
+      KONG_TRUSTED: "true"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "False"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
+      FRONTEND_URL: "http://localhost:1000"
+      TTS_SYSTEM_URL: "http://localhost:1000/"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+    expose:
+      - "8003"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    command: sh -c "sleep 10 && ./start.sh"
+    networks:
+      - tts-network
+
+  # =============================================================================
+  # WORKFLOW API SERVICE (Port 8002 internal)
+  # =============================================================================
+  workflow-api:
+    build:
+      context: ../workflow_api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api,kong"
+      KONG_TRUSTED: "true"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "workflow_db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue-default"
+      DJANGO_TICKET_STATUS_QUEUE: "ticket_status-default"
+      DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8003"
+      DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8006"
+      DJANGO_TTS_SERVICE_URL: "http://workflow-api:8002"
+      DJANGO_USER_SERVICE_URL: "http://auth-service:8003"
+      DJANGO_BASE_URL: "http://kong:8000"
+      DJANGO_FRONTEND_URL: "http://localhost:1000/register"
+    expose:
+      - "8002"
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+      auth-service:
+        condition: service_started
+    command: sh -c "sleep 10 && ./start.sh"
+    networks:
+      - tts-network
+
+  workflow-worker:
+    build:
+      context: ../workflow_api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      KONG_TRUSTED: "true"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8003"
+      DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8006"
+      C_FORCE_ROOT: "false"
+    volumes:
+      - media_files:/app/media
+    command: >
+      sh -c "sleep 20 && 
+             celery -A workflow_api worker --pool=solo --loglevel=info -Q role_send-default,TICKET_TASKS_PRODUCTION,tts.role.sync,tts.user_system_role.sync,workflow_seed_queue,workflow_seed"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+    networks:
+      - tts-network
+
+  # =============================================================================
+  # NOTIFICATION SERVICE (Port 8006 internal)
+  # =============================================================================
+  notification-service:
+    build:
+      context: ../notification_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service,kong"
+      KONG_TRUSTED: "true"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CORS_ALLOW_CREDENTIALS: "True"
+      DJANGO_AUTH_SERVICE_URL: "http://auth-service:8003"
+      DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456"
+      DJANGO_API_KEY: "in-app-notification-api-key-secure"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue"
+      DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+      TTS_FRONTEND_URL: "http://localhost:1000"
+      TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "False"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
+    expose:
+      - "8006"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    command: sh -c "sleep 10 && python -m daphne -b 0.0.0.0 -p 8006 notification_service.asgi:application"
+    networks:
+      - tts-network
+
+  notification-worker:
+    build:
+      context: ../notification_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      KONG_TRUSTED: "true"
+      DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_NOTIFICATION_QUEUE: "notification-queue"
+      DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
+      TTS_FRONTEND_URL: "http://localhost:1000"
+      TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      DJANGO_EMAIL_HOST: "mailpit"
+      DJANGO_EMAIL_PORT: "1025"
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "False"
+      DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
+    command: >
+      sh -c "sleep 15 && 
+             celery -A notification_service worker --pool=solo --loglevel=info -Q notification-queue-default,inapp-notification-queue,user-email-sync-queue"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - tts-network
+
+  # =============================================================================
+  # MESSAGING SERVICE (Port 8005 internal)
+  # =============================================================================
+  messaging-service:
+    build:
+      context: ../messaging
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service,kong"
+      KONG_TRUSTED: "true"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CORS_ALLOW_CREDENTIALS: "True"
+      DJANGO_MEDIA_BASE_URL: "http://kong:8000/api/messages"
+    expose:
+      - "8005"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    command: sh -c "sleep 10 && python -m daphne -b 0.0.0.0 -p 8005 messaging.asgi:application"
+    networks:
+      - tts-network
+
+  # =============================================================================
+  # HELPDESK SERVICE (Port 8000 internal)
+  # =============================================================================
+  helpdesk-backend:
+    build:
+      context: ../../hdts/helpdesk
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,helpdesk-backend,kong"
+      KONG_TRUSTED: "true"
+      DJANGO_AUTH_SERVICE: "http://auth-service:8003"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+      DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      EMAIL_HOST: "mailpit"
+      EMAIL_PORT: "1025"
+      EMAIL_USE_TLS: "False"
+    expose:
+      - "8000"
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    command: sh -c "sleep 30 && ./start.sh"
+    networks:
+      - tts-network
+
+  helpdesk-worker:
+    build:
+      context: ../../hdts/helpdesk
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_ENV: "production"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      KONG_TRUSTED: "true"
+      CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+    command: >
+      sh -c "sleep 15 && 
+             celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2,ticket_status-default --pool=solo"
+    networks:
+      - tts-network
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  tts-network:
+    driver: bridge
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  rabbitmq_data:
+  postgres_data:
+  media_files:

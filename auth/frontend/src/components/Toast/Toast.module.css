@@ -1,0 +1,151 @@
+.toastContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.toast {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px 20px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out forwards;
+  pointer-events: auto;
+  position: relative;
+  min-width: 320px;
+  border-left: 4px solid;
+}
+
+.toast.success {
+  border-left-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.toast.error {
+  border-left-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.toast.warning {
+  border-left-color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.toast.info {
+  border-left-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.toastIcon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.toast.success .toastIcon {
+  color: #10b981;
+}
+
+.toast.error .toastIcon {
+  color: #ef4444;
+}
+
+.toast.warning .toastIcon {
+  color: #f59e0b;
+}
+
+.toast.info .toastIcon {
+  color: #3b82f6;
+}
+
+.toastContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toastTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+
+.toast.success .toastTitle {
+  color: #047857;
+}
+
+.toast.error .toastTitle {
+  color: #b91c1c;
+}
+
+.toast.warning .toastTitle {
+  color: #b45309;
+}
+
+.toast.info .toastTitle {
+  color: #1d4ed8;
+}
+
+.toastMessage {
+  font-size: 13px;
+  color: #4b5563;
+  margin: 0;
+}
+
+.toastClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.toastClose:hover {
+  color: #4b5563;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.toast.closing {
+  animation: slideOut 0.3s ease-in forwards;
+}

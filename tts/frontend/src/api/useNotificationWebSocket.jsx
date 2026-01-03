@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getAccessToken } from './TokenUtils';
 
 // WebSocket endpoint for notifications
 const NOTIFICATION_WS_BASE = import.meta.env.VITE_NOTIFICATION_WS || 'ws://localhost:8006';
@@ -35,8 +36,11 @@ export const useNotificationWebSocket = (userId, onNewNotification, onCountUpdat
       socketRef.current.close();
     }
 
-    const wsUrl = `${NOTIFICATION_WS_BASE}/ws/notifications/${userId}/`;
-    console.log('[NotificationWS] Connecting to:', wsUrl);
+    // Get token for WebSocket authentication (Kong gateway support)
+    const token = getAccessToken();
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const wsUrl = `${NOTIFICATION_WS_BASE}/ws/notifications/${userId}/${tokenParam}`;
+    console.log('[NotificationWS] Connecting to:', wsUrl.replace(/token=.*/, 'token=***'));
 
     try {
       socketRef.current = new WebSocket(wsUrl);

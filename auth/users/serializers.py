@@ -397,6 +397,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         
+        # Add issuer claim for Kong JWT validation
+        # This MUST match the 'key' in Kong's jwt_secrets consumer config
+        token['iss'] = 'tts-jwt-issuer'
+        
         # Add custom claims
         token['email'] = user.email
         token['username'] = user.username

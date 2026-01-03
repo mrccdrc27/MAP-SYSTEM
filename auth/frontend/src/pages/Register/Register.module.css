@@ -1,0 +1,278 @@
+.registerPage {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100vw;
+  background-color: #fcfcfc;
+}
+
+.leftPanel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.leftPanel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rightPanel {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 50%;
+  margin-left: 50%;
+  min-height: 100vh;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+
+.formWrapper {
+  width: 100%;
+  max-width: 500px;
+}
+
+.formHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.logo img {
+  height: 60px;
+  width: 60px;
+  object-fit: contain;
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+.formHeader h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.welcomeMessage {
+  color: #666;
+  font-size: 14px;
+}
+
+.backToLogin {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.backToLogin a {
+  color: #007bff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.backToLogin a:hover {
+  text-decoration: underline;
+}
+
+.alternateRegister {
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alternateRegister a {
+  color: #28a745;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.alternateRegister a:hover {
+  text-decoration: underline;
+}
+
+.registerForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.formGroup input {
+  width: 100%;
+  height: 42px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d3d3d3;
+  background-color: #fcfcfc;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.formGroup input::placeholder {
+  color: #999;
+}
+
+.passwordContainer {
+  position: relative;
+}
+
+.passwordContainer input {
+  padding-right: 40px;
+}
+
+.showPassword {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  transition: color 0.3s;
+}
+
+.showPassword:hover {
+  color: #007bff;
+}
+
+.fieldError {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+.errorContainer {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.errorMsg {
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.3s;
+  margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.submitButton:disabled {
+  background-color: #d3d3d3;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.passwordRequirements {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .leftPanel {
+    display: none;
+  }
+  
+  .rightPanel {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -34,6 +34,14 @@ class CookieJWTAuthentication(JWTAuthentication):
     """
     Custom JWT authentication that reads tokens from cookies (e.g., 'access_token')
     and falls back to standard Authorization header if cookie is missing or invalid.
+    
+    Gateway Mode (KONG_TRUSTED=True):
+        - Decodes JWT without signature verification (Kong already verified at gateway)
+        - Better performance, no redundant crypto operations
+    
+    Direct Mode (KONG_TRUSTED=False or unset):
+        - Full JWT signature verification
+        - Use for direct service access or local development without Kong
     """
 
     def __init__(self, *args, **kwargs):
@@ -43,10 +51,15 @@ class CookieJWTAuthentication(JWTAuthentication):
         self.user_id_claim = simple_jwt_settings.get('USER_ID_CLAIM', 'user_id')
 
     def authenticate(self, request):
-        # Try to get token from cookie first
-        raw_token = request.COOKIES.get('access_token')
+        # Priority 1: Authorization header (Bearer token)
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            raw_token = auth_header[7:]  # Remove 'Bearer ' prefix
+        else:
+            # Priority 2: Cookie (backward compatibility)
+            raw_token = request.COOKIES.get('access_token')
 
-        # No cookie token → fallback to header
+        # No token found → fallback to parent
         if raw_token is None:
             return super().authenticate(request)
 

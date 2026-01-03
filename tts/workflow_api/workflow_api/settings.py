@@ -166,6 +166,11 @@ JWT_SIGNING_KEY = config(
     default=SECRET_KEY  # Fallback to SECRET_KEY if not explicitly set
 )
 
+# Kong Gateway Integration
+# Set to True when running behind Kong API Gateway to skip redundant JWT verification
+# Kong validates JWT at the gateway layer, so services can trust the validation
+KONG_TRUSTED = config('KONG_TRUSTED', default=False, cast=bool)
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),

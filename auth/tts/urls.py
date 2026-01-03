@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from .views import UserIDsByRoleView, UserInfoByIDView, UsersInfoBatchView, AssignAgentToRoleView, assign_agent_to_role_form, role_assignments_view
+from .views import UserIDsByRoleView, UserInfoByIDView, UsersInfoBatchView, AssignAgentToRoleView, assign_agent_to_role_form, role_assignments_view, manage_assignments_api
 from users.views import CreateRoleView, UpdateAssignmentView, role_management_view
 
 app_name = 'tts'
@@ -15,6 +15,7 @@ def tts_root(request, format=None):
         'users-info': reverse('tts:users_info_batch', request=request),
         'assign-agent-to-role': reverse('tts:assign_agent_to_role', request=request),
         'assign-agent-to-role-form': reverse('tts:assign_agent_to_role_form', request=request),
+        'manage-assignments': reverse('tts:manage_assignments_api', request=request),
     })
 
 urlpatterns = [
@@ -29,4 +30,5 @@ urlpatterns = [
     path('update-assignment/<int:assignment_id>/', UpdateAssignmentView.as_view(), name='update_assignment'),
     path('role-management/', role_management_view, name='role_management'),
     path('manage-assignments/', role_assignments_view, name='manage_assignments'),
+    path('manage-assignments-api/', manage_assignments_api, name='manage_assignments_api'),
 ]

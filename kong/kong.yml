@@ -1,0 +1,308 @@
+# Kong Declarative Configuration for TTS Ecosystem
+# This configuration defines all routes, services, and plugins for the API Gateway
+#
+# Architecture:
+#   Frontend -> Kong (8000) -> Backend Services
+#   Kong validates JWT at edge, services trust Kong validation
+#
+# Usage:
+#   - Docker: Mount as /kong/kong.yml with KONG_DATABASE=off and KONG_DECLARATIVE_CONFIG=/kong/kong.yml
+#   - Local: Use kong.local.yml for development without Docker
+
+_format_version: "3.0"
+_transform: true
+
+# =============================================================================
+# CONSUMERS
+# =============================================================================
+# Consumers represent authenticated entities (users, services) that can access APIs
+consumers:
+  - username: auth-service
+    custom_id: auth-service-001
+    tags:
+      - internal
+      - auth
+
+# =============================================================================
+# JWT CREDENTIALS
+# =============================================================================
+# JWT credentials for the auth-service consumer
+# The secret MUST match DJANGO_JWT_SIGNING_KEY in all services
+jwt_secrets:
+  - consumer: auth-service
+    key: tts-jwt-issuer
+    secret: "${KONG_JWT_SECRET:signing-key-1234}"
+    algorithm: HS256
+
+# =============================================================================
+# PLUGINS (Global)
+# =============================================================================
+plugins:
+  # CORS Plugin - Global
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:1000"
+        - "http://127.0.0.1:1000"
+        - "http://localhost:5173"
+        - "http://127.0.0.1:5173"
+        - "http://localhost:3000"
+        - "http://127.0.0.1:3000"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+        - X-Auth-Token
+        - X-API-Key
+        - X-Requested-With
+        - X-Request-ID
+      exposed_headers:
+        - X-Auth-Token
+        - X-Request-ID
+      credentials: true
+      max_age: 3600
+
+  # Rate Limiting - Global (can be overridden per-service)
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+
+  # Request/Response Logging
+  - name: file-log
+    config:
+      path: /tmp/kong-access.log
+      reopen: true
+
+# =============================================================================
+# SERVICES & ROUTES
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # AUTH SERVICE (Port 8003)
+  # ---------------------------------------------------------------------------
+  # Public endpoints (no JWT required)
+  - name: auth-service-public
+    url: http://auth-service:8003
+    tags:
+      - auth
+      - public
+    routes:
+      # Login endpoint
+      - name: auth-login
+        paths:
+          - /api/auth/login
+          - /api/auth/token
+          - /api/auth/token/refresh
+          - /api/auth/register
+          - /api/auth/password-reset
+          - /api/auth/password-reset-confirm
+          - /api/auth/verify-email
+        strip_path: false
+        preserve_host: true
+
+  # Protected auth endpoints
+  - name: auth-service-protected
+    url: http://auth-service:8003
+    tags:
+      - auth
+      - protected
+    routes:
+      - name: auth-protected
+        paths:
+          - /api/auth
+          - /api/users
+          - /api/roles
+          - /api/systems
+          - /api/tts
+          - /api/hdts
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW API SERVICE (Port 8002)
+  # ---------------------------------------------------------------------------
+  - name: workflow-api-service
+    url: http://workflow-api:8002
+    tags:
+      - tts
+      - workflow
+    routes:
+      - name: workflow-routes
+        paths:
+          - /api/workflow
+          - /api/tickets
+          - /api/departments
+          - /api/categories
+          - /api/priorities
+          - /api/statuses
+          - /workflow
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION SERVICE (Port 8006)
+  # ---------------------------------------------------------------------------
+  # WebSocket connections (special handling)
+  - name: notification-websocket
+    url: http://notification-service:8006
+    tags:
+      - tts
+      - notification
+      - websocket
+    routes:
+      - name: notification-ws
+        paths:
+          - /ws/notifications
+        strip_path: false
+        preserve_host: true
+        protocols:
+          - http
+          - https
+          - ws
+          - wss
+
+  # REST API endpoints
+  - name: notification-api-service
+    url: http://notification-service:8006
+    tags:
+      - tts
+      - notification
+    routes:
+      - name: notification-routes
+        paths:
+          - /api/notifications
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+
+  # ---------------------------------------------------------------------------
+  # MESSAGING SERVICE (Port 8005)
+  # ---------------------------------------------------------------------------
+  # WebSocket connections
+  - name: messaging-websocket
+    url: http://messaging-service:8005
+    tags:
+      - tts
+      - messaging
+      - websocket
+    routes:
+      - name: messaging-ws
+        paths:
+          - /ws/chat
+          - /ws/messages
+        strip_path: false
+        preserve_host: true
+        protocols:
+          - http
+          - https
+          - ws
+          - wss
+
+  # REST API endpoints
+  - name: messaging-api-service
+    url: http://messaging-service:8005
+    tags:
+      - tts
+      - messaging
+    routes:
+      - name: messaging-routes
+        paths:
+          - /api/messages
+          - /api/conversations
+          - /api/chat
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+
+  # ---------------------------------------------------------------------------
+  # HELPDESK SERVICE (Port 8000)
+  # ---------------------------------------------------------------------------
+  - name: helpdesk-service
+    url: http://helpdesk-backend:8000
+    tags:
+      - hdts
+      - helpdesk
+    routes:
+      - name: helpdesk-routes
+        paths:
+          - /api/helpdesk
+          - /api/hdts
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+
+# =============================================================================
+# UPSTREAMS (Load Balancing - for future scaling)
+# =============================================================================
+upstreams:
+  - name: auth-upstream
+    targets:
+      - target: auth-service:8003
+        weight: 100
+
+  - name: workflow-upstream
+    targets:
+      - target: workflow-api:8002
+        weight: 100
+
+  - name: notification-upstream
+    targets:
+      - target: notification-service:8006
+        weight: 100
+
+  - name: messaging-upstream
+    targets:
+      - target: messaging-service:8005
+        weight: 100
+
+  - name: helpdesk-upstream
+    targets:
+      - target: helpdesk-backend:8000
+        weight: 100

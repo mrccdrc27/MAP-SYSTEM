@@ -1,0 +1,204 @@
+# Kong Local Development Configuration
+# Simplified for local development without Docker service discovery
+#
+# Usage: 
+#   kong start -c kong.conf --vv
+#   Set: KONG_DATABASE=off KONG_DECLARATIVE_CONFIG=kong.local.yml
+
+_format_version: "3.0"
+_transform: true
+
+# =============================================================================
+# CONSUMERS
+# =============================================================================
+consumers:
+  - username: auth-service
+    custom_id: auth-service-001
+
+# =============================================================================
+# JWT CREDENTIALS  
+# =============================================================================
+jwt_secrets:
+  - consumer: auth-service
+    key: tts-jwt-issuer
+    secret: "signing-key-1234"
+    algorithm: HS256
+
+# =============================================================================
+# PLUGINS (Global)
+# =============================================================================
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:1000"
+        - "http://127.0.0.1:1000"
+        - "http://localhost:5173"
+        - "http://127.0.0.1:5173"
+        - "http://localhost:3000"
+        - "http://127.0.0.1:3000"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Content-Type
+        - Authorization
+        - X-API-Key
+        - X-Requested-With
+      credentials: true
+      max_age: 3600
+
+  - name: rate-limiting
+    config:
+      minute: 200
+      policy: local
+
+# =============================================================================
+# SERVICES & ROUTES (localhost URLs for local development)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # AUTH SERVICE (Port 8003)
+  # ---------------------------------------------------------------------------
+  - name: auth-service-public
+    url: http://localhost:8003
+    routes:
+      - name: auth-login
+        paths:
+          - /api/auth/login
+          - /api/auth/token
+          - /api/auth/token/refresh
+          - /api/auth/register
+          - /api/auth/password-reset
+          - /api/auth/password-reset-confirm
+          - /api/auth/verify-email
+        strip_path: false
+
+  - name: auth-service-protected
+    url: http://localhost:8003
+    routes:
+      - name: auth-protected
+        paths:
+          - /api/auth
+          - /api/users
+          - /api/roles
+          - /api/systems
+          - /api/tts
+          - /api/hdts
+        strip_path: false
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW API SERVICE (Port 8002)
+  # ---------------------------------------------------------------------------
+  - name: workflow-api-service
+    url: http://localhost:8002
+    routes:
+      - name: workflow-routes
+        paths:
+          - /api/workflow
+          - /api/tickets
+          - /api/departments
+          - /api/categories
+          - /api/priorities
+          - /api/statuses
+          - /workflow
+        strip_path: false
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION SERVICE (Port 8006)
+  # ---------------------------------------------------------------------------
+  - name: notification-websocket
+    url: http://localhost:8006
+    routes:
+      - name: notification-ws
+        paths:
+          - /ws/notifications
+        strip_path: false
+        protocols:
+          - http
+          - https
+          - ws
+          - wss
+
+  - name: notification-api-service
+    url: http://localhost:8006
+    routes:
+      - name: notification-routes
+        paths:
+          - /api/notifications
+        strip_path: false
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  # ---------------------------------------------------------------------------
+  # MESSAGING SERVICE (Port 8005)
+  # ---------------------------------------------------------------------------
+  - name: messaging-websocket
+    url: http://localhost:8005
+    routes:
+      - name: messaging-ws
+        paths:
+          - /ws/chat
+          - /ws/messages
+        strip_path: false
+        protocols:
+          - http
+          - https
+          - ws
+          - wss
+
+  - name: messaging-api-service
+    url: http://localhost:8005
+    routes:
+      - name: messaging-routes
+        paths:
+          - /api/messages
+          - /api/conversations
+          - /api/chat
+        strip_path: false
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  # ---------------------------------------------------------------------------
+  # HELPDESK SERVICE (Port 8000)
+  # ---------------------------------------------------------------------------
+  - name: helpdesk-service
+    url: http://localhost:8000
+    routes:
+      - name: helpdesk-routes
+        paths:
+          - /api/helpdesk
+          - /api/hdts
+        strip_path: false
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp

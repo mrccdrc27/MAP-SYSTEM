@@ -1,0 +1,343 @@
+.profilePage {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+.header h2 {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loadingSpinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.profileContent {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 30px;
+}
+
+.profileLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profileCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+.profileImageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileImageContainer {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.profileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profileImageOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.profileImageContainer:hover .profileImageOverlay {
+  opacity: 1;
+}
+
+.unsavedWarning {
+  color: #f59e0b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.profileInfo {
+  text-align: center;
+  width: 100%;
+}
+
+.profileInfo h3 {
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+}
+
+.profileInfoContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.profileInfoContainer:last-child {
+  border-bottom: none;
+}
+
+.profileInfoContainer p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.profileInfoContainer span {
+  font-size: 14px;
+  color: #333;
+}
+
+.fileInput {
+  display: none;
+}
+
+.profileRight {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profileSettingsCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+.profileSettingsCard h2 {
+  font-size: 1.125rem;
+  color: #333;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.formGroup input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #d3d3d3;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.formGroup input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.formGroup small {
+  font-size: 12px;
+  color: #666;
+}
+
+.formGroupCheckbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.formGroupCheckbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
+}
+
+.editBtn,
+.saveBtn,
+.cancelBtn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s;
+}
+
+.editBtn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.editBtn:hover {
+  background-color: #2563eb;
+}
+
+.saveBtn {
+  background-color: #10b981;
+  color: white;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.saveBtn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  background-color: #6b7280;
+  color: white;
+}
+
+.cancelBtn:hover {
+  background-color: #4b5563;
+}
+
+.logoutBtn {
+  background-color: #ef4444;
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s;
+}
+
+.logoutBtn:hover {
+  background-color: #dc2626;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* 2FA Badges */
+.badge2faEnabled {
+  background-color: #d4edda;
+  color: #155724;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.badge2faDisabled {
+  background-color: #f8d7da;
+  color: #721c24;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .profileContent {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

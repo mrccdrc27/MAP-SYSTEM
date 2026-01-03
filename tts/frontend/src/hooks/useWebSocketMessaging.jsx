@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getAccessToken } from '../api/TokenUtils';
 
 // Use environment config for WebSocket
 const WEBSOCKET_BASE = import.meta.env.VITE_MESSAGING_WS || 'ws://localhost:8005';
@@ -33,8 +34,11 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
       socketRef.current.close();
     }
 
-    const wsUrl = `${WEBSOCKET_BASE}/ws/tickets/${ticketId}/`;
-    console.log('[useWebSocketMessaging] Connecting to:', wsUrl);
+    // Get token for WebSocket authentication (Kong gateway support)
+    const token = getAccessToken();
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const wsUrl = `${WEBSOCKET_BASE}/ws/tickets/${ticketId}/${tokenParam}`;
+    console.log('[useWebSocketMessaging] Connecting to:', wsUrl.replace(/token=.*/, 'token=***'));
 
     try {
       socketRef.current = new WebSocket(wsUrl);

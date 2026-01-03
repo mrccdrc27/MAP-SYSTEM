@@ -1,0 +1,18 @@
+fix auth frontend:
+
+hook.js:608 
+ <Router basename="/app"> is not able to match the URL "/" because it does not start with the basename, so the <Router> won't render anything. Error Component Stack
+    at AuthProvider (AuthContext.jsx:15:32)
+    at App (<anonymous>)
+hook.js:600 
+ <Router basename="/app"> is not able to match the URL "/" because it does not start with the basename, so the <Router> won't render anything. Error Component Stack
+    at AuthProvider (AuthContext.jsx:15:32)
+    at App (<anonymous>)
+hook.js:608 
+ ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. Error Component Stack
+    at AuthProvider (AuthContext.jsx:15:32)
+    at App (<anonymous>)
+hook.js:608 
+ ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. Error Component Stack
+    at AuthProvider (AuthContext.jsx:15:32)
+    at App (<anonymous>)

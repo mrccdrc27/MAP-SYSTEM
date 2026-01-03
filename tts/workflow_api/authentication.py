@@ -15,28 +15,47 @@ class JWTCookieAuthentication(BaseAuthentication):
     JWT authentication via cookies OR Authorization header with system-level authorization.
     Supports both cookie-based auth (for browser requests with credentials) and 
     header-based auth (for API requests with Bearer token).
+    
+    Gateway Mode (KONG_TRUSTED=True):
+        - Decodes JWT without signature verification (Kong already verified at gateway)
+        - Better performance, no redundant crypto operations
+    
+    Direct Mode (KONG_TRUSTED=False or unset):
+        - Full JWT signature verification
+        - Use for direct service access or local development without Kong
     """
     
     def authenticate(self, request):
-        # Try to get JWT token from cookies first
-        token = request.COOKIES.get('access_token')
-        
-        # If not in cookies, try Authorization header (Bearer token)
-        if not token:
-            auth_header = request.headers.get('Authorization', '')
-            if auth_header.startswith('Bearer '):
-                token = auth_header[7:]  # Remove 'Bearer ' prefix
+        # Priority 1: Authorization header (Bearer token)
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]  # Remove 'Bearer ' prefix
+        else:
+            # Priority 2: Cookie (backward compatibility for browser requests)
+            token = request.COOKIES.get('access_token')
         
         if not token:
             return None
             
         try:
-            # Decode JWT token
-            payload = jwt.decode(
-                token, 
-                settings.JWT_SIGNING_KEY, 
-                algorithms=['HS256']
-            )
+            # Check if running behind Kong (gateway-trusted mode)
+            kong_trusted = getattr(settings, 'KONG_TRUSTED', False)
+            
+            if kong_trusted:
+                # Kong already verified signature - just decode for user context
+                payload = jwt.decode(
+                    token,
+                    options={"verify_signature": False}
+                )
+                logger.debug("Token decoded (Kong trusted, signature verification skipped)")
+            else:
+                # Full verification for direct access
+                payload = jwt.decode(
+                    token, 
+                    settings.JWT_SIGNING_KEY, 
+                    algorithms=['HS256']
+                )
+                logger.debug("Token decoded with full signature verification")
             
             # Extract user information
             user_id = payload.get('user_id')

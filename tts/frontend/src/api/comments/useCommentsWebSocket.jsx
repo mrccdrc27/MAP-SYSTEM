@@ -1,5 +1,6 @@
 // src/api/useCommentsWebSocket.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getAccessToken } from '../TokenUtils';
 
 // Define the API endpoint as an environment variable to avoid hardcoding
 const MESSAGING_API = import.meta.env.VITE_MESSAGING_API || 'http://localhost:8005';
@@ -317,7 +318,10 @@ export const useCommentsWebSocket = (ticketId, onCommentsUpdate) => {
       wsRef.current.close();
     }
 
-    const wsUrl = `${MESSAGING_API.replace('http', 'ws')}/ws/comments/${ticketId}/`;
+    // Get token for WebSocket authentication (Kong gateway support)
+    const token = getAccessToken();
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const wsUrl = `${MESSAGING_API.replace('http', 'ws')}/ws/comments/${ticketId}/${tokenParam}`;
     
     try {
       wsRef.current = new WebSocket(wsUrl);

@@ -381,12 +381,20 @@ class CookieLogoutView(generics.GenericAPIView):
     serializer_class = LogoutSerializer
     
     def post(self, request, *args, **kwargs):
+        from django.contrib.auth import logout as django_logout
+        
+        # Also logout from Django session
+        django_logout(request)
+        
         response_data = {'message': 'Logout successful'}
         response = Response(response_data, status=status.HTTP_200_OK)
         
         # Clear both access and refresh token cookies
         response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
         response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
+        
+        # Also clear sessionid cookie just to be sure
+        response.delete_cookie('sessionid', path='/', domain=None, samesite='Lax')
         
         return response
 
