@@ -6,8 +6,7 @@ import { updateProfile } from "../../API/authAPI";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ManageProfile({ onClose }) {
-  const { user, updateUserContext } = useAuth(); // Get user and the function to update the context
-
+  const { user, logout, getBmsRole, updateUserContext } = useAuth(); // Get user and the function to update the context
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",

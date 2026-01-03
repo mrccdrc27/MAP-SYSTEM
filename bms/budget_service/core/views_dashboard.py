@@ -26,11 +26,27 @@ from django.views.decorators.cache import cache_page
 from .views_utils import get_user_bms_role
 
 
+# --- MODIFICATION START: Robust Helper with Token Inspection ---
+def get_user_department_id(user):
+    # 1. Check ID
+    if getattr(user, 'department_id', None):
+        return user.department_id
+
+    # 2. Check Name from Token/User Object
+    dept_name = getattr(user, 'department_name', None) or getattr(user, 'department', None)
+    
+    # 3. Direct DB Lookup (No dictionary map needed anymore!)
+    if dept_name:
+        dept = Department.objects.filter(name__iexact=dept_name).first()
+        return dept.id if dept else None
+    
+    return None
+
+
 class DepartmentBudgetView(views.APIView):
     """
     API endpoint that returns department budget allocation information
     """
-
     @extend_schema(
         tags=["Dashboard"],
         summary="Get department budget allocations",
@@ -131,7 +147,6 @@ def get_period_divisor(period):
     tags=["Dashboard"],
     summary="Get dashboard budget summary",
     description="Returns total, spent, and remaining budget. Can be filtered by period.",
-    # MODIFICATION START: Add the period parameter to the schema
     parameters=[
         OpenApiParameter(
             name="period",
@@ -141,7 +156,6 @@ def get_period_divisor(period):
             enum=['monthly', 'quarterly', 'yearly']
         )
     ],
-    # MODIFICATION END
     responses={200: DashboardBudgetSummarySerializer},
     examples=[
         OpenApiExample(
@@ -163,7 +177,6 @@ def get_period_divisor(period):
 @api_view(['GET'])
 @permission_classes([IsBMSUser])
 def get_dashboard_budget_summary(request):
-    # MODIFICATION START
     user = request.user
     bms_role = get_user_bms_role(user)
 
@@ -204,7 +217,8 @@ def get_dashboard_budget_summary(request):
 
     # Data Isolation
     if bms_role == 'GENERAL_USER':
-        department_id = getattr(user, 'department_id', None)
+        # MODIFIED: Pass request to helper
+        department_id = get_user_department_id(user, request) 
         if department_id:
             allocations_qs = allocations_qs.filter(department_id=department_id)
         else:
@@ -653,7 +667,8 @@ def get_project_status_list(request):
 
     # FIX: Finance Head gets global view. General User gets restricted view.
     if bms_role == 'GENERAL_USER':
-        department_id = getattr(user, 'department_id', None)
+        # MODIFIED: Pass request to helper
+        department_id = get_user_department_id(user, request)
         if department_id:
             allocations_qs = allocations_qs.filter(department_id=department_id)
         else:
@@ -746,7 +761,8 @@ def get_department_budget_status(request):
 
     # DATA ISOLATION
     if bms_role == 'GENERAL_USER':
-        department_id = getattr(user, 'department_id', None)
+        # MODIFIED: Pass request to helper
+        department_id = get_user_department_id(user, request)
         if department_id:
             departments_qs = departments_qs.filter(id=department_id)
         else:
@@ -874,15 +890,15 @@ def overall_monthly_budget_actual(request):
     # --- MODIFICATION START ---
     # Apply data isolation to budget and expense queries
     bms_role = get_user_bms_role(user)
-
     budget_query = BudgetAllocation.objects.filter(
         fiscal_year=fiscal_year, is_active=True)
     expense_query_base = Expense.objects.filter(
         status='APPROVED', budget_allocation__fiscal_year=fiscal_year)
 
-    # FIX: Restrict General Users, allow Finance/Admin global
+     # FIX: Restrict General Users, allow Finance/Admin global
     if bms_role == 'GENERAL_USER':
-        department_id = getattr(user, 'department_id', None)
+        # MODIFIED: Pass request to helper
+        department_id = get_user_department_id(user, request)
         if department_id:
             budget_query = budget_query.filter(department_id=department_id)
             expense_query_base = expense_query_base.filter(
@@ -1020,27 +1036,15 @@ class ProjectDetailView(generics.RetrieveAPIView):
 
         # FIX: General User gets department view
         if bms_role == 'GENERAL_USER':
-            department_id = getattr(user, 'department_id', None)
+            # MODIFIED: Pass request to helper
+            department_id = get_user_department_id(user, self.request)
             if department_id:
                 return Project.objects.filter(department_id=department_id)
 
         return Project.objects.none()
     # --- MODIFICATION END ---
 
-    """
-Function: get_budget_forecast()
-Complete Rework of Forecasting Logic: The function was entirely refactored to replace the incorrect, constant-value forecast with a proper cumulative calculation.
-Old Behavior: Calculated a single average monthly expense and returned that same value for all 12 months.
-New Behavior:
-Calculates the total spending from previous months (total_historical_spent).
-Calculates the average_monthly_expense based on that historical data.
-For the current and future months, it now calculates a cumulative forecast using the formula:
-Forecast = Total Historical Spend + (Average Monthly Expense * Number of Future Months)
-This results in a correctly ascending forecast line on the chart, as intended.
-Added Robustness: The function now includes checks to handle cases where there is no historical spending data, preventing potential errors and returning an empty list [] gracefully.
-    """
-
-
+# ... (Forecast views remain unchanged) ...
 @extend_schema(
     tags=["Dashboard", "Forecasting"],
     summary="Get Latest Budget Forecast",

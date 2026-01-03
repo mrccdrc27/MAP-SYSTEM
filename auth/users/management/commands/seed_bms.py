@@ -18,7 +18,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             # 1. Ensure BMS System exists
             bms_system, created = System.objects.get_or_create(
-                slug='bms',  # Use slug for lookup
+                slug='bms',
                 defaults={'name': 'Budget Management System'}
             )
 
@@ -35,36 +35,44 @@ class Command(BaseCommand):
                 roles_map[r_name] = role
 
             # 3. Create Users
-            # Mapping old IDs to New Model Choices
-            # Choices: 'IT Department', 'Asset Department', 'Budget Department'
+            # MODIFIED: EXACT MATCH to BMS 'controlled_seeder.py' names
             dept_map = {
-                1: 'Budget Department', # Finance -> Budget
-                2: 'Asset Department',  # HR -> Asset (Closest match or leave None)
-                3: 'IT Department',     # IT -> IT
-                4: 'Asset Department',  # Ops -> Asset
-                5: 'Budget Department'  # Mkt -> Budget
+                1: 'Finance Department',                    # Matches FIN
+                2: 'Human Resources',                       # Matches HR
+                3: 'IT Application & Data',                 # Matches IT
+                4: 'Operations Department',                 # Matches OPS (Fixes ops_user)
+                5: 'Marketing / Marketing Communications'   # Matches MKT
             }
 
             users_data = [
+                # Admin sees everything
                 {'email': 'admin@example.com', 'username': 'admin_auth', 'password': 'Password123!', 'first_name': 'AuthAdmin', 'last_name': 'User', 'role_code': 'ADMIN', 'dept_id': 1},
+                
+                # Finance Head sees everything
                 {'email': 'finance_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!', 'first_name': 'Finance', 'last_name': 'Head', 'role_code': 'FINANCE_HEAD', 'dept_id': 1},
-                {'email': 'it_user@example.com', 'username': 'it_user_auth', 'password': 'Password123!', 'first_name': 'IT', 'last_name': 'Support', 'role_code': 'ADMIN', 'dept_id': 3},
+                
+                # IT User 
+                {'email': 'it_user@example.com', 'username': 'it_user_auth', 'password': 'Password123!', 'first_name': 'IT', 'last_name': 'Support', 'role_code': 'GENERAL_USER', 'dept_id': 3},
+                
+                # Ops User (GENERAL_USER = Restricted to Department)
                 {'email': 'ops_user@example.com', 'username': 'ops_user_auth', 'password': 'password123', 'first_name': 'Operations', 'last_name': 'Staff', 'role_code': 'GENERAL_USER', 'dept_id': 4},
+                
+                # Extra Admin
                 {'email': 'adibentulan@gmail.com', 'username': 'adi123', 'password': 'password123', 'first_name': 'Eldrin', 'last_name': 'Adi', 'role_code': 'ADMIN', 'dept_id': 3},
             ]
 
             for u_data in users_data:
-                # Create User (New Model Fields)
+                # Create User
                 user, created = User.objects.update_or_create(
                     email=u_data['email'].lower(),
                     defaults={
                         'username': u_data['username'],
                         'first_name': u_data['first_name'],
                         'last_name': u_data['last_name'],
-                        'department': dept_map.get(u_data['dept_id']),
+                        'department': dept_map.get(u_data['dept_id']), # Now saves "Operations Department"
                         'is_active': True,
                         'is_staff': u_data['role_code'] in ['ADMIN', 'FINANCE_HEAD'],
-                        'status': 'Approved' # Set status to Approved so they can login
+                        'status': 'Approved'
                     }
                 )
                 user.set_password(u_data['password'])

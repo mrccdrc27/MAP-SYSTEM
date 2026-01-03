@@ -556,7 +556,7 @@ const ProposalHistory = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, getBmsRole} = useAuth();
 
   // Data State
   const [history, setHistory] = useState([]);
@@ -1021,18 +1021,34 @@ const ProposalHistory = () => {
     XLSX.writeFile(wb, filename);
   };
 
+  // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
   const getUserRole = () => {
+    // Debug logs removed for production
     if (!user) return "User";
-    if (user.roles?.bms) return user.roles.bms;
+
+    // 1. Try to get the BMS specific role using the Context helper
+    if (getBmsRole) {
+      const bmsRole = getBmsRole();
+      if (bmsRole) return bmsRole;
+    }
+
+    // 2. Fallback: Check direct role property (Legacy)
+    if (user.role && typeof user.role === 'string') return user.role;
+
+    // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
+    if (user.is_staff) return "STAFF";
+
     return "User";
   };
 
+  const userRole = getUserRole();
+
   const userProfile = {
     name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "User"
       : "User",
-    role: getUserRole(),
+    role: userRole,
     avatar:
       user?.profile_picture ||
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",

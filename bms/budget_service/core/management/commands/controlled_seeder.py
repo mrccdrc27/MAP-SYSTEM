@@ -5,12 +5,16 @@ from datetime import datetime
 import random
 import calendar
 from decimal import Decimal
+from django.contrib.auth import get_user_model # Standard Django way
 
 # Import models
 from core.models import (
     Department, AccountType, Account, FiscalYear, BudgetProposal, BudgetProposalItem,
     BudgetAllocation, ExpenseCategory, Expense, Project, ProjectFiscalYear, ProposalHistory
 )
+
+# Get the active User model (whether it's custom or default)
+User = get_user_model()
 
 # ... (SIMULATED_USERS, DEPARTMENTS_CONFIG, CATEGORY_TREE - KEEP SAME) ...
 SIMULATED_USERS = [
@@ -146,6 +150,10 @@ class Command(BaseCommand):
 
                 fiscal_years = self.seed_fiscal_years()
                 departments = self.seed_departments()
+                
+                # NEW: Seed Users
+                self.seed_users(departments) 
+                
                 accounts = self.seed_accounts()
 
                 categories = self.seed_categories(departments)
@@ -169,6 +177,44 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'Seeding Failed: {str(e)}'))
             import traceback
             traceback.print_exc()
+
+    # --- MODIFIED METHOD ---
+    def seed_users(self, departments):
+        self.stdout.write("Seeding Local BMS Users...")
+        
+        dept_name_map = {d['code']: d['name'] for d in DEPARTMENTS_CONFIG}
+
+        # Introspect the User model to see which fields are valid
+        # This prevents crashes if the custom model isn't active
+        valid_fields = {f.name for f in User._meta.get_fields()}
+
+        for u_data in SIMULATED_USERS:
+            dept_code = u_data['dept']
+            dept_name = dept_name_map.get(dept_code)
+            
+            defaults = {
+                'first_name': u_data['full_name'].split(' ')[0],
+                'last_name': ' '.join(u_data['full_name'].split(' ')[1:]),
+                'is_active': True,
+                'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD']
+            }
+            
+            # Only add these fields if the User model actually has them
+            if 'role' in valid_fields:
+                defaults['role'] = u_data['role']
+            
+            if 'department_name' in valid_fields:
+                defaults['department_name'] = dept_name
+            
+            # Create user
+            user, created = User.objects.update_or_create(
+                username=u_data['username'],
+                defaults=defaults
+            )
+            
+            if created:
+                self.stdout.write(f"  Created local user: {u_data['username']}")
+    # ------------------
 
     def seed_fiscal_years(self):
         self.stdout.write("Seeding Fiscal Years (2023-2026)...")

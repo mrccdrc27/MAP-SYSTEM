@@ -403,7 +403,7 @@ const Pagination = ({
 };
 
 const ExpenseTracking = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, getBmsRole } = useAuth();
   const navigate = useNavigate();
 
   // --- STATE ---
@@ -509,15 +509,21 @@ const ExpenseTracking = () => {
   // Date/Time
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
   const getUserRole = () => {
+    // Debug logs removed for production
     if (!user) return "User";
 
-    // Check for role in different possible locations
-    if (user.roles?.bms) return user.roles.bms;
-    if (user.role_display) return user.role_display;
-    if (user.role) return user.role;
+    // 1. Try to get the BMS specific role using the Context helper
+    if (getBmsRole) {
+      const bmsRole = getBmsRole();
+      if (bmsRole) return bmsRole;
+    }
 
-    // Default role names based on user type
+    // 2. Fallback: Check direct role property (Legacy)
+    if (user.role && typeof user.role === 'string') return user.role;
+
+    // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
     if (user.is_staff) return "STAFF";
 

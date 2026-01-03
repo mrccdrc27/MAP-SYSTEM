@@ -45,17 +45,39 @@ class AuthenticatedUser:
         self.bms_roles = user_data.get('bms_roles', [])
         self.is_authenticated = True
         
-        # Additional fields that may be in the token
-        self.department_id = user_data.get('department_id')
-        self.department_name = user_data.get('department_name')
+        # ✅ FIXED - Extract department from token
+        self.department = user_data.get('department') or user_data.get('department_name')
+        self.department_name = user_data.get('department_name') or user_data.get('department')
+        self.department_id = user_data.get('department_id') or self._resolve_department_id()
         
         # Standard Django properties
         self.is_active = True
         self.is_staff = False
         self.is_superuser = False
         
-        # Build roles_dict for backward compatibility with code that uses roles.get('bms')
+        # Build roles_dict for backward compatibility
         self._roles_dict = self._build_roles_dict()
+    
+    def _resolve_department_id(self):
+        """Resolve BMS department ID from department name"""
+        if not self.department_name:
+            return None
+        
+        from core.models import Department
+        
+        # Try exact match
+        dept = Department.objects.filter(name__iexact=self.department_name).first()
+        
+        # Fallback to contains
+        if not dept:
+            dept = Department.objects.filter(name__icontains=self.department_name).first()
+        
+        if dept:
+            print(f"✅ Resolved department '{self.department_name}' to ID {dept.id}")
+            return dept.id
+        
+        print(f"⚠️ Could not resolve department '{self.department_name}' in BMS database")
+        return None
     
     def _build_roles_dict(self):
         """
@@ -162,7 +184,6 @@ class JWTCookieAuthentication(BaseAuthentication):
             return None
             
         try:
-            # Decode JWT token using the shared signing key
             payload = jwt.decode(
                 token, 
                 settings.JWT_SIGNING_KEY, 
@@ -179,7 +200,7 @@ class JWTCookieAuthentication(BaseAuthentication):
             if not user_id:
                 raise AuthenticationFailed('Invalid token: missing user_id')
             
-            # Create a user object to store in request
+            # Create user data object
             user_data = {
                 'id': user_id,
                 'user_id': user_id,
@@ -188,9 +209,11 @@ class JWTCookieAuthentication(BaseAuthentication):
                 'full_name': full_name,
                 'roles': roles,
                 'bms_roles': [self._extract_role_if_system(role, 'bms') for role in roles 
-                             if self._extract_role_if_system(role, 'bms')],
+                            if self._extract_role_if_system(role, 'bms')],
+                # ✅ ADD THESE - Extract department fields from token
+                'department': payload.get('department'),
+                'department_name': payload.get('department_name') or payload.get('department'),
                 'department_id': payload.get('department_id'),
-                'department_name': payload.get('department_name'),
             }
             
             return (AuthenticatedUser(user_data), token)

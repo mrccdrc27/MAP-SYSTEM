@@ -179,6 +179,7 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
+
 class MyTokenObtainPairSerializer(OriginalTokenObtainPairSerializer):
     """
     Custom token serializer to add custom claims like role, department info.
@@ -196,10 +197,17 @@ class MyTokenObtainPairSerializer(OriginalTokenObtainPairSerializer):
         token['department_id'] = user.department_id
         token['department_name'] = user.department_name
 
+        
+        token['full_name'] = f"{user.first_name} {user.last_name}".strip()
+        
+        
+        if user.department_name:
+            token['department'] = user.department_name
+
         # CRITICAL: Budget service expects roles in nested dictionary
         # where each key is a service slug (e.g., 'bms' for Budget Management System)
         token['roles'] = {
-            'bms': user.role  # Maps to 'ADMIN', 'FINANCE_HEAD', etc.
+            'bms': user.role  # Maps to 'ADMIN', 'FINANCE_HEAD', etcc
         }
 
         return token
