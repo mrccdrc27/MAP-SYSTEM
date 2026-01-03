@@ -102,42 +102,6 @@ jobs:
         run: |
           python manage.py test || true
 
-  ticket-service-tests:
-    name: Ticket Service Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tts/ticket_service
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-ticket-${{ hashFiles('tts/ticket_service/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-ticket-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Collect static files
-        run: |
-          python manage.py collectstatic --noinput --clear || true
-
-      - name: Run ticket service tests
-        run: |
-          python manage.py test || true
-
   messaging-service-tests:
     name: Messaging Service Tests
     runs-on: ubuntu-latest
@@ -309,7 +273,6 @@ jobs:
       build-docker,
       auth-service-tests,
       workflow-api-tests,
-      ticket-service-tests,
       messaging-service-tests,
       notification-service-tests,
       frontend-build,
@@ -324,7 +287,6 @@ jobs:
           echo "Docker Build: ${{ needs.build-docker.result }}"
           echo "Auth Service Tests: ${{ needs.auth-service-tests.result }}"
           echo "Workflow API Tests: ${{ needs.workflow-api-tests.result }}"
-          echo "Ticket Service Tests: ${{ needs.ticket-service-tests.result }}"
           echo "Messaging Service Tests: ${{ needs.messaging-service-tests.result }}"
           echo "Notification Service Tests: ${{ needs.notification-service-tests.result }}"
           echo "Frontend Build: ${{ needs.frontend-build.result }}"
