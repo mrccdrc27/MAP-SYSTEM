@@ -2,19 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaPaperclip, FaDownload, FaFile, FaCircle } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
-import styles from './CoordinatorOwnedTicketDetail.module.css';
+import styles from './AdminAssignedTicketDetail.module.css';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import { useAuth } from '../../../context/AuthContext';
-import { mockOwnedTickets, coordinatorTicketActions, coordinatorMessages, requesterMessages as mockRequesterMessages } from '../../../mock-data/ownedTickets';
 import Breadcrumb from '../../../shared/components/Breadcrumb';
 import Skeleton from '../../../shared/components/Skeleton/Skeleton';
 import { API_CONFIG } from '../../../config/environment';
 import { useMessaging } from '../../../shared/hooks/messaging';
-import EscalateTicketModal from '../../components/modals/EscalateTicketModal';
 import TransferTicketModal from '../../components/modals/TransferTicketModal';
 import 'react-toastify/dist/ReactToastify.css';
 
-const CoordinatorOwnedTicketDetail = () => {
+const AdminAssignedTicketDetail = () => {
   const { ticketNumber } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -42,12 +40,11 @@ const CoordinatorOwnedTicketDetail = () => {
   const [actionLog, setActionLog] = useState([]);
 
   // Modal states for ticket owner management
-  const [showEscalateModal, setShowEscalateModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
   // Real-time messaging with TTS agents
   const userDisplayName = `${currentUser?.first_name || ''} ${currentUser?.last_name || ''}`.trim() || 
-    currentUser?.username || currentUser?.email || 'Coordinator';
+    currentUser?.username || currentUser?.email || 'Admin';
   
   const {
     messages: agentMessages,
@@ -59,11 +56,11 @@ const CoordinatorOwnedTicketDetail = () => {
     stopTyping,
     fetchMessages: refreshMessages,
   } = useMessaging(
-    ticketNumber, // Use ticket number as the messaging ticket ID
-    userDisplayName, // Use display name for typing indicators
+    ticketNumber,
+    userDisplayName,
     {
       name: userDisplayName,
-      role: 'HDTS: Ticket Coordinator',
+      role: 'HDTS: System Admin',
       first_name: currentUser?.first_name,
       last_name: currentUser?.last_name,
     }
@@ -83,7 +80,6 @@ const CoordinatorOwnedTicketDetail = () => {
         let taskData = null;
         let helpdeskData = null;
         
-        // Fetch both task data from workflow_api AND full ticket from helpdesk in parallel
         try {
           const [taskResponse, helpdeskResponse] = await Promise.all([
             backendTicketService.getOwnedTicketByNumber(ticketNumber).catch(err => {
@@ -99,26 +95,15 @@ const CoordinatorOwnedTicketDetail = () => {
           taskData = taskResponse;
           helpdeskData = helpdeskResponse;
           
-          // Store helpdesk data separately for attachments, comments, etc.
           if (helpdeskData) {
             setHelpdeskTicket(helpdeskData);
           }
         } catch (err) {
-          console.warn('Backend unavailable, using mock data:', err);
-          // Fallback to mock data
-          const found = mockOwnedTickets.find(t => {
-            const tNum = t.ticket_number || t.ticket_id || t.ticketNumber || t.id;
-            return String(tNum) === String(ticketNumber);
-          });
-          if (found) {
-            taskData = found;
-          }
+          console.warn('Backend unavailable:', err);
         }
 
         if (taskData || helpdeskData) {
-          // Merge task data (workflow info) with helpdesk data (full ticket details)
           const mergedData = {
-            // Task/workflow info (from workflow_api)
             taskId: taskData?.task_id,
             ticketOwnerId: taskData?.ticket_owner_id,
             ticketOwnerName: taskData?.ticket_owner_name,
@@ -129,10 +114,12 @@ const CoordinatorOwnedTicketDetail = () => {
             targetResolution: taskData?.target_resolution,
             assignedUsers: taskData?.assigned_users || [],
             taskStatus: taskData?.status,
+            is_owner: taskData?.is_owner,
+            is_admin: taskData?.is_admin,
             
-            // Full ticket details (from helpdesk - prefer this data)
             id: helpdeskData?.ticket_number || taskData?.ticket_number || ticketNumber,
             ticketId: helpdeskData?.id || taskData?.ticket_id,
+            ticketNumber: taskData?.ticket_number || helpdeskData?.ticket_number || ticketNumber,
             subject: helpdeskData?.subject || taskData?.ticket_subject || taskData?.subject || 'N/A',
             description: helpdeskData?.description || taskData?.ticket_description || taskData?.description || '',
             status: helpdeskData?.status || taskData?.status || 'pending',
@@ -143,7 +130,6 @@ const CoordinatorOwnedTicketDetail = () => {
             createdDate: helpdeskData?.submit_date || taskData?.created_at || taskData?.submit_date || new Date().toISOString(),
             updateDate: helpdeskData?.update_date,
             
-            // Employee/requester info (from helpdesk)
             employee: helpdeskData?.employee || null,
             requester: helpdeskData?.employee 
               ? `${helpdeskData.employee.first_name || ''} ${helpdeskData.employee.last_name || ''}`.trim() || 'N/A'
@@ -151,35 +137,13 @@ const CoordinatorOwnedTicketDetail = () => {
             requesterEmail: helpdeskData?.employee?.email || 'N/A',
             requesterDepartment: helpdeskData?.employee?.department || helpdeskData?.department || 'N/A',
             
-            // Assigned to (from helpdesk)
             assignedTo: helpdeskData?.assigned_to 
               ? `${helpdeskData.assigned_to.first_name || ''} ${helpdeskData.assigned_to.last_name || ''}`.trim()
               : taskData?.ticket_owner_name || taskData?.assigned_to || 'N/A',
             
-            // Attachments (from helpdesk)
             attachments: helpdeskData?.attachments || [],
-            
-            // Comments (from helpdesk)
             comments: helpdeskData?.comments || [],
             
-            // Additional ticket fields (from helpdesk)
-            assetName: helpdeskData?.asset_name,
-            serialNumber: helpdeskData?.serial_number,
-            location: helpdeskData?.location,
-            expectedReturnDate: helpdeskData?.expected_return_date,
-            issueType: helpdeskData?.issue_type,
-            otherIssue: helpdeskData?.other_issue,
-            performanceStartDate: helpdeskData?.performance_start_date,
-            performanceEndDate: helpdeskData?.performance_end_date,
-            costItems: helpdeskData?.cost_items,
-            requestedBudget: helpdeskData?.requested_budget,
-            approvedBy: helpdeskData?.approved_by,
-            rejectedBy: helpdeskData?.rejected_by,
-            dateCompleted: helpdeskData?.date_completed,
-            csatRating: helpdeskData?.csat_rating,
-            dynamicData: helpdeskData?.dynamic_data,
-            
-            // Spread any additional data
             ...taskData
           };
           
@@ -187,7 +151,7 @@ const CoordinatorOwnedTicketDetail = () => {
           setTicketStatus(mergedData.priority || 'LOW');
           setLifecycle(mergedData.currentStepName || 'Triage Ticket');
 
-          // Use real comments from helpdesk if available
+          // Initialize requester messages
           if (helpdeskData?.comments && helpdeskData.comments.length > 0) {
             const formattedComments = helpdeskData.comments.map(comment => ({
               id: comment.id,
@@ -202,7 +166,6 @@ const CoordinatorOwnedTicketDetail = () => {
               isOwn: comment.user?.id === currentUser?.id
             }));
             
-            // Public comments go to requester messages (internal messages now use real-time WebSocket)
             const publicComments = formattedComments.filter(c => !c.isInternal);
             
             setRequesterMessages(publicComments.length > 0 ? publicComments : [{
@@ -215,7 +178,6 @@ const CoordinatorOwnedTicketDetail = () => {
               isOwn: false
             }]);
           } else {
-            // Initialize requester messages only (agent messages use real-time WebSocket)
             setRequesterMessages([{
               id: '1',
               sender: mergedData.requester || 'Requester',
@@ -227,7 +189,7 @@ const CoordinatorOwnedTicketDetail = () => {
             }]);
           }
 
-          // Initialize action log with task history if available
+          // Initialize action log
           const logEntries = [];
           if (mergedData.assignedUsers && mergedData.assignedUsers.length > 0) {
             mergedData.assignedUsers.forEach((user, index) => {
@@ -245,95 +207,52 @@ const CoordinatorOwnedTicketDetail = () => {
           if (logEntries.length === 0) {
             logEntries.push({
               id: '1',
-              user: mergedData.ticketOwnerName || currentUser?.first_name || 'You',
+              user: mergedData.ticketOwnerName || 'Coordinator',
               role: mergedData.ticketOwnerRole || 'Coordinator',
               action: 'Assigned as Ticket Owner',
-              timestamp: new Date(mergedData.createdDate || new Date()).toLocaleDateString(),
+              timestamp: new Date(mergedData.createdDate).toLocaleDateString(),
               badge: 'ASSIGNED'
             });
           }
           
           setActionLog(logEntries);
+        } else {
+          setTicket(null);
         }
+        
         setIsLoading(false);
-      } catch (err) {
-        console.error('Failed to load ticket:', err);
+      } catch (error) {
+        console.error('Error loading ticket:', error);
+        setTicket(null);
         setIsLoading(false);
       }
     };
 
-    loadTicket();
+    if (ticketNumber) {
+      loadTicket();
+    }
   }, [ticketNumber, currentUser]);
 
-  // Send message to TTS agents via real-time WebSocket
+  const handleAgentMessageInputChange = (e) => {
+    setAgentMessageInput(e.target.value);
+    if (e.target.value) {
+      startTyping();
+    } else {
+      stopTyping();
+    }
+  };
+
   const handleSendAgentMessage = async () => {
     if (!agentMessageInput.trim()) return;
     
     try {
-      stopTyping();
       await sendAgentMessage(agentMessageInput.trim());
       setAgentMessageInput('');
-    } catch (err) {
-      console.error('Failed to send message:', err);
-      // Optionally show error toast
+      stopTyping();
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
-
-  // Handle typing indicator for agent messages
-  const handleAgentMessageInputChange = (e) => {
-    setAgentMessageInput(e.target.value);
-    startTyping();
-  };
-
-  const handleSendRequesterMessage = () => {
-    if (replyContent.trim()) {
-      const newMsg = {
-        id: Date.now().toString(),
-        sender: currentUser?.first_name || 'You',
-        role: currentUser?.role || 'Coordinator',
-        timestamp: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString(),
-        content: replyContent,
-        isOwn: true
-      };
-      setRequesterMessages([...requesterMessages, newMsg]);
-      setReplyContent('');
-    }
-  };
-
-  const handleStatusChange = (newStatus) => {
-    setTicketStatus(newStatus);
-    setActionLog([
-      {
-        id: Date.now().toString(),
-        user: currentUser?.first_name || 'You',
-        role: currentUser?.role || 'Coordinator',
-        action: `Changed priority to ${newStatus}`,
-        timestamp: new Date().toLocaleDateString(),
-        badge: newStatus
-      },
-      ...actionLog
-    ]);
-  };
-
-  const handleLifecycleChange = (newLifecycle) => {
-    setLifecycle(newLifecycle);
-    setActionLog([
-      {
-        id: Date.now().toString(),
-        user: currentUser?.first_name || 'You',
-        role: currentUser?.role || 'Coordinator',
-        action: newLifecycle,
-        timestamp: new Date().toLocaleDateString(),
-        badge: newLifecycle.replace(' ', '_').toUpperCase()
-      },
-      ...actionLog
-    ]);
-  };
-
-  const displayedRequesterMessages = showAllMessages 
-    ? requesterMessages 
-    : requesterMessages.slice(-3);
 
   const getPriorityColor = (priority) => {
     switch (priority?.toUpperCase()) {
@@ -356,59 +275,6 @@ const CoordinatorOwnedTicketDetail = () => {
     return styles[`status-${lower}`] || '';
   };
 
-  // Determine user permissions for escalation/transfer
-  // Use is_owner and is_admin flags from the API response (set by backend after validation)
-  const isTicketOwner = ticket?.is_owner === true;
-  const isAdminFromAPI = ticket?.is_admin === true;
-  
-  // Fallback: Check if user is a Ticket Coordinator - case-insensitive comparison
-  const userRole = currentUser?.role || '';
-  const isTicketCoordinator = userRole.toLowerCase() === 'ticket coordinator' || 
-                              currentUser?.roles?.some(r => {
-                                const roleName = typeof r === 'string' ? r : r.role || r.role_name || '';
-                                return roleName.toLowerCase() === 'ticket coordinator';
-                              });
-  
-  // Check if user is an Admin (System Admin or Admin) - use API flag if available, fallback to local check
-  const isAdmin = isAdminFromAPI || 
-                  userRole.toLowerCase() === 'admin' || 
-                  userRole.toLowerCase() === 'system admin' ||
-                  currentUser?.roles?.some(r => {
-                    const roleName = typeof r === 'string' ? r : r.role || r.role_name || '';
-                    return roleName.toLowerCase() === 'admin' || roleName.toLowerCase() === 'system admin';
-                  });
-
-  // Debug logging for permission checks
-  console.log('Ticket Owner Actions - Permission Check:', {
-    isTicketOwner,
-    isAdminFromAPI,
-    isTicketCoordinator,
-    isAdmin,
-    userRole,
-    ticketFlags: ticket ? { is_owner: ticket.is_owner, is_admin: ticket.is_admin } : null
-  });
-
-  // Handlers for escalation and transfer modals
-  const handleEscalateSuccess = (ticketNumber, result) => {
-    setShowEscalateModal(false);
-    // Add to action log
-    setActionLog([
-      {
-        id: Date.now().toString(),
-        user: currentUser?.first_name || 'You',
-        role: currentUser?.role || 'Coordinator',
-        action: `Escalated to ${result.new_owner?.name || 'another coordinator'}`,
-        timestamp: new Date().toLocaleDateString(),
-        badge: 'ESCALATED'
-      },
-      ...actionLog
-    ]);
-    // Navigate back to owned tickets since we're no longer the owner
-    setTimeout(() => {
-      navigate('/admin/owned-tickets');
-    }, 2000);
-  };
-
   const handleTransferSuccess = (ticketNumber, result) => {
     setShowTransferModal(false);
     // Add to action log
@@ -423,22 +289,40 @@ const CoordinatorOwnedTicketDetail = () => {
       },
       ...actionLog
     ]);
-    // Reload the page to show updated owner
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    // Update ticket owner in UI
+    if (result.new_owner) {
+      setTicket(prev => ({
+        ...prev,
+        ticketOwnerName: result.new_owner.name,
+        ticketOwnerId: result.new_owner.user_id
+      }));
+    }
   };
 
   if (isLoading) {
-    return <Skeleton height={200} />;
+    return (
+      <div className={styles['detail-container']}>
+        <Skeleton height={40} width="60%" />
+        <div className={styles['content-wrapper']}>
+          <div className={styles['main-panel']}>
+            <Skeleton height={200} />
+            <Skeleton height={100} />
+          </div>
+          <div className={styles['right-panel']}>
+            <Skeleton height={300} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!ticket) {
     return (
       <div className={styles['detail-container']}>
-        <div className={styles['error-message']}>
+        <div className={styles['not-found']}>
+          <h2>Ticket Not Found</h2>
           <p>Ticket not found</p>
-          <button onClick={() => navigate('/admin/owned-tickets')}>
+          <button onClick={() => navigate('/admin/assigned-tickets')}>
             Go Back
           </button>
         </div>
@@ -450,9 +334,9 @@ const CoordinatorOwnedTicketDetail = () => {
     <div className={styles['detail-container']}>
       {/* Breadcrumb Header */}
       <Breadcrumb
-        root="Owned Tickets"
+        root="Assigned Tickets"
         currentPage="Ticket Details"
-        rootNavigatePage="/admin/owned-tickets"
+        rootNavigatePage="/admin/assigned-tickets"
         title={`Ticket No. ${ticket.id}`}
       />
 
@@ -510,193 +394,95 @@ const CoordinatorOwnedTicketDetail = () => {
           <div className={styles['tab-content']}>
             {mainTab === 'ticket' ? (
               <div className={styles['ticket-details']}>
-                {/* Subject */}
                 <div className={styles['field-group']}>
                   <label>Subject:</label>
                   <p className={styles['field-value']}>{ticket.subject}</p>
                 </div>
 
-                {/* Description */}
                 <div className={styles['field-group']}>
                   <label>Description:</label>
-                  <p className={styles['field-value']}>{ticket.description}</p>
+                  <p className={styles['field-value']}>{ticket.description || 'No description provided'}</p>
                 </div>
 
-                {/* Additional Info */}
-                <div className={styles['info-grid']}>
-                  <div>
-                    <label>Category:</label>
-                    <p>{ticket.category}</p>
+                <div className={styles['details-grid']}>
+                  <div className={styles['field-group']}>
+                    <label>Requester:</label>
+                    <p className={styles['field-value']}>{ticket.requester}</p>
                   </div>
-                  <div>
-                    <label>Sub-Category:</label>
-                    <p>{ticket.subCategory}</p>
-                  </div>
-                  <div>
+                  <div className={styles['field-group']}>
                     <label>Department:</label>
-                    <p>{ticket.department}</p>
+                    <p className={styles['field-value']}>{ticket.department}</p>
                   </div>
-                  <div>
-                    <label>Created Date:</label>
-                    <p>{new Date(ticket.createdDate).toLocaleString()}</p>
+                  <div className={styles['field-group']}>
+                    <label>Category:</label>
+                    <p className={styles['field-value']}>{ticket.category}</p>
                   </div>
-                </div>
-
-                {/* Additional Ticket Fields from Helpdesk */}
-                {(ticket.assetName || ticket.serialNumber || ticket.location || ticket.issueType) && (
-                  <div className={styles['info-grid']} style={{ marginTop: '1rem' }}>
-                    {ticket.assetName && (
-                      <div>
-                        <label>Asset Name:</label>
-                        <p>{ticket.assetName}</p>
-                      </div>
-                    )}
-                    {ticket.serialNumber && (
-                      <div>
-                        <label>Serial Number:</label>
-                        <p>{ticket.serialNumber}</p>
-                      </div>
-                    )}
-                    {ticket.location && (
-                      <div>
-                        <label>Location:</label>
-                        <p>{ticket.location}</p>
-                      </div>
-                    )}
-                    {ticket.issueType && (
-                      <div>
-                        <label>Issue Type:</label>
-                        <p>{ticket.issueType}</p>
-                      </div>
-                    )}
+                  <div className={styles['field-group']}>
+                    <label>Sub-Category:</label>
+                    <p className={styles['field-value']}>{ticket.subCategory}</p>
                   </div>
-                )}
-
-                {/* Requester Info */}
-                {ticket.employee && (
-                  <div className={styles['info-section']} style={{ marginTop: '1rem' }}>
-                    <h4>Requester Information</h4>
-                    <div className={styles['info-grid']}>
-                      <div>
-                        <label>Name:</label>
-                        <p>{`${ticket.employee.first_name || ''} ${ticket.employee.last_name || ''}`.trim() || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label>Email:</label>
-                        <p>{ticket.employee.email || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label>Company ID:</label>
-                        <p>{ticket.employee.company_id || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label>Department:</label>
-                        <p>{ticket.employee.department || 'N/A'}</p>
-                      </div>
-                    </div>
+                  <div className={styles['field-group']}>
+                    <label>Created:</label>
+                    <p className={styles['field-value']}>
+                      {new Date(ticket.createdDate).toLocaleString()}
+                    </p>
                   </div>
-                )}
-              </div>
-            ) : mainTab === 'attachments' ? (
-              <div className={styles['attachments-section']}>
-                <h3><FaPaperclip /> Attachments</h3>
-                {ticket.attachments && ticket.attachments.length > 0 ? (
-                  <div className={styles['attachments-list']}>
-                    {ticket.attachments.map((attachment, index) => {
-                      const fileName = attachment.file_name || attachment.file?.split('/').pop() || `Attachment ${index + 1}`;
-                      const fileUrl = attachment.file?.startsWith('http') 
-                        ? attachment.file 
-                        : `${API_CONFIG.BACKEND.BASE_URL}${attachment.file}`;
-                      
-                      return (
-                        <div key={attachment.id || index} className={styles['attachment-item']}>
-                          <div className={styles['attachment-info']}>
-                            <FaFile className={styles['file-icon']} />
-                            <div className={styles['attachment-details']}>
-                              <span className={styles['attachment-name']}>{fileName}</span>
-                              {attachment.uploaded_at && (
-                                <span className={styles['attachment-date']}>
-                                  Uploaded: {new Date(attachment.uploaded_at).toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <a 
-                            href={fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles['download-btn']}
-                          >
-                            <FaDownload /> Download
-                          </a>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className={styles['no-attachments']}>
-                    <FaPaperclip />
-                    <p>No attachments for this ticket</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className={styles['requester-comms']}>
-                {/* Message Thread */}
-                <div className={styles['message-thread']}>
-                  {displayedRequesterMessages.map((msg) => (
-                    <div key={msg.id} className={`${styles['message']} ${msg.isOwn ? styles['own'] : ''}`}>
-                      <div className={styles['message-header']}>
-                        <span className={styles['sender']}>{msg.sender}</span>
-                        <span className={styles['role']}>({msg.role})</span>
-                        <span className={styles['timestamp']}>
-                          {msg.timestamp} at {msg.time}
-                        </span>
-                      </div>
-                      <div className={styles['message-body']}>{msg.content}</div>
-                    </div>
-                  ))}
-
-                  {requesterMessages.length > 3 && (
-                    <div className={styles['show-more']}>
-                      <button onClick={() => setShowAllMessages(!showAllMessages)}>
-                        {showAllMessages ? 'Show fewer messages' : `Show all ${requesterMessages.length} messages`}
-                      </button>
+                  {ticket.updateDate && (
+                    <div className={styles['field-group']}>
+                      <label>Last Updated:</label>
+                      <p className={styles['field-value']}>
+                        {new Date(ticket.updateDate).toLocaleString()}
+                      </p>
                     </div>
                   )}
                 </div>
-
-                {/* Reply Section */}
-                <div className={styles['reply-section']}>
-                  <div className={styles['reply-to']}>
-                    To: <strong>{ticket.requester || 'Requester'}</strong>
+              </div>
+            ) : mainTab === 'attachments' ? (
+              <div className={styles['attachments-section']}>
+                {ticket.attachments && ticket.attachments.length > 0 ? (
+                  <div className={styles['attachment-list']}>
+                    {ticket.attachments.map((att, index) => (
+                      <div key={att.id || index} className={styles['attachment-item']}>
+                        <FaFile className={styles['file-icon']} />
+                        <span className={styles['attachment-name']}>{att.file_name || att.filename || `Attachment ${index + 1}`}</span>
+                        <a 
+                          href={att.file_url || att.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles['download-btn']}
+                        >
+                          <FaDownload /> Download
+                        </a>
+                      </div>
+                    ))}
                   </div>
-                  <textarea
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Type your message..."
-                    className={styles['reply-textarea']}
-                    rows="4"
-                  />
-                  <div className={styles['reply-actions']}>
-                    <button className={styles['attach-btn']}>
-                      📎 Attach files
-                    </button>
-                    <button
-                      className={styles['send-btn']}
-                      onClick={handleSendRequesterMessage}
-                      disabled={!replyContent.trim()}
+                ) : (
+                  <p className={styles['no-attachments']}>No attachments</p>
+                )}
+              </div>
+            ) : (
+              <div className={styles['requester-messages']}>
+                <div className={styles['messages-list']}>
+                  {requesterMessages.map((msg) => (
+                    <div 
+                      key={msg.id} 
+                      className={`${styles['message-item']} ${msg.isOwn ? styles['own-message'] : ''}`}
                     >
-                      Send
-                    </button>
-                  </div>
+                      <div className={styles['message-header']}>
+                        <span className={styles['sender-name']}>{msg.sender}</span>
+                        <span className={styles['sender-role']}>({msg.role})</span>
+                        <span className={styles['message-time']}>{msg.timestamp} {msg.time}</span>
+                      </div>
+                      <p className={styles['message-content']}>{msg.content}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Sidebar */}
+        {/* Right Panel */}
         <div className={styles['right-panel']}>
           {/* Details/Messages Tabs */}
           <div className={styles['sidebar-tabs']}>
@@ -781,45 +567,18 @@ const CoordinatorOwnedTicketDetail = () => {
                 </div>
               </div>
 
-              {/* Ticket Owner Management Actions */}
+              {/* Admin Actions */}
               <div className={styles['owner-actions']}>
-                <h3>Ticket Owner Actions</h3>
+                <h3>Admin Actions</h3>
                 <div className={styles['action-buttons']}>
-                  {/* Escalate button - only for ticket owner who is a coordinator */}
-                  {isTicketOwner && isTicketCoordinator && (
-                    <button
-                      className={styles['escalate-btn']}
-                      onClick={() => setShowEscalateModal(true)}
-                    >
-                      <span className={styles['btn-icon']}>⬆️</span>
-                      Escalate Ownership
-                    </button>
-                  )}
-                  
-                  {/* Transfer button - for admins (can transfer any ticket) */}
-                  {isAdmin && (
-                    <button
-                      className={styles['transfer-btn']}
-                      onClick={() => setShowTransferModal(true)}
-                    >
-                      <span className={styles['btn-icon']}>🔄</span>
-                      Transfer Ownership
-                    </button>
-                  )}
-
-                  {/* Show info message for non-owners */}
-                  {!isTicketOwner && !isAdmin && (
-                    <p className={styles['no-actions-text']}>
-                      You are not the owner of this ticket. Only the owner can escalate.
-                    </p>
-                  )}
-                  
-                  {/* Show message if owner but no actions available */}
-                  {isTicketOwner && !isTicketCoordinator && !isAdmin && (
-                    <p className={styles['no-actions-text']}>
-                      No owner management actions available for your role.
-                    </p>
-                  )}
+                  {/* Transfer button - Admin can transfer any ticket */}
+                  <button
+                    className={styles['transfer-btn']}
+                    onClick={() => setShowTransferModal(true)}
+                  >
+                    <span className={styles['btn-icon']}>🔄</span>
+                    Transfer Ownership
+                  </button>
                 </div>
               </div>
             </div>
@@ -915,15 +674,6 @@ const CoordinatorOwnedTicketDetail = () => {
         </div>
       </div>
 
-      {/* Escalate Modal */}
-      {showEscalateModal && ticket && (
-        <EscalateTicketModal
-          ticket={ticket}
-          onClose={() => setShowEscalateModal(false)}
-          onSuccess={handleEscalateSuccess}
-        />
-      )}
-
       {/* Transfer Modal */}
       {showTransferModal && ticket && (
         <TransferTicketModal
@@ -938,4 +688,4 @@ const CoordinatorOwnedTicketDetail = () => {
   );
 };
 
-export default CoordinatorOwnedTicketDetail;
+export default AdminAssignedTicketDetail;

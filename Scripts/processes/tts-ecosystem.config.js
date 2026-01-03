@@ -22,13 +22,14 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service",
-        DJANGO_JWT_SIGNING_KEY: "insecure-test-secret-key-change-in-production",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         RECAPTCHA_ENABLED: "False",
         CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
         TTS_SYSTEM_URL: "http://localhost:1000/",
         AMS_SYSTEM_URL: "http://localhost:3000/ams",
-        HDTS_SYSTEM_URL: "http://localhost:3000/hdts",
+        HDTS_SYSTEM_URL: "http://localhost:5173/hdts",
         BMS_SYSTEM_URL: "http://localhost:3000/bms",
         DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard",
         DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
@@ -56,7 +57,8 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api",
-        DJANGO_JWT_SIGNING_KEY: "insecure-test-secret-key-change-in-production",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue-default",
@@ -82,6 +84,8 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
@@ -104,7 +108,8 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service",
-        DJANGO_JWT_SIGNING_KEY: "insecure-test-secret-key-change-in-production",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
         DJANGO_NOTIFICATION_SERVICE_PORT: "8006",
@@ -137,6 +142,8 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
@@ -168,7 +175,8 @@ module.exports = {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
         DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service",
-        DJANGO_JWT_SIGNING_KEY: "insecure-test-secret-key-change-in-production",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
         DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
@@ -186,7 +194,16 @@ module.exports = {
       windowsHide: true,
       env: {
         DJANGO_ENV: "development",
-        DJANGO_DEBUG: "True"
+        DJANGO_DEBUG: "True",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,helpdesk-backend",
+        DJANGO_AUTH_SERVICE: "http://localhost:8003",
+        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
+        EMAIL_HOST: "localhost",
+        EMAIL_PORT: "1025",
+        EMAIL_USE_TLS: "False"
       }
     },
     {
@@ -198,7 +215,10 @@ module.exports = {
       windowsHide: true,
       env: {
         DJANGO_ENV: "development",
-        DJANGO_DEBUG: "True"
+        DJANGO_DEBUG: "True",
+        DJANGO_SECRET_KEY: "signing-key-1234",
+        DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
+        CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
       }
     },
 

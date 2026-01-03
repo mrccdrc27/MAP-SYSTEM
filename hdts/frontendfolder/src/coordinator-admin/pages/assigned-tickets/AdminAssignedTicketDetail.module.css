@@ -1083,3 +1083,37 @@
   padding: 0.5rem;
   margin: 0;
 }
+
+/* Owner Info Section */
+.owner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #f0f9ff;
+  border-radius: 0.5rem;
+  border: 1px solid #bae6fd;
+  margin-bottom: 1rem;
+}
+
+.owner-info h4 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: var(--font-semibold);
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.owner-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  font-weight: var(--font-medium);
+}
+
+.owner-info .owner-email {
+  font-size: 0.75rem;
+  color: var(--neutral-gray);
+  font-weight: normal;
+}

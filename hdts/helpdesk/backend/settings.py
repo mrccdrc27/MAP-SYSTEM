@@ -22,12 +22,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'signing-key-1234'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'signing-key-1234')
+
+# JWT Signing Key - should match auth service for token validation
+JWT_SIGNING_KEY = os.environ.get('DJANGO_JWT_SIGNING_KEY', SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') in ('True', 'true', '1')
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # Service URLs for inter-service communication
 DJANGO_AUTH_SERVICE = os.environ.get('DJANGO_AUTH_SERVICE', 'http://localhost:8003')
@@ -169,7 +172,7 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': JWT_SIGNING_KEY,
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,

@@ -1,6 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TaskViewSet, UserTaskListView, AllTasksListView, OwnedTicketsListView, FailedNotificationViewSet, UnassignedTicketsListView
+from .views import (
+    TaskViewSet, UserTaskListView, AllTasksListView, OwnedTicketsListView, OwnedTicketDetailView,
+    AllAssignedTicketsListView,
+    FailedNotificationViewSet, UnassignedTicketsListView,
+    TicketOwnerEscalateView, TicketOwnerTransferView, AvailableCoordinatorsView
+)
 
 # Create a router and register the TaskViewSet
 router = DefaultRouter()
@@ -26,6 +31,26 @@ urlpatterns = [
     # GET /tasks/owned-tickets/
     # Permission: HDTS Ticket Coordinator role required
     path('owned-tickets/', OwnedTicketsListView.as_view(), name='owned-tickets-list'),
+    
+    # Dedicated endpoint for admin to get ALL assigned tickets (for management)
+    # GET /tasks/all-assigned-tickets/
+    # Permission: HDTS Admin or System Admin role required
+    path('all-assigned-tickets/', AllAssignedTicketsListView.as_view(), name='all-assigned-tickets-list'),
+    
+    # Dedicated endpoint for getting a specific owned ticket by ticket number
+    # GET /tasks/owned-tickets/<ticket_number>/
+    # Returns 403 if user is not the owner (unless admin)
+    path('owned-tickets/<str:ticket_number>/', OwnedTicketDetailView.as_view(), name='owned-ticket-detail'),
+    
+    # Ticket Owner Management endpoints
+    # POST /tasks/ticket-owner/escalate/ - Ticket Coordinator escalates ownership
+    path('ticket-owner/escalate/', TicketOwnerEscalateView.as_view(), name='ticket-owner-escalate'),
+    
+    # POST /tasks/ticket-owner/transfer/ - Admin transfers ownership to another coordinator
+    path('ticket-owner/transfer/', TicketOwnerTransferView.as_view(), name='ticket-owner-transfer'),
+    
+    # GET /tasks/ticket-owner/available-coordinators/ - Get list of available coordinators
+    path('ticket-owner/available-coordinators/', AvailableCoordinatorsView.as_view(), name='available-coordinators'),
     
     # Standard CRUD:
     # GET    /tasks/                           - List all tasks

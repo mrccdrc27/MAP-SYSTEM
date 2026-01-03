@@ -353,8 +353,6 @@ def ticket_to_dict(ticket):
         "department_input": ticket.department_input,
     }
 
-    print("Serialized ticket data:", data)  # <-- Debug print statement
-
     return data
 
 

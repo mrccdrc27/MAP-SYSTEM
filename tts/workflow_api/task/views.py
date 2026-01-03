@@ -218,6 +218,79 @@ class UnassignedTicketsListView(ListAPIView):
         return queryset
 
 
+class AllAssignedTicketsListView(ListAPIView):
+    """
+    View to list ALL Tasks that have a ticket owner assigned (Admin view).
+    Admins can see all tickets and their current owners for management purposes.
+    
+    Permission: Requires HDTS Admin or System Admin role.
+    
+    Query Parameters:
+        - tab: 'active', 'inactive' - filters by task status
+        - search: search term for ticket subject/description/number
+        - owner_id: filter by specific owner's user_id
+        - page: page number
+        - page_size: items per page (default 10, max 100)
+    """
+    serializer_class = TaskSerializer
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    filter_backends = [OrderingFilter]
+    ordering_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
+    pagination_class = TaskPagination
+    
+    # SystemRolePermission configuration - require HDTS Admin
+    required_system_roles = {
+        'hdts': ['Admin', 'System Admin']
+    }
+    
+    def get_queryset(self):
+        """Return ALL Tasks that have a ticket owner assigned."""
+        # Get all tasks with a ticket owner
+        queryset = Task.objects.filter(
+            ticket_owner__isnull=False
+        ).select_related(
+            'ticket_id', 
+            'workflow_id', 
+            'workflow_version',
+            'current_step',
+            'current_step__role_id',
+            'ticket_owner',
+            'ticket_owner__role_id'
+        )
+        
+        # Apply tab filter (active, inactive)
+        tab = self.request.query_params.get('tab', '').lower()
+        if tab == 'active':
+            queryset = queryset.filter(
+                Q(status__in=['in progress', 'open', 'pending', 'in_progress']) |
+                Q(ticket_id__status__in=['in progress', 'open', 'pending', 'in_progress'])
+            )
+        elif tab == 'inactive':
+            queryset = queryset.filter(
+                Q(status__in=['closed', 'resolved', 'completed']) |
+                Q(ticket_id__status__in=['closed', 'resolved', 'completed'])
+            )
+        
+        # Apply owner filter
+        owner_id = self.request.query_params.get('owner_id', '').strip()
+        if owner_id:
+            queryset = queryset.filter(ticket_owner__user_id=int(owner_id))
+        
+        # Apply custom search filter
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(ticket_id__ticket_number__icontains=search) |
+                Q(ticket_id__ticket_data__subject__icontains=search) |
+                Q(ticket_id__ticket_data__description__icontains=search) |
+                Q(ticket_owner__user_full_name__icontains=search)
+            )
+        
+        return queryset
+
+
 class OwnedTicketsListView(ListAPIView):
     """
     View to list Tasks owned by the authenticated user (Ticket Coordinator).
@@ -284,6 +357,71 @@ class OwnedTicketsListView(ListAPIView):
             )
         
         return queryset
+
+
+class OwnedTicketDetailView(ListAPIView):
+    """
+    View to get a specific owned ticket by ticket number.
+    Only returns the ticket if the current user is the ticket owner.
+    
+    GET /tasks/owned-tickets/<ticket_number>/
+    
+    Permission: Requires HDTS Ticket Coordinator role.
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    
+    required_system_roles = {
+        'hdts': ['Ticket Coordinator', 'Admin', 'System Admin']
+    }
+    
+    def get(self, request, ticket_number, *args, **kwargs):
+        user_id = request.user.user_id
+        
+        # Find the task for this ticket
+        try:
+            task = Task.objects.select_related(
+                'ticket_id', 
+                'workflow_id', 
+                'workflow_version',
+                'current_step',
+                'current_step__role_id',
+                'ticket_owner',
+                'ticket_owner__role_id'
+            ).get(ticket_id__ticket_number=ticket_number)
+        except Task.DoesNotExist:
+            return Response(
+                {'error': f'Ticket {ticket_number} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if user is the ticket owner
+        owner_user_id = task.ticket_owner.user_id if task.ticket_owner else None
+        is_owner = owner_user_id == user_id
+        
+        # Check if user is admin (admins can view any ticket)
+        user_roles = request.user.roles if hasattr(request.user, 'roles') else []
+        is_admin = any(
+            (isinstance(r, dict) and r.get('system') == 'hdts' and r.get('role') in ['Admin', 'System Admin'])
+            for r in user_roles
+        )
+        
+        if not is_owner and not is_admin:
+            return Response(
+                {'error': 'You do not have permission to view this ticket. You are not the owner.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Serialize and return
+        serializer = TaskSerializer(task)
+        data = serializer.data
+        
+        # Add ownership info
+        data['is_owner'] = is_owner
+        data['is_admin'] = is_admin
+        data['current_user_id'] = user_id
+        
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -1662,6 +1800,418 @@ class TaskViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK
         )
+
+
+class TicketOwnerEscalateView(ListAPIView):
+    """
+    API endpoint for Ticket Coordinators to escalate ticket ownership to a supervisor.
+    
+    POST /tasks/ticket-owner/escalate/
+    
+    This escalates the ticket ownership to a supervisor Ticket Coordinator.
+    Only the current ticket owner (Ticket Coordinator) can escalate.
+    
+    Request Body:
+    {
+        "ticket_number": "TX20251231962083",
+        "reason": "Complex technical issue requiring senior expertise"
+    }
+    
+    Permission: Requires HDTS Ticket Coordinator role.
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    
+    # SystemRolePermission configuration - require HDTS Ticket Coordinator
+    required_system_roles = {
+        'hdts': ['Ticket Coordinator']
+    }
+    
+    def post(self, request, *args, **kwargs):
+        ticket_number = request.data.get('ticket_number')
+        reason = request.data.get('reason', '')
+        
+        if not ticket_number:
+            return Response(
+                {'error': 'ticket_number is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not reason or not reason.strip():
+            return Response(
+                {'error': 'reason is required and cannot be empty'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user_id = request.user.user_id
+        
+        # Find the ticket
+        try:
+            ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
+        except WorkflowTicket.DoesNotExist:
+            return Response(
+                {'error': f'Ticket {ticket_number} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Find the task for this ticket
+        try:
+            task = Task.objects.select_related(
+                'ticket_owner', 
+                'ticket_owner__role_id'
+            ).get(ticket_id=ticket)
+        except Task.DoesNotExist:
+            return Response(
+                {'error': f'No task found for ticket {ticket_number}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if current user is the ticket owner
+        # Note: user_id from JWT should match RoleUsers.user_id
+        owner_user_id = task.ticket_owner.user_id if task.ticket_owner else None
+        print(f"Escalation check: logged_in_user_id={user_id}, ticket_owner_user_id={owner_user_id}")
+        
+        # For coordinators on their owned tickets page, allow escalation if they are the owner
+        # Or if there's no owner set yet (shouldn't happen but handle gracefully)
+        if task.ticket_owner and owner_user_id != user_id:
+            return Response(
+                {'error': f'Only the current ticket owner can escalate. Your ID: {user_id}, Owner ID: {owner_user_id}'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not task.ticket_owner:
+            return Response(
+                {'error': 'This ticket has no owner assigned yet'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        old_owner = task.ticket_owner
+        
+        # Find a supervisor/senior Ticket Coordinator to escalate to
+        # Look for Ticket Coordinators who are NOT the current owner
+        from role.models import RoleUsers, Roles
+        
+        try:
+            coordinator_role = Roles.objects.get(name='Ticket Coordinator')
+        except Roles.DoesNotExist:
+            return Response(
+                {'error': 'Ticket Coordinator role not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get active coordinators (excluding current owner)
+        available_coordinators = RoleUsers.objects.filter(
+            role_id=coordinator_role,
+            is_active=True
+        ).exclude(user_id=user_id).order_by('user_id')
+        
+        if not available_coordinators.exists():
+            return Response(
+                {'error': 'No other Ticket Coordinators available for escalation'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Use round-robin to select next coordinator
+        from tickets.models import RoundRobin
+        round_robin_key = 'ticket_owner_escalation'
+        
+        try:
+            rr = RoundRobin.objects.get(role_name=round_robin_key)
+        except RoundRobin.DoesNotExist:
+            rr = RoundRobin.objects.create(role_name=round_robin_key, current_index=0)
+        
+        coordinator_list = list(available_coordinators)
+        next_index = rr.current_index % len(coordinator_list)
+        new_owner = coordinator_list[next_index]
+        
+        # Update round robin index
+        rr.current_index = (next_index + 1) % len(coordinator_list)
+        rr.save()
+        
+        # Update ticket owner
+        task.ticket_owner = new_owner
+        task.save()
+        
+        # Log the escalation
+        try:
+            log_action(
+                request.user,
+                'ticket_owner_escalate',
+                target=task,
+                changes={
+                    'from_user_id': old_owner.user_id,
+                    'from_user_name': old_owner.user_full_name,
+                    'to_user_id': new_owner.user_id,
+                    'to_user_name': new_owner.user_full_name,
+                    'reason': reason,
+                    'ticket_number': ticket_number
+                },
+                request=request
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit for ticket_owner_escalate: {e}")
+        
+        # Send escalation notification
+        try:
+            from celery import current_app
+            from django.conf import settings
+            
+            inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
+            
+            current_app.send_task(
+                'notifications.send_ticket_owner_escalation_notification',
+                args=(
+                    old_owner.user_id,
+                    new_owner.user_id,
+                    ticket_number,
+                    ticket.ticket_data.get('subject', f'Ticket {ticket_number}'),
+                    reason,
+                    user_id,
+                    getattr(request.user, 'full_name', None) or old_owner.user_full_name
+                ),
+                queue=inapp_queue
+            )
+        except Exception as e:
+            logger.error(f"Failed to send escalation notification: {e}")
+        
+        return Response({
+            'message': 'Ticket ownership escalated successfully',
+            'ticket_number': ticket_number,
+            'previous_owner': {
+                'user_id': old_owner.user_id,
+                'name': old_owner.user_full_name,
+                'role': old_owner.role_id.name if old_owner.role_id else None
+            },
+            'new_owner': {
+                'user_id': new_owner.user_id,
+                'name': new_owner.user_full_name,
+                'role': new_owner.role_id.name if new_owner.role_id else None
+            },
+            'reason': reason
+        }, status=status.HTTP_200_OK)
+
+
+class TicketOwnerTransferView(ListAPIView):
+    """
+    API endpoint for HDTS Admins to transfer ticket ownership to another Ticket Coordinator.
+    
+    POST /tasks/ticket-owner/transfer/
+    
+    Admins can transfer ticket ownership to any active Ticket Coordinator.
+    
+    Request Body:
+    {
+        "ticket_number": "TX20251231962083",
+        "new_owner_user_id": 5,
+        "reason": "Workload balancing"
+    }
+    
+    Permission: Requires HDTS Admin or System Admin role.
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    
+    # SystemRolePermission configuration - require HDTS Admin roles
+    required_system_roles = {
+        'hdts': ['Admin', 'System Admin']
+    }
+    
+    def post(self, request, *args, **kwargs):
+        ticket_number = request.data.get('ticket_number')
+        new_owner_user_id = request.data.get('new_owner_user_id')
+        reason = request.data.get('reason', '')
+        
+        if not ticket_number:
+            return Response(
+                {'error': 'ticket_number is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not new_owner_user_id:
+            return Response(
+                {'error': 'new_owner_user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user_id = request.user.user_id
+        
+        # Find the ticket
+        try:
+            ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
+        except WorkflowTicket.DoesNotExist:
+            return Response(
+                {'error': f'Ticket {ticket_number} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Find the task for this ticket
+        try:
+            task = Task.objects.select_related(
+                'ticket_owner', 
+                'ticket_owner__role_id'
+            ).get(ticket_id=ticket)
+        except Task.DoesNotExist:
+            return Response(
+                {'error': f'No task found for ticket {ticket_number}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        old_owner = task.ticket_owner
+        
+        # Find the new owner (must be an active Ticket Coordinator)
+        from role.models import RoleUsers, Roles
+        
+        try:
+            coordinator_role = Roles.objects.get(name='Ticket Coordinator')
+        except Roles.DoesNotExist:
+            return Response(
+                {'error': 'Ticket Coordinator role not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            new_owner = RoleUsers.objects.get(
+                user_id=new_owner_user_id,
+                role_id=coordinator_role,
+                is_active=True
+            )
+        except RoleUsers.DoesNotExist:
+            return Response(
+                {'error': f'User {new_owner_user_id} is not an active Ticket Coordinator'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except RoleUsers.MultipleObjectsReturned:
+            new_owner = RoleUsers.objects.filter(
+                user_id=new_owner_user_id,
+                role_id=coordinator_role,
+                is_active=True
+            ).first()
+        
+        # Check if new owner is the same as current owner
+        if old_owner and old_owner.user_id == new_owner_user_id:
+            return Response(
+                {'error': 'New owner is the same as current owner'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update ticket owner
+        task.ticket_owner = new_owner
+        task.save()
+        
+        # Log the transfer
+        try:
+            log_action(
+                request.user,
+                'ticket_owner_transfer',
+                target=task,
+                changes={
+                    'from_user_id': old_owner.user_id if old_owner else None,
+                    'from_user_name': old_owner.user_full_name if old_owner else None,
+                    'to_user_id': new_owner.user_id,
+                    'to_user_name': new_owner.user_full_name,
+                    'transferred_by_user_id': user_id,
+                    'reason': reason,
+                    'ticket_number': ticket_number
+                },
+                request=request
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit for ticket_owner_transfer: {e}")
+        
+        # Send transfer notification
+        try:
+            from celery import current_app
+            from django.conf import settings
+            
+            inapp_queue = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-notification-queue')
+            
+            current_app.send_task(
+                'notifications.send_ticket_owner_transfer_notification',
+                args=(
+                    old_owner.user_id if old_owner else None,
+                    new_owner.user_id,
+                    ticket_number,
+                    ticket.ticket_data.get('subject', f'Ticket {ticket_number}'),
+                    reason,
+                    user_id,
+                    getattr(request.user, 'full_name', None) or getattr(request.user, 'username', f'Admin {user_id}')
+                ),
+                queue=inapp_queue
+            )
+        except Exception as e:
+            logger.error(f"Failed to send transfer notification: {e}")
+        
+        return Response({
+            'message': 'Ticket ownership transferred successfully',
+            'ticket_number': ticket_number,
+            'previous_owner': {
+                'user_id': old_owner.user_id if old_owner else None,
+                'name': old_owner.user_full_name if old_owner else None,
+                'role': old_owner.role_id.name if old_owner and old_owner.role_id else None
+            } if old_owner else None,
+            'new_owner': {
+                'user_id': new_owner.user_id,
+                'name': new_owner.user_full_name,
+                'role': new_owner.role_id.name if new_owner.role_id else None
+            },
+            'transferred_by': {
+                'user_id': user_id,
+                'name': getattr(request.user, 'full_name', None) or getattr(request.user, 'username', None)
+            },
+            'reason': reason
+        }, status=status.HTTP_200_OK)
+
+
+class AvailableCoordinatorsView(ListAPIView):
+    """
+    API endpoint to get list of available Ticket Coordinators for transfer/escalation.
+    
+    GET /tasks/ticket-owner/available-coordinators/
+    
+    Query Parameters:
+        - exclude_user_id: (optional) Exclude specific user from the list
+    
+    Permission: Requires HDTS Admin, System Admin, or Ticket Coordinator role.
+    """
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, SystemRolePermission]
+    
+    required_system_roles = {
+        'hdts': ['Admin', 'System Admin', 'Ticket Coordinator']
+    }
+    
+    def get(self, request, *args, **kwargs):
+        from role.models import RoleUsers, Roles
+        
+        exclude_user_id = request.query_params.get('exclude_user_id')
+        
+        try:
+            coordinator_role = Roles.objects.get(name='Ticket Coordinator')
+        except Roles.DoesNotExist:
+            return Response(
+                {'error': 'Ticket Coordinator role not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        coordinators = RoleUsers.objects.filter(
+            role_id=coordinator_role,
+            is_active=True
+        ).select_related('role_id')
+        
+        if exclude_user_id:
+            coordinators = coordinators.exclude(user_id=int(exclude_user_id))
+        
+        result = [{
+            'user_id': coord.user_id,
+            'name': coord.user_full_name,
+            'email': coord.email if hasattr(coord, 'email') else None,
+            'role': coord.role_id.name if coord.role_id else None
+        } for coord in coordinators.order_by('user_full_name')]
+        
+        return Response({
+            'coordinators': result,
+            'count': len(result)
+        }, status=status.HTTP_200_OK)
 
 
 class FailedNotificationViewSet(viewsets.ReadOnlyModelViewSet):

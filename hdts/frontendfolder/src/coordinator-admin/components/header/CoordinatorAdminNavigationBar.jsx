@@ -374,6 +374,16 @@ const CoordinatorAdminNavBar = () => {
     ]
   };
 
+  // Assigned Tickets section (System Admin only - to manage all assigned tickets)
+  const assignedTicketsSection = {
+    key: 'assigned-tickets',
+    label: 'Assigned Tickets',
+    basePath: '/admin/assigned-tickets',
+    links: [
+      { label: 'All Assigned Tickets', path: '/admin/assigned-tickets' }
+    ]
+  };
+
   // Role-based section composition
   let navSections = [];
   if (role === 'Ticket Coordinator') {
@@ -381,8 +391,8 @@ const CoordinatorAdminNavBar = () => {
     // Use coordinator-specific Knowledge Base placeholder
     navSections = [ticketsSection, ownedTicketsSection, amsSection, bmsSection, reportsSection, kbCoordinatorSection];
   } else if (role === 'System Admin') {
-    // System Admin: Dashboard (all), Ticket Management (view-only), User Access, Reports, KB, CSAT
-    navSections = [ticketsSection, usersSection, reportsSection, kbSection, csatSection];
+    // System Admin: Dashboard (all), Ticket Management (view-only), User Access, Assigned Tickets, Reports, KB, CSAT
+    navSections = [ticketsSection, usersSection, assignedTicketsSection, reportsSection, kbSection, csatSection];
   } else {
     // Default: show everything
     navSections = [ticketsSection, usersSection, reportsSection, kbSection];

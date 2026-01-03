@@ -365,14 +365,62 @@ export const backendTicketService = {
   },
 
   /**
+   * Get ALL assigned tickets for admin management (Admin only).
+   * Calls the workflow_api at port 8002.
+   * @param {Object} options - Query options
+   * @param {string} options.tab - 'active' or 'inactive' filter
+   * @param {string} options.search - Search term
+   * @param {string} options.ownerId - Filter by specific owner's user_id
+   * @param {number} options.page - Page number
+   * @param {number} options.pageSize - Items per page
+   * @returns {Promise<{results: Array, count: number}>}
+   */
+  async getAllAssignedTickets({ tab = '', search = '', ownerId = '', page = 1, pageSize = 10 } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (tab) params.append('tab', tab);
+      if (search) params.append('search', search);
+      if (ownerId) params.append('owner_id', ownerId);
+      params.append('page', page.toString());
+      params.append('page_size', pageSize.toString());
+      
+      const url = `${WORKFLOW_URL}/tasks/all-assigned-tickets/?${params.toString()}`;
+      console.log('Fetching all assigned tickets from:', url);
+      
+      const response = await fetch(url, getFetchOptions('GET'));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch assigned tickets: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // API returns paginated response: { count, next, previous, results }
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous
+      };
+    } catch (error) {
+      console.error('Error fetching all assigned tickets:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get a specific owned ticket by ticket number from workflow_api.
+   * This endpoint validates that the user is the actual owner (or admin).
    * @param {string} ticketNumber - The ticket number (e.g., TX20251222801173)
-   * @returns {Promise<Object>} Task/ticket data
+   * @returns {Promise<Object>} Task/ticket data with is_owner and is_admin flags
    */
   async getOwnedTicketByNumber(ticketNumber) {
     try {
-      // First get the task by ticket number from workflow API
-      const url = `${WORKFLOW_URL}/tasks/?ticket_number=${encodeURIComponent(ticketNumber)}`;
+      // Use the dedicated owned-tickets endpoint that validates ownership
+      const url = `${WORKFLOW_URL}/tasks/owned-tickets/${encodeURIComponent(ticketNumber)}/`;
       console.log('Fetching owned ticket by number from:', url);
       
       const response = await fetch(url, getFetchOptions('GET'));
@@ -384,20 +432,7 @@ export const backendTicketService = {
         throw new Error(err.error || err.detail || `Failed to fetch ticket: ${response.status}`);
       }
       
-      const data = await response.json();
-      
-      // API returns paginated results, get the first match
-      const results = data.results || data;
-      if (Array.isArray(results) && results.length > 0) {
-        return results[0];
-      }
-      
-      // If results is a single object
-      if (results && !Array.isArray(results)) {
-        return results;
-      }
-      
-      throw new Error('Ticket not found');
+      return await response.json();
     } catch (error) {
       console.error('Error fetching owned ticket by number:', error);
       throw error;
@@ -423,6 +458,100 @@ export const backendTicketService = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching helpdesk ticket by number:', error);
+      throw error;
+    }
+  },
+
+  // ========== TICKET OWNER MANAGEMENT ==========
+
+  /**
+   * Escalate ticket ownership to another Ticket Coordinator.
+   * Only the current ticket owner (Ticket Coordinator) can escalate.
+   * @param {string} ticketNumber - The ticket number to escalate
+   * @param {string} reason - Reason for escalation
+   * @returns {Promise<Object>} Escalation result with new owner info
+   */
+  async escalateTicketOwnership(ticketNumber, reason) {
+    try {
+      const url = `${WORKFLOW_URL}/tasks/ticket-owner/escalate/`;
+      console.log('Escalating ticket ownership:', ticketNumber);
+      
+      const response = await fetch(url, getFetchOptions('POST', { 
+        ticket_number: ticketNumber, 
+        reason 
+      }));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to escalate ticket: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error escalating ticket ownership:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Transfer ticket ownership to another Ticket Coordinator (Admin only).
+   * @param {string} ticketNumber - The ticket number to transfer
+   * @param {number} newOwnerUserId - User ID of the new owner
+   * @param {string} reason - Reason for transfer
+   * @returns {Promise<Object>} Transfer result with new owner info
+   */
+  async transferTicketOwnership(ticketNumber, newOwnerUserId, reason = '') {
+    try {
+      const url = `${WORKFLOW_URL}/tasks/ticket-owner/transfer/`;
+      console.log('Transferring ticket ownership:', ticketNumber, 'to user:', newOwnerUserId);
+      
+      const response = await fetch(url, getFetchOptions('POST', { 
+        ticket_number: ticketNumber, 
+        new_owner_user_id: newOwnerUserId,
+        reason 
+      }));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to transfer ticket: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error transferring ticket ownership:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get list of available Ticket Coordinators for transfer/escalation.
+   * @param {number} excludeUserId - Optional user ID to exclude from list
+   * @returns {Promise<Object>} List of available coordinators
+   */
+  async getAvailableCoordinators(excludeUserId = null) {
+    try {
+      let url = `${WORKFLOW_URL}/tasks/ticket-owner/available-coordinators/`;
+      if (excludeUserId) {
+        url += `?exclude_user_id=${excludeUserId}`;
+      }
+      console.log('Fetching available coordinators from:', url);
+      
+      const response = await fetch(url, getFetchOptions('GET'));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch coordinators: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching available coordinators:', error);
       throw error;
     }
   }

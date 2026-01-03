@@ -137,7 +137,7 @@ def _get_external_employee_data_legacy(user_id):
                 'image': str(employee.image.url) if employee.image else None,
             }
     except Exception as e:
-        print(f"DEBUG: Error querying ExternalEmployee for user_id {user_id}: {e}")
+        pass
     
     return {}
 
@@ -389,10 +389,6 @@ class CreateAdminEmployeeView(APIView):
     permission_classes = [IsAuthenticated, IsSystemAdmin]
 
     def post(self, request, *args, **kwargs):
-        print("[DEBUG] request.user:", request.user)
-        print("[DEBUG] request.user.is_authenticated:", getattr(request.user, 'is_authenticated', None))
-        print("[DEBUG] request.user.role:", getattr(request.user, 'role', None))
-        print("[DEBUG] request.auth:", request.auth)
         data = request.data.copy()
 
         # Auto-generate Company ID (find lowest available MA number)

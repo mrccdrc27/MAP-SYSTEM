@@ -27,6 +27,8 @@ import CoordinatorAMSTickets from '../coordinator-admin/pages/integration/ams/Co
 import CoordinatorBMSTickets from '../coordinator-admin/pages/integration/bms/CoordinatorBMSTickets';
 import CoordinatorOwnedTickets from '../coordinator-admin/pages/owned-tickets/CoordinatorOwnedTickets';
 import CoordinatorOwnedTicketDetail from '../coordinator-admin/pages/owned-tickets/CoordinatorOwnedTicketDetail';
+import AdminAssignedTickets from '../coordinator-admin/pages/assigned-tickets/AdminAssignedTickets';
+import AdminAssignedTicketDetail from '../coordinator-admin/pages/assigned-tickets/AdminAssignedTicketDetail';
 import NotFoundPage from '../shared/not-found-page/NotFoundPage';
 // protected route
 import ProtectedRoute from "./ProtectedRoute";
@@ -91,6 +93,12 @@ const CoordinatorAdminRoutes = () => (
       <Route path="owned-tickets">
         <Route path="" element={<CoordinatorOwnedTickets />} />
         <Route path=":ticketNumber" element={<CoordinatorOwnedTicketDetail />} />
+      </Route>
+
+      {/* Admin Assigned Tickets routes (System Admin only) */}
+      <Route path="assigned-tickets">
+        <Route path="" element={<AdminAssignedTickets />} />
+        <Route path=":ticketNumber" element={<AdminAssignedTicketDetail />} />
       </Route>
       
       <Route path="*" element={<NotFoundPage />} />

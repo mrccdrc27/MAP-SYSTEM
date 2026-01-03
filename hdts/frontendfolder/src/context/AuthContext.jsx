@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import axios from "axios";
 
-const AuthContext = createContext();
+const AuthContext = createContext(undefined);
 // Default to backend running on localhost:8003 when VITE_AUTH_URL is not provided
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
 const ME_URL = `${AUTH_URL}/api/me/`; // Unified endpoint for both User and Employee
@@ -286,6 +286,8 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider. Make sure your component is wrapped by <AuthProvider>.");
+  }
   return context;
 };

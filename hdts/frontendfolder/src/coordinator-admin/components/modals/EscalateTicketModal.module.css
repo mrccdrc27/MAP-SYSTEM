@@ -1,0 +1,150 @@
+.modalHeader {
+  margin-bottom: 20px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.subheading {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.infoBox {
+  background-color: #f8fafc;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.infoRow {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.infoLabel {
+  font-weight: 500;
+  color: var(--text-muted);
+  min-width: 100px;
+}
+
+.infoValue {
+  color: var(--text-primary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.textarea {
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-family-base);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.required {
+  color: var(--error-color);
+}
+
+.error {
+  margin-top: 4px;
+  color: var(--error-color);
+  font-size: 0.75rem;
+}
+
+.warningBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.warningIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.warningText {
+  font-size: 0.8125rem;
+  color: #9a3412;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-300);
+}
+
+.cancelBtn,
+.escalateBtn {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn {
+  background-color: #f3f4f6;
+  color: var(--text-secondary);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.escalateBtn {
+  background-color: #f97316;
+  color: white;
+}
+
+.escalateBtn:hover:not(:disabled) {
+  background-color: #ea580c;
+}
+
+.escalateBtn:disabled,
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

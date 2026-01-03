@@ -315,5 +315,139 @@ export const localTicketService = {
         error: String(err)
       };
     }
+  },
+
+  // ========== TICKET OWNER MANAGEMENT (Mock for local development) ==========
+
+  // Escalate ticket ownership (mock implementation)
+  escalateTicketOwnership: async (ticketNumber, reason) => {
+    await delay();
+    console.log('Local mock: escalating ticket ownership', ticketNumber, reason);
+    
+    // Mock response
+    return {
+      success: true,
+      message: 'Ticket ownership escalated successfully (mock)',
+      ticket_number: ticketNumber,
+      previous_owner: {
+        user_id: 1,
+        name: 'Current Coordinator',
+        role: 'Ticket Coordinator'
+      },
+      new_owner: {
+        user_id: 2,
+        name: 'Senior Coordinator',
+        role: 'Ticket Coordinator'
+      },
+      reason: reason
+    };
+  },
+
+  // Transfer ticket ownership (mock implementation)
+  transferTicketOwnership: async (ticketNumber, newOwnerUserId, reason = '') => {
+    await delay();
+    console.log('Local mock: transferring ticket ownership', ticketNumber, newOwnerUserId, reason);
+    
+    // Mock response
+    return {
+      success: true,
+      message: 'Ticket ownership transferred successfully (mock)',
+      ticket_number: ticketNumber,
+      previous_owner: {
+        user_id: 1,
+        name: 'Previous Owner',
+        role: 'Ticket Coordinator'
+      },
+      new_owner: {
+        user_id: newOwnerUserId,
+        name: `Coordinator ${newOwnerUserId}`,
+        role: 'Ticket Coordinator'
+      },
+      transferred_by: {
+        user_id: 999,
+        name: 'Admin User'
+      },
+      reason: reason
+    };
+  },
+
+  // Get available coordinators for transfer (mock implementation)
+  getAvailableCoordinators: async (excludeUserId = null) => {
+    await delay();
+    console.log('Local mock: getting available coordinators, excluding:', excludeUserId);
+    
+    // Mock coordinators list
+    const mockCoordinators = [
+      { user_id: 1, name: 'John Coordinator', email: 'john@example.com', role: 'Ticket Coordinator' },
+      { user_id: 2, name: 'Jane Coordinator', email: 'jane@example.com', role: 'Ticket Coordinator' },
+      { user_id: 3, name: 'Bob Coordinator', email: 'bob@example.com', role: 'Ticket Coordinator' },
+      { user_id: 4, name: 'Alice Coordinator', email: 'alice@example.com', role: 'Ticket Coordinator' }
+    ].filter(c => excludeUserId ? c.user_id !== parseInt(excludeUserId) : true);
+    
+    return {
+      coordinators: mockCoordinators,
+      count: mockCoordinators.length
+    };
+  },
+
+  // Get owned tickets (mock implementation)
+  getOwnedTickets: async ({ tab = '', search = '', page = 1, pageSize = 10 } = {}) => {
+    await delay();
+    const tickets = getFromStorage(STORAGE_KEYS.TICKETS) || [];
+    
+    // Filter for owned tickets (mock: return all tickets for testing)
+    let filteredTickets = [...tickets];
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredTickets = filteredTickets.filter(t => 
+        (t.ticket_number || '').toLowerCase().includes(searchLower) ||
+        (t.subject || '').toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Paginate
+    const startIndex = (page - 1) * pageSize;
+    const paginatedTickets = filteredTickets.slice(startIndex, startIndex + pageSize);
+    
+    return {
+      results: paginatedTickets,
+      count: filteredTickets.length,
+      next: null,
+      previous: null
+    };
+  },
+
+  // Get owned ticket by number (mock implementation)
+  getOwnedTicketByNumber: async (ticketNumber) => {
+    await delay();
+    const tickets = getFromStorage(STORAGE_KEYS.TICKETS) || [];
+    const ticket = tickets.find(t => t.ticket_number === ticketNumber);
+    
+    if (ticket) {
+      return {
+        ...ticket,
+        ticket_owner_id: 1,
+        ticket_owner_name: 'Mock Coordinator',
+        workflow_name: 'Default Workflow',
+        current_step_name: 'Review',
+        assigned_users: []
+      };
+    }
+    
+    throw new Error('Ticket not found');
+  },
+
+  // Get helpdesk ticket by number (mock implementation)
+  getHelpdeskTicketByNumber: async (ticketNumber) => {
+    await delay();
+    const tickets = getFromStorage(STORAGE_KEYS.TICKETS) || [];
+    const ticket = tickets.find(t => t.ticket_number === ticketNumber);
+    
+    if (ticket) {
+      return ticket;
+    }
+    
+    throw new Error('Ticket not found');
   }
 };
