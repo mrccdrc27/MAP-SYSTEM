@@ -102,6 +102,50 @@ jobs:
           echo "Waiting for services to initialize (${STARTUP_TIMEOUT}s max)..."
           sleep 60
 
+      - name: Debug - Show actual container names
+        run: |
+          echo "=== Container Discovery ==="
+          echo "All containers (running and stopped):"
+          docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+          echo ""
+          echo "Docker Compose service status:"
+          cd tts/Docker && docker compose ps -a
+          echo ""
+          echo "RabbitMQ containers:"
+          docker ps -a --filter "name=rabbitmq" --format "table {{.Names}}\t{{.Status}}"
+          echo ""
+          echo "Database containers:"
+          docker ps -a --filter "name=db" --format "table {{.Names}}\t{{.Status}}"
+
+      - name: Wait for services to be healthy
+        working-directory: tts/Docker
+        run: |
+          echo "Waiting for Docker Compose services to be healthy..."
+          max_attempts=24  # 2 minutes total (5s * 24)
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            echo "Health check attempt $attempt/$max_attempts"
+            
+            # Check if all services are healthy or running
+            unhealthy_services=$(docker compose ps --format json | jq -r '.[] | select(.Health != "healthy" and .State != "running") | .Service' 2>/dev/null || echo "")
+            
+            if [ -z "$unhealthy_services" ]; then
+              echo "✅ All services appear to be healthy/running"
+              break
+            fi
+            
+            echo "⏳ Waiting for services to be healthy: $unhealthy_services"
+            docker compose ps
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "⚠️ Some services may not be fully healthy, but continuing..."
+            docker compose ps
+          fi
+
       - name: Check container status
         id: container_status
         run: |
@@ -124,13 +168,15 @@ jobs:
           fi
 
       - name: Verify RabbitMQ is healthy
+        working-directory: tts/Docker
         run: |
           echo "Checking RabbitMQ health..."
           max_attempts=10
           attempt=1
           
           while [ $attempt -le $max_attempts ]; do
-            if docker exec rabbitmq rabbitmq-diagnostics -q ping 2>/dev/null; then
+            # Use docker compose exec to check RabbitMQ health
+            if docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping 2>/dev/null; then
               echo "✅ RabbitMQ is healthy"
               break
             fi
@@ -141,18 +187,23 @@ jobs:
           
           if [ $attempt -gt $max_attempts ]; then
             echo "❌ RabbitMQ failed to become healthy"
-            docker logs rabbitmq 2>&1 | tail -30
+            echo "RabbitMQ container status:"
+            docker compose ps rabbitmq
+            echo "RabbitMQ logs:"
+            docker compose logs rabbitmq | tail -30
             exit 1
           fi
 
       - name: Verify PostgreSQL is ready
+        working-directory: tts/Docker
         run: |
           echo "Checking PostgreSQL..."
           max_attempts=10
           attempt=1
           
           while [ $attempt -le $max_attempts ]; do
-            if docker exec postgres_db pg_isready -U postgres 2>/dev/null; then
+            # Use docker compose exec to check PostgreSQL readiness
+            if docker compose exec -T db pg_isready -U postgres 2>/dev/null; then
               echo "✅ PostgreSQL is ready"
               break
             fi
@@ -163,14 +214,18 @@ jobs:
           
           if [ $attempt -gt $max_attempts ]; then
             echo "❌ PostgreSQL failed to become ready"
-            docker logs postgres_db 2>&1 | tail -30
+            echo "PostgreSQL container status:"
+            docker compose ps db
+            echo "PostgreSQL logs:"
+            docker compose logs db | tail -30
             exit 1
           fi
 
       - name: Verify databases are created
+        working-directory: tts/Docker
         run: |
           echo "Checking databases in PostgreSQL..."
-          docker exec postgres_db psql -U postgres -c "\l" | grep -E "workflowmanagement|notificationservice" || echo "Some databases may not be created yet"
+          docker compose exec -T db psql -U postgres -c "\l" | grep -E "workflowmanagement|notificationservice" || echo "Some databases may not be created yet"
 
       - name: Wait for services to fully initialize
         run: |
@@ -253,9 +308,10 @@ jobs:
 
       - name: Check RabbitMQ queues
         continue-on-error: true
+        working-directory: tts/Docker
         run: |
           echo "=== RabbitMQ Queue Status ==="
-          docker exec rabbitmq rabbitmqctl list_queues name messages consumers 2>/dev/null || echo "Could not list queues"
+          docker compose exec -T rabbitmq rabbitmqctl list_queues name messages consumers 2>/dev/null || echo "Could not list queues"
 
       - name: Collect service logs on failure
         if: failure()
@@ -263,11 +319,13 @@ jobs:
         run: |
           mkdir -p ../../logs
           
-          for service in rabbitmq postgres_db auth-service workflow-api workflow-worker messaging-service notification-service notification-worker; do
-            echo "=== $service ===" >> ../../logs/all-services.log
-            docker logs $service 2>&1 >> ../../logs/all-services.log 2>/dev/null || echo "No logs for $service" >> ../../logs/all-services.log
-            echo "" >> ../../logs/all-services.log
-          done
+          echo "=== Docker Compose Services Status ===" >> ../../logs/all-services.log
+          docker compose ps >> ../../logs/all-services.log
+          echo "" >> ../../logs/all-services.log
+          
+          # Get logs from all services using docker compose
+          echo "=== All Services Logs ===" >> ../../logs/all-services.log
+          docker compose logs >> ../../logs/all-services.log 2>&1 || echo "Failed to collect compose logs" >> ../../logs/all-services.log
 
       - name: Upload logs on failure
         if: failure()
@@ -311,46 +369,28 @@ jobs:
           sleep 45
 
       - name: Collect startup logs
+        working-directory: tts/Docker
         run: |
-          echo "=== Auth Service Startup ==="
-          docker logs auth-service 2>&1 | head -50 || true
-          
+          echo "=== Docker Compose Services Status ==="
+          docker compose ps
           echo ""
-          echo "=== Workflow API Startup ==="
-          docker logs workflow-api 2>&1 | head -50 || true
-          
-          echo ""
-          echo "=== Workflow Worker Startup ==="
-          docker logs workflow-worker 2>&1 | head -50 || true
-          
-          echo ""
-          echo "=== Notification Service Startup ==="
-          docker logs notification-service 2>&1 | head -50 || true
-          
-          echo ""
-          echo "=== Notification Worker Startup ==="
-          docker logs notification-worker 2>&1 | head -50 || true
+          echo "=== All Services Startup Logs ==="
+          docker compose logs | head -200
 
       - name: Check for startup errors
+        working-directory: tts/Docker
         run: |
           echo "=== Checking for errors in logs ==="
           
-          error_count=0
+          # Get logs from all services and check for errors
+          compose_logs=$(docker compose logs 2>&1)
+          errors=$(echo "$compose_logs" | grep -iE "error|exception|failed|traceback" | head -20 || true)
           
-          for service in auth-service workflow-api workflow-worker notification-service notification-worker; do
-            errors=$(docker logs $service 2>&1 | grep -iE "error|exception|failed|traceback" | head -10 || true)
-            if [ -n "$errors" ]; then
-              echo "⚠️ Potential issues in $service:"
-              echo "$errors"
-              echo ""
-              error_count=$((error_count + 1))
-            fi
-          done
-          
-          if [ $error_count -eq 0 ]; then
-            echo "✅ No obvious errors found in startup logs"
+          if [ -n "$errors" ]; then
+            echo "⚠️ Potential issues found in logs:"
+            echo "$errors"
           else
-            echo "⚠️ Found potential issues in $error_count service(s)"
+            echo "✅ No obvious errors found in startup logs"
           fi
 
       - name: Stop services
