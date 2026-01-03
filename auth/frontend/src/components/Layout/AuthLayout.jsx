@@ -4,37 +4,31 @@ import styles from './AuthLayout.module.css';
 /**
  * Shared layout for Auth pages (Login, Register, Forgot Password)
  */
-const AuthLayout = ({ children, title, subtitle, wide = false }) => {
+const AuthLayout = ({ children, title, subtitle, sideImage, logoImage, wide = false }) => {
   return (
-    <div className={styles.authLayout}>
-      <div className={`${styles.authContainer} ${wide ? styles.wide : ''}`}>
-        <div className={styles.logo}>
-          <h1>TTS AUTH</h1>
+    <main className={styles.loginPage}>
+      {/* Left Panel */}
+      <section className={styles.leftPanel}>
+        <div className={styles.leftImage}>
+          <img src={sideImage || "/TTS_MAP_BG.png"} alt="Background" className={styles.assetImage} />
         </div>
+      </section>
+
+      {/* Right Panel */}
+      <section className={styles.rightPanel}>
+        <header className={styles.formHeader}>
+          <section className={styles.logo}>
+            <img src={logoImage || "/map-logo.png"} alt="Logo" />
+            <h1 className={styles.logoText}>{title || "Sign In"}</h1>
+          </section>
+          {subtitle && <p>{subtitle}</p>}
+        </header>
         
-        <div className={styles.card}>
-          {title && <h2 style={{ 
-            marginBottom: 'var(--space-xs)', 
-            fontSize: 'var(--font-2xl)',
-            color: 'var(--heading-color)',
-            textAlign: 'center'
-          }}>{title}</h2>}
-          
-          {subtitle && <p style={{ 
-            marginBottom: 'var(--space-lg)', 
-            fontSize: 'var(--font-sm)',
-            color: 'var(--muted-text-color)',
-            textAlign: 'center'
-          }}>{subtitle}</p>}
-          
+        <div className={`${styles.formContainer} ${wide ? styles.wide : ''}`}>
           {children}
         </div>
-        
-        <div className={styles.footer}>
-          &copy; {new Date().getFullYear()} Ticket Tracking System. All rights reserved.
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 

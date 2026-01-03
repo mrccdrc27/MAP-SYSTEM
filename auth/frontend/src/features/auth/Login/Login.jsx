@@ -20,6 +20,7 @@ const Login = ({ userType = 'staff' }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [temporaryToken, setTemporaryToken] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +42,7 @@ const Login = ({ userType = 'staff' }) => {
     try {
       const response = await apiLogin(email, password, currentUserType);
       
-      if (response.ok) {
+      if (response.ok && !response.data.otp_required) {
         const profileResponse = await getProfile();
         if (profileResponse.ok) {
           login(profileResponse.data);
@@ -50,8 +51,9 @@ const Login = ({ userType = 'staff' }) => {
         } else {
            error('Login Failed', 'Could not retrieve user profile.');
         }
-      } else if (response.data.requires_otp) {
+      } else if (response.data.otp_required) {
         info('2FA Required', 'OTP sent to your email.');
+        setTemporaryToken(response.data.temporary_token);
         setMode('otp');
       } else if (response.data.errors) {
         const errorMessages = Object.values(response.data.errors).flat();
@@ -76,7 +78,7 @@ const Login = ({ userType = 'staff' }) => {
 
     setIsLoading(true);
     try {
-      const response = await verifyOtpLogin(email, otpCode, currentUserType);
+      const response = await verifyOtpLogin(temporaryToken, otpCode, currentUserType);
       if (response.ok) {
         const profileResponse = await getProfile();
         if (profileResponse.ok) {
@@ -100,89 +102,108 @@ const Login = ({ userType = 'staff' }) => {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const alternateLoginLink = isEmployee ? '/staff/login' : '/employee/login';
-  const alternateLoginText = isEmployee ? 'Login as Staff' : 'Login as Employee';
+  const alternateLoginText = isEmployee ? 'Login as Staff' : 'Login to Help Desk';
   const registerLink = isEmployee ? '/employee/register' : '/register';
   const forgotPasswordLink = isEmployee ? '/employee/forgot-password' : '/forgot-password';
+  
   const pageTitle = isEmployee ? 'Employee Sign In' : 'Staff Sign In';
   const pageSubtitle = isEmployee 
-    ? 'Please provide your credentials to log in as an employee.'
-    : 'Please provide your credentials to log in as staff.';
+    ? 'Access the helpdesk to manage your support requests.'
+    : 'Manage system resources and track tickets.';
+  
+  const sideImage = isEmployee 
+    ? "/HELPDESK_BG.jpg"
+    : "/TTS_MAP_BG.png";
 
   return (
-    <AuthLayout title={pageTitle} subtitle={pageSubtitle}>
+    <AuthLayout 
+      title={pageTitle}
+      subtitle={pageSubtitle}
+      sideImage={sideImage}
+      logoImage="/map-logo.png"
+    >
       <ToastContainer />
       
-      <form onSubmit={mode === 'login' ? handleLoginSubmit : handleOtpSubmit}>
+      <form onSubmit={mode === 'login' ? handleLoginSubmit : handleOtpSubmit} className={styles.loginForm}>
         {mode === 'login' ? (
           <>
             <Input
-              label="Email"
+              label="Email:"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@company.com"
+              placeholder="Enter your email"
               required
+              className={styles.roundedInput}
             />
 
             <Input
-              label="Password"
+              label="Password:"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               required
+              className={styles.roundedInput}
               icon={
                 <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               }
               onIconClick={togglePasswordVisibility}
             />
 
-            <div className={styles.flexRow}>
-              <div className={styles.rememberMe}>
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <label htmlFor="rememberMe">Remember me</label>
-              </div>
-              <Link to={forgotPasswordLink} className={styles.link}>
-                Forgot Password?
-              </Link>
+            <div className={styles.rememberMe}>
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <label htmlFor="rememberMe">Remember me</label>
             </div>
 
             <Button 
               type="submit" 
-              className={styles.submitButton}
+              className={styles.logInButton}
               isLoading={isLoading}
               variant="primary"
               size="large"
               fullWidth
             >
-              Sign In
+              Log In
             </Button>
+
+            <div className={styles.formFooter}>
+              <div className={styles.forgotLink}>
+                <Link to={forgotPasswordLink}>
+                  <i className="fa-solid fa-question-circle"></i> Forgot Password?
+                </Link>
+              </div>
+              <Link to={alternateLoginLink} className={styles.helpdeskLink}>
+                <i className="fa-solid fa-headset"></i> {alternateLoginText}
+              </Link>
+            </div>
           </>
         ) : (
           <>
             <div className={styles.infoBox}>
-              Enter the 6-digit code sent to <strong>{email}</strong>
+              <i className="fa-solid fa-info-circle"></i> Enter the 6-digit code sent to your email address.
             </div>
 
             <Input
-              label="OTP Code"
+              label="OTP Code:"
               type="text"
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000"
+              placeholder="Enter 6-digit code"
               maxLength={6}
               inputMode="numeric"
               required
+              className={styles.roundedInput}
             />
 
             <Button 
               type="submit" 
-              className={styles.submitButton}
+              className={styles.logInButton}
               isLoading={isLoading}
               variant="primary"
               size="large"
@@ -191,26 +212,16 @@ const Login = ({ userType = 'staff' }) => {
               Verify OTP
             </Button>
 
-            <button 
-              type="button" 
-              onClick={() => setMode('login')} 
-              className={styles.backButton}
-            >
-              <i className="fa-solid fa-arrow-left"></i> Back to Login
-            </button>
+            <div className={styles.forgotLink}>
+              <button 
+                type="button" 
+                onClick={() => setMode('login')} 
+                className={styles.backToLogin}
+              >
+                <i className="fa-solid fa-arrow-left"></i> Back to Login
+              </button>
+            </div>
           </>
-        )}
-
-        {mode === 'login' && (
-          <div className={styles.authFooter}>
-            <p>
-              Don't have an account? <Link to={registerLink} className={styles.link}>Register here</Link>
-            </p>
-            <hr className={styles.divider} />
-            <Link to={alternateLoginLink} className={styles.secondaryLink}>
-              {alternateLoginText}
-            </Link>
-          </div>
         )}
       </form>
     </AuthLayout>

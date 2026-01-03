@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useToast, Button, Input } from '../../../components/common';
+import { AuthLayout } from '../../../components/layout';
 import styles from './SuperAdminLogin.module.css';
 
 const SuperAdminLogin = () => {
   const navigate = useNavigate();
+  const { ToastContainer, error: toastError, success: toastSuccess } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,14 +24,13 @@ const SuperAdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
+    
     if (!email || !password) {
       setError('Email and password are required.');
-      setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:8003/superadmin/api/login/', {
         method: 'POST',
@@ -42,13 +44,17 @@ const SuperAdminLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
-        navigate('/superadmin/dashboard');
+        toastSuccess('Login Successful', 'Redirecting to dashboard...');
+        setTimeout(() => navigate('/superadmin/dashboard'), 1000);
       } else {
-        setError(data.error || 'Invalid email or password');
+        const errorMsg = data.error || 'Invalid email or password';
+        setError(errorMsg);
+        toastError('Login Failed', errorMsg);
       }
     } catch (err) {
       console.error('Login error:', err);
       setError('An error occurred. Please try again.');
+      toastError('Error', 'An error occurred during login.');
     } finally {
       setLoading(false);
     }
@@ -59,95 +65,75 @@ const SuperAdminLogin = () => {
   };
 
   return (
-    <div className={styles.loginPage}>
-      <div className={styles.loginContainer}>
-        <div className={styles.loginHeader}>
-          <div className={styles.icon}>
-            <i className="fa fa-shield-halved"></i>
-          </div>
-          <h1>Superuser Login</h1>
-          <p>Authentication System Administration</p>
-        </div>
+    <AuthLayout
+      title="Superuser Login"
+      subtitle="Authentication System Administration Portal"
+      sideImage="/TTS_MAP_BG.png" // Using the standard background
+    >
+      <ToastContainer />
+      
+      <div className={styles.warningBox}>
+        <i className="fa-solid fa-shield-halved"></i>
+        <span>This portal is restricted to system administrators.</span>
+      </div>
 
-        <div className={styles.warningBox}>
-          <i className="fa fa-exclamation-triangle"></i>
-          <span>This portal is restricted to superuser accounts only.</span>
-        </div>
+      <form onSubmit={handleSubmit} className={styles.loginForm}>
+        <Input
+          label="Superuser Email:"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter superuser email"
+          required
+          autoFocus
+          disabled={loading}
+          className={styles.roundedInput}
+          icon={<i className="fa-solid fa-envelope"></i>}
+        />
+
+        <Input
+          label="Password:"
+          type={showPassword ? 'text' : 'password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter password"
+          required
+          disabled={loading}
+          className={styles.roundedInput}
+          icon={
+            <i 
+              className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}
+              style={{ cursor: 'pointer' }}
+              onClick={togglePasswordVisibility}
+            ></i>
+          }
+        />
 
         {error && (
           <div className={styles.errorMessage}>
-            <i className="fa fa-exclamation-circle"></i>
+            <i className="fa-solid fa-circle-exclamation"></i>
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel} htmlFor="email">
-              Email Address
-            </label>
-            <div className={styles.inputWrapper}>
-              <i className="fa fa-envelope"></i>
-              <input
-                type="email"
-                id="email"
-                className={styles.formControl}
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-                disabled={loading}
-              />
-            </div>
-          </div>
+        <Button
+          type="submit"
+          className={styles.logInButton}
+          isLoading={loading}
+          variant="primary"
+          size="large"
+          fullWidth
+        >
+          Sign In as Administrator
+        </Button>
 
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel} htmlFor="password">
-              Password
-            </label>
-            <div className={styles.inputWrapper}>
-              <i className="fa fa-lock"></i>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                className={styles.formControl}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className={styles.passwordToggle}
-                onClick={togglePasswordVisibility}
-              >
-                <i className={`fa ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" className={styles.btnLogin} disabled={loading}>
-            {loading ? (
-              <>
-                <i className="fa fa-spinner fa-spin"></i> Signing In...
-              </>
-            ) : (
-              <>
-                <i className="fa fa-sign-in-alt"></i> Sign In
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className={styles.loginFooter}>
-          <p>
-            Not a superuser? <a href="/login">Go to Staff Login</a>
-          </p>
+        <div className={styles.formFooter}>
+          <Link to="/login" className={styles.backLink}>
+            <i className="fa-solid fa-arrow-left"></i> Back to Staff Login
+          </Link>
         </div>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   );
 };
 

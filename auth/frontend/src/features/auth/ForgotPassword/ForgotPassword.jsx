@@ -50,7 +50,12 @@ const ForgotPassword = ({ userType = 'staff' }) => {
   };
 
   return (
-    <AuthLayout title={pageTitle} subtitle={pageSubtitle}>
+    <AuthLayout 
+      title="Account Recovery" 
+      subtitle="Enter your email to receive a password reset link."
+      sideImage="/TTS_MAP_BG.png"
+      logoImage="/map-logo.png"
+    >
       <ToastContainer />
 
       {isEmailSent ? (
@@ -63,30 +68,33 @@ const ForgotPassword = ({ userType = 'staff' }) => {
             </p>
           </div>
           
-          <Link to={loginLink} className={styles.backButton}>
-            <i className="fa-solid fa-arrow-left"></i> Back to Login
-          </Link>
+          <div className={styles.forgotLink}>
+            <Link to={loginLink} className={styles.backToLogin}>
+              <i className="fa-solid fa-arrow-left"></i> Back to Login
+            </Link>
+          </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className={styles.recoveryForm}>
           <div className={styles.infoBox}>
             <i className="fa-solid fa-info-circle"></i>
             <p>
-              We'll send a secure link to your registered email to reset your password.
+              Enter your email address and we'll send you a link to reset your password.
             </p>
           </div>
 
           <Input
-            label="Email Address"
+            label="Email Address:"
             type="email"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
               if (emailError) setEmailError('');
             }}
-            placeholder="name@company.com"
+            placeholder="Enter your registered email"
             error={emailError}
             required
+            className={styles.roundedInput}
           />
 
           <Button 
@@ -100,9 +108,11 @@ const ForgotPassword = ({ userType = 'staff' }) => {
             Send Reset Link
           </Button>
 
-          <Link to={loginLink} className={styles.backButton}>
-            <i className="fa-solid fa-arrow-left"></i> Back to Login
-          </Link>
+          <div className={styles.forgotLink}>
+            <Link to={loginLink} className={styles.backToLogin}>
+              <i className="fa-solid fa-arrow-left"></i> Back to Login
+            </Link>
+          </div>
         </form>
       )}
     </AuthLayout>

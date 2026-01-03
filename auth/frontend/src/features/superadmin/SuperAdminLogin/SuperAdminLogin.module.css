@@ -1,219 +1,98 @@
-:root {
-  --primary-color: #1a1a2e;
-  --secondary-color: #16213e;
-  --accent-color: #0f3460;
-  --highlight-color: #e94560;
-  --text-color: #eaeaea;
-  --text-muted: #a0a0a0;
-  --danger-color: #f44336;
-  --border-color: #2a2a3e;
-}
-
-.loginPage {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  min-height: 100vh;
+.loginForm {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.loginContainer {
-  background-color: var(--secondary-color);
-  border-radius: 12px;
-  padding: 40px;
+  flex-direction: column;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  gap: var(--space-md);
 }
 
-.loginHeader {
-  text-align: center;
-  margin-bottom: 35px;
+.roundedInput :global(.input) {
+  border-radius: 40px !important;
+  height: 44px !important;
+  padding: 0 20px 0 45px !important;
+  border: 1px solid var(--color-gray-300) !important;
+  background-color: var(--bg-color) !important;
+  font-size: var(--font-sm) !important;
+  color: var(--text-color) !important;
 }
 
-.loginHeader .icon {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--highlight-color) 0%, #d63050 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-}
-
-.loginHeader .icon i {
-  font-size: 2.5rem;
-  color: white;
-}
-
-.loginHeader h1 {
-  color: var(--text-color);
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.loginHeader p {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.errorMessage {
-  background-color: rgba(244, 67, 54, 0.15);
-  border: 1px solid var(--danger-color);
-  color: var(--danger-color);
-  padding: 12px 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.errorMessage i {
-  margin-right: 10px;
-  font-size: 1.1rem;
-}
-
-.formGroup {
-  margin-bottom: 20px;
-}
-
-.formLabel {
-  display: block;
-  color: var(--text-color);
-  font-size: 0.9rem;
+.roundedInput :global(.label) {
+  font-size: var(--font-sm);
   font-weight: 500;
+  color: var(--color-gray-700);
   margin-bottom: 8px;
 }
 
-.inputWrapper {
-  position: relative;
-}
-
-.inputWrapper i {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  font-size: 1rem;
-  z-index: 1;
-}
-
-.formControl {
-  width: 100%;
-  padding: 14px 15px 14px 45px;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--primary-color);
-  color: var(--text-color);
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.formControl:focus {
-  outline: none;
-  border-color: var(--highlight-color);
-  box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
-}
-
-.formControl::placeholder {
-  color: var(--text-muted);
-}
-
-.formControl:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.passwordToggle {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 5px;
-  z-index: 1;
-}
-
-.passwordToggle:hover {
-  color: var(--text-color);
-}
-
-.passwordToggle:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.btnLogin {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--highlight-color) 0%, #d63050 100%);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 10px;
-}
-
-.btnLogin:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
-}
-
-.btnLogin:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btnLogin:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.loginFooter {
-  text-align: center;
-  margin-top: 25px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
-}
-
-.loginFooter p {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.loginFooter a {
-  color: var(--highlight-color);
-  text-decoration: none;
-}
-
-.loginFooter a:hover {
-  text-decoration: underline;
+.roundedInput :global(.icon) {
+  left: 20px !important;
+  right: auto !important;
+  color: var(--color-gray-500) !important;
 }
 
 .warningBox {
-  background-color: rgba(255, 152, 0, 0.15);
-  border: 1px solid #ff9800;
-  border-radius: 6px;
-  padding: 12px 15px;
-  margin-bottom: 20px;
+  background-color: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
   display: flex;
   align-items: center;
-  font-size: 0.85rem;
-  color: #ff9800;
+  gap: var(--space-sm);
+  font-size: var(--font-sm);
+  color: var(--color-gray-700);
 }
 
 .warningBox i {
-  margin-right: 10px;
-  font-size: 1.1rem;
+  color: var(--color-danger);
+  font-size: var(--font-lg);
+}
+
+.errorMessage {
+  background-color: #fff5f5;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-sm);
+}
+
+.logInButton {
+  border-radius: 40px !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  font-size: var(--font-base) !important;
+  background-color: var(--color-gray-800) !important; /* Admin uses a darker, serious tone */
+  transition: var(--transition) !important;
+  margin-top: var(--space-sm);
+}
+
+.logInButton:hover {
+  background-color: var(--color-gray-900) !important;
+  box-shadow: var(--shadow-md);
+}
+
+.formFooter {
+  text-align: center;
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.backLink {
+  color: var(--color-gray-600);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.backLink:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
 }

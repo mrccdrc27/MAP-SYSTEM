@@ -26,6 +26,26 @@
 
 .submitButton {
   margin-top: var(--space-md);
+  border-radius: 40px !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  background-color: var(--color-primary) !important;
+}
+
+.roundedInput :global(.input) {
+  border-radius: 40px !important;
+  height: 44px !important;
+  padding: 0 20px !important;
+  border: 1px solid #d3d3d3 !important;
+  background-color: #fcfcfc !important;
+  font-size: var(--font-sm) !important;
+}
+
+.roundedInput :global(.label) {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
 }
 
 .authFooter {

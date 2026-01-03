@@ -134,6 +134,7 @@ const Register = ({ userType = 'staff' }) => {
               placeholder="name@company.com"
               required
               error={errors.email}
+              className={styles.roundedInput}
             />
           </div>
 
@@ -147,6 +148,7 @@ const Register = ({ userType = 'staff' }) => {
               placeholder="jdoe123"
               required
               error={errors.username}
+              className={styles.roundedInput}
             />
           </div>
 
@@ -158,6 +160,7 @@ const Register = ({ userType = 'staff' }) => {
             placeholder="John"
             required
             error={errors.first_name}
+            className={styles.roundedInput}
           />
 
           <Input
@@ -166,6 +169,7 @@ const Register = ({ userType = 'staff' }) => {
             value={formData.middle_name}
             onChange={handleChange}
             placeholder="Quincy"
+            className={styles.roundedInput}
           />
 
           <Input
@@ -176,6 +180,7 @@ const Register = ({ userType = 'staff' }) => {
             placeholder="Doe"
             required
             error={errors.last_name}
+            className={styles.roundedInput}
           />
 
           <Input
@@ -184,6 +189,7 @@ const Register = ({ userType = 'staff' }) => {
             value={formData.suffix}
             onChange={handleChange}
             placeholder="Jr., Sr., etc."
+            className={styles.roundedInput}
           />
 
           <div className={styles.gridFull}>
@@ -196,6 +202,7 @@ const Register = ({ userType = 'staff' }) => {
               placeholder="09123456789"
               required
               error={errors.phone_number}
+              className={styles.roundedInput}
             />
           </div>
 
@@ -206,6 +213,7 @@ const Register = ({ userType = 'staff' }) => {
               value={formData.department}
               onChange={handleChange}
               placeholder="IT Department"
+              className={styles.roundedInput}
             />
           </div>
 
@@ -221,6 +229,7 @@ const Register = ({ userType = 'staff' }) => {
               error={errors.password}
               icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
               onIconClick={() => setShowPassword(!showPassword)}
+              className={styles.roundedInput}
             />
           </div>
 
@@ -236,6 +245,7 @@ const Register = ({ userType = 'staff' }) => {
               error={errors.confirmPassword}
               icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
               onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className={styles.roundedInput}
             />
           </div>
         </div>

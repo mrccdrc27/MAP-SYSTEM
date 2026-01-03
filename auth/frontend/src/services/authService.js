@@ -29,13 +29,13 @@ export const login = async (email, password, userType = USER_TYPES.STAFF, recapt
 };
 
 // Verify OTP for login
-export const verifyOtpLogin = async (email, otpCode, userType = null) => {
+export const verifyOtpLogin = async (temporaryToken, otpCode, userType = null) => {
   const type = userType || getUserType();
   const endpoints = getEndpoints(type);
   const response = await apiRequest(endpoints.VERIFY_OTP, {
     method: 'POST',
     body: JSON.stringify({
-      email,
+      temporary_token: temporaryToken,
       otp_code: otpCode,
     }),
   });

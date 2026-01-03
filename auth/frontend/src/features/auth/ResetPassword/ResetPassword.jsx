@@ -82,16 +82,23 @@ const ResetPassword = ({ userType = 'staff' }) => {
 
   if (!isTokenValid) {
     return (
-      <AuthLayout title="Invalid Link" subtitle="This password reset link is invalid or has expired.">
+      <AuthLayout 
+        title="Invalid Link" 
+        subtitle="This password reset link is invalid or has expired."
+        sideImage="/TTS_MAP_BG.png"
+        logoImage="/map-logo.png"
+      >
         <ToastContainer />
         <div className={styles.content}>
           <div className={styles.errorBox}>
             <i className="fa-solid fa-circle-xmark"></i>
             <p>Please request a new password reset link to continue.</p>
           </div>
-          <Link to={forgotPasswordLink} className={styles.backButton}>
-            <i className="fa-solid fa-arrow-left"></i> Request New Link
-          </Link>
+          <div className={styles.forgotLink}>
+            <Link to={forgotPasswordLink} className={styles.backToLogin}>
+              <i className="fa-solid fa-arrow-left"></i> Request New Link
+            </Link>
+          </div>
         </div>
       </AuthLayout>
     );
@@ -99,54 +106,68 @@ const ResetPassword = ({ userType = 'staff' }) => {
 
   if (isSuccess) {
     return (
-      <AuthLayout title="Success!" subtitle="Your password has been reset successfully.">
+      <AuthLayout 
+        title="Success!" 
+        subtitle="Your password has been reset successfully."
+        sideImage="/TTS_MAP_BG.png"
+        logoImage="/map-logo.png"
+      >
         <ToastContainer />
         <div className={styles.content}>
           <div className={styles.successBox}>
             <i className="fa-solid fa-circle-check"></i>
             <p>You will be redirected to the login page shortly.</p>
           </div>
-          <Link to={loginLink} className={styles.backButton}>
-            <i className="fa-solid fa-arrow-left"></i> Go to Login
-          </Link>
+          <div className={styles.forgotLink}>
+            <Link to={loginLink} className={styles.backToLogin}>
+              <i className="fa-solid fa-arrow-left"></i> Go to Login
+            </Link>
+          </div>
         </div>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title={pageTitle} subtitle={pageSubtitle}>
+    <AuthLayout 
+      title="Reset Password" 
+      subtitle="Please enter your new password below."
+      sideImage="/TTS_MAP_BG.png"
+      logoImage="/map-logo.png"
+    >
       <ToastContainer />
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className={styles.resetForm}>
         <Input
-          label="New Password"
+          label="New Password:"
           type={showPassword ? 'text' : 'password'}
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
             if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
           }}
-          placeholder="••••••••"
+          placeholder="Enter new password"
           error={errors.password}
           hint="Min 8 characters"
           icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
           onIconClick={() => setShowPassword(!showPassword)}
           required
+          className={styles.roundedInput}
         />
 
         <Input
-          label="Confirm New Password"
+          label="Confirm New Password:"
           type={showConfirmPassword ? 'text' : 'password'}
           value={confirmPassword}
           onChange={(e) => {
             setConfirmPassword(e.target.value);
             if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
           }}
-          placeholder="••••••••"
+          placeholder="Confirm new password"
           error={errors.confirmPassword}
           icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
           onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
           required
+          className={styles.roundedInput}
         />
 
         <Button 
@@ -160,9 +181,11 @@ const ResetPassword = ({ userType = 'staff' }) => {
           Reset Password
         </Button>
 
-        <Link to={loginLink} className={styles.backButton}>
-          <i className="fa-solid fa-arrow-left"></i> Back to Login
-        </Link>
+        <div className={styles.forgotLink}>
+          <Link to={loginLink} className={styles.backToLogin}>
+            <i className="fa-solid fa-arrow-left"></i> Back to Login
+          </Link>
+        </div>
       </form>
     </AuthLayout>
   );
