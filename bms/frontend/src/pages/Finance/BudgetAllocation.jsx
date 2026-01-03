@@ -941,7 +941,7 @@ const Pagination = ({
 // --- MAIN COMPONENT ---
 function BudgetAllocation() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, getBmsRole } = useAuth();
 
   // --- STATE ---
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
@@ -979,16 +979,30 @@ function BudgetAllocation() {
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
 
+ // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
+ // TODO: remove debug
   const getUserRole = () => {
+    if (user) {
+      console.groupCollapsed("BMS Auth Debugger");
+      console.log("Full User Object:", user);
+      console.log("User Roles Array:", user.roles);
+      console.log("Detected BMS Role:", getBmsRole ? getBmsRole() : "getBmsRole function missing");
+      console.groupEnd();
+    }
+
     if (!user) return "User";
 
-    // Check deeply nested roles first (from JWT decoding)
-    if (user.roles && user.roles.bms) return user.roles.bms;
+    // 1. Try to get the BMS specific role using the Context helper
+    // This handles the array structure: [{ system: 'bms', role: 'FINANCE_HEAD' }]
+    if (getBmsRole) {
+      const bmsRole = getBmsRole();
+      if (bmsRole) return bmsRole;
+    }
 
-    // Check direct role property (from Login API response user object)
-    if (user.role) return user.role;
+    // 2. Fallback: Check direct role property (Legacy)
+    if (user.role && typeof user.role === 'string') return user.role;
 
-    // Default role names based on user type
+    // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
     if (user.is_staff) return "STAFF";
 
