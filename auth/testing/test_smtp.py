@@ -43,11 +43,11 @@ def test_smtp_connection():
     
     # Check for common formatting issues
     if email_host_user.startswith("'") and email_host_user.endswith("'"):
-        print("⚠️  WARNING: EMAIL_HOST_USER has quotes - remove them from .env file")
+        print("[WARN] WARNING: EMAIL_HOST_USER has quotes - remove them from .env file")
         email_host_user = email_host_user.strip("'")
     
     if email_host_password.startswith("'") and email_host_password.endswith("'"):
-        print("⚠️  WARNING: EMAIL_HOST_PASSWORD has quotes - remove them from .env file")
+        print("[WARN] WARNING: EMAIL_HOST_PASSWORD has quotes - remove them from .env file")
         email_host_password = email_host_password.strip("'")
     
     try:
@@ -65,12 +65,12 @@ def test_smtp_connection():
         print("Logging in...")
         server.login(email_host_user, email_host_password)
         
-        print("✅ SMTP connection successful!")
+        print("[OK] SMTP connection successful!")
         server.quit()
         return True
         
     except smtplib.SMTPAuthenticationError as e:
-        print(f"❌ Authentication failed: {e}")
+        print(f"[FAIL] Authentication failed: {e}")
         print("This usually means:")
         print("  - Wrong email/password")
         print("  - Need to use App Password for Gmail")
@@ -78,11 +78,11 @@ def test_smtp_connection():
         return False
         
     except smtplib.SMTPException as e:
-        print(f"❌ SMTP error: {e}")
+        print(f"[FAIL] SMTP error: {e}")
         return False
         
     except Exception as e:
-        print(f"❌ Connection error: {e}")
+        print(f"[FAIL] Connection error: {e}")
         return False
 
 def test_django_email():
@@ -119,11 +119,11 @@ def test_django_email():
             fail_silently=False,
         )
         
-        print("✅ Django email sent successfully!")
+        print("[OK] Django email sent successfully!")
         return True
         
     except Exception as e:
-        print(f"❌ Django email failed: {e}")
+        print(f"[FAIL] Django email failed: {e}")
         return False
 
 def check_env_file():
@@ -135,7 +135,7 @@ def check_env_file():
     env_file = BASE_DIR / '.env'
     
     if not env_file.exists():
-        print("❌ .env file not found!")
+        print("[FAIL] .env file not found!")
         return False
     
     print(f"Reading .env file: {env_file}")
@@ -150,15 +150,15 @@ def check_env_file():
         if '=' in line:
             key, value = line.split('=', 1)
             if value.startswith("'") and value.endswith("'"):
-                print(f"⚠️  {key} has quotes: {line}")
+                print(f"[WARN] {key} has quotes: {line}")
                 cleaned_value = value.strip("'")
                 print(f"   Should be: {key}={cleaned_value}")
             elif value.startswith('"') and value.endswith('"'):
-                print(f"⚠️  {key} has quotes: {line}")
+                print(f"[WARN] {key} has quotes: {line}")
                 cleaned_value = value.strip('"')
                 print(f"   Should be: {key}={cleaned_value}")
             else:
-                print(f"✅ {key} formatting looks good")
+                print(f"[OK] {key} formatting looks good")
     
     return True
 
@@ -185,8 +185,8 @@ def main():
     print("\n" + "=" * 60)
     print("TEST SUMMARY")
     print("=" * 60)
-    print(f"SMTP Connection: {'✅ PASS' if smtp_success else '❌ FAIL'}")
-    print(f"Django Email: {'✅ PASS' if django_success else '❌ FAIL'}")
+    print(f"SMTP Connection: {'PASS' if smtp_success else 'FAIL'}")
+    print(f"Django Email: {'PASS' if django_success else 'FAIL'}")
     
     if not smtp_success:
         print("\nTROUBLESHOoting TIPS:")

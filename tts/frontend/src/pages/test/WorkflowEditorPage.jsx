@@ -1,17 +1,22 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import WorkflowEditorLayout from '../../components/workflow/WorkflowEditor/WorkflowEditorLayout';
+import WorkflowEditorLayout from '../admin/workflow-detail-page/WorkflowEditorLayout';
 import styles from './WorkflowEditorPage.module.css';
+import { slugToWorkflowName } from '../../api/useWorkflowAPI';
  
 export default function WorkflowEditorPage() {
-  const { workflowId } = useParams();
+  const { workflowName, workflowId } = useParams();
+  
+  // Support both name-based and ID-based routing for backward compatibility
+  const identifier = workflowName || workflowId;
+  const isNameBased = !!workflowName;
  
-  if (!workflowId) {
+  if (!identifier) {
     return (
       <div className={styles.page}>
         <div className={styles.error}>
-          <h2>No Workflow ID Provided</h2>
-          <p>Please provide a valid workflow ID in the URL: /test/workflow/:workflowId</p>
+          <h2>No Workflow Identifier Provided</h2>
+          <p>Please provide a valid workflow name in the URL: /admin/workflow/:workflowName</p>
         </div>
       </div>
     );
@@ -19,7 +24,10 @@ export default function WorkflowEditorPage() {
  
   return (
     <div className={styles.page}>
-      <WorkflowEditorLayout workflowId={workflowId} />
+      <WorkflowEditorLayout 
+        workflowIdentifier={identifier} 
+        isNameBased={isNameBased}
+      />
     </div>
   );
 }

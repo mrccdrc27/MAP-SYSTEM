@@ -74,8 +74,9 @@ function ArchiveItem({ item }) {
       <td>{format(new Date(item.submit_date), "MMMM dd, yyyy")}</td>
       <td>
         <button
-          className={general.btn}
+          className={general.btnView}
           onClick={() => navigate(`/agent/ticket/${item.step_instance_id}`)}
+          title="View ticket details"
         >
           👁
         </button>

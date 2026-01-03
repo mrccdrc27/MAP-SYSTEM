@@ -49,10 +49,10 @@ def get_sla_for_priority(workflow, priority):
     sla = getattr(workflow, sla_field, None)
     
     if not sla:
-        logger.warning(f"⚠️ No SLA configured for priority '{priority}' in workflow {workflow.name}")
+        logger.warning(f"[WARNING] No SLA configured for priority '{priority}' in workflow {workflow.name}")
         return None
     
-    logger.info(f"✅ Found SLA for priority '{priority}': {sla}")
+    logger.info(f"[OK] Found SLA for priority '{priority}': {sla}")
     return sla
 
 
@@ -78,11 +78,11 @@ def calculate_step_weight_percentage(step, workflow):
     total_weight = sum(float(s.weight) for s in all_steps)
     
     if total_weight == 0:
-        logger.warning(f"⚠️ Total workflow weight is 0 for workflow {workflow.name}")
+        logger.warning(f"[WARNING] Total workflow weight is 0 for workflow {workflow.name}")
         return 1.0 / len(all_steps) if all_steps.exists() else 1.0
     
     step_percentage = float(step.weight) / total_weight
-    logger.info(f"📊 Step '{step.name}' weight: {step.weight}, Total: {total_weight}, Percentage: {step_percentage:.2%}")
+    logger.info(f"[INFO] Step '{step.name}' weight: {step.weight}, Total: {total_weight}, Percentage: {step_percentage:.2%}")
     
     return step_percentage
 
@@ -115,12 +115,12 @@ def calculate_target_resolution_for_task(ticket, workflow):
     try:
         # Get ticket priority
         priority = ticket.priority or 'Medium'
-        logger.info(f"🎫 Calculating TASK target resolution for ticket {ticket.ticket_number}, priority: {priority}")
+        logger.info(f"[INFO] Calculating TASK target resolution for ticket {ticket.ticket_number}, priority: {priority}")
         
         # Get FULL SLA for this priority (no weighting)
         sla = get_sla_for_priority(workflow, priority)
         if not sla:
-            logger.warning(f"⚠️ Cannot calculate target resolution: no SLA for priority '{priority}'")
+            logger.warning(f"[WARNING] Cannot calculate target resolution: no SLA for priority '{priority}'")
             return None
         
         # Calculate target resolution using full SLA (no step weight applied)
@@ -128,7 +128,7 @@ def calculate_target_resolution_for_task(ticket, workflow):
         target_resolution = now + sla
         
         logger.info(
-            f"✅ TASK Target resolution calculated:\n"
+            f"[OK] TASK Target resolution calculated:\n"
             f"   Ticket: {ticket.ticket_number}\n"
             f"   Priority: {priority}\n"
             f"   Full SLA: {sla}\n"
@@ -138,7 +138,7 @@ def calculate_target_resolution_for_task(ticket, workflow):
         return target_resolution
         
     except Exception as e:
-        logger.error(f"❌ Error calculating TASK target resolution: {e}", exc_info=True)
+        logger.error(f"[ERROR] Error calculating TASK target resolution: {e}", exc_info=True)
         return None
 
 
@@ -173,12 +173,12 @@ def calculate_target_resolution_for_task_item(ticket, step, workflow):
     try:
         # Get ticket priority
         priority = ticket.priority or 'Medium'
-        logger.info(f"🎫 Calculating TASK ITEM target resolution for ticket {ticket.ticket_number}, priority: {priority}")
+        logger.info(f"[INFO] Calculating TASK ITEM target resolution for ticket {ticket.ticket_number}, priority: {priority}")
         
         # Get SLA for this priority
         sla = get_sla_for_priority(workflow, priority)
         if not sla:
-            logger.warning(f"⚠️ Cannot calculate target resolution: no SLA for priority '{priority}'")
+            logger.warning(f"[WARNING] Cannot calculate target resolution: no SLA for priority '{priority}'")
             return None
         
         # Calculate step weight percentage
@@ -192,7 +192,7 @@ def calculate_target_resolution_for_task_item(ticket, step, workflow):
         target_resolution = now + step_sla
         
         logger.info(
-            f"✅ TASK ITEM Target resolution calculated:\n"
+            f"[OK] TASK ITEM Target resolution calculated:\n"
             f"   Priority: {priority}\n"
             f"   Full SLA: {sla}\n"
             f"   Step weight: {step.weight} ({step_percentage:.2%})\n"
@@ -203,7 +203,7 @@ def calculate_target_resolution_for_task_item(ticket, step, workflow):
         return target_resolution
         
     except Exception as e:
-        logger.error(f"❌ Error calculating TASK ITEM target resolution: {e}", exc_info=True)
+        logger.error(f"[ERROR] Error calculating TASK ITEM target resolution: {e}", exc_info=True)
         return None
 
 

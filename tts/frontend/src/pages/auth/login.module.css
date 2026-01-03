@@ -61,7 +61,7 @@
 .formHeader .logoText {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #3b82f6;
+  color: var(--primary-color);
   margin: 0;
 }
 
@@ -114,11 +114,11 @@ fieldset {
 
 .formBtn button:disabled {
   cursor: not-allowed;
-  background-color: #d3d3d3;
+  background-color: var(--border-color);
 }
 
 .formBtn button:hover:not(button:disabled) {
-  background-color: rgba(0, 123, 255, 0.8);
+  background-color: var(--primary-color-hover);
 }
 
 .forgotPassword,
@@ -129,7 +129,7 @@ fieldset {
 
 .forgotPassword:hover,
 .registerBtn:hover {
-  color: rgba(0, 123, 255, 0.8);
+  color: var(--primary-color-hover);
 }
 
 .loginPage p {
@@ -168,7 +168,7 @@ fieldset {
   height: 44px;
   padding: 18px 16px;
   border-radius: 40px;
-  border: 1px solid #d3d3d3;
+  border: 1px solid var(--border-color);
   background-color: var(--bg-color);
 }
 
@@ -224,8 +224,8 @@ input[type="password"]::-ms-reveal {
 
 /* ADDED */
 .logInButton:disabled {
-  background-color: #d3d3d3;
-  color: #777;
+  background-color: var(--border-color);
+  color: var(--muted-text-color);
   cursor: not-allowed;
   transition: var(--transition);
 }
@@ -233,7 +233,7 @@ input[type="password"]::-ms-reveal {
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg1-color);
   border-top: 2px solid transparent;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;

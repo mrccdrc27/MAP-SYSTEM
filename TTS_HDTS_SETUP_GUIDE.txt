@@ -188,7 +188,7 @@ Prerequisites:
 Start All Services:
 -------------------
     cd C:\work\Capstone 2\Ticket-Tracking-System
-    pm2 start ecosystem.config.js
+    pm2 start Scripts/processes/tts-ecosystem.config.js
 
 This starts:
     - auth-service (port 8003)
@@ -569,7 +569,7 @@ Full Fresh Setup (after cloning):
     .\Scripts\start_rabbitmq.ps1  # In separate terminal
     
     # 3. Start all services
-    pm2 start ecosystem.config.js
+    pm2 start Scripts/processes/tts-ecosystem.config.js
     
     # 4. Run migrations (first time only)
     cd auth && python manage.py migrate && cd ..
@@ -596,7 +596,7 @@ Daily Development Startup:
     .\Scripts\start_rabbitmq.ps1
     
     # Terminal 2
-    pm2 start ecosystem.config.js
+    pm2 start Scripts/processes/tts-ecosystem.config.js
     pm2 logs  # Stream all logs
 
 Default Test Users:

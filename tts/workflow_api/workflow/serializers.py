@@ -127,6 +127,10 @@ class WorkflowBasicSerializer(serializers.ModelSerializer):
             'department',
             'is_published',
             'status',
+            'low_sla',
+            'medium_sla',
+            'high_sla',
+            'urgent_sla',
             'created_at',
             'updated_at',
         ]
@@ -142,7 +146,6 @@ class CreateWorkflowSerializer(serializers.ModelSerializer):
             'category',
             'sub_category',
             'department',
-            'end_logic',
             'low_sla',
             'medium_sla',
             'high_sla',
@@ -157,7 +160,6 @@ class UpdateWorkflowDetailsSerializer(serializers.Serializer):
     category = serializers.CharField(max_length=64, required=False)
     sub_category = serializers.CharField(max_length=64, required=False)
     department = serializers.CharField(max_length=64, required=False)
-    end_logic = serializers.CharField(max_length=32, required=False, allow_blank=True)
     low_sla = serializers.DurationField(required=False)
     medium_sla = serializers.DurationField(required=False)
     high_sla = serializers.DurationField(required=False)
@@ -176,7 +178,6 @@ class WorkflowDetailSerializer(serializers.ModelSerializer):
             'category',
             'sub_category',
             'department',
-            'end_logic',
             'is_published',
             'status',
             'low_sla',
@@ -265,7 +266,7 @@ class CreateWorkflowWithGraphSerializer(serializers.Serializer):
             "category": "IT",
             "sub_category": "Support",
             "department": "IT Support",
-            "end_logic": "",
+
             "low_sla": "P7D",
             "medium_sla": "P5D",
             "high_sla": "P3D",
@@ -309,7 +310,6 @@ class CreateWorkflowWithGraphSerializer(serializers.Serializer):
         category = serializers.CharField(max_length=64)
         sub_category = serializers.CharField(max_length=64)
         department = serializers.CharField(max_length=64)
-        end_logic = serializers.CharField(max_length=32, required=False, allow_blank=True)
         low_sla = serializers.DurationField(required=False)
         medium_sla = serializers.DurationField(required=False)
         high_sla = serializers.DurationField(required=False)

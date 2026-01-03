@@ -24,10 +24,10 @@ class Command(BaseCommand):
         try:
             # Call the function directly (not as a task) - it will send a message to workflow_api
             result = trigger_workflow_seeding()
-            self.stdout.write(self.style.SUCCESS(f'✓ Workflow seeding triggered'))
+            self.stdout.write(self.style.SUCCESS('Workflow seeding triggered'))
             self.stdout.write(self.style.SUCCESS(f'  Message: {result.get("message", "")}'))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Failed to trigger workflow seeding: {str(e)}'))
+            self.stdout.write(self.style.ERROR(f'Failed to trigger workflow seeding: {str(e)}'))
 
     def create_roles(self):
         """Create roles specific to the TTS system."""

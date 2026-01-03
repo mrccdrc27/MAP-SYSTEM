@@ -27,7 +27,11 @@ from .views import (
     
     # New notification type views
     NotificationTypesView,
-    MyNotificationsByTaskItemView
+    MyNotificationsByTicketView,
+    
+    # Internal endpoints for WebSocket broadcasting
+    InternalBroadcastView,
+    InternalBroadcastCountView,
 )
 
 @api_view(['GET'])
@@ -98,11 +102,15 @@ urlpatterns = [
     path('my/notifications/unread/', MyUnreadNotificationsListView.as_view(), name='my-unread-notifications'),
     path('my/notifications/read/', MyReadNotificationsListView.as_view(), name='my-read-notifications'),
     path('my/notifications/mark-all-read/', MarkAllMyNotificationsAsReadView.as_view(), name='mark-all-my-notifications-read'),
-    path('my/notifications/task-item/<str:task_item_id>/', MyNotificationsByTaskItemView.as_view(), name='my-notifications-by-task-item'),
+    path('my/notifications/ticket/<str:ticket_number>/', MyNotificationsByTicketView.as_view(), name='my-notifications-by-ticket'),
     path('my/notification/detail/', MyNotificationDetailView.as_view(), name='my-notification-detail'),
     path('my/notification/read/', ReadMyNotificationView.as_view(), name='read-my-notification'),
     path('my/notification/mark-read/', MarkMyNotificationAsReadView.as_view(), name='mark-my-notification-read'),
     
     # Notification types endpoint
     path('notification-types/', NotificationTypesView.as_view(), name='notification-types'),
+    
+    # Internal endpoints for WebSocket broadcasting (called by Celery workers)
+    path('internal/broadcast/', InternalBroadcastView.as_view(), name='internal-broadcast'),
+    path('internal/broadcast-count/', InternalBroadcastCountView.as_view(), name='internal-broadcast-count'),
 ]

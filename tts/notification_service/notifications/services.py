@@ -2,7 +2,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.template import Template, Context
 from .models import NotificationTemplate, NotificationLog, NotificationRequest
-from .gmail_service import get_gmail_service
+from emails.services import get_email_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -128,9 +128,9 @@ class NotificationService:
             )
             
             try:
-                # Send the email using Gmail API
-                gmail_service = get_gmail_service()
-                success, message_id, error = gmail_service.send_email(
+                # Send the email using EmailService
+                email_service = get_email_service()
+                success, message_id, error = email_service.send_email(
                     to_email=user_email,
                     subject=rendered_subject,
                     body_text=rendered_body,

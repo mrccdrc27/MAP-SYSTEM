@@ -394,11 +394,16 @@ def apply_edge_handles_to_transitions(transitions_queryset, workflow_id):
             design.setdefault("source_handle", "bottom")
             design.setdefault("target_handle", "top")
         
+        # Use explicit name if set, otherwise generate from step names (same pattern as task API)
+        from_name = edge.from_step_id.name if edge.from_step_id else 'Start'
+        to_name = edge.to_step_id.name if edge.to_step_id else 'End'
+        transition_name = edge.name or f'{from_name} → {to_name}'
+        
         transition_data = {
             'id': edge.transition_id,
             'from': edge.from_step_id.step_id if edge.from_step_id else None,
             'to': edge.to_step_id.step_id if edge.to_step_id else None,
-            'name': edge.name or '',
+            'name': transition_name,
             'design': design
         }
         transitions_data.append(transition_data)

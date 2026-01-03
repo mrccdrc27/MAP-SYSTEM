@@ -151,6 +151,6 @@ class Command(BaseCommand):
             from tts.tasks import trigger_workflow_seeding
             # Send the task asynchronously
             result = trigger_workflow_seeding.delay()
-            self.stdout.write(self.style.SUCCESS(f'✓ Workflow seeding triggered (Task ID: {result.id})'))
+            self.stdout.write(self.style.SUCCESS(f'Workflow seeding triggered (Task ID: {result.id})'))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Failed to trigger workflow seeding: {str(e)}'))
+            self.stdout.write(self.style.ERROR(f'Failed to trigger workflow seeding: {str(e)}'))

@@ -250,6 +250,40 @@ class WorkflowViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, viewset
             status=status.HTTP_200_OK
         )
     
+    @action(detail=False, methods=['get'], url_path='by-name/(?P<workflow_name>[^/.]+)')
+    def workflow_by_name(self, request, workflow_name=None):
+        """
+        Get complete workflow details by name (URL-encoded).
+        Supports both exact name and slug-style name (spaces replaced with hyphens).
+        
+        Example URLs:
+        - /workflows/by-name/IT%20Support/  (URL-encoded space)
+        - /workflows/by-name/IT-Support/    (slug-style)
+        """
+        import urllib.parse
+        
+        # URL decode the name
+        decoded_name = urllib.parse.unquote(workflow_name)
+        
+        # Try exact match first
+        workflow = Workflows.objects.filter(name__iexact=decoded_name).first()
+        
+        # If not found, try matching with hyphens converted to spaces (slug-style)
+        if not workflow:
+            slug_to_name = decoded_name.replace('-', ' ')
+            workflow = Workflows.objects.filter(name__iexact=slug_to_name).first()
+        
+        if not workflow:
+            return Response(
+                {'error': f'Workflow with name "{decoded_name}" not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        return Response(
+            self._get_workflow_detail_response(workflow),
+            status=status.HTTP_200_OK
+        )
+    
     @action(detail=True, methods=['put'], url_path='update-details')
     def update_details(self, request, workflow_id=None):
         """Update workflow metadata (name, description, category, SLAs, etc.)"""

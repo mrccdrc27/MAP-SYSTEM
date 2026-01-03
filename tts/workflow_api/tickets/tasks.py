@@ -296,12 +296,46 @@ def apply_round_robin_assignment(user_ids, role_name, max_assignments=1):
     return [assigned_user]
 
 
+# Note: The send_ticket_status task is defined in HDTS (core/tasks.py) as:
+#   @shared_task(name='send_ticket_status')
+#   def update_ticket_status_from_queue(ticket_number, new_status)
+# 
+# TTS sends tasks to this queue by using current_app.send_task() with explicit queue routing.
+# This avoids the need for a local task definition and ensures the task runs on HDTS worker.
+
+def send_ticket_status_to_hdts(ticket_number, new_status):
+    """
+    Send ticket status update to HDTS via Celery.
+    
+    This function sends a task to the 'ticket_status-default' queue,
+    which HDTS worker listens to. The HDTS task 'send_ticket_status'
+    will update the ticket status in the HDTS database.
+    """
+    from celery import current_app
+    
+    print(f"📤 Sending ticket status update to HDTS: {ticket_number} → {new_status}")
+    
+    try:
+        # Send task to HDTS worker via explicit queue routing
+        result = current_app.send_task(
+            'send_ticket_status',
+            args=[ticket_number, new_status],
+            queue='ticket_status-default'
+        )
+        print(f"✅ Ticket status update sent to HDTS queue. Task ID: {result.id}")
+        return result
+    except Exception as e:
+        print(f"❌ Failed to send ticket status to HDTS: {e}")
+        raise
+
+
 @shared_task(name="send_ticket_status")
 def send_ticket_status(ticket_id, status):
-    data = {
-        "ticket_number": ticket_id,
-        "new_status": status
-    }
-    json_data = json.dumps(data)
-    print("Sending to queue:", json_data)
-    return json_data
+    """
+    Legacy wrapper for backwards compatibility.
+    
+    When called via .delay(), this task runs locally on TTS worker,
+    then forwards the request to HDTS via send_ticket_status_to_hdts().
+    """
+    return send_ticket_status_to_hdts(ticket_id, status)
+

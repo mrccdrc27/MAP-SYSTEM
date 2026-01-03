@@ -182,9 +182,29 @@ CORS_ALLOW_CREDENTIALS = True
 # Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+# Allow Authorization header for JWT authentication
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # Celery Configuration
 CELERY_BROKER_URL = config('DJANGO_CELERY_BROKER_URL', default='amqp://guest:guest@127.0.0.1:5672//')    
@@ -209,6 +229,9 @@ NOTIFICATION_SERVICE_BROKER_URL = config('DJANGO_NOTIFICATION_SERVICE_BROKER_URL
 
 # TTS (Ticket Tracking Service) Configuration for round-robin assignment
 TTS_SERVICE_URL = config('DJANGO_TTS_SERVICE_URL', default='http://localhost:8002')
+
+# Helpdesk Service Configuration (for media/attachments)
+HELPDESK_SERVICE_URL = config('DJANGO_HELPDESK_SERVICE_URL', default='http://localhost:8000')
 
 # Queue Configuration
 DJANGO_NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-queue-default')

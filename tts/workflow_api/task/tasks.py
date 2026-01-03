@@ -13,7 +13,7 @@ INAPP_NOTIFICATION_QUEUE = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-
 # =============================================================================
 
 @shared_task(name="task.send_assignment_notification")
-def send_assignment_notification(user_id, task_item_id, task_title, role_name):
+def send_assignment_notification(user_id, ticket_number, task_title, role_name):
     """
     Send an in-app notification when a user is assigned to a task.
     
@@ -22,7 +22,7 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
     
     Args:
         user_id (int): ID of the user being assigned
-        task_item_id (str): ID of the task item (user's specific assignment)
+        ticket_number (str): Ticket number for navigation
         task_title (str): Title/name of the task
         role_name (str): Role the user is being assigned to
     
@@ -32,7 +32,7 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
     Example:
         >>> send_assignment_notification.delay(
         ...     user_id=6,
-        ...     task_item_id="123",
+        ...     ticket_number="TX20251227638396",
         ...     task_title="Review Ticket",
         ...     role_name="Reviewer"
         ... )
@@ -40,30 +40,22 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
     try:
         from django.utils import timezone
         
-        subject = f"Task Assignment: {task_title}"
-        message = f"Assigned as {role_name}"
-        
         # Send task to notification service via shared Celery broker
         # The notification service worker listens to 'inapp-notification-queue'
+        # This calls the notification service's task which creates both in-app notification AND sends email
         current_app.send_task(
-            'notifications.create_inapp_notification',
+            'notifications.send_assignment_notification',
             args=(
                 user_id,
-                subject,
-                message,
-                'task_assignment',
-                str(task_item_id),
-                None,
-                {
-                    'role_name': role_name,
-                    'assigned_at': timezone.now().isoformat()
-                }
+                str(ticket_number),
+                task_title,
+                role_name
             ),
             queue=INAPP_NOTIFICATION_QUEUE
         )
         
         logger.info(
-            f"📧 Assignment notification queued for user {user_id} to task item {task_item_id} "
+            f"📧 Assignment notification queued for user {user_id} to ticket {ticket_number} "
             f"with role '{role_name}'"
         )
         
@@ -71,12 +63,12 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
             "status": "success",
             "message": "Notification queued for sending",
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
         
     except Exception as e:
         logger.error(
-            f"❌ Failed to queue assignment notification for user {user_id}, task item {task_item_id}: {str(e)}",
+            f"❌ Failed to queue assignment notification for user {user_id}, ticket {ticket_number}: {str(e)}",
             exc_info=True
         )
         return {

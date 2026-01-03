@@ -8,8 +8,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #3498db;
+  border: 6px solid var(--border-color);
+  border-top: 6px solid var(--primary-color);
   border-radius: 50%;
   width: 40px;
   height: 40px;

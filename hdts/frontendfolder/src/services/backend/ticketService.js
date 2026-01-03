@@ -3,24 +3,37 @@ import { API_CONFIG } from '../../config/environment.js';
 import { backendAuthService } from './authService.js';
 
 const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
+const WORKFLOW_URL = API_CONFIG.TTS_WORKFLOW?.BASE_URL || 'http://localhost:8002';
 
 // Helper function to get headers for cookie-based auth
 const getAuthHeaders = () => {
-  // Try to get the access token from cookies (set by auth service)
-  const cookies = document.cookie.split(';');
-  const accessTokenCookie = cookies.find(c => c.trim().startsWith('access_token='));
-  const accessToken = accessTokenCookie ? accessTokenCookie.split('=')[1] : null;
-  
-  const headers = {
+  return {
     'Content-Type': 'application/json',
   };
+};
+
+// Helper to get fetch options with credentials
+const getFetchOptions = (method = 'GET', body = null) => {
+  const options = {
+    method,
+    credentials: 'include', // Essential for httpOnly cookie-based auth
+  };
   
-  // If we have an access token, send it as Authorization header
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
+  if (body) {
+    if (body instanceof FormData) {
+      // For FormData, don't set Content-Type header (browser will set it with boundary)
+      options.body = body;
+    } else {
+      // For JSON data, set headers and stringify
+      options.headers = getAuthHeaders();
+      options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    }
+  } else {
+    // For requests without body, set JSON headers
+    options.headers = getAuthHeaders();
   }
   
-  return headers;
+  return options;
 };
 
 // Helper to handle 401 errors by logging out immediately
@@ -49,7 +62,7 @@ export const backendTicketService = {
       let allResults = [];
 
       while (url) {
-        const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+        const response = await fetch(url, getFetchOptions('GET'));
 
         handleAuthError(response);
 
@@ -85,11 +98,7 @@ export const backendTicketService = {
 
   async getTicketById(ticketId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, getFetchOptions('GET'));
       handleAuthError(response);
       if (!response.ok) {
         throw new Error('Failed to fetch ticket');
@@ -103,11 +112,7 @@ export const backendTicketService = {
 
   async getTicketByNumber(ticketNumber) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/number/${encodeURIComponent(ticketNumber)}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/number/${encodeURIComponent(ticketNumber)}/`, getFetchOptions('GET'));
       if (!response.ok) {
         throw new Error('Failed to fetch ticket by number');
       }
@@ -121,21 +126,7 @@ export const backendTicketService = {
 
   async createTicket(ticketData) {
     try {
-      let options;
-      if (ticketData instanceof FormData) {
-        options = {
-          method: 'POST',
-          credentials: 'include',
-          body: ticketData
-        };
-      } else {
-        options = {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(ticketData),
-        };
-      }
+      const options = getFetchOptions('POST', ticketData);
       let response = await fetch(`${BASE_URL}/api/tickets/`, options);
       if (!response.ok) {
         const respClone = response.clone();
@@ -161,12 +152,7 @@ export const backendTicketService = {
 
   async updateTicket(ticketId, ticketData) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(ticketData),
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, getFetchOptions('PATCH', ticketData));
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update ticket');
@@ -180,12 +166,7 @@ export const backendTicketService = {
 
   async approveTicket(ticketId, { priority = 'Low', department = '', approval_notes = '' } = {}) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/approve/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ priority, department, approval_notes }),
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/approve/`, getFetchOptions('POST', { priority, department, approval_notes }));
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error || err.detail || 'Failed to approve ticket');
@@ -199,11 +180,7 @@ export const backendTicketService = {
 
   async deleteTicket(ticketId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, getFetchOptions('DELETE'));
       if (!response.ok) {
         throw new Error('Failed to delete ticket');
       }
@@ -217,11 +194,7 @@ export const backendTicketService = {
   async getTicketsByEmployee(employeeId) {
     // employeeId should be passed from AuthContext
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/?employee=${employeeId}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/?employee=${employeeId}`, getFetchOptions('GET'));
       if (!response.ok) {
         throw new Error('Failed to fetch employee tickets');
       }
@@ -234,11 +207,7 @@ export const backendTicketService = {
 
   async getTicketsByDepartment(department) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/?department=${department}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/?department=${department}`, getFetchOptions('GET'));
       if (!response.ok) {
         throw new Error('Failed to fetch department tickets');
       }
@@ -251,12 +220,7 @@ export const backendTicketService = {
 
   async updateTicketStatus(ticketId, status, comment = '') {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/update-status/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ status, comment }),
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/update-status/`, getFetchOptions('POST', { status, comment }));
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || errorData.detail || 'Failed to update ticket status');
@@ -270,12 +234,7 @@ export const backendTicketService = {
 
   async rejectTicket(ticketId, rejection_reason = '') {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/reject/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ rejection_reason }),
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/reject/`, getFetchOptions('POST', { rejection_reason }));
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error || err.detail || 'Failed to reject ticket');
@@ -289,12 +248,7 @@ export const backendTicketService = {
 
   async assignTicket(ticketId, assigneeId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ assigned_to: assigneeId }),
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, getFetchOptions('PATCH', { assigned_to: assigneeId }));
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to assign ticket');
@@ -308,12 +262,7 @@ export const backendTicketService = {
 
   async createComment(ticketId, commentText, isInternal = false) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/comments/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ comment: commentText, is_internal: isInternal })
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/comments/`, getFetchOptions('POST', { comment: commentText, is_internal: isInternal }));
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error || err.detail || 'Failed to create comment');
@@ -327,12 +276,7 @@ export const backendTicketService = {
 
   async withdrawTicket(ticketId, reason) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/withdraw/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ reason })
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/withdraw/`, getFetchOptions('POST', { reason }));
       handleAuthError(response);
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -347,12 +291,7 @@ export const backendTicketService = {
 
   async submitCSATRating(ticketId, rating, feedback = '') {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/csat/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ rating, feedback }),
-      });
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/csat/`, getFetchOptions('POST', { rating, feedback }));
       handleAuthError(response);
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -367,11 +306,7 @@ export const backendTicketService = {
 
   async getCSATFeedback() {
     try {
-      const response = await fetch(`${BASE_URL}/api/csat/feedback/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/csat/feedback/`, getFetchOptions('GET'));
       handleAuthError(response);
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -380,6 +315,114 @@ export const backendTicketService = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching CSAT feedback:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get tickets owned by the current user (Ticket Coordinator).
+   * Calls the workflow_api at port 8002.
+   * @param {Object} options - Query options
+   * @param {string} options.tab - 'active' or 'inactive' filter
+   * @param {string} options.search - Search term
+   * @param {number} options.page - Page number
+   * @param {number} options.pageSize - Items per page
+   * @returns {Promise<{results: Array, count: number}>}
+   */
+  async getOwnedTickets({ tab = '', search = '', page = 1, pageSize = 10 } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (tab) params.append('tab', tab);
+      if (search) params.append('search', search);
+      params.append('page', page.toString());
+      params.append('page_size', pageSize.toString());
+      
+      const url = `${WORKFLOW_URL}/tasks/owned-tickets/?${params.toString()}`;
+      console.log('Fetching owned tickets from:', url);
+      
+      const response = await fetch(url, getFetchOptions('GET'));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch owned tickets: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // API returns paginated response: { count, next, previous, results }
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous
+      };
+    } catch (error) {
+      console.error('Error fetching owned tickets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a specific owned ticket by ticket number from workflow_api.
+   * @param {string} ticketNumber - The ticket number (e.g., TX20251222801173)
+   * @returns {Promise<Object>} Task/ticket data
+   */
+  async getOwnedTicketByNumber(ticketNumber) {
+    try {
+      // First get the task by ticket number from workflow API
+      const url = `${WORKFLOW_URL}/tasks/?ticket_number=${encodeURIComponent(ticketNumber)}`;
+      console.log('Fetching owned ticket by number from:', url);
+      
+      const response = await fetch(url, getFetchOptions('GET'));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch ticket: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // API returns paginated results, get the first match
+      const results = data.results || data;
+      if (Array.isArray(results) && results.length > 0) {
+        return results[0];
+      }
+      
+      // If results is a single object
+      if (results && !Array.isArray(results)) {
+        return results;
+      }
+      
+      throw new Error('Ticket not found');
+    } catch (error) {
+      console.error('Error fetching owned ticket by number:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get full ticket details from helpdesk backend by ticket number.
+   * @param {string} ticketNumber - The ticket number
+   * @returns {Promise<Object>} Full helpdesk ticket data
+   */
+  async getHelpdeskTicketByNumber(ticketNumber) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/number/${encodeURIComponent(ticketNumber)}/`, getFetchOptions('GET'));
+      
+      handleAuthError(response);
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || `Failed to fetch helpdesk ticket: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching helpdesk ticket by number:', error);
       throw error;
     }
   }

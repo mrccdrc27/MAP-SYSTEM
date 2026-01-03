@@ -64,12 +64,12 @@ def test_invitation_email():
     try:
         result = send_invitation_email(user, temp_password, system_name, role_name)
         if result:
-            print("✅ Invitation email sent successfully!")
+            print("[OK] Invitation email sent successfully!")
         else:
-            print("❌ Invitation email failed to send")
+            print("[FAIL] Invitation email failed to send")
         return result
     except Exception as e:
-        print(f"❌ Error calling send_invitation_email: {e}")
+        print(f"[ERROR] Error calling send_invitation_email: {e}")
         return False
 
 if __name__ == '__main__':

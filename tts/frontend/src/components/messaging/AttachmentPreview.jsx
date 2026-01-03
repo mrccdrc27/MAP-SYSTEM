@@ -18,12 +18,12 @@ const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
 
   // Get file icon based on type
   const getFileIcon = () => {
-    if (isImage) return '🖼️';
-    if (content_type?.includes('pdf')) return '📄';
-    if (content_type?.includes('word') || content_type?.includes('document')) return '📝';
-    if (content_type?.includes('excel') || content_type?.includes('spreadsheet')) return '📊';
-    if (content_type?.includes('zip') || content_type?.includes('rar')) return '📦';
-    return '📎';
+    if (isImage) return 'fa-regular fa-image';
+    if (content_type?.includes('pdf')) return 'fa-solid fa-file-pdf';
+    if (content_type?.includes('word') || content_type?.includes('document')) return 'fa-solid fa-file-word';
+    if (content_type?.includes('excel') || content_type?.includes('spreadsheet')) return 'fa-solid fa-file-excel';
+    if (content_type?.includes('zip') || content_type?.includes('rar')) return 'fa-solid fa-file-zipper';
+    return 'fa-solid fa-paperclip';
   };
 
   // Handle image click to open in new tab
@@ -50,7 +50,7 @@ const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
             className={styles.downloadBtn}
             title="Download"
           >
-            ⬇️
+            <i className="fa-solid fa-download"></i>
           </button>
         </div>
       </div>
@@ -60,7 +60,7 @@ const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
   // Regular file attachment
   return (
     <div className={`${styles.filePreview} ${isOwn ? styles.fileOwn : styles.fileOther}`}>
-      <div className={styles.fileIcon}>{getFileIcon()}</div>
+      <div className={styles.fileIcon}><i className={getFileIcon()}></i></div>
       <div className={styles.fileInfo}>
         <div className={styles.fileName}>{filename}</div>
         <div className={styles.fileSize}>{formatFileSize(file_size)}</div>
@@ -70,7 +70,7 @@ const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
         className={styles.downloadBtn}
         title="Download"
       >
-        ⬇️
+        <i className="fa-solid fa-download"></i>
       </button>
     </div>
   );

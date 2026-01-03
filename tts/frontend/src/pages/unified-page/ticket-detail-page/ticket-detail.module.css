@@ -31,7 +31,7 @@
 
 .tdpHeaderTitle {
   padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 20px;
 }
 
@@ -54,8 +54,8 @@
   background-color: var(--bg1-color);
   border-radius: 16px;
   padding: 20px;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
 }
 
@@ -83,7 +83,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 20px;
   padding: 10px 0;
 }
@@ -97,7 +97,7 @@
 .tdpSection {
   margin-bottom: 20px;
   background-color: var(--bg-color);
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 15px;
 }
@@ -105,33 +105,56 @@
 .tdpTitle {
   color: var(--heading-color);
   font-size: var(--h3-font-size);
+  margin-bottom: 0.75rem;
 }
 
 .tdpMeta {
-  font-size: var(--table-head-size);
-  color: var(--table-color);
+  font-size: var(--default-font-size);
+  color: var(--muted-text-color);
+  margin-bottom: 0.5rem;
+}
+
+.tdpMeta span {
+  font-weight: 600;
+  color: var(--heading-color);
 }
 
 /* Owner Description */
 .tdpOwnerDescWrapper {
-  display: flex;
-  flex-direction: column;
+  /* display: flex;
+  flex-direction: column; */
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .tdpODWItem {
+  /* display: flex;
+  justify-content: space-between; */
+
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .tdpODWLabel {
-  font-weight: 600;
+  /* font-weight: 600;
   color: #444;
-  font-size: 0.9rem;
+  font-size: 0.9rem; */
+
+  font-size: var(--default-font-size);
+  color: var(--muted-text-color);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .tdpODWValue {
-  font-size: 0.9rem;
-  color: #222;
+  font-size: var(--default-font-size);
+  color: var(--heading-color);
+  font-weight: 500;
 }
 
 .tdpDescription {
@@ -144,13 +167,13 @@
 
 /* INSTRUCTIONS */
 .tdInstructions {
-  background-color: #f4f8ff;
+  background-color: var(--bg-content-color);
   border-left: 5px solid var(--primary-color);
   border-radius: 8px;
   padding: 16px 20px;
   color: var(--text-color);
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .iHeaderWrapper {
@@ -183,6 +206,7 @@
 .tdAttachment h3 {
   color: var(--heading-color);
   font-size: var(--h3-font-size);
+  margin-bottom: 12px;
 }
 
 .tdAttached {
@@ -192,12 +216,88 @@
 }
 
 .tdAttached i {
-  color: #007bff;
+  color: var(--primary-color);
 }
 
 .tdAttached span {
   font-size: var(--default-font-size);
   color: var(--secondary-color);
+}
+
+/* Attachment List Styles */
+.attachmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachmentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: var(--bg1-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.attachmentItem:hover {
+  background-color: var(--bg-color);
+  border-color: var(--primary-color);
+}
+
+.attachmentIcon {
+  font-size: 20px;
+  color: var(--primary-color);
+  min-width: 24px;
+  text-align: center;
+}
+
+.attachmentInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attachmentName {
+  font-size: var(--default-font-size);
+  color: var(--text-color);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.attachmentName:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.attachmentMeta {
+  font-size: 12px;
+  color: var(--secondary-color);
+}
+
+.attachmentDownload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: var(--bg-color);
+  color: var(--secondary-color);
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.attachmentDownload:hover {
+  background-color: var(--primary-color);
+  color: white;
 }
 
 /* BUTTONS (RIGHT PANEL) */
@@ -223,9 +323,9 @@
 .escalateButton:hover:not(:disabled),
 .transferButton:hover:not(:disabled) {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--box-shadow-hover, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 /* DISABLED STATE (Shared) */
@@ -235,8 +335,8 @@
 .transferButtonDisabled,
 .escalateButtonDisabled,
 .ticketActionButtonDisabled {
-  background-color: #cccccc !important;
-  color: #666666 !important;
+  background-color: var(--border-color) !important;
+  color: var(--muted-text-color) !important;
   cursor: not-allowed;
   opacity: 0.6;
   transform: none !important;
@@ -263,7 +363,7 @@
   display: flex;
   gap: 32px;
   margin-bottom: 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tdpTabLink {
@@ -277,7 +377,7 @@
 }
 
 .tdpTabLink.active {
-  color: #0d6efd;
+  color: var(--primary-color);
   font-weight: 500;
 }
 
@@ -288,7 +388,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background-color: #0d6efd;
+  background-color: var(--primary-color);
 }
 
 /* STATUS */
@@ -297,10 +397,18 @@
   justify-content: space-between;
   margin-bottom: 10px;
   align-items: center;
-  padding: 10px;
+
+  width: 100%;
+  background-color: var(--bg1-color);
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 
-.tdStatusLabel {
+.tdStatusCard h4,
+.actionLogs h4,
+.tdSLA h4 {
   font-size: var(--default-font-size);
   color: var(--heading-color);
   font-weight: bold;
@@ -323,7 +431,7 @@
   left: 0;
   height: 4px;
   width: 100%;
-  background-color: #ddd;
+  background-color: var(--border-color);
   transform: translateY(-50%);
 }
 
@@ -337,7 +445,7 @@
   height: 24px;
   border-radius: 50%;
   background-color: var(--bg-color);
-  border: 3px solid #ccc;
+  border: 3px solid var(--border-very-light-gray);
 }
 
 /* INFO */
@@ -379,11 +487,22 @@
   color: var(--heading-color);
 }
 
+/* SLA STATUS SECTION */
+.slaStatusSection {
+  margin: 1rem 0;
+  transition: all 0.3s ease;
+}
+
+.slaStatusSection:hover {
+  transform: translateY(-2px);
+}
+
 /* ACTION LOGS */
 .actionLogs {
   font-size: var(--default-font-size);
   color: var(--heading-color);
 }
+
 
 /* ANIMATION */
 @keyframes fadeInUp {
@@ -398,9 +517,164 @@
   }
 }
 
+/* ERROR STATES */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.errorBox {
+  background: var(--bg1-color);
+  border: 2px solid var(--error-color);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  max-width: 500px;
+  box-shadow: var(--box-shadow-hover, 0 4px 12px rgba(255, 107, 107, 0.15));
+}
+
+.errorIcon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.errorTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--error-color);
+  margin: 1rem 0;
+}
+
+.errorMessage {
+  font-size: 0.95rem;
+  color: var(--muted-text-color);
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+
+.errorSubtext {
+  font-size: 0.85rem;
+  color: var(--muted-text-color);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.errorActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.errorBackButton,
+.errorRefreshButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.errorBackButton {
+  background-color: var(--bg-content-color);
+  color: var(--heading-color);
+}
+
+.errorBackButton:hover {
+  background-color: var(--border-color);
+  transform: translateX(-2px);
+}
+
+.errorRefreshButton {
+  background-color: var(--error-color);
+  color: var(--bg1-color);
+}
+
+.errorRefreshButton:hover {
+  background-color: var(--error-color);
+  transform: scale(1.02);
+}
+
+/* ERROR TYPE VARIANTS */
+.errorBox.notFound {
+  border-color: var(--status-danger-color);
+  background: var(--error-gradient-bg, linear-gradient(135deg, var(--bg1-color) 0%, var(--bg-content-color) 100%));
+}
+
+.errorBox.unauthorized {
+  border-color: var(--status-warning-color);
+  background: var(--error-gradient-bg, linear-gradient(135deg, var(--bg1-color) 0%, var(--bg-content-color) 100%));
+}
+
+.errorBox.forbidden {
+  border-color: var(--status-warning-color);
+  background: var(--error-gradient-bg, linear-gradient(135deg, var(--bg1-color) 0%, var(--bg-content-color) 100%));
+}
+
+.errorBox.unassigned {
+  border-color: var(--status-info-color);
+  background: var(--error-gradient-bg, linear-gradient(135deg, var(--bg1-color) 0%, var(--bg-content-color) 100%));
+}
+
+.errorBox.notFound .errorTitle {
+  color: var(--status-danger-color);
+}
+
+.errorBox.unauthorized .errorTitle {
+  color: var(--status-warning-color);
+}
+
+.errorBox.forbidden .errorTitle {
+  color: var(--status-warning-color);
+}
+
+.errorBox.unassigned .errorTitle {
+  color: var(--status-info-color);
+}
+
+.errorBox.notFound .errorIcon {
+  color: var(--status-danger-color);
+}
+
+.errorBox.unauthorized .errorIcon {
+  color: var(--status-warning-color);
+}
+
+.errorBox.forbidden .errorIcon {
+  color: var(--status-warning-color);
+}
+
+.errorBox.unassigned .errorIcon {
+  color: var(--status-info-color);
+}
+
 /* RESPONSIVE */
 @media screen and (max-width: 768px) {
   .layoutFlex {
     flex-direction: column;
+  }
+
+  .errorBox {
+    padding: 2rem 1.5rem;
+  }
+
+  .errorIcon {
+    font-size: 2.5rem;
+  }
+
+  .errorTitle {
+    font-size: 1.25rem;
   }
 }

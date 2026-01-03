@@ -30,7 +30,7 @@
 }
 
 .actionButton:hover {
-  background-color: #0056b3;
+  background-color: var(--primary-color-hover);
   transform: scale(1.05) translateY(-3px);
   box-shadow: var(--box-shadow-as);
   color: var(--bg1-color);

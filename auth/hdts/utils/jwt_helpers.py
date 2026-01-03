@@ -43,8 +43,11 @@ def generate_employee_tokens(employee):
     """
     import uuid
     now = timezone.now()
-    access_exp = now + timedelta(minutes=15)
-    refresh_exp = now + timedelta(days=7)
+    # Use SIMPLE_JWT settings for consistency with User tokens
+    access_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('ACCESS_TOKEN_LIFETIME', timedelta(minutes=5))
+    refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
+    access_exp = now + access_lifetime
+    refresh_exp = now + refresh_lifetime
     
     # Build full name
     full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
@@ -107,21 +110,27 @@ def set_employee_cookies(response, access_token, refresh_token):
     # Only use secure flag in production (when DEBUG=False)
     use_secure = not settings.DEBUG
     
+    # Use SIMPLE_JWT settings for cookie max_age
+    access_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('ACCESS_TOKEN_LIFETIME', timedelta(minutes=5))
+    refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
+    
     response.set_cookie(
         'access_token',
         access_token,
         httponly=True,
         secure=use_secure,
-        samesite='Strict',
-        max_age=900  # 15 minutes
+        samesite='Lax',
+        max_age=int(access_lifetime.total_seconds()),
+        path='/'
     )
     response.set_cookie(
         'refresh_token',
         refresh_token,
         httponly=True,
         secure=use_secure,
-        samesite='Strict',
-        max_age=86400 * 7  # 7 days
+        samesite='Lax',
+        max_age=int(refresh_lifetime.total_seconds()),
+        path='/'
     )
     return response
 

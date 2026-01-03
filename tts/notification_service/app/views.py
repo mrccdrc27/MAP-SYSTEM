@@ -56,7 +56,7 @@ class MyNotificationsListView(generics.ListAPIView):
     
     Query Parameters (optional):
     - notification_type: Filter by notification type (e.g., 'task_assignment', 'task_transfer_in')
-    - related_task_item_id: Filter by related task item ID
+    - related_ticket_number: Filter by related ticket number
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -71,10 +71,10 @@ class MyNotificationsListView(generics.ListAPIView):
         if notification_type:
             queryset = queryset.filter(notification_type=notification_type)
         
-        # Optional filtering by related task item ID
-        related_task_item_id = self.request.query_params.get('related_task_item_id')
-        if related_task_item_id:
-            queryset = queryset.filter(related_task_item_id=related_task_item_id)
+        # Optional filtering by related ticket number
+        related_ticket_number = self.request.query_params.get('related_ticket_number')
+        if related_ticket_number:
+            queryset = queryset.filter(related_ticket_number=related_ticket_number)
         
         return queryset
 
@@ -491,12 +491,12 @@ class NotificationTypesView(APIView):
         })
 
 
-class MyNotificationsByTaskItemView(generics.ListAPIView):
+class MyNotificationsByTicketView(generics.ListAPIView):
     """
-    List all notifications for the authenticated user related to a specific task item.
+    List all notifications for the authenticated user related to a specific ticket.
     
     Path Parameters:
-    - task_item_id: The task item ID to filter notifications by
+    - ticket_number: The ticket number to filter notifications by
     """
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
@@ -504,8 +504,85 @@ class MyNotificationsByTaskItemView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        task_item_id = self.kwargs.get('task_item_id')
+        ticket_number = self.kwargs.get('ticket_number')
         return InAppNotification.objects.filter(
             user_id=user_id,
-            related_task_item_id=task_item_id
+            related_ticket_number=ticket_number
         ).order_by('-created_at')
+
+
+# =============================================================================
+# INTERNAL ENDPOINTS FOR WEBSOCKET BROADCASTING
+# These are called by Celery workers to trigger broadcasts within Daphne process
+# =============================================================================
+
+class InternalBroadcastView(APIView):
+    """
+    Internal endpoint for triggering WebSocket broadcasts.
+    Called by Celery workers after creating notifications.
+    
+    This runs within the Daphne process, so it can access the
+    InMemoryChannelLayer directly.
+    """
+    authentication_classes = []  # No auth for internal calls
+    permission_classes = []  # Allow all (should be firewalled in production)
+    
+    def post(self, request):
+        from .websocket_utils import broadcast_notification_direct
+        
+        user_id = request.data.get('user_id')
+        notification_data = request.data.get('notification')
+        action = request.data.get('action', 'new')
+        
+        if not user_id or not notification_data:
+            return Response(
+                {'error': 'user_id and notification are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        success = broadcast_notification_direct(user_id, notification_data, action)
+        
+        return Response({
+            'success': success,
+            'user_id': user_id,
+            'action': action
+        })
+
+
+class InternalBroadcastCountView(APIView):
+    """
+    Internal endpoint for broadcasting unread count updates.
+    Called by Celery workers after marking notifications as read.
+    """
+    authentication_classes = []
+    permission_classes = []
+    
+    def post(self, request):
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        from datetime import datetime
+        
+        user_id = request.data.get('user_id')
+        unread_count = request.data.get('unread_count', 0)
+        
+        if not user_id:
+            return Response(
+                {'error': 'user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                group_name = f'notifications_{user_id}'
+                message = {
+                    'type': 'notification_count_update',
+                    'unread_count': unread_count,
+                    'timestamp': datetime.now().isoformat()
+                }
+                async_to_sync(channel_layer.group_send)(group_name, message)
+                return Response({'success': True, 'user_id': user_id})
+            else:
+                return Response({'success': False, 'error': 'No channel layer'})
+        except Exception as e:
+            return Response({'success': False, 'error': str(e)})

@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { getAccessToken } from '../api/TokenUtils';
 
 // Use environment config for messaging API
 const MESSAGING_API_BASE = import.meta.env.VITE_MESSAGING_API || 'http://localhost:8005';
@@ -10,21 +9,13 @@ console.log('[useMessagingAPI] MESSAGING_API_BASE:', MESSAGING_API_BASE);
 /**
  * Hook for messaging API operations
  * Handles HTTP requests to the messaging service for ticket communication
+ * Uses cookie-based authentication - no localStorage tokens
  */
 export const useMessagingAPI = (ticketId, setMessages) => {
   console.log('[useMessagingAPI] Hook initialized with ticketId:', ticketId);
   const [ticket, setTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  /**
-   * Get auth headers - tries localStorage first, then cookies
-   */
-  const getAuthHeaders = useCallback(() => {
-    const token = getAccessToken();
-    console.log('[useMessagingAPI] Token found:', token ? 'Yes' : 'No');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
 
   /**
    * Fetch all messages for the current ticket
@@ -44,10 +35,9 @@ export const useMessagingAPI = (ticketId, setMessages) => {
       
       const response = await fetch(url, {
         method: 'GET',
-        credentials: 'include', // Include cookies for cross-origin requests
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
         },
       });
 
@@ -81,7 +71,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
     } finally {
       setIsLoading(false);
     }
-  }, [ticketId, setMessages, getAuthHeaders]);
+  }, [ticketId, setMessages]);
 
   /**
    * Send a new message to the ticket
@@ -111,7 +101,6 @@ export const useMessagingAPI = (ticketId, setMessages) => {
       const response = await fetch(`${MESSAGING_API_BASE}/messages/`, {
         method: 'POST',
         credentials: 'include', // Include cookies for cross-origin requests
-        headers: getAuthHeaders(),
         body: formData,
       });
 
@@ -140,7 +129,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
     } finally {
       setIsLoading(false);
     }
-  }, [ticketId, setMessages, getAuthHeaders]);
+  }, [ticketId, setMessages]);
 
   /**
    * Edit an existing message
@@ -159,7 +148,6 @@ export const useMessagingAPI = (ticketId, setMessages) => {
         credentials: 'include', // Include cookies for cross-origin requests
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
         },
         body: JSON.stringify({ message: newText.trim() }),
       });
@@ -185,7 +173,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
     } finally {
       setIsLoading(false);
     }
-  }, [setMessages, getAuthHeaders]);
+  }, [setMessages]);
 
   /**
    * Delete a message (soft delete)
@@ -204,7 +192,6 @@ export const useMessagingAPI = (ticketId, setMessages) => {
         credentials: 'include', // Include cookies for cross-origin requests
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
         },
       });
 
@@ -226,7 +213,51 @@ export const useMessagingAPI = (ticketId, setMessages) => {
     } finally {
       setIsLoading(false);
     }
-  }, [setMessages, getAuthHeaders]);
+  }, [setMessages]);
+
+  /**
+   * Unsend a message (mark as unsent, optionally for everyone)
+   */
+  const unsendMessage = useCallback(async (messageId, forAll = false) => {
+    if (!messageId) {
+      throw new Error('Message ID required');
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${MESSAGING_API_BASE}/messages/${messageId}/unsend/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ for_all: forAll }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}`);
+      }
+
+      const updatedMessage = await response.json();
+      console.log('[useMessagingAPI] Message unsent:', updatedMessage);
+      
+      // Update message in local state
+      setMessages(prev => 
+        prev.map(msg => msg.message_id === messageId ? updatedMessage : msg)
+      );
+      
+      return updatedMessage;
+    } catch (err) {
+      console.error('[useMessagingAPI] Unsend error:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setMessages]);
 
   /**
    * Add a reaction to a message
@@ -242,7 +273,6 @@ export const useMessagingAPI = (ticketId, setMessages) => {
         credentials: 'include', // Include cookies for cross-origin requests
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
         },
         body: JSON.stringify({ message_id: messageId, reaction: emoji }),
       });
@@ -273,7 +303,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
       console.error('[useMessagingAPI] Add reaction error:', err);
       throw err;
     }
-  }, [setMessages, getAuthHeaders]);
+  }, [setMessages]);
 
   /**
    * Remove a reaction from a message
@@ -289,7 +319,6 @@ export const useMessagingAPI = (ticketId, setMessages) => {
         credentials: 'include', // Include cookies for cross-origin requests
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
         },
         body: JSON.stringify({ message_id: messageId, reaction: emoji }),
       });
@@ -319,7 +348,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
       console.error('[useMessagingAPI] Remove reaction error:', err);
       throw err;
     }
-  }, [setMessages, getAuthHeaders]);
+  }, [setMessages]);
 
   /**
    * Download an attachment
@@ -335,7 +364,6 @@ export const useMessagingAPI = (ticketId, setMessages) => {
         {
           method: 'GET',
           credentials: 'include', // Include cookies for cross-origin requests
-          headers: getAuthHeaders(),
         }
       );
 
@@ -358,7 +386,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
       console.error('[useMessagingAPI] Download error:', err);
       throw err;
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   return {
     ticket,
@@ -368,6 +396,7 @@ export const useMessagingAPI = (ticketId, setMessages) => {
     sendMessage,
     editMessage,
     deleteMessage,
+    unsendMessage,
     addReaction,
     removeReaction,
     downloadAttachment,

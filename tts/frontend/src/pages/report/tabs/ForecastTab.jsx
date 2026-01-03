@@ -251,9 +251,9 @@ function ResolutionTimeCard({ prediction }) {
 
 // Category Trend Card
 function CategoryTrendCard({ category }) {
-  const trendColor = category.trend_direction === 'increasing' ? '#e74c3c' 
-    : category.trend_direction === 'decreasing' ? '#7ed321' 
-    : '#f5a623';
+  const trendColor = category.trend_direction === 'increasing' ? 'var(--status-danger-color)' 
+    : category.trend_direction === 'decreasing' ? 'var(--status-success-color)' 
+    : 'var(--status-warning-color)';
 
   return (
     <div style={{
@@ -441,7 +441,7 @@ export default function ForecastTab({ timeFilter }) {
             value={volumeData.forecast_daily_avg?.toFixed(1) || '0'}
             subtitle="tickets/day"
             icon={TrendingUp}
-            color={volumeData.trend_direction === 'increasing' ? '#e74c3c' : '#7ed321'}
+            color={volumeData.trend_direction === 'increasing' ? 'var(--status-danger-color)' : 'var(--status-success-color)'}
             trend={volumeData.trend_direction === 'increasing' ? 'up' : volumeData.trend_direction === 'decreasing' ? 'down' : 'stable'}
             trendValue={`${volumeData.trend_percentage > 0 ? '+' : ''}${volumeData.trend_percentage}%`}
           />
@@ -450,7 +450,7 @@ export default function ForecastTab({ timeFilter }) {
             value={slaRisk.total_open || 0}
             subtitle={`${slaRisk.high_risk_count || 0} at risk`}
             icon={AlertTriangle}
-            color={slaRisk.high_risk_percentage > 20 ? '#e74c3c' : '#f5a623'}
+            color={slaRisk.high_risk_percentage > 20 ? 'var(--status-danger-color)' : 'var(--status-warning-color)'}
           />
           <ForecastKpiCard
             title="Avg Resolution"
@@ -484,7 +484,7 @@ export default function ForecastTab({ timeFilter }) {
                 textAlign: 'center', 
                 color: 'var(--secondary-color)' 
               }}>
-                <CheckCircle size={32} color="#7ed321" style={{ marginBottom: '8px' }} />
+                <CheckCircle size={32} color="var(--status-success-color)" style={{ marginBottom: '8px' }} />
                 <div>All systems operating normally</div>
               </div>
             )}
@@ -539,7 +539,7 @@ export default function ForecastTab({ timeFilter }) {
             value={summary.forecast_average?.toFixed(1) || '0'}
             subtitle="tickets/period"
             icon={TrendingUp}
-            color={summary.trend_direction === 'increasing' ? '#e74c3c' : '#7ed321'}
+            color={summary.trend_direction === 'increasing' ? 'var(--status-danger-color)' : 'var(--status-success-color)'}
             trend={summary.trend_direction === 'increasing' ? 'up' : summary.trend_direction === 'decreasing' ? 'down' : 'stable'}
             trendValue={summary.trend_direction}
           />
@@ -723,21 +723,21 @@ export default function ForecastTab({ timeFilter }) {
             value={summary.high_risk_count || 0}
             subtitle={`${distribution.high?.toFixed(1) || 0}%`}
             icon={AlertCircle}
-            color="#e74c3c"
+            color="var(--status-danger-color)"
           />
           <ForecastKpiCard
             title="Medium Risk"
             value={summary.medium_risk_count || 0}
             subtitle={`${distribution.medium?.toFixed(1) || 0}%`}
             icon={AlertTriangle}
-            color="#f5a623"
+            color="var(--status-warning-color)"
           />
           <ForecastKpiCard
             title="Low Risk"
             value={summary.low_risk_count || 0}
             subtitle={`${distribution.low?.toFixed(1) || 0}%`}
             icon={CheckCircle}
-            color="#7ed321"
+            color="var(--status-success-color)"
           />
         </div>
 
@@ -800,19 +800,19 @@ export default function ForecastTab({ timeFilter }) {
             value={patterns.peak_hours?.join(', ') || 'N/A'}
             subtitle="busiest times"
             icon={Zap}
-            color="#e74c3c"
+            color="var(--status-danger-color)"
           />
           <ForecastKpiCard
             title="Busiest Day"
             value={patterns.busiest_day || 'N/A'}
             icon={TrendingUp}
-            color="#f5a623"
+            color="var(--status-warning-color)"
           />
           <ForecastKpiCard
             title="Quietest Day"
             value={patterns.quietest_day || 'N/A'}
             icon={TrendingDown}
-            color="#7ed321"
+            color="var(--status-success-color)"
           />
         </div>
 

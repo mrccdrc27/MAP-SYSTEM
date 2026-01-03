@@ -17,7 +17,7 @@ class Command(BaseCommand):
         admin_role = Role.objects.filter(name__iexact='Admin').first()
         
         if not coordinator_role and not admin_role:
-            self.stdout.write(self.style.WARNING('⚠ No Ticket Coordinator or Admin roles found'))
+            self.stdout.write(self.style.WARNING('No Ticket Coordinator or Admin roles found'))
             return
 
         # Find all users with these roles
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         updated_count = coordinators_admins.update(status='Approved')
         self.stdout.write(
             self.style.SUCCESS(
-                f'✓ Updated {updated_count} users (Ticket Coordinators and Admins) to Approved status'
+                f'Updated {updated_count} users (Ticket Coordinators and Admins) to Approved status'
             )
         )
 
@@ -49,8 +49,8 @@ class Command(BaseCommand):
         if employees_updated:
             self.stdout.write(
                 self.style.SUCCESS(
-                    f'✓ Updated {employees_updated} employee records to Approved status'
+                    f'Updated {employees_updated} employee records to Approved status'
                 )
             )
 
-        self.stdout.write(self.style.SUCCESS('✓ Approval process completed!'))
+        self.stdout.write(self.style.SUCCESS('Approval process completed!'))

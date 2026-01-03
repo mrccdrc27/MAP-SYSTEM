@@ -28,9 +28,9 @@ class TaskService:
         
         # Move to next step
         next_step = transition.to_step_id
-        task.current_step = next_step
         
-        # Reset user assignments for new step
+        # Assign users for the new step BEFORE updating task.current_step
+        # Pass step explicitly to ensure TaskItems get correct assigned_on_step
         if next_step and next_step.role_id:
             # Fetch new users for the next step's role
             users_for_role = fetch_users_for_role(next_step.role_id.name)
@@ -39,8 +39,12 @@ class TaskService:
                 apply_round_robin_assignment(
                     task, 
                     users_for_role, 
-                    next_step.role_id.name
+                    next_step.role_id.name,
+                    step=next_step  # Explicitly pass the target step
                 )
+        
+        # Update task.current_step after assignments are made
+        task.current_step = next_step
             # If no users, keep existing assignments (don't clear)
         
         task.status = 'pending'

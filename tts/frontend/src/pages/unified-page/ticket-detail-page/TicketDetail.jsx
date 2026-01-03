@@ -16,6 +16,7 @@ import WorkflowTracker2 from "../../../components/ticket/WorkflowVisualizer2";
 import TicketComments from "../../../components/ticket/TicketComments";
 import ActionLogList from "../../../components/ticket/ActionLogList";
 import Messaging from "../../../components/messaging";
+import SLAStatus from "../../../components/ticket/SLAStatus";
 
 // hooks
 import useFetchActionLogs from "../../../api/workflow-graph/useActionLogs";
@@ -27,17 +28,16 @@ import { useAuth } from "../../../context/AuthContext";
 import TicketAction from "./modals/TicketAction";
 import EscalateTicket from "./modals/EscalateTicket";
 import TransferTask from "../../../components/modal/TransferTask";
-import { min } from "date-fns";
 
 export default function TicketDetail() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const { id: taskItemId } = useParams();
+  const { ticketNumber } = useParams();
   const {
     stepInstance,
     loading: instanceLoading,
     error: instanceError,
-  } = useTicketDetail(taskItemId);
+  } = useTicketDetail(ticketNumber);
 
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,6 +52,7 @@ export default function TicketDetail() {
     instruction: "",
     taskid: null,
     currentOwner: null,
+    canAct: true,  // Can user take any action on this task item?
   };
 
   function reducer(state, action) {
@@ -65,6 +66,7 @@ export default function TicketDetail() {
           instance: action.payload.instance,
           taskid: action.payload.taskid,
           currentOwner: action.payload.currentOwner,
+          canAct: action.payload.canAct,
         };
       case "RESET":
         return initialState;
@@ -163,16 +165,14 @@ export default function TicketDetail() {
 
     // Handle successful data
     if (stepInstance) {
-      // Console log before normalizing the data
-      // console.log('Raw stepInstance data before normalization:', JSON.stringify(stepInstance, null, 2));
-
-      // Map new ticket fields from the provided structure
+      // Map ticket fields from the API response
       const t = stepInstance.task.ticket;
+      
       dispatch({
         type: "SET_TICKET",
         payload: {
           ticket: {
-            ticket_id: t.ticket_number || t.ticket_id || t.id, // Use ticket_number as primary ID
+            ticket_id: t.ticket_number || t.ticket_id || t.id,
             ticket_number: t.ticket_number,
             ticket_subject: t.subject,
             ticket_description: t.description,
@@ -183,9 +183,13 @@ export default function TicketDetail() {
             current_step_role: stepInstance.step.role_id,
             status: t.status,
             user_assignment: t.employee || { username: t.assigned_to },
+            // Action state flags from API
+            current_status: stepInstance.current_status,
             has_acted: stepInstance.has_acted,
             is_escalated: stepInstance.is_escalated,
             is_transferred: stepInstance.is_transferred,
+            origin: stepInstance.origin,
+            // Dates
             created_at: t.created_at,
             updated_at: t.updated_at,
             fetched_at: t.fetched_at,
@@ -198,6 +202,8 @@ export default function TicketDetail() {
           instance: stepInstance.step_instance_id,
           taskid: stepInstance.task.task_id,
           currentOwner: stepInstance.current_owner,
+          // Use the simplified can_act flag from backend
+          canAct: stepInstance.can_act ?? true,
         },
       });
       setError("");
@@ -218,33 +224,41 @@ export default function TicketDetail() {
     }
   }, [state.ticket?.ticket_id, fetchActionLogs]);
 
-  // check ticket data after normalization
-  // console.log("ticket data", JSON.stringify(state.ticket, null, 2));
-
   const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
 
   // Helper function to get button text based on ticket state
+  // Uses the simplified canAct flag from backend + specific status for messaging
   const getButtonText = (buttonType) => {
     const ticket = state.ticket;
+    const canAct = state.canAct;
 
     if (buttonType === "action") {
-      if (ticket?.is_escalated) return "Can't Make Action After Escalation";
-      if (ticket?.is_transferred) return "Can't Make Action After Transfer";
-      if (ticket?.has_acted) return "Action Already Taken";
+      if (!canAct) {
+        if (ticket?.is_escalated) return "Already Escalated";
+        if (ticket?.is_transferred) return "Already Transferred";
+        if (ticket?.has_acted) return "Action Already Taken";
+        return "Action Not Available";
+      }
       return "Make an Action";
     }
 
     if (buttonType === "escalate") {
-      if (ticket?.is_escalated) return "Already Escalated";
-      if (ticket?.has_acted) return "Can't Escalate After Action";
-      if (ticket?.is_transferred) return "Can't Escalate After Transfer";
+      if (!canAct) {
+        if (ticket?.is_escalated) return "Already Escalated";
+        if (ticket?.is_transferred) return "Already Transferred";
+        if (ticket?.has_acted) return "Already Resolved";
+        return "Escalation Not Available";
+      }
       return "Escalate";
     }
 
     if (buttonType === "transfer") {
-      if (ticket?.is_transferred) return "Already Transferred";
-      if (ticket?.is_escalated) return "Can't Transfer After Escalation";
-      if (ticket?.has_acted) return "Can't Transfer After Action";
+      if (!canAct) {
+        if (ticket?.is_transferred) return "Already Transferred";
+        if (ticket?.is_escalated) return "Already Escalated";
+        if (ticket?.has_acted) return "Already Resolved";
+        return "Transfer Not Available";
+      }
       return "Transfer";
     }
 
@@ -275,23 +289,87 @@ export default function TicketDetail() {
     );
   }
   if (error) {
+    // Determine error type and customize messaging
+    let errorType = "notFound";
+    let errorIcon = "fa-exclamation-circle";
+    let errorTitle = "Ticket Not Found";
+    let errorMessage = error;
+    let errorSubtext = "The ticket you're looking for doesn't exist or has been removed.";
+
+    if (error.includes("no authorization") || error.includes("not assigned to you")) {
+      errorType = "unauthorized";
+      errorIcon = "fa-lock";
+      errorTitle = "Access Denied";
+      errorMessage = "You don't have permission to view this ticket.";
+      errorSubtext = "Only the assigned agent can view this ticket detail.";
+    } else if (error.includes("no assignment") || error.includes("You have no")) {
+      errorType = "unassigned";
+      errorIcon = "fa-user-slash";
+      errorTitle = "No Assignment";
+      errorMessage = "You have no assigned task for this ticket.";
+      errorSubtext = "This ticket has not been assigned to you. Please check the ticket list.";
+    } else if (error.includes("Authentication required") || error.includes("401")) {
+      errorType = "unauthorized";
+      errorIcon = "fa-user-circle";
+      errorTitle = "Authentication Required";
+      errorMessage = "Your session has expired or you are not logged in.";
+      errorSubtext = "Please log in again to continue.";
+    } else if (error.includes("not found") || error.includes("404")) {
+      errorType = "notFound";
+      errorIcon = "fa-search";
+      errorTitle = "Ticket Not Found";
+      errorMessage = error;
+      errorSubtext = "The ticket you're looking for doesn't exist.";
+    } else if (error.includes("Failed to fetch")) {
+      errorType = "forbidden";
+      errorIcon = "fa-network-wired";
+      errorTitle = "Connection Error";
+      errorMessage = "Failed to fetch ticket data. Please try again.";
+      errorSubtext = "Check your internet connection and try refreshing the page.";
+    }
+
     return (
       <>
         <Nav />
         <main className={styles.ticketDetailPage}>
           <section className={styles.tdpHeader}>
             <button
-              className={styles.tdBack}
+              className={styles.wpdBack}
               onClick={handleBack}
-              aria-label="Go back"
+              aria-label="Go back to tickets"
               type="button"
             >
-              <i className="fa fa-chevron-left"></i>
+              Tickets
             </button>
-            <h1>Error</h1>
+            <span className={styles.wpdCurrent}> / Error</span>
           </section>
-          <section className={styles.tdpBody}>
-            <div style={{ padding: "2rem", color: "red" }}>{error}</div>
+
+          <section className={styles.errorContainer}>
+            <div className={`${styles.errorBox} ${styles[errorType]}`}>
+              <i className={`fa-solid ${errorIcon} ${styles.errorIcon}`}></i>
+              <h2 className={styles.errorTitle}>{errorTitle}</h2>
+              <p className={styles.errorMessage}>{errorMessage}</p>
+              <p className={styles.errorSubtext}>{errorSubtext}</p>
+
+              <div className={styles.errorActions}>
+                <button
+                  className={styles.errorBackButton}
+                  onClick={handleBack}
+                  type="button"
+                >
+                  <i className="fa-solid fa-chevron-left"></i>
+                  Go Back
+                </button>
+                <button
+                  className={styles.errorRefreshButton}
+                  onClick={() => window.location.reload()}
+                  type="button"
+                >
+                  <i className="fa-solid fa-arrows-rotate"></i>
+                  Refresh
+                </button>
+              </div>
+            </div>
           </section>
         </main>
       </>
@@ -367,6 +445,9 @@ export default function TicketDetail() {
                   </span>
                 </div>
               </div>
+
+              {/* SLA Status Component */}
+
               {/* Ticket Owner */}
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
@@ -431,38 +512,77 @@ export default function TicketDetail() {
                     "No instructions available for this step."}
                 </p>
               </div>
-              {/* <div className={styles.tdAttachment}>
-                <h3>Attachment</h3>
-                <div className={styles.tdAttached}>
-                  <i className="fa fa-upload"></i>
-                  {state.ticket?.attachments &&
-                  state.ticket.attachments.length > 0 ? (
-                    <ul>
-                      {state.ticket.attachments.map((file, idx) => (
-                        <li key={idx}>
+              
+              {/* Attachments Section */}
+              <div className={styles.tdAttachment}>
+                <h3>Attachments</h3>
+                {state.ticket?.attachments &&
+                state.ticket.attachments.length > 0 ? (
+                  <div className={styles.attachmentList}>
+                    {state.ticket.attachments.map((file) => {
+                      // Construct full URL for the attachment using helpdesk service URL
+                      // Uses /api/attachments/ endpoint for public access to ticket attachments
+                      const baseUrl = import.meta.env.VITE_HELPDESK_SERVICE_URL || 'http://localhost:8000';
+                      const fileUrl = `${baseUrl}/api/attachments/${file.file_path}`;
+                      
+                      // Determine icon based on file type
+                      const getFileIcon = (fileType) => {
+                        if (fileType?.includes('pdf')) return 'fa-file-pdf';
+                        if (fileType?.includes('image')) return 'fa-file-image';
+                        if (fileType?.includes('word') || fileType?.includes('document')) return 'fa-file-word';
+                        if (fileType?.includes('excel') || fileType?.includes('spreadsheet')) return 'fa-file-excel';
+                        if (fileType?.includes('powerpoint') || fileType?.includes('presentation')) return 'fa-file-powerpoint';
+                        if (fileType?.includes('zip') || fileType?.includes('archive')) return 'fa-file-zipper';
+                        if (fileType?.includes('text')) return 'fa-file-lines';
+                        return 'fa-file';
+                      };
+                      
+                      // Format file size
+                      const formatFileSize = (bytes) => {
+                        if (!bytes) return '';
+                        if (bytes < 1024) return `${bytes} B`;
+                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+                      };
+                      
+                      return (
+                        <div key={file.id} className={styles.attachmentItem}>
+                          <i className={`fa-solid ${getFileIcon(file.file_type)} ${styles.attachmentIcon}`}></i>
+                          <div className={styles.attachmentInfo}>
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.attachmentName}
+                              title={file.file_name}
+                            >
+                              {file.file_name}
+                            </a>
+                            <span className={styles.attachmentMeta}>
+                              {formatFileSize(file.file_size)}
+                            </span>
+                          </div>
                           <a
-                            href={file.url || file}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={fileUrl}
+                            download={file.file_name}
+                            className={styles.attachmentDownload}
+                            title="Download file"
                           >
-                            {file.name || `Attachment ${idx + 1}`}
+                            <i className="fa-solid fa-download"></i>
                           </a>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={styles.tdAttached}>
+                    <i className="fa-solid fa-paperclip"></i>
                     <span className={styles.placeholderText}>
                       No attachments available.
                     </span>
-                  )}
-                  <input
-                    type="file"
-                    id="file-upload"
-                    accept=".pdf, .jpg, .jpeg, .docx"
-                    style={{ display: "none" }}
-                  />
-                </div>
-              </div> */}
+                  </div>
+                )}
+              </div>
 
               {/* Comment */}
               <TicketComments ticketId={state.ticket?.ticket_id} />
@@ -473,21 +593,15 @@ export default function TicketDetail() {
               style={{ flex: 1, minWidth: "300px" }}
             >
               <div className={styles.layoutFlexButton}>
-                {/* Make an Action */}
+                {/* Make an Action - disabled when canAct is false */}
                 <button
                   className={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
+                    !state.canAct
                       ? styles.ticketActionButtonDisabled
                       : styles.ticketActionButton
                   }
                   onClick={() => setOpenTicketAction(true)}
-                  disabled={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
-                  }
+                  disabled={!state.canAct}
                 >
                   <span className={styles.iconTextWrapper}>
                     <i className="fa fa-check-circle"></i>
@@ -495,21 +609,15 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Escalate */}
+                {/* Escalate - disabled when canAct is false */}
                 <button
                   className={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
+                    !state.canAct
                       ? styles.escalateButtonDisabled
                       : styles.escalateButton
                   }
                   onClick={() => setOpenEscalateModal(true)}
-                  disabled={
-                    state.ticket?.has_acted ||
-                    state.ticket?.is_escalated ||
-                    state.ticket?.is_transferred
-                  }
+                  disabled={!state.canAct}
                 >
                   <span className={styles.iconTextWrapper}>
                     <i className="fa fa-arrow-up"></i>
@@ -517,22 +625,16 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Transfer (Admin only) */}
+                {/* Transfer (Admin only) - disabled when canAct is false */}
                 {isAdmin() && (
                   <button
                     className={
-                      state.ticket?.has_acted ||
-                      state.ticket?.is_escalated ||
-                      state.ticket?.is_transferred
+                      !state.canAct
                         ? styles.transferButtonDisabled
                         : styles.transferButton
                     }
                     onClick={() => setOpenTransferModal(true)}
-                    disabled={
-                      state.ticket?.has_acted ||
-                      state.ticket?.is_escalated ||
-                      state.ticket?.is_transferred
-                    }
+                    disabled={!state.canAct}
                   >
                     <span className={styles.iconTextWrapper}>
                       <i className="fa fa-exchange"></i>
@@ -544,7 +646,7 @@ export default function TicketDetail() {
 
               <div className={styles.layoutSection}>
                 <div className={styles.tdpTabs}>
-                  {["Details", "Messages", "Logs"].map((tab) => (
+                  {["Details", "Messages"].map((tab) => (
                     <button
                       style={{ flex: 1 }}
                       key={tab}
@@ -562,8 +664,12 @@ export default function TicketDetail() {
                 {/* Detail Section */}
                 {activeTab === "Details" && (
                   <>
+                    {/* workflow */}
+                    <WorkflowTracker2 workflowData={tracker} />
+                    <br />
+                    {/* status */}
                     <div className={styles.tdStatusCard}>
-                      <div className={styles.tdStatusLabel}>Status</div>
+                      <h4>Status</h4>
                       <div
                         className={
                           general[
@@ -576,88 +682,29 @@ export default function TicketDetail() {
                         {state.ticket?.status}
                       </div>
                     </div>
-                    <WorkflowTracker2 workflowData={tracker} />
-                    {/* <div className={styles.tdInfoWrapper}>
-                      <div className={styles.tdInfoHeader}>
-                        <h3>Details</h3>
-                        <button
-                          className={styles.tdArrow}
-                          onClick={toggTicketInfosVisibility}
-                          aria-label={
-                            showTicketInfo ? "Hide details" : "Show details"
-                          }
-                          type="button"
-                        >
-                          <i
-                            className={`fa-solid fa-caret-${
-                              showTicketInfo ? "down" : "up"
-                            }`}
-                          ></i>
-                        </button>
-                      </div>
-                      {showTicketInfo && (
-                        <div className={styles.tdInfoItem}>
-                          <div className={styles.tdInfoLabelValue}>
-                            <div className={styles.tdInfoLabel}>
-                              Ticket Owner
-                            </div>
-                            <div className={styles.tdInfoValue}>
-                              {state.ticket?.user_assignment?.first_name
-                                ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
-                                : state.ticket?.user_assignment?.username ||
-                                  state.ticket?.user_assignment?.email ||
-                                  "N/A"}
-                            </div>
-                          </div>
-                          <div className={styles.tdInfoLabelValue}>
-                            <div className={styles.tdInfoLabel}>Role</div>
-                            <div className={styles.tdInfoValue}>
-                              {state.ticket?.user_assignment?.role || "N/A"}
-                            </div>
-                          </div>
-                          {state.currentOwner && (
-                            <>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Current Owner
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.user_full_name || "N/A"}
-                                </div>
-                              </div>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Owner Role
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.role || "N/A"}
-                                </div>
-                              </div>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Assignment Status
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.status || "N/A"}
-                                </div>
-                              </div>
-                              <div className={styles.tdInfoLabelValue}>
-                                <div className={styles.tdInfoLabel}>
-                                  Assigned On
-                                </div>
-                                <div className={styles.tdInfoValue}>
-                                  {state.currentOwner.assigned_on
-                                    ? new Date(
-                                        state.currentOwner.assigned_on
-                                      ).toLocaleString()
-                                    : "N/A"}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div> */}
+                    <br />
+                    {/* sla */}
+                    <div className={styles.tdSLA}>
+                      <h4>SLA Information</h4>
+                      {/* Here */}
+                      <SLAStatus
+                        ticket={state.ticket}
+                        targetResolution={state.ticket?.target_resolution}
+                        className={styles.slaStatusSection}
+                      />
+                    </div>
+                    <br />
+                    {/* action logs */}
+                    <div className={styles.actionLogs}>
+                      <h4>Action Logs</h4>
+                      <ActionLogList
+                        logs={
+                          logs && logs.length > 0 ? [...logs].reverse() : []
+                        }
+                        loading={loading}
+                        error={error}
+                      />
+                    </div>
                   </>
                 )}
 
@@ -668,20 +715,6 @@ export default function TicketDetail() {
                     <Messaging
                       ticket_id={state.ticket?.ticket_id}
                       ticket_owner={state.ticket?.user_assignment}
-                    />
-                  </div>
-                )}
-
-                {/* Logs Section */}
-                {activeTab === "Logs" && (
-                  <div className={styles.actionLogs}>
-                    <h4>Action Logs</h4>
-                    <ActionLogList
-                      logs={
-                        logs && logs.length > 0 ? [...logs].reverse() : []
-                      }
-                      loading={loading}
-                      error={error}
                     />
                   </div>
                 )}
@@ -703,14 +736,14 @@ export default function TicketDetail() {
         <EscalateTicket
           closeEscalateModal={setOpenEscalateModal}
           ticket={state.ticket}
-          taskItemId={taskItemId}
+          taskItemId={stepInstance?.task_item_id}
         />
       )}
       {openTransferModal && (
         <TransferTask
           closeTransferModal={setOpenTransferModal}
           ticket={state.ticket}
-          taskItemId={taskItemId}
+          taskItemId={stepInstance?.task_item_id}
           currentOwner={state.currentOwner}
         />
       )}

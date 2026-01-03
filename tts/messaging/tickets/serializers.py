@@ -38,11 +38,12 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = [
             'message_id', 'ticket_id', 'sender', 'sender_role', 'user_id', 'message', 'created_at', 'updated_at',
             'is_edited', 'edited_at', 'is_deleted', 'deleted_at',
+            'is_unsent', 'unsent_at', 'unsent_for_all',
             'attachments', 'reactions', 'reaction_counts'
         ]
         read_only_fields = [
             'message_id', 'ticket_id', 'sender', 'sender_role', 'user_id', 'created_at', 'updated_at', 'is_edited', 
-            'edited_at', 'is_deleted', 'deleted_at'
+            'edited_at', 'is_deleted', 'deleted_at', 'is_unsent', 'unsent_at', 'unsent_for_all'
         ]
     
     def get_reaction_counts(self, obj):
@@ -64,7 +65,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class CreateMessageSerializer(serializers.Serializer):
     ticket_id = serializers.CharField(max_length=20)
-    message = serializers.CharField()
+    message = serializers.CharField(required=False, allow_blank=True, default='')
     attachments = serializers.ListField(
         child=serializers.FileField(),
         required=False,
@@ -77,6 +78,22 @@ class CreateMessageSerializer(serializers.Serializer):
         if not value.strip():
             raise serializers.ValidationError("Ticket ID cannot be empty.")
         return value
+    
+    def validate(self, attrs):
+        """Ensure either message or attachments is provided"""
+        message = attrs.get('message', '').strip()
+        # Check attachments from both attrs and context (files from request.FILES)
+        attachments = attrs.get('attachments', [])
+        
+        # Also check context for files (passed from view for multipart/form-data)
+        context_files = self.context.get('files', []) if hasattr(self, 'context') else []
+        
+        # Allow sending with just message OR just attachments OR both
+        if not message and not attachments and not context_files:
+            raise serializers.ValidationError(
+                "Either message text or at least one attachment is required."
+            )
+        return attrs
 
 
 class TicketMessageSerializer(serializers.ModelSerializer):

@@ -1,0 +1,186 @@
+You are absolutely right. The current approach is brittle because it tries to be too smart by guessing paths (`venv/Scripts`, `venv/bin`, `where`, `which`). This makes the script hard to maintain and prone to breaking when a folder structure changes slightly or when moving between OS environments (Windows vs. WSL vs. Mac).
+
+Here is the corrected architectural approach:
+
+1. **Stop Guessing, Start Configuring:** Rely on the system `PATH` by default. If the user has Python installed and added to PATH, the script should just call `python`.
+2. **Use `cross-spawn`:** Node's native `spawn` has issues with path resolution on Windows. `cross-spawn` handles the cross-platform headaches for you.
+3. **Use `.env` for Overrides:** Instead of hardcoding arrays of paths, let the user define specific overrides in a `.env` file if their setup is non-standard.
+4. **Virtual Environment Context:** Instead of hunting for the venv python, assume the user runs this CLI *from* the environment, or allow a single `.env` variable to set the Python path.
+
+### Prerequisites
+
+You need two standard packages to make this robust:
+
+```bash
+npm install cross-spawn dotenv
+
+```
+
+### The Refactored Script
+
+Here is the cleaned-up version. It removes the complex `findExecutable` logic and replaces it with a configuration-based approach.
+
+```javascript
+#!/usr/bin/env node
+
+require('dotenv').config(); // Load environment variables
+const { program } = require('commander');
+const inquirer = require('inquirer');
+const chalk = require('chalk');
+const spawn = require('cross-spawn'); // REPLACES child_process.spawn
+const path = require('path');
+const fs = require('fs');
+
+const SCRIPTS_ROOT = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(SCRIPTS_ROOT, '..');
+
+/**
+ * CONFIGURATION
+ * We default to the command name (assuming it's in PATH).
+ * Users can override these in a .env file like: PYTHON_CMD=/usr/bin/python3
+ */
+const CMD = {
+  python: process.env.PYTHON_CMD || 'python',
+  bash: process.env.BASH_CMD || 'bash',
+  pm2: process.env.PM2_CMD || 'pm2',
+  powershell: process.env.POWERSHELL_CMD || 'powershell'
+};
+
+// ... [Keep your SCRIPTS object exactly as it is] ...
+const SCRIPTS = {
+  // ... Paste your existing SCRIPTS object here ... 
+  // (For brevity, I am not repeating the huge object, but keep it exactly same)
+  services: {
+    name: '🚀 Services',
+    description: 'Start individual services',
+    scripts: {
+      'auth': { file: 'start_auth.ps1', desc: 'Auth Service (port 8003)' },
+    },
+    // ... rest of your object
+  }
+};
+
+// Helper to fix line endings (Keep this, it's useful for cross-platform git usage)
+function fixLineEndings(scriptPath) {
+  try {
+    if (fs.existsSync(scriptPath)) {
+      const content = fs.readFileSync(scriptPath, 'utf8');
+      // Only write if we actually find CRLF to save IO
+      if (content.includes('\r\n')) {
+        const fixed = content.replace(/\r\n/g, '\n');
+        fs.writeFileSync(scriptPath, fixed, 'utf8');
+      }
+    }
+  } catch (err) {
+    // Silent fail or debug log
+  }
+}
+
+// Unified Runner Function
+function executeCommand(command, args, cwd) {
+  console.log(chalk.gray(`> ${command} ${args.join(' ')}`));
+
+  const child = spawn(command, args, {
+    cwd: cwd || PROJECT_ROOT,
+    stdio: 'inherit',
+    env: { ...process.env } // Explicitly pass current env (vital for venv)
+  });
+
+  child.on('error', (err) => {
+    console.log(chalk.red(`Failed to start command: ${command}`));
+    console.log(chalk.yellow(`Error: ${err.message}`));
+    if (err.code === 'ENOENT') {
+      console.log(chalk.yellow(`Hint: Is '${command}' installed and in your PATH?`));
+    }
+  });
+
+  child.on('close', (code) => {
+    if (code !== 0) {
+      console.log(chalk.yellow(`Process exited with code ${code}`));
+    }
+  });
+}
+
+function runScript(category, scriptKey, extraArgs = []) {
+  // 1. Locate Script Entry
+  const script = SCRIPTS[category]?.scripts?.[scriptKey];
+  if (!script) {
+    console.log(chalk.red(`Script not found.`));
+    return;
+  }
+
+  console.log(chalk.cyan(`\n▶ Running: ${script.desc || scriptKey}`));
+
+  // 2. Determine Command Type
+  if (script.cmd) {
+    // Case A: Direct Command (PM2)
+    // We split by space to separate executable from args
+    const [exec, ...args] = script.cmd.split(' ');
+    // If the command is 'pm2', use our config variable, otherwise use as is
+    const finalExec = exec === 'pm2' ? CMD.pm2 : exec;
+    executeCommand(finalExec, [...args, ...extraArgs], PROJECT_ROOT);
+    return;
+  }
+
+  // Case B: File Execution
+  const scriptPath = path.join(SCRIPTS_ROOT, category, script.file);
+  if (!fs.existsSync(scriptPath)) {
+    console.log(chalk.red(`File missing: ${scriptPath}`));
+    return;
+  }
+
+  // 3. Logic based on file extension or explicit shell override
+  if (script.shell === 'bash' || script.file.endsWith('.sh')) {
+    fixLineEndings(scriptPath);
+    // Convert path to standard forward slashes for Bash compatibility on Windows
+    const posixPath = scriptPath.split(path.sep).join('/'); 
+    executeCommand(CMD.bash, [posixPath, ...extraArgs]);
+
+  } else if (script.shell === 'python' || script.file.endsWith('.py')) {
+    executeCommand(CMD.python, [scriptPath, ...extraArgs]);
+
+  } else if (script.file.endsWith('.ps1')) {
+    executeCommand(CMD.powershell, [
+      '-ExecutionPolicy', 'Bypass', 
+      '-File', scriptPath, 
+      ...(script.args || []), 
+      ...extraArgs
+    ]);
+  } else {
+    console.log(chalk.red(`Unknown script type for: ${script.file}`));
+  }
+}
+
+// ... [Keep your menu logic, inquirer logic, and program definitions exactly the same] ...
+// The interactiveMenu, listScripts, and program definitions don't need to change.
+
+```
+
+### Why this is better
+
+1. **Environment Variable Inheritance:** By using `env: { ...process.env }` in the spawn options, if you activate your Python virtual environment in your terminal *before* running this Node script, the child processes will automatically see the `venv` Python. You don't need to hardcode paths to `venv/Scripts`.
+2. **`cross-spawn`:** This library automatically handles the difference between `python` and `python.exe`, and how spaces in paths are handled on Windows vs Linux.
+3. **Configurability:** If a developer on your team has a weird setup (e.g., they use `python3` instead of `python`), they just create a `.env` file in the root:
+```env
+PYTHON_CMD=python3
+PM2_CMD=./node_modules/.bin/pm2
+
+```
+
+
+The code doesn't need to change.
+4. **Cleaner Logic:** We removed the `findExecutable` function entirely. We assume the environment is set up correctly, which is the standard "Unix philosophy" approach.
+
+### Recommended Next Step: Add a `.env` check
+
+Since your project relies heavily on Python virtual environments, I recommend adding this small check at the very top of the script (after imports) to warn the user if they forgot to activate their venv:
+
+```javascript
+// Check for Python Venv
+if (!process.env.VIRTUAL_ENV && !process.env.PYTHON_CMD) {
+  console.log(chalk.yellow('⚠️  Warning: No Virtual Environment detected.'));
+  console.log(chalk.gray('   If your scripts require dependencies, please activate your venv first.'));
+  console.log(chalk.gray('   Example: .\\venv\\Scripts\\activate\n'));
+}
+
+```

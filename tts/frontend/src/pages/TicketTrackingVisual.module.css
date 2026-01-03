@@ -1,10 +1,10 @@
 /* TicketTrackingVisual.module.css */
 
 .container {
-  background-color: white;
+  background-color: var(--bg1-color);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  box-shadow: var(--box-shadow, 0 1px 3px rgba(0, 0, 0, 0.1));
+  border: 1px solid var(--border-color);
   padding: 1.5rem;
   max-width: 64rem; /* max-w-4xl */
   margin-left: auto;
@@ -21,7 +21,7 @@
 .ticketId {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937; /* gray-800 */
+  color: var(--text-color); /* gray-800 */
 }
 
 .priority {
@@ -49,7 +49,7 @@
 .title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827; /* gray-900 */
+  color: var(--heading-color); /* gray-900 */
   margin-bottom: 1rem;
 }
 
@@ -67,18 +67,18 @@
 .progressTitle {
   font-size: 1.125rem;
   font-weight: 500;
-  color: #4b5563; /* gray-700 */
+  color: var(--secondary-color); /* gray-700 */
 }
 
 .progressPercentage {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #2563eb; /* blue-600 */
+  color: var(--primary-color); /* blue-600 */
 }
 
 .progressTrack {
   width: 100%;
-  background-color: #e5e7eb; /* gray-200 */
+  background-color: var(--border-color); /* gray-200 */
   border-radius: 9999px;
   height: 0.75rem; /* h-3 */
   margin-bottom: 1.5rem;
@@ -122,7 +122,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #e5e7eb; /* gray-200 */
+  background-color: var(--border-color); /* gray-200 */
   transform: translateY(-50%);
   z-index: 0;
 }
@@ -144,7 +144,7 @@
   align-items: center;
   position: relative;
   z-index: 10;
-  background-color: white;
+  background-color: var(--bg1-color);
   padding: 0 0.5rem;
 }
 
@@ -188,7 +188,7 @@
 }
 
 .stageLabelPending {
-  color: #6b7280; /* gray-500 */
+  color: var(--muted-text-color); /* gray-500 */
 }
 
 .stageLabelActive {
@@ -205,7 +205,7 @@
   gap: 1rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #f3f4f6; /* gray-100 */
+  border-top: 1px solid var(--border-color); /* gray-100 */
 }
 
 @media(min-width: 768px) {
@@ -219,20 +219,20 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background-color: #f9fafb; /* gray-50 */
+  background-color: var(--bg-content-color); /* gray-50 */
   border-radius: 0.5rem;
 }
 
 .detailIcon {
   width: 1.25rem;
   height: 1.25rem;
-  color: #6b7280; /* gray-500 */
+  color: var(--muted-text-color); /* gray-500 */
   flex-shrink: 0;
 }
 
 .detailText {
   font-size: 0.875rem;
-  color: #374151; /* gray-700 */
+  color: var(--secondary-color); /* gray-700 */
 }
 
 .detailLabel {

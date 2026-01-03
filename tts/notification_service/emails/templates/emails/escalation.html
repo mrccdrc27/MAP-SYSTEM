@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Escalation</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            line-height: 1.6;
+            color: #0f172a;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 24px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+        .header {
+            margin-bottom: 20px;
+        }
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 12px;
+            color: #f97316;
+            margin-bottom: 4px;
+        }
+        h1 {
+            color: #0f172a;
+            font-size: 24px;
+            margin: 0 0 8px;
+        }
+        .subtitle {
+            color: #475569;
+            margin: 0;
+        }
+        .content {
+            margin: 24px 0;
+        }
+        .summary-card {
+            background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+            border: 1px solid #fb923c;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        .task-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 12px;
+            color: #0f172a;
+        }
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 16px;
+            margin: 8px 0;
+            color: #334155;
+        }
+        .label {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .pill {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background-color: #fed7aa;
+            color: #9a3412;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .reason-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+            margin: 16px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 20px;
+            background-color: #ea580c;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            margin: 12px 0 4px;
+        }
+        .footer {
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="eyebrow">Task Escalation</div>
+            <h1>{{ task_title|default:"Task" }}</h1>
+            <p class="subtitle">For {{ user_name|default:"your account" }}</p>
+        </div>
+
+        <div class="content">
+            <div class="summary-card">
+                <div class="task-title">Ticket {{ ticket_number|default:"N/A" }}</div>
+                <div class="meta-row"><span class="label">From:</span> <span class="pill">{{ escalated_from|default:"Previous step" }}</span></div>
+                <div class="meta-row"><span class="label">To:</span> <span class="pill">{{ escalated_to|default:"Current step" }}</span></div>
+                {% if escalated_by %}
+                <div class="meta-row"><span class="label">Escalated by:</span> <span>{{ escalated_by }}</span></div>
+                {% endif %}
+            </div>
+
+            {% if escalation_reason %}
+            <div class="reason-box">
+                <strong>Reason</strong><br>
+                {{ escalation_reason }}
+            </div>
+            {% endif %}
+
+            {% if ticket_url %}
+            <p style="text-align: center;">
+                <a href="{{ ticket_url }}" class="button">Open Ticket</a>
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            <p>This is an automated notification from {{ site_name|default:"TicketFlow" }}.</p>
+            <p>&copy; {{ current_year|default:"2025" }} {{ site_name|default:"TicketFlow" }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

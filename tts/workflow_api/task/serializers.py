@@ -294,3 +294,155 @@ class FailedNotificationSerializer(serializers.ModelSerializer):
             'last_retry_at',
             'succeeded_at'
         ]
+
+
+class UnassignedTicketSerializer(serializers.ModelSerializer):
+    """
+    Serializer for WorkflowTickets that are NOT assigned to any workflow.
+    Formats ticket data to be compatible with the admin archive table display.
+    """
+    # Use ticket_data fields for display - simulating TaskItem format
+    ticket_number = serializers.CharField()
+    ticket_subject = serializers.SerializerMethodField()
+    ticket_description = serializers.SerializerMethodField()
+    ticket_status = serializers.SerializerMethodField()
+    ticket_priority = serializers.SerializerMethodField()
+    
+    # Placeholder fields (no workflow/task assigned yet)
+    task_item_id = serializers.SerializerMethodField()
+    task_id = serializers.SerializerMethodField()
+    ticket_id = serializers.IntegerField(source='id')
+    user_id = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    workflow_id = serializers.SerializerMethodField()
+    workflow_name = serializers.SerializerMethodField()
+    current_step_id = serializers.SerializerMethodField()
+    current_step_name = serializers.SerializerMethodField()
+    current_step_role = serializers.SerializerMethodField()
+    assigned_on_step_id = serializers.SerializerMethodField()
+    assigned_on_step_name = serializers.SerializerMethodField()
+    task_status = serializers.SerializerMethodField()
+    ticket_owner_id = serializers.SerializerMethodField()
+    ticket_owner_name = serializers.SerializerMethodField()
+    ticket_owner_role = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    status_updated_on = serializers.SerializerMethodField()
+    assigned_on = serializers.DateTimeField(source='created_at')
+    target_resolution = serializers.SerializerMethodField()
+    resolution_time = serializers.SerializerMethodField()
+    notes = serializers.SerializerMethodField()
+    origin = serializers.SerializerMethodField()
+    transferred_to_user_id = serializers.SerializerMethodField()
+    transferred_to_user_name = serializers.SerializerMethodField()
+    transferred_by = serializers.SerializerMethodField()
+    task_history = serializers.SerializerMethodField()
+    acted_on = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = WorkflowTicket
+        fields = [
+            'task_item_id', 'ticket_number', 'ticket_id', 'ticket_subject', 'ticket_description',
+            'ticket_status', 'ticket_priority', 'user_id', 'user_full_name', 'role',
+            'workflow_id', 'workflow_name', 'current_step_id', 'current_step_name',
+            'current_step_role', 'assigned_on_step_id', 'assigned_on_step_name',
+            'task_id', 'task_status', 'ticket_owner_id', 'ticket_owner_name',
+            'ticket_owner_role', 'status', 'status_updated_on', 'assigned_on',
+            'target_resolution', 'resolution_time', 'notes', 'origin',
+            'transferred_to_user_id', 'transferred_to_user_name', 'transferred_by',
+            'task_history', 'acted_on', 'is_task_allocated'
+        ]
+    
+    def get_ticket_subject(self, obj):
+        return obj.ticket_data.get('subject', '')
+    
+    def get_ticket_description(self, obj):
+        return obj.ticket_data.get('description', '')
+    
+    def get_ticket_status(self, obj):
+        return obj.ticket_data.get('status', 'new')
+    
+    def get_ticket_priority(self, obj):
+        return obj.ticket_data.get('priority', 'Medium')
+    
+    def get_task_item_id(self, obj):
+        # Use negative ID to distinguish from real task_item_ids
+        return f"unassigned-{obj.id}"
+    
+    def get_task_id(self, obj):
+        return None
+    
+    def get_user_id(self, obj):
+        return None
+    
+    def get_user_full_name(self, obj):
+        return "Unassigned"
+    
+    def get_role(self, obj):
+        return None
+    
+    def get_workflow_id(self, obj):
+        return None
+    
+    def get_workflow_name(self, obj):
+        return "Not Assigned"
+    
+    def get_current_step_id(self, obj):
+        return None
+    
+    def get_current_step_name(self, obj):
+        return None
+    
+    def get_current_step_role(self, obj):
+        return None
+    
+    def get_assigned_on_step_id(self, obj):
+        return None
+    
+    def get_assigned_on_step_name(self, obj):
+        return None
+    
+    def get_task_status(self, obj):
+        return "unassigned"
+    
+    def get_ticket_owner_id(self, obj):
+        return None
+    
+    def get_ticket_owner_name(self, obj):
+        return None
+    
+    def get_ticket_owner_role(self, obj):
+        return None
+    
+    def get_status(self, obj):
+        return "unassigned"
+    
+    def get_status_updated_on(self, obj):
+        return obj.created_at
+    
+    def get_target_resolution(self, obj):
+        return None
+    
+    def get_resolution_time(self, obj):
+        return None
+    
+    def get_notes(self, obj):
+        return ""
+    
+    def get_origin(self, obj):
+        return "System"
+    
+    def get_transferred_to_user_id(self, obj):
+        return None
+    
+    def get_transferred_to_user_name(self, obj):
+        return None
+    
+    def get_transferred_by(self, obj):
+        return None
+    
+    def get_task_history(self, obj):
+        return []
+    
+    def get_acted_on(self, obj):
+        return None

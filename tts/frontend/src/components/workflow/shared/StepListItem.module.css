@@ -1,0 +1,172 @@
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg1-color);
+  border: var(--border-bottom);
+  border-radius: 10px;
+  transition: var(--transition);
+}
+
+.stepItem.clickable {
+  cursor: pointer;
+}
+
+.stepItem.clickable:hover {
+  background: var(--bg-content-color);
+  border-color: var(--border-color);
+}
+
+.stepItem.selected {
+  background: var(--primary-light-bg, rgba(0, 123, 255, 0.08));
+  border-color: var(--primary-border, rgba(0, 123, 255, 0.4));
+  box-shadow: 0 0 0 2px var(--primary-shadow-color);
+}
+
+.stepItem.hasError {
+  border-color: var(--error-border, rgba(174, 19, 27, 0.4));
+}
+
+/* Drag Handle */
+.dragHandle {
+  display: flex;
+  align-items: center;
+  color: var(--muted-text-color);
+  cursor: grab;
+  padding: 4px;
+  margin: -4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.dragHandle:hover {
+  color: var(--secondary-color);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* Icon */
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.name {
+  font-size: var(--default-font-size);
+  font-weight: 500;
+  color: var(--heading-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+}
+
+.roleInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--table-font-size);
+  color: var(--muted-text-color);
+}
+
+.roleInfo svg {
+  flex-shrink: 0;
+}
+
+.errorInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--error-color);
+}
+
+.errorInfo svg {
+  flex-shrink: 0;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.stepItem:hover .actions {
+  opacity: 1;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-content-color);
+  border: var(--border-bottom);
+  color: var(--secondary-color);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.actionBtn:hover {
+  background: var(--bg-color);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+.deleteBtn:hover {
+  background: rgba(174, 19, 27, 0.1);
+  color: var(--error-color);
+  border-color: rgba(174, 19, 27, 0.3);
+}
+
+/* Chevron */
+.chevron {
+  color: var(--muted-text-color);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.stepItem:hover .chevron {
+  transform: translateX(2px);
+  color: var(--secondary-color);
+}

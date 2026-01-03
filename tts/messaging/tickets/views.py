@@ -10,17 +10,7 @@ from .serializers import (
     MessageSerializer, MessageAttachmentSerializer, 
     MessageReactionSerializer, CreateMessageSerializer
 )
-
-try:
-    from authentication import SystemRolePermission
-except ImportError:
-    # Fallback for cases where authentication module is not available
-    from rest_framework.permissions import BasePermission
-    
-    class SystemRolePermission(BasePermission):
-        """Fallback permission class"""
-        def has_permission(self, request, view):
-            return bool(request.user and getattr(request.user, 'is_authenticated', False))
+from authentication import SystemRolePermission
 
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -54,8 +44,11 @@ class MessageViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """Create a message with automatic ticket creation if needed"""
-        # Use CreateMessageSerializer to validate input
-        serializer = self.get_serializer(data=request.data)
+        # Get attachments from FILES before validation
+        files = request.FILES.getlist('attachments')
+        
+        # Use CreateMessageSerializer to validate input, passing files in context
+        serializer = self.get_serializer(data=request.data, context={'request': request, 'files': files})
         serializer.is_valid(raise_exception=True)
         
         with transaction.atomic():
@@ -95,8 +88,7 @@ class MessageViewSet(viewsets.ModelViewSet):
                 message=message_text
             )
             
-            # Handle file attachments
-            files = request.FILES.getlist('attachments')
+            # Handle file attachments (files already extracted before validation)
             for file in files:
                 attachment = MessageAttachment.objects.create(
                     filename=file.name,
@@ -233,6 +225,52 @@ class MessageViewSet(viewsets.ModelViewSet):
             pass  # WebSocket utils not available
         
         return Response({"status": "Message deleted successfully"})
+
+    @extend_schema(
+        summary="Unsend a message",
+        description="Unsend a message. Can be unsent for sender only or for everyone.",
+        responses={200: MessageSerializer},
+        tags=['Messages']
+    )
+    @action(detail=True, methods=['post'])
+    def unsend(self, request, *args, **kwargs):
+        """Unsend a message"""
+        message = self.get_object()
+        
+        # Check if user is the author of the message
+        if message.sender != getattr(request.user, 'full_name', request.user.username):
+            return Response(
+                {'error': 'You can only unsend your own messages'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if already unsent
+        if message.is_unsent:
+            return Response(
+                {'error': 'Message has already been unsent'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get the unsend mode - for_all means everyone sees "message unsent"
+        for_all = request.data.get('for_all', False)
+        
+        message.unsend(
+            unsent_by=getattr(request.user, 'full_name', request.user.username),
+            for_all=for_all
+        )
+        
+        # Broadcast via WebSocket
+        try:
+            from .websocket_utils import broadcast_message
+            broadcast_message(message.ticket_id.ticket_id, {
+                'type': 'message_unsent',
+                'message': MessageSerializer(message, context={'request': request}).data
+            })
+        except ImportError:
+            pass  # WebSocket utils not available
+        
+        serializer = MessageSerializer(message, context={'request': request})
+        return Response(serializer.data)
 
 
 class ReactionViewSet(viewsets.ViewSet):

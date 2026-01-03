@@ -144,6 +144,12 @@ class LoginView(FormView):
             'systems_count': System.objects.count(),
             'recaptcha_enabled': getattr(settings, 'RECAPTCHA_ENABLED', True),
             'recaptcha_site_key': getattr(settings, 'RECAPTCHA_SITE_KEY', ''),
+            # System URLs from environment
+            'tts_system_url': settings.SYSTEM_TEMPLATE_URLS.get('tts', 'http://localhost:1000'),
+            'ams_system_url': settings.SYSTEM_TEMPLATE_URLS.get('ams', 'http://localhost:3000/ams'),
+            'hdts_system_url': settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173'),
+            'bms_system_url': settings.SYSTEM_TEMPLATE_URLS.get('bms', 'http://localhost:3000/bms'),
+            'default_system_url': settings.DEFAULT_SYSTEM_URL,
         })
         return context
     

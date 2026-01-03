@@ -41,7 +41,6 @@ class WorkflowGraphService:
                     category=workflow_data['category'],
                     sub_category=workflow_data['sub_category'],
                     department=workflow_data['department'],
-                    end_logic=workflow_data.get('end_logic', ''),
                     low_sla=workflow_data.get('low_sla'),
                     medium_sla=workflow_data.get('medium_sla'),
                     high_sla=workflow_data.get('high_sla'),

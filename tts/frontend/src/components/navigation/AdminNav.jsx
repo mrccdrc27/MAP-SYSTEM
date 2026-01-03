@@ -10,18 +10,22 @@ import Notification from "../modal/Notification";
 import ProfileModal from "../modal/ProfileModal";
 import AdminProfileModal from "../modal/AdminProfileModal";
 
-// notifications
-import { useNotifications } from "../../api/useNotification";
+// notifications context (shared WebSocket connection)
+import { useNotificationContext } from "../../context/NotificationContext";
 
 // hooks
 import { useAuth } from "../../context/AuthContext";
+
+import ThemeToggle from "../component/ThemeToggle";
 
 export default function AdminNav() {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const [openNotifModal, setOpenNotifModal] = useState(false);
-  const { notifications, fetchNotifications } = useNotifications();
+  
+  // Use shared notification context (single WebSocket connection)
+  const { notifications, fetchNotifications, wsConnected, unreadCount } = useNotificationContext();
   // nav hide on scroll
   const [hideNav, setHideNav] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -44,9 +48,7 @@ export default function AdminNav() {
     };
   }, [lastScrollY]);
 
-  const unreadCount = Array.isArray(notifications?.unread)
-    ? notifications.unread.length
-    : 0;
+  // unreadCount is now provided by context
 
   const handleAvatarClick = () => {
     setOpenProfileModal((prev) => !prev);
@@ -58,10 +60,8 @@ export default function AdminNav() {
     setOpenProfileModal(false);
   };
 
-  // modal close when the page is resize
+  // modal close when the page is resized
   useEffect(() => {
-    // ensure we have the unread count for the badge
-    fetchNotifications("unread");
     const handleResize = () => {
       setOpenProfileModal(false);
       setOpenNotifModal(false);
@@ -70,11 +70,10 @@ export default function AdminNav() {
 
     window.addEventListener("resize", handleResize);
 
-    // clean event listener
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [fetchNotifications]);
+  }, []);
 
   // Burger Menu
   const [menuOpen, setMenuOpen] = useState(false);
@@ -140,14 +139,14 @@ export default function AdminNav() {
           >
             Workflow
           </NavLink>
-          <NavLink
+          {/* <NavLink
             to="/admin/agent"
             className={({ isActive }) =>
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }
           >
             Agent
-          </NavLink>
+          </NavLink> */}
           <NavLink
             to="/admin/archive"
             className={({ isActive }) =>
@@ -162,7 +161,7 @@ export default function AdminNav() {
               isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
             }
           >
-            Reporting
+            Reports
           </NavLink>
         </div>
 
@@ -172,7 +171,7 @@ export default function AdminNav() {
             userMenuOpen ? styles.userSectionOpen : ""
           }`}
         >
-          {" "}
+          <ThemeToggle />
           <div className={styles.notifBell} onClick={handleNotifClick}>
             <i className="fa fa-bell"></i>
             {unreadCount > 0 && (
@@ -195,8 +194,6 @@ export default function AdminNav() {
         {openNotifModal && (
           <Notification
             closeNotifAction={() => setOpenNotifModal(false)}
-            // pass the parent's fetchNotifications so the nav badge can refresh
-            parentFetchNotifications={fetchNotifications}
           />
         )}
         {openProfileModal && (

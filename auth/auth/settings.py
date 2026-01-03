@@ -182,7 +182,7 @@ JWT_SIGNING_KEY = config(
 )
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Short-lived for security, refresh via polling
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -341,6 +341,9 @@ CELERY_TASK_ROUTES = {
     # HDTS to TTS sync routes (for cross-system role/user sync)
     'hdts.tasks.sync_hdts_role_to_tts': {'queue': 'tts.role.sync'},
     'hdts.tasks.sync_hdts_user_to_tts': {'queue': 'tts.user_system_role.sync'},
+    # User email sync to notification service
+    'users.tasks.sync_user_email_to_notification_service': {'queue': 'auth-sync-queue'},
+    'users.tasks.bulk_sync_user_emails_to_notification_service': {'queue': 'auth-sync-queue'},
 }
 
 CELERY_TASK_DEFAULT_QUEUE = 'default'
@@ -360,8 +363,20 @@ SENDGRID_ENABLED = config('SENDGRID_ENABLED', default='True', cast=lambda x: x.l
 SENDGRID_SANDBOX_MODE_IN_DEBUG = config('SENDGRID_SANDBOX_MODE_IN_DEBUG', default='False', cast=lambda x: x.lower() in ('true', '1', 'yes'))
 SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='support@ticketflow.com')
 
-# Set EMAIL_BACKEND based on SendGrid configuration
-if SENDGRID_ENABLED and SENDGRID_API_KEY:
+# Email Backend Configuration
+# Priority: 1. DJANGO_EMAIL_BACKEND from .env, 2. SendGrid if configured, 3. Console in debug, 4. SMTP
+_env_email_backend = config('DJANGO_EMAIL_BACKEND', default='')
+
+if _env_email_backend:
+    # Use explicitly configured backend from .env
+    EMAIL_BACKEND = _env_email_backend
+    EMAIL_HOST = config('DJANGO_EMAIL_HOST', default='localhost')
+    EMAIL_PORT = config('DJANGO_EMAIL_PORT', default=25, cast=int)
+    EMAIL_HOST_USER = config('DJANGO_EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default='')
+    EMAIL_USE_TLS = config('DJANGO_EMAIL_USE_TLS', default='False', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+    DEFAULT_FROM_EMAIL = config('DJANGO_DEFAULT_FROM_EMAIL', default=DEFAULT_FROM_EMAIL)
+elif SENDGRID_ENABLED and SENDGRID_API_KEY:
     # Use SendGrid backend when API key is configured
     EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 elif DEBUG:

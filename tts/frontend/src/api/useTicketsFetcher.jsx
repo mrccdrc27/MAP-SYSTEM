@@ -18,10 +18,18 @@ const useTicketsFetcher = () => {
     setLoading(true);
     try {
       const params = { page, page_size: pageSize };
-      if (tab) params.tab = tab;
       if (search) params.search = search;
       
-      const res = await api.get("tasks/all-tasks/", { params });
+      // Use different endpoint for unassigned tab
+      // Unassigned = tickets not assigned to any workflow (is_task_allocated=False)
+      let endpoint = "tasks/all-tasks/";
+      if (tab.toLowerCase() === 'unassigned') {
+        endpoint = "tasks/unassigned-tickets/";
+      } else if (tab) {
+        params.tab = tab;
+      }
+      
+      const res = await api.get(endpoint, { params });
       
       // Handle paginated response from DRF
       const { count, next, previous, results } = res.data;

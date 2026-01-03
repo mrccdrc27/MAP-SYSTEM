@@ -99,8 +99,9 @@ class WorkflowTicket(models.Model):
         if not is_new and old_status != new_status:
             print("status changed")
             try:
-                ticket_id = self.ticket_data.get('ticket_id') or self.ticket_data.get('id')
-                result = send_ticket_status.delay(ticket_id, new_status)
-                print(f"✅ Task queued to Celery. ID: {result.id}")
+                # Use ticket_number field (not internal ID) - HDTS expects ticket_number like TX20251231962083
+                ticket_number = self.ticket_number
+                result = send_ticket_status.delay(ticket_number, new_status)
+                print(f"✅ Task queued to Celery. ID: {result.id}, ticket_number: {ticket_number}")
             except Exception as e:
                 print(f"❌ Failed to queue task: {e}")

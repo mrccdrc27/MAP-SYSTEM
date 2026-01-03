@@ -3,15 +3,52 @@ import api from './axios';
 
 const WORKFLOW_BASE_URL = '/workflows';
 
+/**
+ * Convert a workflow name to a URL-safe slug
+ * Replaces spaces with hyphens and encodes special characters
+ */
+export const workflowNameToSlug = (name) => {
+  if (!name) return '';
+  return name.trim().replace(/\s+/g, '-');
+};
+
+/**
+ * Convert a slug back to a workflow name
+ * Replaces hyphens with spaces
+ */
+export const slugToWorkflowName = (slug) => {
+  if (!slug) return '';
+  return slug.replace(/-/g, ' ');
+};
+
 export const useWorkflowAPI = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  // Get workflow details with graph
+  
+  // Get workflow details with graph by ID
   const getWorkflowDetail = useCallback(async (workflowId) => {
     setLoading(true);
     setError(null);
     try {
       const response = await api.get(`${WORKFLOW_BASE_URL}/${workflowId}/detail/`);
+      return response.data;
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Failed to fetch workflow details';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Get workflow details with graph by name (slug)
+  const getWorkflowDetailByName = useCallback(async (workflowName) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // URL encode the name to handle special characters
+      const encodedName = encodeURIComponent(workflowName);
+      const response = await api.get(`${WORKFLOW_BASE_URL}/by-name/${encodedName}/`);
       return response.data;
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to fetch workflow details';
@@ -151,6 +188,7 @@ export const useWorkflowAPI = () => {
 
   return {
     getWorkflowDetail,
+    getWorkflowDetailByName,
     getWorkflowGraph,
     updateWorkflowGraph,
     updateWorkflowDetails,

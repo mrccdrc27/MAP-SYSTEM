@@ -1,0 +1,10 @@
+ ✔ Container docker-helpdesk-worker-1                 Created                                                                                 0.4s 
+ ✔ Container docker-workflow-api-1                    Created                                                                                 0.4s 
+ ✔ Container docker-workflow-worker-1                 Created                                                                                 0.4s 
+ ✔ Container docker-notification-worker-1             Created                                                                                 0.2s 
+ ✔ Container docker-helpdesk-service-1                Created                                                                                 0.2s 
+ ✔ Container docker-mailpit-1                         Started                                                                                 0.7s 
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint docker-messaging-service-1 (571fe779b2b27f7e494dd1d5ba8e071cb600332c2959cd68d1be32892af1848e): Bind for 0.0.0.0:8005 failed: port is already allocated
+Exit Code: 1
+
+(venv) PS C:\work\Capstone 2\Ticket-Tracking-System> 

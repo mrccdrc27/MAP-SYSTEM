@@ -78,8 +78,6 @@ This document describes the folder structure and file organization for the produ
 │
 ├── Scripts/                         # Helper scripts
 │   ├── docker.sh                    # Build and start all services
-│   ├── reset.sh                     # Reset environment
-│   └── init.sh                      # Initialize project
 │
 ├── documentation/                   # Architecture docs
 │   ├── A.6_DEPLOYMENT_AND_INFRASTRUCTURE.md

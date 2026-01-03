@@ -68,7 +68,7 @@ function generateMermaidCode(nodes, edges, workflowName = 'Workflow') {
 
   // Create participants from nodes (each step is a participant)
   // Use step name as alias for cleaner display
-  nodes.forEach((node, idx) => {
+  nodes.forEach((node) => {
     const participantId = sanitizeParticipant(node.id);
     const displayName = sanitizeText(node.name);
     const role = node.role ? ` (${sanitizeText(node.role)})` : '';

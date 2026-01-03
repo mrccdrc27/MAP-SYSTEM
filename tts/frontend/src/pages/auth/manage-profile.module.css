@@ -33,11 +33,11 @@
 }
 
 .profileCard {
-  background: white;
+  background: var(--bg1-color);
   border-radius: 8px;
   padding: 25px 30px 30px 30px;
-  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
-  border: 1px solid #d3d3d3;
+  box-shadow: var(--box-shadow, 0 0 20px rgba(211, 211, 211, 0.8));
+  border: 1px solid var(--border-color);
   text-align: center;
   height: 100%;
   display: flex;
@@ -58,7 +58,7 @@
   margin: 0 auto 15px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid #e0e0e0;
+  border: 3px solid var(--border-color);
 }
 
 .profileImage {
@@ -71,7 +71,7 @@
   display: inline-block;
   padding: 8px 16px;
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
@@ -118,11 +118,11 @@
 
 .profileSettingsCard,
 .authenticationCard {
-  background: white;
+  background: var(--bg1-color);
   border-radius: 8px;
   padding: 30px;
-  box-shadow: 0 0 20px rgba(211, 211, 211, 0.8);
-  border: 1px solid #d3d3d3;
+  box-shadow: var(--box-shadow, 0 0 20px rgba(211, 211, 211, 0.8));
+  border: 1px solid var(--border-color);
 }
 
 .profileSettingsCard h2,
@@ -154,29 +154,29 @@
 
 .formGroup input {
   padding: 12px 16px;
-  border: 1px solid #d3d3d3;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 13px;
   color: var(--text-color);
-  background-color: white;
+  background-color: var(--bg1-color);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .formGroup input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.15);
+  box-shadow: var(--box-shadow-hover, 0 0 10px rgba(0, 123, 255, 0.15));
 }
 
 .formGroup input::placeholder {
-  color: #999;
+  color: var(--muted-text-color);
 }
 
 .saveChangesBtn {
   width: 200px;
   padding: 12px 24px;
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
   border: none;
   border-radius: 8px;
   font-size: 14px;

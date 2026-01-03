@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-dark-bg, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +46,7 @@
 
 .header {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
   padding: 32px 24px;
   text-align: center;
   border-radius: 12px 12px 0 0;
@@ -60,12 +60,12 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--success-icon-bg, rgba(255, 255, 255, 0.2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: var(--bg1-color);
+  border: 2px solid var(--success-icon-border, rgba(255, 255, 255, 0.3));
 }
 
 .header h2 {
@@ -114,7 +114,7 @@
 
 .statusBadge {
   display: inline-block;
-  background-color: rgba(0, 123, 255, 0.1);
+  background-color: var(--primary-light-bg, rgba(0, 123, 255, 0.1));
   color: var(--primary-color);
   padding: 4px 12px;
   border-radius: 4px;
@@ -170,11 +170,11 @@
 
 .btnPrimary {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
 }
 
 .btnPrimary:hover {
   background-color: var(--primary-color-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 4px 12px var(--primary-shadow-color, rgba(0, 123, 255, 0.3));
 }

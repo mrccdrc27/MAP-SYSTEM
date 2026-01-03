@@ -7,23 +7,26 @@ const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
 // repeated 404 requests during a session. undefined = unknown, true/false = cached result.
 let _supportsVersionEndpoint;
 
-// Helper function to get auth headers from cookies
+// Helper function to get auth headers (no manual cookie reading needed with httpOnly cookies)
 const getAuthHeaders = () => {
-  // Try to get the access token from cookies (set by auth service)
-  const cookies = document.cookie.split(';');
-  const accessTokenCookie = cookies.find(c => c.trim().startsWith('access_token='));
-  const accessToken = accessTokenCookie ? accessTokenCookie.split('=')[1] : null;
-  
-  const headers = {
+  return {
     'Content-Type': 'application/json',
   };
+};
+
+// Helper function to get fetch options with proper cookie-based authentication
+const getFetchOptions = (method = 'GET', body = null) => {
+  const options = {
+    method,
+    credentials: 'include', // Essential for httpOnly cookie-based auth
+    headers: getAuthHeaders(),
+  };
   
-  // If we have an access token, send it as Authorization header
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
+  if (body) {
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
   
-  return headers;
+  return options;
 };
 
 // Helper to handle 401 errors by logging out immediately
@@ -54,11 +57,7 @@ export const backendArticleService = {
       const qs = Object.keys(params || {}).length
         ? `?${Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')}`
         : '';
-      const response = await fetch(`${BASE_URL}/api/articles/${qs}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${qs}`, getFetchOptions('GET'));
 
       handleAuthError(response);
 
@@ -80,11 +79,7 @@ export const backendArticleService = {
    */
   async getCategoryChoices() {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/choices/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/choices/`, getFetchOptions('GET'));
 
       handleAuthError(response);
 
@@ -102,11 +97,7 @@ export const backendArticleService = {
    */
   async getArticleById(articleId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/`, getFetchOptions('GET'));
 
       handleAuthError(response);
 
@@ -126,12 +117,7 @@ export const backendArticleService = {
    */
   async createArticle(articleData) {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(articleData),
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/`, getFetchOptions('POST', articleData));
 
       handleAuthError(response);
 
@@ -160,12 +146,7 @@ export const backendArticleService = {
    */
   async updateArticle(articleId, articleData) {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(articleData),
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/`, getFetchOptions('PATCH', articleData));
 
       handleAuthError(response);
 
@@ -186,11 +167,7 @@ export const backendArticleService = {
    */
   async archiveArticle(articleId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/archive/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/archive/`, getFetchOptions('POST'));
 
       handleAuthError(response);
 
@@ -211,11 +188,7 @@ export const backendArticleService = {
    */
   async restoreArticle(articleId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/restore/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/restore/`, getFetchOptions('POST'));
 
       handleAuthError(response);
 
@@ -236,11 +209,7 @@ export const backendArticleService = {
    */
   async deleteArticle(articleId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/`, getFetchOptions('DELETE'));
 
       handleAuthError(response);
 
@@ -264,11 +233,7 @@ export const backendArticleService = {
     try {
       // If we've previously determined the endpoint is not supported, skip calling it.
       if (_supportsVersionEndpoint === false) return null;
-      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/versions/${versionId}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${BASE_URL}/api/articles/${articleId}/versions/${versionId}/`, getFetchOptions('GET'));
 
       handleAuthError(response);
 

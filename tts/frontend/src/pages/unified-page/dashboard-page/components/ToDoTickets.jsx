@@ -103,16 +103,12 @@ export default function ToDoTickets({ tickets = [] }) {
                   key={t.ticket_id || t.ticket_no || t.ticket_number}
                   className={styles.taskRow}
                   style={{ borderLeft: `4px solid var(--${prio}-color)` }}
-                  onClick={() => navigate(`/ticket/${t.task_item_id}`)}
+                  onClick={() => navigate(`/ticket/${t.ticket_number}`)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      navigate(
-                        `/ticket/${
-                          t.ticket_id || t.ticket_no || t.task_item_id || ""
-                        }`
-                      );
+                      navigate(`/ticket/${t.ticket_number}`);
                     }
                   }}
                 >
