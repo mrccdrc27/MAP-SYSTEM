@@ -6,6 +6,18 @@ import {
   LogOut,
   Bell,
   Settings,
+  Eye,
+  FileDown,
+  X,
+  Calendar,
+  User as UserIcon,
+  Clock,
+  FileText,
+  ArrowLeft,
+  Download,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LOGOMAP from "../../assets/MAP.jpg";
@@ -15,6 +27,165 @@ import { getLedgerEntries } from "../../API/ledgerAPI";
 // MODIFIED: Added department API import
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
+import * as XLSX from "xlsx"; // For Excel export
+
+// Status Component (from Proposal History)
+const Status = ({ type, name }) => {
+  const getStatusStyle = () => {
+    switch (type?.toLowerCase()) {
+      case "approved":
+        return {
+          backgroundColor: "#e6f4ea",
+          color: "#0d6832",
+          borderColor: "#a3d9b1",
+        };
+      case "rejected":
+        return {
+          backgroundColor: "#fde8e8",
+          color: "#9b1c1c",
+          borderColor: "#f5b7b1",
+        };
+      case "submitted":
+        return {
+          backgroundColor: "#e8f4fd",
+          color: "#1a56db",
+          borderColor: "#a4cafe",
+        };
+      case "updated":
+        return {
+          backgroundColor: "#fef3c7",
+          color: "#92400e",
+          borderColor: "#fcd34d",
+        };
+      case "reviewed":
+        return {
+          backgroundColor: "#f0f9ff",
+          color: "#0369a1",
+          borderColor: "#bae6fd",
+        };
+      default:
+        return {
+          backgroundColor: "#f3f4f6",
+          color: "#374151",
+          borderColor: "#d1d5db",
+        };
+    }
+  };
+
+  const style = getStatusStyle();
+
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 12px",
+        borderRadius: "12px",
+        fontSize: "12px",
+        fontWeight: "500",
+        border: `1px solid ${style.borderColor}`,
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+      }}
+    >
+      <div
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          marginRight: "6px",
+          backgroundColor: style.color,
+        }}
+      ></div>
+      {name}
+    </div>
+  );
+};
+
+// Audit Trail Timeline Component (updated from Proposal History)
+const AuditTrailTimeline = ({ history }) => {
+  if (!history || history.length === 0) return null;
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "approved":
+        return <CheckCircle size={14} color="#0d6832" />;
+      case "rejected":
+        return <XCircle size={14} color="#9b1c1c" />;
+      case "submitted":
+        return <FileText size={14} color="#1a56db" />;
+      case "updated":
+        return <RefreshCw size={14} color="#92400e" />;
+      default:
+        return <FileText size={14} color="#374151" />;
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "20px" }}>
+      <h4 style={{ marginBottom: "15px", color: "#333", fontSize: "14px" }}>
+        Audit Information
+      </h4>
+      <div style={{ position: "relative" }}>
+        {history.map((entry, index) => (
+          <div
+            key={index}
+            style={{
+              marginBottom: "15px",
+              padding: "12px",
+              backgroundColor: "#f8f9fa",
+              borderRadius: "6px",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "8px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {getStatusIcon(entry.status)}
+                <strong style={{ fontSize: "13px" }}>{entry.status}</strong>
+              </div>
+              <div style={{ fontSize: "11px", color: "#666" }}>
+                {new Date(entry.last_modified).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                <UserIcon size={12} />
+                <span style={{ fontSize: "12px" }}>{entry.last_modified_by}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Calendar size={12} />
+                <span style={{ fontSize: "12px" }}>
+                  {new Date(entry.last_modified).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            
+            {entry.comments && (
+              <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "#fff", borderRadius: "4px", borderLeft: "2px solid #007bff" }}>
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "2px" }}>Comments:</div>
+                <div style={{ fontSize: "12px" }}>{entry.comments}</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // Pagination Component (Preserved)
 const Pagination = ({
@@ -248,6 +419,797 @@ const Pagination = ({
   );
 };
 
+// NEW: Render Navbar Component (to reuse in popup)
+const renderNavbar = (showBudgetDropdown, showExpenseDropdown, showProfileDropdown, showNotifications, 
+  toggleBudgetDropdown, toggleExpenseDropdown, toggleProfileDropdown, toggleNotifications, 
+  handleNavigate, formattedDay, formattedDate, formattedTime, userProfile, 
+  handleManageProfile, userRole, handleLogout) => {
+  return (
+    <nav
+      className="navbar"
+      style={{
+        position: "static",
+        marginBottom: "20px",
+        backgroundColor: "white",
+        borderBottom: "1px solid #e0e0e0",
+      }}
+    >
+      <div
+        className="navbar-content"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0 20px",
+          height: "60px",
+        }}
+      >
+        <div
+          className="navbar-brand"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            height: "60px",
+            overflow: "hidden",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              height: "45px",
+              width: "45px",
+              borderRadius: "8px",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#fff",
+            }}
+          >
+            <img
+              src={LOGOMAP}
+              alt="System Logo"
+              className="navbar-logo"
+              style={{
+                height: "100%",
+                width: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          </div>
+          <span
+            className="system-name"
+            style={{
+              fontWeight: 700,
+              fontSize: "1.3rem",
+              color: "var(--primary-color, #007bff)",
+            }}
+          >
+            BudgetPro
+          </span>
+        </div>
+
+        <div
+          className="navbar-links"
+          style={{ display: "flex", gap: "20px" }}
+        >
+          <Link to="/dashboard" className="nav-link">
+            Dashboard
+          </Link>
+
+          <div className="nav-dropdown">
+            <div
+              className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
+              onClick={toggleBudgetDropdown}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{ outline: "none" }}
+            >
+              Budget{" "}
+              <ChevronDown
+                size={14}
+                className={`dropdown-arrow ${
+                  showBudgetDropdown ? "rotated" : ""
+                }`}
+              />
+            </div>
+            {showBudgetDropdown && (
+              <div
+                className="dropdown-menu"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 1000,
+                }}
+              >
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/budget-proposal")}
+                >
+                  Budget Proposal
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/proposal-history")}
+                >
+                  Proposal History
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/ledger-view")}
+                >
+                  Ledger View
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/budget-allocation")}
+                >
+                  Budget Allocation
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() =>
+                    handleNavigate("/finance/budget-variance-report")
+                  }
+                >
+                  Budget Variance Report
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="nav-dropdown">
+            <div
+              className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
+              onClick={toggleExpenseDropdown}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{ outline: "none" }}
+            >
+              Expense{" "}
+              <ChevronDown
+                size={14}
+                className={`dropdown-arrow ${
+                  showExpenseDropdown ? "rotated" : ""
+                }`}
+              />
+            </div>
+            {showExpenseDropdown && (
+              <div
+                className="dropdown-menu"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 1000,
+                }}
+              >
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/expense-tracking")}
+                >
+                  Expense Tracking
+                </div>
+                <div
+                  className="dropdown-item"
+                  onClick={() => handleNavigate("/finance/expense-history")}
+                >
+                  Expense History
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="navbar-controls"
+          style={{ display: "flex", alignItems: "center", gap: "15px" }}
+        >
+          <div
+            className="date-time-badge"
+            style={{
+              background: "#f3f4f6",
+              borderRadius: "16px",
+              padding: "4px 14px",
+              fontSize: "0.95rem",
+              color: "#007bff",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            {formattedDay}, {formattedDate} | {formattedTime}
+          </div>
+
+          <div className="notification-container">
+            <div
+              className="notification-icon"
+              onClick={toggleNotifications}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{
+                position: "relative",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <Bell size={20} />
+              <span
+                className="notification-badge"
+                style={{
+                  position: "absolute",
+                  top: "-5px",
+                  right: "-5px",
+                  backgroundColor: "red",
+                  color: "white",
+                  borderRadius: "50%",
+                  width: "16px",
+                  height: "16px",
+                  fontSize: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                3
+              </span>
+            </div>
+          </div>
+
+          <div className="profile-container" style={{ position: "relative" }}>
+            <div
+              className="profile-trigger"
+              onClick={toggleProfileDropdown}
+              onMouseDown={(e) => e.preventDefault()}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <img
+                src={userProfile.avatar}
+                alt="User avatar"
+                className="profile-image"
+                style={{ width: "32px", height: "32px", borderRadius: "50%" }}
+              />
+            </div>
+
+            {showProfileDropdown && (
+              <div
+                className="profile-dropdown"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  backgroundColor: "white",
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                  width: "250px",
+                  zIndex: 1000,
+                }}
+              >
+                <div
+                  className="profile-info-section"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "10px",
+                  }}
+                >
+                  <img
+                    src={userProfile.avatar}
+                    alt="Profile"
+                    className="profile-dropdown-image"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      marginRight: "10px",
+                    }}
+                  />
+                  <div className="profile-details">
+                    <div
+                      className="profile-name"
+                      style={{ fontWeight: "bold" }}
+                    >
+                      {userProfile.name}
+                    </div>
+                    <div
+                      className="profile-role-badge"
+                      style={{
+                        backgroundColor: "#e9ecef",
+                        padding: "2px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        display: "inline-block",
+                      }}
+                    >
+                      {userProfile.role}
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="dropdown-divider"
+                  style={{
+                    height: "1px",
+                    backgroundColor: "#eee",
+                    margin: "10px 0",
+                  }}
+                ></div>
+                <div
+                  className="dropdown-item"
+                  onClick={handleManageProfile}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "8px 0",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <User size={16} style={{ marginRight: "8px" }} />
+                  <span>Manage Profile</span>
+                </div>
+                {userRole === "ADMIN" && (
+                  <div
+                    className="dropdown-item"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "8px 0",
+                      cursor: "pointer",
+                      outline: "none",
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <Settings size={16} style={{ marginRight: "8px" }} />
+                    <span>User Management</span>
+                  </div>
+                )}
+                <div
+                  className="dropdown-divider"
+                  style={{
+                    height: "1px",
+                    backgroundColor: "#eee",
+                    margin: "10px 0",
+                  }}
+                ></div>
+                <div
+                  className="dropdown-item"
+                  onClick={handleLogout}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "8px 0",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <LogOut size={16} style={{ marginRight: "8px" }} />
+                  <span>Log Out</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// NEW COMPONENT: Journal Entry Details Modal (Updated to match Proposal History style)
+const JournalEntryDetailsModal = ({ entry, onClose, loading, 
+  showBudgetDropdown, showExpenseDropdown, showProfileDropdown, showNotifications,
+  toggleBudgetDropdown, toggleExpenseDropdown, toggleProfileDropdown, toggleNotifications,
+  handleNavigate, formattedDay, formattedDate, formattedTime, userProfile,
+  handleManageProfile, userRole, handleLogout }) => {
+  if (!entry) return null;
+
+  const formatAmount = (val) => {
+    return `₱${parseFloat(val).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  // Create mock audit trail with Finance Manager tag
+  const getAuditTrail = () => {
+    return [
+      {
+        status: "CREATED",
+        last_modified: new Date(Date.now() - 86400000 * 3).toISOString(),
+        last_modified_by: "System User",
+        comments: "Journal entry created",
+      },
+      {
+        status: "PROCESSED",
+        last_modified: new Date(Date.now() - 86400000 * 2).toISOString(),
+        last_modified_by: "Finance Dept",
+        comments: "Transaction processed",
+      },
+      {
+        status: "POSTED",
+        last_modified: new Date(Date.now() - 86400000 * 1).toISOString(),
+        last_modified_by: "Finance Manager",
+        comments: "Posted to ledger",
+      },
+    ];
+  };
+
+  // Create double entry data
+  const getDoubleEntryData = () => {
+    return [
+      {
+        account: entry.account,
+        entry_type: "DEBIT",
+        department: entry.department,
+        amount: entry.amount,
+      },
+      {
+        account: "Counterpart Account",
+        entry_type: "CREDIT",
+        department: entry.department,
+        amount: entry.amount,
+      },
+    ];
+  };
+
+  const auditTrail = getAuditTrail();
+  const doubleEntries = getDoubleEntryData();
+
+  // Utility function to shorten department names
+  const shortenDepartmentName = (name, maxLength = 20) => {
+    if (!name || name.length <= maxLength) return name;
+
+    const abbreviations = {
+      Department: "Dept.",
+      Management: "Mgmt.",
+      Operations: "Ops.",
+      Merchandising: "Merch.",
+      Marketing: "Mktg.",
+      Logistics: "Log.",
+      "Human Resources": "HR",
+      "Information Technology": "IT",
+      Finance: "Fin.",
+    };
+
+    let shortened = name;
+    for (const [full, abbr] of Object.entries(abbreviations)) {
+      shortened = shortened.replace(new RegExp(full, "gi"), abbr);
+    }
+
+    if (shortened.length <= maxLength) return shortened;
+    return shortened.substring(0, maxLength - 3) + "...";
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "white",
+        zIndex: 1100,
+        overflow: "auto",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Navbar inside modal - full navbar like main page */}
+      {renderNavbar(
+        showBudgetDropdown,
+        showExpenseDropdown,
+        showProfileDropdown,
+        showNotifications,
+        toggleBudgetDropdown,
+        toggleExpenseDropdown,
+        toggleProfileDropdown,
+        toggleNotifications,
+        handleNavigate,
+        formattedDay,
+        formattedDate,
+        formattedTime,
+        userProfile,
+        handleManageProfile,
+        userRole,
+        handleLogout
+      )}
+
+      <div style={{ 
+        flex: 1, 
+        overflow: "auto", 
+        padding: "20px",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        width: "100%"
+      }}>
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          marginBottom: "20px",
+          flexWrap: "wrap",
+          gap: "10px"
+        }}>
+          <button
+            className="back-button"
+            onClick={onClose}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "8px 12px",
+              backgroundColor: "#f8f9fa",
+              border: "1px solid #dee2e6",
+              borderRadius: "4px",
+              cursor: "pointer",
+              alignSelf: "flex-start",
+              fontSize: "13px",
+              outline: "none",
+            }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <ArrowLeft size={16} /> <span>Back to Ledger View</span>
+          </button>
+
+          {/* Export Button - Changed to "Export Report" */}
+          <button
+            onClick={() => {
+              // Export functionality will be added
+              alert("Export Report feature will be implemented here");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: "500",
+              fontSize: "13px",
+              outline: "none",
+              order: 2,
+              minWidth: "140px",
+            }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <span>Export Report</span>
+            <Download size={16} style={{ marginLeft: "5px" }} />
+          </button>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: "white",
+            borderRadius: "8px",
+            padding: "20px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          }}
+        >
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}>
+              Loading journal entry details...
+            </div>
+          ) : (
+            <>
+              {/* Journal Entry Context - Horizontal Breakdown */}
+              <div
+                className="audit-header"
+                style={{
+                  marginBottom: "25px",
+                  padding: "20px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "8px",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                <h4
+                  style={{
+                    margin: "0 0 15px 0",
+                    color: "#6c757d",
+                    fontSize: "12px",
+                    textTransform: "uppercase",
+                    fontWeight: "600",
+                  }}
+                >
+                  JOURNAL ENTRY DETAILS
+                </h4>
+                
+                {/* Main Ticket ID */}
+                <h3
+                  className="proposal-title"
+                  style={{
+                    margin: "0 0 20px 0",
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#333",
+                  }}
+                >
+                  {entry.reference_id || "N/A"}
+                </h3>
+                
+                {/* Horizontal Breakdown Grid */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "15px",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Department:
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                      {shortenDepartmentName(entry.department)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Category:
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                      {entry.category}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Sub-Category:
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                      {entry.sub_category || "General"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Status:
+                    </div>
+                    <div style={{ fontSize: "13px" }}>
+                      <Status type="APPROVED" name="POSTED" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Additional Info */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "15px",
+                    marginTop: "15px",
+                    paddingTop: "15px",
+                    borderTop: "1px solid #e9ecef",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Account:
+                    </div>
+                    <div style={{ fontSize: "13px" }}>
+                      {entry.account}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Date:
+                    </div>
+                    <div style={{ fontSize: "13px" }}>
+                      {entry.date}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                      Amount:
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: "500" }}>
+                      {formatAmount(entry.amount)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Double Entry Details Section */}
+              <div
+                className="double-entry-section"
+                style={{
+                  marginBottom: "20px",
+                  backgroundColor: "white",
+                  padding: "20px",
+                  borderRadius: "8px",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                <h4
+                  className="section-label"
+                  style={{
+                    margin: "0 0 15px 0",
+                    fontSize: "14px",
+                    color: "#495057",
+                    fontWeight: "600",
+                  }}
+                >
+                  Double Entry Details
+                </h4>
+                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #dee2e6", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8f9fa" }}>
+                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
+                        Account
+                      </th>
+                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
+                        Type
+                      </th>
+                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
+                        Department
+                      </th>
+                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {doubleEntries.map((line, index) => (
+                      <tr key={index} style={{ backgroundColor: index % 2 === 0 ? "#fff" : "#f8f9fa" }}>
+                        <td style={{ padding: "10px", border: "1px solid #dee2e6", color: "#000", fontSize: "13px" }}>
+                          {line.account}
+                        </td>
+                        <td style={{ padding: "10px", border: "1px solid #dee2e6", fontSize: "13px" }}>
+                          <span
+                            style={{
+                              backgroundColor: line.entry_type === "DEBIT" ? "#d4edda" : "#f8d7da",
+                              color: line.entry_type === "DEBIT" ? "#155724" : "#721c24",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              fontWeight: "600",
+                            }}
+                          >
+                            {line.entry_type}
+                          </span>
+                        </td>
+                        <td style={{ padding: "10px", border: "1px solid #dee2e6", color: "#000", fontSize: "13px" }}>
+                          {line.department}
+                        </td>
+                        <td style={{ padding: "10px", border: "1px solid #dee2e6", color: "#000", fontSize: "13px" }}>
+                          {formatAmount(line.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Audit Information Section */}
+              <div
+                className="timeline-section"
+                style={{
+                  marginBottom: "20px",
+                  backgroundColor: "white",
+                  padding: "20px",
+                  borderRadius: "8px",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                <AuditTrailTimeline history={auditTrail} />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LedgerView = () => {
   // Navigation and UI State
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
@@ -297,6 +1259,14 @@ const LedgerView = () => {
 
   // Date/Time State
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // NEW: Journal Entry Details State
+  const [selectedEntry, setSelectedEntry] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // NEW: Export State
+  const [exporting, setExporting] = useState(false);
 
   // Category options - only CapEx and OpEx
   const categoryOptions = [
@@ -447,6 +1417,96 @@ const LedgerView = () => {
     setCurrentPage(1);
   };
 
+  // NEW: Handle Journal Entry Click
+  const handleJournalEntryClick = (entry) => {
+    setSelectedEntry(entry);
+    setDetailsLoading(true);
+    setShowDetailsModal(true);
+    // Simulate loading
+    setTimeout(() => {
+      setDetailsLoading(false);
+    }, 500);
+  };
+
+  // NEW: Close Details Modal
+  const handleCloseDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedEntry(null);
+  };
+
+  // NEW: Export Functionality
+  const handleExportLedger = async () => {
+    setExporting(true);
+    
+    try {
+      // Generate 7-digit token
+      const token = Math.floor(1000000 + Math.random() * 9000000).toString();
+      
+      // Get current date for filename
+      const today = new Date();
+      const dateString = today.toISOString().split('T')[0].replace(/-/g, '');
+      const filename = `ledger_view_${dateString}_${token}.xlsx`;
+      
+      // Prepare data for Excel
+      const exportData = ledgerEntries.map(item => ({
+        "TICKET ID": item.reference_id,
+        "DATE": item.date,
+        "DEPARTMENT": item.department,
+        "CATEGORY": item.category,
+        "SUB-CATEGORY": item.sub_category || "General",
+        "ACCOUNT": item.account,
+        "AMOUNT": parseFloat(item.amount).toFixed(2)
+      }));
+      
+      // Add summary row if there's data
+      if (exportData.length > 0) {
+        const totalAmount = ledgerEntries.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+        exportData.push({
+          "TICKET ID": "SUMMARY",
+          "DATE": "",
+          "DEPARTMENT": "",
+          "CATEGORY": "TOTAL",
+          "SUB-CATEGORY": "",
+          "ACCOUNT": "",
+          "AMOUNT": totalAmount.toFixed(2)
+        });
+      }
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Auto-size columns
+      const wscols = [
+        { wch: 15 },
+        { wch: 12 },
+        { wch: 18 },
+        { wch: 12 },
+        { wch: 21 },
+        { wch: 17 },
+        { wch: 15 },
+      ];
+      worksheet["!cols"] = wscols;
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger View");
+      
+      // Generate and download file
+      XLSX.writeFile(workbook, filename);
+      
+      // Show success message
+      setTimeout(() => {
+        alert(`Export completed successfully!\nFile: ${filename}\nRecords exported: ${ledgerEntries.length}`);
+      }, 500);
+      
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleNavigate = (path) => {
     navigate(path);
     closeAllDropdowns();
@@ -509,422 +1569,30 @@ const LedgerView = () => {
       className="app-container"
       style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
     >
-      {/* Navigation Bar */}
-      <nav
-        className="navbar"
-        style={{ position: "static", marginBottom: "20px" }}
-      >
-        <div
-          className="navbar-content"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 20px",
-            height: "60px",
-          }}
-        >
-          {/* Logo and System Name */}
-          <div
-            className="navbar-brand"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              height: "60px",
-              overflow: "hidden",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                height: "45px",
-                width: "45px",
-                borderRadius: "8px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fff",
-              }}
-            >
-              <img
-                src={LOGOMAP}
-                alt="System Logo"
-                className="navbar-logo"
-                style={{
-                  height: "100%",
-                  width: "100%",
-                  objectFit: "contain",
-                  display: "block",
-                }}
-              />
-            </div>
-            <span
-              className="system-name"
-              style={{
-                fontWeight: 700,
-                fontSize: "1.3rem",
-                color: "var(--primary-color, #007bff)",
-              }}
-            >
-              BudgetPro
-            </span>
-          </div>
-
-          {/* Main Navigation Links */}
-          <div
-            className="navbar-links"
-            style={{ display: "flex", gap: "20px" }}
-          >
-            <Link to="/dashboard" className="nav-link">
-              Dashboard
-            </Link>
-
-            {/* Budget Dropdown */}
-            <div className="nav-dropdown">
-              <div
-                className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
-                onClick={toggleBudgetDropdown}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{ outline: "none" }}
-              >
-                Budget{" "}
-                <ChevronDown
-                  size={14}
-                  className={`dropdown-arrow ${
-                    showBudgetDropdown ? "rotated" : ""
-                  }`}
-                />
-              </div>
-              {showBudgetDropdown && (
-                <div
-                  className="dropdown-menu"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/budget-proposal")}
-                  >
-                    Budget Proposal
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/proposal-history")}
-                  >
-                    Proposal History
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/ledger-view")}
-                  >
-                    Ledger View
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/budget-allocation")}
-                  >
-                    Budget Allocation
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() =>
-                      handleNavigate("/finance/budget-variance-report")
-                    }
-                  >
-                    Budget Variance Report
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Expense Dropdown */}
-            <div className="nav-dropdown">
-              <div
-                className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
-                onClick={toggleExpenseDropdown}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{ outline: "none" }}
-              >
-                Expense{" "}
-                <ChevronDown
-                  size={14}
-                  className={`dropdown-arrow ${
-                    showExpenseDropdown ? "rotated" : ""
-                  }`}
-                />
-              </div>
-              {showExpenseDropdown && (
-                <div
-                  className="dropdown-menu"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/expense-tracking")}
-                  >
-                    Expense Tracking
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/expense-history")}
-                  >
-                    Expense History
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* User Controls */}
-          <div
-            className="navbar-controls"
-            style={{ display: "flex", alignItems: "center", gap: "15px" }}
-          >
-            <div
-              className="date-time-badge"
-              style={{
-                background: "#f3f4f6",
-                borderRadius: "16px",
-                padding: "4px 14px",
-                fontSize: "0.95rem",
-                color: "#007bff",
-                fontWeight: 500,
-              }}
-            >
-              {formattedDay}, {formattedDate} | {formattedTime}
-            </div>
-
-            {/* Notification Icon */}
-            <div className="notification-container">
-              <div
-                className="notification-icon"
-                onClick={toggleNotifications}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{ position: "relative", cursor: "pointer" }}
-              >
-                <Bell size={20} />
-                <span
-                  className="notification-badge"
-                  style={{
-                    position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
-                    backgroundColor: "red",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    fontSize: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  3
-                </span>
-              </div>
-              {showNotifications && (
-                <div
-                  className="notification-panel"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    right: 0,
-                    backgroundColor: "white",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    padding: "10px",
-                    width: "300px",
-                    zIndex: 1000,
-                  }}
-                >
-                  {/* Notification content here */}
-                </div>
-              )}
-            </div>
-
-            {/* Profile Dropdown */}
-            <div className="profile-container" style={{ position: "relative" }}>
-              <div
-                className="profile-trigger"
-                onClick={toggleProfileDropdown}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <img
-                  src={userProfile.avatar}
-                  alt="User avatar"
-                  className="profile-image"
-                  style={{ width: "32px", height: "32px", borderRadius: "50%" }}
-                />
-              </div>
-              {showProfileDropdown && (
-                <div
-                  className="profile-dropdown"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    right: 0,
-                    backgroundColor: "white",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    padding: "10px",
-                    width: "250px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="profile-info-section"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <img
-                      src={userProfile.avatar}
-                      alt="Profile"
-                      className="profile-dropdown-image"
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        marginRight: "10px",
-                      }}
-                    />
-                    <div>
-                      <div
-                        className="profile-name"
-                        style={{ fontWeight: "bold" }}
-                      >
-                        {userProfile.name}
-                      </div>
-                      <div
-                        className="profile-role-badge"
-                        style={{
-                          backgroundColor: "#e9ecef",
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          display: "inline-block",
-                        }}
-                      >
-                        {userProfile.role}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className="dropdown-divider"
-                    style={{
-                      height: "1px",
-                      backgroundColor: "#eee",
-                      margin: "10px 0",
-                    }}
-                  ></div>
-                  <div
-                    className="dropdown-item"
-                    onClick={handleManageProfile}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "8px 0",
-                      cursor: "pointer",
-                      outline: "none",
-                      transition: "background-color 0.2s ease",
-                      color: "#000", // Black text color
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#f0f0f0"; // Light gray hover
-                      e.currentTarget.style.color = "#000"; // Keep black text on hover
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "#000"; // Keep black text
-                    }}
-                  >
-                    <User size={16} style={{ marginRight: "8px" }} />
-                    Manage Profile
-                  </div>
-                  {userProfile.role === "ADMIN" && (
-                    <div
-                      className="dropdown-item"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "8px 0",
-                        cursor: "pointer",
-                        transition: "background-color 0.2s ease",
-                        color: "#000",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#f0f0f0";
-                        e.currentTarget.style.color = "#000";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                        e.currentTarget.style.color = "#000";
-                      }}
-                    >
-                      <Settings size={16} style={{ marginRight: "8px" }} /> User
-                      Management
-                    </div>
-                  )}
-                  <div
-                    className="dropdown-divider"
-                    style={{
-                      height: "1px",
-                      backgroundColor: "#eee",
-                      margin: "10px 0",
-                    }}
-                  ></div>
-                  <div
-                    className="dropdown-item"
-                    onClick={handleLogout}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "8px 0",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s ease",
-                      color: "#000",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#f0f0f0";
-                      e.currentTarget.style.color = "#000";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "#000";
-                    }}
-                  >
-                    <LogOut size={16} style={{ marginRight: "8px" }} /> Log Out
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Main Navbar */}
+      {renderNavbar(
+        showBudgetDropdown,
+        showExpenseDropdown,
+        showProfileDropdown,
+        showNotifications,
+        toggleBudgetDropdown,
+        toggleExpenseDropdown,
+        toggleProfileDropdown,
+        toggleNotifications,
+        handleNavigate,
+        formattedDay,
+        formattedDate,
+        formattedTime,
+        userProfile,
+        handleManageProfile,
+        userRole,
+        handleLogout
+      )}
 
       {/* Main Content */}
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {/* Conditionally render either Dashboard content or ManageProfile */}
         {showManageProfile ? (
@@ -953,7 +1621,14 @@ const LedgerView = () => {
                 marginBottom: "20px",
               }}
             >
-              <h2 className="page-title">Ledger View</h2>
+              <h2 className="page-title" style={{
+                margin: 0,
+                fontSize: "24px",
+                fontWeight: "bold",
+                color: "#0C0C0C",
+              }}>
+                Ledger View
+              </h2>
               <div
                 className="controls-container"
                 style={{ display: "flex", gap: "10px" }}
@@ -993,7 +1668,7 @@ const LedgerView = () => {
                   />
                 </div>
 
-                {/* Department Filter Button - Added before Category */}
+                {/* Department Filter Button */}
                 <div
                   className="filter-dropdown"
                   style={{ position: "relative" }}
@@ -1073,7 +1748,7 @@ const LedgerView = () => {
                   )}
                 </div>
 
-                {/* Category Filter Button - Updated to only CapEx and OpEx */}
+                {/* Category Filter Button */}
                 <div
                   className="filter-dropdown"
                   style={{ position: "relative" }}
@@ -1140,6 +1815,51 @@ const LedgerView = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Export Button */}
+                <button
+                  onClick={handleExportLedger}
+                  disabled={exporting || ledgerEntries.length === 0}
+                  onMouseDown={(e) => e.preventDefault()}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    padding: "8px 16px",
+                    backgroundColor: "#007bff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: exporting ? "not-allowed" : "pointer",
+                    fontWeight: "500",
+                    fontSize: "13px",
+                    outline: "none",
+                    minWidth: "120px",
+                    opacity: exporting ? 0.7 : 1,
+                  }}
+                >
+                  {exporting ? (
+                    <>
+                      <div
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          border: "2px solid rgba(255,255,255,0.3)",
+                          borderTop: "2px solid white",
+                          borderRadius: "50%",
+                          animation: "spin 1s linear infinite",
+                        }}
+                      />
+                      <span>Exporting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Export</span>
+                      <Download size={16} style={{ marginLeft: "5px" }} />
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -1166,6 +1886,7 @@ const LedgerView = () => {
                   width: "100%",
                   borderCollapse: "collapse",
                   tableLayout: "fixed",
+                  fontSize: "13px",
                 }}
               >
                 <thead>
@@ -1179,22 +1900,24 @@ const LedgerView = () => {
                   >
                     <th
                       style={{
-                        width: "15%",
-                        padding: "0.75rem",
+                        width: "14%",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       TICKET ID
                     </th>
                     <th
                       style={{
-                        width: "11%",
-                        padding: "0.75rem",
+                        width: "10%",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       DATE
@@ -1202,57 +1925,74 @@ const LedgerView = () => {
                     <th
                       style={{
                         width: "18%",
-                        padding: "0.75rem",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       DEPARTMENT
                     </th>
                     <th
                       style={{
-                        width: "12%",
-                        padding: "0.75rem",
+                        width: "10%",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       CATEGORY
                     </th>
                     <th
                       style={{
-                        width: "21%",
-                        padding: "0.75rem",
+                        width: "18%",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       SUB-CATEGORY
                     </th>
                     <th
                       style={{
-                        width: "17%",
-                        padding: "0.75rem",
+                        width: "16%",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       ACCOUNT
                     </th>
                     <th
                       style={{
-                        width: "12%",
-                        padding: "0.75rem",
+                        width: "9%",
+                        padding: "12px",
                         textAlign: "left",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
+                        fontSize: "13px",
                       }}
                     >
                       AMOUNT
+                    </th>
+                    <th
+                      style={{
+                        width: "8%",
+                        padding: "12px",
+                        textAlign: "center",
+                        borderBottom: "2px solid #dee2e6",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                      }}
+                    >
+                      ACTIONS
                     </th>
                   </tr>
                 </thead>
@@ -1260,8 +2000,8 @@ const LedgerView = () => {
                   {loading ? (
                     <tr>
                       <td
-                        colSpan="7"
-                        style={{ textAlign: "center", padding: "20px" }}
+                        colSpan="8"
+                        style={{ textAlign: "center", padding: "20px", fontSize: "13px" }}
                       >
                         Loading...
                       </td>
@@ -1279,87 +2019,111 @@ const LedgerView = () => {
                       >
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
+                            fontSize: "13px",
                             fontWeight: "400",
-                            color: "#000000", // Changed to black
+                            color: "#000000",
                           }}
                         >
                           {entry.reference_id}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
-                            color: "#000000", // Changed to black
+                            fontSize: "13px",
+                            color: "#000000",
                           }}
                         >
-                          {entry.date} {/* Now shows YYYY-MM-DD format */}
+                          {entry.date}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
-                            color: "#000000", // Changed to black
+                            fontSize: "13px",
+                            color: "#000000",
                           }}
                         >
                           {entry.department}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
+                            fontSize: "13px",
                             fontWeight: "400",
-                            color: "#000000", // Changed to black
+                            color: "#000000",
                             textAlign: "left",
                           }}
                         >
-                          {entry.category} {/* Now only shows CapEx or OpEx */}
+                          {entry.category}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
-                            color: "#000000", // Changed to black
+                            fontSize: "13px",
+                            color: "#000000",
                           }}
                         >
-                          {/* Ensure this matches serializer field name */}
                           {entry.sub_category || "General"}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
-                            color: "#000000", // Changed to black
+                            fontSize: "13px",
+                            color: "#000000",
                           }}
                         >
                           {entry.account}
                         </td>
                         <td
                           style={{
-                            padding: "0.75rem",
+                            padding: "12px",
                             borderBottom: "1px solid #dee2e6",
-                            fontSize: "14px",
+                            fontSize: "13px",
                             fontWeight: "400",
-                            color: "#000000", // Changed to black
+                            color: "#000000",
                           }}
                         >
                           {formatAmount(entry.amount)}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #dee2e6",
+                            textAlign: "center",
+                          }}
+                        >
+                          {/* View Button */}
+                          <button
+                            onClick={() => handleJournalEntryClick(entry)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            style={{
+                              padding: "6px 12px",
+                              backgroundColor: "#007bff",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              fontWeight: "500",
+                            }}
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="no-results"
-                        style={{ padding: "20px", textAlign: "center" }}
+                        style={{ padding: "20px", textAlign: "center", fontSize: "13px" }}
                       >
                         No transactions match your search criteria.
                       </td>
@@ -1386,6 +2150,31 @@ const LedgerView = () => {
           </div>
         )}
       </div>
+
+      {/* NEW: Journal Entry Details Modal with Full Navbar */}
+      {showDetailsModal && (
+        <JournalEntryDetailsModal
+          entry={selectedEntry}
+          onClose={handleCloseDetailsModal}
+          loading={detailsLoading}
+          showBudgetDropdown={showBudgetDropdown}
+          showExpenseDropdown={showExpenseDropdown}
+          showProfileDropdown={showProfileDropdown}
+          showNotifications={showNotifications}
+          toggleBudgetDropdown={toggleBudgetDropdown}
+          toggleExpenseDropdown={toggleExpenseDropdown}
+          toggleProfileDropdown={toggleProfileDropdown}
+          toggleNotifications={toggleNotifications}
+          handleNavigate={handleNavigate}
+          formattedDay={formattedDay}
+          formattedDate={formattedDate}
+          formattedTime={formattedTime}
+          userProfile={userProfile}
+          handleManageProfile={handleManageProfile}
+          userRole={userRole}
+          handleLogout={handleLogout}
+        />
+      )}
     </div>
   );
 };

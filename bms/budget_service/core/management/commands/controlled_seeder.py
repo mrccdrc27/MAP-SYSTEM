@@ -171,13 +171,16 @@ class Command(BaseCommand):
             traceback.print_exc()
 
     def seed_fiscal_years(self):
-        self.stdout.write("Seeding Fiscal Years...")
+        self.stdout.write("Seeding Fiscal Years (2023-2026)...")
         fys = {}
-        # Explicitly seed 2023, 2024, 2025
-        for year in [2023, 2024, 2025]:
+        # Always include previous 3 years plus current year for realism/history
+        current_year = datetime.now().year
+        years_to_seed = list(range(current_year - 3, current_year + 1))  # e.g., 2023-2026
+
+        for year in years_to_seed:
             name = f"FY {year}"
-            is_active = (year == datetime.now().year)
-            is_locked = (year < datetime.now().year)
+            is_active = (year == current_year)
+            is_locked = (year < current_year)
 
             fy, _ = FiscalYear.objects.update_or_create(
                 name=name,
@@ -289,8 +292,11 @@ class Command(BaseCommand):
         self.stdout.write("Seeding Proposals and Projects...")
         projects = []
 
-        # ENSURE 2023, 2024, 2025 are all processed
-        for year in [2023, 2024, 2025]:
+        # MODIFICATION: Use dynamic year range instead of hard-coded list
+        current_year = datetime.now().year
+        years_to_seed = list(range(current_year - 3, current_year + 1))  # e.g., 2023-2026
+        
+        for year in years_to_seed:  # CHANGED: Now includes 2026
             fy = fiscal_years[year]
             for dept_code, dept_obj in departments.items():
                 user = next(
@@ -303,12 +309,17 @@ class Command(BaseCommand):
                 # Seed 5 proposals per department
                 for i in range(1, 6):
                     cat = random.choice(dept_cats)
-                    # Force more APPROVED status for historical years to ensure projects/allocations exist
-                    if year < 2025:
+                    
+                    # MODIFICATION: Adjust status logic for current year (2026)
+                    if year < current_year:
+                        # Historical years: Force APPROVED to ensure data exists
                         status = 'APPROVED'
+                    elif year == current_year:
+                        # Current year: Mix of statuses for realism
+                        status = random.choice(['APPROVED', 'APPROVED', 'SUBMITTED', 'REJECTED'])
                     else:
-                        status = random.choice(
-                            ['APPROVED', 'APPROVED', 'SUBMITTED', 'REJECTED'])
+                        # Future years: Should not occur with current logic
+                        status = 'SUBMITTED'
 
                     ticket_id = f"TKT-{dept_code}-{year}-{i:03d}"
                     amount = Decimal(str(random.randint(5000, 500000)))
@@ -340,16 +351,14 @@ class Command(BaseCommand):
                     if created or not proposal.items.exists():
                         BudgetProposalItem.objects.create(
                             proposal=proposal,
-                            # MODIFICATION START: Populate the new Category field
                             category=cat,
-                            # MODIFICATION END
                             cost_element=cat.name,
                             description=f"Specific item for {cat.name}",
                             estimated_cost=amount,
                             account=accounts['ASSET'] if cat.classification == 'CAPEX' else accounts['EXPENSE']
                         )
                         
-                        # --- MODIFICATION START: Create Initial History (Submitted) ---
+                        # Create Initial History (Submitted)
                         ProposalHistory.objects.get_or_create(
                             proposal=proposal,
                             action='SUBMITTED',
@@ -360,14 +369,13 @@ class Command(BaseCommand):
                                 'comments': f"Initial submission via seeder."
                             }
                         )
-                        # --- MODIFICATION END ---
 
                     if status == 'APPROVED':
                         proposal.approved_by_name = finance_head['full_name']
                         proposal.approval_date = datetime(year, 1, 20)
                         proposal.save()
                         
-                        # --- MODIFICATION START: Create Approval History ---
+                        # Create Approval History
                         approval_dt = timezone.make_aware(datetime(year, 1, 20, 10, 0, 0))
                         ProposalHistory.objects.get_or_create(
                             proposal=proposal,
@@ -380,8 +388,10 @@ class Command(BaseCommand):
                                 'comments': "Approved via controlled seeder."
                             }
                         )
-                        # --- MODIFICATION END ---
 
+                        # MODIFICATION: Adjust project status for current year
+                        project_status = 'IN_PROGRESS' if year == current_year else 'COMPLETED'
+                        
                         project, _ = Project.objects.update_or_create(
                             budget_proposal=proposal,
                             defaults={
@@ -390,7 +400,7 @@ class Command(BaseCommand):
                                 'start_date': proposal.performance_start_date,
                                 'end_date': proposal.performance_end_date,
                                 'department': dept_obj,
-                                'status': 'IN_PROGRESS' if year == 2025 else 'COMPLETED',
+                                'status': project_status,
                                 'completion_percentage': random.randint(10, 90)
                             }
                         )
@@ -402,7 +412,7 @@ class Command(BaseCommand):
                         proposal.rejection_date = datetime(year, 1, 25)
                         proposal.save()
                         
-                        # --- MODIFICATION START: Create Rejection History ---
+                        # Create Rejection History
                         rejection_dt = timezone.make_aware(datetime(year, 1, 25, 14, 30, 0))
                         ProposalHistory.objects.get_or_create(
                             proposal=proposal,
@@ -415,7 +425,6 @@ class Command(BaseCommand):
                                 'comments': "Rejected due to budget constraints (Seeder)."
                             }
                         )
-                        # --- MODIFICATION END ---
                         
         return projects
 

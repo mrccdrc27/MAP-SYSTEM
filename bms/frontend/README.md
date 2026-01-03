@@ -1,80 +1,34 @@
-Dashboard - In the dashboard, I changed the Export Report Button, previously when you exported it, it was in .json, now it is in excel format .xlsx, and I also changed the sample data/structure in Budget per Department, which was previously per category.
+- All our new features come from our BRD and documentations so you can access this to follow all the new features.
+* https://docs.google.com/spreadsheets/d/1acl3j4xo5vlsGOrZ89hzYNF7VsnwKhWrfnMHk2c-GZo/edit?fbclid=IwY2xjawO9XHBleHRuA2FlbQIxMABicmlkETFXRm0wcVVYMVBmNXp4Tmg5c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHi8b-ppla4Fgg643I-Yh1wlSzm3A85iAzov9PoKFJ_prDfur3xpyrJXHCrd4_aem_PfEGSmLT2BG7PvEMaqQ4rg&gid=1365499177#gid=1365499177
 
+- Also, I can't revise our dropdown code like its data in selection because it's inside the API, so when i revising it, the API Calls and the backend that are attached is being destroy, so I can't even change it. Also, when i put the dropdown codes into components file our code is becoming white screen, so it's hard to risk.
+
+* I revised all margin sizes per module.
+
+Dashboard - In the dashboard, It still the same but i add the new feature which is Spending Behavior Analytics where you can see the Department Spending Trends, Highest Spendings Per Category and lastly the Spending heatmaps per department and its Montly and Quarterly.
 
 Budget proposals
-- Remove the description and status in the table and add a "Department", "Sub - category".
-- FOR ACTIONS Button it all now contains 'REVIEW' BUTTON ONLY.
-- Add a "Department" filter before category
-- In Submitted by Column, It must be a person who submit the proposal so i change it also.
-- In our Budget Proposal Form, Now the Print file has functionality where you can now print the our Ticket and some data there is revise now this is the sequence, Budget Proposals turns into (Ticket Review), Category, Sub category, Department, Budget amount and Submitted by: employee (department)
-- And also in lower Budget Form there is At the end of the ticket there is
-
-Finance Operator name:
-Signature:
-Date submitted:
-
-The table sequence now is;
-- Ticket ID → Department → Category → sub - category → Submiited by → Amount  → Actions 
+- Still the same but i remame the Finance Operator name: to Finance Manager Name: in Finance Department Approval Section in Review Button.
 
 Proposal history
-- Add a "Department" filter before category
-- Fix the content inside the category and the status, it must be a Approved and Rejected only.
-- Fix the content of sub-category
-- Fix the content of Modified by must be a FINANCE MANAGER or DEPARTMENT HEAD
+- Add another column for Action Buttons which is View Buttons and the content of it is the Detailed Audit View and also i add an Export Report Button in that Popup screen.
 
-The sequence is;
-Ticket ID → Department → Category → sub - category → Last modified → Modified By → Status
 
 Ledger View
-- Add "Department filter" 
-- Fix the content of categories
-- Change the "description" into a "Sub - category"
-The table sequence is;
-Ticket ID → Date → Department → Category → sub - category → Account → Amount 
+- Add a Export Button in main list view and as well as add a another column in the table for Action Buttons which is View Buttons and the content of it is a Complete journal entry details, All related debit/credit lines for the transaction and as well an Additional metadata: Created By, Created Date, Last Modified. Lastly an Export Report in Journal Entry Details
 
 BudgetAllocation
-*Ticket ID - system generated
+- In this Module, It has a lot of revisions so first is, under this module it has a 2 sub-tabs which is Budget Adjustment and the Supplemental Budget Approval. 
 
-*Date - Standardized date format (YYYY-MM-DD)
-↓
-Add *Department field
-↓
-*Category (per department)
-↓
-*Debit from Account (sub-category in each department)
-↓
-*Credit to the Account (sub-category each department)
-↓
-*Amount
+Budget Adjustment - I Add here a new Dropdown button where you can choose if you are modifying the budget in a proposal or just adding a budget. So each button has Forms related to what you have chosen which is either Modify Budget or Add Budget.
 
-- Now the table is same format as the Modify budget form once you add a manual entry. 
-- Remove the description
-- Add some disabled 'MODIFY BUDGET' when a user didn't select a row from the table.
-
-Note: (I already add this)
-1. Field-level error messages
-2. Form-level validation summary
-3. Change "save" into "submit"
-4. Success confirmation upon submit (submit means the budget allocation has been forwarded to the finance manager)
-5. The amount field will atomatic turn into peso once you input a value
-6. Modify budget entry will only show in FINANCE MANAGER
+Supplemental Budget - So here, Finance Manager can views list of pending supplemental budget requests and also it has a pre-approval or rejections in a request. Lastly it has a Audit logs that showing approver, action, remarks, date/time, and request ID.
 
 Budget Variance Report
-- Color Coding: Green (on budget), Yellow (warning), Red (over budget)
-- Icons: Warning symbols for critical variances
-- Trend Arrows: Indicators showing improvement/deterioration
-- Highlighting: Emphasis on main category totals
-- I alsoadd sample data here
+- Nothing change, ijust adjust its margin size.
 
 Expense Tracking
-- The ticket ID field is disabled (system generated)
-- Add a department filter
-- Remove the description
-- Add attachment file: JPG, PDF, and PNG
-- Now, "Submit" button instead save inAdd Expense Form.
-- The table is now the same format as the Add expense form except for "Status".
-- The "ACCOMPLISHED" will update 'yes' if the manual entry already checked by Finance Manager ( i Add conditions here already.)
+- Nothing change, ijust adjust its margin sizeand its UI Layout.
 
 Expense History
-- I update here the Category filter button the data there to CapEx and OpEx data only
-- i also add sample data here to visualize it properly.
+- Also nothing change, i just add an Export Report in View Details.

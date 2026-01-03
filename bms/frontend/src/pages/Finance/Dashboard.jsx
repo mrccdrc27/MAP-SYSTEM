@@ -19,7 +19,7 @@ Accuracy: Division happens before subtraction, reducing rounding drift.
 */
 
 import React, { useState, useEffect } from "react";
-import { Line, Pie } from "react-chartjs-2";
+import { Line, Pie, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -27,6 +27,7 @@ import {
   PointElement,
   LineElement,
   ArcElement,
+  BarElement,
   Tooltip,
   Legend,
   Filler,
@@ -42,6 +43,11 @@ import {
   Download,
   User,
   LogOut,
+  TrendingDown,
+  Flame,
+  PieChart,
+  Calendar,
+  ChevronRight,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LOGOMAP from "../../assets/MAP.jpg";
@@ -65,6 +71,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   ArcElement,
+  BarElement,
   Tooltip,
   Legend,
   Filler
@@ -297,7 +304,6 @@ const exportAccuracyReport = (
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
   const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "");
-  // CHANGED: Updated filename to match dashboard_summary format
   const fileName = `dashboard_summary_${dateStr}_${timeStr}.xlsx`;
 
   if (!forecastAccuracyData || !moneyFlowData || !forecastData) {
@@ -332,10 +338,6 @@ const exportAccuracyReport = (
           (f) => f.month_name === month.month_name
         );
         let forecastValue = forecastPoint ? Number(forecastPoint.forecast) : 0;
-
-        // NOTE: Manual stitching logic removed.
-        // The export should reflect the raw data comparison shown in the
-        // "Detailed Metrics Table" on the UI, where December shows a variance.
 
         const variance = actualValue - forecastValue;
 
@@ -401,7 +403,6 @@ const exportAccuracyReport = (
     const ws1 = XLSX.utils.aoa_to_sheet(combinedData);
 
     // --- 3. BEAUTIFICATION (Column Widths) ---
-    // Standard XLSX doesn't support fonts/colors easily, but we can fix widths.
     const wscols = [
       { wch: 15 }, // Month
       { wch: 20 }, // Actual
@@ -420,6 +421,148 @@ const exportAccuracyReport = (
   }
 };
 
+// Export Spending Behavior Report
+const exportSpendingReport = (type, data, filters) => {
+  const now = new Date();
+  const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
+  const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "");
+  const fileName = `${type.replace(/\s+/g, '_')}_report_${dateStr}_${timeStr}.xlsx`;
+
+  try {
+    const wb = XLSX.utils.book_new();
+    let wsData = [];
+
+    if (type === "Department Spending Trends") {
+      wsData = [
+        ["DEPARTMENT SPENDING TRENDS REPORT"],
+        ["Generated on:", now.toLocaleString()],
+        ["Department:", filters.department || "All Departments"],
+        ["Date Range:", `${filters.startDate} to ${filters.endDate}`],
+        ["Time Granularity:", filters.granularity],
+        [""],
+        ["Period", "Total Spent", "Percentage Change", "Status"],
+        ...(data.chartData?.labels?.map((label, index) => [
+          label,
+          formatPeso(data.chartData.datasets[0].data[index] || 0),
+          data.chartData.datasets[0].percentageChange?.[index]
+            ? `${data.chartData.datasets[0].percentageChange[index]}%`
+            : "N/A",
+          data.chartData.datasets[0].percentageChange?.[index] >= 0
+            ? "Increase"
+            : "Decrease",
+        ]) || []),
+      ];
+    } else if (type === "Highest Spending Categories") {
+      wsData = [
+        ["HIGHEST SPENDING CATEGORIES REPORT"],
+        ["Generated on:", now.toLocaleString()],
+        ["Department:", filters.department],
+        ["Date Range:", `${filters.startDate} to ${filters.endDate}`],
+        [""],
+        ["Rank", "Category", "Total Spent", "Percentage of Total"],
+        ...(data.categories?.map((cat, index) => [
+          index + 1,
+          cat.category,
+          formatPeso(cat.amount),
+          `${cat.percentage}%`,
+        ]) || []),
+      ];
+    } else if (type === "Spending Heatmap") {
+      wsData = [
+        ["SPENDING HEATMAP ANALYTICS REPORT"],
+        ["Generated on:", now.toLocaleString()],
+        ["Department:", filters.department],
+        ["Time Aggregation:", filters.aggregation],
+        [""],
+        ["Period", "Total Spent", "Intensity Level"],
+        ...(data.heatmapData?.map((item) => [
+          item.period,
+          formatPeso(item.value),
+          item.intensity,
+        ]) || []),
+      ];
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wscols = [{ wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 20 }];
+    ws["!cols"] = wscols;
+
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, fileName);
+  } catch (error) {
+    console.error("Error exporting spending report:", error);
+    alert("Failed to export report. Please try again.");
+  }
+};
+
+// Mock data for demonstration (replace with actual API calls)
+const getMockDepartmentSpendingTrends = (department, startDate, endDate, granularity) => {
+  const periods = granularity === "Monthly" 
+    ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    : ["Q1", "Q2", "Q3", "Q4"];
+  
+  const data = periods.map(() => Math.random() * 50000 + 10000);
+  const percentageChange = periods.map((_, i) => 
+    i > 0 ? ((data[i] - data[i-1]) / data[i-1] * 100).toFixed(1) : 0
+  );
+
+  return {
+    labels: periods,
+    datasets: [{
+      label: `Spending - ${department || "All Departments"}`,
+      data,
+      percentageChange,
+      borderColor: '#007bff',
+      backgroundColor: 'rgba(0, 123, 255, 0.1)',
+      tension: 0.4,
+      fill: true,
+    }],
+    totalAmount: data.reduce((a, b) => a + b, 0),
+    avgPercentageChange: ((data[data.length - 1] - data[0]) / data[0] * 100).toFixed(1)
+  };
+};
+
+const getMockHighestSpendingCategories = (department, startDate, endDate) => {
+  const categories = [
+    "Office Supplies", "Travel & Entertainment", "Software Licenses", 
+    "Hardware Equipment", "Marketing Campaigns", "Training & Development",
+    "Maintenance", "Utilities", "Consulting Fees", "Contract Services"
+  ];
+  
+  const randomCategories = categories
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 6)
+    .map(category => ({
+      category,
+      amount: Math.random() * 100000 + 50000,
+      percentage: (Math.random() * 30 + 10).toFixed(1)
+    }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const total = randomCategories.reduce((sum, cat) => sum + cat.amount, 0);
+  
+  return randomCategories.map(cat => ({
+    ...cat,
+    percentage: ((cat.amount / total) * 100).toFixed(1)
+  }));
+};
+
+const getMockHeatmapData = (department, aggregation) => {
+  const periods = aggregation === "Monthly" 
+    ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    : ["Q1", "Q2", "Q3", "Q4"];
+  
+  return periods.map(period => {
+    const value = Math.random() * 100000 + 20000;
+    let intensity;
+    if (value > 80000) intensity = "High";
+    else if (value > 50000) intensity = "Medium";
+    else intensity = "Low";
+    
+    return { period, value, intensity };
+  });
+};
+
 function BudgetDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -434,6 +577,31 @@ function BudgetDashboard() {
   const [showForecasting, setShowForecasting] = useState(false);
   const [showForecastComparison, setShowForecastComparison] = useState(false);
   const [showManageProfile, setShowManageProfile] = useState(false);
+  
+  // Spending Analytics State
+  const [activeSpendingTab, setActiveSpendingTab] = useState("trends");
+  
+  // Department Spending Trends State
+  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  const [timeGranularity, setTimeGranularity] = useState("Monthly");
+  const [spendingTrendsData, setSpendingTrendsData] = useState(null);
+  
+  // Highest Spending Categories State
+  const [selectedCategoryDepartment, setSelectedCategoryDepartment] = useState("All Departments");
+  const [categoryDateRange, setCategoryDateRange] = useState({
+    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  const [highestSpendingCategories, setHighestSpendingCategories] = useState([]);
+  
+  // Heatmap State
+  const [selectedHeatmapDepartment, setSelectedHeatmapDepartment] = useState("All Departments");
+  const [timeAggregation, setTimeAggregation] = useState("Monthly");
+  const [heatmapData, setHeatmapData] = useState([]);
 
   // Data State
   const [timeFilter, setTimeFilter] = useState("monthly");
@@ -548,6 +716,34 @@ function BudgetDashboard() {
     fetchAnalysisData();
   }, [showForecastComparison, showForecasting]);
 
+  // 4. Spending Analytics Data (Refreshes on Tab/Filter Change)
+  useEffect(() => {
+    fetchSpendingAnalyticsData();
+  }, [activeSpendingTab, selectedDepartment, dateRange, timeGranularity, selectedCategoryDepartment, categoryDateRange, selectedHeatmapDepartment, timeAggregation]);
+
+  const fetchSpendingAnalyticsData = () => {
+    // Mock API calls - replace with actual API calls
+    if (activeSpendingTab === "trends") {
+      const data = getMockDepartmentSpendingTrends(
+        selectedDepartment,
+        dateRange.startDate,
+        dateRange.endDate,
+        timeGranularity
+      );
+      setSpendingTrendsData(data);
+    } else if (activeSpendingTab === "categories") {
+      const data = getMockHighestSpendingCategories(
+        selectedCategoryDepartment,
+        categoryDateRange.startDate,
+        categoryDateRange.endDate
+      );
+      setHighestSpendingCategories(data);
+    } else if (activeSpendingTab === "heatmap") {
+      const data = getMockHeatmapData(selectedHeatmapDepartment, timeAggregation);
+      setHeatmapData(data);
+    }
+  };
+
   // --- EVENT HANDLERS ---
 
   const handleNavigate = (path) => {
@@ -577,7 +773,6 @@ function BudgetDashboard() {
     : -1;
 
   // Convert Cumulative Forecast (Backend) to Monthly Forecast (Chart)
-  // This is crucial: Backend gives Year-to-Date totals, Charts need Month-by-Month values.
   const monthlyForecastData = convertCumulativeToMonthly(forecastData);
 
   // 1. DEFAULT VIEW: Budget vs Actual (+ Projection Stitching)
@@ -784,7 +979,70 @@ function BudgetDashboard() {
     plugins: { legend: { position: "top" } },
     scales: {
       x: { grid: { display: false } },
-      y: { grid: { display: true }, beginAtZero: true },
+      y: { 
+        grid: { display: true }, 
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return formatPeso(value);
+          }
+        }
+      },
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            label += formatPeso(context.parsed.y);
+            return label;
+          }
+        }
+      }
+    }
+  };
+
+  // Spending Trends Chart Options
+  const spendingTrendsOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { 
+      legend: { position: "top" },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            label += formatPeso(context.parsed.y);
+            
+            // Add percentage change to tooltip
+            if (spendingTrendsData?.datasets[0]?.percentageChange?.[context.dataIndex] !== undefined) {
+              const change = spendingTrendsData.datasets[0].percentageChange[context.dataIndex];
+              if (context.dataIndex > 0) {
+                label += ` (${change >= 0 ? '+' : ''}${change}% vs previous)`;
+              }
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { 
+        grid: { display: true }, 
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return formatPeso(value);
+          }
+        }
+      },
     },
   };
 
@@ -805,20 +1063,16 @@ function BudgetDashboard() {
     if (showProfileDropdown) setShowProfileDropdown(false);
   };
 
+  const toggleCategoryDropdown = () => {
+    toggleDropdown(setShowCategoryDropdown, showCategoryDropdown);
+  };
+
   const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
-    if (showBudgetDropdown) setShowBudgetDropdown(false);
-    if (showExpenseDropdown) setShowExpenseDropdown(false);
-    if (showCategoryDropdown) setShowCategoryDropdown(false);
-    if (showProfileDropdown) setShowProfileDropdown(false);
+    toggleDropdown(setShowNotifications, showNotifications);
   };
 
   const toggleProfileDropdown = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-    if (showBudgetDropdown) setShowBudgetDropdown(false);
-    if (showExpenseDropdown) setShowExpenseDropdown(false);
-    if (showCategoryDropdown) setShowCategoryDropdown(false);
-    if (showNotifications) setShowNotifications(false);
+    toggleDropdown(setShowProfileDropdown, showProfileDropdown);
   };
 
   const handleManageProfile = () => {
@@ -840,6 +1094,96 @@ function BudgetDashboard() {
 
   const toggleForecastComparison = () => {
     setShowForecastComparison(!showForecastComparison);
+  };
+
+  // Spending Analytics Handlers
+  const handleExportSpendingReport = (type) => {
+    let data, filters;
+    
+    if (type === "Department Spending Trends") {
+      data = spendingTrendsData;
+      filters = {
+        department: selectedDepartment,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        granularity: timeGranularity
+      };
+    } else if (type === "Highest Spending Categories") {
+      data = { categories: highestSpendingCategories };
+      filters = {
+        department: selectedCategoryDepartment,
+        startDate: categoryDateRange.startDate,
+        endDate: categoryDateRange.endDate
+      };
+    } else if (type === "Spending Heatmap") {
+      data = { heatmapData };
+      filters = {
+        department: selectedHeatmapDepartment,
+        aggregation: timeAggregation
+      };
+    }
+    
+    exportSpendingReport(type, data, filters);
+  };
+
+  // Heatmap rendering function
+  const renderHeatmap = () => {
+    if (!heatmapData.length) return null;
+
+    const maxValue = Math.max(...heatmapData.map(item => item.value));
+    const minValue = Math.min(...heatmapData.map(item => item.value));
+
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+        {heatmapData.map((item, index) => {
+          // Calculate intensity based on value
+          const intensity = (item.value - minValue) / (maxValue - minValue);
+          const colorIntensity = Math.floor(intensity * 255);
+          const color = `rgba(255, ${255 - colorIntensity}, ${255 - colorIntensity}, ${0.3 + intensity * 0.7})`;
+
+          return (
+            <div
+              key={index}
+              style={{
+                backgroundColor: color,
+                padding: '20px',
+                borderRadius: '8px',
+                textAlign: 'center',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'transform 0.2s',
+                minHeight: '80px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              title={`${item.period}: ${formatPeso(item.value)}`}
+            >
+              <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{item.period}</div>
+              <div style={{ fontSize: '12px', marginTop: '5px' }}>{formatPeso(item.value)}</div>
+              <div style={{ 
+                fontSize: '10px', 
+                marginTop: '5px',
+                padding: '2px 6px',
+                backgroundColor: item.intensity === 'High' ? '#dc3545' : 
+                                item.intensity === 'Medium' ? '#ffc107' : '#28a745',
+                color: 'white',
+                borderRadius: '10px'
+              }}>
+                {item.intensity}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // --- DATE FORMATTING HELPERS ---
@@ -1320,10 +1664,10 @@ function BudgetDashboard() {
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* Main Content - Reduced side margins */}
       <div
         className="content-container"
-        style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}
+        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -1342,6 +1686,11 @@ function BudgetDashboard() {
                   color: timeFilter === "monthly" ? "white" : "#007bff",
                   border: "1px solid #007bff",
                   outline: "none",
+                  padding: "8px 20px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
                 }}
                 onFocus={(e) =>
                   (e.target.style.boxShadow =
@@ -1362,6 +1711,11 @@ function BudgetDashboard() {
                   color: timeFilter === "quarterly" ? "white" : "#007bff",
                   border: "1px solid #007bff",
                   outline: "none",
+                  padding: "8px 20px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
                 }}
                 onFocus={(e) =>
                   (e.target.style.boxShadow =
@@ -1382,6 +1736,11 @@ function BudgetDashboard() {
                   color: timeFilter === "yearly" ? "white" : "#007bff",
                   border: "1px solid #007bff",
                   outline: "none",
+                  padding: "8px 20px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
                 }}
                 onFocus={(e) =>
                   (e.target.style.boxShadow =
@@ -1577,7 +1936,7 @@ function BudgetDashboard() {
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
-                      padding: "3px 8px",
+                      padding: "6px 12px",
                       backgroundColor: showForecasting ? "#ff6b35" : "#e9ecef",
                       color: showForecasting ? "white" : "#1b1d1fff",
                       border: "none",
@@ -1587,6 +1946,7 @@ function BudgetDashboard() {
                       outline: "none",
                       fontSize: "12px",
                       fontWeight: "500",
+                      height: "32px",
                     }}
                     title={showForecasting ? "Hide Forecast" : "Show Forecast"}
                   >
@@ -1599,7 +1959,7 @@ function BudgetDashboard() {
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
-                      padding: "3px 8px",
+                      padding: "6px 12px",
                       backgroundColor: showForecastComparison
                         ? "#6f42c1"
                         : "#e9ecef",
@@ -1611,6 +1971,7 @@ function BudgetDashboard() {
                       outline: "none",
                       fontSize: "12px",
                       fontWeight: "500",
+                      height: "32px",
                     }}
                     title={
                       showForecastComparison
@@ -1641,7 +2002,6 @@ function BudgetDashboard() {
               </div>
             </div>
 
-            {/* Forecast Accuracy Analysis */}
             {/* Forecast Accuracy Analysis */}
             {showForecastComparison &&
               moneyFlowData &&
@@ -1677,16 +2037,16 @@ function BudgetDashboard() {
                         outline: "none",
                         fontSize: "14px",
                         fontWeight: "500",
+                        height: "32px",
                       }}
                     >
-                      <Download size={16} />
                       Export Accuracy Report
+                      <Download size={16} style={{ marginLeft: "6px" }} />
                     </button>
                   </div>
 
                   {(() => {
                     // DERIVE CARD DATA FROM TABLE DATA for consistency
-                    // 1. Find the last completed month (index 10 = November)
                     const lastMonthIndex = 10; // 0-based index for November
                     const lastMonthName = "November";
 
@@ -1700,7 +2060,7 @@ function BudgetDashboard() {
 
                     const forecastPoint = monthlyForecasts.find(
                       (f) => f.month === lastMonthIndex + 1
-                    ); // month is 1-based
+                    );
                     const forecastVal = Number(forecastPoint?.forecast || 0);
 
                     const varianceVal = actualVal - forecastVal;
@@ -1884,7 +2244,6 @@ function BudgetDashboard() {
                         </thead>
                         <tbody>
                           {moneyFlowData?.map((month, index) => {
-                            // Ensure we compare monthly actuals against monthly forecasts
                             const monthlyForecasts =
                               convertCumulativeToMonthly(forecastData);
                             const forecastPoint = monthlyForecasts.find(
@@ -1895,7 +2254,6 @@ function BudgetDashboard() {
                               : 0;
                             const actualValue = Number(month.actual);
                             const variance = actualValue - forecastValue;
-                            // Fix: Use an epsilon threshold for "Exact" match to handle float precision
                             const isExact = Math.abs(variance) < 0.01;
 
                             // Calculate raw accuracy
@@ -1980,7 +2338,7 @@ function BudgetDashboard() {
               )}
 
             {/* Budget per Department Pie Chart */}
-            <div className="card">
+            <div className="card" style={{ marginBottom: "30px" }}>
               <div
                 style={{
                   display: "flex",
@@ -2006,10 +2364,11 @@ function BudgetDashboard() {
                     outline: "none",
                     fontSize: "14px",
                     fontWeight: "500",
+                    height: "32px",
                   }}
                 >
-                  <Eye size={16} style={{ color: "white" }} />
                   View Details
+                  <Eye size={16} style={{ color: "white", marginLeft: "6px" }} />
                 </button>
               </div>
 
@@ -2157,6 +2516,870 @@ function BudgetDashboard() {
                     ))
                   ) : (
                     <p>Loading department details...</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* SPENDING ANALYTICS SECTION */}
+            <div className="card" style={{ marginBottom: "30px" }}>
+              {/* Spending Analytics Header */}
+              <div style={{ marginBottom: "25px" }}>
+                <h2 style={{ color: "#007bff", marginBottom: "8px", fontSize: "22px" }}>
+                  Spending Behavior Analytics
+                </h2>
+                <p style={{ color: "#6c757d", fontSize: "14px" }}>
+                  Analyze spending patterns, trends, and category-wise expenditures
+                </p>
+              </div>
+
+              {/* Analytics Tabs */}
+              <div style={{ marginBottom: "25px", display: "flex", gap: "15px", flexWrap: "wrap" }}>
+                <button
+                  className={`filter-button ${activeSpendingTab === "trends" ? "active" : ""}`}
+                  onClick={() => setActiveSpendingTab("trends")}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: activeSpendingTab === "trends" ? "#007bff" : "white",
+                    color: activeSpendingTab === "trends" ? "white" : "#007bff",
+                    border: "1px solid #007bff",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    outline: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    height: "40px",
+                    minWidth: "220px",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeSpendingTab !== "trends") {
+                      e.currentTarget.style.backgroundColor = "#f0f8ff";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeSpendingTab !== "trends") {
+                      e.currentTarget.style.backgroundColor = "white";
+                    }
+                  }}
+                >
+                  <TrendingUp size={18} style={{ marginRight: "8px" }} />
+                  Department Spending Trends
+                </button>
+                <button
+                  className={`filter-button ${activeSpendingTab === "categories" ? "active" : ""}`}
+                  onClick={() => setActiveSpendingTab("categories")}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: activeSpendingTab === "categories" ? "#007bff" : "white",
+                    color: activeSpendingTab === "categories" ? "white" : "#007bff",
+                    border: "1px solid #007bff",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    outline: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    height: "40px",
+                    minWidth: "220px",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeSpendingTab !== "categories") {
+                      e.currentTarget.style.backgroundColor = "#f0f8ff";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeSpendingTab !== "categories") {
+                      e.currentTarget.style.backgroundColor = "white";
+                    }
+                  }}
+                >
+                  <PieChart size={18} style={{ marginRight: "8px" }} />
+                  Highest Spending Categories
+                </button>
+                <button
+                  className={`filter-button ${activeSpendingTab === "heatmap" ? "active" : ""}`}
+                  onClick={() => setActiveSpendingTab("heatmap")}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: activeSpendingTab === "heatmap" ? "#007bff" : "white",
+                    color: activeSpendingTab === "heatmap" ? "white" : "#007bff",
+                    border: "1px solid #007bff",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    outline: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    height: "40px",
+                    minWidth: "220px",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeSpendingTab !== "heatmap") {
+                      e.currentTarget.style.backgroundColor = "#f0f8ff";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeSpendingTab !== "heatmap") {
+                      e.currentTarget.style.backgroundColor = "white";
+                    }
+                  }}
+                >
+                  <Flame size={18} style={{ marginRight: "8px" }} />
+                  Spending Heatmaps
+                </button>
+              </div>
+
+              {/* Department Spending Trends */}
+              {activeSpendingTab === "trends" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                    <h3 className="card-title" style={{ fontSize: "18px" }}>Department Spending Trends</h3>
+                    <button
+                      onClick={() => handleExportSpendingReport("Department Spending Trends")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        outline: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        height: "32px",
+                      }}
+                    >
+                      Export Report
+                      <Download size={16} style={{ marginLeft: "6px" }} />
+                    </button>
+                  </div>
+
+                  {/* Filters */}
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "repeat(4, 1fr)", 
+                    gap: "15px", 
+                    marginBottom: "25px",
+                    backgroundColor: "#f8f9fa",
+                    padding: "20px",
+                    borderRadius: "8px",
+                    alignItems: "end"
+                  }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Department
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={selectedDepartment}
+                          onChange={(e) => setSelectedDepartment(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            paddingRight: "35px",
+                            borderRadius: "6px",
+                            border: "1px solid #ced4da",
+                            backgroundColor: "white",
+                            fontSize: "14px",
+                            appearance: "none",
+                            outline: "none",
+                            height: "40px",
+                          }}
+                        >
+                          <option value="All Departments">All Departments</option>
+                          {DEPARTMENTS.map(dept => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                        <ChevronDown 
+                          size={14} 
+                          style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "#6c757d",
+                            pointerEvents: "none"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Date Range
+                      </label>
+                      <div style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "1fr auto 1fr", 
+                        gap: "8px", 
+                        alignItems: "center" 
+                      }}>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="date"
+                            value={dateRange.startDate}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              paddingRight: "35px",
+                              borderRadius: "6px",
+                              border: "1px solid #ced4da",
+                              backgroundColor: "white",
+                              fontSize: "14px",
+                              outline: "none",
+                              height: "40px",
+                            }}
+                          />
+                          <Calendar 
+                            size={14} 
+                            style={{
+                              position: "absolute",
+                              right: "12px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              color: "#6c757d",
+                              pointerEvents: "none"
+                            }}
+                          />
+                        </div>
+                        <span style={{ color: "#6c757d", textAlign: "center", fontSize: "12px" }}>to</span>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="date"
+                            value={dateRange.endDate}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              paddingRight: "35px",
+                              borderRadius: "6px",
+                              border: "1px solid #ced4da",
+                              backgroundColor: "white",
+                              fontSize: "14px",
+                              outline: "none",
+                              height: "40px",
+                            }}
+                          />
+                          <Calendar 
+                            size={14} 
+                            style={{
+                              position: "absolute",
+                              right: "12px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              color: "#6c757d",
+                              pointerEvents: "none"
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Time Granularity
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={timeGranularity}
+                          onChange={(e) => setTimeGranularity(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            paddingRight: "35px",
+                            borderRadius: "6px",
+                            border: "1px solid #ced4da",
+                            backgroundColor: "white",
+                            fontSize: "14px",
+                            appearance: "none",
+                            outline: "none",
+                            height: "40px",
+                          }}
+                        >
+                          <option value="Monthly">Monthly</option>
+                          <option value="Quarterly">Quarterly</option>
+                        </select>
+                        <ChevronDown 
+                          size={14} 
+                          style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "#6c757d",
+                            pointerEvents: "none"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <button
+                        onClick={fetchSpendingAnalyticsData}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          backgroundColor: "#007bff",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          outline: "none",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          transition: "background-color 0.2s",
+                          height: "40px",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#0056b3"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#007bff"}
+                      >
+                        Generate Report
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Chart and Summary */}
+                  {spendingTrendsData ? (
+                    <>
+                      <div style={{ height: "350px", marginBottom: "25px" }}>
+                        <Line data={spendingTrendsData} options={spendingTrendsOptions} />
+                      </div>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "15px", marginBottom: "20px" }}>
+                        <div className="card" style={{ padding: "16px", textAlign: "center", backgroundColor: "#f8f9fa" }}>
+                          <h4 style={{ marginBottom: "8px", color: "#495057", fontSize: "13px" }}>Total Amount Spent</h4>
+                          <p style={{ fontSize: "20px", fontWeight: "bold", color: "#007bff", margin: 0 }}>
+                            {formatPeso(spendingTrendsData.totalAmount)}
+                          </p>
+                        </div>
+                        <div className="card" style={{ padding: "16px", textAlign: "center", backgroundColor: "#f8f9fa" }}>
+                          <h4 style={{ marginBottom: "8px", color: "#495057", fontSize: "13px" }}>Percentage Change</h4>
+                          <p style={{ 
+                            fontSize: "20px", 
+                            fontWeight: "bold", 
+                            color: spendingTrendsData.avgPercentageChange >= 0 ? "#28a745" : "#dc3545",
+                            margin: 0 
+                          }}>
+                            {spendingTrendsData.avgPercentageChange >= 0 ? '+' : ''}{spendingTrendsData.avgPercentageChange}%
+                          </p>
+                          <span style={{ 
+                            fontSize: "11px", 
+                            color: spendingTrendsData.avgPercentageChange >= 0 ? "#28a745" : "#dc3545",
+                            display: "block",
+                            marginTop: "4px"
+                          }}>
+                            vs first period
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "30px", color: "#6c757d", backgroundColor: "#f8f9fa", borderRadius: "8px", fontSize: "14px" }}>
+                      Select filters and click "Generate Report" to view spending trends
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Highest Spending Categories */}
+              {activeSpendingTab === "categories" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                    <h3 className="card-title" style={{ fontSize: "18px" }}>Highest Spending Categories</h3>
+                    <button
+                      onClick={() => handleExportSpendingReport("Highest Spending Categories")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        outline: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        height: "32px",
+                      }}
+                    >
+                      Export Report
+                      <Download size={16} style={{ marginLeft: "6px" }} />
+                    </button>
+                  </div>
+
+                  {/* Filters */}
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "repeat(3, 1fr)", 
+                    gap: "15px", 
+                    marginBottom: "25px",
+                    backgroundColor: "#f8f9fa",
+                    padding: "20px",
+                    borderRadius: "8px",
+                    alignItems: "end"
+                  }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Department
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={selectedCategoryDepartment}
+                          onChange={(e) => setSelectedCategoryDepartment(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            paddingRight: "35px",
+                            borderRadius: "6px",
+                            border: "1px solid #ced4da",
+                            backgroundColor: "white",
+                            fontSize: "14px",
+                            appearance: "none",
+                            outline: "none",
+                            height: "40px",
+                          }}
+                        >
+                          <option value="All Departments">All Departments</option>
+                          {DEPARTMENTS.map(dept => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                        <ChevronDown 
+                          size={14} 
+                          style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "#6c757d",
+                            pointerEvents: "none"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Date Range
+                      </label>
+                      <div style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "1fr auto 1fr", 
+                        gap: "8px", 
+                        alignItems: "center" 
+                      }}>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="date"
+                            value={categoryDateRange.startDate}
+                            onChange={(e) => setCategoryDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              paddingRight: "35px",
+                              borderRadius: "6px",
+                              border: "1px solid #ced4da",
+                              backgroundColor: "white",
+                              fontSize: "14px",
+                              outline: "none",
+                              height: "40px",
+                            }}
+                          />
+                          <Calendar 
+                            size={14} 
+                            style={{
+                              position: "absolute",
+                              right: "12px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              color: "#6c757d",
+                              pointerEvents: "none"
+                            }}
+                          />
+                        </div>
+                        <span style={{ color: "#6c757d", textAlign: "center", fontSize: "12px" }}>to</span>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="date"
+                            value={categoryDateRange.endDate}
+                            onChange={(e) => setCategoryDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              paddingRight: "35px",
+                              borderRadius: "6px",
+                              border: "1px solid #ced4da",
+                              backgroundColor: "white",
+                              fontSize: "14px",
+                              outline: "none",
+                              height: "40px",
+                            }}
+                          />
+                          <Calendar 
+                            size={14} 
+                            style={{
+                              position: "absolute",
+                              right: "12px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              color: "#6c757d",
+                              pointerEvents: "none"
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <button
+                        onClick={fetchSpendingAnalyticsData}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          backgroundColor: "#007bff",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          outline: "none",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          transition: "background-color 0.2s",
+                          height: "40px",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#0056b3"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#007bff"}
+                      >
+                        Generate Report
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Categories List */}
+                  {highestSpendingCategories.length > 0 ? (
+                    <>
+                      <div style={{ height: "280px", marginBottom: "25px" }}>
+                        <Bar
+                          data={{
+                            labels: highestSpendingCategories.map(cat => cat.category),
+                            datasets: [{
+                              label: 'Spending Amount',
+                              data: highestSpendingCategories.map(cat => cat.amount),
+                              backgroundColor: '#007bff',
+                              borderColor: '#0056b3',
+                              borderWidth: 1
+                            }]
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: { display: false },
+                              tooltip: {
+                                callbacks: {
+                                  label: function(context) {
+                                    return `${context.label}: ${formatPeso(context.parsed.y)} (${highestSpendingCategories[context.dataIndex].percentage}%)`;
+                                  }
+                                }
+                              }
+                            },
+                            scales: {
+                              x: { 
+                                grid: { display: false },
+                                ticks: {
+                                  maxRotation: 45,
+                                  font: {
+                                    size: 12
+                                  }
+                                }
+                              },
+                              y: { 
+                                grid: { display: true }, 
+                                beginAtZero: true,
+                                ticks: {
+                                  callback: function(value) {
+                                    return formatPeso(value);
+                                  },
+                                  font: {
+                                    size: 12
+                                  }
+                                }
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ overflowX: "auto", backgroundColor: "#f8f9fa", borderRadius: "8px", padding: "12px" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr>
+                              <th style={{ 
+                                padding: "10px 12px", 
+                                textAlign: "left", 
+                                borderBottom: "2px solid #dee2e6",
+                                backgroundColor: "white",
+                                color: "#495057",
+                                fontWeight: "600",
+                                fontSize: "13px"
+                              }}>
+                                Rank
+                              </th>
+                              <th style={{ 
+                                padding: "10px 12px", 
+                                textAlign: "left", 
+                                borderBottom: "2px solid #dee2e6",
+                                backgroundColor: "white",
+                                color: "#495057",
+                                fontWeight: "600",
+                                fontSize: "13px"
+                              }}>
+                                Category
+                              </th>
+                              <th style={{ 
+                                padding: "10px 12px", 
+                                textAlign: "right", 
+                                borderBottom: "2px solid #dee2e6",
+                                backgroundColor: "white",
+                                color: "#495057",
+                                fontWeight: "600",
+                                fontSize: "13px"
+                              }}>
+                                Total Spent
+                              </th>
+                              <th style={{ 
+                                padding: "10px 12px", 
+                                textAlign: "right", 
+                                borderBottom: "2px solid #dee2e6",
+                                backgroundColor: "white",
+                                color: "#495057",
+                                fontWeight: "600",
+                                fontSize: "13px"
+                              }}>
+                                Percentage of Total
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {highestSpendingCategories.map((category, index) => (
+                              <tr key={index} style={{ 
+                                borderBottom: "1px solid #e9ecef",
+                                backgroundColor: index % 2 === 0 ? "white" : "#f8f9fa"
+                              }}>
+                                <td style={{ padding: "10px 12px", fontWeight: "bold", color: "#007bff", fontSize: "13px" }}>
+                                  {index + 1}
+                                </td>
+                                <td style={{ padding: "10px 12px", color: "#495057", fontSize: "13px" }}>
+                                  {category.category}
+                                </td>
+                                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: "bold", color: "#212529", fontSize: "13px" }}>
+                                  {formatPeso(category.amount)}
+                                </td>
+                                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6c757d", fontSize: "13px" }}>
+                                  {category.percentage}%
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "30px", color: "#6c757d", backgroundColor: "#f8f9fa", borderRadius: "8px", fontSize: "14px" }}>
+                      No spending categories found for the selected filters
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Spending Heatmaps */}
+              {activeSpendingTab === "heatmap" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                    <h3 className="card-title" style={{ fontSize: "18px" }}>Spending Intensity Heatmap</h3>
+                    <button
+                      onClick={() => handleExportSpendingReport("Spending Heatmap")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        outline: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        height: "32px",
+                      }}
+                    >
+                      Export Report
+                      <Download size={16} style={{ marginLeft: "6px" }} />
+                    </button>
+                  </div>
+
+                  {/* Filters */}
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "repeat(3, 1fr)", 
+                    gap: "15px", 
+                    marginBottom: "25px",
+                    backgroundColor: "#f8f9fa",
+                    padding: "20px",
+                    borderRadius: "8px",
+                    alignItems: "end"
+                  }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Department
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={selectedHeatmapDepartment}
+                          onChange={(e) => setSelectedHeatmapDepartment(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            paddingRight: "35px",
+                            borderRadius: "6px",
+                            border: "1px solid #ced4da",
+                            backgroundColor: "white",
+                            fontSize: "14px",
+                            appearance: "none",
+                            outline: "none",
+                            height: "40px",
+                          }}
+                        >
+                          <option value="All Departments">All Departments</option>
+                          {DEPARTMENTS.map(dept => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                        <ChevronDown 
+                          size={14} 
+                          style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "#6c757d",
+                            pointerEvents: "none"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#495057", fontSize: "13px" }}>
+                        Time Aggregation
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={timeAggregation}
+                          onChange={(e) => setTimeAggregation(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            paddingRight: "35px",
+                            borderRadius: "6px",
+                            border: "1px solid #ced4da",
+                            backgroundColor: "white",
+                            fontSize: "14px",
+                            appearance: "none",
+                            outline: "none",
+                            height: "40px",
+                          }}
+                        >
+                          <option value="Monthly">Monthly</option>
+                          <option value="Quarterly">Quarterly</option>
+                        </select>
+                        <ChevronDown 
+                          size={14} 
+                          style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "#6c757d",
+                            pointerEvents: "none"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <button
+                        onClick={fetchSpendingAnalyticsData}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          backgroundColor: "#007bff",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          outline: "none",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          transition: "background-color 0.2s",
+                          height: "40px",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#0056b3"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#007bff"}
+                      >
+                        Generate Heatmap
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Heatmap */}
+                  {heatmapData.length > 0 ? (
+                    <>
+                      <div style={{ marginBottom: "25px", backgroundColor: "#f8f9fa", padding: "16px", borderRadius: "8px" }}>
+                        {renderHeatmap()}
+                      </div>
+                      
+                      <div style={{ backgroundColor: "#f8f9fa", padding: "12px", borderRadius: "8px" }}>
+                        <h4 style={{ marginBottom: "8px", color: "#495057", fontSize: "14px" }}>Intensity Legend</h4>
+                        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <div style={{ width: "16px", height: "16px", backgroundColor: "#28a745", borderRadius: "4px" }}></div>
+                            <span style={{ color: "#495057", fontSize: "13px" }}>Low Spending</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <div style={{ width: "16px", height: "16px", backgroundColor: "#ffc107", borderRadius: "4px" }}></div>
+                            <span style={{ color: "#495057", fontSize: "13px" }}>Medium Spending</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <div style={{ width: "16px", height: "16px", backgroundColor: "#dc3545", borderRadius: "4px" }}></div>
+                            <span style={{ color: "#495057", fontSize: "13px" }}>High Spending</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "30px", color: "#6c757d", backgroundColor: "#f8f9fa", borderRadius: "8px", fontSize: "14px" }}>
+                      Select filters and click "Generate Heatmap" to view spending intensity
+                    </div>
                   )}
                 </div>
               )}

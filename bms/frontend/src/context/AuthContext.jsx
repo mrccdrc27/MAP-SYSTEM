@@ -1,5 +1,3 @@
-// src/context/AuthContext.jsx
-// Updated to use centralized auth service (matching TTS pattern)
 import React, {
   createContext,
   useContext,
@@ -19,242 +17,172 @@ import {
   isTokenExpired,
   getSystemRole,
 } from "../API/TokenUtils";
+import { AuthProvider as LocalAuthProvider } from './AuthContextLocal';
 
 const AuthContext = createContext();
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
 
-// API endpoints
-const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
-const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/token/obtain/`;
-const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/verify/`;
+// Remove trailing slash
+const AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:18001").replace(/\/$/, "");
+
+// === UPDATED ENDPOINTS ===
+// CRITICAL CHANGE: Use the specific API Login view that doesn't redirect
+const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`; 
+
+const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/validate/`; 
 const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/`;
+const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`; 
 const LOGOUT_URL = `${AUTH_URL}/logout/`;
 
-// Create auth API instance for auth service requests
 const createAuthRequest = () => {
   return axios.create({
     baseURL: AUTH_URL,
-    headers: {
-      "Content-Type": "application/json",
+    headers: { 
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
     },
-    withCredentials: true,
+    withCredentials: true, // IMPORTANT: Allows sending/receiving cookies
   });
 };
 
-export const AuthProvider = ({ children }) => {
+const CentralAuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Check if user has ADMIN role for BMS system
-  const isAdmin = useCallback(() => {
-    return user && hasSystemRole(user, "bms", "ADMIN");
-  }, [user]);
+  // ... (Role Helpers remain the same) ...
+  const isAdmin = useCallback(() => user && hasSystemRole(user, "bms", "ADMIN"), [user]);
+  const isFinanceHead = useCallback(() => user && hasSystemRole(user, "bms", "FINANCE_HEAD"), [user]);
+  const hasBmsAccess = useCallback(() => user && hasAnySystemRole(user, "bms"), [user]);
+  const getBmsRole = useCallback(() => user ? getSystemRole(user, "bms") : null, [user]);
 
-  // Check if user has FINANCE_HEAD role for BMS system
-  const isFinanceHead = useCallback(() => {
-    return user && hasSystemRole(user, "bms", "FINANCE_HEAD");
-  }, [user]);
-
-  // Check if user has any role for BMS system
-  const hasBmsAccess = useCallback(() => {
-    return user && hasAnySystemRole(user, "bms");
-  }, [user]);
-
-  // Get user's BMS role
-  const getBmsRole = useCallback(() => {
-    return user ? getSystemRole(user, "bms") : null;
-  }, [user]);
-
-  // Verify token with auth service
-  const verifyToken = useCallback(async () => {
+  // 1. Fetch Profile (Acts as Verify)
+  // Since tokens are HttpOnly/Lax cookies, we can't read them in JS easily to verify signature.
+  // We rely on the API returning 200 OK or 401 Unauthorized.
+  const fetchUserProfile = useCallback(async () => {
     try {
-      const token = getAccessToken();
-      if (!token) return false;
+      const authApi = createAuthRequest();
+      const response = await authApi.get(PROFILE_URL);
+      
+      const apiData = response.data;
 
-      // First check if token is expired locally
-      if (isTokenExpired(token)) {
+      // MAP Profile API format (system_slug) to Token format (system)
+      if (apiData.system_roles) {
+          apiData.roles = apiData.system_roles.map(r => ({
+              system: r.system_slug || r.system, // Handle both formats
+              role: r.role_name || r.role
+          }));
+      }
+
+      return apiData;
+    } catch (error) {
+      throw error;
+    }
+  }, []);
+
+  // 2. Check Status
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      // Try to fetch profile. If cookies are valid, it works.
+      const userData = await fetchUserProfile();
+      
+      console.log("[Auth] User:", userData.email);
+      
+      if (!hasAnySystemRole(userData, "bms")) {
+        console.error("[Auth] No BMS Access.");
+        setUser(null);
+        setLoading(false);
+        setInitialized(true);
         return false;
       }
 
-      const authApi = createAuthRequest();
-      const response = await authApi.post(TOKEN_VERIFY_URL, {
-        token,
-      });
+      // Store basic info in localStorage for non-sensitive checks if needed
+      // But rely on cookies for API calls
+      setUser(userData);
+      setLoading(false);
+      setInitialized(true);
+      return true;
 
-      return response.status === 200;
     } catch (error) {
-      console.error("Token verification failed:", error);
-      return false;
-    }
-  }, []);
-
-  // Fetch user profile (token + full profile)
-  const fetchUserProfile = useCallback(async () => {
-    try {
-      const tokenUser = getUserFromToken();
-      if (!tokenUser) throw new Error("Invalid token");
-
-      const authApi = createAuthRequest();
-      const response = await authApi.get(PROFILE_URL, {
-        headers: {
-          Authorization: `Bearer ${getAccessToken()}`,
-        },
-      });
-
-      if (response.data) {
-        return {
-          ...tokenUser,
-          ...response.data,
-          roles: tokenUser.roles, // preserve roles from token
-        };
-      }
-
-      throw new Error("Failed to fetch user profile");
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      // If profile fetch fails, at least return token user data
-      return getUserFromToken();
-    }
-  }, []);
-
-  // Central auth checker (single source of truth)
-  const checkAuthStatus = useCallback(async () => {
-    if (!hasAccessToken()) {
+      // If 401, cookies are missing/invalid
       setUser(null);
       setLoading(false);
       setInitialized(true);
       return false;
     }
+  }, [fetchUserProfile]);
 
-    try {
-      const isValid = await verifyToken();
-
-      if (isValid) {
-        const userData = await fetchUserProfile();
-        
-        // Check if user has BMS access
-        if (!hasAnySystemRole(userData, "bms")) {
-          console.warn("User does not have BMS access");
-          removeAccessToken();
-          setUser(null);
-          setLoading(false);
-          setInitialized(true);
-          return false;
-        }
-
-        setUser(userData);
-        setLoading(false);
-        setInitialized(true);
-        return true;
-      }
-
-      removeAccessToken();
-      setUser(null);
-      setLoading(false);
-      setInitialized(true);
-      return false;
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      removeAccessToken();
-      setUser(null);
-      setLoading(false);
-      setInitialized(true);
-      return false;
-    }
-  }, [verifyToken, fetchUserProfile]);
-
-  // Initial auth check on app load
   useEffect(() => {
-    const init = async () => {
-      await checkAuthStatus();
-    };
-    init();
+    checkAuthStatus();
   }, [checkAuthStatus]);
 
-  // Periodic token refresh
-  useEffect(() => {
-    if (!user) return;
-
-    const interval = setInterval(() => {
-      const authApi = createAuthRequest();
-      authApi
-        .post(TOKEN_REFRESH_URL)
-        .then((res) => {
-          if (res.data?.access) {
-            setAccessToken(res.data.access);
-          }
-        })
-        .catch(() => {
-          checkAuthStatus();
-        });
-    }, 10 * 60 * 1000); // Refresh every 10 minutes
-
-    return () => clearInterval(interval);
-  }, [user, checkAuthStatus]);
-
-  const getToken = useCallback(() => {
-    return getAccessToken();
-  }, []);
-
-  const refreshAuth = useCallback(async () => {
-    setLoading(true);
-    try {
-      return await checkAuthStatus();
-    } finally {
-      setLoading(false);
-    }
-  }, [checkAuthStatus]);
-
-  // Login function
+  // 3. Login Function (Updated to handle LoginAPIView response format)
   const login = async (credentials) => {
     try {
-      const loginData = {
+      console.log("[Auth] Logging in via Public API...", credentials.email);
+      const authApi = createAuthRequest();
+      
+      // The LoginAPIView expects this payload structure
+      const payload = {
         email: credentials.email,
         password: credentials.password,
+        // g_recaptcha_response: "" // Optional if disabled in backend
       };
 
-      const authApi = createAuthRequest();
-      const response = await authApi.post(TOKEN_OBTAIN_URL, loginData);
+      const response = await authApi.post(TOKEN_OBTAIN_URL, payload);
 
-      if (response.data?.access) {
-        setAccessToken(response.data.access);
+      console.log("[Auth] API Response:", response.data);
+
+      // Handle OTP Requirement
+      if (response.data.otp_required) {
+          return { 
+              success: false, 
+              error: "OTP Required. Please login via the main portal for 2FA support.",
+              otp_required: true 
+          };
       }
 
-      // Let checkAuthStatus fetch & set FULL user
-      const authSuccess = await checkAuthStatus();
+      // Handle Success
+      if (response.data.success) {
+          console.log("[Auth] Login Successful. Cookies should be set.");
+          
+          // Verify immediately
+          const authSuccess = await checkAuthStatus();
+          
+          if (!authSuccess) {
+              return { success: false, error: "Login successful, but role check failed." };
+          }
+          return { success: true };
+      } 
       
-      if (!authSuccess) {
-        return { 
-          success: false, 
-          error: "You do not have access to the Budget Management System." 
-        };
-      }
+      // Handle Failure (if 200 OK but success=false)
+      return { success: false, error: "Invalid credentials" };
 
-      setInitialized(true);
-      setLoading(false);
-
-      return { success: true };
     } catch (error) {
-      console.error("Login failed:", error);
-
-      let errorDetail = "Login failed. Please check your credentials.";
-
-      if (error.response?.data?.detail) {
-        errorDetail = error.response.data.detail;
+      console.error("[Auth] Login error:", error);
+      
+      // LoginAPIView returns 400 Bad Request on failure with specific error structure
+      const errorData = error.response?.data;
+      let msg = "Login failed.";
+      
+      if (errorData?.errors) {
+          // Flatten error object
+          const errs = errorData.errors;
+          msg = errs.non_field_errors?.[0] || errs.email?.[0] || errs.password?.[0] || msg;
+      } else if (errorData?.detail) {
+          msg = errorData.detail;
+      } else if (typeof error.response?.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
+          msg = "Server redirected to HTML (Endpoint mismatch).";
       }
 
-      return { success: false, error: errorDetail };
+      return { success: false, error: msg };
     }
   };
 
-  // Logout function
   const logout = async () => {
     try {
       const authApi = createAuthRequest();
-      await authApi.post(LOGOUT_URL).catch(() => {});
+      await authApi.post(LOGOUT_URL); // This clears cookies on server
     } finally {
-      removeAccessToken();
       setUser(null);
       setInitialized(true);
       setLoading(false);
@@ -262,36 +190,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Updates the user state in the context.
-   * This is called after a successful profile update.
-   * @param {object} updatedUserData - The updated user object.
-   */
   const updateUserContext = (updatedUserData) => {
-    setUser(prevUser => ({
-      ...prevUser,
-      ...updatedUserData,
-      roles: prevUser?.roles, // Preserve roles from token
-    }));
+    setUser(prevUser => ({ ...prevUser, ...updatedUserData }));
   };
 
   const value = {
-    user,
-    setUser,
-    loading,
-    logout,
-    login,
-    refreshAuth,
-    initialized,
-    isAuthenticated: !!user,
-    hasAuth: !!user,
-    isAdmin,
-    isFinanceHead,
-    hasBmsAccess,
-    getBmsRole,
-    checkAuthStatus,
-    getToken,
-    updateUserContext,
+    user, setUser, loading, logout, login, 
+    refreshAuth: checkAuthStatus, initialized, 
+    isAuthenticated: !!user, isAdmin, isFinanceHead, 
+    hasBmsAccess, getBmsRole, updateUserContext, checkAuthStatus
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -299,112 +206,9 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
 
-/*
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import * as authApi from '../API/authAPI';// Importd new logout function
-import { jwtDecode } from 'jwt-decode'; // install this: npm install jwt-decode
-
-const AuthContext = createContext(null);
-
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('access_token');
-            const storedUser = localStorage.getItem('user');
-
-            if (token && storedUser) {
-                const decodedToken = jwtDecode(token);
-                // Check if the token is expired
-                if (decodedToken.exp * 1000 > Date.now()) {
-                    setUser(JSON.parse(storedUser));
-                } else {
-                    // Token is expired, clear everything
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    localStorage.removeItem('user');
-                }
-            }
-        } catch (error) {
-            console.error("Failed to initialize auth state:", error);
-            // Clear any corrupted auth data
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('user');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const login = async (identifier, password) => {
-        try {
-            const data = await authApi.login(identifier, password);
-            localStorage.setItem('access_token', data.access);
-            localStorage.setItem('refresh_token', data.refresh);
-            // Store the full user object in local storage
-            localStorage.setItem('user', JSON.stringify(data.user)); 
-            
-            setUser(data.user); // Set the full user object in state
-            navigate('/dashboard', { replace: true });
-        } catch (error) {
-            console.error('Login failed:', error);
-            throw error; // Re-throw to be caught by the login form
-        }
-    };
-
-    const logout = async () => {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-            try {
-                await authApi.logout(refreshToken);
-            } catch (error) {
-                console.error("Server logout failed, clearing tokens locally.", error);
-            }
-        }
-        // Always clear local state and storage
-        setUser(null);
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        navigate('/login', { replace: true });
-    };
-
-    
-    const updateUserContext = (updatedUserData) => {
-        setUser(updatedUserData);
-        localStorage.setItem('user', JSON.stringify(updatedUserData));
-    };
-
-    const value = {
-        user,
-        isAuthenticated: !!user,
-        loading,
-        login,
-        logout,
-        updateUserContext, // Expose the new function
-    };
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
-
-
-*/
+const USE_CENTRAL_AUTH = import.meta.env.VITE_USE_CENTRAL_AUTH === 'true';
+export const AuthProvider = USE_CENTRAL_AUTH ? CentralAuthProvider : LocalAuthProvider;
