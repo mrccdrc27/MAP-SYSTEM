@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import redirect
 from django.views.generic import TemplateView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -11,64 +10,16 @@ from rest_framework import serializers
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from drf_spectacular.utils import extend_schema
 from users.views import (
-    LoginView,
-    request_otp_for_login,
-    profile_settings_view,
-    agent_management_view,
-    invite_agent_view,
-    ChangePasswordUIView,
     CustomTokenObtainPairView,
     UILogoutView,
-    StaffNotAuthenticatedMixin,
-)
-from tts.views import assign_agent_to_role_form
-from hdts import views as hdts_views
-from hdts.employee_template_views import (
-    EmployeeLoginView,
-    EmployeeRegisterView,
-    EmployeeVerifyOTPView,
-    EmployeeResetPasswordUIView,
-    EmployeeProfileSettingsView,
-    EmployeeChangePasswordView,
-    EmployeeStaffBlockerMixin,
 )
 from hdts.employee_api_views import MeView
-from users.views.role_management_views import role_management_view
 
 # Custom error handlers
 from .error_handlers import custom_404_view, custom_500_view
 
 handler404 = custom_404_view
 handler500 = custom_500_view
-
-def root_redirect(request):
-    """Redirect root URL to login page"""
-    return redirect('auth_login')
-
-# ==================== Staff Blocker Views ====================
-# These views block authenticated employees from accessing /staff/* endpoints
-class StaffBlockerView(EmployeeStaffBlockerMixin, TemplateView):
-    """Generic view that blocks authenticated employees from staff endpoints."""
-    template_name = 'users/login.html'
-    
-    def get(self, request, *args, **kwargs):
-        # If we get here, the employee is not authenticated
-        # Let them pass through to the actual staff login view
-        view = StaffNotAuthenticatedLoginView.as_view()
-        return view(request, *args, **kwargs)
-
-
-# ==================== Protected Staff Views ====================
-# Wrap the existing LoginView with authentication mixins
-class StaffNotAuthenticatedLoginView(StaffNotAuthenticatedMixin, LoginView):
-    """
-    Staff login page with protective routing.
-    - If not authenticated: show login page
-    - If authenticated (single system): redirect to system dashboard
-    - If authenticated (multiple systems): redirect to system selection
-    - If authenticated (no systems): redirect to welcome page
-    """
-    pass
 
 
 class APIRootSerializer(serializers.Serializer):
@@ -97,8 +48,7 @@ def api_root(request, format=None):
     return Response(root_urls)
 
 urlpatterns = [
-    path('', root_redirect, name='root-redirect'),  # Redirect root to login page
-    path('api/', api_root, name='api-root'),  # API root moved to /api/
+    path('api/', api_root, name='api-root'),  # API root
     path('admin/', admin.site.urls),
     path('api/v1/', include('auth.v1.urls')),
     
@@ -109,62 +59,17 @@ urlpatterns = [
     # - Manages user masterlist, import/export, CRUD operations
     path('superadmin/', include('users.superadmin_urls')),
 
-    # ==================== STAFF Portal (Protected & Guarded) ====================
-    # Staff portal with protective routing:
-    # - Unauthenticated → show login page
-    # - Authenticated (1 system) → redirect to system dashboard
-    # - Authenticated (>1 system) → redirect to system selection
-    # - Employees → blocked, redirected to /login/
-    
-    path('staff/login/', StaffNotAuthenticatedLoginView.as_view(), name='auth_login'),
-    path('staff/request-otp/', request_otp_for_login, name='auth_request_otp'),
-
-    # Protected staff pages (require staff authentication)
-    path('staff/settings/profile/', profile_settings_view, name='profile-settings'),
-    path('staff/agent-management/', agent_management_view, name='agent-management'),
-    path('staff/invite-agent/', invite_agent_view, name='invite-agent'),
-    path('staff/password-change/', ChangePasswordUIView.as_view(), name='password-change-shortcut'),
-    path('staff/role-management/', role_management_view, name='role_management_shortcut'),
-
-    # Token and Logout (shared between staff and API)
+    # Token and Logout (API endpoints)
     path('token/', CustomTokenObtainPairView.as_view(), name='root_token_obtain'),
     path('logout/', UILogoutView.as_view(), name='root_logout'),
-    
-    # Assign role form
-    path('assign-role/', assign_agent_to_role_form, name='assign_role'),
-
-    # ==================== EMPLOYEE Portal (Protected & Guarded) ====================
-    # Employee portal with protective routing:
-    # - Unauthenticated → show login/register/etc pages
-    # - Authenticated → redirect to /profile-settings/
-    # - Staff → blocked, redirected to /staff/login/ (via API permissions)
-    
-    path('login/', EmployeeLoginView.as_view(), name='employee-login-shortcut'),
-    path('register/', EmployeeRegisterView.as_view(), name='employee-register-shortcut'),
-    path('verify-otp/', EmployeeVerifyOTPView.as_view(), name='employee-verify-otp-shortcut'),
-    path('profile-settings/', EmployeeProfileSettingsView.as_view(), name='employee-profile-settings-shortcut'),
-    path('change-password/', EmployeeChangePasswordView.as_view(), name='employee-change-password-shortcut'),
-    path('reset-password/', EmployeeResetPasswordUIView.as_view(), name='employee-reset-password-shortcut'),
     
     # API shortcut for current user profile (works for both staff and employees)
     path('api/me/', MeView.as_view(), name='api-me'),
     
     # ==================== REACT FRONTEND SPA ====================
     # React SPA frontend - handles its own routing via react-router-dom
-    # Access via /app/ prefix to avoid conflict with existing Django templates
+    # Entry point only - React Router handles all internal navigation
     path('app/', TemplateView.as_view(template_name='frontend/index.html'), name='react-app'),
-    path('app/login/', TemplateView.as_view(template_name='frontend/index.html'), name='react-staff-login'),
-    path('app/staff/login/', TemplateView.as_view(template_name='frontend/index.html'), name='react-staff-login-alt'),
-    path('app/employee/login/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-login'),
-    path('app/register/', TemplateView.as_view(template_name='frontend/index.html'), name='react-register'),
-    path('app/staff/register/', TemplateView.as_view(template_name='frontend/index.html'), name='react-staff-register'),
-    path('app/employee/register/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-register'),
-    path('app/forgot-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-forgot-password'),
-    path('app/employee/forgot-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-forgot-password'),
-    path('app/reset-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-reset-password'),
-    path('app/employee/reset-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-employee-reset-password'),
-    path('app/profile/', TemplateView.as_view(template_name='frontend/index.html'), name='react-profile'),
-    path('app/change-password/', TemplateView.as_view(template_name='frontend/index.html'), name='react-change-password'),
 ]
 
 # Include API documentation URLs only in DEBUG mode

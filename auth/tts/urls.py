@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from .views import UserIDsByRoleView, UserInfoByIDView, UsersInfoBatchView, AssignAgentToRoleView, assign_agent_to_role_form, role_assignments_view, manage_assignments_api
-from users.views import CreateRoleView, UpdateAssignmentView, role_management_view
+from users.views import CreateRoleView, UpdateAssignmentView
 
 app_name = 'tts'
 
@@ -28,7 +28,6 @@ urlpatterns = [
     path('assign-role/', assign_agent_to_role_form, name='assign_role_shortcut'),
     path('create-role/', CreateRoleView.as_view(), name='create_role'),
     path('update-assignment/<int:assignment_id>/', UpdateAssignmentView.as_view(), name='update_assignment'),
-    path('role-management/', role_management_view, name='role_management'),
     path('manage-assignments/', role_assignments_view, name='manage_assignments'),
     path('manage-assignments-api/', manage_assignments_api, name='manage_assignments_api'),
 ]

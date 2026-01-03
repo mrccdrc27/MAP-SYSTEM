@@ -3,13 +3,13 @@ Views package - organized by functionality/category.
 
 This package organizes views into logical modules:
 - auth_views: User registration, token management, and authentication
-- profile_views: User profile retrieval and updates
+- profile_views: User profile retrieval and updates (API-only)
 - otp_views: Two-factor authentication and OTP handling
-- password_views: Password reset and change flows
-- user_management_views: User CRUD operations and agent management
-- login_views: Login flow, OTP for login, and system welcome
+- password_views: Password reset and change flows (API-only)
+- user_management_views: User CRUD operations (API-only)
+- login_views: API-based login flow with OTP verification
 - role_management_views: Role creation, viewing, and assignment management
-- staff_routing_mixins: Protective routing mixins for staff portal pages
+- superuser_admin_views: Superuser admin portal (session-based)
 """
 
 # Authentication and Token Management
@@ -23,11 +23,10 @@ from .auth_views import (
     UILogoutView,
 )
 
-# User Profile
+# User Profile (API-only)
 from .profile_views import (
     MeView,
     ProfileView,
-    profile_settings_view,
 )
 
 # OTP and 2FA
@@ -39,26 +38,21 @@ from .otp_views import (
     verify_disable_otp_view,
 )
 
-# Password Management
+# Password Management (API-only)
 from .password_views import (
     ForgotPasswordView,
     ResetPasswordView,
     ProfilePasswordResetView,
-    ChangePasswordUIView,
 )
 
-# User Management
+# User Management (API-only)
 from .user_management_views import (
     UserViewSet,
-    agent_management_view,
-    invite_agent_view,
 )
 
-# Login Flow
+# Login Flow (API-only)
 from .login_views import (
-    LoginView,
-    request_otp_for_login,
-    SystemWelcomeView,
+    LoginAPIView,
     VerifyOTPLoginView,
 )
 
@@ -66,19 +60,9 @@ from .login_views import (
 from .role_management_views import (
     CreateRoleView,
     UpdateAssignmentView,
-    role_management_view,
 )
 
-# Staff Portal Routing
-from .staff_routing_mixins import (
-    StaffAuthenticationMixin,
-    StaffLoginRequiredMixin,
-    StaffNotAuthenticatedMixin,
-    StaffEmployeeBlockerMixin,
-    StaffSystemRedirectMixin,
-)
-
-# Superuser Admin Portal
+# Superuser Admin Portal (session-based, kept for admin functionality)
 from .superuser_admin_views import (
     SuperuserRequiredMixin,
     IsSuperuserSessionAuth,
@@ -111,8 +95,8 @@ __all__ = [
     'ValidateTokenView',
     'UILogoutView',
     # Profile
+    'MeView',
     'ProfileView',
-    'profile_settings_view',
     # OTP
     'RequestOTPView',
     'Enable2FAView',
@@ -123,34 +107,15 @@ __all__ = [
     'ForgotPasswordView',
     'ResetPasswordView',
     'ProfilePasswordResetView',
-    'ChangePasswordUIView',
     # User Management
     'UserViewSet',
-    'agent_management_view',
-    'invite_agent_view',
-    # Login
-    'LoginView',
-    'request_otp_for_login',
-    'SystemWelcomeView',
+    # Login (API-only)
+    'LoginAPIView',
     'VerifyOTPLoginView',
     # Role Management
     'CreateRoleView',
     'UpdateAssignmentView',
-    'role_management_view',
-    # Staff Portal Routing
-    'StaffAuthenticationMixin',
-    'StaffLoginRequiredMixin',
-    'StaffNotAuthenticatedMixin',
-    'StaffEmployeeBlockerMixin',
-    'StaffSystemRedirectMixin',
-    # Superuser Admin Portal
-    'SuperuserRequiredMixin',
-    'IsSuperuserSessionAuth',
-    'SuperAdminLoginView',
-    'SuperAdminLogoutView',
-    'SuperAdminDashboardView',
-    'UserMasterlistView',
-    'UserCreateView',
+
     'UserEditView',
     'UserImportView',
     'UserListAPIView',

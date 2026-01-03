@@ -5,13 +5,13 @@ from rest_framework import serializers
 from rest_framework.routers import DefaultRouter
 from drf_spectacular.utils import extend_schema
 
-# Import directly from individual modules
+# Import directly from individual modules (API-only views)
 from .views.auth_views import RegisterView, CustomTokenObtainPairView, CookieTokenRefreshView, CookieLogoutView, ValidateTokenView, UILogoutView
-from .views.profile_views import ProfileView, profile_settings_view, UserByCompanyIdView, MeView
+from .views.profile_views import ProfileView, UserByCompanyIdView, MeView
 from .views.otp_views import RequestOTPView, Enable2FAView, Disable2FAView, request_otp_authenticated_view, verify_disable_otp_view
-from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordUIView, ChangePasswordView, VerifyPasswordView
-from .views.user_management_views import UserViewSet, agent_management_view, invite_agent_view, UserByIdView
-from .views.login_views import LoginView, request_otp_for_login, SystemWelcomeView, LoginAPIView, VerifyOTPLoginView
+from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordView, VerifyPasswordView
+from .views.user_management_views import UserViewSet, UserByIdView
+from .views.login_views import LoginAPIView, VerifyOTPLoginView
 
 class PasswordResetSerializer(serializers.Serializer):
     forgot = serializers.URLField()
@@ -72,15 +72,12 @@ urlpatterns = [
     # Root endpoint for users API discovery 
     path('', users_root, name='users-root'),
     
-    # Authentication endpoints
+    # Authentication endpoints (API-only)
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
-    path('login/ui/', LoginView.as_view(), name='auth_login'),
     path('login/api/', LoginAPIView.as_view(), name='login-api'),
     path('login/verify-otp/', VerifyOTPLoginView.as_view(), name='verify-otp-login'),
-    path('login/request-otp/', request_otp_for_login, name='auth_request_otp'),
     
-    path('welcome/', SystemWelcomeView.as_view(), name='system-welcome'),
     path('token/refresh/', CookieTokenRefreshView.as_view(), name='cookie-token-refresh'),
     path('token/validate/', ValidateTokenView.as_view(), name='validate-token'),
     path('logout/', CookieLogoutView.as_view(), name='cookie-logout'),
@@ -94,10 +91,6 @@ urlpatterns = [
     path('profile/by-company/<str:company_id>/', UserByCompanyIdView.as_view(), name='user-profile-by-company'),
     path('profile/reset-password/', ProfilePasswordResetView.as_view(), name='profile-password-reset'),
     
-    # Template-based Profile Settings and Agent Management URLs removed
-    # These are now only accessible via root-level shortcuts:
-    # /settings/profile/ and /agent-management/
-    
     # 2FA endpoints
     path('2fa/request-otp/', RequestOTPView.as_view(), name='request-otp'),
     path('2fa/request-otp-authenticated/', request_otp_authenticated_view, name='request-otp-authenticated'),
@@ -105,12 +98,11 @@ urlpatterns = [
     path('2fa/disable/', Disable2FAView.as_view(), name='disable-2fa'),
     path('verify-disable-otp/', verify_disable_otp_view, name='verify-disable-otp'),
     
-    # Password reset endpoints
+    # Password reset endpoints (API-only)
     path('password/forgot/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('password/reset', ResetPasswordView.as_view(), name='reset-password-no-slash'),  # Without trailing slash for token links
     path('password/reset/', ResetPasswordView.as_view(), name='reset-password'),
     path('password/change/', ProfilePasswordResetView.as_view(), name='change-password'),
-    path('password/change/ui/', ChangePasswordUIView.as_view(), name='change-password-ui'),
     path('change-password/', ChangePasswordView.as_view(), name='api-change-password'),
     path('verify-password/', VerifyPasswordView.as_view(), name='api-verify-password'),
     

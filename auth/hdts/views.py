@@ -21,7 +21,7 @@ from .serializers import EmployeeProfileSerializer
 from django.shortcuts import get_object_or_404
 from system_roles.models import UserSystemRole
 
-# Import employee views from separated modules
+# Import employee views from API module (template views have been removed)
 from .employee_api_views import (
     EmployeeRegisterView,
     EmployeeTokenObtainPairView,
@@ -33,14 +33,6 @@ from .employee_api_views import (
     VerifyEmployeeOTPView,
     Enable2FAView,
     Disable2FAView,
-)
-from .employee_template_views import (
-    EmployeeLoginView,
-    EmployeeVerifyOTPView,
-    EmployeeProfileSettingsView,
-    EmployeeChangePasswordView as TemplateChangePasswordView,
-    EmployeeLogoutView as TemplateLogoutView,
-    EmployeeResetPasswordUIView,
 )
 
 

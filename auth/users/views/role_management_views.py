@@ -285,37 +285,3 @@ class UpdateAssignmentView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
-@jwt_cookie_required
-def role_management_view(request):
-    """
-    Render the role management page for managing roles (create and view) in the current system.
-    Automatically selects a system if one isn't already selected.
-    """
-    user = request.user
-    
-    # Get or set the current system from session
-    current_system_slug = get_or_set_default_system(request)
-    
-    if not current_system_slug:
-        messages.error(request, 'No systems are assigned to your account. Please contact support.')
-        return redirect('profile-settings')
-    
-    # Check if user has permission to manage roles in the current system
-    if not user.is_superuser:
-        is_admin = UserSystemRole.objects.filter(
-            user=user,
-            role__name='Admin',
-            system__slug=current_system_slug
-        ).exists()
-        
-        if not is_admin:
-            messages.error(request, f'Access denied. You need admin privileges in {current_system_slug.upper()} to manage roles.')
-            return redirect('profile-settings')
-    
-    context = {
-        'user': user,
-        'unread_count': 0,
-        'current_system': current_system_slug,
-    }
-    return render(request, 'management/manage_roles.html', context)

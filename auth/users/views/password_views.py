@@ -1,5 +1,6 @@
 """
 Password management views - handles password reset, change, and forgot password flows.
+API-only views - frontend handles all UI.
 """
 
 from rest_framework import generics, status, serializers
@@ -8,14 +9,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 import rest_framework.serializers as drf_serializers
 
-from django.shortcuts import render, redirect
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.cache import never_cache
-from django.utils.decorators import method_decorator
-from django.views.generic import FormView, TemplateView
-from django.urls import reverse_lazy
-from django.contrib import messages
-
 from ..models import User, UserOTP, PasswordResetToken
 from ..serializers import (
     ForgotPasswordSerializer,
@@ -23,7 +16,6 @@ from ..serializers import (
     ProfilePasswordResetSerializer,
     send_password_reset_email,
 )
-from ..forms import ForgotPasswordForm
 
 
 @extend_schema(
@@ -97,28 +89,9 @@ class ForgotPasswordView(generics.CreateAPIView):
     }
 )
 class ResetPasswordView(generics.GenericAPIView):
-    """Reset password using reset token."""
+    """Reset password using reset token (API-only, frontend handles UI)."""
     permission_classes = [AllowAny]
     serializer_class = ResetPasswordSerializer
-    
-    def get(self, request, *args, **kwargs):
-        """Render the password reset form."""
-        token = request.query_params.get('token', '')
-        
-        # Check if token is valid before rendering the form
-        reset_token = PasswordResetToken.get_valid_token(token)
-        if not reset_token:
-            context = {
-                'error': 'Invalid or expired reset token. Please request a new password reset link.',
-                'token_valid': False
-            }
-        else:
-            context = {
-                'token': token,
-                'token_valid': True
-            }
-            
-        return render(request, 'public/staff_reset_password.html', context)
         
     def post(self, request, *args, **kwargs):
         """Process the password reset API submission."""
@@ -267,24 +240,3 @@ class VerifyPasswordView(generics.GenericAPIView):
             return Response({"detail": "Password verified."}, status=status.HTTP_200_OK)
         return Response({"detail": "Incorrect password."}, status=status.HTTP_400_BAD_REQUEST)
 
-
-@method_decorator([never_cache], name='dispatch')  
-class ChangePasswordUIView(TemplateView):
-    """UI view for changing password that uses the existing API endpoint."""
-    template_name = 'users/change_password.html'
-    
-    def dispatch(self, request, *args, **kwargs):
-        # Check if user is authenticated via JWT token
-        from ..authentication import CookieJWTAuthentication
-        
-        auth = CookieJWTAuthentication()
-        try:
-            user, validated_token = auth.authenticate(request)
-            if user:
-                request.user = user
-                return super().dispatch(request, *args, **kwargs)
-        except Exception:
-            pass
-        
-        # If not authenticated, redirect to login
-        return redirect('auth_login')

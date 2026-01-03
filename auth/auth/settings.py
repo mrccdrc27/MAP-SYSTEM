@@ -65,7 +65,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'auth.middleware.JWTAuthenticationMiddleware',  # Add JWT authentication middleware for cookies
-    'users.authentication_middleware.AuthenticationRoutingMiddleware',  # Centralized auth & routing
+    # AuthenticationRoutingMiddleware removed - frontend handles all routing
 ]
 
 ROOT_URLCONF = 'auth.urls'
