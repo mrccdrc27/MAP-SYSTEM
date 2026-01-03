@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { verifyPassword, requestOtp, disable2FA } from '../../api/auth';
+import { requestOtp, disable2FA } from '../../services/authService';
+import { verifyPassword } from '../../services/userService';
 import styles from './Disable2FAModal.module.css';
 
 const Disable2FAModal = ({ isOpen, onClose, onSuccess }) => {

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getMe, logout as apiLogout } from '../api/auth';
-import { clearAuthState, setOnUnauthorizedCallback } from '../api/config';
+import { logout as apiLogout } from '../services/authService';
+import { getMe } from '../services/userService';
+import { clearAuthState } from '../utils/storage';
+import { setOnUnauthorizedCallback } from '../services/api';
 
 const AuthContext = createContext(null);
 

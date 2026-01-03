@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { requestOtp, enable2FA } from '../../api/auth';
+import { requestOtp, enable2FA } from '../../services/authService';
 import styles from './Enable2FAModal.module.css';
 
 const Enable2FAModal = ({ isOpen, onClose, onSuccess }) => {
