@@ -102,7 +102,7 @@ class BudgetProposalDetailSerializer(serializers.ModelSerializer):
             'items', 'total_cost', 'document', 'comments', 'last_reviewed_at',
             'approved_by_name', 'approval_date', 'rejected_by_name', 'rejection_date',
             'latest_review_comment', 'submitted_at',
-            'finance_operator_name', 'signature'
+            'finance_manager_name', 'signature'
         ]
 
     def get_total_cost(self, obj): return obj.items.aggregate(
@@ -648,7 +648,7 @@ class ProposalReviewSerializer(serializers.Serializer):
     comment = serializers.CharField(
         required=False, allow_blank=True, max_length=1000)
 
-    finance_operator_name = serializers.CharField(
+    finance_manager_name = serializers.CharField(
         required=False, allow_blank=True)
     signature = serializers.FileField(required=False, allow_null=True)
 

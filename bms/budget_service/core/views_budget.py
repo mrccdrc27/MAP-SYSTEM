@@ -672,7 +672,7 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
 
         new_status = review_input_serializer.validated_data['status']
         comment_text = review_input_serializer.validated_data.get('comment', '')
-        finance_operator = review_input_serializer.validated_data.get('finance_operator_name', '')
+        finance_operator = review_input_serializer.validated_data.get('finance_manager_name', '')
         signature_file = review_input_serializer.validated_data.get('signature')
 
         reviewer_user_id = request.user.id
@@ -683,7 +683,7 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
             proposal.status = new_status
 
             if finance_operator:
-                proposal.finance_operator_name = finance_operator
+                proposal.finance_manager_name = finance_operator
             if signature_file:
                 proposal.signature = signature_file
 
@@ -926,7 +926,7 @@ class ExternalBudgetProposalViewSet(viewsets.ModelViewSet):
             'comment', '')
 
         finance_operator = review_input_serializer.validated_data.get(
-            'finance_operator_name', '')
+            'finance_manager_name', '')
         signature_file = review_input_serializer.validated_data.get(
             'signature')
 
@@ -939,7 +939,7 @@ class ExternalBudgetProposalViewSet(viewsets.ModelViewSet):
             proposal.status = new_status
 
             if finance_operator:
-                proposal.finance_operator_name = finance_operator
+                proposal.finance_manager_name = finance_operator
             if signature_file:
                 proposal.signature = signature_file
 

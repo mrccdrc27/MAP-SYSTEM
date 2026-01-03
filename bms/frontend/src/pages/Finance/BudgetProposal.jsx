@@ -743,7 +743,7 @@ const BudgetProposal = () => {
       const isReadOnly =
         data.status === "APPROVED" || data.status === "REJECTED";
       if (isReadOnly) {
-        setFinanceOperatorName(data.finance_operator_name || "");
+        setFinanceOperatorName(data.finance_manager_name || "");
         setFinanceOperatorSignature(data.signature || "");
       } else {
         setFinanceOperatorName("");
@@ -790,7 +790,7 @@ const BudgetProposal = () => {
       const formData = new FormData();
       formData.append("status", reviewStatus);
       formData.append("comment", finalComment);
-      formData.append("finance_operator_name", financeOperatorName);
+      formData.append("finance_manager_name", financeOperatorName);
       if (
         financeOperatorSignature &&
         financeOperatorSignature.startsWith("data:")

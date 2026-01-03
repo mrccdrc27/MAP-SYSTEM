@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='budgetproposal',
-            name='finance_operator_name',
+            name='finance_manager_name',
             field=models.CharField(blank=True, help_text='Name of the finance operator who reviewed this proposal.', max_length=255, null=True),
         ),
         migrations.AddField(

@@ -2351,7 +2351,7 @@ const ProposalHistory = () => {
                         <strong>Reviewed By:</strong>{" "}
                         {selectedDetail.approved_by_name ||
                           selectedDetail.rejected_by_name ||
-                          selectedDetail.finance_operator_name}
+                          selectedDetail.finance_manager_name}
                       </div>
                       <div>
                         <strong>Date:</strong>{" "}

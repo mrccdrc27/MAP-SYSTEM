@@ -389,7 +389,7 @@ class Command(BaseCommand):
                             'performance_start_date': datetime(year, 1, 15).date(),
                             'performance_end_date': datetime(year, 12, 15).date(),
                             'sync_status': 'SYNCED',
-                            'finance_operator_name': finance_head['full_name'] if status != 'SUBMITTED' else '',
+                            'finance_manager_name': finance_head['full_name'] if status != 'SUBMITTED' else '',
                             'submitted_at': submission_dt,
                         }
                     )
