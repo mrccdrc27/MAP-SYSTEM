@@ -53,75 +53,75 @@ DEPARTMENTS_CONFIG = [
 
 CATEGORY_TREE = {
     'MERCH': [
-        ('Product Range Planning', 'OPEX'),
-        ('Buying Costs', 'MIXED'),
-        ('Market Research', 'OPEX'),
-        ('Inventory Handling Fees', 'OPEX'),
-        ('Supplier Coordination', 'OPEX'),
-        ('Seasonal Planning Tools', 'CAPEX'),
-        ('Training', 'OPEX'),
-        ('Travel', 'OPEX'),
-        ('Software Subscription', 'OPEX'),
+        ('Product Range Planning', 'OPEX', 'MERCH-PLAN'),
+        ('Buying Costs', 'MIXED', 'MERCH-BUY'),
+        ('Market Research', 'OPEX', 'MERCH-RES'),
+        ('Inventory Handling Fees', 'OPEX', 'MERCH-INV'),
+        ('Supplier Coordination', 'OPEX', 'MERCH-SUP'),
+        ('Seasonal Planning Tools', 'CAPEX', 'MERCH-TOOLS'),
+        ('Training', 'OPEX', 'MERCH-TRN'),
+        ('Travel', 'OPEX', 'MERCH-TRV'),
+        ('Software Subscription', 'OPEX', 'MERCH-SW'),
     ],
     'SALES': [
-        ('Store Consumables', 'OPEX'),
-        ('POS Maintenance', 'OPEX'),
-        ('Store Repairs', 'MIXED'),
-        ('Sales Incentives', 'OPEX'),
-        ('Uniforms', 'MIXED'),
-        ('Store Opening Expenses', 'CAPEX'),
-        ('Store Supplies', 'OPEX'),
-        ('Utilities', 'OPEX'),
+        ('Store Consumables', 'OPEX', 'SALES-CONS'),
+        ('POS Maintenance', 'OPEX', 'SALES-POS'),
+        ('Store Repairs', 'MIXED', 'SALES-REP'),
+        ('Sales Incentives', 'OPEX', 'SALES-INC'),
+        ('Uniforms', 'MIXED', 'SALES-UNI'),
+        ('Store Opening Expenses', 'CAPEX', 'SALES-OPEN'),
+        ('Store Supplies', 'OPEX', 'SALES-SUP'),
+        ('Utilities', 'OPEX', 'SALES-UTIL'),
     ],
     'MKT': [
-        ('Campaign Budget', 'OPEX'),
-        ('Branding Materials', 'MIXED'),
-        ('Digital Ads', 'OPEX'),
-        ('Social Media Management', 'OPEX'),
-        ('Events Budget', 'OPEX'),
-        ('Influencer Fees', 'OPEX'),
-        ('Photography/Videography', 'MIXED'),
+        ('Campaign Budget', 'OPEX', 'MKT-CAMP'),
+        ('Branding Materials', 'MIXED', 'MKT-BRAND'),
+        ('Digital Ads', 'OPEX', 'MKT-ADS'),
+        ('Social Media Management', 'OPEX', 'MKT-SOCIAL'),
+        ('Events Budget', 'OPEX', 'MKT-EVENT'),
+        ('Influencer Fees', 'OPEX', 'MKT-INFL'),
+        ('Photography/Videography', 'MIXED', 'MKT-PHOTO'),
     ],
     'OPS': [
-        ('Equipment Maintenance', 'OPEX'),
-        ('Fleet/Vehicle Expenses', 'MIXED'),
-        ('Operational Supplies', 'OPEX'),
-        ('Business Permits', 'OPEX'),
-        ('Facility Utilities', 'OPEX'),
-        ('Compliance Costs', 'OPEX'),
+        ('Equipment Maintenance', 'OPEX', 'OPS-MAINT'),
+        ('Fleet/Vehicle Expenses', 'MIXED', 'OPS-FLEET'),
+        ('Operational Supplies', 'OPEX', 'OPS-SUP'),
+        ('Business Permits', 'OPEX', 'OPS-PERMIT'),
+        ('Facility Utilities', 'OPEX', 'OPS-UTIL'),
+        ('Compliance Costs', 'OPEX', 'OPS-COMP'),
     ],
     'IT': [
-        ('Server Hosting', 'OPEX'),
-        ('Software Licenses', 'MIXED'),
-        ('Cloud Subscriptions', 'OPEX'),
-        ('Hardware Purchases', 'CAPEX'),
-        ('Data Tools', 'MIXED'),
-        ('Cybersecurity Costs', 'OPEX'),
-        ('API Subscription Fees', 'OPEX'),
-        ('Domain Renewals', 'OPEX'),
+        ('Server Hosting', 'OPEX', 'IT-HOST'),
+        ('Software Licenses', 'MIXED', 'IT-SW'),
+        ('Cloud Subscriptions', 'OPEX', 'IT-CLOUD'),
+        ('Hardware Purchases', 'CAPEX', 'CAP-IT-HW'),
+        ('Data Tools', 'MIXED', 'IT-DATA'),
+        ('Cybersecurity Costs', 'OPEX', 'IT-SEC'),
+        ('API Subscription Fees', 'OPEX', 'IT-API'),
+        ('Domain Renewals', 'OPEX', 'IT-DOMAIN'),
     ],
     'LOG': [
-        ('Shipping Costs', 'OPEX'),
-        ('Warehouse Equipment', 'CAPEX'),
-        ('Transport & Fuel', 'OPEX'),
-        ('Freight Fees', 'OPEX'),
-        ('Vendor Delivery Charges', 'OPEX'),
-        ('Storage Fees', 'OPEX'),
-        ('Packaging Materials', 'OPEX'),
-        ('Safety Gear', 'MIXED'),
+        ('Shipping Costs', 'OPEX', 'LOG-SHIP'),
+        ('Warehouse Equipment', 'CAPEX', 'LOG-EQUIP'),
+        ('Transport & Fuel', 'OPEX', 'LOG-FUEL'),
+        ('Freight Fees', 'OPEX', 'LOG-FREIGHT'),
+        ('Vendor Delivery Charges', 'OPEX', 'LOG-DELIV'),
+        ('Storage Fees', 'OPEX', 'LOG-STOR'),
+        ('Packaging Materials', 'OPEX', 'LOG-PACK'),
+        ('Safety Gear', 'MIXED', 'LOG-SAFE'),
     ],
     'HR': [
-        ('Recruitment Expenses', 'OPEX'),
-        ('Job Posting Fees', 'OPEX'),
-        ('Employee Engagement Activities', 'OPEX'),
-        ('Training & Workshops', 'OPEX'),
-        ('Medical & Wellness Programs', 'OPEX'),
-        ('Background Checks', 'OPEX'),
-        ('HR Systems/Payroll Software', 'MIXED'),
+        ('Recruitment Expenses', 'OPEX', 'HR-RECRUIT'),
+        ('Job Posting Fees', 'OPEX', 'HR-POST'),
+        ('Employee Engagement Activities', 'OPEX', 'HR-ENGAGE'),
+        ('Training & Workshops', 'OPEX', 'HRM-TRN'),
+        ('Medical & Wellness Programs', 'OPEX', 'HR-MED'),
+        ('Background Checks', 'OPEX', 'HR-CHECK'),
+        ('HR Systems/Payroll Software', 'MIXED', 'HR-SYS'),
     ],
     'FIN': [
-        ('Professional Services', 'OPEX'),
-        ('Audit Fees', 'OPEX'),
+        ('Professional Services', 'OPEX', 'FIN-PROF'),
+        ('Audit Fees', 'OPEX', 'FIN-AUDIT'),
     ]
 }
 
@@ -309,16 +309,13 @@ class Command(BaseCommand):
             code='OPEX', defaults={'name': 'Operational Expenditure', 'level': 1, 'classification': 'OPEX'}
         )
 
-        # 2. Sub-Categories
+        # 2. Sub-Categories (MODIFIED: Now unpacks 3 values including code)
         for dept_code, items in CATEGORY_TREE.items():
-            for item_name, classification in items:
-                slug = item_name.upper().replace(
-                    ' ', '-').replace('/', '-')[:15]
-                code = f"{dept_code}-{slug}"
+            for item_name, classification, code in items:  # ← CHANGED: Added 'code'
                 parent = root_capex if classification == 'CAPEX' else root_opex
 
                 cat, created = ExpenseCategory.objects.update_or_create(
-                    code=code,
+                    code=code,  # ← CHANGED: Use hardcoded code instead of generated slug
                     defaults={
                         'name': item_name,
                         'level': 2,
@@ -327,11 +324,12 @@ class Command(BaseCommand):
                     }
                 )
                 if created:
-                    print(f"  Created Category: {code}")
+                    print(f"  Created Category: {code}")  # ← CHANGED: Log the clean code
 
                 if dept_code not in cat_map:
                     cat_map[dept_code] = []
                 cat_map[dept_code].append(cat)
+        
         return cat_map
 
     def seed_proposals_and_projects(self, departments, fiscal_years, accounts, categories):
