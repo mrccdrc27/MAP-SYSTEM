@@ -403,7 +403,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['full_name'] = user.get_full_name()
         token['user_type'] = 'staff'  # This is for Staff users (User model)
         
-        # ✅ ADD THIS - Include department in token
+        # Include department in token
         if hasattr(user, 'department') and user.department:
             token['department'] = user.department
             token['department_name'] = user.department  # Alias for BMS compatibility

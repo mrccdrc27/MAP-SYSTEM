@@ -40,7 +40,7 @@ class Command(BaseCommand):
                 1: 'Finance Department',                    # Matches FIN
                 2: 'Human Resources',                       # Matches HR
                 3: 'IT Application & Data',                 # Matches IT
-                4: 'Operations Department',                 # Matches OPS (Fixes ops_user)
+                4: 'Operations Department',                 # Matches OPS 
                 5: 'Marketing / Marketing Communications'   # Matches MKT
             }
 

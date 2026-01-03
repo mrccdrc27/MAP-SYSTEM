@@ -217,8 +217,8 @@ def get_dashboard_budget_summary(request):
 
     # Data Isolation
     if bms_role == 'GENERAL_USER':
-        # MODIFIED: Pass request to helper
-        department_id = get_user_department_id(user, request) 
+        # MODIFIED: Removed ', request'
+        department_id = get_user_department_id(user) 
         if department_id:
             allocations_qs = allocations_qs.filter(department_id=department_id)
         else:
@@ -667,8 +667,8 @@ def get_project_status_list(request):
 
     # FIX: Finance Head gets global view. General User gets restricted view.
     if bms_role == 'GENERAL_USER':
-        # MODIFIED: Pass request to helper
-        department_id = get_user_department_id(user, request)
+        # MODIFIED: Removed ', request'
+        department_id = get_user_department_id(user)
         if department_id:
             allocations_qs = allocations_qs.filter(department_id=department_id)
         else:
@@ -761,8 +761,8 @@ def get_department_budget_status(request):
 
     # DATA ISOLATION
     if bms_role == 'GENERAL_USER':
-        # MODIFIED: Pass request to helper
-        department_id = get_user_department_id(user, request)
+        # MODIFIED: Removed ', request'
+        department_id = get_user_department_id(user)
         if department_id:
             departments_qs = departments_qs.filter(id=department_id)
         else:
@@ -887,7 +887,7 @@ def overall_monthly_budget_actual(request):
         if not fiscal_year:
             return Response({"detail": "No active fiscal year found."}, status=status.HTTP_404_NOT_FOUND)
 
-    # --- MODIFICATION START ---
+     # --- MODIFICATION START ---
     # Apply data isolation to budget and expense queries
     bms_role = get_user_bms_role(user)
     budget_query = BudgetAllocation.objects.filter(
@@ -897,8 +897,8 @@ def overall_monthly_budget_actual(request):
 
      # FIX: Restrict General Users, allow Finance/Admin global
     if bms_role == 'GENERAL_USER':
-        # MODIFIED: Pass request to helper
-        department_id = get_user_department_id(user, request)
+        # MODIFIED: Removed ', request'
+        department_id = get_user_department_id(user)
         if department_id:
             budget_query = budget_query.filter(department_id=department_id)
             expense_query_base = expense_query_base.filter(
@@ -1036,8 +1036,8 @@ class ProjectDetailView(generics.RetrieveAPIView):
 
         # FIX: General User gets department view
         if bms_role == 'GENERAL_USER':
-            # MODIFIED: Pass request to helper
-            department_id = get_user_department_id(user, self.request)
+            # MODIFIED: Removed ', self.request'
+            department_id = get_user_department_id(user)
             if department_id:
                 return Project.objects.filter(department_id=department_id)
 

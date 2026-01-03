@@ -45,7 +45,7 @@ class AuthenticatedUser:
         self.bms_roles = user_data.get('bms_roles', [])
         self.is_authenticated = True
         
-        # ✅ FIXED - Extract department from token
+        # ✅ Extract department from token
         self.department = user_data.get('department') or user_data.get('department_name')
         self.department_name = user_data.get('department_name') or user_data.get('department')
         self.department_id = user_data.get('department_id') or self._resolve_department_id()
@@ -210,7 +210,7 @@ class JWTCookieAuthentication(BaseAuthentication):
                 'roles': roles,
                 'bms_roles': [self._extract_role_if_system(role, 'bms') for role in roles 
                             if self._extract_role_if_system(role, 'bms')],
-                # ✅ ADD THESE - Extract department fields from token
+                # ✅ Extract department fields from token
                 'department': payload.get('department'),
                 'department_name': payload.get('department_name') or payload.get('department'),
                 'department_id': payload.get('department_id'),
