@@ -1,84 +1,57 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { changePassword } from '../../../services/userService';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input } from '../../../components/common';
+import useForm from '../../../hooks/useForm';
 import styles from './ChangePassword.module.css';
 
 const ChangePassword = () => {
   const navigate = useNavigate();
   const { ToastContainer, success, error } = useToast();
 
-  const [formData, setFormData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
     confirm: false,
   });
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-    setGeneralError('');
-  };
-
-  const togglePasswordVisibility = (field) => {
-    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const validateForm = () => {
+  const validate = (values) => {
     const newErrors = {};
 
-    if (!formData.currentPassword) {
+    if (!values.currentPassword) {
       newErrors.currentPassword = 'Current password is required';
     }
 
-    if (!formData.newPassword) {
+    if (!values.newPassword) {
       newErrors.newPassword = 'New password is required';
-    } else if (formData.newPassword.length < 8) {
+    } else if (values.newPassword.length < 8) {
       newErrors.newPassword = 'Password must be at least 8 characters';
     }
 
-    if (!formData.confirmPassword) {
+    if (!values.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your new password';
-    } else if (formData.newPassword !== formData.confirmPassword) {
+    } else if (values.newPassword !== values.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (formData.currentPassword && formData.newPassword && formData.currentPassword === formData.newPassword) {
+    if (values.currentPassword && values.newPassword && values.currentPassword === values.newPassword) {
       newErrors.newPassword = 'New password must be different from current password';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (values) => {
     setGeneralError('');
     setSuccessMessage('');
 
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsLoading(true);
-
     try {
       const response = await changePassword(
-        formData.currentPassword,
-        formData.newPassword,
-        formData.confirmPassword
+        values.currentPassword,
+        values.newPassword,
+        values.confirmPassword
       );
 
       if (response.ok) {
@@ -97,9 +70,28 @@ const ChangePassword = () => {
     } catch (err) {
       console.error('Change password error:', err);
       error('Error', 'An error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
+  };
+
+  const {
+    values,
+    errors,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+    setErrors,
+  } = useForm(
+    {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    },
+    validate,
+    onSubmit
+  );
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   return (
@@ -121,90 +113,51 @@ const ChangePassword = () => {
         )}
 
         <form className={styles.changePasswordForm} onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label htmlFor="currentPassword">Current Password</label>
-            <div className={styles.passwordContainer}>
-              <input
-                type={showPasswords.current ? 'text' : 'password'}
-                id="currentPassword"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={handleChange}
-                placeholder="Enter current password"
-              />
-              <span 
-                className={styles.showPassword}
-                onClick={() => togglePasswordVisibility('current')}
-              >
-                <i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </span>
-            </div>
-            {errors.currentPassword && <span className={styles.fieldError}>{errors.currentPassword}</span>}
-          </div>
+          <Input
+            label="Current Password"
+            type={showPasswords.current ? 'text' : 'password'}
+            name="currentPassword"
+            value={values.currentPassword}
+            onChange={handleChange}
+            placeholder="Enter current password"
+            error={errors.currentPassword}
+            icon={<i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+            onIconClick={() => togglePasswordVisibility('current')}
+          />
 
-          <div className={styles.formGroup}>
-            <label htmlFor="newPassword">New Password</label>
-            <div className={styles.passwordContainer}>
-              <input
-                type={showPasswords.new ? 'text' : 'password'}
-                id="newPassword"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handleChange}
-                placeholder="Enter new password"
-              />
-              <span 
-                className={styles.showPassword}
-                onClick={() => togglePasswordVisibility('new')}
-              >
-                <i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </span>
-            </div>
-            <p className={styles.passwordRequirements}>
-              Password must be at least 8 characters long.
-            </p>
-            {errors.newPassword && <span className={styles.fieldError}>{errors.newPassword}</span>}
-          </div>
+          <Input
+            label="New Password"
+            type={showPasswords.new ? 'text' : 'password'}
+            name="newPassword"
+            value={values.newPassword}
+            onChange={handleChange}
+            placeholder="Enter new password"
+            error={errors.newPassword}
+            hint="Password must be at least 8 characters long."
+            icon={<i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+            onIconClick={() => togglePasswordVisibility('new')}
+          />
 
-          <div className={styles.formGroup}>
-            <label htmlFor="confirmPassword">Confirm New Password</label>
-            <div className={styles.passwordContainer}>
-              <input
-                type={showPasswords.confirm ? 'text' : 'password'}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm new password"
-              />
-              <span 
-                className={styles.showPassword}
-                onClick={() => togglePasswordVisibility('confirm')}
-              >
-                <i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </span>
-            </div>
-            {errors.confirmPassword && <span className={styles.fieldError}>{errors.confirmPassword}</span>}
-          </div>
+          <Input
+            label="Confirm New Password"
+            type={showPasswords.confirm ? 'text' : 'password'}
+            name="confirmPassword"
+            value={values.confirmPassword}
+            onChange={handleChange}
+            placeholder="Confirm new password"
+            error={errors.confirmPassword}
+            icon={<i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+            onIconClick={() => togglePasswordVisibility('confirm')}
+          />
 
           <div className={styles.formActions}>
-            <button 
+            <Button 
               type="submit" 
-              className={styles.submitBtn}
-              disabled={isLoading}
+              isLoading={isSubmitting}
+              icon={<i className="fa-solid fa-key"></i>}
             >
-              {isLoading ? (
-                <>
-                  <span>Changing...</span>
-                  <span className={styles.spinner}></span>
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-key"></i>
-                  <span>Change Password</span>
-                </>
-              )}
-            </button>
+              Change Password
+            </Button>
             <Link to="/profile" className={styles.cancelBtn}>
               <i className="fa-solid fa-times"></i>
               Cancel

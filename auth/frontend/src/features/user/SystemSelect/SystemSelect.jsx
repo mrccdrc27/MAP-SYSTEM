@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { getUserSystems, selectSystem } from '../../../services/userService';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button } from '../../../components/common';
 import styles from './SystemSelect.module.css';
 
 const logoUrl = '/map-logo.png';
@@ -94,21 +94,21 @@ const SystemSelect = () => {
         {systems.length > 0 ? (
           <div className={styles.systemList}>
             {systems.map((system) => (
-              <button
+              <Button
                 key={system.slug || system.id}
                 className={styles.systemOption}
                 onClick={() => handleSelectSystem(system.slug)}
-                disabled={selecting !== null}
+                isLoading={selecting === system.slug}
+                disabled={selecting !== null && selecting !== system.slug}
               >
-                <span className={styles.systemName}>{system.name}</span>
-                <span className={styles.systemMeta}>
-                  <i className="fa-solid fa-network-wired"></i>
-                  {system.slug}
-                </span>
-                {selecting === system.slug && (
-                  <span className={styles.selectingSpinner}></span>
-                )}
-              </button>
+                <div className={styles.systemOptionContent}>
+                  <span className={styles.systemName}>{system.name}</span>
+                  <span className={styles.systemMeta}>
+                    <i className="fa-solid fa-network-wired"></i>
+                    {system.slug}
+                  </span>
+                </div>
+              </Button>
             ))}
           </div>
         ) : (
@@ -120,11 +120,13 @@ const SystemSelect = () => {
 
         <footer className={styles.cardFooter}>
           <Link to="/profile" className={styles.profileLink}>
-            <i className="fa-solid fa-user"></i> Go to Profile
+            <Button variant="outline" size="small" icon={<i className="fa-solid fa-user"></i>}>
+              Go to Profile
+            </Button>
           </Link>
-          <button className={styles.logoutLink} onClick={handleLogout}>
-            <i className="fa-solid fa-arrow-right-from-bracket"></i> Sign out
-          </button>
+          <Button variant="text" size="small" onClick={handleLogout} icon={<i className="fa-solid fa-arrow-right-from-bracket"></i>}>
+            Sign out
+          </Button>
         </footer>
       </section>
     </main>

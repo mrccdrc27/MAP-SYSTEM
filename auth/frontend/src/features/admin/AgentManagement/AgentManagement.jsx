@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { getUserSystemRoles, deleteUserSystemRole, updateUserByAdmin } from '../../../services/adminService';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input, Modal } from '../../../components/common';
 import styles from './AgentManagement.module.css';
 
 const defaultAvatar = 'https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg';
@@ -321,160 +321,121 @@ const AgentManagement = () => {
       </div>
 
       {/* Edit Modal */}
-      {editModalOpen && (
-        <div className={styles.modal} onClick={() => setEditModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Edit Agent</h3>
-              <button className={styles.modalClose} onClick={() => setEditModalOpen(false)}>
-                &times;
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>First Name</label>
-                  <input
-                    type="text"
-                    name="first_name"
-                    value={editForm.first_name}
-                    onChange={handleEditChange}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Last Name</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={editForm.last_name}
-                    onChange={handleEditChange}
-                  />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Middle Name</label>
-                  <input
-                    type="text"
-                    name="middle_name"
-                    value={editForm.middle_name}
-                    onChange={handleEditChange}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Suffix</label>
-                  <select name="suffix" value={editForm.suffix} onChange={handleEditChange}>
-                    <option value="">---------</option>
-                    <option value="Jr.">Jr.</option>
-                    <option value="Sr.">Sr.</option>
-                    <option value="II">II</option>
-                    <option value="III">III</option>
-                    <option value="IV">IV</option>
-                  </select>
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label>Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={editForm.username}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={editForm.email}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Phone Number</label>
-                <input
-                  type="tel"
-                  name="phone_number"
-                  value={editForm.phone_number}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Department</label>
-                <select name="department" value={editForm.department} onChange={handleEditChange}>
-                  <option value="">---------</option>
-                  <option value="IT Department">IT Department</option>
-                  <option value="Asset Department">Asset Department</option>
-                  <option value="Budget Department">Budget Department</option>
-                </select>
-              </div>
-              <div className={styles.formGroupCheckbox}>
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  name="is_active"
-                  checked={editForm.is_active}
-                  onChange={handleEditChange}
-                />
-                <label htmlFor="is_active">Active</label>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                className={styles.cancelBtn}
-                onClick={() => setEditModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.saveBtn}
-                onClick={handleSaveEdit}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit Agent"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} isLoading={isSaving}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.formRow}>
+          <Input
+            label="First Name"
+            name="first_name"
+            value={editForm.first_name}
+            onChange={handleEditChange}
+            className={styles.flex1}
+          />
+          <Input
+            label="Last Name"
+            name="last_name"
+            value={editForm.last_name}
+            onChange={handleEditChange}
+            className={styles.flex1}
+          />
+        </div>
+        <div className={styles.formRow}>
+          <Input
+            label="Middle Name"
+            name="middle_name"
+            value={editForm.middle_name}
+            onChange={handleEditChange}
+            className={styles.flex1}
+          />
+          <div className={`${styles.formGroup} ${styles.flex1}`}>
+            <label className={styles.label}>Suffix</label>
+            <select name="suffix" value={editForm.suffix} onChange={handleEditChange} className={styles.select}>
+              <option value="">---------</option>
+              <option value="Jr.">Jr.</option>
+              <option value="Sr.">Sr.</option>
+              <option value="II">II</option>
+              <option value="III">III</option>
+              <option value="IV">IV</option>
+            </select>
           </div>
         </div>
-      )}
+        <Input
+          label="Username"
+          name="username"
+          value={editForm.username}
+          onChange={handleEditChange}
+        />
+        <Input
+          label="Email"
+          type="email"
+          name="email"
+          value={editForm.email}
+          onChange={handleEditChange}
+        />
+        <Input
+          label="Phone Number"
+          type="tel"
+          name="phone_number"
+          value={editForm.phone_number}
+          onChange={handleEditChange}
+        />
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Department</label>
+          <select name="department" value={editForm.department} onChange={handleEditChange} className={styles.select}>
+            <option value="">---------</option>
+            <option value="IT Department">IT Department</option>
+            <option value="Asset Department">Asset Department</option>
+            <option value="Budget Department">Budget Department</option>
+          </select>
+        </div>
+        <div className={styles.formGroupCheckbox}>
+          <input
+            type="checkbox"
+            id="is_active"
+            name="is_active"
+            checked={editForm.is_active}
+            onChange={handleEditChange}
+          />
+          <label htmlFor="is_active">Active</label>
+        </div>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className={styles.modal} onClick={() => setDeleteModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Remove Agent</h3>
-              <button className={styles.modalClose} onClick={() => setDeleteModalOpen(false)}>
-                &times;
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p>
-                Are you sure you want to remove <strong>{selectedAgent?.first_name} {selectedAgent?.last_name}</strong> from all systems?
-              </p>
-              <p className={styles.warningText}>
-                This will revoke their access but will not delete their account.
-              </p>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                className={styles.cancelBtn}
-                onClick={() => setDeleteModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.deleteBtn}
-                onClick={handleConfirmDelete}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Removing...' : 'Remove Agent'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Remove Agent"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleConfirmDelete} isLoading={isSaving}>
+              Remove Agent
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Are you sure you want to remove <strong>{selectedAgent?.first_name} {selectedAgent?.last_name}</strong> from all systems?
+        </p>
+        <p className={styles.warningText}>
+          This will revoke their access but will not delete their account.
+        </p>
+      </Modal>
     </main>
   );
 };

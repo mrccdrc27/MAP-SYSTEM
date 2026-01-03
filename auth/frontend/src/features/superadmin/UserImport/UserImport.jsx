@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
+import { Button } from '../../../components/common';
 import styles from './UserImport.module.css';
 
 const UserImport = () => {
@@ -100,9 +101,9 @@ const UserImport = () => {
     <SuperAdminLayout>
       <div className={styles.pageHeader}>
         <h2>Import Users</h2>
-        <button onClick={() => navigate('/superadmin/users')} className={styles.btnSecondary}>
-          <i className="fa fa-arrow-left"></i> Back to List
-        </button>
+        <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
+          Back to List
+        </Button>
       </div>
 
       <div className={styles.card}>
@@ -135,9 +136,9 @@ const UserImport = () => {
               </span>
             ))}
           </div>
-          <button onClick={handleDownloadTemplate} className={styles.btnPrimary}>
-            <i className="fa fa-download"></i> Download Template
-          </button>
+          <Button onClick={handleDownloadTemplate} icon={<i className="fa fa-download"></i>}>
+            Download Template
+          </Button>
         </div>
 
         {error && (
@@ -168,17 +169,14 @@ const UserImport = () => {
             />
           </div>
 
-          <button type="submit" className={styles.btnPrimary} disabled={!file || loading}>
-            {loading ? (
-              <>
-                <i className="fa fa-spinner fa-spin"></i> Importing...
-              </>
-            ) : (
-              <>
-                <i className="fa fa-upload"></i> Import Users
-              </>
-            )}
-          </button>
+          <Button 
+            type="submit" 
+            isLoading={loading} 
+            disabled={!file}
+            icon={<i className="fa fa-upload"></i>}
+          >
+            Import Users
+          </Button>
         </form>
 
         {results && (

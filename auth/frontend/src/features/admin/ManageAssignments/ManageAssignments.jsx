@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { apiRequest } from '../../../services/api';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Modal } from '../../../components/common';
 import styles from './ManageAssignments.module.css';
 
 const defaultAvatar = 'https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg';
@@ -248,63 +248,50 @@ const ManageAssignments = () => {
       </div>
 
       {/* Edit Modal */}
-      {editModalOpen && (
-        <div className={styles.modal} onClick={() => setEditModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Edit Assignment</h3>
-              <button className={styles.modalClose} onClick={() => setEditModalOpen(false)}>
-                &times;
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.infoGroup}>
-                <label>Agent</label>
-                <p className={styles.infoText}>
-                  {selectedAssignment?.first_name} {selectedAssignment?.last_name} ({selectedAssignment?.role})
-                </p>
-              </div>
-
-              <div className={styles.formGroupCheckbox}>
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  name="is_active"
-                  checked={editForm.is_active}
-                  onChange={handleEditChange}
-                />
-                <label htmlFor="is_active">Active</label>
-              </div>
-
-              <div className={styles.formGroupCheckbox}>
-                <input
-                  type="checkbox"
-                  id="is_deployed"
-                  name="is_deployed"
-                  checked={editForm.is_deployed}
-                  onChange={handleEditChange}
-                />
-                <label htmlFor="is_deployed">Deployed</label>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                className={styles.cancelBtn}
-                onClick={() => setEditModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.saveBtn}
-                onClick={handleSaveEdit}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit Assignment"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} isLoading={isSaving}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.infoGroup}>
+          <label className={styles.label}>Agent</label>
+          <p className={styles.infoText}>
+            {selectedAssignment?.first_name} {selectedAssignment?.last_name} ({selectedAssignment?.role})
+          </p>
         </div>
-      )}
+
+        <div className={styles.formGroupCheckbox}>
+          <input
+            type="checkbox"
+            id="is_active"
+            name="is_active"
+            checked={editForm.is_active}
+            onChange={handleEditChange}
+          />
+          <label htmlFor="is_active">Active</label>
+        </div>
+
+        <div className={styles.formGroupCheckbox}>
+          <input
+            type="checkbox"
+            id="is_deployed"
+            name="is_deployed"
+            checked={editForm.is_deployed}
+            onChange={handleEditChange}
+          />
+          <label htmlFor="is_deployed">Deployed</label>
+        </div>
+      </Modal>
     </main>
   );
 };

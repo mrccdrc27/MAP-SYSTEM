@@ -249,12 +249,12 @@
   margin-bottom: 1.5rem;
 }
 
-.infoGroup label {
+.label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #333;
   font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
 }
 
 .infoText {

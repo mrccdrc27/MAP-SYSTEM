@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { login as apiLogin, verifyOtpLogin } from '../../../services/authService';
 import { getProfile } from '../../../services/userService';
 import { USER_TYPES } from '../../../utils/constants';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input } from '../../../components/common';
 import styles from './Login.module.css';
 
 // Import logo - you can replace this with your actual logo path
@@ -166,38 +166,29 @@ const Login = ({ userType = 'staff' }) => {
         >
           {/* Login Mode */}
           <div className={`${styles.formMode} ${mode === 'login' ? styles.active : ''}`}>
-            <div className={styles.fieldset}>
-              <label htmlFor="email">Email:</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required={mode === 'login'}
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required={mode === 'login'}
+            />
 
-            <div className={styles.fieldset}>
-              <label htmlFor="password">Password:</label>
-              <div className={styles.passwordContainer}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required={mode === 'login'}
-                />
-                <span 
-                  className={`${styles.showPassword} ${password ? styles.visible : ''}`}
-                  onClick={togglePasswordVisibility}
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                </span>
-              </div>
-            </div>
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required={mode === 'login'}
+              icon={
+                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              }
+              onIconClick={togglePasswordVisibility}
+            />
 
             <div className={styles.rememberMe}>
               <input
@@ -209,20 +200,13 @@ const Login = ({ userType = 'staff' }) => {
               <label htmlFor="rememberMe">Remember me</label>
             </div>
 
-            <button 
+            <Button 
               type="submit" 
               className={styles.submitButton}
-              disabled={isLoading}
+              isLoading={isLoading}
             >
-              {isLoading ? (
-                <>
-                  <span>Signing in...</span>
-                  <span className={styles.spinner}></span>
-                </>
-              ) : (
-                <span>Sign In</span>
-              )}
-            </button>
+              Sign In
+            </Button>
           </div>
 
           {/* OTP Mode */}
@@ -232,37 +216,28 @@ const Login = ({ userType = 'staff' }) => {
               Enter the One-Time Password (OTP) sent to your email.
             </div>
 
-            <div className={styles.fieldset}>
-              <label htmlFor="otpCode">OTP Code:</label>
-              <input
-                type="text"
-                id="otpCode"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="Enter 6-digit code"
-                maxLength={6}
-                inputMode="numeric"
-                required={mode === 'otp'}
-              />
-            </div>
+            <Input
+              label="OTP Code"
+              type="text"
+              name="otpCode"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="Enter 6-digit code"
+              maxLength={6}
+              inputMode="numeric"
+              required={mode === 'otp'}
+            />
 
-            <button 
+            <Button 
               type="submit" 
               className={styles.submitButton}
-              disabled={isLoading}
+              isLoading={isLoading}
             >
-              {isLoading ? (
-                <>
-                  <span>Verifying...</span>
-                  <span className={styles.spinner}></span>
-                </>
-              ) : (
-                <span>Verify OTP</span>
-              )}
-            </button>
+              Verify OTP
+            </Button>
 
             <div className={styles.forgotLink}>
-              <button type="button" onClick={handleBackToLogin}>
+              <button type="button" onClick={handleBackToLogin} className={styles.backButton}>
                 <i className="fa-solid fa-arrow-left"></i> Back to Login
               </button>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
+import { Button, Input } from '../../../components/common';
 import styles from './UserForm.module.css';
 
 const UserForm = () => {
@@ -146,9 +147,9 @@ const UserForm = () => {
     <SuperAdminLayout>
       <div className={styles.pageHeader}>
         <h2>{isEditMode ? 'Edit User' : 'Create New User'}</h2>
-        <button onClick={() => navigate('/superadmin/users')} className={styles.btnSecondary}>
-          <i className="fa fa-arrow-left"></i> Back to List
-        </button>
+        <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
+          Back to List
+        </Button>
       </div>
 
       {error && (
@@ -170,63 +171,45 @@ const UserForm = () => {
           </h3>
 
           <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Email <span className={styles.required}>*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                className={styles.formControl}
-                value={formData.email}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              disabled={loading}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Username</label>
-              <input
-                type="text"
-                name="username"
-                className={styles.formControl}
-                value={formData.username}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Username"
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              disabled={loading}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Password {!isEditMode && <span className={styles.required}>*</span>}
-              </label>
-              <input
-                type="password"
-                name="password"
-                className={styles.formControl}
-                value={formData.password}
-                onChange={handleChange}
-                required={!isEditMode}
-                disabled={loading}
-                placeholder={isEditMode ? 'Leave blank to keep current password' : ''}
-              />
-            </div>
+            <Input
+              label={`Password ${!isEditMode ? '*' : ''}`}
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required={!isEditMode}
+              disabled={loading}
+              placeholder={isEditMode ? 'Leave blank to keep current password' : ''}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Confirm Password {!isEditMode && <span className={styles.required}>*</span>}
-              </label>
-              <input
-                type="password"
-                name="confirm_password"
-                className={styles.formControl}
-                value={formData.confirm_password}
-                onChange={handleChange}
-                required={!isEditMode}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label={`Confirm Password ${!isEditMode ? '*' : ''}`}
+              type="password"
+              name="confirm_password"
+              value={formData.confirm_password}
+              onChange={handleChange}
+              required={!isEditMode}
+              disabled={loading}
+            />
           </div>
 
           <h3 className={styles.cardTitle}>
@@ -234,66 +217,51 @@ const UserForm = () => {
           </h3>
 
           <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>First Name</label>
-              <input
-                type="text"
-                name="first_name"
-                className={styles.formControl}
-                value={formData.first_name}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="First Name"
+              type="text"
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleChange}
+              disabled={loading}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Middle Name</label>
-              <input
-                type="text"
-                name="middle_name"
-                className={styles.formControl}
-                value={formData.middle_name}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Middle Name"
+              type="text"
+              name="middle_name"
+              value={formData.middle_name}
+              onChange={handleChange}
+              disabled={loading}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Last Name</label>
-              <input
-                type="text"
-                name="last_name"
-                className={styles.formControl}
-                value={formData.last_name}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Last Name"
+              type="text"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleChange}
+              disabled={loading}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Suffix</label>
-              <input
-                type="text"
-                name="suffix"
-                className={styles.formControl}
-                value={formData.suffix}
-                onChange={handleChange}
-                placeholder="Jr., Sr., III, etc."
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Suffix"
+              type="text"
+              name="suffix"
+              value={formData.suffix}
+              onChange={handleChange}
+              placeholder="Jr., Sr., III, etc."
+              disabled={loading}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Phone Number</label>
-              <input
-                type="tel"
-                name="phone_number"
-                className={styles.formControl}
-                value={formData.phone_number}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Phone Number"
+              type="tel"
+              name="phone_number"
+              value={formData.phone_number}
+              onChange={handleChange}
+              disabled={loading}
+            />
 
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Department</label>
@@ -386,25 +354,16 @@ const UserForm = () => {
           </div>
 
           <div className={styles.formActions}>
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => navigate('/superadmin/users')}
-              className={styles.btnSecondary}
               disabled={loading}
             >
               Cancel
-            </button>
-            <button type="submit" className={styles.btnPrimary} disabled={loading}>
-              {loading ? (
-                <>
-                  <i className="fa fa-spinner fa-spin"></i> Saving...
-                </>
-              ) : (
-                <>
-                  <i className="fa fa-save"></i> {isEditMode ? 'Update User' : 'Create User'}
-                </>
-              )}
-            </button>
+            </Button>
+            <Button type="submit" isLoading={loading}>
+              {isEditMode ? 'Update User' : 'Create User'}
+            </Button>
           </div>
         </form>
       </div>

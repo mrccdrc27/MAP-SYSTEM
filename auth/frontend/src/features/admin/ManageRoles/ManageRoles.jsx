@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAllSystems, getSystemRoles, createRole, updateRole, deleteRole } from '../../../services/adminService';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input, Modal } from '../../../components/common';
 import styles from './ManageRoles.module.css';
 
 const ManageRoles = () => {
@@ -273,20 +273,22 @@ const ManageRoles = () => {
         </div>
 
         <div className={styles.tabs}>
-          <button 
-            className={`${styles.tab} ${activeTab === 'view' ? styles.active : ''}`}
+          <Button 
+            variant={activeTab === 'view' ? 'primary' : 'outline'}
+            className={`${styles.tab}`}
             onClick={() => setActiveTab('view')}
+            icon={<i className="fa-solid fa-list"></i>}
           >
-            <i className="fa-solid fa-list"></i>
             View Roles
-          </button>
-          <button 
-            className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
+          </Button>
+          <Button 
+            variant={activeTab === 'create' ? 'primary' : 'outline'}
+            className={`${styles.tab}`}
             onClick={() => setActiveTab('create')}
+            icon={<i className="fa-solid fa-plus"></i>}
           >
-            <i className="fa-solid fa-plus"></i>
             Create Role
-          </button>
+          </Button>
         </div>
 
         <div className={styles.content}>
@@ -301,12 +303,11 @@ const ManageRoles = () => {
                   <i className="fa-solid fa-user-tag"></i>
                   <h3>No Roles Found</h3>
                   <p>No roles have been created for this system yet.</p>
-                  <button 
-                    className={styles.createBtn}
+                  <Button 
                     onClick={() => setActiveTab('create')}
                   >
                     Create First Role
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className={styles.rolesList}>
@@ -364,47 +365,41 @@ const ManageRoles = () => {
 
           {activeTab === 'create' && (
             <form className={styles.createForm} onSubmit={handleCreateSubmit}>
-              <div className={styles.formGroup}>
-                <label>Role Name <span className={styles.required}>*</span></label>
-                <input
-                  type="text"
-                  name="name"
-                  value={createForm.name}
-                  onChange={handleCreateChange}
-                  placeholder="e.g., Senior Agent"
-                  className={createErrors.name ? styles.inputError : ''}
-                />
-                {createErrors.name && (
-                  <span className={styles.errorText}>{createErrors.name}</span>
-                )}
-              </div>
+              <Input
+                label="Role Name"
+                name="name"
+                value={createForm.name}
+                onChange={handleCreateChange}
+                placeholder="e.g., Senior Agent"
+                required
+                error={createErrors.name}
+              />
 
               <div className={styles.formGroup}>
-                <label>Description</label>
+                <label className={styles.label}>Description</label>
                 <textarea
                   name="description"
                   value={createForm.description}
                   onChange={handleCreateChange}
                   placeholder="Describe the role's responsibilities..."
                   rows="3"
+                  className={styles.textarea}
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label>Role Level</label>
-                <input
-                  type="number"
-                  name="level"
-                  value={createForm.level}
-                  onChange={handleCreateChange}
-                  min="1"
-                  max="10"
-                />
-                <small>Higher levels have more authority (1-10)</small>
-              </div>
+              <Input
+                label="Role Level"
+                type="number"
+                name="level"
+                value={createForm.level}
+                onChange={handleCreateChange}
+                min="1"
+                max="10"
+                hint="Higher levels have more authority (1-10)"
+              />
 
               <div className={styles.formGroup}>
-                <label>Permissions</label>
+                <label className={styles.label}>Permissions</label>
                 <div className={styles.permissionsGrid}>
                   {availablePermissions.map(perm => (
                     <label key={perm.id} className={styles.permissionItem}>
@@ -423,23 +418,21 @@ const ManageRoles = () => {
               </div>
 
               <div className={styles.formActions}>
-                <button 
-                  type="button" 
-                  className={styles.cancelBtn}
+                <Button 
+                  variant="secondary"
                   onClick={() => {
                     setActiveTab('view');
                     setCreateForm({ name: '', description: '', level: 1, permissions: [] });
                   }}
                 >
                   Cancel
-                </button>
-                <button 
+                </Button>
+                <Button 
                   type="submit" 
-                  className={styles.submitBtn}
-                  disabled={isCreating}
+                  isLoading={isCreating}
                 >
-                  {isCreating ? 'Creating...' : 'Create Role'}
-                </button>
+                  Create Role
+                </Button>
               </div>
             </form>
           )}
@@ -447,118 +440,89 @@ const ManageRoles = () => {
       </div>
 
       {/* Edit Modal */}
-      {editModalOpen && (
-        <div className={styles.modal} onClick={() => setEditModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Edit Role</h3>
-              <button className={styles.modalClose} onClick={() => setEditModalOpen(false)}>
-                &times;
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>Role Name</label>
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit Role"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSubmit} isLoading={isEditing}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <Input
+          label="Role Name"
+          type="text"
+          name="name"
+          value={editForm.name}
+          onChange={handleEditChange}
+        />
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Description</label>
+          <textarea
+            name="description"
+            value={editForm.description}
+            onChange={handleEditChange}
+            rows="3"
+            className={styles.textarea}
+          />
+        </div>
+        <Input
+          label="Level"
+          type="number"
+          name="level"
+          value={editForm.level}
+          onChange={handleEditChange}
+          min="1"
+          max="10"
+        />
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Permissions</label>
+          <div className={styles.permissionsGrid}>
+            {availablePermissions.map(perm => (
+              <label key={perm.id} className={styles.permissionItem}>
                 <input
-                  type="text"
-                  name="name"
-                  value={editForm.name}
-                  onChange={handleEditChange}
+                  type="checkbox"
+                  checked={(editForm.permissions || []).includes(perm.id)}
+                  onChange={() => handlePermissionToggle(perm.id, false)}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={editForm.description}
-                  onChange={handleEditChange}
-                  rows="3"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Level</label>
-                <input
-                  type="number"
-                  name="level"
-                  value={editForm.level}
-                  onChange={handleEditChange}
-                  min="1"
-                  max="10"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Permissions</label>
-                <div className={styles.permissionsGrid}>
-                  {availablePermissions.map(perm => (
-                    <label key={perm.id} className={styles.permissionItem}>
-                      <input
-                        type="checkbox"
-                        checked={(editForm.permissions || []).includes(perm.id)}
-                        onChange={() => handlePermissionToggle(perm.id, false)}
-                      />
-                      <span className={styles.permissionLabel}>
-                        <strong>{perm.name}</strong>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                className={styles.cancelBtn}
-                onClick={() => setEditModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.submitBtn}
-                onClick={handleEditSubmit}
-                disabled={isEditing}
-              >
-                {isEditing ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+                <span className={styles.permissionLabel}>
+                  <strong>{perm.name}</strong>
+                </span>
+              </label>
+            ))}
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className={styles.modal} onClick={() => setDeleteModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Delete Role</h3>
-              <button className={styles.modalClose} onClick={() => setDeleteModalOpen(false)}>
-                &times;
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p>
-                Are you sure you want to delete the role <strong>{deletingRole?.name}</strong>?
-              </p>
-              <p className={styles.warningText}>
-                This action cannot be undone. Users with this role will lose their permissions.
-              </p>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                className={styles.cancelBtn}
-                onClick={() => setDeleteModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.deleteBtn}
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete Role'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Role"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleConfirmDelete} isLoading={isDeleting}>
+              Delete Role
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Are you sure you want to delete the role <strong>{deletingRole?.name}</strong>?
+        </p>
+        <p className={styles.warningText}>
+          This action cannot be undone. Users with this role will lose their permissions.
+        </p>
+      </Modal>
     </main>
   );
 };

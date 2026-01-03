@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { resetPassword } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input } from '../../../components/common';
 import styles from './ResetPassword.module.css';
 
 const ResetPassword = ({ userType = 'staff' }) => {
@@ -148,72 +148,45 @@ const ResetPassword = ({ userType = 'staff' }) => {
         </div>
 
         <form className={styles.resetForm} onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label htmlFor="password">New Password</label>
-            <div className={styles.passwordContainer}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
-                }}
-                placeholder="Enter new password"
-              />
-              <span 
-                className={styles.showPassword}
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </span>
-            </div>
-            <p className={styles.passwordRequirements}>
-              Password must be at least 8 characters long.
-            </p>
-            {errors.password && <span className={styles.fieldError}>{errors.password}</span>}
-          </div>
+          <Input
+            label="New Password"
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+            }}
+            placeholder="Enter new password"
+            error={errors.password}
+            hint="Password must be at least 8 characters long."
+            icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+            onIconClick={() => setShowPassword(!showPassword)}
+          />
 
-          <div className={styles.formGroup}>
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <div className={styles.passwordContainer}>
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
-                }}
-                placeholder="Confirm new password"
-              />
-              <span 
-                className={styles.showPassword}
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-              </span>
-            </div>
-            {errors.confirmPassword && <span className={styles.fieldError}>{errors.confirmPassword}</span>}
-          </div>
+          <Input
+            label="Confirm Password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
+            }}
+            placeholder="Confirm new password"
+            error={errors.confirmPassword}
+            icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+            onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          />
 
-          <button 
+          <Button 
             type="submit" 
             className={styles.submitButton}
-            disabled={isLoading}
+            isLoading={isLoading}
+            icon={<i className="fa-solid fa-key"></i>}
           >
-            {isLoading ? (
-              <>
-                <span>Resetting...</span>
-                <span className={styles.spinner}></span>
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-key"></i>
-                <span>Reset Password</span>
-              </>
-            )}
-          </button>
+            Reset Password
+          </Button>
         </form>
 
         <div className={styles.backLink}>

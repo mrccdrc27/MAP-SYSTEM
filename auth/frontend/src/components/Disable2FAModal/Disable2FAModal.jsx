@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { requestOtp, disable2FA } from '../../services/authService';
 import { verifyPassword } from '../../services/userService';
+import { Modal, Button, Input } from '../common';
 import styles from './Disable2FAModal.module.css';
 
 const Disable2FAModal = ({ isOpen, onClose, onSuccess }) => {
@@ -92,89 +93,77 @@ const Disable2FAModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  if (!isOpen) return null;
+  const footer = (
+    <>
+      <Button variant="secondary" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button
+        onClick={handleVerifyAndDisable}
+        isLoading={isLoading}
+      >
+        Verify & Disable
+      </Button>
+    </>
+  );
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <div className={styles.header}>
-          <h3>Disable Two-Factor Authentication</h3>
-          <button type="button" className={styles.closeBtn} onClick={onClose}>
-            &times;
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Disable Two-Factor Authentication"
+      footer={footer}
+    >
+      <p className={styles.description}>
+        For security purposes, please verify your identity before disabling 2FA.
+      </p>
+
+      {otpSent && (
+        <div className={styles.infoMessage}>
+          <p>📧 An OTP code has been sent to your email. Please check your inbox.</p>
         </div>
+      )}
 
-        <div className={styles.body}>
-          <p className={styles.description}>
-            For security purposes, please verify your identity before disabling 2FA.
-          </p>
+      <Input
+        label="Password"
+        type="password"
+        id="verify-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Enter your password"
+        error={errors.password}
+      />
 
-          {otpSent && (
-            <div className={styles.infoMessage}>
-              <p>📧 An OTP code has been sent to your email. Please check your inbox.</p>
-            </div>
-          )}
+      <Input
+        label="OTP Code"
+        type="text"
+        id="verify-otp"
+        value={otpCode}
+        onChange={(e) => setOtpCode(e.target.value)}
+        placeholder="Enter your OTP code"
+        maxLength={6}
+        error={errors.otp}
+        hint="Enter the 6-digit code sent to your email."
+      />
 
-          <div className={styles.formGroup}>
-            <label htmlFor="verify-password">Password</label>
-            <input
-              type="password"
-              id="verify-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-            />
-            {errors.password && <small className={styles.error}>{errors.password}</small>}
-          </div>
+      {generalError && (
+        <div className={styles.generalError}>{generalError}</div>
+      )}
 
-          <div className={styles.formGroup}>
-            <label htmlFor="verify-otp">OTP Code</label>
-            <input
-              type="text"
-              id="verify-otp"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value)}
-              placeholder="Enter your OTP code"
-              maxLength={6}
-            />
-            {errors.otp && <small className={styles.error}>{errors.otp}</small>}
-            <small className={styles.hint}>Enter the 6-digit code sent to your email.</small>
-          </div>
-
-          {generalError && (
-            <div className={styles.generalError}>{generalError}</div>
-          )}
-
-          <div className={styles.resendSection}>
-            <button
-              type="button"
-              className={styles.resendBtn}
-              onClick={handleRequestOtp}
-              disabled={resendTimer > 0}
-            >
-              Didn't receive the code? Resend OTP
-            </button>
-            {resendTimer > 0 && (
-              <span className={styles.timer}>({resendTimer}s)</span>
-            )}
-          </div>
-        </div>
-
-        <div className={styles.footer}>
-          <button type="button" className={styles.cancelBtn} onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={styles.verifyBtn}
-            onClick={handleVerifyAndDisable}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Verifying...' : 'Verify & Disable'}
-          </button>
-        </div>
+      <div className={styles.resendSection}>
+        <Button
+          variant="text"
+          className={styles.resendBtn}
+          onClick={handleRequestOtp}
+          disabled={resendTimer > 0}
+        >
+          Didn't receive the code? Resend OTP
+        </Button>
+        {resendTimer > 0 && (
+          <span className={styles.timer}>({resendTimer}s)</span>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { forgotPassword } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input } from '../../../components/common';
 import styles from './ForgotPassword.module.css';
 
 const logoUrl = '/map-logo.png';
@@ -107,38 +107,27 @@ const ForgotPassword = ({ userType = 'staff' }) => {
                 </span>
               </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="email">Email Address</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (emailError) setEmailError('');
-                  }}
-                  placeholder="Enter your email"
-                />
-                {emailError && <span className={styles.fieldError}>{emailError}</span>}
-              </div>
+              <Input
+                label="Email Address"
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError('');
+                }}
+                placeholder="Enter your email"
+                error={emailError}
+              />
 
-              <button 
+              <Button 
                 type="submit" 
                 className={styles.submitButton}
-                disabled={isLoading}
+                isLoading={isLoading}
+                icon={<i className="fa-solid fa-paper-plane"></i>}
               >
-                {isLoading ? (
-                  <>
-                    <span>Sending...</span>
-                    <span className={styles.spinner}></span>
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-paper-plane"></i>
-                    <span>Send Reset Link</span>
-                  </>
-                )}
-              </button>
+                Send Reset Link
+              </Button>
 
               <div className={styles.backLink}>
                 <Link to={loginLink}>

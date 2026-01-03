@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
+import { Button, Input, Modal } from '../../../components/common';
 import styles from './UserMasterlist.module.css';
 
 const UserMasterlist = () => {
@@ -126,11 +127,13 @@ const UserMasterlist = () => {
       <div className={styles.pageHeader}>
         <h2>User Masterlist</h2>
         <div className={styles.btnGroup}>
-          <button onClick={handleExport} className={styles.btnSecondary}>
-            <i className="fa fa-file-export"></i> Export CSV
-          </button>
-          <Link to="/superadmin/users/create" className={styles.btnPrimary}>
-            <i className="fa fa-user-plus"></i> Add User
+          <Button variant="secondary" onClick={handleExport} icon={<i className="fa fa-file-export"></i>}>
+            Export CSV
+          </Button>
+          <Link to="/superadmin/users/create" className={styles.btnPrimaryLink}>
+            <Button icon={<i className="fa fa-user-plus"></i>}>
+              Add User
+            </Button>
           </Link>
         </div>
       </div>
@@ -145,27 +148,21 @@ const UserMasterlist = () => {
       <div className={styles.card}>
         <form onSubmit={handleSearch} className={styles.filterForm}>
           <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Email</label>
-              <input
-                type="text"
-                className={styles.formControl}
-                placeholder="Search by email"
-                value={searchEmail}
-                onChange={(e) => setSearchEmail(e.target.value)}
-              />
-            </div>
+            <Input
+              label="Email"
+              type="text"
+              placeholder="Search by email"
+              value={searchEmail}
+              onChange={(e) => setSearchEmail(e.target.value)}
+            />
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Name</label>
-              <input
-                type="text"
-                className={styles.formControl}
-                placeholder="Search by name"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-              />
-            </div>
+            <Input
+              label="Name"
+              type="text"
+              placeholder="Search by name"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
 
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Status</label>
@@ -222,12 +219,12 @@ const UserMasterlist = () => {
           </div>
 
           <div className={styles.formActions}>
-            <button type="submit" className={styles.btnPrimary}>
-              <i className="fa fa-search"></i> Search
-            </button>
-            <button type="button" onClick={handleReset} className={styles.btnSecondary}>
-              <i className="fa fa-redo"></i> Reset
-            </button>
+            <Button type="submit" icon={<i className="fa fa-search"></i>}>
+              Search
+            </Button>
+            <Button variant="secondary" onClick={handleReset} icon={<i className="fa fa-redo"></i>}>
+              Reset
+            </Button>
           </div>
         </form>
       </div>
@@ -317,23 +314,26 @@ const UserMasterlist = () => {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className={styles.pagination}>
-                <button
+                <Button
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={styles.paginationBtn}
+                  variant="secondary"
+                  size="small"
+                  icon={<i className="fa fa-chevron-left"></i>}
                 >
-                  <i className="fa fa-chevron-left"></i> Previous
-                </button>
+                  Previous
+                </Button>
                 <span className={styles.paginationInfo}>
                   Page {currentPage} of {totalPages}
                 </span>
-                <button
+                <Button
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={styles.paginationBtn}
+                  variant="secondary"
+                  size="small"
                 >
                   Next <i className="fa fa-chevron-right"></i>
-                </button>
+                </Button>
               </div>
             )}
           </>
@@ -341,22 +341,23 @@ const UserMasterlist = () => {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteModalUser && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <h3>Confirm Delete</h3>
-            <p>Are you sure you want to delete user <strong>{deleteModalUser.email}</strong>?</p>
-            <div className={styles.modalActions}>
-              <button onClick={() => setDeleteModalUser(null)} className={styles.btnSecondary}>
-                Cancel
-              </button>
-              <button onClick={handleDeleteConfirm} className={styles.btnDanger}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={Boolean(deleteModalUser)}
+        onClose={() => setDeleteModalUser(null)}
+        title="Confirm Delete"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteModalUser(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p>Are you sure you want to delete user <strong>{deleteModalUser?.email}</strong>?</p>
+      </Modal>
     </SuperAdminLayout>
   );
 };

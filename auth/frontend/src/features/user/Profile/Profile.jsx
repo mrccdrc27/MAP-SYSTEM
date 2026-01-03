@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { getProfile, updateProfile } from '../../../services/userService';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input } from '../../../components/common';
 import Enable2FAModal from '../../../components/Enable2FAModal';
 import Disable2FAModal from '../../../components/Disable2FAModal';
 import styles from './Profile.module.css';
@@ -249,104 +249,81 @@ const Profile = () => {
             <div className={styles.profileSettingsCard}>
               <h2>Personal Details</h2>
               <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="first_name">First Name</label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="middle_name">Middle Name</label>
-                  <input
-                    type="text"
-                    id="middle_name"
-                    name="middle_name"
-                    value={formData.middle_name}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="last_name">Last Name</label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="suffix">Suffix</label>
-                  <input
-                    type="text"
-                    id="suffix"
-                    name="suffix"
-                    value={formData.suffix}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="username">Username</label>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="phone_number">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phone_number"
-                    name="phone_number"
-                    value={formData.phone_number}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
+                <Input
+                  label="First Name"
+                  id="first_name"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+                <Input
+                  label="Middle Name"
+                  id="middle_name"
+                  name="middle_name"
+                  value={formData.middle_name}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+                <Input
+                  label="Last Name"
+                  id="last_name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+                <Input
+                  label="Suffix"
+                  id="suffix"
+                  name="suffix"
+                  value={formData.suffix}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+                <Input
+                  label="Username"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+                <Input
+                  label="Phone Number"
+                  type="tel"
+                  id="phone_number"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
               </div>
 
               <h2>Organization</h2>
               <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="email">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={profileData?.email || ''}
-                    disabled
-                  />
-                  <small>Email cannot be changed directly.</small>
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="company_id">Company ID</label>
-                  <input
-                    type="text"
-                    id="company_id"
-                    value={profileData?.company_id || ''}
-                    disabled
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="department">Department</label>
-                  <input
-                    type="text"
-                    id="department"
-                    value={profileData?.department || ''}
-                    disabled
-                  />
-                </div>
+                <Input
+                  label="Email"
+                  type="email"
+                  id="email"
+                  value={profileData?.email || ''}
+                  disabled
+                  hint="Email cannot be changed directly."
+                />
+                <Input
+                  label="Company ID"
+                  type="text"
+                  id="company_id"
+                  value={profileData?.company_id || ''}
+                  disabled
+                />
+                <Input
+                  label="Department"
+                  type="text"
+                  id="department"
+                  value={profileData?.department || ''}
+                  disabled
+                />
               </div>
 
               <h2>Account & Security</h2>
@@ -371,59 +348,44 @@ const Profile = () => {
                     <span className={styles.badge2faDisabled}>Disabled</span>
                   )}
                 </div>
-                <div className={styles.formGroup}>
-                  <label>Last Login</label>
-                  <input
-                    type="text"
-                    value={formatDate(profileData?.last_login)}
-                    disabled
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Date Joined</label>
-                  <input
-                    type="text"
-                    value={formatDate(profileData?.date_joined)}
-                    disabled
-                  />
-                </div>
+                <Input
+                  label="Last Login"
+                  type="text"
+                  value={formatDate(profileData?.last_login)}
+                  disabled
+                />
+                <Input
+                  label="Date Joined"
+                  type="text"
+                  value={formatDate(profileData?.date_joined)}
+                  disabled
+                />
               </div>
 
               <div className={styles.formActions}>
                 {!isEditing ? (
                   <>
-                    <button className={styles.editBtn} onClick={handleEdit}>
-                      <i className="fa-solid fa-edit"></i>
+                    <Button onClick={handleEdit} icon={<i className="fa-solid fa-edit"></i>}>
                       EDIT PROFILE
-                    </button>
-                    <Link to="/change-password" className={styles.editBtn}>
-                      <i className="fa-solid fa-key"></i>
-                      CHANGE PASSWORD
+                    </Button>
+                    <Link to="/change-password" className={styles.editBtnLink}>
+                      <Button variant="secondary" icon={<i className="fa-solid fa-key"></i>}>
+                        CHANGE PASSWORD
+                      </Button>
                     </Link>
                   </>
                 ) : (
                   <>
-                    <button 
-                      className={styles.saveBtn} 
+                    <Button 
                       onClick={handleSave}
-                      disabled={isSaving}
+                      isLoading={isSaving}
+                      icon={<i className="fa-solid fa-save"></i>}
                     >
-                      {isSaving ? (
-                        <>
-                          <span>Saving...</span>
-                          <span className={styles.spinner}></span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa-solid fa-save"></i>
-                          SAVE CHANGES
-                        </>
-                      )}
-                    </button>
-                    <button className={styles.cancelBtn} onClick={handleCancel}>
-                      <i className="fa-solid fa-times"></i>
+                      SAVE CHANGES
+                    </Button>
+                    <Button variant="secondary" onClick={handleCancel} icon={<i className="fa-solid fa-times"></i>}>
                       CANCEL
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>

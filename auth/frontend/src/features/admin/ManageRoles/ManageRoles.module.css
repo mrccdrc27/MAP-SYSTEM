@@ -251,39 +251,28 @@
   max-width: 600px;
 }
 
-.formGroup {
-  margin-bottom: 1.5rem;
-}
-
-.formGroup label {
+.label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: #555;
 }
 
-.required {
-  color: #dc3545;
-}
-
-.formGroup input,
-.formGroup textarea,
-.formGroup select {
+.textarea {
   width: 100%;
-  padding: 0.7rem 0.9rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: inherit;
+  resize: vertical;
 }
 
-.formGroup input:focus,
-.formGroup textarea:focus,
-.formGroup select:focus {
+.textarea:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
 .formGroup small {

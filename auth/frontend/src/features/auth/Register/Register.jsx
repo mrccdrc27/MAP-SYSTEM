@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { register } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Input } from '../../../components/common';
 import styles from './Register.module.css';
 
 const logoUrl = '/map-logo.png';
@@ -183,194 +183,130 @@ const Register = ({ userType = 'staff' }) => {
 
           <form className={styles.registerForm} onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
-              {/* Email */}
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label htmlFor="email">
-                  Email <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                />
-                {errors.email && <span className={styles.fieldError}>{errors.email}</span>}
-              </div>
+              <Input
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+                error={errors.email}
+                className={styles.fullWidth}
+              />
 
-              {/* Username */}
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label htmlFor="username">
-                  Username <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  placeholder="Choose a username"
-                />
-                {errors.username && <span className={styles.fieldError}>{errors.username}</span>}
-              </div>
+              <Input
+                label="Username"
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Choose a username"
+                required
+                error={errors.username}
+                className={styles.fullWidth}
+              />
 
-              {/* First Name */}
-              <div className={styles.formGroup}>
-                <label htmlFor="first_name">
-                  First Name <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  id="first_name"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                  placeholder="First name"
-                />
-                {errors.first_name && <span className={styles.fieldError}>{errors.first_name}</span>}
-              </div>
+              <Input
+                label="First Name"
+                type="text"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                placeholder="First name"
+                required
+                error={errors.first_name}
+              />
 
-              {/* Middle Name */}
-              <div className={styles.formGroup}>
-                <label htmlFor="middle_name">Middle Name</label>
-                <input
-                  type="text"
-                  id="middle_name"
-                  name="middle_name"
-                  value={formData.middle_name}
-                  onChange={handleChange}
-                  placeholder="Middle name"
-                />
-              </div>
+              <Input
+                label="Middle Name"
+                type="text"
+                name="middle_name"
+                value={formData.middle_name}
+                onChange={handleChange}
+                placeholder="Middle name"
+              />
 
-              {/* Last Name */}
-              <div className={styles.formGroup}>
-                <label htmlFor="last_name">
-                  Last Name <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  id="last_name"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                  placeholder="Last name"
-                />
-                {errors.last_name && <span className={styles.fieldError}>{errors.last_name}</span>}
-              </div>
+              <Input
+                label="Last Name"
+                type="text"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                placeholder="Last name"
+                required
+                error={errors.last_name}
+              />
 
-              {/* Suffix */}
-              <div className={styles.formGroup}>
-                <label htmlFor="suffix">Suffix</label>
-                <input
-                  type="text"
-                  id="suffix"
-                  name="suffix"
-                  value={formData.suffix}
-                  onChange={handleChange}
-                  placeholder="Jr., Sr., III, etc."
-                />
-              </div>
+              <Input
+                label="Suffix"
+                type="text"
+                name="suffix"
+                value={formData.suffix}
+                onChange={handleChange}
+                placeholder="Jr., Sr., III, etc."
+              />
 
-              {/* Phone Number */}
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label htmlFor="phone_number">
-                  Phone Number <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone_number"
-                  name="phone_number"
-                  value={formData.phone_number}
-                  onChange={handleChange}
-                  placeholder="09123456789"
-                />
-                {errors.phone_number && <span className={styles.fieldError}>{errors.phone_number}</span>}
-              </div>
+              <Input
+                label="Phone Number"
+                type="tel"
+                name="phone_number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                placeholder="09123456789"
+                required
+                error={errors.phone_number}
+                className={styles.fullWidth}
+              />
 
-              {/* Department */}
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label htmlFor="department">Department</label>
-                <input
-                  type="text"
-                  id="department"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  placeholder="Your department"
-                />
-              </div>
+              <Input
+                label="Department"
+                type="text"
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                placeholder="Your department"
+                className={styles.fullWidth}
+              />
 
-              {/* Password */}
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label htmlFor="password">
-                  Password <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.passwordContainer}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Create a password"
-                  />
-                  <span 
-                    className={styles.showPassword}
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </span>
-                </div>
-                <p className={styles.passwordRequirements}>
-                  Password must be at least 8 characters long.
-                </p>
-                {errors.password && <span className={styles.fieldError}>{errors.password}</span>}
-              </div>
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a password"
+                required
+                error={errors.password}
+                hint="Password must be at least 8 characters long."
+                className={styles.fullWidth}
+                icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+                onIconClick={() => setShowPassword(!showPassword)}
+              />
 
-              {/* Confirm Password */}
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label htmlFor="confirmPassword">
-                  Confirm Password <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.passwordContainer}>
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm your password"
-                  />
-                  <span 
-                    className={styles.showPassword}
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </span>
-                </div>
-                {errors.confirmPassword && <span className={styles.fieldError}>{errors.confirmPassword}</span>}
-              </div>
+              <Input
+                label="Confirm Password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                required
+                error={errors.confirmPassword}
+                className={styles.fullWidth}
+                icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+                onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
             </div>
 
-            <button 
+            <Button 
               type="submit" 
               className={styles.submitButton}
-              disabled={isLoading}
+              isLoading={isLoading}
+              icon={<i className="fas fa-user-plus"></i>}
             >
-              {isLoading ? (
-                <>
-                  <span>Creating Account...</span>
-                  <span className={styles.spinner}></span>
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-user-plus"></i>
-                  <span>Sign Up</span>
-                </>
-              )}
-            </button>
+              Sign Up
+            </Button>
           </form>
         </div>
       </section>

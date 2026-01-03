@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { requestOtp, enable2FA } from '../../services/authService';
+import { Modal, Button, Input } from '../common';
 import styles from './Enable2FAModal.module.css';
 
 const Enable2FAModal = ({ isOpen, onClose, onSuccess }) => {
@@ -71,73 +72,63 @@ const Enable2FAModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  if (!isOpen) return null;
+  const footer = (
+    <>
+      <Button variant="secondary" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button
+        onClick={handleEnable}
+        isLoading={isLoading}
+      >
+        Enable 2FA
+      </Button>
+    </>
+  );
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <div className={styles.header}>
-          <h3>Enable Two-Factor Authentication</h3>
-          <button type="button" className={styles.closeBtn} onClick={onClose}>
-            &times;
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Enable Two-Factor Authentication"
+      footer={footer}
+    >
+      <p className={styles.description}>
+        Two-factor authentication adds an extra layer of security to your account.
+        Each time you log in, you'll need to enter a code sent to your email.
+      </p>
+
+      {otpSent && (
+        <div className={styles.infoMessage}>
+          <p>📧 A verification code has been sent to your email. Please check your inbox.</p>
         </div>
+      )}
 
-        <div className={styles.body}>
-          <p className={styles.description}>
-            Two-factor authentication adds an extra layer of security to your account.
-            Each time you log in, you'll need to enter a code sent to your email.
-          </p>
+      <Input
+        label="Verification Code"
+        type="text"
+        id="enable-otp"
+        value={otpCode}
+        onChange={(e) => setOtpCode(e.target.value)}
+        placeholder="Enter the 6-digit code"
+        maxLength={6}
+        error={error}
+      />
 
-          {otpSent && (
-            <div className={styles.infoMessage}>
-              <p>📧 A verification code has been sent to your email. Please check your inbox.</p>
-            </div>
-          )}
-
-          <div className={styles.formGroup}>
-            <label htmlFor="enable-otp">Verification Code</label>
-            <input
-              type="text"
-              id="enable-otp"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value)}
-              placeholder="Enter the 6-digit code"
-              maxLength={6}
-            />
-            {error && <small className={styles.error}>{error}</small>}
-          </div>
-
-          <div className={styles.resendSection}>
-            <button
-              type="button"
-              className={styles.resendBtn}
-              onClick={handleRequestOtp}
-              disabled={resendTimer > 0}
-            >
-              Didn't receive the code? Resend
-            </button>
-            {resendTimer > 0 && (
-              <span className={styles.timer}>({resendTimer}s)</span>
-            )}
-          </div>
-        </div>
-
-        <div className={styles.footer}>
-          <button type="button" className={styles.cancelBtn} onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={styles.enableBtn}
-            onClick={handleEnable}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Enabling...' : 'Enable 2FA'}
-          </button>
-        </div>
+      <div className={styles.resendSection}>
+        <Button
+          variant="text"
+          className={styles.resendBtn}
+          onClick={handleRequestOtp}
+          disabled={resendTimer > 0}
+        >
+          Didn't receive the code? Resend
+        </Button>
+        {resendTimer > 0 && (
+          <span className={styles.timer}>({resendTimer}s)</span>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };
 

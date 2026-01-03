@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../../services/api';
-import { useToast } from '../../../components/Toast';
+import { useToast, Button, Modal } from '../../../components/common';
 import styles from './InviteAgent.module.css';
 
 const defaultAvatar = 'https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg';
@@ -245,91 +245,76 @@ const InviteAgent = () => {
       </div>
 
       {/* Invite Modal */}
-      {inviteModalOpen && (
-        <div className={styles.modal} onClick={() => setInviteModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Invite User to System</h3>
-              <button className={styles.modalClose} onClick={() => setInviteModalOpen(false)}>
-                &times;
-              </button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className={styles.modalBody}>
-                <div className={styles.formGroup}>
-                  <label>User</label>
-                  <p className={styles.selectedUser}>
-                    {selectedUser?.first_name} {selectedUser?.last_name}
-                  </p>
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="system_id">System <span className={styles.required}>*</span></label>
-                  <select
-                    id="system_id"
-                    name="system_id"
-                    value={formData.system_id}
-                    onChange={handleFormChange}
-                    required
-                  >
-                    <option value="">Select a system...</option>
-                    {systems.map(system => (
-                      <option key={system.id} value={system.id}>
-                        {system.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="role_id">Role <span className={styles.required}>*</span></label>
-                  <select
-                    id="role_id"
-                    name="role_id"
-                    value={formData.role_id}
-                    onChange={handleFormChange}
-                    disabled={!formData.system_id || roles.length === 0}
-                    required
-                  >
-                    <option value="">
-                      {!formData.system_id 
-                        ? 'Select a system first' 
-                        : roles.length === 0 
-                          ? 'No roles available' 
-                          : 'Select a role...'}
-                    </option>
-                    {roles.map(role => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                  {formData.system_id && roles.length === 0 && (
-                    <small>Roles will be populated based on selected system</small>
-                  )}
-                </div>
-              </div>
-              
-              <div className={styles.modalFooter}>
-                <button 
-                  type="button"
-                  className={styles.cancelBtn}
-                  onClick={() => setInviteModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className={styles.inviteSubmitBtn}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Inviting...' : 'Invite'}
-                </button>
-              </div>
-            </form>
-          </div>
+      <Modal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        title="Invite User to System"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setInviteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} isLoading={isSubmitting}>
+              Invite
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.formGroup}>
+          <label className={styles.label}>User</label>
+          <p className={styles.selectedUser}>
+            {selectedUser?.first_name} {selectedUser?.last_name}
+          </p>
         </div>
-      )}
+        
+        <div className={styles.formGroup}>
+          <label htmlFor="system_id" className={styles.label}>System <span className={styles.required}>*</span></label>
+          <select
+            id="system_id"
+            name="system_id"
+            value={formData.system_id}
+            onChange={handleFormChange}
+            className={styles.select}
+            required
+          >
+            <option value="">Select a system...</option>
+            {systems.map(system => (
+              <option key={system.id} value={system.id}>
+                {system.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className={styles.formGroup}>
+          <label htmlFor="role_id" className={styles.label}>Role <span className={styles.required}>*</span></label>
+          <select
+            id="role_id"
+            name="role_id"
+            value={formData.role_id}
+            onChange={handleFormChange}
+            className={styles.select}
+            disabled={!formData.system_id || roles.length === 0}
+            required
+          >
+            <option value="">
+              {!formData.system_id 
+                ? 'Select a system first' 
+                : roles.length === 0 
+                  ? 'No roles available' 
+                  : 'Select a role...'}
+            </option>
+            {roles.map(role => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          {formData.system_id && roles.length === 0 && (
+            <small className={styles.hintText}>Roles will be populated based on selected system</small>
+          )}
+        </div>
+      </Modal>
     </main>
   );
 };
