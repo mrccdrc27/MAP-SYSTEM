@@ -108,7 +108,7 @@ INSTALLED_APPS = [
     'core',
 ]
 
-# AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'core.User'
 
 AUTHENTICATION_BACKENDS = [
     #'core.authentication.EmailOrPhoneNumberBackend',

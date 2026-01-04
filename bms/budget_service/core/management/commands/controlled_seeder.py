@@ -185,36 +185,41 @@ class Command(BaseCommand):
         dept_name_map = {d['code']: d['name'] for d in DEPARTMENTS_CONFIG}
 
         # Introspect the User model to see which fields are valid
-        # This prevents crashes if the custom model isn't active
         valid_fields = {f.name for f in User._meta.get_fields()}
 
         for u_data in SIMULATED_USERS:
             dept_code = u_data['dept']
             dept_name = dept_name_map.get(dept_code)
+            username = u_data['username']
             
+            # GENERATE A DUMMY EMAIL if not provided
+            # This prevents the Unique Constraint error on empty emails
+            email = f"{username}@example.com" 
+
             defaults = {
                 'first_name': u_data['full_name'].split(' ')[0],
                 'last_name': ' '.join(u_data['full_name'].split(' ')[1:]),
                 'is_active': True,
-                'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD']
+                'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD'],
+                'email': email  # Explicitly set the email
             }
             
-            # Only add these fields if the User model actually has them
             if 'role' in valid_fields:
                 defaults['role'] = u_data['role']
             
             if 'department_name' in valid_fields:
                 defaults['department_name'] = dept_name
             
-            # Create user
+            # Use update_or_create on USERNAME, but update email too
             user, created = User.objects.update_or_create(
-                username=u_data['username'],
+                username=username,
                 defaults=defaults
             )
             
             if created:
-                self.stdout.write(f"  Created local user: {u_data['username']}")
-    # ------------------
+                self.stdout.write(f"  Created local user: {username}")
+            else:
+                self.stdout.write(f"  Updated local user: {username}")
 
     def seed_fiscal_years(self):
         self.stdout.write("Seeding Fiscal Years (2023-2026)...")
