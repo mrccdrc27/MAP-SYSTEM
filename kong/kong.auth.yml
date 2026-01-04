@@ -1,0 +1,167 @@
+# Kong Local Development Configuration for Auth Service
+# Simplified config for auth service + frontend development
+#
+# Usage: 
+#   Start Kong: Scripts/docker/start_kong.ps1 -Detached
+#   Frontend connects to Kong at localhost:8000
+#   Kong forwards to Auth backend at host.docker.internal:8003
+#
+# Flow:
+#   Frontend (3001) -> Kong (8000) -> Auth Backend (8003)
+
+_format_version: "3.0"
+_transform: true
+
+# =============================================================================
+# CONSUMERS
+# =============================================================================
+consumers:
+  - username: auth-service
+    custom_id: auth-service-001
+    tags:
+      - internal
+      - auth
+
+# =============================================================================
+# JWT CREDENTIALS
+# =============================================================================
+jwt_secrets:
+  - consumer: auth-service
+    key: tts-jwt-issuer
+    secret: "signing-key-1234"
+    algorithm: HS256
+
+# =============================================================================
+# PLUGINS (Global)
+# =============================================================================
+plugins:
+  # CORS Plugin - Allow frontend origins
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:3001"
+        - "http://127.0.0.1:3001"
+        - "http://localhost:3000"
+        - "http://127.0.0.1:3000"
+        - "http://localhost:5173"
+        - "http://127.0.0.1:5173"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Encoding
+        - Accept-Language
+        - Content-Type
+        - Content-Length
+        - Authorization
+        - X-Requested-With
+        - X-API-Key
+        - X-CSRF-Token
+        - Origin
+        - Cache-Control
+        - Pragma
+      exposed_headers:
+        - X-Auth-Token
+        - X-Request-ID
+        - Content-Length
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+
+  # Rate Limiting - Prevent abuse
+  - name: rate-limiting
+    config:
+      minute: 200
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+
+# =============================================================================
+# SERVICES & ROUTES
+# =============================================================================
+# Note: Using host.docker.internal to access services running on host machine
+# from inside Docker container
+
+services:
+  # ---------------------------------------------------------------------------
+  # AUTH SERVICE - Public Endpoints (No JWT Required)
+  # ---------------------------------------------------------------------------
+  # These routes are public and don't require authentication
+  - name: auth-public
+    # host.docker.internal allows Docker container to reach host's localhost
+    url: http://host.docker.internal:8003
+    tags:
+      - auth
+      - public
+    routes:
+      - name: auth-login-routes
+        paths:
+          # Dynamic: Match ALL auth-related public endpoints
+          - ~/api/(auth|v1/users)/(login|register|token|password|verify)(/.*)?$
+          - ~/api/v1/users/2fa/request-otp(/.*)?$
+          - ~/api/v1/token(/.*)?$
+          - ~/api/v1/employees/login(/.*)?$
+          - ~/api/v1/hdts/employees(/.*)?/login(/.*)?$
+          - ~/api/v1/hdts/.*/(login|register|password|verify)(/.*)?$
+          - ~/api/auth/logout(/.*)?$
+        methods:
+          - GET
+          - POST
+          - OPTIONS
+        strip_path: false
+        preserve_host: true
+
+  # ---------------------------------------------------------------------------
+  # AUTH SERVICE - Protected Endpoints (JWT Required)
+  # ---------------------------------------------------------------------------
+  # These routes require valid JWT token in Authorization header OR cookie
+  - name: auth-protected
+    url: http://host.docker.internal:8003
+    tags:
+      - auth
+      - protected
+    routes:
+      - name: auth-protected-routes
+        paths:
+          # Dynamic: Match ALL API endpoints except public ones (handled above)
+          # This catches any new endpoints automatically
+          - ~/api/v1(/.*)?$
+          - ~/api/(users|roles|systems|system-roles|tts|hdts|ams|bms|keys|me)(/.*)?$
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          secret_is_base64: false
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+          header_names:
+            - authorization
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - access_token
+
+  # ---------------------------------------------------------------------------
+  # STATIC FILES & MEDIA (Pass-through, no JWT)
+  # ---------------------------------------------------------------------------
+  - name: auth-static
+    url: http://host.docker.internal:8003
+    tags:
+      - auth
+      - static
+    routes:
+      - name: auth-static-routes
+        paths:
+          - /static
+          - /media
+          - /admin
+        strip_path: false
+        preserve_host: true

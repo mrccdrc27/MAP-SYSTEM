@@ -7,8 +7,24 @@ export default defineConfig({
   server: {
     port: 3001,
     proxy: {
+      // Route API requests through Kong Gateway
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8000',  // Kong Gateway
+        changeOrigin: true,
+        secure: false,
+        // Forward cookies properly
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
+        // Uncomment to bypass Kong and hit backend directly:
+        // target: 'http://localhost:8003',
+      },
+      // Static files and media (direct to backend)
+      '/static': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+      },
+      '/media': {
+        target: 'http://localhost:8003',
         changeOrigin: true,
       },
     },

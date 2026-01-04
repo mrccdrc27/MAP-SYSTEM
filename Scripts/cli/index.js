@@ -66,6 +66,10 @@ const SCRIPTS = {
     description: 'Container management',
     scripts: {
       'rabbitmq': { file: 'start_rabbitmq.ps1', desc: 'Start RabbitMQ Container' },
+      'kong': { file: 'start_kong.ps1', desc: 'Start Kong Gateway (Auth config)', args: ['-Detached'] },
+      'kong-stop': { file: 'start_kong.ps1', desc: 'Stop Kong Gateway', args: ['-Stop'] },
+      'kong-logs': { file: 'start_kong.ps1', desc: 'View Kong Gateway Logs', args: ['-Logs'] },
+      'kong-full': { file: 'start_kong.ps1', desc: 'Start Kong Gateway (Full TTS config)', args: ['-Detached', '-Config', 'local'] },
     },
     subcategories: {
       tts: {
