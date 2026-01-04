@@ -95,26 +95,39 @@ services:
   - name: auth-public
     # host.docker.internal allows Docker container to reach host's localhost
     url: http://host.docker.internal:8003
+    path: /
     tags:
       - auth
       - public
     routes:
       - name: auth-login-routes
         paths:
-          # Dynamic: Match ALL auth-related public endpoints
-          - ~/api/(auth|v1/users)/(login|register|token|password|verify)(/.*)?$
-          - ~/api/v1/users/2fa/request-otp(/.*)?$
-          - ~/api/v1/token(/.*)?$
-          - ~/api/v1/employees/login(/.*)?$
-          - ~/api/v1/hdts/employees(/.*)?/login(/.*)?$
-          - ~/api/v1/hdts/.*/(login|register|password|verify)(/.*)?$
-          - ~/api/auth/logout(/.*)?$
+          # Match /auth prefix, strip it, forward to backend
+          - /auth/api/v1/users/login
+          - /auth/api/v1/users/register
+          - /auth/api/v1/users/token
+          - /auth/api/v1/users/password
+          - /auth/api/v1/users/verify
+          - /auth/api/v1/users/2fa
+          - /auth/api/v1/users/logout
+          - /auth/api/v1/token
+          - /auth/api/v1/employees/login
+          - /auth/api/v1/hdts/employees
+          - /auth/api/auth/logout
         methods:
           - GET
           - POST
           - OPTIONS
-        strip_path: false
+        strip_path: true
         preserve_host: true
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/auth", "")
+              kong.service.request.set_path(new_path)
 
   # ---------------------------------------------------------------------------
   # AUTH SERVICE - Protected Endpoints (JWT Required)
@@ -128,13 +141,22 @@ services:
     routes:
       - name: auth-protected-routes
         paths:
-          # Dynamic: Match ALL API endpoints except public ones (handled above)
-          # This catches any new endpoints automatically
-          - ~/api/v1(/.*)?$
-          - ~/api/(users|roles|systems|system-roles|tts|hdts|ams|bms|keys|me)(/.*)?$
-        strip_path: false
+          # Match /auth/api/* endpoints
+          - /auth/api/v1
+          - /auth/api/users
+          - /auth/api/roles
+          - /auth/api/systems
+          - /auth/api/me
+        strip_path: true
         preserve_host: true
     plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/auth", "")
+              kong.service.request.set_path(new_path)
       - name: jwt
         config:
           key_claim_name: iss

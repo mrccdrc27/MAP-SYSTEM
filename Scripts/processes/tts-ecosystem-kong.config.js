@@ -11,10 +11,15 @@ const celeryScript = path.join(projectRoot, 'venv', 'Lib', 'site-packages', 'cel
  * 
  * This configuration runs all services with Kong as the API gateway.
  * All traffic flows through Kong (port 8000) which handles:
- *   - JWT validation at the edge
+ *   - JWT validation at the edge (reads JWT from cookies, not HTTP headers)
  *   - Rate limiting
  *   - CORS
- *   - Request routing
+ *   - Request routing with path rewriting
+ * 
+ * Key Configuration:
+ *   - KONG_TRUSTED=true: Services trust Kong's pre-validated JWT
+ *   - All API endpoints require authentication (no public endpoints)
+ *   - JWT is read from 'access_token' cookie by Kong
  * 
  * Architecture:
  *   Frontend (1000) -> Kong (8000) -> Backend Services
@@ -25,24 +30,13 @@ const celeryScript = path.join(projectRoot, 'venv', 'Lib', 'site-packages', 'cel
 module.exports = {
   apps: [
     // -------------------
-    // Kong API Gateway (requires local Kong installation)
+    // Kong API Gateway
     // -------------------
-    {
-      name: 'kong-gateway',
-      cwd: path.join(projectRoot, 'kong'),
-      script: 'kong',
-      args: 'start -c kong.conf',
-      interpreter: 'none',
-      windowsHide: true,
-      env: {
-        KONG_DATABASE: "off",
-        KONG_DECLARATIVE_CONFIG: path.join(projectRoot, 'kong', 'kong.local.yml'),
-        KONG_PROXY_LISTEN: "0.0.0.0:8000",
-        KONG_ADMIN_LISTEN: "0.0.0.0:8001",
-        KONG_LOG_LEVEL: "info",
-        KONG_JWT_SECRET: "signing-key-1234"
-      }
-    },
+    // Kong runs via Docker, NOT as a PM2 process.
+    // Start Kong BEFORE running this ecosystem:
+    //   node Scripts/cli/index.js run docker:kong
+    // Or:
+    //   .\Scripts\docker\start_kong.ps1 -Detached -Config local
 
     // -------------------
     // Auth Service
@@ -57,14 +51,15 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service",
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service,host.docker.internal",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        // Kong gateway integration - services trust Kong's JWT validation
-        KONG_TRUSTED: "false",  // Set to true when running behind Kong
+        // Kong gateway integration - services trust Kong's JWT validation from cookies
+        KONG_TRUSTED: "true",  // Services trust Kong's pre-validated JWT
         RECAPTCHA_ENABLED: "False",
         CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8000",
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173",
+        DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:8000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3000,http://127.0.0.1:3000",
         TTS_SYSTEM_URL: "http://localhost:1000/",
         AMS_SYSTEM_URL: "http://localhost:3000/ams",
         HDTS_SYSTEM_URL: "http://localhost:5173/hdts",
@@ -93,21 +88,23 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api",
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api,host.docker.internal",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue-default",
         DJANGO_TICKET_STATUS_QUEUE: "ticket_status-default",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
-        DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
-        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8006",
-        DJANGO_TTS_SERVICE_URL: "http://localhost:8002",
-        DJANGO_HELPDESK_SERVICE_URL: "http://localhost:8000",
+        // Service URLs - Going through Kong gateway with prefix-based routing
+        // Kong routes: /helpdesk/*, /workflow/*, /notification/*, /messaging/*
+        DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",  // Auth is direct (not through Kong for backend calls)
+        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8000/notification",  // Through Kong
+        DJANGO_TTS_SERVICE_URL: "http://localhost:8000/workflow",  // Through Kong
+        DJANGO_HELPDESK_SERVICE_URL: "http://localhost:8000/helpdesk",  // Through Kong
         DJANGO_USER_SERVICE_URL: "http://localhost:3000",
-        DJANGO_BASE_URL: "http://localhost:8002",
+        DJANGO_BASE_URL: "http://localhost:8000/workflow",  // External base URL through Kong
         DJANGO_FRONTEND_URL: "http://localhost:1000/register",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000"
       }
@@ -124,11 +121,12 @@ module.exports = {
         DJANGO_DEBUG: "True",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        // Inter-service URLs - Auth is direct, others through Kong
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
-        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8006",
+        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8000/notification",
         C_FORCE_ROOT: "false"
       }
     },
@@ -146,10 +144,10 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service",
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service,host.docker.internal",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8000",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
         DJANGO_NOTIFICATION_SERVICE_PORT: "8006",
@@ -184,7 +182,7 @@ module.exports = {
         DJANGO_DEBUG: "True",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
@@ -215,10 +213,10 @@ module.exports = {
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service",
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service,host.docker.internal",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
         DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
@@ -226,13 +224,14 @@ module.exports = {
     },
 
     // -------------------
-    // Helpdesk (Backend)
+    // Helpdesk (Backend) - Port 8007
+    // Kong runs on 8000, so helpdesk uses 8007
     // -------------------
     {
       name: 'helpdesk-backend',
       cwd: path.join(projectRoot, 'hdts/helpdesk'),
       script: 'manage.py',
-      args: 'runserver 0.0.0.0:8000', 
+      args: 'runserver 0.0.0.0:8007', 
       interpreter: pythonInterpreter,
       windowsHide: true,
       env: {
@@ -240,8 +239,8 @@ module.exports = {
         DJANGO_DEBUG: "True",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
-        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,helpdesk-backend",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
+        DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,helpdesk-backend,host.docker.internal",
         DJANGO_AUTH_SERVICE: "http://localhost:8003",
         CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
@@ -262,7 +261,7 @@ module.exports = {
         DJANGO_DEBUG: "True",
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
-        KONG_TRUSTED: "false",
+        KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
       }
     },
@@ -280,8 +279,31 @@ module.exports = {
     },
 
     // -------------------
+    // Auth Frontend (Port 3001)
+    // -------------------
+    // Standalone login/registration UI that proxies through Kong
+    {
+      name: 'auth-frontend',
+      cwd: path.join(projectRoot, 'auth/frontend'),
+      script: './node_modules/vite/bin/vite.js',
+      interpreter: 'node',
+      watch: false,
+      windowsHide: true,
+      env: {
+        // Auth frontend proxies through Kong via vite.config.js
+        // No additional env vars needed - vite proxy handles routing
+      }
+    },
+
+    // -------------------
     // Main Frontend (Kong Gateway Mode)
     // -------------------
+    // Frontend uses its own .env configuration.
+    // When using Kong, update frontend/.env to route through Kong:
+    //   VITE_AUTH_URL=http://localhost:8000/auth
+    //   VITE_WORKFLOW_API=http://localhost:8000/workflow
+    //   etc.
+    // No changes needed here - frontend .env controls routing.
     {
       name: 'main-frontend',
       cwd: path.join(projectRoot, 'tts/frontend'),
@@ -290,29 +312,17 @@ module.exports = {
       watch: false,
       windowsHide: true,
       env: {
-        // Gateway mode - route through Kong (port 8000)
-        // Set VITE_USE_KONG_GATEWAY=true to use Kong
-        VITE_USE_KONG_GATEWAY: "false",
-        
-        // Direct service URLs (when not using Kong)
-        VITE_AUTH_URL: "http://localhost:8003",
-        VITE_WORKFLOW_API: "http://localhost:8002/workflow",
-        VITE_BACKEND_API: "http://localhost:8002/",
-        VITE_NOTIFICATION_API: "http://localhost:8006",
-        VITE_NOTIFICATION_WS: "ws://localhost:8006",
-        VITE_MESSAGING_API: "http://localhost:8005",
-        VITE_MESSAGING_WS: "ws://localhost:8005",
-        VITE_HELPDESK_SERVICE_URL: "http://localhost:8000"
-        
-        // Kong gateway URLs (when using Kong)
-        // VITE_AUTH_URL: "http://localhost:8000/api/auth",
-        // VITE_WORKFLOW_API: "http://localhost:8000/api/workflow",
-        // VITE_BACKEND_API: "http://localhost:8000/",
-        // VITE_NOTIFICATION_API: "http://localhost:8000/api/notifications",
-        // VITE_NOTIFICATION_WS: "ws://localhost:8000/ws/notifications",
-        // VITE_MESSAGING_API: "http://localhost:8000/api/messages",
-        // VITE_MESSAGING_WS: "ws://localhost:8000/ws/chat",
-        // VITE_HELPDESK_SERVICE_URL: "http://localhost:8000/api/helpdesk"
+        // Kong Gateway Mode - All API calls routed through Kong (port 8000)
+        // Kong uses prefix-based routing: /helpdesk/*, /workflow/*, /notification/*, /messaging/*
+        // Kong strips the prefix and forwards to the backend service
+        VITE_AUTH_URL: "http://localhost:8003",  // Auth direct (login page before Kong auth)
+        VITE_WORKFLOW_API: "http://localhost:8000/workflow",  // Through Kong
+        VITE_BACKEND_API: "http://localhost:8000/workflow",   // Through Kong (workflow is the main backend)
+        VITE_NOTIFICATION_API: "http://localhost:8000/notification",  // Through Kong
+        VITE_NOTIFICATION_WS: "ws://localhost:8000/notification/ws",  // WebSocket through Kong
+        VITE_MESSAGING_API: "http://localhost:8000/messaging",  // Through Kong
+        VITE_MESSAGING_WS: "ws://localhost:8000/messaging/ws",  // WebSocket through Kong
+        VITE_HELPDESK_SERVICE_URL: "http://localhost:8000/helpdesk"  // Through Kong
       }
     }
   ]

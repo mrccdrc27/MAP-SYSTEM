@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     port: 3001,
     proxy: {
-      // Route API requests through Kong Gateway
-      '/api': {
+      // Route AUTH API requests through Kong Gateway
+      '/auth/api': {
         target: 'http://localhost:8000',  // Kong Gateway
         changeOrigin: true,
         secure: false,

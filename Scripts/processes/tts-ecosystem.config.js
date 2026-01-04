@@ -237,6 +237,18 @@ module.exports = {
     },
 
     // -------------------
+    // Auth Frontend (Port 3001)
+    // -------------------
+    {
+      name: 'auth-frontend',
+      cwd: path.join(projectRoot, 'auth/frontend'),
+      script: './node_modules/vite/bin/vite.js',
+      interpreter: 'node',
+      watch: false,
+      windowsHide: true
+    },
+
+    // -------------------
     // Main Frontend
     // -------------------
     {

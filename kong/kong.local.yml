@@ -32,10 +32,16 @@ plugins:
     config:
       origins:
         - "http://localhost:1000"
+        - "http://host.docker.internal:1000"
         - "http://127.0.0.1:1000"
+        - "http://localhost:3001"
+        - "http://host.docker.internal:3001"
+        - "http://127.0.0.1:3001"
         - "http://localhost:5173"
+        - "http://host.docker.internal:5173"
         - "http://127.0.0.1:5173"
         - "http://localhost:3000"
+        - "http://host.docker.internal:3000"
         - "http://127.0.0.1:3000"
       methods:
         - GET
@@ -66,8 +72,26 @@ services:
   # ---------------------------------------------------------------------------
   # AUTH SERVICE (Port 8003)
   # ---------------------------------------------------------------------------
+  # Auth frontend routes (prefix: /auth/api/v1/)
+  - name: auth-service-frontend
+    url: http://host.docker.internal:8003
+    routes:
+      - name: auth-frontend-routes
+        paths:
+          - /auth/api/v1
+        strip_path: false
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/auth", "")
+              kong.service.request.set_path(new_path)
+
+  # Legacy API routes (prefix: /api/auth/)
   - name: auth-service-public
-    url: http://localhost:8003
+    url: http://host.docker.internal:8003
     routes:
       - name: auth-login
         paths:
@@ -81,7 +105,7 @@ services:
         strip_path: false
 
   - name: auth-service-protected
-    url: http://localhost:8003
+    url: http://host.docker.internal:8003
     routes:
       - name: auth-protected
         paths:
@@ -101,104 +125,165 @@ services:
 
   # ---------------------------------------------------------------------------
   # WORKFLOW API SERVICE (Port 8002)
+  # Prefix: /workflow/* → strips prefix → forwards to backend
+  # Example: /workflow/tickets/ → /tickets/
   # ---------------------------------------------------------------------------
   - name: workflow-api-service
-    url: http://localhost:8002
+    url: http://host.docker.internal:8002
     routes:
       - name: workflow-routes
         paths:
-          - /api/workflow
-          - /api/tickets
-          - /api/departments
-          - /api/categories
-          - /api/priorities
-          - /api/statuses
           - /workflow
-        strip_path: false
+        strip_path: true
     plugins:
+      # Extract JWT from access_token cookie and set as Authorization header
+      - name: pre-function
+        config:
+          access:
+            - |
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
       - name: jwt
         config:
           key_claim_name: iss
           claims_to_verify:
             - exp
+          cookie_names:
+            - access_token
 
   # ---------------------------------------------------------------------------
   # NOTIFICATION SERVICE (Port 8006)
+  # Prefix: /notification/* → strips prefix → forwards to backend
+  # Example: /notification/api/v1/app/my/notifications/ → /api/v1/app/my/notifications/
   # ---------------------------------------------------------------------------
   - name: notification-websocket
-    url: http://localhost:8006
+    url: http://host.docker.internal:8006
     routes:
       - name: notification-ws
         paths:
-          - /ws/notifications
-        strip_path: false
+          - /notification/ws
+        strip_path: true
         protocols:
           - http
           - https
-          - ws
-          - wss
 
   - name: notification-api-service
-    url: http://localhost:8006
+    url: http://host.docker.internal:8006
     routes:
       - name: notification-routes
         paths:
-          - /api/notifications
-        strip_path: false
+          - /notification
+        strip_path: true
     plugins:
+      # Extract JWT from access_token cookie and set as Authorization header
+      - name: pre-function
+        config:
+          access:
+            - |
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
       - name: jwt
         config:
           key_claim_name: iss
           claims_to_verify:
             - exp
+          cookie_names:
+            - access_token
 
   # ---------------------------------------------------------------------------
   # MESSAGING SERVICE (Port 8005)
+  # Prefix: /messaging/* → strips prefix → forwards to backend
+  # Example: /messaging/messages/ → /messages/
   # ---------------------------------------------------------------------------
   - name: messaging-websocket
-    url: http://localhost:8005
+    url: http://host.docker.internal:8005
     routes:
       - name: messaging-ws
         paths:
-          - /ws/chat
-          - /ws/messages
-        strip_path: false
+          - /messaging/ws
+        strip_path: true
         protocols:
           - http
           - https
-          - ws
-          - wss
 
   - name: messaging-api-service
-    url: http://localhost:8005
+    url: http://host.docker.internal:8005
     routes:
       - name: messaging-routes
         paths:
-          - /api/messages
-          - /api/conversations
-          - /api/chat
-        strip_path: false
+          - /messaging
+        strip_path: true
     plugins:
+      # Extract JWT from access_token cookie and set as Authorization header
+      - name: pre-function
+        config:
+          access:
+            - |
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
       - name: jwt
         config:
           key_claim_name: iss
           claims_to_verify:
             - exp
+          cookie_names:
+            - access_token
 
   # ---------------------------------------------------------------------------
-  # HELPDESK SERVICE (Port 8000)
+  # HELPDESK SERVICE (Port 8007)
+  # Prefix: /helpdesk/* → strips prefix → forwards to backend
+  # Example: /helpdesk/api/tickets/ → /api/tickets/
+  # Also handles legacy /api/tickets/ paths for helpdesk frontend compatibility
   # ---------------------------------------------------------------------------
   - name: helpdesk-service
-    url: http://localhost:8000
+    url: http://host.docker.internal:8007
     routes:
       - name: helpdesk-routes
         paths:
-          - /api/helpdesk
-          - /api/hdts
+          - /helpdesk
+        strip_path: true
+      - name: helpdesk-api-legacy
+        paths:
+          - /api/tickets
+          - /api/employees
+          - /api/departments
+          - /api/categories
+          - /api/dashboard
+          - /api/media
         strip_path: false
     plugins:
+      # Extract JWT from access_token cookie and set as Authorization header
+      - name: pre-function
+        config:
+          access:
+            - |
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
       - name: jwt
         config:
           key_claim_name: iss
           claims_to_verify:
             - exp
+          cookie_names:
+            - access_token
+

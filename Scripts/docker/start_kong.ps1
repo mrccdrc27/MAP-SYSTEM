@@ -1,5 +1,5 @@
 # Scripts/docker/start_kong.ps1
-# Start Kong API Gateway in Docker for Auth service
+# Start Kong API Gateway in Docker for TTS ecosystem
 
 param(
     [switch]$Detached,
@@ -7,7 +7,7 @@ param(
     [switch]$Logs,
     [switch]$Restart,
     [ValidateSet("auth", "full", "local")]
-    [string]$Config = "auth"
+    [string]$Config = "local"  # Default to local for full TTS ecosystem
 )
 
 $ContainerName = "kong-gateway"
@@ -15,9 +15,9 @@ $KongConfigPath = (Resolve-Path "$PSScriptRoot/../../kong").Path
 
 # Select config file based on parameter
 $ConfigFile = switch ($Config) {
-    "auth"  { "kong.auth.yml" }    # Auth service only (recommended for auth development)
+    "auth"  { "kong.auth.yml" }    # Auth service only (minimal config)
     "full"  { "kong.yml" }         # Full TTS ecosystem (Docker service discovery)
-    "local" { "kong.local.yml" }   # Full TTS ecosystem (localhost URLs)
+    "local" { "kong.local.yml" }   # Full TTS ecosystem (localhost URLs - recommended)
 }
 $KongYmlPath = "$KongConfigPath/$ConfigFile"
 

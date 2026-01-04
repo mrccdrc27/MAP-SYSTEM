@@ -12,21 +12,21 @@ export const API_CONFIG = {
     MOCK_DELAY_MS: 500
   },
   
-  // Backend API settings
+  // Backend API settings - Routes through Kong Gateway with /helpdesk prefix
   BACKEND: {
-    BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+    BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/helpdesk',
     TIMEOUT: 10000
   },
   
-  // Auth service settings
+  // Auth service settings (direct, not through Kong)
   AUTH: {
     BASE_URL: import.meta.env.VITE_AUTH_URL || 'http://localhost:8003',
     TIMEOUT: 10000
   },
   
-  // TTS Workflow API settings (port 8002)
+  // TTS Workflow API settings - Routes through Kong Gateway with /workflow prefix
   TTS_WORKFLOW: {
-    BASE_URL: import.meta.env.VITE_TTS_WORKFLOW_URL || 'http://localhost:8002',
+    BASE_URL: import.meta.env.VITE_TTS_WORKFLOW_URL || 'http://localhost:8000/workflow',
     TIMEOUT: 10000
   }
 };

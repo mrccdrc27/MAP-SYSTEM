@@ -37,7 +37,8 @@ Scripts/
 ├── utils/            # Utility scripts
 │   └── delete_migrations_workflow_api.sh
 ├── processes/        # Process management configurations
-│   └── tts-ecosystem.config.js
+│   ├── tts-ecosystem.config.js       # Direct service communication
+│   └── tts-ecosystem-kong.config.js  # Kong API Gateway mode
 ```
 
 ## 🚀 CLI Manager
@@ -107,6 +108,11 @@ node Scripts/cli/index.js flush
 # 3. Start all services with PM2
 node Scripts/cli/index.js start
 # Note: This reads from Scripts/processes/tts-ecosystem.config.js
+
+# 3b. OR Start with Kong Gateway (services trust Kong's JWT validation)
+node Scripts/cli/index.js run pm2:tts:start-kong
+# Note: This reads from Scripts/processes/tts-ecosystem-kong.config.js
+# Requires Kong to be running: node Scripts/cli/index.js run docker:kong
 
 # 4. Check status
 node Scripts/cli/index.js status

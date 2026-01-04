@@ -169,6 +169,7 @@ const SCRIPTS = {
         description: 'Ticket Tracking System Ecosystem',
         scripts: {
           'start': { cmd: 'pm2 start Scripts/processes/tts-ecosystem.config.js', desc: 'Start Ecosystem' },
+          'start-kong': { cmd: 'pm2 start Scripts/processes/tts-ecosystem-kong.config.js', desc: 'Start Ecosystem (Kong Gateway Mode)' },
           'stop': { cmd: 'pm2 stop all', desc: 'Stop All Services' },
           'restart': { cmd: 'pm2 restart all', desc: 'Restart All Services' },
           'logs': { cmd: 'pm2 logs', desc: 'View Realtime Logs' },
