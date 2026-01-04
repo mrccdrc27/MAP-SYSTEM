@@ -1,3 +1,4 @@
+// bms\frontend\src\API\TokenUtils.js
 /**
  * Utility functions for working with JWT authentication tokens
  * Matches TTS frontend pattern for centralized auth integration

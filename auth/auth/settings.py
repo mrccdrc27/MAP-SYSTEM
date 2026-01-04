@@ -26,6 +26,16 @@ ALLOWED_HOSTS = config(
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
+# Always allow the Render domain, regardless of DEBUG setting
+ALLOWED_HOSTS.extend([
+    'auth-service-cdln.onrender.com',
+    '.onrender.com'
+])
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
 # Application definition
 # testapp
 
