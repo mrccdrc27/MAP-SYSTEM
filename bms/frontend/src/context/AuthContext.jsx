@@ -82,11 +82,9 @@ const CentralAuthProvider = ({ children }) => {
   // 2. Check Status
   const checkAuthStatus = useCallback(async () => {
     try {
-      // Try to fetch profile. If cookies are valid, it works.
+      // 1. Try fetching full profile
       const userData = await fetchUserProfile();
-      
-      console.log("[Auth] User:", userData.email);
-      
+
       if (!hasAnySystemRole(userData, "bms")) {
         console.error("[Auth] No BMS Access.");
         setUser(null);
@@ -95,15 +93,25 @@ const CentralAuthProvider = ({ children }) => {
         return false;
       }
 
-      // Store basic info in localStorage for non-sensitive checks if needed
-      // But rely on cookies for API calls
       setUser(userData);
       setLoading(false);
       setInitialized(true);
       return true;
-
     } catch (error) {
-      // If 401, cookies are missing/invalid
+      console.warn("[Auth] Profile fetch failed:", error);
+
+      // 2. FALLBACK: If API fails, check if we have a valid token locally
+      const localUser = getUserFromToken(); // decodes JWT from localStorage
+
+      if (localUser && !isTokenExpired(getAccessToken()) && hasAnySystemRole(localUser, "bms")) {
+        console.log("[Auth] Recovering session from local token");
+        setUser(localUser);
+        setLoading(false);
+        setInitialized(true);
+        return true;
+      }
+
+      // 3. Fail
       setUser(null);
       setLoading(false);
       setInitialized(true);
@@ -143,16 +151,39 @@ const CentralAuthProvider = ({ children }) => {
 
       // Handle Success
       if (response.data.success) {
-          console.log("[Auth] Login Successful. Cookies should be set.");
+          console.log("[Auth] Login Successful. Response:", response.data);
           
-          // Verify immediately
-          const authSuccess = await checkAuthStatus();
-          
-          if (!authSuccess) {
-              return { success: false, error: "Login successful, but role check failed." };
+          if (response.data.access_token) {
+             localStorage.setItem('accessToken', response.data.access_token);
+             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
           }
+
+          // --- FIX: Use the user data directly from login response ---
+          const userData = response.data.user;
+          
+          // Map roles if they exist in response (LoginResponseSerializer might put them in system_roles or roles)
+          if (response.data.system_roles) {
+              userData.roles = response.data.system_roles.map(r => ({
+                  system: r.system_slug || r.system,
+                  role: r.role_name || r.role
+              }));
+          } else if (response.data.user.roles) {
+             // Sometimes it is nested
+             userData.roles = response.data.user.roles;
+          }
+
+          // Verify BMS Access locally
+          if (!hasAnySystemRole(userData, "bms")) {
+             return { success: false, error: "No BMS Access." };
+          }
+
+          // Set User State DIRECTLY (Skip fetchUserProfile for now)
+          setUser(userData);
+          setLoading(false);
+          setInitialized(true);
+          
           return { success: true };
-      } 
+      }
       
       // Handle Failure (if 200 OK but success=false)
       return { success: false, error: "Invalid credentials" };
