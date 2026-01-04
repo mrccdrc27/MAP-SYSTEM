@@ -108,12 +108,11 @@ const SuperAdminLogin = () => {
           disabled={loading}
           className={styles.roundedInput}
           icon={
-            <i 
-              className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}
-              style={{ cursor: 'pointer' }}
-              onClick={togglePasswordVisibility}
-            ></i>
+            password ? (
+              <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+            ) : null
           }
+          onIconClick={togglePasswordVisibility}
         />
 
         {error && (

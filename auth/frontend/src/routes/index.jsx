@@ -4,6 +4,7 @@ import { SuperAdminProvider } from '../context/SuperAdminContext';
 
 // Components (Lazy loading could be added here later)
 import Login from '../features/auth/Login/Login';
+import LandingPage from '../features/auth/LandingPage';
 import Register from '../features/auth/Register/Register';
 import ForgotPassword from '../features/auth/ForgotPassword/ForgotPassword';
 import ResetPassword from '../features/auth/ResetPassword/ResetPassword';
@@ -33,14 +34,10 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <Navigate to="/login" replace />,
+        element: <LandingPage />,
       },
       {
-        path: '/login',
-        element: <Login userType="staff" />,
-      },
-      {
-        path: '/staff/login',
+        path: '/staff',
         element: <Login userType="staff" />,
       },
       {
@@ -52,7 +49,7 @@ const router = createBrowserRouter([
         element: <Register userType="staff" />,
       },
       {
-        path: '/employee/login',
+        path: '/employee',
         element: <Login userType="employee" />,
       },
       {
@@ -183,7 +180,7 @@ const router = createBrowserRouter([
       },
       {
         path: '*',
-        element: <Navigate to="/login" replace />,
+        element: <Navigate to="/" replace />,
       },
     ]
   }

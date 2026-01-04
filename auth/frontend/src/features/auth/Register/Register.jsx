@@ -5,6 +5,7 @@ import { register } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
 import { AuthLayout } from '../../../components/layout';
+import EmployeeRegister from './EmployeeRegister';
 import styles from './Register.module.css';
 
 const Register = ({ userType = 'staff' }) => {
@@ -14,6 +15,11 @@ const Register = ({ userType = 'staff' }) => {
 
   const isEmployee = userType === 'employee';
   const currentUserType = isEmployee ? USER_TYPES.EMPLOYEE : USER_TYPES.STAFF;
+
+  // If this is employee registration, use the new HDTS-style component
+  if (isEmployee) {
+    return <EmployeeRegister />;
+  }
 
   const [formData, setFormData] = useState({
     email: '',
@@ -34,11 +40,9 @@ const Register = ({ userType = 'staff' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
 
-  const loginLink = isEmployee ? '/employee/login' : '/login';
+  const loginLink = isEmployee ? '/employee' : '/staff';
   const pageTitle = isEmployee ? 'Employee Registration' : 'Staff Registration';
   const pageSubtitle = `Create your ${isEmployee ? 'employee' : 'staff'} account below.`;
-  const alternateRegisterLink = isEmployee ? '/register' : '/employee/register';
-  const alternateRegisterText = isEmployee ? 'Register as Staff' : 'Register as Employee';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -227,7 +231,7 @@ const Register = ({ userType = 'staff' }) => {
               placeholder="••••••••"
               required
               error={errors.password}
-              icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+              icon={formData.password ? <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null}
               onIconClick={() => setShowPassword(!showPassword)}
               className={styles.roundedInput}
             />
@@ -243,7 +247,7 @@ const Register = ({ userType = 'staff' }) => {
               placeholder="••••••••"
               required
               error={errors.confirmPassword}
-              icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+              icon={formData.confirmPassword ? <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null}
               onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className={styles.roundedInput}
             />
@@ -265,10 +269,6 @@ const Register = ({ userType = 'staff' }) => {
           <p>
             Already have an account? <Link to={loginLink} className={styles.link}>Sign In</Link>
           </p>
-          <hr className={styles.divider} />
-          <Link to={alternateRegisterLink} className={styles.secondaryLink}>
-            {alternateRegisterText}
-          </Link>
         </div>
       </form>
     </AuthLayout>

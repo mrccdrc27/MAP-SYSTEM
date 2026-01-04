@@ -1,0 +1,262 @@
+/* ========== Layout ========== */
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-color);
+  overflow: hidden;
+}
+
+.leftPanel {
+  width: 50%;
+  height: 100%;
+  background-color: var(--bg1-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.assetImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rightPanel {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-xl);
+  overflow-y: auto;
+  max-height: 100vh;
+  scrollbar-width: thin;
+}
+
+/* ========== Form Container & Header ========== */
+.formWrapper {
+  width: 80%;
+  max-width: 600px;
+  padding-bottom: var(--space-xl);
+}
+
+.formHeader {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.logo img {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+}
+
+.logoText {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.welcomeMessage {
+  font-size: var(--font-sm);
+  color: var(--text-color);
+}
+
+/* ========== Form Fields ========== */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.input,
+.select {
+  width: 100%;
+  height: 44px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 40px !important;
+  background-color: var(--bg-color);
+  font-size: var(--font-sm);
+  color: var(--text-color);
+  transition: var(--transition);
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-shadow-color);
+}
+
+.input::placeholder {
+  color: var(--muted-text-color);
+  font-size: 0.9rem;
+}
+
+/* ========== Labels ========== */
+.fieldset label {
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: var(--font-sm);
+  margin-bottom: 0.25rem;
+}
+
+.required {
+  color: var(--color-danger);
+  font-weight: bold;
+}
+
+/* ========== Error Messages ========== */
+.errorMsg {
+  color: var(--color-danger);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+/* ========== Password Container ========== */
+.passwordContainer {
+  position: relative;
+  width: 100%;
+}
+
+.passwordContainer .input {
+  padding-right: 2.5rem;
+}
+
+.showPassword {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--muted-text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.showPassword:hover {
+  color: var(--text-color);
+}
+
+/* ========== Checkbox ========== */
+.checkboxWrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: var(--space-md) 0;
+}
+
+.checkboxWrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+  accent-color: var(--primary-color);
+}
+
+.checkboxLabel {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.link {
+  color: var(--primary-color);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.link:hover {
+  color: var(--primary-color-hover);
+  text-decoration: none;
+}
+
+/* ========== Button ========== */
+.button {
+  width: 100%;
+  height: 48px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 40px;
+  font-size: var(--font-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: var(--space-md);
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+.button:disabled {
+  background-color: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+/* ========== Back to Login ========== */
+.backToLogin {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  margin-top: var(--space-lg);
+}
+
+.backToLogin a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.backToLogin a:hover {
+  text-decoration: underline;
+  color: var(--primary-color-hover);
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .leftPanel {
+    width: 100%;
+    height: 30vh;
+  }
+
+  .rightPanel {
+    width: 100%;
+    height: 70vh;
+    padding: var(--space-md);
+  }
+
+  .formWrapper {
+    width: 95%;
+    max-width: none;
+  }
+}

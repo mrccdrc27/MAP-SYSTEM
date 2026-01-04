@@ -101,12 +101,10 @@ const Login = ({ userType = 'staff' }) => {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  const alternateLoginLink = isEmployee ? '/staff/login' : '/employee/login';
-  const alternateLoginText = isEmployee ? 'Login as Staff' : 'Login to Help Desk';
   const registerLink = isEmployee ? '/employee/register' : '/register';
   const forgotPasswordLink = isEmployee ? '/employee/forgot-password' : '/forgot-password';
   
-  const pageTitle = isEmployee ? 'Employee Sign In' : 'Staff Sign In';
+  const pageTitle = isEmployee ? 'Helpdesk and Ticketing system' : 'Staff Sign In';
   const pageSubtitle = isEmployee 
     ? 'Access the helpdesk to manage your support requests.'
     : 'Manage system resources and track tickets.';
@@ -134,6 +132,7 @@ const Login = ({ userType = 'staff' }) => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               required
+              autoComplete="username"
               className={styles.roundedInput}
             />
 
@@ -144,9 +143,12 @@ const Login = ({ userType = 'staff' }) => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               required
+              autoComplete="current-password"
               className={styles.roundedInput}
               icon={
-                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                password ? (
+                  <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                ) : null
               }
               onIconClick={togglePasswordVisibility}
             />
@@ -173,14 +175,17 @@ const Login = ({ userType = 'staff' }) => {
             </Button>
 
             <div className={styles.formFooter}>
+              {isEmployee && (
+                <div className={styles.registerPrompt}>
+                  Don't have an account? <Link to={registerLink} className={styles.registerLink}>Register here</Link>
+                </div>
+              )}
+              
               <div className={styles.forgotLink}>
                 <Link to={forgotPasswordLink}>
                   <i className="fa-solid fa-question-circle"></i> Forgot Password?
                 </Link>
               </div>
-              <Link to={alternateLoginLink} className={styles.helpdeskLink}>
-                <i className="fa-solid fa-headset"></i> {alternateLoginText}
-              </Link>
             </div>
           </>
         ) : (

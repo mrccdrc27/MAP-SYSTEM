@@ -178,9 +178,9 @@ const AccountSecurity = () => {
         )}
 
         <div className={styles.modalFormGrid}>
-          <Input label="Current Password" type={showPasswords.current ? 'text' : 'password'} name="currentPassword" value={values.currentPassword} onChange={handleChange} error={errors.currentPassword} icon={<i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`}></i>} onIconClick={() => setShowPasswords(p => ({ ...p, current: !p.current }))} required />
-          <Input label="New Password" type={showPasswords.new ? 'text' : 'password'} name="newPassword" value={values.newPassword} onChange={handleChange} error={errors.newPassword} icon={<i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`}></i>} onIconClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))} required />
-          <Input label="Confirm New Password" type={showPasswords.confirm ? 'text' : 'password'} name="confirmPassword" value={values.confirmPassword} onChange={handleChange} error={errors.confirmPassword} icon={<i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`}></i>} onIconClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))} required />
+          <Input label="Current Password" type={showPasswords.current ? 'text' : 'password'} name="currentPassword" value={values.currentPassword} onChange={handleChange} error={errors.currentPassword} icon={values.currentPassword ? <i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} onIconClick={() => setShowPasswords(p => ({ ...p, current: !p.current }))} required />
+          <Input label="New Password" type={showPasswords.new ? 'text' : 'password'} name="newPassword" value={values.newPassword} onChange={handleChange} error={errors.newPassword} icon={values.newPassword ? <i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} onIconClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))} required />
+          <Input label="Confirm New Password" type={showPasswords.confirm ? 'text' : 'password'} name="confirmPassword" value={values.confirmPassword} onChange={handleChange} error={errors.confirmPassword} icon={values.confirmPassword ? <i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} onIconClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))} required />
         </div>
       </Modal>
 

@@ -1,0 +1,287 @@
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--overlay-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* Modal Content */
+.modalContent {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 90vw;
+  max-width: 800px;
+  height: 90vh; /* Fixed height to ensure scrolling works */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Modal Header */
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg1-color);
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: var(--heading-color);
+  font-size: var(--font-xl);
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: var(--font-2xl);
+  color: var(--muted-text-color);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: var(--color-danger);
+  background-color: var(--color-gray-100);
+}
+
+/* Tab Container */
+.tabContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Crucial for nested flex scrolling */
+}
+
+.tabButtons {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-content-color);
+  flex-shrink: 0;
+}
+
+.tabButton {
+  flex: 1;
+  padding: var(--space-md) var(--space-lg);
+  border: none;
+  background: none;
+  color: var(--muted-text-color);
+  font-size: var(--font-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  border-bottom: 3px solid transparent;
+}
+
+.tabButton:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-color);
+}
+
+.tabButton.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background-color: var(--bg1-color);
+}
+
+/* Tab Content */
+.tabContent {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Crucial for nested flex scrolling */
+}
+
+.contentSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-xl);
+  min-height: 0; /* Crucial for nested flex scrolling */
+  overflow: hidden;
+}
+
+.contentSection h3 {
+  margin: 0 0 var(--space-lg) 0;
+  color: var(--heading-color);
+  font-size: var(--font-lg);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Scrollable Content */
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.scrollableContent h4 {
+  color: var(--heading-color);
+  font-size: var(--font-base);
+  font-weight: 600;
+  margin: var(--space-lg) 0 var(--space-sm) 0;
+}
+
+.scrollableContent h4:first-child {
+  margin-top: 0;
+}
+
+.scrollableContent p {
+  color: var(--text-color);
+  font-size: var(--font-sm);
+  line-height: 1.6;
+  margin: 0 0 var(--space-md) 0;
+}
+
+.effectiveDate {
+  font-style: italic;
+  color: var(--muted-text-color);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+/* Agreement Section */
+.agreementSection {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-md);
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  color: var(--text-color);
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.checkboxLabel span {
+  user-select: none;
+}
+
+/* Modal Actions */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-content-color);
+  flex-shrink: 0;
+}
+
+.cancelButton,
+.agreeButton {
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  min-width: 100px;
+}
+
+.cancelButton {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.cancelButton:hover {
+  background-color: var(--color-gray-300);
+}
+
+.agreeButton {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.agreeButton:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+.agreeButton:disabled {
+  background-color: var(--color-gray-300);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+/* Scrollbar Styling */
+.scrollableContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollableContent::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.scrollableContent::-webkit-scrollbar-thumb {
+  background: var(--color-gray-400);
+  border-radius: var(--radius-sm);
+}
+
+.scrollableContent::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-500);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modalContent {
+    width: 95vw;
+    height: 90vh; /* Consistent height on mobile too */
+  }
+  
+  .modalHeader,
+  .contentSection,
+  .modalActions {
+    padding: var(--space-md);
+  }
+  
+  .tabButtons {
+    flex-direction: column;
+  }
+  
+  .tabButton {
+    border-bottom: 1px solid var(--border-color);
+    border-right: none;
+  }
+  
+  .tabButton.active {
+    border-bottom-color: var(--border-color);
+    border-left: 3px solid var(--primary-color);
+  }
+}

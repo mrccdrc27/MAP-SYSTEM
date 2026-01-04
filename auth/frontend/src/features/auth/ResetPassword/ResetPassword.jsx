@@ -13,7 +13,7 @@ const ResetPassword = ({ userType = 'staff' }) => {
 
   const isEmployee = userType === 'employee';
   const currentUserType = isEmployee ? USER_TYPES.EMPLOYEE : USER_TYPES.STAFF;
-  const loginLink = isEmployee ? '/employee/login' : '/login';
+  const loginLink = isEmployee ? '/employee' : '/staff';
   const forgotPasswordLink = isEmployee ? '/employee/forgot-password' : '/forgot-password';
   const pageTitle = isEmployee ? 'Employee Reset' : 'Staff Reset';
   const pageSubtitle = 'Please enter your new password below.';
@@ -148,7 +148,7 @@ const ResetPassword = ({ userType = 'staff' }) => {
           placeholder="Enter new password"
           error={errors.password}
           hint="Min 8 characters"
-          icon={<i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+          icon={password ? <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null}
           onIconClick={() => setShowPassword(!showPassword)}
           required
           className={styles.roundedInput}
@@ -164,7 +164,7 @@ const ResetPassword = ({ userType = 'staff' }) => {
           }}
           placeholder="Confirm new password"
           error={errors.confirmPassword}
-          icon={<i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>}
+          icon={confirmPassword ? <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null}
           onIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
           required
           className={styles.roundedInput}

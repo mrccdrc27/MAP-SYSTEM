@@ -11,7 +11,7 @@ const ForgotPassword = ({ userType = 'staff' }) => {
   
   const isEmployee = userType === 'employee';
   const currentUserType = isEmployee ? USER_TYPES.EMPLOYEE : USER_TYPES.STAFF;
-  const loginLink = isEmployee ? '/employee/login' : '/login';
+  const loginLink = isEmployee ? '/employee' : '/staff';
   const pageTitle = isEmployee ? 'Employee Recovery' : 'Staff Recovery';
   const pageSubtitle = 'Enter your email to receive a password reset link.';
   

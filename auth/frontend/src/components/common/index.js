@@ -6,3 +6,4 @@ export { default as Badge } from './Badge';
 export { default as Table } from './Table';
 export { default as Alert } from './Alert';
 export { ToastContainer, useToast, toast } from './Toast';
+export { default as PrivacyPolicyModal } from './PrivacyPolicyModal';
