@@ -17,19 +17,27 @@ export const SuperAdminProvider = ({ children }) => {
 
   const checkSession = async () => {
     try {
+      // Use the correct port (8003) based on the auth service configuration  
       const response = await fetch('http://localhost:8003/superadmin/api/session/', {
         credentials: 'include',
       });
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
-        setIsAuthenticated(true);
+        if (data.authenticated) {
+          setUser(data.user);
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
       } else {
+        setUser(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Session check error:', error);
+      setUser(null);
       setIsAuthenticated(false);
     } finally {
       setLoading(false);
@@ -38,6 +46,7 @@ export const SuperAdminProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Use the correct port (8003) based on the auth service configuration
       await fetch('http://localhost:8003/superadmin/api/logout/', {
         method: 'POST',
         credentials: 'include',

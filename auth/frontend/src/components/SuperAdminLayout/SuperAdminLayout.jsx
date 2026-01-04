@@ -43,6 +43,7 @@ const SuperAdminLayout = ({ children }) => {
           <li>
             <NavLink
               to="/superadmin/users"
+              end
               className={({ isActive }) => isActive ? styles.active : ''}
             >
               <i className="fa fa-users"></i>
@@ -50,13 +51,19 @@ const SuperAdminLayout = ({ children }) => {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/superadmin/users/create">
+            <NavLink 
+              to="/superadmin/users/create"
+              className={({ isActive }) => isActive ? styles.active : ''}
+            >
               <i className="fa fa-user-plus"></i>
               Create User
             </NavLink>
           </li>
           <li>
-            <NavLink to="/superadmin/users/import">
+            <NavLink 
+              to="/superadmin/users/import"
+              className={({ isActive }) => isActive ? styles.active : ''}
+            >
               <i className="fa fa-file-import"></i>
               Import Users
             </NavLink>

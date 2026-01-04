@@ -92,6 +92,10 @@ const router = createBrowserRouter([
         ),
         children: [
           {
+            index: true,
+            element: <Navigate to="/superadmin/login" replace />,
+          },
+          {
             path: 'login',
             element: <SuperAdminLogin />,
           },

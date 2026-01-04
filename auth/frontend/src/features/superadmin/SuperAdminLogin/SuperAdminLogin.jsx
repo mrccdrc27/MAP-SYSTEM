@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast, Button, Input } from '../../../components/common';
 import { AuthLayout } from '../../../components/layout';
+import { useSuperAdmin } from '../../../context/SuperAdminContext';
 import styles from './SuperAdminLogin.module.css';
 
 const SuperAdminLogin = () => {
   const navigate = useNavigate();
   const { ToastContainer, error: toastError, success: toastSuccess } = useToast();
+  const { checkSession, isAuthenticated } = useSuperAdmin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,12 +16,11 @@ const SuperAdminLogin = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if already logged in as superuser
-    const token = localStorage.getItem('superadmin_access_token');
-    if (token) {
+    // Check if already authenticated as superuser
+    if (isAuthenticated) {
       navigate('/superadmin/dashboard');
     }
-  }, [navigate]);
+  }, [navigate, isAuthenticated]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +33,7 @@ const SuperAdminLogin = () => {
 
     setLoading(true);
     try {
+      // Use the correct port (8003) based on the auth service configuration
       const response = await fetch('http://localhost:8003/superadmin/api/login/', {
         method: 'POST',
         headers: {
@@ -45,6 +47,11 @@ const SuperAdminLogin = () => {
 
       if (response.ok) {
         toastSuccess('Login Successful', 'Redirecting to dashboard...');
+        
+        // After successful login, check the session to update context
+        await checkSession();
+        
+        // Navigate to dashboard
         setTimeout(() => navigate('/superadmin/dashboard'), 1000);
       } else {
         const errorMsg = data.error || 'Invalid email or password';

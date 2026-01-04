@@ -5,6 +5,7 @@ import { Button, Input, Modal, Table, Badge, Card, Alert } from '../../../compon
 import styles from './UserMasterlist.module.css';
 
 const UserMasterlist = () => {
+  const [allUsers, setAllUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,31 +19,29 @@ const UserMasterlist = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [deleteModalUser, setDeleteModalUser] = useState(null);
 
+  const itemsPerPage = 10;
+
   useEffect(() => {
     loadUsers();
-  }, [currentPage, searchEmail, searchName, statusFilter, isActiveFilter, isStaffFilter, isSuperuserFilter]);
+  }, []);
+
+  useEffect(() => {
+    filterAndPaginateUsers();
+  }, [allUsers, currentPage, searchEmail, searchName, statusFilter, isActiveFilter, isStaffFilter, isSuperuserFilter]);
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        ...(searchEmail && { email: searchEmail }),
-        ...(searchName && { name: searchName }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(isActiveFilter && { is_active: isActiveFilter }),
-        ...(isStaffFilter && { is_staff: isStaffFilter }),
-        ...(isSuperuserFilter && { is_superuser: isSuperuserFilter }),
-      });
-
-      const response = await fetch(`http://localhost:8003/superadmin/api/users/?${params}`, {
+      // Fetch all users without params for frontend pagination
+      const response = await fetch('http://localhost:8003/superadmin/api/users/', {
         credentials: 'include',
       });
 
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || []);
-        setTotalPages(data.total_pages || 1);
+        // Handle potentially different response structures (array or object with users key)
+        const userList = Array.isArray(data) ? data : (data.users || []);
+        setAllUsers(userList);
         setError('');
       } else {
         setError('Failed to load users');
@@ -52,6 +51,59 @@ const UserMasterlist = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterAndPaginateUsers = () => {
+    let filtered = [...allUsers];
+
+    // Search filters
+    if (searchEmail) {
+      filtered = filtered.filter(user => 
+        user.email?.toLowerCase().includes(searchEmail.toLowerCase())
+      );
+    }
+
+    if (searchName) {
+      filtered = filtered.filter(user => {
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+        return fullName.includes(searchName.toLowerCase());
+      });
+    }
+
+    // Dropdown filters
+    if (statusFilter) {
+      filtered = filtered.filter(user => user.status === statusFilter);
+    }
+
+    if (isActiveFilter !== '') {
+      const isActive = isActiveFilter === 'true';
+      filtered = filtered.filter(user => user.is_active === isActive);
+    }
+
+    if (isStaffFilter !== '') {
+      const isStaff = isStaffFilter === 'true';
+      filtered = filtered.filter(user => user.is_staff === isStaff);
+    }
+
+    if (isSuperuserFilter !== '') {
+      const isSuperuser = isSuperuserFilter === 'true';
+      filtered = filtered.filter(user => user.is_superuser === isSuperuser);
+    }
+
+    // Pagination
+    const total = Math.ceil(filtered.length / itemsPerPage);
+    setTotalPages(total || 1);
+
+    // Adjust current page if out of bounds after filtering
+    const validPage = Math.min(Math.max(1, currentPage), Math.max(1, total));
+    if (validPage !== currentPage) {
+      setCurrentPage(validPage);
+      return; // The useEffect will re-run with the new page
+    }
+
+    const start = (validPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    setUsers(filtered.slice(start, end));
   };
 
   const handleReset = () => {
@@ -152,6 +204,22 @@ const UserMasterlist = () => {
                   <option value="">All</option>
                   <option value="true">Active</option>
                   <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div className={styles.selectGroup}>
+                <label>Is Staff</label>
+                <select value={isStaffFilter} onChange={(e) => setIsStaffFilter(e.target.value)}>
+                  <option value="">All</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+              <div className={styles.selectGroup}>
+                <label>Is Superuser</label>
+                <select value={isSuperuserFilter} onChange={(e) => setIsSuperuserFilter(e.target.value)}>
+                  <option value="">All</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
                 </select>
               </div>
             </div>
