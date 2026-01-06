@@ -149,6 +149,8 @@ module.exports = {
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
+        // Internal URL for WebSocket broadcasts - must point to Daphne process directly
+        NOTIFICATION_SERVICE_INTERNAL_URL: "http://localhost:8006",
         // TTS frontend deep-linking
         TTS_FRONTEND_URL: "http://localhost:1000",
         TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}",

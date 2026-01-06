@@ -285,13 +285,20 @@ export const useMessagingAPI = (ticketId, setMessages) => {
       const result = await response.json();
       console.log('[useMessagingAPI] Reaction added:', result);
       
-      // Update message reactions in local state
+      // Update message reactions and reaction_counts in local state
       setMessages(prev => 
         prev.map(msg => {
           if (msg.message_id === messageId) {
+            const newReactions = [...(msg.reactions || []), result];
+            // Recalculate reaction_counts
+            const newCounts = newReactions.reduce((acc, r) => {
+              acc[r.reaction] = (acc[r.reaction] || 0) + 1;
+              return acc;
+            }, {});
             return {
               ...msg,
-              reactions: [...(msg.reactions || []), result]
+              reactions: newReactions,
+              reaction_counts: newCounts
             };
           }
           return msg;
@@ -328,15 +335,36 @@ export const useMessagingAPI = (ticketId, setMessages) => {
         throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}`);
       }
 
-      console.log('[useMessagingAPI] Reaction removed');
+      const removedReaction = await response.json().catch(() => ({}));
+      console.log('[useMessagingAPI] Reaction removed:', removedReaction);
       
-      // Update message reactions in local state
+      // Update message reactions in local state - remove only the current user's reaction
       setMessages(prev => 
         prev.map(msg => {
           if (msg.message_id === messageId) {
+            // Filter out only the current user's reaction with this emoji
+            // The API returns info about which reaction was removed
+            let removedOne = false;
+            const newReactions = (msg.reactions || []).filter(r => {
+              // Only remove one instance of this user's reaction
+              if (!removedOne && r.reaction === emoji && 
+                  (removedReaction.user_id === r.user_id || 
+                   removedReaction.user === r.user ||
+                   removedReaction.user_full_name === r.user_full_name)) {
+                removedOne = true;
+                return false;
+              }
+              return true;
+            });
+            // Recalculate reaction_counts
+            const newCounts = newReactions.reduce((acc, r) => {
+              acc[r.reaction] = (acc[r.reaction] || 0) + 1;
+              return acc;
+            }, {});
             return {
               ...msg,
-              reactions: (msg.reactions || []).filter(r => r.reaction !== emoji)
+              reactions: newReactions,
+              reaction_counts: newCounts
             };
           }
           return msg;

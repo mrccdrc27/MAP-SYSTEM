@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import Ticket, Message, MessageAttachment, MessageReaction
 
 
@@ -12,6 +13,13 @@ class MessageAttachmentSerializer(serializers.ModelSerializer):
     
     def get_file_url(self, obj):
         if obj.file:
+            # Use MEDIA_BASE_URL from settings to construct proper Kong-proxied URLs
+            # This ensures frontend can access media through Kong gateway
+            media_base_url = getattr(settings, 'MEDIA_BASE_URL', None)
+            if media_base_url:
+                # Return URL via Kong: e.g., http://localhost:8080/messaging/media/...
+                return f"{media_base_url}{obj.file.url}"
+            # Fallback to request-based URL
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.file.url)

@@ -14,15 +14,10 @@ class DocumentStorageSerializer(serializers.ModelSerializer):
     
     def get_download_url(self, obj):
         """Generate download URL for the document"""
-        request = self.context.get('request')
-        
-        if request:
-            # Use request to build absolute URL
-            from django.urls import reverse
-            return request.build_absolute_uri(reverse('download-attachment', kwargs={'attachment_id': obj.id}))
-        else:
-            # Fallback for WebSocket context where request is not available
-            return f"{settings.MEDIA_BASE_URL}/api/attachments/{obj.id}/download/"
+        # Always use MEDIA_BASE_URL to ensure URLs go through Kong gateway
+        # This avoids issues with request.build_absolute_uri() returning internal host URLs
+        media_base_url = getattr(settings, 'MEDIA_BASE_URL', 'http://localhost:8080/messaging')
+        return f"{media_base_url}/media/document/{obj.id}/"
 
 class CommentDocumentSerializer(serializers.ModelSerializer):
     document = DocumentStorageSerializer(read_only=True)

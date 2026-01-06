@@ -50,7 +50,7 @@ const MessageReactions = ({
 
           return (
             <button
-              key={emoji}
+              key={`${messageId}-${emoji}`}
               className={`${styles.reactionBubble} ${userReacted ? styles.userReacted : ''}`}
               onClick={() => onReaction(messageId, emoji)}
               title={`${names}${moreCount > 0 ? ` and ${moreCount} others` : ''}`}

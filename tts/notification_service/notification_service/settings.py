@@ -234,6 +234,10 @@ EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default=SENDGRID_API_
 NOTIFICATION_SERVICE_PORT = config('DJANGO_NOTIFICATION_SERVICE_PORT', default=8001, cast=int)
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8000')
 
+# Internal URL for WebSocket broadcasts (used by Celery workers to trigger broadcasts in Daphne process)
+# Default to port 1003 which is the Daphne port in Kong ecosystem
+NOTIFICATION_SERVICE_INTERNAL_URL = config('NOTIFICATION_SERVICE_INTERNAL_URL', default='http://localhost:1003')
+
 # Frontend links for ticket deep-links
 TTS_FRONTEND_URL = config('TTS_FRONTEND_URL', default='http://localhost:1000')
 TTS_TICKET_PATH_TEMPLATE = config('TTS_TICKET_PATH_TEMPLATE', default='/ticket/{id}')

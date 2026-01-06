@@ -186,6 +186,8 @@ module.exports = {
         DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         DJANGO_NOTIFICATION_QUEUE: "notification-queue",
         DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue",
+        // Internal URL for WebSocket broadcasts - must point to Daphne process directly
+        NOTIFICATION_SERVICE_INTERNAL_URL: "http://localhost:1003",
         // TTS frontend deep-linking
         TTS_FRONTEND_URL: "http://localhost:1000",
         TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}",
@@ -219,7 +221,7 @@ module.exports = {
         KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
-        DJANGO_MEDIA_BASE_URL: "http://localhost:1002"
+        DJANGO_MEDIA_BASE_URL: "http://localhost:8080/messaging"  // Through Kong gateway for browser access
       }
     },
 

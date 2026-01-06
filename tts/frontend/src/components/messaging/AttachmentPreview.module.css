@@ -5,7 +5,7 @@
   max-width: 300px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
   border: 1px solid var(--border-color);
 }
 
@@ -23,6 +23,7 @@
   max-height: 400px;
   object-fit: cover;
   display: block;
+  transition: max-height 0.3s ease;
 }
 
 .imageOverlay {
@@ -47,7 +48,7 @@
   background: var(--bg-content-color, #f5f5f5);
   max-width: 300px;
   min-width: 200px;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   border: 1px solid var(--border-color, #e0e0e0);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
@@ -158,4 +159,30 @@
 .imageOwn .downloadBtn:hover,
 .fileOwn .downloadBtn:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+/* EXPANDED STATE STYLES */
+/* Allow column layout to control width, but respect general limits */
+.previewExpanded.imagePreview {
+  max-width: 100%;
+}
+
+.previewExpanded .image {
+  max-height: 400px;
+}
+
+.previewExpanded.filePreview {
+  max-width: 100%;
+  padding: 12px 16px;
+}
+
+.previewExpanded .fileName {
+  font-size: 13px;
+  max-width: 100%;
+}
+
+.previewExpanded .fileIcon {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
 }

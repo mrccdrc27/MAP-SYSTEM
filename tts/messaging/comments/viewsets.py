@@ -148,7 +148,12 @@ class CommentViewSet(viewsets.ModelViewSet):
             print(f"DEBUG: Extracted user info - ID: {request.user.user_id}, Name: {firstname} {lastname}, Role: {role}")
             
             # Create a new reply with authenticated user data
-            data = request.data.copy()
+            # Use dict() instead of .copy() to avoid deepcopy issues with file uploads in Python 3.13
+            data = dict(request.data)
+            # Flatten single-item lists from QueryDict
+            for key, value in data.items():
+                if isinstance(value, list) and len(value) == 1:
+                    data[key] = value[0]
             data['ticket_id'] = parent_comment.ticket.ticket_id
             data['parent'] = parent_comment.comment_id  # Use comment_id instead of database id
             data['user_id'] = str(request.user.user_id)
@@ -216,7 +221,12 @@ class CommentViewSet(viewsets.ModelViewSet):
                 role = first_role
         
         # Add user information to request data
-        data = request.data.copy()
+        # Use dict() instead of .copy() to avoid deepcopy issues with file uploads in Python 3.13
+        data = dict(request.data)
+        # Flatten single-item lists from QueryDict
+        for key, value in data.items():
+            if isinstance(value, list) and len(value) == 1:
+                data[key] = value[0]
         data['user_id'] = str(request.user.user_id)
         data['firstname'] = firstname
         data['lastname'] = lastname

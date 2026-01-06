@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styles from './AttachmentPreview.module.css';
 
-const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
+const AttachmentPreview = ({ attachment, onDownload, isOwn, isExpanded }) => {
   const [imageError, setImageError] = useState(false);
   const { attachment_id, filename, file_size, content_type, file_url } = attachment;
 
@@ -35,7 +35,7 @@ const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
 
   if (isImage && !imageError && file_url) {
     return (
-      <div className={`${styles.imagePreview} ${isOwn ? styles.imageOwn : styles.imageOther}`}>
+      <div className={`${styles.imagePreview} ${isOwn ? styles.imageOwn : styles.imageOther} ${isExpanded ? styles.previewExpanded : ''}`}>
         <img
           src={file_url}
           alt={filename}
@@ -59,7 +59,7 @@ const AttachmentPreview = ({ attachment, onDownload, isOwn }) => {
 
   // Regular file attachment
   return (
-    <div className={`${styles.filePreview} ${isOwn ? styles.fileOwn : styles.fileOther}`}>
+    <div className={`${styles.filePreview} ${isOwn ? styles.fileOwn : styles.fileOther} ${isExpanded ? styles.previewExpanded : ''}`}>
       <div className={styles.fileIcon}><i className={getFileIcon()}></i></div>
       <div className={styles.fileInfo}>
         <div className={styles.fileName}>{filename}</div>

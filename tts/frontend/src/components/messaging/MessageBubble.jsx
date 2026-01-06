@@ -14,7 +14,8 @@ const MessageBubble = ({
   onEdit, 
   onUnsend,
   onReaction,
-  onDownloadAttachment
+  onDownloadAttachment,
+  isExpanded
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showQuickReactions, setShowQuickReactions] = useState(false);
@@ -115,7 +116,7 @@ const MessageBubble = ({
     <div className={`${styles.messageWrapper} ${isOwn ? styles.own : styles.other}`}>
       {!isOwn && <div className={styles.avatar}>{sender?.charAt(0)?.toUpperCase()}</div>}
       
-      <div className={styles.messageContent}>
+      <div className={`${styles.messageContent} ${isExpanded ? styles.contentExpanded : ''}`}>
         {!isOwn && (
           <div className={styles.messageMeta}>
             <span className={styles.senderName}>{sender}</span>
@@ -126,7 +127,7 @@ const MessageBubble = ({
         {/* Message bubble with hover actions - only show if there's text */}
         {text?.trim() && (
           <div className={styles.bubbleWrapper}>
-            <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : styles.bubbleOther}`}>
+            <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : styles.bubbleOther} ${isExpanded ? styles.bubbleExpanded : ''}`}>
               <p className={styles.messageText}>{text}</p>
               {is_edited && <span className={styles.editedTag}>(edited)</span>}
               
@@ -236,13 +237,14 @@ const MessageBubble = ({
               </div>
             )}
             
-            <div className={styles.attachmentsContainer}>
+            <div className={`${styles.attachmentsContainer} ${isExpanded ? styles.attachmentsExpanded : ''}`}>
               {attachments.map((attachment) => (
                 <AttachmentPreview
                   key={attachment.attachment_id}
                   attachment={attachment}
                   onDownload={onDownloadAttachment}
                   isOwn={isOwn}
+                  isExpanded={isExpanded}
                 />
               ))}
               

@@ -46,6 +46,11 @@
   flex-direction: column;
   max-width: 70%;
   position: relative;
+  transition: max-width 0.3s ease;
+}
+
+.contentExpanded {
+  max-width: 90%;
 }
 
 .messageWrapper.own .messageContent {
@@ -85,6 +90,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  transition: all 0.3s ease;
+}
+
+.bubbleExpanded {
+  padding: 16px 24px;
+  border-radius: 24px;
 }
 
 .bubbleOwn {
@@ -189,6 +200,12 @@
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
+  transition: font-size 0.3s ease;
+}
+
+.bubbleExpanded .messageText {
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .editedTag {
@@ -416,6 +433,26 @@
   gap: 8px;
   max-width: 100%;
   position: relative;
+}
+
+/* Masonry-like layout for expanded view */
+.attachmentsExpanded {
+  display: block;
+  column-width: 280px;
+  column-gap: 12px;
+  width: 100%;
+}
+
+.own .attachmentsExpanded {
+  direction: rtl; /* Stagger from right for own messages */
+}
+
+.attachmentsExpanded > * {
+  break-inside: avoid-column;
+  margin-bottom: 12px;
+  display: inline-block; /* Helps prevent column breaking */
+  width: 100%;
+  direction: ltr; /* Reset text direction */
 }
 
 .attachmentsWithMenu {
