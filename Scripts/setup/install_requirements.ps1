@@ -79,6 +79,17 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host ""
 
+# Install/upgrade setuptools and wheel (required for building packages)
+Write-Host "Installing setuptools and wheel..." -ForegroundColor Cyan
+& $PipPath install --upgrade setuptools wheel
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[X] Failed to install setuptools and wheel" -ForegroundColor Red
+    Write-Host "These are required to build packages. Please fix the error and try again." -ForegroundColor Yellow
+    exit 1
+}
+Write-Host ""
+
 # Count total packages
 $TotalPackages = (Get-Content $RequirementsPath | Where-Object { 
     $_ -and $_.Trim() -and -not $_.Trim().StartsWith("#") 

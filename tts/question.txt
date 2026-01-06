@@ -1,8 +1,0 @@
-based on the architecture including the auth, if we applied kong as the api gateway, what would be the protocol and architecture for authentication?
-
-is it:
-
-A. there is no need for JWT validation for most of the services (no authentication.py), it's handled by the api gateway, the services trust API gateway
-B. do we keep current design where each services validates the jwt cookie
-
-since every service uses authentication.py, how drastic will the changes be? 

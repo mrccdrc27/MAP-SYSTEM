@@ -24,8 +24,8 @@ django-extensions==4.1
 django-filter==25.1
 
 # Data Science (for forecasting)
-numpy==1.24.0
-scipy==1.10.0
+numpy==1.24.4
+scipy==1.14.1
 
 # Server & Deployment
 gunicorn==20.1.0
