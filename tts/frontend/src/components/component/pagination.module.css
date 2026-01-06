@@ -49,14 +49,14 @@
 }
 
 .pageButton:hover {
-  background-color: #ddd;
+  background-color: var(--border-color);
 }
 
 .pageButton.active {
   font-weight: bold;
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
+  background-color: var(--primary-color);
+  color: var(--bg1-color);
+  border-color: var(--primary-color);
 }
 
 .ellipsis {

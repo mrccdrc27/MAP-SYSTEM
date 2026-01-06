@@ -26,42 +26,28 @@ export function generateSecureMediaUrl(filePath, token) {
 }
 
 /**
- * Get the current access token from localStorage
+ * Get the current access token from cookies
+ * Note: This only works if cookies are not HttpOnly
+ * For HttpOnly cookies, API requests should use credentials: 'include'
  * @returns {string|null} - The access token or null if not found
  */
 export function getAccessToken() {
-  // Check the correct key used by TokenUtils: 'accessToken' (camelCase)
-  const accessToken = localStorage.getItem('accessToken');
-  if (accessToken) {
-    console.log('💚 [TOKEN] Found token in localStorage under key "accessToken"');
-    return accessToken;
-  }
-  
-  // Also try camelCase variants
-  const employeeToken = localStorage.getItem('employeeAccessToken');
-  if (employeeToken) {
-    console.log('💚 [TOKEN] Found token in localStorage under key "employeeAccessToken"');
-    return employeeToken;
-  }
-  
-  const adminToken = localStorage.getItem('adminAccessToken');
-  if (adminToken) {
-    console.log('💚 [TOKEN] Found token in localStorage under key "adminAccessToken"');
-    return adminToken;
-  }
-  
-  // Fall back to checking cookies
+  // Check for access_token in cookies
   const tokenCookie = document.cookie
     .split('; ')
     .find(row => row.startsWith('access_token='));
   
   if (tokenCookie) {
     const token = tokenCookie.split('=')[1];
-    console.log('💚 [TOKEN] Found token in cookies under key "access_token"');
+    if (import.meta.env.DEV) {
+      console.debug('[secureMedia] Found token in cookies');
+    }
     return token;
   }
   
-  console.log('🔴 [TOKEN] No token found in localStorage or cookies');
+  if (import.meta.env.DEV) {
+    console.debug('[secureMedia] No token found in cookies (may be HttpOnly)');
+  }
   return null;
 }
 
@@ -135,17 +121,9 @@ export function convertToSecureUrl(existingUrl) {
  * @returns {Promise} - Promise that resolves with the download
  */
 export async function downloadSecureFile(url, filename) {
-  const token = getAccessToken();
-  
-  if (!token) {
-    throw new Error('No authentication token available');
-  }
-  
   try {
     const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      credentials: 'include', // Use cookie-based auth
     });
     
     if (!response.ok) {

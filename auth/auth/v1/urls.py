@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema
+from .token_refresh_view import UnifiedTokenRefreshView
 
 class APIV1RootSerializer(serializers.Serializer):
     users = serializers.URLField()
@@ -35,8 +36,10 @@ urlpatterns = [
     path('roles/', include('roles.urls')),
     path('systems/', include('systems.urls')),
     path('system-roles/', include('system_roles.urls')),
-    # Optional:
+    # Token endpoints
     path('token/', include('auth.token_urls')),
+    # Unified token refresh (cookie-based, works for both User and Employee)
+    path('token/refresh/cookie/', UnifiedTokenRefreshView.as_view(), name='unified-token-refresh'),
     path('tts/', include('tts.urls')),
     path('hdts/', include('hdts.urls')),
 ]

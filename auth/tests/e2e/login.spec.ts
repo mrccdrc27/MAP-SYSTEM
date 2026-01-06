@@ -1,0 +1,34 @@
+import { test, expect } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.goto('http://localhost:8000/staff/login/');
+  await page.getByRole('textbox', { name: 'Email:' }).click();
+  await page.getByRole('textbox', { name: 'Email:' }).click();
+  await page.getByRole('textbox', { name: 'Email:' }).fill('');
+  await page.getByRole('textbox', { name: 'Email:' }).dblclick();
+  await page.getByRole('textbox', { name: 'Email:' }).fill('tickettrackingsystem.mapactive+lawrenceafable@dev.mapactive.tech');
+  await page.getByRole('textbox', { name: 'Password:' }).click();
+  await page.getByRole('textbox', { name: 'Password:' }).fill('Tr@ck1ng.Sys7em.2025!Secure');
+  await page.getByRole('button', { name: 'Log In' }).click();
+  await expect(page.getByRole('heading', { name: 'Select a System' })).toBeVisible();
+  await expect(page.getByText('Choose which system you want')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ticket Tracking System  tts' })).toBeVisible();
+  await page.getByRole('link', { name: ' Go to Profile' }).click();
+  await expect(page.locator('#display-username')).toContainText('lawrenceafable');
+  await expect(page.locator('#display-email')).toContainText('tickettrackingsystem.mapactive+lawrenceafable@dev.mapactive.tech');
+  await page.getByRole('textbox', { name: 'First Name' }).click();
+  await expect(page.getByRole('textbox', { name: 'First Name' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Last Name' }).click();
+  await expect(page.getByRole('link', { name: ' Manage Agents' })).toBeVisible();
+  await page.getByRole('link', { name: ' Manage Agents' }).click();
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Edit Agent' })).toBeVisible();
+  await page.getByRole('button', { name: '×' }).click();
+  await page.getByRole('link', { name: ' Invite Agent' }).click();
+  await page.getByRole('heading', { name: 'Available Users to Invite' }).click();
+  await page.getByRole('link', { name: ' Manage Roles' }).click();
+  await page.getByText('Manage TTS Roles Create new').click();
+  await page.getByRole('link', { name: ' Manage Assignments' }).click();
+  await page.getByRole('heading', { name: 'Manage Role Assignments' }).click();
+  await page.getByRole('link', { name: ' Logout' }).click();
+});

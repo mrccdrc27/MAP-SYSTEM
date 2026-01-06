@@ -52,10 +52,11 @@ function TicketItem({ item, onInviteAgent }) {
       <td>{format(new Date(item.created_at), "yyyy-MM-dd hh:mm:ss a")}</td>
       <td>
         <button
-          className={general.btn}
+          className={general.btnAdd}
           onClick={() => onInviteAgent(item.ticket_id)}
+          title="Assign task to workflow"
         >
-          <i className="fa-solid fa-plus"></i> Assign Task
+          ➕ Assign
         </button>
       </td>
     </tr>

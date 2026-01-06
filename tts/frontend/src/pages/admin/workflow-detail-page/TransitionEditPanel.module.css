@@ -1,0 +1,36 @@
+/* TransitionEditPanel specific styles */
+
+.transitionInfo {
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.infoRow {
+  font-size: 0.8125rem;
+  margin-bottom: 8px;
+}
+
+.infoRow:last-child {
+  margin-bottom: 0;
+}
+
+.infoLabel {
+  color: var(--muted-text-color);
+}
+
+.infoValue {
+  margin-left: 8px;
+  color: var(--text-color);
+}
+
+.errorText {
+  color: var(--error-color);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.charCount {
+  font-size: 11px;
+  color: var(--muted-text-color);
+  margin-top: 2px;
+}

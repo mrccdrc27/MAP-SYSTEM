@@ -3,10 +3,6 @@ import uuid
 from django.utils import timezone
 
 
-# Import token storage model
-from .token_storage import GmailToken  # noqa
-
-
 class NotificationTemplate(models.Model):
     """
     Template for different types of notifications

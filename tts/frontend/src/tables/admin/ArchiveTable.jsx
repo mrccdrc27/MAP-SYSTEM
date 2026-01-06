@@ -50,8 +50,9 @@ function ArchiveItem({ item }) {
       <td>{item.opened_on}</td>
       <td>
         <button
-          className={general.btn}
+          className={general.btnView}
           onClick={() => navigate(`/agent/ticket/${item.id}`)}
+          title="View ticket details"
         >
           👁
         </button>

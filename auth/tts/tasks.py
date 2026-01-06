@@ -194,12 +194,12 @@ def trigger_workflow_seeding():
             routing_key='workflow.seed',
         )
         
-        logger.info("✓ Triggered workflow seeding via Celery")
+        logger.info("[OK] Triggered workflow seeding via Celery")
         return {
             "status": "success",
             "message": "Workflow seeding triggered in workflow_api",
         }
     
     except Exception as e:
-        logger.error(f"✗ Error triggering workflow seeding: {str(e)}")
+        logger.error(f"[ERROR] Error triggering workflow seeding: {str(e)}")
         return {"status": "error", "error": str(e)}

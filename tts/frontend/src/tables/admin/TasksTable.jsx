@@ -55,8 +55,9 @@ function TicketItem({ item }) {
       </td>
       <td>
         <button
-          className={general.btn}
+          className={general.btnView}
           onClick={() => navigate(`/admin/archive/${item.task_id}`)}
+          title="View task details"
         >
           👁
         </button>

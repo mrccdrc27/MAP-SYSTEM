@@ -72,12 +72,21 @@ class Command(BaseCommand):
             action='store_true',
             help='Run the command without making database changes',
         )
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Force recreate by deleting existing transitions before seeding',
+        )
 
     def handle(self, *args, **options):
         dry_run = options.get('dry_run', False)
+        force = options.get('force', False)
         
         if dry_run:
             self.stdout.write(self.style.WARNING('Running in DRY RUN mode - no changes will be made'))
+        
+        if force:
+            self.stdout.write(self.style.WARNING('Running in FORCE mode - existing transitions will be deleted'))
         
         self.stdout.write(self.style.MIGRATE_HEADING('Starting 3-step workflow seeding process...'))
         
@@ -94,6 +103,11 @@ class Command(BaseCommand):
                     self.stdout.write(f'  • {role_key}: {role_obj.name} (ID: {role_obj.role_id})')
             except Roles.DoesNotExist as e:
                 raise CommandError(f"Missing expected role: {e}. Please ensure the following roles exist in the database: Admin, Asset Manager, Budget Manager")
+
+            # If force mode, delete all existing transitions to start fresh
+            if force:
+                deleted_count = StepTransition.objects.all().delete()[0]
+                self.stdout.write(self.style.WARNING(f'✓ Deleted {deleted_count} existing transitions'))
 
             # Define the standardized 3-step configuration generator
             def create_3_step_config(resolver_role, resolver_instruction, resolve_desc):
@@ -215,22 +229,12 @@ class Command(BaseCommand):
                     "broken_type": "deadend_and_orphan"
                 },
             ]
-
-            # End logic options mapped to departments
-            end_logic_map = {
-                'Asset Department': 'asset',
-                'Budget Department': 'budget',
-                'IT Department': 'notification',
-            }
             
             total_workflows = 0
             total_steps = 0
             total_transitions = 0
 
             for wf_data in workflows_to_create:
-                # Assign end logic based on department
-                end_logic = end_logic_map.get(wf_data['department'], 'notification')
-
                 self.stdout.write(f'\n{self.style.MIGRATE_LABEL("Processing workflow:")} {wf_data["name"]}')
 
                 wf, created = Workflows.objects.get_or_create(
@@ -240,10 +244,9 @@ class Command(BaseCommand):
                         'description': wf_data.get("description", f'{wf_data["name"]} workflow'),
                         'category': wf_data["category"],
                         'sub_category': wf_data["sub_category"],
-                        'end_logic': end_logic,
                         'department': wf_data["department"],
-                        'is_published': True,
-                        'status': 'deployed',  # Set status to deployed so workflows are active
+                        'is_published': False,  # Let validation signals compute this
+                        'status': 'draft',  # Let validation signals compute final status
                         'urgent_sla': timedelta(hours=4),
                         'high_sla': timedelta(hours=8),
                         'medium_sla': timedelta(days=2),
@@ -254,11 +257,11 @@ class Command(BaseCommand):
                 if created:
                     total_workflows += 1
                     self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ Created workflow with end_logic="{end_logic}" for {wf_data["department"]}'
+                        f'  ✓ Created workflow for {wf_data["department"]}'
                     ))
                 else:
                     self.stdout.write(self.style.WARNING(
-                        f'  ⚠ Workflow already exists (end_logic="{end_logic}")'
+                        f'  ⚠ Workflow already exists'
                     ))
 
                 # Get workflow-specific step configuration
@@ -325,30 +328,50 @@ class Command(BaseCommand):
                         elif idx == 1:
                             # Create a transition between orphaned steps (disconnected from start)
                             if idx + 1 < num_steps:
-                                transitions = [(step, step_objs[idx + 1])]
+                                transitions = [(step, step_objs[idx + 1], 'Forward')]
                     else:
                         # NORMAL workflow: Flexible transitions based on step count
-                        if idx == 0:  # First step
-                            transitions = [(None, step)]  # start
-                            if num_steps > 1:  # Only add outgoing transition if there are more steps
-                                transitions.append((step, step_objs[idx + 1]))
-                        elif idx == num_steps - 1:  # Last step
-                            transitions = [(step, None)]  # complete -> End
-                            if num_steps > 1 and idx > 0:  # Add reject transition if not single step and not first
-                                transitions.append((step, step_objs[idx - 1]))
+                        # NOTE: Validation requires BOTH from_step_id and to_step_id to be set
+                        # so we don't create (None, step) or (step, None) transitions.
+                        # Transition tuple format: (from_step, to_step, name)
+                        if num_steps == 1:
+                            # Single step workflow: No transitions needed!
+                            # The step is both is_start=True and is_end=True
+                            # Validation allows end steps to have no outgoing transitions
+                            # and start step is already in reachable set
+                            transitions = []
+                        elif idx == 0:  # First step
+                            transitions = [(step, step_objs[idx + 1], 'Submit')]  # Forward to next step
+                        elif idx == num_steps - 1:  # Last step (End node)
+                            # End nodes (is_end=True) should NOT have outgoing transitions
+                            # The is_end flag marks the step as terminal - workflow completes here
+                            # No reject from end node - tickets must be finalized/closed, not sent back
+                            transitions = []
                         else:  # Middle steps
                             transitions = [
-                                (step, step_objs[idx + 1]),  # approve -> Next
-                                (step, step_objs[idx - 1])   # reject -> Previous
+                                (step, step_objs[idx + 1], 'Approve'),  # approve -> Next
+                                (step, step_objs[idx - 1], 'Reject')   # reject -> Previous
                             ]
                     
-                    for frm, to in transitions:
+                    for frm, to, trans_name in transitions:
                         try:
-                            # Create transition without triggering initialization checks
-                            trans = StepTransition(
+                            # Check if transition already exists before creating
+                            existing_transition = StepTransition.objects.filter(
                                 from_step_id=frm,
                                 to_step_id=to,
                                 workflow_id=wf
+                            ).first()
+                            
+                            if existing_transition:
+                                # Transition already exists, skip
+                                continue
+                            
+                            # Create transition with name
+                            trans = StepTransition(
+                                from_step_id=frm,
+                                to_step_id=to,
+                                workflow_id=wf,
+                                name=trans_name
                             )
                             trans.save()
                             total_transitions += 1
@@ -358,20 +381,21 @@ class Command(BaseCommand):
                             ))
                             continue
 
-                # After all steps and transitions are created, force the workflow status
-                # Use update() to bypass signals that recalculate status
+                # After all steps and transitions are created, let signals compute status
+                # Manually trigger status recomputation by calling compute_workflow_status
+                from workflow.utils import compute_workflow_status
+                compute_workflow_status(wf.workflow_id)
+                
+                # Reload workflow to get updated status
+                wf.refresh_from_db()
                 is_broken = wf_data.get('broken_type') is not None
-                if not is_broken:
-                    Workflows.objects.filter(workflow_id=wf.workflow_id).update(
-                        status='deployed',
-                        is_published=True
-                    )
-                    self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ Workflow status set to deployed (bypassing validation signals)'
+                if is_broken:
+                    self.stdout.write(self.style.WARNING(
+                        f'  ⚠ Broken workflow status: {wf.status} (expected: draft)'
                     ))
                 else:
-                    self.stdout.write(self.style.WARNING(
-                        f'  ⚠ Broken workflow left in draft state intentionally'
+                    self.stdout.write(self.style.SUCCESS(
+                        f'  ✓ Workflow status computed by validation: {wf.status}, is_published: {wf.is_published}'
                     ))
 
             # Comprehensive summary output
@@ -383,11 +407,11 @@ class Command(BaseCommand):
             self.stdout.write(f'{self.style.MIGRATE_LABEL("Total Transitions Created:")} {total_transitions}')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflow Structure Summary:'))
-            self.stdout.write('  • Asset Department (end_logic: asset)')
+            self.stdout.write('  • Asset Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
-            self.stdout.write('  • Budget Department (end_logic: budget)')
+            self.stdout.write('  • Budget Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin)')
-            self.stdout.write('  • IT Department (end_logic: notification)')
+            self.stdout.write('  • IT Department')
             self.stdout.write(f'    - Process (Asset Manager) [Single Step]')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflows Created:'))

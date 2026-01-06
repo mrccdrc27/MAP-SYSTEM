@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
 import api from "./axios";
 
-const useTicketDetail = (task_item_id) => {
+/**
+ * Hook to fetch ticket details by ticket_number.
+ * The backend resolves the ticket_number to the current user's TaskItem.
+ * 
+ * @param {string} ticketNumber - The ticket number (e.g., "TX20251227638396")
+ */
+const useTicketDetail = (ticketNumber) => {
   const [stepInstance, setStepInstance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!task_item_id) {
+    if (!ticketNumber) {
       setStepInstance(null);
       setLoading(false);
       return;
@@ -18,7 +24,8 @@ const useTicketDetail = (task_item_id) => {
       setError("");
       
       try {
-        const response = await api.get(`tasks/detail/${task_item_id}/`);
+        // Use the by-ticket endpoint that resolves ticket_number to user's TaskItem
+        const response = await api.get(`tasks/detail/by-ticket/${ticketNumber}/`);
         setStepInstance(response.data);
       } catch (err) {
         console.error('Failed to fetch ticket detail:', err);
@@ -26,7 +33,7 @@ const useTicketDetail = (task_item_id) => {
         if (err.response?.status === 403) {
           setError("No authorization to handle this ticket");
         } else if (err.response?.status === 404) {
-          setError("Step instance not found");
+          setError(err.response?.data?.error || "Ticket not found or not assigned to you");
         } else if (err.response?.status === 401) {
           setError("Authentication required");
         } else {
@@ -38,14 +45,14 @@ const useTicketDetail = (task_item_id) => {
     };
 
     fetchStepInstance();
-  }, [task_item_id]);
+  }, [ticketNumber]);
 
   const refetch = () => {
-    if (task_item_id) {
+    if (ticketNumber) {
       setLoading(true);
       setError("");
       
-      api.get(`tasks/detail/${task_item_id}/`)
+      api.get(`tasks/detail/by-ticket/${ticketNumber}/`)
         .then(response => {
           setStepInstance(response.data);
         })
@@ -55,7 +62,7 @@ const useTicketDetail = (task_item_id) => {
           if (err.response?.status === 403) {
             setError("No authorization to handle this ticket");
           } else if (err.response?.status === 404) {
-            setError("Step instance not found");
+            setError(err.response?.data?.error || "Ticket not found or not assigned to you");
           } else if (err.response?.status === 401) {
             setError("Authentication required");
           } else {

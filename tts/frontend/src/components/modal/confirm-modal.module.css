@@ -12,11 +12,11 @@
 }
 
 .modal {
-  background: #ffffff;
+  background: var(--bg1-color);
   padding: 20px;
   border-radius: 8px;
   width: 320px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--box-shadow, 0 0 20px rgba(0, 0, 0, 0.3));
 }
 
 .title {
@@ -28,7 +28,7 @@
 .message {
   margin: 0 0 20px;
   font-size: 1rem;
-  color: #333;
+  color: var(--heading-color);
 }
 
 .actions {
@@ -38,8 +38,8 @@
 }
 
 .cancelBtn {
-  background: #b0b0b0;
-  color: #fff;
+  background: var(--muted-text-color);
+  color: var(--bg1-color);
   border: none;
   padding: 8px 12px;
   border-radius: 5px;
@@ -47,8 +47,8 @@
 }
 
 .confirmBtn {
-  background: #e63946;
-  color: #fff;
+  background: var(--error-color);
+  color: var(--bg1-color);
   border: none;
   padding: 8px 12px;
   border-radius: 5px;

@@ -11,7 +11,6 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [editingMessage, setEditingMessage] = useState(null);
-  const [showReactionModal, setShowReactionModal] = useState(null);
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -37,16 +36,25 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
     isLoading,
     error,
     typingUsers,
+    onlineUsers,
     fetchMessages,
     sendMessage: sendMessageAPI,
     editMessage,
     deleteMessage,
+    unsendMessage,
     addReaction,
     removeReaction,
     downloadAttachment,
     startTyping,
     stopTyping,
   } = useMessaging(ticket_id, currentIdentifier);
+
+  // Determine if ticket owner is online (check against onlineUsers list)
+  const isOwnerOnline = onlineUsers?.some(user => 
+    user === ownerName || 
+    user === ticket_owner?.username || 
+    user === ticket_owner?.email
+  );
 
   // Use auto-scroll hook
   useAutoScroll(messages, containerRef);
@@ -77,14 +85,12 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
     }
   };
 
-  // Handle message deletion
-  const handleDeleteMessage = async (messageId) => {
-    if (window.confirm('Delete this message?')) {
-      try {
-        await deleteMessage(messageId);
-      } catch (error) {
-        console.error('Failed to delete message:', error);
-      }
+  // Handle message unsend
+  const handleUnsendMessage = async (messageId, forAll = false) => {
+    try {
+      await unsendMessage(messageId, forAll);
+    } catch (error) {
+      console.error('Failed to unsend message:', error);
     }
   };
 
@@ -120,12 +126,12 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
       <div className={styles.header}>
         <div className={styles.headerContent}>
           <h3 className={styles.title}>{ownerName}</h3>
-          {/* <div className={styles.statusIndicator}>
-            <span className={`${styles.statusDot} ${isConnected ? styles.connected : styles.disconnected}`} />
+          <div className={styles.statusIndicator}>
+            <span className={`${styles.statusDot} ${isOwnerOnline ? styles.online : styles.offline}`} />
             <span className={styles.statusText}>
-              {isConnected ? 'Connected' : 'Disconnected'}
+              {isOwnerOnline ? 'Online' : 'Offline'}
             </span>
-          </div> */}
+          </div>
         </div>
         {/* {error && <div className={styles.error}>{error}</div>} */}
       </div>
@@ -157,11 +163,9 @@ const Messaging = ({ ticket_id , ticket_owner}) => {
                   currentUserId={currentUserId}
                   currentUserData={authUser}
                   onEdit={handleEditMessage}
-                  onDelete={handleDeleteMessage}
+                  onUnsend={handleUnsendMessage}
                   onReaction={handleReaction}
                   onDownloadAttachment={downloadAttachment}
-                  showReactionModal={showReactionModal}
-                  setShowReactionModal={setShowReactionModal}
                 />
               );
             })}

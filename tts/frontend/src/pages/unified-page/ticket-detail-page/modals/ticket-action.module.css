@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-dark-bg, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,9 +13,9 @@
 }
 
 .ticketActionModal {
-  background-color: white;
+  background-color: var(--bg1-color);
   border-radius: 8px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
   max-width: 700px;
   width: 100%;
   max-height: 90vh;
@@ -31,26 +31,26 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .taHeaderTitle {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--heading-color);
 }
 
 .taHeaderSubtitle {
   margin: 8px 0 0 0;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--muted-text-color);
 }
 
 .taCloseButton {
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--muted-text-color);
   cursor: pointer;
   font-size: 24px;
   padding: 0;
@@ -58,7 +58,7 @@
 }
 
 .taCloseButton:hover {
-  color: #374151;
+  color: var(--secondary-color);
 }
 
 /* Body */
@@ -73,12 +73,12 @@
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--heading-color);
   margin-bottom: 8px;
 }
 
 .taRequired {
-  color: #ef4444;
+  color: var(--error-color);
   margin-left: 4px;
 }
 
@@ -93,9 +93,9 @@
 }
 
 .taErrorMessage {
-  background-color: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #7f1d1d;
+  background-color: var(--critical-bg-color);
+  border: 1px solid var(--error-color);
+  color: var(--critical-color);
 }
 
 .taErrorMessage i {
@@ -177,38 +177,38 @@
 
 .taActionName {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-color);
   font-size: 14px;
   margin-bottom: 2px;
 }
 
 .taActionDescription {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted-text-color);
 }
 
 .taCheckmark {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  background-color: #3b82f6;
+  background-color: var(--primary-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--bg1-color);
   font-size: 12px;
 }
 
 .taNoActions {
   padding: 16px;
   text-align: center;
-  color: #6b7280;
+  color: var(--muted-text-color);
   margin: 0;
 }
 
 .taErrorText {
-  color: #ef4444;
+  color: var(--error-color);
   font-size: 12px;
   margin-top: 8px;
 }
@@ -221,7 +221,7 @@
 .taTextarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
@@ -232,13 +232,13 @@
 
 .taTextarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: var(--box-shadow-hover, 0 0 0 3px rgba(59, 130, 246, 0.1));
 }
 
 .taCharCount {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted-text-color);
   margin-top: 4px;
   margin-bottom: 0;
 }
@@ -249,8 +249,8 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-content-color);
 }
 
 .taCancelButton,
@@ -270,14 +270,14 @@
 }
 
 .taCancelButton {
-  background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background-color: var(--bg1-color);
+  color: var(--table-color);
+  border: 1px solid var(--border-color);
 }
 
 .taCancelButton:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+  background-color: var(--bg-content-color);
+  border-color: var(--muted-text-color);
 }
 
 .taCancelButton:disabled {
@@ -286,12 +286,12 @@
 }
 
 .taSubmitButton {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--primary-color);
+  color: var(--bg1-color);
 }
 
 .taSubmitButton:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--primary-color-hover);
 }
 
 .taSubmitButton:disabled {

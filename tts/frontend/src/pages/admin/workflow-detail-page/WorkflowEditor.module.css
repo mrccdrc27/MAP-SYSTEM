@@ -4,13 +4,13 @@
   margin: 0 auto;
   padding: 2rem;
   min-height: 100vh;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .header {
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .title {
@@ -31,7 +31,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.5px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .grid {
@@ -44,7 +44,7 @@
 /* Section Styles */
 .section {
   padding: 1.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .sectionTitle {
@@ -65,7 +65,7 @@
 .stepCard {
   padding: 1rem;
   transition: all 0.2s ease;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 }
 
@@ -104,7 +104,7 @@
   /* font-weight: 500; */
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 16px;
 }
 
@@ -150,7 +150,7 @@
 .transitionItem {
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   line-height: 2;
 }
@@ -172,7 +172,7 @@
 .transitionCard {
   padding: 1rem;
   transition: all 0.2s ease;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 }
 
@@ -202,7 +202,7 @@
   color: var(--heading-color);
   font-size: var(--default-font-size);
   font-weight: 500;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 }
 
@@ -223,7 +223,7 @@
 .addStepForm,
 .addTransitionForm {
   padding: 1.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .formTitle {
@@ -256,7 +256,7 @@
   padding: 0.75rem;
   font-size: 0.875rem;
   transition: all 0.2s ease;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   color: var(--muted-text-color);
 }
@@ -268,14 +268,14 @@
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   background-color: var(--success-color);
   color: var(--bg-color);
 }
 
 .error {
-  color: #dc2626; /* Red */
+  color: var(--error-color);
   font-size: 0.85rem;
   margin-bottom: 0.25rem;
   font-weight: 500;
@@ -295,7 +295,7 @@
   max-width: 500px;
   max-height: 90vh;
   overflow: hidden;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .modalOverlay {
@@ -316,13 +316,13 @@
 
 /* MODALS */
 .modal {
-  background: #fff;
+  background: var(--bg1-color);
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow: hidden;
   border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--box-shadow, 0 10px 40px rgba(0, 0, 0, 0.3));
   display: flex;
   flex-direction: column;
   animation: fadeInScale 0.3s ease-out;
@@ -333,7 +333,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modalTitle {
@@ -369,8 +369,8 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  border-top: 1px solid #ccc;
-  background-color: #f9f9f9;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-content-color);
 }
 
 /* END MODALS */
@@ -414,7 +414,7 @@
   font-size: 1.125rem;
   text-align: center;
   padding: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 /* Responsive Design */
@@ -486,10 +486,10 @@
 /* steptransition */
 
 .undoButton {
-  background-color: #f3f3f3;
-  color: #333;
+  background-color: var(--bg-content-color);
+  color: var(--heading-color);
   margin-right: 8px;
   padding: 6px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 }

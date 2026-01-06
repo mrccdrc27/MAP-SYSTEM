@@ -36,8 +36,8 @@
 
 /* REVISED BUTTON STYLES */
 .resetButton {
-  background-color: #007BFF; 
-  color: white;            
+  background-color: var(--primary-color); 
+  color: var(--bg1-color);            
   padding: 12px;            
   border-radius: 6px;       
   border: none;           
@@ -47,5 +47,5 @@
 }
 
 .resetButton:hover {
-  background-color: #0056b3; /* Darker shade of blue on hover */
+  background-color: var(--primary-color-hover);
 }

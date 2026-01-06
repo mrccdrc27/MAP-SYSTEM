@@ -11,6 +11,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [connectedUsers, setConnectedUsers] = useState([]);
   
   const socketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
@@ -123,6 +124,17 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
           );
         }
         break;
+
+      case 'message_unsent':
+        // Update unsent message
+        if (data.message && setMessages) {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.message_id === data.message.message_id ? data.message : msg
+            )
+          );
+        }
+        break;
         
       case 'reaction_added':
       case 'reaction_removed':
@@ -154,6 +166,35 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
           });
         } else {
           console.log('[useWebSocketMessaging] Ignoring own typing indicator');
+        }
+        break;
+
+      case 'user_joined':
+      case 'presence_update':
+        // Track user joining the chat
+        console.log('[useWebSocketMessaging] User joined/presence update:', data);
+        if (data.user && String(data.user) !== String(userId)) {
+          setConnectedUsers(prev => {
+            if (data.status === 'online' || data.type === 'user_joined') {
+              return prev.includes(data.user) ? prev : [...prev, data.user];
+            } else if (data.status === 'offline') {
+              return prev.filter(u => u !== data.user);
+            }
+            return prev;
+          });
+        }
+        // Handle users list from server
+        if (data.users) {
+          setConnectedUsers(data.users.filter(u => String(u) !== String(userId)));
+        }
+        break;
+
+      case 'user_left':
+        // Track user leaving the chat
+        console.log('[useWebSocketMessaging] User left:', data);
+        if (data.user) {
+          setConnectedUsers(prev => prev.filter(u => u !== data.user));
+          setTypingUsers(prev => prev.filter(u => u !== data.user));
         }
         break;
         
@@ -258,6 +299,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
     isConnected,
     error,
     typingUsers,
+    connectedUsers,
     startTyping,
     stopTyping,
     reconnect,

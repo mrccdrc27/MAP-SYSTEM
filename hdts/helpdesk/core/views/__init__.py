@@ -47,6 +47,7 @@ from .knowledge_views import (
 
 from .media_views import (
     serve_protected_media,
+    serve_ticket_attachment,
     test_jwt_view,
 )
 
@@ -86,5 +87,6 @@ __all__ = [
     'custom_api_root',
     'KnowledgeArticleViewSet',
     'serve_protected_media',
+    'serve_ticket_attachment',
     'test_jwt_view',
 ]

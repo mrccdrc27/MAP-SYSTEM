@@ -28,8 +28,12 @@
         <td>{item.email}</td>
         <td>{item.role}</td>
         <td>
-          <button className={general.btn} onClick={() => onDeleteClick(item)}>
-            👁
+          <button 
+            className={general.btnDelete} 
+            onClick={() => onDeleteClick(item)}
+            title="Delete invite"
+          >
+            🗑️
           </button>
         </td>
       </tr>

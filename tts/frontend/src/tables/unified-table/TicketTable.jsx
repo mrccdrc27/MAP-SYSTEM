@@ -37,8 +37,13 @@ function TicketHeader() {
 function TicketItem({ item }) {
   const navigate = useNavigate();
   // console.log("id", item);
+  
+  const handleRowClick = () => {
+    navigate(`/ticket/${item.ticket_number}`);
+  };
+  
   return (
-    <tr className={general.item}>
+    <tr className={`${general.item} ${general.clickableRow}`} onClick={handleRowClick}>
       <td>{item.hasacted ? "Has Acted" : "Not Yet"}</td>
       <td>{item.ticket_number}</td>
       <td>{item.subject}</td>
@@ -90,8 +95,12 @@ function TicketItem({ item }) {
 
       <td>
         <button
-          className={general.btn}
-          onClick={() => navigate(`/ticket/${item.task_item_id}`)}
+          className={general.btnView}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/ticket/${item.ticket_number}`);
+          }}
+          title="View ticket details"
         >
           👁
         </button>

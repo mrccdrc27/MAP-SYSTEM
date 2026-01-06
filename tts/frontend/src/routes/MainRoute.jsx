@@ -63,7 +63,7 @@ export default function MainRoute() {
       <Route element={<ProtectedRoute requireAgent={true} />}>
         <Route path="/agent/track" element={<Track />} />
         <Route path="/agent/archive" element={<Archive />} />
-        <Route path="/agent/ticket/:id" element={<TicketDetail />} />
+        <Route path="/agent/ticket/:ticketNumber" element={<TicketDetail />} />
         <Route path="/agent/profile" element={<AgentProfile />} />
       </Route>
 
@@ -76,14 +76,14 @@ export default function MainRoute() {
           element={<CreateWorkflowPage />}
         />
         <Route
-          path="/admin/workflows/:workflowId/edit"
+          path="/admin/workflows/:workflowName/edit"
           element={<WorkflowEditorPage />}
         />
         <Route path="/admin/agent" element={<Agent />} />
         <Route path="/admin/archive" element={<AdminArchive />} />
         <Route path="/admin/archive/:id" element={<AdminArchiveDetail />} />
         <Route
-          path="/admin/workflow/:workflowId"
+          path="/admin/workflow/:workflowName"
           element={<WorkflowEditorPage />}
         />
         {/* <Route path="/admin/assigned" element={<AdminTicket />} /> */}
@@ -94,7 +94,7 @@ export default function MainRoute() {
       <Route element={<ProtectedRoute requireAuth={true} />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/ticket" element={<Ticket />} />
-        <Route path="/ticket/:id" element={<TicketDetail />} />
+        <Route path="/ticket/:ticketNumber" element={<TicketDetail />} />
         <Route path="/archive" element={<Archive />} />
       </Route>
 

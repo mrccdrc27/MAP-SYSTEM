@@ -1,9 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import NotFoundPage from "../not-found-page/NotFoundPage";
 import { USE_LOCAL_API } from "../../config/environment.js";
+import { useAuth } from "../../context/AuthContext";
 
 const ProtectedRoute = ({ role }) => {
   const location = useLocation();
+  const { hasAuth, user, loading, initialized } = useAuth();
   
   // For local development, bypass authentication checks
   if (USE_LOCAL_API) {
@@ -11,15 +13,13 @@ const ProtectedRoute = ({ role }) => {
     return <Outlet />;
   }
   
-  // Original authentication logic for backend API
-  let token = null;
-  if (role === "admin") {
-    token = localStorage.getItem("admin_access_token");
-  } else if (role === "employee") {
-    token = localStorage.getItem("employee_access_token");
+  // Wait for auth to initialize
+  if (!initialized || loading) {
+    return null; // or a loading spinner
   }
-
-  if (!token) {
+  
+  // Check if user is authenticated via cookie-based auth
+  if (!hasAuth) {
     return <NotFoundPage />;
   }
 

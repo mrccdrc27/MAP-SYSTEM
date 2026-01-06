@@ -161,6 +161,8 @@ class AuthenticationRoutingMiddleware:
                         '/api/v1/users/password/forgot/',
                         '/api/v1/users/password/reset/', # With trailing slash
                         '/api/v1/users/password/reset',  # Without trailing slash
+                        '/api/v1/hdts/employees/api/password/forgot/',  # HDTS forgot password
+                        '/api/v1/hdts/employees/api/password/reset/',   # HDTS reset password
                         '/api/v1/users/login/verify-otp/',
                         '/api/v1/users/verify-password/',  # Allow authenticated users to verify password
                         '/api/v1/users/change-password/',  # Allow authenticated users to change password

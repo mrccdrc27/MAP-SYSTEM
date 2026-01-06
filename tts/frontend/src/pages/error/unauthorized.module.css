@@ -3,30 +3,30 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f7f7f7, #ececec);
+  background: var(--bg-color);
   padding: 20px;
 }
 
 .card {
-  background: #fff;
+  background: var(--bg1-color);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--box-shadow, 0 4px 20px rgba(0, 0, 0, 0.08));
   max-width: 400px;
   width: 100%;
   text-align: center;
   padding: 40px 30px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow-hover, 0 6px 24px rgba(0, 0, 0, 0.1));
 }
 
 .iconWrapper {
-  background-color: #ffe6e6;
-  color: #e74c3c;
+  background-color: var(--error-bg, #ffe6e6);
+  color: var(--error-color);
   border-radius: 50%;
   width: 80px;
   height: 80px;
@@ -43,13 +43,13 @@
 .title {
   font-size: 1.8rem;
   font-weight: 600;
-  color: #333;
+  color: var(--heading-color);
   margin-bottom: 12px;
 }
 
 .message {
   font-size: 1rem;
-  color: #666;
+  color: var(--muted-text-color);
   margin-bottom: 28px;
   line-height: 1.5;
 }
@@ -62,8 +62,8 @@
 }
 
 .primaryButton {
-  background-color: #007bff;
-  color: #fff;
+  background-color: var(--primary-color);
+  color: var(--bg1-color);
   padding: 12px 16px;
   border: none;
   border-radius: 8px;
@@ -75,13 +75,13 @@
 }
 
 .primaryButton:hover {
-  background-color: #005fcc;
+  background-color: var(--primary-color-hover);
 }
 
 .secondaryButton {
-  background-color: #f8f9fa;
-  color: #333;
-  border: 1px solid #ccc;
+  background-color: var(--bg-content-color);
+  color: var(--heading-color);
+  border: 1px solid var(--border-color);
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 1rem;
@@ -91,17 +91,17 @@
 }
 
 .secondaryButton:hover {
-  background-color: #f1f1f1;
-  border-color: #bbb;
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
 }
 
 .footer {
   font-size: 0.9rem;
-  color: #999;
+  color: var(--muted-text-color);
 }
 
 .supportLink {
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
   font-weight: 500;
   margin-left: 4px;
@@ -109,5 +109,5 @@
 }
 
 .supportLink:hover {
-  color: #005fcc;
+  color: var(--primary-color-hover);
 }

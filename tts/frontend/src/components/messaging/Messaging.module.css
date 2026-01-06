@@ -2,16 +2,16 @@
   display: flex;
   flex-direction: column;
   height: var(--messaging-height, 600px);
-  background: white;
+  background: var(--bg1-color);
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--box-shadow, 0 4px 24px rgba(0, 0, 0, 0.08));
   overflow: hidden;
 }
 
 .header {
   padding: 16px 20px;
-  background: linear-gradient(135deg, #007bff 0%, #3194ff 100%);
-  color: white;
+  background: var(--primary-color);
+  color: var(--bg1-color);
   flex-shrink: 0;
 }
 
@@ -23,7 +23,7 @@
 
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--base-font-size);
   font-weight: 600;
 }
 
@@ -42,11 +42,25 @@
 }
 
 .statusDot.connected {
-  background: #10b981;
+  background: var(--success-color);
 }
 
 .statusDot.disconnected {
-  background: #ef4444;
+  background: var(--error-color);
+  animation: none;
+}
+
+.statusDot.online {
+  background: var(--green-color);
+}
+
+.statusDot.offline {
+  background: var(--muted-text-color);
+  animation: none;
+}
+
+.statusDot.away {
+  background: var(--accent-color);
   animation: none;
 }
 
@@ -76,7 +90,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-  background: #f9fafb;
+  background: var(--bg-content-color);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -91,12 +105,12 @@
 }
 
 .messagesContainer::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--border-color);
   border-radius: 3px;
 }
 
 .messagesContainer::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--muted-text-color);
 }
 
 .loadingState,
@@ -106,15 +120,15 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  color: #9ca3af;
+  color: var(--muted-text-color);
   gap: 12px;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #007bff;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -134,12 +148,12 @@
   margin: 0;
   font-size: 16px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--muted-text-color);
 }
 
 .emptyState span {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--muted-text-color);
 }
 
 .typingIndicator {
@@ -147,10 +161,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: white;
+  background: var(--bg1-color);
   border-radius: 18px;
   width: fit-content;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow, 0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .typingDots {
@@ -161,7 +175,7 @@
 .dot {
   width: 6px;
   height: 6px;
-  background: #9ca3af;
+  background: var(--muted-text-color);
   border-radius: 50%;
   animation: typing 1.4s infinite;
 }
@@ -185,6 +199,6 @@
 
 .typingText {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted-text-color);
   font-style: italic;
 }

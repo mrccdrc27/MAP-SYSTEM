@@ -6,12 +6,99 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _broadcast_notification_websocket(notification):
+    """
+    Broadcast a notification via WebSocket after creation.
+    This is a helper function that wraps the WebSocket broadcast logic.
+    """
+    try:
+        from .websocket_utils import broadcast_notification, serialize_notification
+        notification_data = serialize_notification(notification)
+        broadcast_notification(notification.user_id, notification_data, action='new')
+    except Exception as e:
+        # Don't fail the task if WebSocket broadcast fails
+        logger.warning(f"WebSocket broadcast failed for notification {notification.id}: {e}")
+
+
+def _create_and_broadcast_notification(**kwargs):
+    """
+    Create an InAppNotification and broadcast it via WebSocket.
+    
+    Args:
+        **kwargs: All fields for InAppNotification.objects.create()
+    
+    Returns:
+        InAppNotification instance
+    """
+    notification = InAppNotification.objects.create(**kwargs)
+    _broadcast_notification_websocket(notification)
+    return notification
+
+
+def _send_email_for_notification(user_id, subject, message, notification_type, context=None):
+    """
+    Helper to send email counterpart for in-app notification.
+    Fires off an async email task to avoid blocking the main notification task.
+    """
+    try:
+        # Import the Celery app to send task
+        from notification_service.celery import app
+        
+        # Fire off async email task - don't wait for result
+        app.send_task(
+            'notifications.send_email_async',
+            kwargs={
+                'user_id': user_id,
+                'subject': subject,
+                'message': message,
+                'notification_type': notification_type,
+                'context': context
+            },
+            queue='notification-queue-default'
+        )
+        
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to queue email task for user {user_id}: {e}")
+        return False
+
+
+@shared_task(name="notifications.send_email_async")
+def send_email_async(user_id, subject, message, notification_type, context=None):
+    """
+    Async task to send email notification.
+    This runs separately so it doesn't block the main notification task.
+    """
+    try:
+        from .email_service import send_notification_email, get_template_for_notification
+        
+        template = get_template_for_notification(notification_type)
+        success, error = send_notification_email(
+            user_id=user_id,
+            subject=subject,
+            message=message,
+            notification_type=notification_type,
+            template_name=template,
+            context=context
+        )
+        
+        if success:
+            logger.info(f"📧 Email sent to user {user_id} for notification type: {notification_type}")
+        else:
+            logger.warning(f"Email notification failed for user {user_id}: {error}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Error sending email notification: {str(e)}", exc_info=True)
+        return False
+
+
 # =============================================================================
 # TASK ASSIGNMENT NOTIFICATIONS
 # =============================================================================
 
-@shared_task(name="task.send_assignment_notification")
-def send_assignment_notification(user_id, task_item_id, task_title, role_name):
+@shared_task(name="notifications.send_assignment_notification")
+def send_assignment_notification(user_id, ticket_number, task_title, role_name):
     """
     Handle assignment notifications sent from the workflow API.
     
@@ -20,7 +107,7 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
     
     Args:
         user_id (int): The ID of the user being assigned
-        task_item_id (str): The ID of the task item (user's specific assignment)
+        ticket_number (str): The ticket number for navigation
         task_title (str): The title of the task
         role_name (str): The role the user is being assigned to
     
@@ -31,25 +118,39 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
         subject = f"Task Assignment: {task_title}"
         message = f"Assigned as {role_name}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='task_assignment',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'role_name': role_name,
                 'assigned_at': timezone.now().isoformat()
             }
         )
         
-        logger.info(f"✅ Created assignment notification {notification.id} for user {user_id} to task item {task_item_id}")
+        logger.info(f"✅ Created assignment notification {notification.id} for user {user_id} to ticket {ticket_number}")
+        
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"You have been assigned to task '{task_title}' as {role_name}.",
+            notification_type='task_assignment',
+            context={
+                'task_title': task_title,
+                'ticket_number': ticket_number,
+                'ticket_subject': task_title,
+                'role_name': role_name
+            }
+        )
         
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create assignment notification: {str(e)}", exc_info=True)
@@ -57,8 +158,18 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
             "status": "error",
             "error": str(e),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
+
+
+# Alias for backward compatibility with workflow_api task routing
+@shared_task(name="task.send_assignment_notification")
+def send_assignment_notification_alias(user_id, ticket_number, task_title, role_name):
+    """
+    Alias task for backward compatibility.
+    Routes to the main send_assignment_notification function.
+    """
+    return send_assignment_notification(user_id, ticket_number, task_title, role_name)
 
 
 # =============================================================================
@@ -69,8 +180,8 @@ def send_assignment_notification(user_id, task_item_id, task_title, role_name):
 def send_task_transfer_notification(
     from_user_id, 
     to_user_id, 
-    from_task_item_id,
-    to_task_item_id,
+    from_ticket_number,
+    to_ticket_number,
     task_title, 
     transferred_by_id,
     transferred_by_name=None,
@@ -85,8 +196,8 @@ def send_task_transfer_notification(
     Args:
         from_user_id (int): Original assignee user ID
         to_user_id (int): New assignee user ID
-        from_task_item_id (str): The original task item ID (for the user losing the task)
-        to_task_item_id (str): The new task item ID (for the user receiving the task)
+        from_ticket_number (str): The original task item ID (for the user losing the task)
+        to_ticket_number (str): The new task item ID (for the user receiving the task)
         task_title (str): The task title/ticket number
         transferred_by_id (int): User ID who initiated the transfer
         transferred_by_name (str): Name of user who initiated the transfer
@@ -101,15 +212,29 @@ def send_task_transfer_notification(
         
         # Notification for original assignee (task transferred away from them)
         subject_out = f"Task Transferred: {task_title}"
-        transfer_by = transferred_by_name or f'User {transferred_by_id}'
-        message_out = f"Transferred by {transfer_by}" + (f" - {transfer_notes}" if transfer_notes else "")
+        transfer_by = transferred_by_name or ("a teammate" if not transferred_by_id else "a teammate")
+        # Use friendly labels in messages; keep IDs in metadata only
+        to_user_label = "the new assignee"
+        from_user_label = "the previous assignee"
+
+        # Make it explicit when the current user initiated the transfer
+        if transferred_by_id and transferred_by_id == from_user_id:
+            message_out = (
+                f"You transferred task '{task_title}' to {to_user_label}."
+                + (f" Notes: {transfer_notes}" if transfer_notes else "")
+            )
+        else:
+            message_out = (
+                f"Task '{task_title}' was moved to {to_user_label} by {transfer_by}."
+                + (f" Notes: {transfer_notes}" if transfer_notes else "")
+            )
         
-        notification_out = InAppNotification.objects.create(
+        notification_out = _create_and_broadcast_notification(
             user_id=from_user_id,
             subject=subject_out,
             message=message_out,
             notification_type='task_transfer_out',
-            related_task_item_id=str(from_task_item_id),
+            related_ticket_number=str(from_ticket_number),
             metadata={
                 'transferred_to_user_id': to_user_id,
                 'transferred_by_id': transferred_by_id,
@@ -122,15 +247,19 @@ def send_task_transfer_notification(
         logger.info(f"✅ Created transfer-out notification {notification_out.id} for user {from_user_id}")
         
         # Notification for new assignee (task transferred to them)
-        subject_in = f"Task Received: {task_title}"
-        message_in = f"Transferred from {transfer_by}" + (f" - {transfer_notes}" if transfer_notes else "")
+        # Treat like a fresh assignment for clarity
+        subject_in = f"New Task: {task_title}"
+        message_in = (
+            f"New task '{task_title}' assigned to you. It was transferred from {from_user_label} by {transfer_by}."
+            + (f" Notes: {transfer_notes}" if transfer_notes else "")
+        )
         
-        notification_in = InAppNotification.objects.create(
+        notification_in = _create_and_broadcast_notification(
             user_id=to_user_id,
             subject=subject_in,
             message=message_in,
             notification_type='task_transfer_in',
-            related_task_item_id=str(to_task_item_id),
+            related_ticket_number=str(to_ticket_number),
             metadata={
                 'transferred_from_user_id': from_user_id,
                 'transferred_by_id': transferred_by_id,
@@ -142,21 +271,52 @@ def send_task_transfer_notification(
         notifications_created.append(str(notification_in.id))
         logger.info(f"✅ Created transfer-in notification {notification_in.id} for user {to_user_id}")
         
+        # Send email counterparts
+        _send_email_for_notification(
+            user_id=from_user_id,
+            subject=subject_out,
+            message=f"Your task '{task_title}' has been transferred to another team member by {transfer_by}." + (f" Reason: {transfer_notes}" if transfer_notes else ""),
+            notification_type='task_transfer_out',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': from_ticket_number,
+                'transferred_by': transfer_by,
+                'transfer_notes': transfer_notes,
+                'direction': 'out'
+            }
+        )
+        
+        _send_email_for_notification(
+            user_id=to_user_id,
+            subject=subject_in,
+            message=f"Task '{task_title}' has been transferred to you by {transfer_by}." + (f" Notes: {transfer_notes}" if transfer_notes else ""),
+            notification_type='task_transfer_in',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': to_ticket_number,
+                'transferred_by': transfer_by,
+                'transfer_notes': transfer_notes,
+                'direction': 'in'
+            }
+        )
+        
         return {
             "status": "success",
             "notifications_created": notifications_created,
             "from_user_id": from_user_id,
             "to_user_id": to_user_id,
-            "from_task_item_id": from_task_item_id,
-            "to_task_item_id": to_task_item_id
+            "from_ticket_number": from_ticket_number,
+            "to_ticket_number": to_ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create transfer notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "from_task_item_id": from_task_item_id,
-            "to_task_item_id": to_task_item_id
+            "from_ticket_number": from_ticket_number,
+            "to_ticket_number": to_ticket_number
         }
 
 
@@ -168,8 +328,8 @@ def send_task_transfer_notification(
 def send_escalation_notification(
     from_user_id,
     to_user_id,
-    from_task_item_id,
-    to_task_item_id,
+    from_ticket_number,
+    to_ticket_number,
     task_title,
     escalated_from_role,
     escalated_to_role,
@@ -186,8 +346,8 @@ def send_escalation_notification(
     Args:
         from_user_id (int): Original assignee user ID
         to_user_id (int): New assignee user ID (escalated to)
-        from_task_item_id (str): The original task item ID (for the user losing the task)
-        to_task_item_id (str): The new task item ID (for the user receiving the task)
+        from_ticket_number (str): The original task item ID (for the user losing the task)
+        to_ticket_number (str): The new task item ID (for the user receiving the task)
         task_title (str): The task title/ticket number
         escalated_from_role (str): Original role name
         escalated_to_role (str): Escalated role name
@@ -207,12 +367,12 @@ def send_escalation_notification(
         escalated_by = escalated_by_name or f'User {escalated_by_id}' if escalated_by_id else None
         message_out = f"Escalated to {escalated_to_role}" + (f" by {escalated_by}" if escalated_by else "") + (f" - {escalation_reason}" if escalation_reason else "")
         
-        notification_out = InAppNotification.objects.create(
+        notification_out = _create_and_broadcast_notification(
             user_id=from_user_id,
             subject=subject_out,
             message=message_out,
             notification_type='task_escalation_out',
-            related_task_item_id=str(from_task_item_id),
+            related_ticket_number=str(from_ticket_number),
             metadata={
                 'escalated_to_user_id': to_user_id,
                 'escalated_to_role': escalated_to_role,
@@ -230,12 +390,12 @@ def send_escalation_notification(
         subject_in = f"Escalated Task: {task_title}"
         message_in = f"From {escalated_from_role} as {escalated_to_role}" + (f" - {escalation_reason}" if escalation_reason else "")
         
-        notification_in = InAppNotification.objects.create(
+        notification_in = _create_and_broadcast_notification(
             user_id=to_user_id,
             subject=subject_in,
             message=message_in,
             notification_type='task_escalation_in',
-            related_task_item_id=str(to_task_item_id),
+            related_ticket_number=str(to_ticket_number),
             metadata={
                 'escalated_from_user_id': from_user_id,
                 'escalated_from_role': escalated_from_role,
@@ -249,21 +409,54 @@ def send_escalation_notification(
         notifications_created.append(str(notification_in.id))
         logger.info(f"✅ Created escalation-in notification {notification_in.id} for user {to_user_id}")
         
+        # Send email counterparts
+        _send_email_for_notification(
+            user_id=from_user_id,
+            subject=subject_out,
+            message=f"Task '{task_title}' has been escalated from {escalated_from_role} to {escalated_to_role}." + (f" Reason: {escalation_reason}" if escalation_reason else ""),
+            notification_type='task_escalation_out',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': from_ticket_number,
+                'escalated_from_role': escalated_from_role,
+                'escalated_to_role': escalated_to_role,
+                'escalation_reason': escalation_reason,
+                'direction': 'out'
+            }
+        )
+        
+        _send_email_for_notification(
+            user_id=to_user_id,
+            subject=subject_in,
+            message=f"You have received an escalated task '{task_title}' as {escalated_to_role}." + (f" Reason: {escalation_reason}" if escalation_reason else ""),
+            notification_type='task_escalation_in',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': to_ticket_number,
+                'escalated_from_role': escalated_from_role,
+                'escalated_to_role': escalated_to_role,
+                'escalation_reason': escalation_reason,
+                'direction': 'in'
+            }
+        )
+        
         return {
             "status": "success",
             "notifications_created": notifications_created,
             "from_user_id": from_user_id,
             "to_user_id": to_user_id,
-            "from_task_item_id": from_task_item_id,
-            "to_task_item_id": to_task_item_id
+            "from_ticket_number": from_ticket_number,
+            "to_ticket_number": to_ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create escalation notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "from_task_item_id": from_task_item_id,
-            "to_task_item_id": to_task_item_id
+            "from_ticket_number": from_ticket_number,
+            "to_ticket_number": to_ticket_number
         }
 
 
@@ -274,7 +467,7 @@ def send_escalation_notification(
 @shared_task(name="notifications.send_task_completed_notification")
 def send_task_completed_notification(
     user_id,
-    task_item_id,
+    ticket_number,
     task_title,
     completed_by_id=None,
     completed_by_name=None
@@ -284,7 +477,7 @@ def send_task_completed_notification(
     
     Args:
         user_id (int): User to notify (e.g., ticket owner)
-        task_item_id (str): The task item ID
+        ticket_number (str): The task item ID
         task_title (str): The task title/ticket number
         completed_by_id (int): User who completed the task
         completed_by_name (str): Name of user who completed the task
@@ -299,12 +492,12 @@ def send_task_completed_notification(
         completed_by = completed_by_name or f'User {completed_by_id}' if completed_by_id else None
         message = f"Completed by {completed_by}" if completed_by else "Task has been finalized"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='task_completed',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'completed_by_id': completed_by_id,
                 'completed_by_name': completed_by_name,
@@ -314,18 +507,32 @@ def send_task_completed_notification(
         
         logger.info(f"✅ Created task completed notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"Task '{task_title}' has been completed" + (f" by {completed_by}" if completed_by else "") + ".",
+            notification_type='task_completed',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': ticket_number,
+                'completed_by': completed_by
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create task completed notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
 
 
@@ -336,7 +543,7 @@ def send_task_completed_notification(
 @shared_task(name="notifications.send_workflow_step_notification")
 def send_workflow_step_notification(
     user_id,
-    task_item_id,
+    ticket_number,
     task_title,
     previous_step,
     current_step,
@@ -349,7 +556,7 @@ def send_workflow_step_notification(
     
     Args:
         user_id (int): User to notify
-        task_item_id (str): The task item ID
+        ticket_number (str): The task item ID
         task_title (str): The task title/ticket number
         previous_step (str): Previous step name
         current_step (str): Current step name
@@ -365,12 +572,12 @@ def send_workflow_step_notification(
         subject = f"Workflow Update: {task_title}"
         message = f"{previous_step} → {current_step}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='workflow_step_change',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'previous_step': previous_step,
                 'current_step': current_step,
@@ -382,18 +589,34 @@ def send_workflow_step_notification(
         
         logger.info(f"✅ Created workflow step notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"Task '{task_title}' has moved from '{previous_step}' to '{current_step}'.",
+            notification_type='workflow_step_change',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': ticket_number,
+                'previous_step': previous_step,
+                'current_step': current_step,
+                'action_by_name': action_by_name
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create workflow step notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
 
 
@@ -404,7 +627,7 @@ def send_workflow_step_notification(
 @shared_task(name="notifications.send_sla_warning_notification")
 def send_sla_warning_notification(
     user_id,
-    task_item_id,
+    ticket_number,
     task_title,
     time_remaining,
     target_resolution
@@ -414,7 +637,7 @@ def send_sla_warning_notification(
     
     Args:
         user_id (int): User to notify
-        task_item_id (str): The task item ID
+        ticket_number (str): The task item ID
         task_title (str): The task title/ticket number
         time_remaining (str): Human-readable time remaining
         target_resolution (str): Target resolution datetime
@@ -428,12 +651,12 @@ def send_sla_warning_notification(
         subject = f"SLA Warning: {task_title}"
         message = f"{time_remaining} remaining until {target_resolution}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='sla_warning',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'time_remaining': time_remaining,
                 'target_resolution': target_resolution,
@@ -443,25 +666,40 @@ def send_sla_warning_notification(
         
         logger.info(f"✅ Created SLA warning notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"SLA Warning: Task '{task_title}' has {time_remaining} remaining. Target resolution: {target_resolution}.",
+            notification_type='sla_warning',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': ticket_number,
+                'time_remaining': time_remaining,
+                'target_resolution': target_resolution
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create SLA warning notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
 
 
 @shared_task(name="notifications.send_sla_breach_notification")
 def send_sla_breach_notification(
     user_id,
-    task_item_id,
+    ticket_number,
     task_title,
     target_resolution,
     breach_duration=None
@@ -471,7 +709,7 @@ def send_sla_breach_notification(
     
     Args:
         user_id (int): User to notify
-        task_item_id (str): The task item ID
+        ticket_number (str): The task item ID
         task_title (str): The task title/ticket number
         target_resolution (str): Target resolution datetime
         breach_duration (str): How long past the deadline
@@ -485,12 +723,12 @@ def send_sla_breach_notification(
         subject = f"SLA Breached: {task_title}"
         message = f"Overdue by {breach_duration}" if breach_duration else f"Target was {target_resolution}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='sla_breach',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'target_resolution': target_resolution,
                 'breach_duration': breach_duration,
@@ -500,18 +738,33 @@ def send_sla_breach_notification(
         
         logger.info(f"✅ Created SLA breach notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"SLA Breached: Task '{task_title}' is overdue" + (f" by {breach_duration}" if breach_duration else "") + f". Target was: {target_resolution}.",
+            notification_type='sla_breach',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': ticket_number,
+                'target_resolution': target_resolution,
+                'breach_duration': breach_duration
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create SLA breach notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
 
 
@@ -523,7 +776,6 @@ def send_sla_breach_notification(
 def send_ticket_status_notification(
     user_id,
     ticket_number,
-    task_item_id,
     old_status,
     new_status,
     changed_by_name=None
@@ -533,8 +785,7 @@ def send_ticket_status_notification(
     
     Args:
         user_id (int): User to notify
-        ticket_number (str): The ticket number
-        task_item_id (str): Associated task item ID
+        ticket_number (str): The ticket number for navigation
         old_status (str): Previous status
         new_status (str): New status
         changed_by_name (str): Name of user who changed the status
@@ -559,13 +810,12 @@ def send_ticket_status_notification(
         subject = f"Ticket {new_status}: {ticket_number}"
         message = f"{old_status} → {new_status}" + (f" by {changed_by_name}" if changed_by_name else "")
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type=notification_type,
-            related_task_item_id=str(task_item_id),
-            related_ticket_number=ticket_number,
+            related_ticket_number=str(ticket_number),
             metadata={
                 'old_status': old_status,
                 'new_status': new_status,
@@ -575,6 +825,21 @@ def send_ticket_status_notification(
         )
         
         logger.info(f"✅ Created ticket status notification {notification.id} for user {user_id}")
+        
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"Ticket {ticket_number} status changed from '{old_status}' to '{new_status}'" + (f" by {changed_by_name}" if changed_by_name else "") + ".",
+            notification_type=notification_type,
+            context={
+                'ticket_number': ticket_number,
+                'ticket_subject': ticket_number,
+                'old_status': old_status,
+                'new_status': new_status,
+                'changed_by_name': changed_by_name
+            }
+        )
         
         return {
             "status": "success",
@@ -596,7 +861,7 @@ def send_ticket_status_notification(
 # =============================================================================
 
 @shared_task(name="notifications.create_inapp_notification")
-def create_inapp_notification(user_id, subject, message, notification_type='system', related_task_item_id=None, related_ticket_number=None, metadata=None):
+def create_inapp_notification(user_id, subject, message, notification_type='system', related_ticket_number=None, metadata=None):
     """
     Create a new in-app notification for a user
     
@@ -605,20 +870,18 @@ def create_inapp_notification(user_id, subject, message, notification_type='syst
         subject (str): The notification subject
         message (str): The notification message content
         notification_type (str): Type of notification (default: 'system')
-        related_task_item_id (str): Optional related task item ID
-        related_ticket_number (str): Optional related ticket number
+        related_ticket_number (str): Optional related ticket number for navigation
         metadata (dict): Optional additional metadata
     
     Returns:
         dict: Status of the operation
     """
     try:
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type=notification_type,
-            related_task_item_id=related_task_item_id,
             related_ticket_number=related_ticket_number,
             metadata=metadata or {}
         )
@@ -683,7 +946,6 @@ def bulk_create_notifications(notifications_data):
             - subject (required)
             - message (required)
             - notification_type (optional)
-            - related_task_item_id (optional)
             - related_ticket_number (optional)
             - metadata (optional)
         
@@ -702,7 +964,6 @@ def bulk_create_notifications(notifications_data):
                     subject=data['subject'],
                     message=data['message'],
                     notification_type=data.get('notification_type', 'system'),
-                    related_task_item_id=data.get('related_task_item_id'),
                     related_ticket_number=data.get('related_ticket_number'),
                     metadata=data.get('metadata', {})
                 ))
@@ -737,7 +998,7 @@ def bulk_create_notifications(notifications_data):
 @shared_task(name="notifications.send_comment_notification")
 def send_comment_notification(
     user_id,
-    task_item_id,
+    ticket_number,
     task_title,
     commenter_name,
     comment_preview=None
@@ -747,7 +1008,7 @@ def send_comment_notification(
     
     Args:
         user_id (int): User to notify
-        task_item_id (str): The task item ID
+        ticket_number (str): The task item ID
         task_title (str): The task title/ticket number
         commenter_name (str): Name of the person who commented
         comment_preview (str): First few characters of the comment
@@ -762,12 +1023,12 @@ def send_comment_notification(
         preview = comment_preview[:80] + "..." if comment_preview and len(comment_preview) > 80 else comment_preview
         message = f"{commenter_name}: {preview}" if preview else f"Comment from {commenter_name}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='comment_added',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'commenter_name': commenter_name,
                 'comment_preview': comment_preview[:200] if comment_preview else None,
@@ -777,25 +1038,40 @@ def send_comment_notification(
         
         logger.info(f"✅ Created comment notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"{commenter_name} commented on task '{task_title}': {comment_preview[:100] + '...' if comment_preview and len(comment_preview) > 100 else comment_preview or ''}",
+            notification_type='comment_added',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': ticket_number,
+                'commenter_name': commenter_name,
+                'comment_preview': comment_preview
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create comment notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
 
 
 @shared_task(name="notifications.send_mention_notification")
 def send_mention_notification(
     user_id,
-    task_item_id,
+    ticket_number,
     task_title,
     mentioned_by_name,
     comment_preview=None
@@ -805,7 +1081,7 @@ def send_mention_notification(
     
     Args:
         user_id (int): User who was mentioned
-        task_item_id (str): The task item ID
+        ticket_number (str): The task item ID
         task_title (str): The task title/ticket number
         mentioned_by_name (str): Name of the person who mentioned them
         comment_preview (str): First few characters of the comment
@@ -820,12 +1096,12 @@ def send_mention_notification(
         preview = comment_preview[:80] + "..." if comment_preview and len(comment_preview) > 80 else comment_preview
         message = f"{mentioned_by_name}: {preview}" if preview else f"Mentioned by {mentioned_by_name}"
         
-        notification = InAppNotification.objects.create(
+        notification = _create_and_broadcast_notification(
             user_id=user_id,
             subject=subject,
             message=message,
             notification_type='mention',
-            related_task_item_id=str(task_item_id),
+            related_ticket_number=str(ticket_number),
             metadata={
                 'mentioned_by_name': mentioned_by_name,
                 'comment_preview': comment_preview[:200] if comment_preview else None,
@@ -835,16 +1111,44 @@ def send_mention_notification(
         
         logger.info(f"✅ Created mention notification {notification.id} for user {user_id}")
         
+        # Send email counterpart
+        _send_email_for_notification(
+            user_id=user_id,
+            subject=subject,
+            message=f"You were mentioned by {mentioned_by_name} in task '{task_title}': {comment_preview[:100] + '...' if comment_preview and len(comment_preview) > 100 else comment_preview or ''}",
+            notification_type='mention',
+            context={
+                'task_title': task_title,
+                'ticket_subject': task_title,
+                'ticket_number': ticket_number,
+                'mentioned_by_name': mentioned_by_name,
+                'comment_preview': comment_preview
+            }
+        )
+        
         return {
             "status": "success",
             "notification_id": str(notification.id),
             "user_id": user_id,
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
     except Exception as e:
         logger.error(f"❌ Failed to create mention notification: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),
-            "task_item_id": task_item_id
+            "ticket_number": ticket_number
         }
+
+
+# =============================================================================
+# USER EMAIL SYNC TASKS - Imported from sync_tasks module
+# =============================================================================
+
+# Import sync tasks so they are discovered by Celery autodiscover
+from .sync_tasks import (
+    sync_user_email,
+    bulk_sync_user_emails,
+    delete_user_email_cache,
+)
+

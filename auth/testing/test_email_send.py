@@ -37,9 +37,9 @@ def test_email():
     print(f'  Error: {error}')
     
     if success:
-        print('\n✅ Email sent successfully! Check your inbox.')
+        print('\n[OK] Email sent successfully! Check your inbox.')
     else:
-        print(f'\n❌ Failed to send email: {error}')
+        print(f'\n[FAIL] Failed to send email: {error}')
 
 if __name__ == '__main__':
     test_email()

@@ -32,6 +32,7 @@ from .views import (
     deny_employee,
     finalize_ticket,  # <-- add this import
     serve_protected_media,
+    serve_ticket_attachment,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
@@ -79,6 +80,9 @@ urlpatterns = [
 
     # Protected media files - require authentication
     path('media/<path:file_path>', serve_protected_media, name='serve_protected_media'),
+    
+    # Public ticket attachments - for TTS frontend access
+    path('attachments/<path:file_path>', serve_ticket_attachment, name='serve_ticket_attachment'),
 
     # DRF router (should be last, and at the root for browsable API)
     path('', include(router.urls)),  # keep this LAST

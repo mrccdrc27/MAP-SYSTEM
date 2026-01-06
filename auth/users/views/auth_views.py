@@ -294,13 +294,38 @@ class CookieTokenRefreshView(generics.GenericAPIView):
         
         try:
             from rest_framework_simplejwt.tokens import RefreshToken
+            import jwt
             
-            # Validate and refresh the token
-            token = RefreshToken(refresh_token)
-            access_token = str(token.access_token)
+            # First decode the token to get user_id
+            algorithm = getattr(settings, 'SIMPLE_JWT', {}).get('ALGORITHM', 'HS256')
+            secret = getattr(settings, 'SIMPLE_JWT', {}).get('SIGNING_KEY', settings.SECRET_KEY)
+            
+            payload = jwt.decode(refresh_token, secret, algorithms=[algorithm])
+            user_id = payload.get('user_id')
+            
+            if not user_id:
+                return Response(
+                    {'detail': 'Invalid token payload'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # Get the user and generate token with custom claims (roles)
+            from users.models import User
+            user = User.objects.get(id=user_id)
+            
+            # Use CustomTokenObtainPairSerializer to include custom claims (email, username, full_name, roles)
+            refresh = CustomTokenObtainPairSerializer.get_token(user)
+            access_token = str(refresh.access_token)
+            
+            # Calculate expires_in
+            access_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
+            expires_in = int(access_lifetime.total_seconds()) if access_lifetime else 300
             
             response = Response(
-                {'message': 'Token refreshed successfully'},
+                {
+                    'message': 'Token refreshed successfully',
+                    'expires_in': expires_in
+                },
                 status=status.HTTP_200_OK
             )
             
@@ -308,7 +333,7 @@ class CookieTokenRefreshView(generics.GenericAPIView):
             response.set_cookie(
                 'access_token',
                 access_token,
-                max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
+                max_age=expires_in,
                 httponly=False,
                 secure=settings.SESSION_COOKIE_SECURE,
                 samesite='Lax',
@@ -318,6 +343,21 @@ class CookieTokenRefreshView(generics.GenericAPIView):
             
             return response
             
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'User not found'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except jwt.ExpiredSignatureError:
+            return Response(
+                {'detail': 'Refresh token has expired'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except jwt.InvalidTokenError as e:
+            return Response(
+                {'detail': f'Invalid refresh token: {str(e)}'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         except TokenError as e:
             return Response(
                 {'detail': str(e)},

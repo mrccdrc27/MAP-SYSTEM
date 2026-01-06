@@ -139,6 +139,43 @@ class TaskTransitionView(CreateAPIView):
         
         logger.info(f"User {current_user_id} validated for transition")
         
+        # If user has 'new' status, update to 'in progress' and sync to HDTS
+        try:
+            from task.models import TaskItemHistory
+            latest_history = user_assignment.taskitemhistory_set.order_by('-created_at').first()
+            if latest_history and latest_history.status == 'new':
+                # Create 'in progress' status record
+                TaskItemHistory.objects.create(
+                    task_item=user_assignment,
+                    status='in progress'
+                )
+                logger.info(f"User {current_user_id} status updated from 'new' to 'in progress'")
+                
+                # Update local WorkflowTicket status to 'In Progress'
+                try:
+                    if hasattr(task.ticket_id, 'ticket_data'):
+                        task.ticket_id.ticket_data['status'] = 'In Progress'
+                        task.ticket_id.save()
+                        logger.info(f"Updated local ticket {task.ticket_id.ticket_number} status to 'In Progress'")
+                except Exception as e:
+                    logger.error(f"Failed to update local ticket status to 'In Progress': {str(e)}")
+                
+                # Sync 'In Progress' status to HDTS
+                try:
+                    from celery import current_app
+                    ticket_number = task.ticket_id.ticket_number if hasattr(task.ticket_id, 'ticket_number') else None
+                    if ticket_number:
+                        current_app.send_task(
+                            'send_ticket_status',
+                            args=[ticket_number, 'In Progress'],
+                            queue='ticket_status-default'
+                        )
+                        logger.info(f"Sent status update to HDTS for ticket {ticket_number}: In Progress")
+                except Exception as e:
+                    logger.error(f"Failed to sync 'In Progress' status to HDTS: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error updating user status to 'in progress': {str(e)}")
+        
         # Handle finalize action (transition_id is None)
         if is_finalize_action:
             current_step = task.current_step
@@ -190,6 +227,29 @@ class TaskTransitionView(CreateAPIView):
             task.save()
             
             logger.info(f"Task {task_id} completed via finalize action")
+            
+            # Update local WorkflowTicket status to 'Resolved'
+            try:
+                if hasattr(task.ticket_id, 'ticket_data'):
+                    task.ticket_id.ticket_data['status'] = 'Resolved'
+                    task.ticket_id.save()
+                    logger.info(f"Updated local ticket {task.ticket_id.ticket_number} status to 'Resolved'")
+            except Exception as e:
+                logger.error(f"Failed to update local ticket status to 'Resolved': {str(e)}")
+            
+            # Sync ticket status back to HDTS
+            try:
+                from celery import current_app
+                ticket_number = task.ticket_id.ticket_number if hasattr(task.ticket_id, 'ticket_number') else None
+                if ticket_number:
+                    current_app.send_task(
+                        'send_ticket_status',
+                        args=[ticket_number, 'Resolved'],
+                        queue='ticket_status-default'
+                    )
+                    logger.info(f"Sent status update to HDTS for ticket {ticket_number}: Resolved")
+            except Exception as e:
+                logger.error(f"Failed to sync ticket status to HDTS: {str(e)}")
             
             # Return completion response
             serializer = TaskSerializer(task)
@@ -257,6 +317,29 @@ class TaskTransitionView(CreateAPIView):
             task.save()
             
             logger.info(f"Task {task_id} completed")
+            
+            # Update local WorkflowTicket status to 'Resolved'
+            try:
+                if hasattr(task.ticket_id, 'ticket_data'):
+                    task.ticket_id.ticket_data['status'] = 'Resolved'
+                    task.ticket_id.save()
+                    logger.info(f"Updated local ticket {task.ticket_id.ticket_number} status to 'Resolved'")
+            except Exception as e:
+                logger.error(f"Failed to update local ticket status to 'Resolved': {str(e)}")
+            
+            # Sync ticket status back to HDTS
+            try:
+                from celery import current_app
+                ticket_number = task.ticket_id.ticket_number if hasattr(task.ticket_id, 'ticket_number') else None
+                if ticket_number:
+                    current_app.send_task(
+                        'send_ticket_status',
+                        args=[ticket_number, 'Resolved'],
+                        queue='ticket_status-default'
+                    )
+                    logger.info(f"Sent status update to HDTS for ticket {ticket_number}: Resolved")
+            except Exception as e:
+                logger.error(f"Failed to sync ticket status to HDTS: {str(e)}")
             
             # Return completion response
             serializer = TaskSerializer(task)
@@ -385,6 +468,29 @@ class TaskTransitionView(CreateAPIView):
         task.save()
         
         logger.info(f"Task {task.task_id} transitioned successfully")
+        
+        # Update local WorkflowTicket status to 'In Progress' for middle transitions
+        try:
+            if hasattr(task.ticket_id, 'ticket_data'):
+                task.ticket_id.ticket_data['status'] = 'In Progress'
+                task.ticket_id.save()
+                logger.info(f"Updated local ticket {task.ticket_id.ticket_number} status to 'In Progress'")
+        except Exception as e:
+            logger.error(f"Failed to update local ticket status during transition: {str(e)}")
+        
+        # Sync 'In Progress' status to HDTS for middle transitions
+        try:
+            from celery import current_app
+            ticket_number = task.ticket_id.ticket_number if hasattr(task.ticket_id, 'ticket_number') else None
+            if ticket_number:
+                current_app.send_task(
+                    'send_ticket_status',
+                    args=[ticket_number, 'In Progress'],
+                    queue='ticket_status-default'
+                )
+                logger.info(f"Sent status update to HDTS for ticket {ticket_number}: In Progress")
+        except Exception as e:
+            logger.error(f"Failed to sync 'In Progress' status to HDTS during transition: {str(e)}")
         
         # Return detailed response
         serializer = TaskSerializer(task)

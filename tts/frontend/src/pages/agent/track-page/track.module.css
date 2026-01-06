@@ -39,7 +39,7 @@
 
 .searchForm button {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg1-color);
   border: none;
   border-radius: 6px;
   padding: 12px 24px;

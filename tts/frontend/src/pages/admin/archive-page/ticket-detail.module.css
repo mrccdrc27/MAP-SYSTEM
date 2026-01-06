@@ -28,7 +28,7 @@
 
 .headerTitle {
   padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 10px;
 }
 
@@ -102,13 +102,13 @@
 
 /* tdInstructions */
 .tdInstructions {
-  background-color: #f4f8ff;
+  background-color: var(--primary-light-bg, #f4f8ff);
   border-left: 5px solid var(--primary-color);
   border-radius: 12px;
   padding: 16px 20px;
   color: var(--text-color);
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
 }
 
 .iHeaderWrapper {

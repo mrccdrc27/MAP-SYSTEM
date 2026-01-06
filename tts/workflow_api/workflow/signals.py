@@ -62,7 +62,6 @@ def create_workflow_version(workflow):
                 'medium_sla': str(workflow.medium_sla) if workflow.medium_sla else None,
                 'high_sla': str(workflow.high_sla) if workflow.high_sla else None,
                 'urgent_sla': str(workflow.urgent_sla) if workflow.urgent_sla else None,
-                'end_logic': workflow.end_logic or '',
             }
         }
         

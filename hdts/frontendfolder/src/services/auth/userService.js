@@ -3,23 +3,19 @@ import { API_CONFIG } from '../../config/environment.js';
 
 const AUTH_BASE_URL = API_CONFIG.AUTH.BASE_URL;
 
-// Helper function to get headers for cookie-based auth
-const getAuthHeaders = () => {
-  // Try to get the access token from cookies (set by auth service)
-  const cookies = document.cookie.split(';');
-  const accessTokenCookie = cookies.find(c => c.trim().startsWith('access_token='));
-  const accessToken = accessTokenCookie ? accessTokenCookie.split('=')[1] : null;
-  
-  const headers = {
-    'Content-Type': 'application/json',
+// Helper function to get fetch options with proper cookie-based authentication
+const getFetchOptions = (method = 'GET', body = null) => {
+  const options = {
+    method,
+    credentials: 'include', // Essential for httpOnly cookie-based auth
+    headers: { 'Content-Type': 'application/json' },
   };
   
-  // If we have an access token, send it as Authorization header
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
+  if (body) {
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
   
-  return headers;
+  return options;
 };
 
 export const authUserService = {
@@ -29,11 +25,8 @@ export const authUserService = {
    */
   async getAllHdtsUsers() {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/api/v1/hdts/user-management/users/api/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include', // Send cookies
-      });
+      const response = await fetch(`${AUTH_BASE_URL}/api/v1/hdts/user-management/users/api/`, 
+        getFetchOptions());
 
       if (!response.ok) {
         throw new Error(`Failed to fetch HDTS users: ${response.status}`);
@@ -56,11 +49,8 @@ export const authUserService = {
    */
   async getPendingHdtsUsers() {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/api/v1/hdts/user-management/pending/api/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include', // Send cookies
-      });
+      const response = await fetch(`${AUTH_BASE_URL}/api/v1/hdts/user-management/pending/api/`, 
+        getFetchOptions());
 
       if (!response.ok) {
         throw new Error(`Failed to fetch pending users: ${response.status}`);
@@ -82,11 +72,8 @@ export const authUserService = {
    */
   async getUserById(userId) {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/api/v1/users/${userId}/`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
+      const response = await fetch(`${AUTH_BASE_URL}/api/v1/users/${userId}/`, 
+        getFetchOptions());
 
       if (!response.ok) {
         throw new Error(`Failed to fetch user: ${response.status}`);
@@ -109,15 +96,9 @@ export const authUserService = {
       if (!userId) throw new Error('Missing userId for approval');
       // Call the update status endpoint
       const url = `${AUTH_BASE_URL}/api/v1/hdts/user-management/update-status/${userId}/`;
-      const headers = getAuthHeaders();
-      headers['Content-Type'] = 'application/json';
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ action: 'approve' }),
-      });
+      
+      const response = await fetch(url, 
+        getFetchOptions('POST', { action: 'approve' }));
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
@@ -140,15 +121,9 @@ export const authUserService = {
       if (!userId) throw new Error('Missing userId for rejection');
       // Call the update status endpoint with reject action
       const url = `${AUTH_BASE_URL}/api/v1/hdts/user-management/update-status/${userId}/`;
-      const headers = getAuthHeaders();
-      headers['Content-Type'] = 'application/json';
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ action: 'reject' }),
-      });
+      
+      const response = await fetch(url, 
+        getFetchOptions('POST', { action: 'reject' }));
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');

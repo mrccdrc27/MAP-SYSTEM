@@ -149,7 +149,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             print(f"[AUTH_PROFILE_UPDATE] Restricted fields: {restricted_fields}")
             
             if restricted_fields:
-                print(f"[AUTH_PROFILE_UPDATE] ✗ REJECTED: Restricted fields detected")
+                print(f"[AUTH_PROFILE_UPDATE] [REJECTED] Restricted fields detected")
                 print(f"{'='*80}\n")
                 return Response(
                     {
@@ -172,18 +172,18 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         print(f"[AUTH_PROFILE_UPDATE] Serializer valid: {is_valid}")
         
         if not is_valid:
-            print(f"[AUTH_PROFILE_UPDATE] ✗ VALIDATION ERRORS:")
+            print(f"[AUTH_PROFILE_UPDATE] [ERROR] VALIDATION ERRORS:")
             for field, errors in serializer.errors.items():
                 print(f"[AUTH_PROFILE_UPDATE]   - {field}: {errors}")
             print(f"{'='*80}\n")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        print(f"[AUTH_PROFILE_UPDATE] ✓ Validation passed")
+        print(f"[AUTH_PROFILE_UPDATE] [OK] Validation passed")
         print(f"[AUTH_PROFILE_UPDATE] Saving changes...")
         
         self.perform_update(serializer)
         
-        print(f"[AUTH_PROFILE_UPDATE] ✓ Serializer saved")
+        print(f"[AUTH_PROFILE_UPDATE] [OK] Serializer saved")
         print(f"[AUTH_PROFILE_UPDATE] Refreshing instance from database...")
         
         instance.refresh_from_db()
@@ -201,7 +201,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         
         print(f"[AUTH_PROFILE_UPDATE] Response data keys: {list(response_data.keys())}")
         print(f"[AUTH_PROFILE_UPDATE] Response profile_picture: {response_data.get('profile_picture')}")
-        print(f"[AUTH_PROFILE_UPDATE] ✓✓✓ SUCCESS: Profile updated")
+        print(f"[AUTH_PROFILE_UPDATE] [SUCCESS] Profile updated")
         print(f"{'='*80}\n")
         
         return Response(response_data, status=status.HTTP_200_OK)

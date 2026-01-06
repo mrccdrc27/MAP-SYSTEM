@@ -9,6 +9,9 @@ import Pagination from "../../components/component/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+// utils
+import { workflowNameToSlug } from "../../api/useWorkflowAPI";
+
 // headers for the table
 const workflowHeaders = [
   "WORKFLOW",
@@ -31,8 +34,17 @@ function WorkflowHeader() {
 
 function WorkflowItem({ item }) {
   const navigate = useNavigate();
+
+  const handleRowClick = () => {
+    const slug = workflowNameToSlug(item.name);
+    navigate(`/admin/workflow/${slug}`);
+  };
+
   return (
-    <tr className={general.item}>
+    <tr
+      className={`${general.item} ${general.clickableRow}`}
+      onClick={handleRowClick}
+    >
       <td>{item.name}</td>
       <td>{item.category}</td>
       <td>{item.sub_category}</td>
@@ -43,10 +55,15 @@ function WorkflowItem({ item }) {
       <td>{item.status}</td>
       <td>
         <button
-          className={general.btn}
-          onClick={() => navigate(`/admin/workflow/${item.workflow_id}`)}
+          className={general.btnEdit}
+          onClick={(e) => {
+            e.stopPropagation();
+            const slug = workflowNameToSlug(item.name);
+            navigate(`/admin/workflow/${slug}`);
+          }}
+          title="Edit workflow"
         >
-          <i className="fa-solid fa-pen-to-square"></i>
+          ✏️
         </button>
       </td>
     </tr>
@@ -57,7 +74,6 @@ export default function WorkflowTable({
   workflows,
   searchValue = "",
   onSearchChange,
-  onAddWorkflow,
 }) {
   const navigate = useNavigate();
   // Pagination state
@@ -74,7 +90,10 @@ export default function WorkflowTable({
         <h2>Workflow</h2>
         <div className={general.tableActions}>
           <SearchBar value={searchValue} onChange={onSearchChange} />
-          <button className={general.addButton} onClick={() => navigate('/admin/workflows/create')}>
+          <button
+            className={general.addButton}
+            onClick={() => navigate("/admin/workflows/create")}
+          >
             + Create Workflow
           </button>
         </div>

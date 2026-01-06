@@ -1,0 +1,76 @@
+name: Deploy Documentation to GitHub Pages
+
+on:
+  push:
+    branches:
+      - documentations
+    paths:
+      - 'map-docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true # ✅ CHANGED: Cancels old builds to save time
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: map-docs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # ✅ ADDED: Only fetches the latest commit (faster cloning)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: map-docs/yarn.lock
+
+      # ✅ ADDED: Caches the Docusaurus/Webpack build output
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: map-docs/node_modules/.cache
+          # Key includes OS and hash of lockfile.
+          key: ${{ runner.os }}-docusaurus-build-${{ hashFiles('map-docs/yarn.lock') }}
+          # If exact match fails, restore the most recent cache anyway
+          restore-keys: |
+            ${{ runner.os }}-docusaurus-build-
+
+      - name: Install dependencies
+        # ✅ CHANGED: Added --prefer-offline to speed up install if cache exists
+        run: yarn install --frozen-lockfile --prefer-offline
+
+      - name: Build website
+        run: yarn build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: map-docs/build
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

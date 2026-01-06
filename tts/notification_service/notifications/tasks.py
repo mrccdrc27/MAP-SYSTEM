@@ -1,12 +1,12 @@
 """
-Celery tasks for notification service email sending via Gmail API
+Celery tasks for notification service email sending via SendGrid/SMTP
 """
 
 from celery import shared_task
 from django.utils import timezone
 from django.core.cache import cache
 import logging
-from .gmail_service import get_gmail_service
+from emails.services import get_email_service
 from .models import NotificationLog
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ def check_rate_limit(email, limit=10, window=60):
     Returns:
         tuple: (is_allowed: bool, remaining: int, retry_after: int)
     """
-    rate_key = f"gmail_rate_limit_{email}"
+    rate_key = f"email_rate_limit_{email}"
     current_count = cache.get(rate_key, 0)
     
     if current_count >= limit:
@@ -36,7 +36,7 @@ def check_rate_limit(email, limit=10, window=60):
 @shared_task(name="notifications.send_email_via_gmail")
 def send_email_via_gmail(to_email, subject, body_text, body_html=None, notification_type=None, user_id=None, context_data=None):
     """
-    Send an email using Gmail API (async task)
+    Send an email (async task) - kept name for backward compatibility
     
     Args:
         to_email (str): Recipient email address
@@ -63,9 +63,9 @@ def send_email_via_gmail(to_email, subject, body_text, body_html=None, notificat
             status='pending'
         )
         
-        # Send email via Gmail API
-        gmail_service = get_gmail_service()
-        success, message_id, error = gmail_service.send_email(
+        # Send email via EmailService
+        email_service = get_email_service()
+        success, message_id, error = email_service.send_email(
             to_email=to_email,
             subject=subject,
             body_text=body_text,
@@ -121,7 +121,7 @@ def send_email_via_gmail(to_email, subject, body_text, body_html=None, notificat
 @shared_task(name="notifications.send_email_with_headers")
 def send_email_with_headers(to_email, subject, headers, body_html=None, user_id=None):
     """
-    Send an email using Gmail API with custom headers (no template)
+    Send an email with custom headers (no template)
     This is the preferred method when message should be in headers, not templated.
     
     Args:
@@ -147,42 +147,14 @@ def send_email_with_headers(to_email, subject, headers, body_html=None, user_id=
             status='pending'
         )
         
-        # Try Gmail API first, fall back to SMTP if not available
-        gmail_service = get_gmail_service()
-        if gmail_service.service is not None:
-            success, message_id, error = gmail_service.send_email_with_headers(
-                to_email=to_email,
-                subject=subject,
-                headers=headers,
-                body_html=body_html
-            )
-        else:
-            # Fallback to SMTP
-            from django.core.mail import send_mail
-            from django.conf import settings
-            
-            # Build body from headers
-            body_lines = []
-            for key, value in headers.items():
-                formatted_key = key.replace('_', ' ').title()
-                body_lines.append(f"{formatted_key}: {value}")
-            body_text = '\n'.join(body_lines)
-            
-            try:
-                send_mail(
-                    subject=subject,
-                    message=body_text,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[to_email],
-                    fail_silently=False,
-                )
-                success = True
-                message_id = None
-                error = None
-            except Exception as e:
-                success = False
-                message_id = None
-                error = str(e)
+        # Send email via EmailService
+        email_service = get_email_service()
+        success, message_id, error = email_service.send_email_with_headers(
+            to_email=to_email,
+            subject=subject,
+            headers=headers,
+            body_html=body_html
+        )
         
         if success:
             # Update log status

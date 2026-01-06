@@ -5,16 +5,16 @@
   padding: 28px 20px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
   animation: fadeInUp 0.6s ease both;
   overflow: hidden;
 }
 
 .statusCard:hover {
-  background-color: #0066ff;
+  background-color: var(--primary-color);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 102, 255, 0.25);
+  box-shadow: 0 8px 24px var(--primary-shadow-color, rgba(0, 102, 255, 0.25));
 }
 
 .statusCard:hover::before {
@@ -25,7 +25,7 @@
   transform: translateY(-50%);
   width: 3px;
   height: 40%;
-  background: white;
+  background: var(--bg1-color);
   border-radius: 0 2px 2px 0;
   animation: pulseWhiteBox 2s ease-in-out infinite;
 }
@@ -58,8 +58,8 @@
 }
 
 .statusCard:hover .statusNumber {
-  background-color: white;
-  color: #0066ff;
+  background-color: var(--bg1-color);
+  color: var(--primary-color);
   animation: pulseWhite 2s ease-in-out infinite;
 }
 
@@ -77,7 +77,7 @@
 
 .statusNumber.critical,
 .statusNumber.rejected {
-  background-color: #ff3333;
+  background-color: var(--error-color);
   animation: pulseRed 2s ease-in-out infinite;
 }
 
@@ -86,7 +86,7 @@
 .statusNumber.resolved,
 .statusNumber.onHold,
 .statusNumber.inProgress {
-  background: #0066ff;
+  background: var(--primary-color);
   animation: pulseBlue 2s ease-in-out infinite;
 }
 

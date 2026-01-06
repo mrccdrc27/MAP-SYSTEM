@@ -27,13 +27,13 @@
 
 .ddDropdownButton:hover {
   border-color: var(--primary-color-hover);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  box-shadow: 0 0 0 3px var(--primary-shadow-color);
 }
 
 .ddDropdownButton:focus {
   outline: none;
   border-color: var(--primary-color-hover);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 0 0 3px var(--primary-shadow-color);
 }
 
 .ddDropdownArrow {
@@ -59,7 +59,7 @@
   border: var(--border-very-light-gray);
   border-radius: 8px;
   padding: 0.75rem 0;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--box-shadow);
   max-height: unset;
   overflow: visible;
   z-index: 1000;

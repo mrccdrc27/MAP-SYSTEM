@@ -74,6 +74,12 @@ class Message(models.Model):
     edited_at = models.DateTimeField(null=True, blank=True)
     original_message = models.TextField(blank=True)  # Store original content for edit history
     
+    # Unsend tracking
+    is_unsent = models.BooleanField(default=False)
+    unsent_at = models.DateTimeField(null=True, blank=True)
+    unsent_by = models.CharField(max_length=255, blank=True, null=True)
+    unsent_for_all = models.BooleanField(default=False)  # True = unsent for everyone, False = unsent for sender only
+    
     # Soft delete
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -105,6 +111,15 @@ class Message(models.Model):
             self.deleted_by = deleted_by
         if deleted_by_email:
             self.deleted_by_email = deleted_by_email
+        self.save()
+    
+    def unsend(self, unsent_by=None, for_all=False):
+        """Unsend the message - can be for sender only or for everyone"""
+        self.is_unsent = True
+        self.unsent_at = timezone.now()
+        self.unsent_for_all = for_all
+        if unsent_by:
+            self.unsent_by = unsent_by
         self.save()
     
     def edit_message(self, new_message, edited_by=None, edited_by_email=None):

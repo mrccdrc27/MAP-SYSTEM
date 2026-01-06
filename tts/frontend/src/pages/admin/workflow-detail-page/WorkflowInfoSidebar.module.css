@@ -1,0 +1,62 @@
+/* WorkflowInfoSidebar specific styles */
+
+.readOnlyInput {
+  cursor: default;
+  background: var(--bg-content-color);
+}
+
+.readOnlyTextarea {
+  cursor: default;
+  background: var(--bg-content-color);
+  resize: none;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.statusActive {
+  background: var(--low-bg-color);
+  color: var(--low-color);
+}
+
+.statusInactive {
+  background: var(--critical-bg-color);
+  color: var(--critical-color);
+}
+
+.statusInitialized {
+  background: var(--primary-bg-color, rgba(59, 130, 246, 0.1));
+  color: var(--primary-color, #3b82f6);
+}
+
+.statusPaused {
+  background: var(--medium-bg-color, rgba(234, 179, 8, 0.1));
+  color: var(--medium-color, #ca8a04);
+}
+
+.statusDraft {
+  background: var(--bg-content-color, #f3f4f6);
+  color: var(--muted-text-color, #6b7280);
+}
+
+.slaTitle {
+  margin-bottom: 12px;
+  display: block;
+}
+
+.slaValue {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.toggleButton {
+  padding: 0;
+  margin-bottom: 12px;
+}

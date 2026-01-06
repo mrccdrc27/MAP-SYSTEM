@@ -18,13 +18,13 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build all Docker services
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           docker compose build --no-cache
 
       - name: Verify Docker images were created
         run: |
-          docker images | grep -E "auth-service|ticket-service|workflow-api|messaging-service|notification-service|nginx"
+          docker images | grep -E "auth-service|workflow-api|messaging-service|notification-service|nginx"
 
   auth-service-tests:
     name: Auth Service Tests
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: workflow_api
+        working-directory: tts/workflow_api
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-workflow-${{ hashFiles('workflow_api/requirements.txt') }}
+          key: ${{ runner.os }}-pip-workflow-${{ hashFiles('tts/workflow_api/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-workflow-
 
@@ -102,48 +102,12 @@ jobs:
         run: |
           python manage.py test || true
 
-  ticket-service-tests:
-    name: Ticket Service Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ticket_service
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-ticket-${{ hashFiles('ticket_service/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-ticket-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r ../requirements.txt
-
-      - name: Collect static files
-        run: |
-          python manage.py collectstatic --noinput --clear || true
-
-      - name: Run ticket service tests
-        run: |
-          python manage.py test || true
-
   messaging-service-tests:
     name: Messaging Service Tests
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: messaging
+        working-directory: tts/messaging
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -157,7 +121,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-messaging-${{ hashFiles('messaging/requirements.txt') }}
+          key: ${{ runner.os }}-pip-messaging-${{ hashFiles('tts/messaging/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-messaging-
 
@@ -175,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: notification_service
+        working-directory: tts/notification_service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -189,7 +153,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-notification-${{ hashFiles('notification_service/requirements.txt') }}
+          key: ${{ runner.os }}-pip-notification-${{ hashFiles('tts/notification_service/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-notification-
 
@@ -207,7 +171,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: tts/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -217,7 +181,7 @@ jobs:
         with:
           node-version: "18"
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: tts/frontend/package-lock.json
 
       - name: Install dependencies
         run: npm install
@@ -250,12 +214,12 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker images
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           docker compose build
 
       - name: Start services
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           docker compose up -d
           sleep 30
@@ -282,13 +246,10 @@ jobs:
 
       - name: View service logs
         if: always()
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           echo "=== Auth Service Logs ==="
           docker logs auth-service 2>&1 | tail -20 || true
-          
-          echo "=== Ticket Service Logs ==="
-          docker logs ticket-service 2>&1 | tail -20 || true
           
           echo "=== Workflow API Logs ==="
           docker logs workflow-api 2>&1 | tail -20 || true
@@ -301,7 +262,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        working-directory: Docker
+        working-directory: tts/Docker
         run: |
           docker compose down -v
 
@@ -312,7 +273,6 @@ jobs:
       build-docker,
       auth-service-tests,
       workflow-api-tests,
-      ticket-service-tests,
       messaging-service-tests,
       notification-service-tests,
       frontend-build,
@@ -327,7 +287,6 @@ jobs:
           echo "Docker Build: ${{ needs.build-docker.result }}"
           echo "Auth Service Tests: ${{ needs.auth-service-tests.result }}"
           echo "Workflow API Tests: ${{ needs.workflow-api-tests.result }}"
-          echo "Ticket Service Tests: ${{ needs.ticket-service-tests.result }}"
           echo "Messaging Service Tests: ${{ needs.messaging-service-tests.result }}"
           echo "Notification Service Tests: ${{ needs.notification-service-tests.result }}"
           echo "Frontend Build: ${{ needs.frontend-build.result }}"

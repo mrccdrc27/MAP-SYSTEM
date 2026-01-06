@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useNotificationWebSocket } from './useNotificationWebSocket';
 
 // --- Configuration ---
 
@@ -24,7 +25,7 @@ const userEndpoints = {
 
 // --- Custom React Hook: useNotifications ---
 
-export const useNotifications = () => {
+export const useNotifications = (userId = null) => {
     const [notifications, setNotifications] = useState({
         all: [],
         unread: [],
@@ -32,6 +33,9 @@ export const useNotifications = () => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    
+    // Ref to track if we've done initial fetch
+    const initialFetchDone = useRef(false);
 
     // Helper to normalize different API response shapes into an array
     const normalizeResponseToArray = (data) => {
@@ -44,6 +48,53 @@ export const useNotifications = () => {
         // Fallback: if the response has a single object, wrap it
         return [];
     };
+
+    /**
+     * Handle new notification from WebSocket
+     */
+    const handleNewNotification = useCallback((notification, action) => {
+        console.log('[useNotifications] WebSocket notification received:', action, notification);
+        
+        if (action === 'new') {
+            // Add new notification to the beginning of all lists
+            setNotifications(prev => ({
+                all: [notification, ...prev.all],
+                unread: [notification, ...prev.unread],
+                read: prev.read // New notifications are unread
+            }));
+        } else if (action === 'read') {
+            // Move notification from unread to read
+            setNotifications(prev => ({
+                all: prev.all.map(n => 
+                    n.id === notification.id ? { ...n, is_read: true } : n
+                ),
+                unread: prev.unread.filter(n => n.id !== notification.id),
+                read: [notification, ...prev.read.filter(n => n.id !== notification.id)]
+            }));
+        }
+    }, []);
+
+    /**
+     * Handle unread count update from WebSocket
+     */
+    const handleCountUpdate = useCallback((unreadCount) => {
+        console.log('[useNotifications] WebSocket count update:', unreadCount);
+        // If count doesn't match, refresh the lists
+        setNotifications(prev => {
+            if (prev.unread.length !== unreadCount) {
+                // Trigger a refresh in the background
+                setTimeout(() => fetchNotifications('unread'), 100);
+            }
+            return prev;
+        });
+    }, []);
+
+    // Initialize WebSocket connection for real-time updates
+    const { isConnected: wsConnected } = useNotificationWebSocket(
+        userId,
+        handleNewNotification,
+        handleCountUpdate
+    );
 
     /**
      * Fetches notifications from a specified endpoint.
@@ -127,7 +178,8 @@ export const useNotifications = () => {
         error,
         fetchNotifications,
         markAsRead,
-        markAllAsRead
+        markAllAsRead,
+        wsConnected  // Expose WebSocket connection status
     };
 };
 

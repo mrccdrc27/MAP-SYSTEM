@@ -181,22 +181,12 @@ class Command(BaseCommand):
                     )
                 },
             ]
-
-            # End logic options mapped to departments
-            end_logic_map = {
-                'Asset Department': 'asset',
-                'Budget Department': 'budget',
-                'IT Department': 'notification',
-            }
             
             total_workflows = 0
             total_steps = 0
             total_transitions = 0
 
             for wf_data in workflows_to_create:
-                # Assign end logic based on department
-                end_logic = end_logic_map.get(wf_data['department'], 'notification')
-
                 self.stdout.write(f'\n{self.style.MIGRATE_LABEL("Processing workflow:")} {wf_data["name"]}')
 
                 wf, created = Workflows.objects.get_or_create(
@@ -208,7 +198,6 @@ class Command(BaseCommand):
                         'sub_category': wf_data["sub_category"],
                         'status': 'deployed',
                         'is_published': True,
-                        'end_logic': end_logic,
                         'department': wf_data["department"],
                         'urgent_sla': timedelta(hours=4),
                         'high_sla': timedelta(hours=8),
@@ -220,11 +209,11 @@ class Command(BaseCommand):
                 if created:
                     total_workflows += 1
                     self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ Created workflow with end_logic="{end_logic}" for {wf_data["department"]}'
+                        f'  ✓ Created workflow for {wf_data["department"]}'
                     ))
                 else:
                     self.stdout.write(self.style.WARNING(
-                        f'  ⚠ Workflow already exists (end_logic="{end_logic}")'
+                        f'  ⚠ Workflow already exists'
                     ))
 
                 # Get workflow-specific step configuration
@@ -270,30 +259,32 @@ class Command(BaseCommand):
                     step = step_objs[idx]
                     
                     # Determine transitions based on step position
+                    # Transition tuple format: (from_step, to_step, name)
                     transitions = []
                     
                     if idx == 0:  # Triage step
                         transitions = [
-                            (None, step),  # start
-                            (step, step_objs[idx + 1])  # submit -> Resolve
+                            (None, step, 'Start'),  # start
+                            (step, step_objs[idx + 1], 'Submit')  # submit -> Resolve
                         ]
                     elif idx == 1:  # Resolve step
                         transitions = [
-                            (step, step_objs[idx + 1]),  # approve -> Finalize
-                            (step, step_objs[idx - 1])   # reject -> Triage
+                            (step, step_objs[idx + 1], 'Approve'),  # approve -> Finalize
+                            (step, step_objs[idx - 1], 'Reject')   # reject -> Triage
                         ]
                     elif idx == 2:  # Finalize step
                         transitions = [
-                            (step, None)  # complete -> End
+                            (step, None, 'Complete')  # complete -> End
                         ]
                     
-                    for frm, to in transitions:
+                    for frm, to, trans_name in transitions:
                         try:
-                            # Create transition without triggering initialization checks
+                            # Create transition with name
                             trans = StepTransition(
                                 from_step_id=frm,
                                 to_step_id=to,
-                                workflow_id=wf
+                                workflow_id=wf,
+                                name=trans_name
                             )
                             trans.save()
                             total_transitions += 1
@@ -312,11 +303,11 @@ class Command(BaseCommand):
             self.stdout.write(f'{self.style.MIGRATE_LABEL("Total Transitions Created:")} {total_transitions}')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Standardized 3-Step Workflow Summary:'))
-            self.stdout.write('  • Asset Department (end_logic: asset)')
+            self.stdout.write('  • Asset Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
-            self.stdout.write('  • Budget Department (end_logic: budget)')
+            self.stdout.write('  • Budget Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin)')
-            self.stdout.write('  • IT Department (end_logic: notification)')
+            self.stdout.write('  • IT Department')
             self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflows Created:'))

@@ -46,6 +46,7 @@ ALLOWED_HOSTS = config(
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # Add daphne for ASGI/WebSocket support
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -58,9 +59,11 @@ INSTALLED_APPS = [
     'django_celery_results',  # Add Celery results backend
     'whitenoise',  # Add Whitenoise for static file serving
     'corsheaders',  # Enable CORS handling
+    'channels',  # Add Django Channels for WebSocket support
     
     # Local apps
     'notifications',
+    'emails',
     'app',
 ]
 
@@ -81,7 +84,9 @@ ROOT_URLCONF = 'notification_service.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'emails', 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -94,6 +99,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'notification_service.wsgi.application'
+ASGI_APPLICATION = 'notification_service.asgi.application'
+
+# Channel layers configuration for WebSocket support
+# Using InMemoryChannelLayer - broadcasts must happen within the Daphne process
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 
 # Database
@@ -196,26 +210,33 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-# Gmail API Configuration (replaces SMTP for production)
-GMAIL_CREDENTIALS_PATH = config('GMAIL_CREDENTIALS_PATH', default=os.path.join(BASE_DIR, 'credentials.json'))
-GMAIL_TOKEN_PATH = config('GMAIL_TOKEN_PATH', default=os.path.join(BASE_DIR, 'token.json'))
-GMAIL_SENDER_EMAIL = config('GMAIL_SENDER_EMAIL', default='')
-DEFAULT_FROM_EMAIL = config('DJANGO_DEFAULT_FROM_EMAIL', default='noreply@notifications.com')
+# Email Configuration
+# SendGrid in production, console backend in development
+DEFAULT_FROM_EMAIL = config('DJANGO_DEFAULT_FROM_EMAIL', default='noreply@ticketflow.com')
+SUPPORT_EMAIL = config('DJANGO_SUPPORT_EMAIL', default='support@ticketflow.com')
 
-# For production Railway: OAuth credentials from environment variable (JSON string)
-# GMAIL_OAUTH_CREDENTIALS should contain the entire credentials.json content as a JSON string
+# SendGrid Configuration (for production)
+SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+SENDGRID_FROM_EMAIL = config('SENDGRID_FROM_EMAIL', default=DEFAULT_FROM_EMAIL)
+SENDGRID_FROM_NAME = config('SENDGRID_FROM_NAME', default='TicketFlow')
+SENDGRID_ENABLED = config('SENDGRID_ENABLED', default='False', cast=lambda x: x.lower() in ('true', '1', 'yes'))
 
-# Legacy Email Configuration (deprecated - kept for fallback)
+# Django Email Backend Configuration
+# Uses console in development, SMTP/SendGrid in production
 EMAIL_BACKEND = config('DJANGO_EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend' if not IS_PRODUCTION else 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = config('DJANGO_EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_HOST = config('DJANGO_EMAIL_HOST', default='smtp.sendgrid.net')
 EMAIL_PORT = config('DJANGO_EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('DJANGO_EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('DJANGO_EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default='')
+EMAIL_HOST_USER = config('DJANGO_EMAIL_HOST_USER', default='apikey')
+EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default=SENDGRID_API_KEY)
 
 # Notification Service Settings
 NOTIFICATION_SERVICE_PORT = config('DJANGO_NOTIFICATION_SERVICE_PORT', default=8001, cast=int)
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8000')
+
+# Frontend links for ticket deep-links
+TTS_FRONTEND_URL = config('TTS_FRONTEND_URL', default='http://localhost:1000')
+TTS_TICKET_PATH_TEMPLATE = config('TTS_TICKET_PATH_TEMPLATE', default='/ticket/{id}')
 
 # API Key Authentication for v2 endpoints
 NOTIFICATION_API_KEYS = config(
@@ -250,8 +271,13 @@ CELERY_TIMEZONE = 'UTC'
 # Queues configuration for notification service
 NOTIFICATION_QUEUE = config('DJANGO_NOTIFICATION_QUEUE', default='notification-queue')
 INAPP_NOTIFICATION_QUEUE = config('DJANGO_INAPP_NOTIFICATION_QUEUE', default='inapp-notification-queue')
+USER_SYNC_QUEUE = config('DJANGO_USER_SYNC_QUEUE', default='user-email-sync-queue')
 
 CELERY_TASK_ROUTES = {
+    # User email sync tasks (from auth service)
+    'notifications.sync_user_email': {'queue': USER_SYNC_QUEUE},
+    'notifications.bulk_sync_user_emails': {'queue': USER_SYNC_QUEUE},
+    'notifications.delete_user_email_cache': {'queue': USER_SYNC_QUEUE},
     # In-app notification tasks
     'task.send_assignment_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
     'notifications.create_inapp_notification': {'queue': INAPP_NOTIFICATION_QUEUE},
