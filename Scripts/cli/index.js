@@ -88,30 +88,40 @@ const SCRIPTS = {
   setup: {
     name: 'Setup',
     description: 'Database seeding and configuration',
-    scripts: {
-      'python-env': { file: 'setup_python_environment.ps1', desc: 'Setup Python Environment (venv + requirements)' },
-      'create-venv': { file: 'create_venv.ps1', desc: 'Create Virtual Environment' },
-      'aggregate-reqs': { file: 'aggregate_requirements.ps1', desc: 'Aggregate Requirements.txt' },
-      'install-reqs': { file: 'install_requirements.ps1', desc: 'Install Aggregated Requirements' },
-      'verify-install': { file: 'verify_installation.ps1', desc: 'Verify Python Installation' },
-      'verify-install-py': { file: 'verify_installation.py', desc: 'Verify Python Installation (Python script)', shell: 'python' },
-    },
     subcategories: {
-      tts: {
-        name: 'TTS',
-        description: 'Ticket Tracking System Setup',
+      python: {
+        name: 'Python Environment',
+        description: 'Python venv and requirements',
         scripts: {
-          'seed': { file: 'restart_all_services.ps1', desc: 'Migrate & Seed All Services', args: ['-Seed'] },
-          'flush-seed': { file: 'restart_all_services.ps1', desc: 'Flush DBs, Migrate & Seed', args: ['-FlushDB', '-Seed'] },
-          'migrate': { file: 'restart_all_services.ps1', desc: 'Run Migrations Only' },
-          'seed-workflow-hdts': { file: 'seed_workflow_helpdesk.ps1', desc: 'Seed Workflow & Helpdesk Data' },
+          'env': { file: 'python/setup_python_environment.ps1', desc: 'Setup Python Environment (venv + requirements)' },
+          'create-venv': { file: 'python/create_venv.ps1', desc: 'Create Virtual Environment' },
+          'aggregate-reqs': { file: 'python/aggregate_requirements.ps1', desc: 'Aggregate Requirements.txt' },
+          'install-reqs': { file: 'python/install_requirements.ps1', desc: 'Install Aggregated Requirements' },
+          'verify': { file: 'python/verify_installation.ps1', desc: 'Verify Python Installation' },
+        }
+      },
+      ecosystem: {
+        name: 'Ecosystem',
+        description: 'Full stack setup',
+        scripts: {
+          'full': { file: 'ecosystem/setup_tts_ecosystem.ps1', desc: 'Setup TTS Ecosystem (Kong, DBs, PM2)' },
+        }
+      },
+      seeding: {
+        name: 'Seeding',
+        description: 'Database population',
+        scripts: {
+          'workflow-hdts': { file: 'seeding/seed_workflow_helpdesk.ps1', desc: 'Seed Workflow & Helpdesk Data' },
+          'restart-services': { file: 'seeding/restart_all_services.ps1', desc: 'Migrate & Seed All Services', args: ['-Seed'] },
+          'flush-seed': { file: 'seeding/restart_all_services.ps1', desc: 'Flush DBs, Migrate & Seed', args: ['-FlushDB', '-Seed'] },
+          'migrate': { file: 'seeding/restart_all_services.ps1', desc: 'Run Migrations Only' },
         }
       },
       ams: {
         name: 'AMS',
         description: 'Asset Management System Setup',
         scripts: {
-          'setup': { file: 'setup_and_test_ams.ps1', desc: 'Setup & Test AMS' }
+          'setup': { file: 'ams/setup_and_test_ams.ps1', desc: 'Setup & Test AMS' }
         }
       },
     }
@@ -166,6 +176,17 @@ const SCRIPTS = {
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees (Auth)' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees (HDTS)' },
       'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass user transition (Admin workflow tool)' },
+    }
+  },
+  'docker-utils': {
+    name: 'Docker Utils',
+    description: 'Docker container utilities (seed, bypass, etc)',
+    scripts: {
+      'seed-tickets': { file: 'seed_tickets_open.ps1', desc: 'Seed Open Tickets (HDTS Docker)' },
+      'seed-tickets-attachments': { file: 'seed_tickets_with_attachments.ps1', desc: 'Seed Tickets with Attachments (Docker)' },
+      'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees in Auth Container' },
+      'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees in HDTS Container' },
+      'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass Workflow Transition (Docker)' },
     }
   },
   pm2: {

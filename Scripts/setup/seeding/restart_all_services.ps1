@@ -52,8 +52,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --- Configuration ---
-# PSScriptRoot is Scripts\setup, so go up 2 levels to get project root
-$ProjectRoot = Resolve-Path "$PSScriptRoot\..\.."
+# PSScriptRoot is Scripts\setup\seeding, so go up 3 levels to get project root
+$ProjectRoot = Resolve-Path "$PSScriptRoot\..\..\.."
 $VenvPath = "$ProjectRoot\venv\Scripts\Activate.ps1"
 $PythonExe = "$ProjectRoot\venv\Scripts\python.exe"
 $LogDir = "$PSScriptRoot\..\logs"

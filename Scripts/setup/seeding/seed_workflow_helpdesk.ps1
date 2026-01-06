@@ -27,7 +27,7 @@
 $ErrorActionPreference = "Stop"
 
 # --- Configuration ---
-$ProjectRoot = Resolve-Path "$PSScriptRoot\.."
+$ProjectRoot = Resolve-Path "$PSScriptRoot\..\..\.."
 $VenvPath = "$ProjectRoot\venv\Scripts\Activate.ps1"
 $AuthDir = "$ProjectRoot\auth"
 $WorkflowDir = "$ProjectRoot\tts\workflow_api"

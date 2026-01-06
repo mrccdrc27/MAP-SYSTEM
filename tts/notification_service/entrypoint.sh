@@ -34,6 +34,6 @@ python manage.py setup_notification_templates
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Start Gunicorn server
-echo "Starting Gunicorn server..."
-exec gunicorn notification_service.wsgi:application --bind 0.0.0.0:8001
+# Start Daphne ASGI server (supports WebSockets)
+echo "Starting Daphne ASGI server..."
+exec daphne -b 0.0.0.0 -p 8001 notification_service.asgi:application

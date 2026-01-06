@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import DateDivider from './DateDivider';
 import styles from './Messaging.module.css';
 
 const Messaging = ({ ticket_id , ticket_owner, onExpandToggle, isExpanded: externalExpanded }) => {
@@ -145,6 +146,13 @@ const Messaging = ({ ticket_id , ticket_owner, onExpandToggle, isExpanded: exter
     }
   };
 
+  // Helper for date comparison
+  const isSameDay = (d1, d2) => {
+    const date1 = new Date(d1);
+    const date2 = new Date(d2);
+    return date1.toDateString() === date2.toDateString();
+  };
+
   const content = (
     <>
       {/* Backdrop overlay when expanded */}
@@ -191,23 +199,42 @@ const Messaging = ({ ticket_id , ticket_owner, onExpandToggle, isExpanded: exter
           </div>
         ) : (
           <>
-            {messages.map((msg) => {
+            {messages.map((msg, index) => {
               const isOwn = currentUserId && msg.user_id && 
                 String(currentUserId) === String(msg.user_id);
+              
+              // Grouping logic
+              const prevMsg = messages[index - 1];
+              const nextMsg = messages[index + 1];
+              
+              const isFirstInGroup = !prevMsg || 
+                String(prevMsg.user_id) !== String(msg.user_id) || 
+                !isSameDay(prevMsg.created_at, msg.created_at);
+              
+              const isLastInGroup = !nextMsg || 
+                String(nextMsg.user_id) !== String(msg.user_id) || 
+                !isSameDay(nextMsg.created_at, msg.created_at);
+              
+              // Date divider logic
+              const showDateDivider = !prevMsg || !isSameDay(prevMsg.created_at, msg.created_at);
 
               return (
-                <MessageBubble
-                  key={msg.message_id}
-                  message={msg}
-                  isOwn={isOwn}
-                  currentUserId={currentUserId}
-                  currentUserData={authUser}
-                  onEdit={handleEditMessage}
-                  onUnsend={handleUnsendMessage}
-                  onReaction={handleReaction}
-                  onDownloadAttachment={downloadAttachment}
-                  isExpanded={isExpanded}
-                />
+                <React.Fragment key={msg.message_id}>
+                  {showDateDivider && <DateDivider date={msg.created_at} />}
+                  <MessageBubble
+                    message={msg}
+                    isOwn={isOwn}
+                    currentUserId={currentUserId}
+                    currentUserData={authUser}
+                    onEdit={handleEditMessage}
+                    onUnsend={handleUnsendMessage}
+                    onReaction={handleReaction}
+                    onDownloadAttachment={downloadAttachment}
+                    isExpanded={isExpanded}
+                    isFirstInGroup={isFirstInGroup}
+                    isLastInGroup={isLastInGroup}
+                  />
+                </React.Fragment>
               );
             })}
             <div ref={messagesEndRef} />

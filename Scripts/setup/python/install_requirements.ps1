@@ -15,7 +15,7 @@ Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Get the root directory (MAP-SYSTEM)
-$RootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$RootDir = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 Set-Location $RootDir
 
 Write-Host "Working directory: $RootDir" -ForegroundColor Yellow
@@ -23,6 +23,8 @@ Write-Host ""
 
 # Check if requirements file exists
 $RequirementsPath = Join-Path $RootDir $RequirementsFile
+Write-Host "Looking for requirements at: $RequirementsPath" -ForegroundColor DarkGray
+
 if (-not (Test-Path $RequirementsPath)) {
     Write-Host "[X] Requirements file not found: $RequirementsFile" -ForegroundColor Red
     Write-Host ""

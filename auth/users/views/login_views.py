@@ -6,6 +6,8 @@ Template-serving views have been removed - frontend now handles all UI.
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 import logging
 
 from django.conf import settings
@@ -19,6 +21,7 @@ from ..rate_limiting import (
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginAPIView(APIView):
     """
     API endpoint for login with reCAPTCHA verification.
@@ -105,6 +108,7 @@ class LoginAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class VerifyOTPLoginView(APIView):
     """
     API endpoint to verify OTP during login flow.

@@ -1,0 +1,384 @@
+# Kong Declarative Configuration for Docker Compose
+# Routes all API traffic through Kong gateway on port 8000
+#
+# Service URLs use Docker internal networking (service names)
+
+_format_version: "3.0"
+_transform: true
+
+# =============================================================================
+# CONSUMERS
+# =============================================================================
+consumers:
+  - username: auth-service
+    custom_id: auth-service-001
+    tags:
+      - internal
+      - auth
+
+# =============================================================================
+# JWT CREDENTIALS
+# =============================================================================
+jwt_secrets:
+  - consumer: auth-service
+    key: tts-jwt-issuer
+    secret: "signing-key-1234"
+    algorithm: HS256
+
+# =============================================================================
+# PLUGINS (Global)
+# =============================================================================
+plugins:
+  # CORS Plugin - Global
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:1000"
+        - "http://host.docker.internal:1000"
+        - "http://127.0.0.1:1000"
+        - "http://localhost:3001"
+        - "http://host.docker.internal:3001"
+        - "http://127.0.0.1:3001"
+        - "http://localhost:5000"
+        - "http://host.docker.internal:5000"
+        - "http://127.0.0.1:5000"
+        - "http://localhost:5173"
+        - "http://host.docker.internal:5173"
+        - "http://127.0.0.1:5173"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Content-Type
+        - Authorization
+        - X-API-Key
+        - X-Requested-With
+        - X-CSRFToken
+      credentials: true
+      max_age: 3600
+
+  # Rate Limiting - Global
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+
+# =============================================================================
+# SERVICES & ROUTES
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # AUTH SERVICE (Internal port 8000, exposed as 8003)
+  # ---------------------------------------------------------------------------
+  # Auth frontend routes (prefix: /auth/api/v1/) - strips /auth prefix
+  - name: auth-service-frontend
+    url: http://auth-service:8000
+    tags:
+      - auth
+      - public
+    routes:
+      - name: auth-frontend-routes
+        paths:
+          - /auth/api/v1
+        strip_path: false
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/auth", "")
+              kong.service.request.set_path(new_path)
+
+  # Direct API routes (no prefix stripping) - Login, Register, etc.
+  - name: auth-service-public
+    url: http://auth-service:8000
+    tags:
+      - auth
+      - public
+    routes:
+      - name: auth-login
+        paths:
+          - /api/v1/users/login
+          - /api/v1/users/register
+          - /api/v1/users/token/refresh
+          - /api/v1/users/password
+          - /api/v1/users/verify
+        strip_path: false
+        
+      # Direct auth API access
+      - name: auth-api-v1
+        paths:
+          - /api/v1/users
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+
+  # Auth static files and admin
+  - name: auth-service-static
+    url: http://auth-service:8000
+    tags:
+      - auth
+      - static
+    routes:
+      - name: auth-static
+        paths:
+          - /static
+          - /admin
+          - /api-auth
+        strip_path: false
+        preserve_host: true
+
+  # Protected auth endpoints (systems, roles, tts, hdts)
+  - name: auth-service-protected
+    url: http://auth-service:8000
+    tags:
+      - auth
+      - protected
+    routes:
+      - name: auth-systems
+        paths:
+          - /api/v1/systems
+          - /api/v1/roles
+          - /api/v1/tts
+          - /api/v1/hdts
+          - /api/v1/ams
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          run_on_preflight: false
+          cookie_names:
+            - access_token
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW API SERVICE (Internal port 8000, exposed as 1001)
+  # Prefix: /workflow/* → strips prefix → forwards to backend
+  # ---------------------------------------------------------------------------
+  - name: workflow-api-service
+    url: http://workflow-api:8000
+    tags:
+      - tts
+      - workflow
+    routes:
+      - name: workflow-routes
+        paths:
+          - /workflow
+        strip_path: true
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          cookie_names:
+            - access_token
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION SERVICE (Internal port 8001, exposed as 1003)
+  # Prefix: /notification/* → strips prefix → forwards to backend
+  # WebSocket: /notification/ws/* → strips /notification → forwards /ws/* to backend
+  # ---------------------------------------------------------------------------
+  - name: notification-websocket
+    url: http://notification-service:8001
+    connect_timeout: 60000
+    write_timeout: 3600000
+    read_timeout: 3600000
+    tags:
+      - tts
+      - notification
+      - websocket
+    routes:
+      - name: notification-ws
+        paths:
+          - /notification/ws/
+          - /notification/ws
+        strip_path: false
+        protocols:
+          - http
+          - https
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/notification", "")
+              kong.service.request.set_path(new_path)
+
+  - name: notification-api-service
+    url: http://notification-service:8001
+    tags:
+      - tts
+      - notification
+    routes:
+      - name: notification-routes
+        paths:
+          - /notification/
+        strip_path: false
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              -- Skip if this is a WebSocket path (handled by notification-ws route)
+              if path:match("^/notification/ws") then
+                return
+              end
+              local new_path = path:gsub("^/notification", "")
+              kong.service.request.set_path(new_path)
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          cookie_names:
+            - access_token
+
+  # ---------------------------------------------------------------------------
+  # MESSAGING SERVICE (Internal port 8001, exposed as 1002)
+  # Prefix: /messaging/* → strips prefix → forwards to backend
+  # WebSocket: /messaging/ws/* → strips /messaging → forwards /ws/* to backend
+  # ---------------------------------------------------------------------------
+  - name: messaging-websocket
+    url: http://messaging-service:8001
+    connect_timeout: 60000
+    write_timeout: 3600000
+    read_timeout: 3600000
+    tags:
+      - tts
+      - messaging
+      - websocket
+    routes:
+      - name: messaging-ws
+        paths:
+          - /messaging/ws/
+          - /messaging/ws
+        strip_path: false
+        protocols:
+          - http
+          - https
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/messaging", "")
+              kong.service.request.set_path(new_path)
+
+  - name: messaging-api-service
+    url: http://messaging-service:8001
+    tags:
+      - tts
+      - messaging
+    routes:
+      - name: messaging-routes
+        paths:
+          - /messaging/
+        strip_path: false
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              -- Skip if this is a WebSocket path (handled by messaging-ws route)
+              if path:match("^/messaging/ws") then
+                return
+              end
+              local new_path = path:gsub("^/messaging", "")
+              kong.service.request.set_path(new_path)
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          cookie_names:
+            - access_token
+
+  # ---------------------------------------------------------------------------
+  # HELPDESK SERVICE (Internal port 8000, exposed as 5001)
+  # Prefix: /helpdesk/* → strips prefix → forwards to backend
+  # ---------------------------------------------------------------------------
+  - name: helpdesk-service
+    url: http://helpdesk-service:8000
+    tags:
+      - hdts
+      - helpdesk
+    routes:
+      - name: helpdesk-routes
+        paths:
+          - /helpdesk
+        strip_path: true
+      - name: helpdesk-api-legacy
+        paths:
+          - /api/tickets
+          - /api/employees
+          - /api/departments
+          - /api/categories
+          - /api/dashboard
+          - /api/media
+        strip_path: false
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local cookie = kong.request.get_header("cookie")
+              if cookie then
+                local token = cookie:match("access_token=([^;]+)")
+                if token then
+                  kong.service.request.set_header("Authorization", "Bearer " .. token)
+                end
+              end
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+          cookie_names:
+            - access_token

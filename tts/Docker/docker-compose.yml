@@ -5,6 +5,37 @@
 # none of the following env's would be used if there is already an .env file in the respective service directory
 
 services:
+  # Kong API Gateway
+  kong:
+    image: kong:3.4
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.docker.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+    ports:
+      - "8080:8000"   # Kong proxy (main API gateway)
+      - "8001:8001"   # Kong admin API
+    volumes:
+      - ./kong.docker.yml:/kong/kong.docker.yml:ro
+    depends_on:
+      - auth-service
+      - workflow-api
+      - notification-service
+      - messaging-service
+      - helpdesk-service
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   # RabbitMQ for message queueing - No sleep
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -64,6 +95,7 @@ services:
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-worker"
+      KONG_TRUSTED: "true"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
       PGHOST: "db"
       PGPORT: "5432"
@@ -95,8 +127,9 @@ services:
       DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,helpdesk-service"
-      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,helpdesk-service,host.docker.internal"
+      KONG_TRUSTED: "true"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:5173"
       DJANGO_CORS_ALLOW_ALL_ORIGINS: "False"
       # DATABASE_URL: "postgres://postgres:postgrespass@db:5432/helpdesk"
       # PGHOST: "db"
@@ -131,6 +164,8 @@ services:
       DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      KONG_TRUSTED: "true"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
     depends_on:
       rabbitmq:
@@ -151,14 +186,15 @@ services:
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,workflow-api,host.docker.internal"
+      KONG_TRUSTED: "true"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/workflowmanagement"
       PGHOST: "db"
       PGPORT: "5432"
       POSTGRES_DB: "workflow_db"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgrespass"
-      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
       DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DJANGO_NOTIFICATION_QUEUE: "notification-queue-default"
@@ -166,7 +202,8 @@ services:
       DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
       DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
       DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8001"
-      DJANGO_TTS_SERVICE_URL: "http://localhost:8002"
+      DJANGO_TTS_SERVICE_URL: "http://workflow-api:8000"
+      DJANGO_HELPDESK_SERVICE_URL: "http://helpdesk-service:8000"
       DJANGO_USER_SERVICE_URL: "http://localhost:3000"
       DJANGO_BASE_URL: "http://localhost:1001"
       DJANGO_FRONTEND_URL: "http://localhost:1000/register"
@@ -187,9 +224,11 @@ services:
     environment:
       DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
-      DJANGO_SECRET_KEY: "your-auth-service-secret-key-here"
+      DJANGO_SECRET_KEY: "signing-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,auth-service,host.docker.internal"
+      KONG_TRUSTED: "true"
+      RECAPTCHA_ENABLED: "False"
       DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
       DJANGO_EMAIL_HOST: "mailpit"
       DJANGO_EMAIL_PORT: "1025"
@@ -201,10 +240,11 @@ services:
       COOKIE_DOMAIN: "localhost"
       DJANGO_SESSION_COOKIE_SECURE: "False"
       DJANGO_CSRF_COOKIE_SECURE: "False"
-      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:8080,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3000,http://127.0.0.1:3000"
       TTS_SYSTEM_URL: "http://localhost:1000/"
       AMS_SYSTEM_URL: "http://localhost:3000/ams"
-      HDTS_SYSTEM_URL: "http://localhost:3000/hdts"
+      HDTS_SYSTEM_URL: "http://localhost:5173/hdts"
       BMS_SYSTEM_URL: "http://localhost:3000/bms"
       DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
@@ -223,7 +263,9 @@ services:
     environment:
       DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
-      DJANGO_SECRET_KEY: "your-auth-service-secret-key-here"
+      DJANGO_SECRET_KEY: "signing-key-1234"
+      DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
+      KONG_TRUSTED: "true"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
       DJANGO_EMAIL_HOST: "mailpit"
@@ -247,8 +289,9 @@ services:
       DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service"
-      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service,host.docker.internal"
+      KONG_TRUSTED: "true"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080"
       DJANGO_CORS_ALLOW_CREDENTIALS: "True"
       DJANGO_MEDIA_BASE_URL: "http://localhost:1002"
     ports:
@@ -265,7 +308,8 @@ services:
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-service,host.docker.internal"
+      KONG_TRUSTED: "true"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
       PGHOST: "db"
       PGPORT: "5432"
@@ -281,7 +325,7 @@ services:
       DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
       TTS_FRONTEND_URL: "http://localhost:1000"
       TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}"
-      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
+      DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080"
       DJANGO_CORS_ALLOW_CREDENTIALS: "True"
       DJANGO_NOTIFICATION_SERVICE_PORT: "8001"
       DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
@@ -308,6 +352,7 @@ services:
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,notification-worker"
+      KONG_TRUSTED: "true"
       DATABASE_URL: "postgres://postgres:postgrespass@db:5432/notificationservice"
       PGHOST: "db"
       PGPORT: "5432"
@@ -323,6 +368,7 @@ services:
       DJANGO_DEFAULT_FROM_EMAIL: "noreply@tickettracking.local"
       TTS_FRONTEND_URL: "http://localhost:1000"
       TTS_TICKET_PATH_TEMPLATE: "/ticket/{id}"
+      NOTIFICATION_SERVICE_INTERNAL_URL: "http://notification-service:8001"
       DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
       DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456"
       DJANGO_API_KEY: "in-app-notification-api-key-secure"

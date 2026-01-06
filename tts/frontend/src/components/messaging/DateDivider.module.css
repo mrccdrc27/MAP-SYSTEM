@@ -1,0 +1,28 @@
+.dateDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  position: relative;
+}
+
+.dateDivider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-color);
+  z-index: 1;
+}
+
+.dateText {
+  background: var(--bg-content-color); /* Match container background */
+  padding: 0 12px;
+  color: var(--muted-text-color);
+  font-size: 12px;
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+  border-radius: 10px;
+}

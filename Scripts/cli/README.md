@@ -91,6 +91,48 @@ node Scripts/cli/index.js run docker:rabbitmq
 node Scripts/cli/index.js run services:tts:workflow
 ```
 
+## Available Script Categories
+
+### Services
+Individual backend/frontend services (Auth, TTS, HDTS)
+
+### Docker
+Container management (RabbitMQ, Kong Gateway, TTS Docker Compose)
+
+### Setup
+Database seeding, Python environment, ecosystem setup
+
+### Testing
+Automated tests and integration tests
+
+### Utilities
+Maintenance scripts for local development:
+- `seed-tickets`: Seed open tickets
+- `seed-tickets-attachments`: Seed tickets with file attachments
+- `seed-employees-auth`: Seed employees in Auth service
+- `seed-employees-hdts`: Seed employees in HDTS
+- `bypass-transition`: Admin workflow tool
+
+### Docker Utils
+Docker container utilities - same as Utilities but executes inside Docker containers:
+- `seed-tickets`: Seed open tickets in Docker containers
+- `seed-tickets-attachments`: Seed tickets with attachments in Docker
+- `seed-employees-auth`: Seed employees in Auth container
+- `seed-employees-hdts`: Seed employees in HDTS container
+- `bypass-transition`: Bypass workflow transition in Docker
+
+**Usage Example:**
+```powershell
+# Local development
+node Scripts/cli/index.js run utils:seed-tickets
+
+# Docker containers
+node Scripts/cli/index.js run docker-utils:seed-tickets
+```
+
+### PM2
+Process Manager commands for TTS ecosystem
+
 ### Quick Commands
 ```powershell
 node Scripts/cli/index.js start        # Start all with PM2

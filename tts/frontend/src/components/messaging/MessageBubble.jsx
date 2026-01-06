@@ -15,7 +15,9 @@ const MessageBubble = ({
   onUnsend,
   onReaction,
   onDownloadAttachment,
-  isExpanded
+  isExpanded,
+  isFirstInGroup = true,
+  isLastInGroup = true
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showQuickReactions, setShowQuickReactions] = useState(false);
@@ -52,14 +54,7 @@ const MessageBubble = ({
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    
-    const options = { hour: '2-digit', minute: '2-digit' };
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
     return date.toLocaleTimeString([], options);
   };
 
@@ -85,13 +80,53 @@ const MessageBubble = ({
     setShowQuickReactions(false);
   };
 
+  // Styles logic
+  const wrapperStyle = {
+    marginBottom: isLastInGroup ? '12px' : '2px', // Tighter spacing within group
+  };
+
+  // Avatar visibility: Show only for the last message in a group (bottom aligned visual)
+  // OR first message (top aligned visual). 
+  // Current design is top aligned (flex-start).
+  // Standard apps: Avatar often at bottom. 
+  // Let's stick to showing avatar for the LAST message in the group to match the "tail" at bottom.
+  // But wait, the previous CSS aligned items to start. I should change CSS to align to end if I want bottom avatars.
+  // For now, let's keep it simple: Show avatar for every message BUT hide it (visibility: hidden) for non-last messages.
+  // Actually, standard is: Avatar at BOTTOM of group.
+  
+  const showAvatar = isLastInGroup; 
+  
+  // Border radius logic
+  const bubbleStyle = {};
+  if (!isFirstInGroup && !isLastInGroup) {
+    // Middle message: softer corners everywhere
+    bubbleStyle.borderRadius = '18px 18px 18px 18px';
+  } else if (isFirstInGroup && !isLastInGroup) {
+    // Top of group: fully rounded (no tail yet)
+    bubbleStyle.borderRadius = '18px 18px 18px 18px';
+  } else if (!isFirstInGroup && isLastInGroup) {
+    // Bottom of group: has the tail
+    // Inherits default class style which has the tail
+  }
+  
+  // Show sender name only on first message of group
+  const showSenderName = !isOwn && isFirstInGroup;
+
   // Show unsent message placeholder
   if (is_unsent) {
     return (
-      <div className={`${styles.messageWrapper} ${isOwn ? styles.own : styles.other}`}>
-        {!isOwn && <div className={styles.avatar}>{sender?.charAt(0)?.toUpperCase()}</div>}
+      <div className={`${styles.messageWrapper} ${isOwn ? styles.own : styles.other}`} style={wrapperStyle}>
+        {!isOwn && (
+          <div className={styles.avatarContainer}>
+             {showAvatar ? (
+               <div className={styles.avatar}>{sender?.charAt(0)?.toUpperCase()}</div>
+             ) : (
+               <div className={styles.avatarPlaceholder} />
+             )}
+          </div>
+        )}
         <div className={styles.messageContent}>
-          {!isOwn && (
+          {showSenderName && (
             <div className={styles.messageMeta}>
               <span className={styles.senderName}>{sender}</span>
             </div>
@@ -106,18 +141,26 @@ const MessageBubble = ({
                   : `${sender} unsent this message`}
             </p>
           </div>
-          <div className={styles.messageTime}>{formatTime(created_at)}</div>
+          {isLastInGroup && <div className={styles.messageTime}>{formatTime(created_at)}</div>}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`${styles.messageWrapper} ${isOwn ? styles.own : styles.other}`}>
-      {!isOwn && <div className={styles.avatar}>{sender?.charAt(0)?.toUpperCase()}</div>}
+    <div className={`${styles.messageWrapper} ${isOwn ? styles.own : styles.other}`} style={wrapperStyle}>
+      {!isOwn && (
+         <div className={styles.avatarContainer}>
+           {showAvatar ? (
+             <div className={styles.avatar}>{sender?.charAt(0)?.toUpperCase()}</div>
+           ) : (
+             <div className={styles.avatarPlaceholder} />
+           )}
+         </div>
+      )}
       
       <div className={`${styles.messageContent} ${isExpanded ? styles.contentExpanded : ''}`}>
-        {!isOwn && (
+        {showSenderName && (
           <div className={styles.messageMeta}>
             <span className={styles.senderName}>{sender}</span>
             {sender_role && <span className={styles.senderRole}>• {sender_role}</span>}
@@ -127,9 +170,17 @@ const MessageBubble = ({
         {/* Message bubble with hover actions - only show if there's text */}
         {text?.trim() && (
           <div className={styles.bubbleWrapper}>
-            <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : styles.bubbleOther} ${isExpanded ? styles.bubbleExpanded : ''}`}>
-              <p className={styles.messageText}>{text}</p>
-              {is_edited && <span className={styles.editedTag}>(edited)</span>}
+            <div 
+              className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : styles.bubbleOther} ${isExpanded ? styles.bubbleExpanded : ''}`}
+              style={bubbleStyle}
+            >
+              <p className={styles.messageText}>
+                {text}
+                {is_edited && <span className={styles.editedTag}>(edited)</span>}
+              </p>
+              
+              {/* Time inside bubble */}
+              <span className={styles.bubbleTime}>{formatTime(created_at)}</span>
               
               {/* Quick reactions button inside bubble */}
               <div 
@@ -298,8 +349,12 @@ const MessageBubble = ({
           onReaction={onReaction}
           isOwn={isOwn}
         />
-
-        <div className={styles.messageTime}>{formatTime(created_at)}</div>
+        
+        {/* Only show external time if it's attachment only (since text bubbles have internal time) 
+            AND it is the last in group */}
+        {!text?.trim() && isLastInGroup && (
+          <div className={styles.messageTime}>{formatTime(created_at)}</div>
+        )}
       </div>
     </div>
   );
