@@ -1,9 +1,32 @@
-Django
-djangorestframework
-django-cors-headers
-Pillow
-djangorestframework-simplejwt
-celery
-google-api-python-client>=2.85.0
-google-auth-httplib2>=0.1.0
-google-auth-oauthlib>=1.1.0
+# Core Framework
+Django==5.2.4
+python-decouple==3.8
+python-dotenv==1.1.0
+
+# REST Framework & API
+djangorestframework==3.16.0
+djangorestframework-simplejwt==5.5.0
+drf-spectacular==0.28.0
+
+# Database
+psycopg2-binary==2.9.11
+dj-database-url==2.1.0
+
+# Task Queue
+celery==5.5.3
+
+# HTTP & Networking
+django-cors-headers==4.7.0
+requests==2.32.4
+
+# Google API Integration
+google-api-python-client==2.85.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.1.0
+
+# Media & Files
+pillow==12.1.0
+
+# Server & Deployment
+gunicorn==20.1.0
+whitenoise==6.6.0

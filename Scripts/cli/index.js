@@ -88,6 +88,14 @@ const SCRIPTS = {
   setup: {
     name: 'Setup',
     description: 'Database seeding and configuration',
+    scripts: {
+      'python-env': { file: 'setup_python_environment.ps1', desc: 'Setup Python Environment (venv + requirements)' },
+      'create-venv': { file: 'create_venv.ps1', desc: 'Create Virtual Environment' },
+      'aggregate-reqs': { file: 'aggregate_requirements.ps1', desc: 'Aggregate Requirements.txt' },
+      'install-reqs': { file: 'install_requirements.ps1', desc: 'Install Aggregated Requirements' },
+      'verify-install': { file: 'verify_installation.ps1', desc: 'Verify Python Installation' },
+      'verify-install-py': { file: 'verify_installation.py', desc: 'Verify Python Installation (Python script)', shell: 'python' },
+    },
     subcategories: {
       tts: {
         name: 'TTS',

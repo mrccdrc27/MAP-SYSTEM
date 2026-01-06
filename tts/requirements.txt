@@ -1,65 +1,32 @@
-amqp==5.3.1
-argon2-cffi>=23.1.0
-argon2-cffi-bindings>=21.2.0
-asgiref==3.9.1
-attrs==25.3.0
-billiard==4.2.1
-celery==5.5.3
-certifi==2025.6.15
-cffi==1.17.1
-channels
-charset-normalizer==3.4.2
-click==8.2.1
-click-didyoumean==0.3.1
-click-plugins==1.1.1
-click-repl==0.3.0
-colorama==0.4.6
-cryptography==45.0.4
-daphne
-dj-database-url
+# Core Framework
 Django==5.2.4
-django-celery-results==2.5.1
+python-decouple==3.8
+python-dotenv==1.1.0
+
+# REST Framework & API
+djangorestframework==3.16.0
+djangorestframework-simplejwt==5.5.0
+drf-spectacular==0.28.0
+
+# Database
+psycopg2-binary==2.9.11
+dj-database-url==2.1.0
+
+# Task Queue
+celery==5.5.3
+
+# HTTP & Networking
 django-cors-headers==4.7.0
+requests==2.32.4
+
+# Django Extensions
 django-extensions==4.1
 django-filter==25.1
-django-simple-captcha==0.6.0
-djangorestframework==3.16.0
-djangorestframework-api-key
-djangorestframework_simplejwt==5.5.0
-drf-spectacular==0.28.0
-Faker==37.4.0
-gunicorn==21.2.0
-idna==3.10
-inflection==0.5.1
-jsonschema==4.24.0
-jsonschema-specifications==2025.4.1
-kombu==5.5.4
-lxml==5.4.0
-packaging==25.0
-pdfminer.six==20250506
-pdfplumber==0.11.7
-pillow==11.2.1
-prompt_toolkit==3.0.51
-psycopg2-binary>=2.9
-pycparser==2.22
-PyJWT==2.9.0
-pypdfium2==4.30.1
-python-dateutil==2.9.0.post0
-python-decouple==3.8
-python-docx==1.2.0
-python-dotenv==1.1.0
-PyYAML==6.0.2
-referencing==0.36.2
-requests==2.32.4
-rpds-py==0.25.1
-setuptools==80.9.0
-six==1.17.0
-sqlparse==0.5.3
-typing_extensions==4.14.0
-tzdata==2025.2
-uritemplate==4.2.0
-urllib3==2.5.0
-vine==5.1.0
-wcwidth==0.2.13
+
+# Data Science (for forecasting)
+numpy==1.24.0
+scipy==1.10.0
+
+# Server & Deployment
+gunicorn==20.1.0
 whitenoise==6.6.0
-#for deployment
