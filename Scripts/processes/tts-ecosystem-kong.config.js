@@ -58,8 +58,8 @@ module.exports = {
         KONG_TRUSTED: "true",  // Services trust Kong's pre-validated JWT
         RECAPTCHA_ENABLED: "False",
         CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173",
-        DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:8000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3000,http://127.0.0.1:3000",
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173",
+        DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:8080,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3000,http://127.0.0.1:3000",
         TTS_SYSTEM_URL: "http://localhost:1000/",
         AMS_SYSTEM_URL: "http://localhost:3000/ams",
         HDTS_SYSTEM_URL: "http://localhost:5173/hdts",
@@ -82,7 +82,7 @@ module.exports = {
       name: 'workflow-api',
       cwd: path.join(projectRoot, 'tts/workflow_api'),
       script: 'manage.py',
-      args: 'runserver 0.0.0.0:8002',
+      args: 'runserver 0.0.0.0:1001',
       interpreter: pythonInterpreter,
       windowsHide: true,
       env: {
@@ -100,13 +100,13 @@ module.exports = {
         // Service URLs - Going through Kong gateway with prefix-based routing
         // Kong routes: /helpdesk/*, /workflow/*, /notification/*, /messaging/*
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",  // Auth is direct (not through Kong for backend calls)
-        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8000/notification",  // Through Kong
-        DJANGO_TTS_SERVICE_URL: "http://localhost:8000/workflow",  // Through Kong
-        DJANGO_HELPDESK_SERVICE_URL: "http://localhost:8000/helpdesk",  // Through Kong
+        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8080/notification",  // Through Kong
+        DJANGO_TTS_SERVICE_URL: "http://localhost:8080/workflow",  // Through Kong
+        DJANGO_HELPDESK_SERVICE_URL: "http://localhost:8080/helpdesk",  // Through Kong
         DJANGO_USER_SERVICE_URL: "http://localhost:3000",
-        DJANGO_BASE_URL: "http://localhost:8000/workflow",  // External base URL through Kong
+        DJANGO_BASE_URL: "http://localhost:8080/workflow",  // External base URL through Kong
         DJANGO_FRONTEND_URL: "http://localhost:1000/register",
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000"
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080"
       }
     },
     {
@@ -126,7 +126,7 @@ module.exports = {
         DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@localhost:5672/",
         // Inter-service URLs - Auth is direct, others through Kong
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
-        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8000/notification",
+        DJANGO_NOTIFICATION_SERVICE_URL: "http://localhost:8080/notification",
         C_FORCE_ROOT: "false"
       }
     },
@@ -138,7 +138,7 @@ module.exports = {
       name: 'notification-service',
       cwd: path.join(projectRoot, 'tts/notification_service'),
       script: pythonInterpreter,
-      args: '-m daphne -b 0.0.0.0 -p 8006 notification_service.asgi:application',
+      args: '-m daphne -b 0.0.0.0 -p 1003 notification_service.asgi:application',
       interpreter: 'none',
       windowsHide: true,
       env: {
@@ -148,9 +148,9 @@ module.exports = {
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8000",
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
-        DJANGO_NOTIFICATION_SERVICE_PORT: "8006",
+        DJANGO_NOTIFICATION_SERVICE_PORT: "1003",
         DJANGO_AUTH_SERVICE_URL: "http://localhost:8003",
         DJANGO_NOTIFICATION_API_KEYS: "demo-api-key-123,test-api-key-456",
         DJANGO_API_KEY: "in-app-notification-api-key-secure",
@@ -207,7 +207,7 @@ module.exports = {
       name: 'messaging-service',
       cwd: path.join(projectRoot, 'tts/messaging'),
       script: pythonInterpreter,
-      args: '-m daphne -b 0.0.0.0 -p 8005 messaging.asgi:application',
+      args: '-m daphne -b 0.0.0.0 -p 1002 messaging.asgi:application',
       interpreter: 'none',
       windowsHide: true,
       env: {
@@ -217,21 +217,21 @@ module.exports = {
         DJANGO_SECRET_KEY: "signing-key-1234",
         DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
         KONG_TRUSTED: "true",  // Trust Kong's pre-validated JWT from cookies
-        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000",
+        DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080",
         DJANGO_CORS_ALLOW_CREDENTIALS: "True",
-        DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
+        DJANGO_MEDIA_BASE_URL: "http://localhost:1002"
       }
     },
 
     // -------------------
-    // Helpdesk (Backend) - Port 8007
-    // Kong runs on 8000, so helpdesk uses 8007
+    // Helpdesk (Backend) - Port 5001
+    // Kong runs on 8080, so helpdesk backend uses 5001
     // -------------------
     {
       name: 'helpdesk-backend',
       cwd: path.join(projectRoot, 'hdts/helpdesk'),
       script: 'manage.py',
-      args: 'runserver 0.0.0.0:8007', 
+      args: 'runserver 0.0.0.0:5001', 
       interpreter: pythonInterpreter,
       windowsHide: true,
       env: {
@@ -290,8 +290,20 @@ module.exports = {
       watch: false,
       windowsHide: true,
       env: {
-        // Auth frontend proxies through Kong via vite.config.js
-        // No additional env vars needed - vite proxy handles routing
+        // Kong Gateway Mode - Route auth requests through Kong (port 8080)
+        VITE_API_BASE_URL: "http://localhost:8080",
+        VITE_ENV: "development",
+        VITE_DEBUG: "true",
+        // Auth endpoints use /auth prefix (Kong routes)
+        VITE_AUTH_LOGIN_ENDPOINT: "/auth/api/v1/users/login/api",
+        VITE_AUTH_REGISTER_ENDPOINT: "/auth/api/v1/users/register",
+        VITE_AUTH_LOGOUT_ENDPOINT: "/auth/api/v1/users/logout",
+        VITE_AUTH_REFRESH_ENDPOINT: "/auth/api/v1/users/token/refresh",
+        VITE_AUTH_PROFILE_ENDPOINT: "/auth/api/v1/users/profile",
+        // Feature flags
+        VITE_ENABLE_REGISTRATION: "true",
+        VITE_ENABLE_PASSWORD_RESET: "true",
+        VITE_ENABLE_RECAPTCHA: "false"
       }
     },
 
@@ -312,17 +324,17 @@ module.exports = {
       watch: false,
       windowsHide: true,
       env: {
-        // Kong Gateway Mode - All API calls routed through Kong (port 8000)
+        // Kong Gateway Mode - All API calls routed through Kong (port 8080)
         // Kong uses prefix-based routing: /helpdesk/*, /workflow/*, /notification/*, /messaging/*
         // Kong strips the prefix and forwards to the backend service
         VITE_AUTH_URL: "http://localhost:8003",  // Auth direct (login page before Kong auth)
-        VITE_WORKFLOW_API: "http://localhost:8000/workflow",  // Through Kong
-        VITE_BACKEND_API: "http://localhost:8000/workflow",   // Through Kong (workflow is the main backend)
-        VITE_NOTIFICATION_API: "http://localhost:8000/notification",  // Through Kong
-        VITE_NOTIFICATION_WS: "ws://localhost:8000/notification/ws",  // WebSocket through Kong
-        VITE_MESSAGING_API: "http://localhost:8000/messaging",  // Through Kong
-        VITE_MESSAGING_WS: "ws://localhost:8000/messaging/ws",  // WebSocket through Kong
-        VITE_HELPDESK_SERVICE_URL: "http://localhost:8000/helpdesk"  // Through Kong
+        VITE_WORKFLOW_API: "http://localhost:8080/workflow",  // Through Kong
+        VITE_BACKEND_API: "http://localhost:8080/workflow",   // Through Kong (workflow is the main backend)
+        VITE_NOTIFICATION_API: "http://localhost:8080/notification",  // Through Kong
+        VITE_NOTIFICATION_WS: "ws://localhost:8080/notification/ws",  // WebSocket through Kong
+        VITE_MESSAGING_API: "http://localhost:8080/messaging",  // Through Kong
+        VITE_MESSAGING_WS: "ws://localhost:8080/messaging/ws",  // WebSocket through Kong
+        VITE_HELPDESK_SERVICE_URL: "http://localhost:8080/helpdesk"  // Through Kong
       }
     }
   ]

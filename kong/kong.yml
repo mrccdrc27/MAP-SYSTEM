@@ -44,10 +44,10 @@ plugins:
       origins:
         - "http://localhost:1000"
         - "http://127.0.0.1:1000"
+        - "http://localhost:5000"
+        - "http://127.0.0.1:5000"
         - "http://localhost:5173"
         - "http://127.0.0.1:5173"
-        - "http://localhost:3000"
-        - "http://127.0.0.1:3000"
       methods:
         - GET
         - POST
@@ -93,11 +93,11 @@ plugins:
 
 services:
   # ---------------------------------------------------------------------------
-  # AUTH SERVICE (Port 8003)
+  # AUTH SERVICE (Port 8003 - Internal)
   # ---------------------------------------------------------------------------
   # Public endpoints (no JWT required)
   - name: auth-service-public
-    url: http://auth-service:8003
+    url: http://${AUTH_SERVICE_HOST:auth-service}:${AUTH_SERVICE_PORT:8003}
     tags:
       - auth
       - public
@@ -117,7 +117,7 @@ services:
 
   # Protected auth endpoints
   - name: auth-service-protected
-    url: http://auth-service:8003
+    url: http://${AUTH_SERVICE_HOST:auth-service}:${AUTH_SERVICE_PORT:8003}
     tags:
       - auth
       - protected
@@ -141,10 +141,10 @@ services:
           run_on_preflight: false
 
   # ---------------------------------------------------------------------------
-  # WORKFLOW API SERVICE (Port 8002)
+  # WORKFLOW API SERVICE (Port 1001 - Backend)
   # ---------------------------------------------------------------------------
   - name: workflow-api-service
-    url: http://workflow-api:8002
+    url: http://${WORKFLOW_API_HOST:workflow-api}:${WORKFLOW_API_PORT:1001}
     tags:
       - tts
       - workflow
@@ -169,11 +169,11 @@ services:
           run_on_preflight: false
 
   # ---------------------------------------------------------------------------
-  # NOTIFICATION SERVICE (Port 8006)
+  # NOTIFICATION SERVICE (Port 1003)
   # ---------------------------------------------------------------------------
   # WebSocket connections (special handling)
   - name: notification-websocket
-    url: http://notification-service:8006
+    url: http://${NOTIFICATION_SERVICE_HOST:notification-service}:${NOTIFICATION_SERVICE_PORT:1003}
     tags:
       - tts
       - notification
@@ -192,7 +192,7 @@ services:
 
   # REST API endpoints
   - name: notification-api-service
-    url: http://notification-service:8006
+    url: http://${NOTIFICATION_SERVICE_HOST:notification-service}:${NOTIFICATION_SERVICE_PORT:1003}
     tags:
       - tts
       - notification
@@ -211,11 +211,11 @@ services:
           run_on_preflight: false
 
   # ---------------------------------------------------------------------------
-  # MESSAGING SERVICE (Port 8005)
+  # MESSAGING SERVICE (Port 1002)
   # ---------------------------------------------------------------------------
   # WebSocket connections
   - name: messaging-websocket
-    url: http://messaging-service:8005
+    url: http://${MESSAGING_SERVICE_HOST:messaging-service}:${MESSAGING_SERVICE_PORT:1002}
     tags:
       - tts
       - messaging
@@ -235,7 +235,7 @@ services:
 
   # REST API endpoints
   - name: messaging-api-service
-    url: http://messaging-service:8005
+    url: http://${MESSAGING_SERVICE_HOST:messaging-service}:${MESSAGING_SERVICE_PORT:1002}
     tags:
       - tts
       - messaging
@@ -256,10 +256,10 @@ services:
           run_on_preflight: false
 
   # ---------------------------------------------------------------------------
-  # HELPDESK SERVICE (Port 8000)
+  # HELPDESK SERVICE (Port 5001 - Backend)
   # ---------------------------------------------------------------------------
   - name: helpdesk-service
-    url: http://helpdesk-backend:8000
+    url: http://${HELPDESK_BACKEND_HOST:helpdesk-backend}:${HELPDESK_BACKEND_PORT:5001}
     tags:
       - hdts
       - helpdesk
@@ -284,25 +284,25 @@ services:
 upstreams:
   - name: auth-upstream
     targets:
-      - target: auth-service:8003
+      - target: ${AUTH_SERVICE_HOST:auth-service}:${AUTH_SERVICE_PORT:8003}
         weight: 100
 
   - name: workflow-upstream
     targets:
-      - target: workflow-api:8002
+      - target: ${WORKFLOW_API_HOST:workflow-api}:${WORKFLOW_API_PORT:1001}
         weight: 100
 
   - name: notification-upstream
     targets:
-      - target: notification-service:8006
+      - target: ${NOTIFICATION_SERVICE_HOST:notification-service}:${NOTIFICATION_SERVICE_PORT:1003}
         weight: 100
 
   - name: messaging-upstream
     targets:
-      - target: messaging-service:8005
+      - target: ${MESSAGING_SERVICE_HOST:messaging-service}:${MESSAGING_SERVICE_PORT:1002}
         weight: 100
 
   - name: helpdesk-upstream
     targets:
-      - target: helpdesk-backend:8000
+      - target: ${HELPDESK_BACKEND_HOST:helpdesk-backend}:${HELPDESK_BACKEND_PORT:5001}
         weight: 100

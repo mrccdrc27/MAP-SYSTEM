@@ -3,7 +3,7 @@ import { API_CONFIG } from '../../config/environment.js';
 import { backendAuthService } from './authService.js';
 
 const BASE_URL = API_CONFIG.BACKEND.BASE_URL;
-const WORKFLOW_URL = API_CONFIG.TTS_WORKFLOW?.BASE_URL || 'http://localhost:8002';
+const WORKFLOW_URL = API_CONFIG.WORKFLOW.BASE_URL;
 
 // Helper function to get headers for cookie-based auth
 const getAuthHeaders = () => {

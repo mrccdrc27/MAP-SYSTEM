@@ -2,6 +2,8 @@
  * Utility functions for handling secure media URLs with authentication
  */
 
+import { API_CONFIG } from '../config/environment';
+
 /**
  * Generate a secure media URL with authentication token
  * @param {string} filePath - The file path from the media folder (e.g., 'employee_images/profile.jpg')
@@ -13,7 +15,7 @@ export function generateSecureMediaUrl(filePath, token) {
     return null;
   }
 
-  const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || 'http://localhost:8000/media/';
+  const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || `${API_CONFIG.BACKEND.BASE_URL}/media/`;
   
   // Remove leading slash if present
   const cleanFilePath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
@@ -69,7 +71,7 @@ export function getSecureMediaUrl(filePath) {
 export function extractFilePathFromUrl(fullUrl) {
   if (!fullUrl) return null;
   
-  const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || 'http://localhost:8000/media/';
+  const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || `${API_CONFIG.BACKEND.BASE_URL}/media/`;
   
   if (fullUrl.startsWith(MEDIA_URL)) {
     const filePath = fullUrl.replace(MEDIA_URL, '');
@@ -93,17 +95,16 @@ export function extractFilePathFromUrl(fullUrl) {
 export function convertToSecureUrl(existingUrl) {
   if (!existingUrl) return null;
   
-  // If the URL already starts with http://localhost:8000/api/media/, use it as-is
-  if (existingUrl.startsWith('http://localhost:8000/api/media/') || 
-      existingUrl.startsWith('http://localhost:8003/api/media/') ||
-      existingUrl.startsWith('https://') && existingUrl.includes('/api/media/')) {
-    return existingUrl;
+  // If the URL already has a full URL with /api/media/, use it as-is
+  if (existingUrl.startsWith('http://') || existingUrl.startsWith('https://')) {
+    if (existingUrl.includes('/api/media/')) {
+      return existingUrl;
+    }
   }
   
-  // If it starts with /api/media/, prepend the base URL
+  // If it starts with /api/media/, prepend the backend base URL
   if (existingUrl.startsWith('/api/media/')) {
-    const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8000';
-    return `${BASE_URL}${existingUrl}`;
+    return `${API_CONFIG.BACKEND.BASE_URL}${existingUrl}`;
   }
   
   // Otherwise, use the old logic for backward compatibility

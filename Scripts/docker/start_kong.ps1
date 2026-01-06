@@ -75,7 +75,7 @@ $dockerArgs = @(
     "run"
     if ($Detached) { "-d" } else { "--rm" }
     "--name", $ContainerName
-    "-p", "8000:8000"   # Kong Proxy (API Gateway)
+    "-p", "8080:8000"   # Kong Proxy (API Gateway)
     "-p", "8001:8001"   # Kong Admin API
     "-e", "KONG_DATABASE=off"
     "-e", "KONG_DECLARATIVE_CONFIG=/kong/$ConfigFile"
@@ -94,7 +94,7 @@ $dockerArgs = @(
 
 Write-Host ""
 Write-Host "Starting Kong API Gateway..." -ForegroundColor Green
-Write-Host "  Proxy:  http://localhost:8000" -ForegroundColor Cyan
+Write-Host "  Proxy:  http://localhost:8080" -ForegroundColor Cyan
 Write-Host "  Admin:  http://localhost:8001" -ForegroundColor Cyan
 Write-Host ""
 

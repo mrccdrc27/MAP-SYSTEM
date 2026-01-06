@@ -2,10 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_CONFIG } from '../../../config/environment';
 
 // WebSocket URL for messaging service
-const WEBSOCKET_BASE = import.meta.env.VITE_MESSAGING_WS || 
-  (import.meta.env.VITE_MESSAGING_API?.replace('http', 'ws')?.replace('', '') || 
-   API_CONFIG.MESSAGING?.WS_URL || 
-   'ws://localhost:8005');
+const WEBSOCKET_BASE = API_CONFIG.MESSAGING.WS_URL;
 
 export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessages) => {
   const [isConnected, setIsConnected] = useState(false);

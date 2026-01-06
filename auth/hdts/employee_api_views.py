@@ -109,8 +109,12 @@ class EmployeeTokenObtainPairView(generics.GenericAPIView):
     API endpoint for employee login with reCAPTCHA verification.
     POST: Login with email and password, returns JWT tokens
     """
-    serializer_class = None  # Will be set dynamically
     permission_classes = (AllowAny,)
+
+    def get_serializer_class(self):
+        """Return the appropriate serializer class."""
+        from .serializers import EmployeeTokenObtainPairWithRecaptchaSerializer
+        return EmployeeTokenObtainPairWithRecaptchaSerializer
 
     def post(self, request, *args, **kwargs):
         """Authenticate employee and return JWT tokens."""

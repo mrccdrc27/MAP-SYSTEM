@@ -12,21 +12,36 @@ export const API_CONFIG = {
     MOCK_DELAY_MS: 500
   },
   
-  // Backend API settings - Routes through Kong Gateway with /helpdesk prefix
+  // HDTS Backend API settings - Routes through Kong Gateway with /helpdesk prefix
   BACKEND: {
-    BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/helpdesk',
+    BASE_URL: import.meta.env.VITE_HDTS_BACKEND_URL || 
+              import.meta.env.VITE_API_URL || 
+              'http://localhost:8000/helpdesk',
     TIMEOUT: 10000
   },
   
-  // Auth service settings (direct, not through Kong)
+  // Auth service settings (direct connection, not through Kong)
   AUTH: {
-    BASE_URL: import.meta.env.VITE_AUTH_URL || 'http://localhost:8003',
+    BASE_URL: import.meta.env.VITE_AUTH_URL || 
+              'http://localhost:8003',
     TIMEOUT: 10000
   },
   
   // TTS Workflow API settings - Routes through Kong Gateway with /workflow prefix
-  TTS_WORKFLOW: {
-    BASE_URL: import.meta.env.VITE_TTS_WORKFLOW_URL || 'http://localhost:8000/workflow',
+  WORKFLOW: {
+    BASE_URL: import.meta.env.VITE_WORKFLOW_API_URL || 
+              import.meta.env.VITE_TTS_WORKFLOW_URL || 
+              'http://localhost:8000/workflow',
+    TIMEOUT: 10000
+  },
+  
+  // Messaging service settings (WebSocket and HTTP API)
+  MESSAGING: {
+    BASE_URL: import.meta.env.VITE_MESSAGING_API_URL || 
+              'http://localhost:8005',
+    WS_URL: import.meta.env.VITE_MESSAGING_WS_URL || 
+            import.meta.env.VITE_MESSAGING_API_URL?.replace('http', 'ws') || 
+            'ws://localhost:8005',
     TIMEOUT: 10000
   }
 };

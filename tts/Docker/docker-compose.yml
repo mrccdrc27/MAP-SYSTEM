@@ -110,7 +110,7 @@ services:
       DJANGO_SUPERUSER_USERNAME: "admin"
       DJANGO_SUPERUSER_PASSWORD: "admin123"
     ports:
-      - "8000:8000"
+      - "5001:8000"
     volumes:
       - media_files:/app/media
     depends_on:
@@ -168,10 +168,10 @@ services:
       DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8001"
       DJANGO_TTS_SERVICE_URL: "http://localhost:8002"
       DJANGO_USER_SERVICE_URL: "http://localhost:3000"
-      DJANGO_BASE_URL: "http://localhost:8002"
+      DJANGO_BASE_URL: "http://localhost:1001"
       DJANGO_FRONTEND_URL: "http://localhost:1000/register"
     ports:
-      - "8002:8000"
+      - "1001:8000"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -250,9 +250,9 @@ services:
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,messaging-service"
       DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000"
       DJANGO_CORS_ALLOW_CREDENTIALS: "True"
-      DJANGO_MEDIA_BASE_URL: "http://localhost:8005"
+      DJANGO_MEDIA_BASE_URL: "http://localhost:1002"
     ports:
-      - "8005:8001"
+      - "1002:8001"
     command: sh -c "sleep 10 && ./entrypoint.sh"
     
   # Notification service - 10 seconds sleep
@@ -291,7 +291,7 @@ services:
       DJANGO_NOTIFICATION_QUEUE: "notification-queue"
       DJANGO_INAPP_NOTIFICATION_QUEUE: "inapp-notification-queue"
     ports:
-      - "8006:8001"
+      - "1003:8001"
     depends_on:
       rabbitmq:
         condition: service_healthy

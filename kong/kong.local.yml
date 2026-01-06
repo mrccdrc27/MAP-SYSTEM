@@ -37,12 +37,12 @@ plugins:
         - "http://localhost:3001"
         - "http://host.docker.internal:3001"
         - "http://127.0.0.1:3001"
+        - "http://localhost:5000"
+        - "http://host.docker.internal:5000"
+        - "http://127.0.0.1:5000"
         - "http://localhost:5173"
         - "http://host.docker.internal:5173"
         - "http://127.0.0.1:5173"
-        - "http://localhost:3000"
-        - "http://host.docker.internal:3000"
-        - "http://127.0.0.1:3000"
       methods:
         - GET
         - POST
@@ -56,6 +56,7 @@ plugins:
         - Authorization
         - X-API-Key
         - X-Requested-With
+        - X-CSRFToken
       credentials: true
       max_age: 3600
 
@@ -74,7 +75,9 @@ services:
   # ---------------------------------------------------------------------------
   # Auth frontend routes (prefix: /auth/api/v1/)
   - name: auth-service-frontend
-    url: http://host.docker.internal:8003
+    host: host.docker.internal
+    port: 8003
+    protocol: http
     routes:
       - name: auth-frontend-routes
         paths:
@@ -91,7 +94,9 @@ services:
 
   # Legacy API routes (prefix: /api/auth/)
   - name: auth-service-public
-    url: http://host.docker.internal:8003
+    host: host.docker.internal
+    port: 8003
+    protocol: http
     routes:
       - name: auth-login
         paths:
@@ -105,7 +110,9 @@ services:
         strip_path: false
 
   - name: auth-service-protected
-    url: http://host.docker.internal:8003
+    host: host.docker.internal
+    port: 8003
+    protocol: http
     routes:
       - name: auth-protected
         paths:
@@ -124,12 +131,14 @@ services:
             - exp
 
   # ---------------------------------------------------------------------------
-  # WORKFLOW API SERVICE (Port 8002)
+  # WORKFLOW API SERVICE (Port 1001)
   # Prefix: /workflow/* → strips prefix → forwards to backend
   # Example: /workflow/tickets/ → /tickets/
   # ---------------------------------------------------------------------------
   - name: workflow-api-service
-    url: http://host.docker.internal:8002
+    host: host.docker.internal
+    port: 1001
+    protocol: http
     routes:
       - name: workflow-routes
         paths:
@@ -157,12 +166,14 @@ services:
             - access_token
 
   # ---------------------------------------------------------------------------
-  # NOTIFICATION SERVICE (Port 8006)
+  # NOTIFICATION SERVICE (Port 1003)
   # Prefix: /notification/* → strips prefix → forwards to backend
   # Example: /notification/api/v1/app/my/notifications/ → /api/v1/app/my/notifications/
   # ---------------------------------------------------------------------------
   - name: notification-websocket
-    url: http://host.docker.internal:8006
+    host: host.docker.internal
+    port: 1003
+    protocol: http
     routes:
       - name: notification-ws
         paths:
@@ -173,7 +184,9 @@ services:
           - https
 
   - name: notification-api-service
-    url: http://host.docker.internal:8006
+    host: host.docker.internal
+    port: 1003
+    protocol: http
     routes:
       - name: notification-routes
         paths:
@@ -201,12 +214,14 @@ services:
             - access_token
 
   # ---------------------------------------------------------------------------
-  # MESSAGING SERVICE (Port 8005)
+  # MESSAGING SERVICE (Port 1002)
   # Prefix: /messaging/* → strips prefix → forwards to backend
   # Example: /messaging/messages/ → /messages/
   # ---------------------------------------------------------------------------
   - name: messaging-websocket
-    url: http://host.docker.internal:8005
+    host: host.docker.internal
+    port: 1002
+    protocol: http
     routes:
       - name: messaging-ws
         paths:
@@ -217,7 +232,9 @@ services:
           - https
 
   - name: messaging-api-service
-    url: http://host.docker.internal:8005
+    host: host.docker.internal
+    port: 1002
+    protocol: http
     routes:
       - name: messaging-routes
         paths:
@@ -245,13 +262,15 @@ services:
             - access_token
 
   # ---------------------------------------------------------------------------
-  # HELPDESK SERVICE (Port 8007)
+  # HELPDESK SERVICE (Port 5001)
   # Prefix: /helpdesk/* → strips prefix → forwards to backend
   # Example: /helpdesk/api/tickets/ → /api/tickets/
   # Also handles legacy /api/tickets/ paths for helpdesk frontend compatibility
   # ---------------------------------------------------------------------------
   - name: helpdesk-service
-    url: http://host.docker.internal:8007
+    host: host.docker.internal
+    port: 5001
+    protocol: http
     routes:
       - name: helpdesk-routes
         paths:

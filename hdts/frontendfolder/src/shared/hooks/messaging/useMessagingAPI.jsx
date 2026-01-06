@@ -2,10 +2,7 @@ import { useState, useCallback } from 'react';
 import { API_CONFIG } from '../../../config/environment';
 
 // Use environment config for messaging API
-const MESSAGING_API_BASE =
-  import.meta.env.VITE_MESSAGING_API ||
-  API_CONFIG.MESSAGING?.BASE_URL ||
-  'http://localhost:8005';
+const MESSAGING_API_BASE = API_CONFIG.MESSAGING.BASE_URL;
 
 export const useMessagingAPI = (ticketId, setMessages) => {
   const [ticket, setTicket] = useState(null);
