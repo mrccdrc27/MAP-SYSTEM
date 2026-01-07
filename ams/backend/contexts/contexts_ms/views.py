@@ -22,10 +22,21 @@ from contexts_ms.authentication import (
 )
 
 
+class PublicReadModelViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet that allows public read access (list, retrieve, names)
+    but requires authentication for modification.
+    """
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'names']:
+            return [AllowAny()]
+        return [IsAuthenticated(), AMSSystemPermission()]
+
+
 # If will add more views later or functionality, please create file on api folder or services folder
 # Only viewsets here
 #CATEGORY
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(PublicReadModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -73,7 +84,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     def bulk_delete(self, request):
         return _bulk_delete_handler(request, 'category', hard_delete=False)
     
-    @action(detail=False, methods=['get'], url_path='names')
+    @action(detail=False, methods=['get'], url_path=r'names', permission_classes=[AllowAny])
     def names(self, request):
         """Return all categories with only name and id."""
         categories = self.get_queryset()
@@ -82,7 +93,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 #END
 
 #SUPPLIER 
-class SupplierViewSet(viewsets.ModelViewSet):
+class SupplierViewSet(PublicReadModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -106,7 +117,7 @@ class SupplierViewSet(viewsets.ModelViewSet):
     def bulk_delete(self, request):
         return _bulk_delete_handler(request, 'supplier', hard_delete=False)
     
-    @action(detail=False, methods=['get'], url_path='names')
+    @action(detail=False, methods=['get'], url_path=r'names', permission_classes=[AllowAny])
     def names(self, request):
         """Return all suppliers with only name and id."""
         suppliers = self.get_queryset()
@@ -115,7 +126,7 @@ class SupplierViewSet(viewsets.ModelViewSet):
 #END
 
 #DEPRECIATION
-class DepreciationViewSet(viewsets.ModelViewSet):
+class DepreciationViewSet(PublicReadModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -138,7 +149,7 @@ class DepreciationViewSet(viewsets.ModelViewSet):
     def bulk_delete(self, request):
         return _bulk_delete_handler(request, 'depreciation', hard_delete=False)
 
-    @action(detail=False, methods=['get'], url_path='names')
+    @action(detail=False, methods=['get'], url_path=r'names', permission_classes=[AllowAny])
     def names(self, request):
         """Return all depreciations with only name and id."""
         depreciations = self.get_queryset()
@@ -147,7 +158,7 @@ class DepreciationViewSet(viewsets.ModelViewSet):
 #END
 
 #MANUFACTURER
-class ManufacturerViewSet(viewsets.ModelViewSet):
+class ManufacturerViewSet(PublicReadModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -170,7 +181,7 @@ class ManufacturerViewSet(viewsets.ModelViewSet):
     def bulk_delete(self, request):
         return _bulk_delete_handler(request, 'manufacturer', hard_delete=False)
     
-    @action(detail=False, methods=['get'], url_path='names')
+    @action(detail=False, methods=['get'], url_path=r'names', permission_classes=[AllowAny])
     def names(self, request):
         """Return all manufacturers with only name and id."""
         manufacturers = self.get_queryset()
@@ -178,7 +189,7 @@ class ManufacturerViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 # STATUS
-class StatusViewSet(viewsets.ModelViewSet):
+class StatusViewSet(PublicReadModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -225,7 +236,7 @@ class StatusViewSet(viewsets.ModelViewSet):
     def bulk_delete(self, request):
         return _bulk_delete_handler(request, 'status', hard_delete=False)
     
-    @action(detail=False, methods=['get'], url_path='names')
+    @action(detail=False, methods=['get'], url_path=r'names', permission_classes=[AllowAny])
     def names(self, request):
         """Return all statuses with only name and id."""
         statuses = self.get_queryset()
@@ -233,7 +244,7 @@ class StatusViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 # LOCATION
-class LocationViewSet(viewsets.ModelViewSet):
+class LocationViewSet(PublicReadModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
@@ -256,7 +267,7 @@ class LocationViewSet(viewsets.ModelViewSet):
     def bulk_delete(self, request):
         return _bulk_delete_handler(request, 'location', hard_delete=True)
     
-    @action(detail=False, methods=['get'], url_path='names')
+    @action(detail=False, methods=['get'], url_path=r'names')
     def names(self, request):
         """Return all locations with only name and id."""
         locations = self.get_queryset()
@@ -293,7 +304,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # GET /tickets/by-asset/{asset_id}/?status={resolved|unresolved}
-    @action(detail=False, methods=['get'], url_path='by-asset/(?P<asset_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'by-asset/(?P<asset_id>\d+)')
     def by_asset(self, request, asset_id=None):
         """Get the first ticket for a specific asset, optionally filtered by status"""
         status_param = request.query_params.get('status')  # 'resolved' or 'unresolved'

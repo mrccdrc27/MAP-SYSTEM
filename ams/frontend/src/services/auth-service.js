@@ -1,13 +1,16 @@
 // Authentication service URLs - uses environment variable for API Gateway support
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || "http://127.0.0.1:8001/";
-const API_URL_AUTH = `${AUTH_BASE_URL}auth/`;
-const API_URL_USER = `${AUTH_BASE_URL}users/`;
+console.log("VITE_AUTH_API_URL:", import.meta.env.VITE_AUTH_API_URL);
+// Force correct URL for now to bypass environment variable issues if any
+const AUTH_BASE_URL = "http://localhost:8000/"; 
+// const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || "http://127.0.0.1:8000/";
+const API_URL_AUTH = `${AUTH_BASE_URL}api/v1/users/`;
+const API_URL_USER = `${AUTH_BASE_URL}api/v1/users/`;
 
 class AuthService {
   // Login user and store tokens
   async login(email, password) {
     try {
-      const response = await fetch(API_URL_AUTH + "jwt/create/", {
+      const response = await fetch(API_URL_AUTH + "login/api/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,7 +71,7 @@ class AuthService {
   // Get current user
   async getCurrrentUser() {
     try {
-      const response = await fetch(API_URL_AUTH + "users/me/", {
+      const response = await fetch(API_URL_AUTH + "me/", {
         method: "GET",
         headers: this.getAuthHeader(),
       });

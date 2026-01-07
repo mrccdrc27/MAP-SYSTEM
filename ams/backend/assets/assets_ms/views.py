@@ -68,29 +68,41 @@ class ProductViewSet(viewsets.ModelViewSet):
         category_map = cache.get("categories:map")
         if not category_map:
             categories = get_category_names()
-            category_map = {c['id']: c for c in categories}
-            cache.set("categories:map", category_map, 300)
+            if isinstance(categories, list):
+                category_map = {c['id']: c for c in categories}
+                cache.set("categories:map", category_map, 300)
+            else:
+                category_map = {}
 
         # manufacturers
         manufacturer_map = cache.get("manufacturers:map")
         if not manufacturer_map:
             manufacturers = get_manufacturer_names()
-            manufacturer_map = {m['id']: m for m in manufacturers}
-            cache.set("manufacturers:map", manufacturer_map, 300)
+            if isinstance(manufacturers, list):
+                manufacturer_map = {m['id']: m for m in manufacturers}
+                cache.set("manufacturers:map", manufacturer_map, 300)
+            else:
+                manufacturer_map = {}
 
         # suppliers
         supplier_map = cache.get("suppliers:map")
         if not supplier_map:
             suppliers = get_supplier_names()
-            supplier_map = {s['id']: s for s in suppliers}
-            cache.set("suppliers:map", supplier_map, 300)
+            if isinstance(suppliers, list):
+                supplier_map = {s['id']: s for s in suppliers}
+                cache.set("suppliers:map", supplier_map, 300)
+            else:
+                supplier_map = {}
 
         # depreciations
         depreciation_map = cache.get("depreciations:map")
         if not depreciation_map:
             depreciations = get_depreciation_names()
-            depreciation_map = {d['id']: d for d in depreciations}
-            cache.set("depreciations:map", depreciation_map, 300)
+            if isinstance(depreciations, list):
+                depreciation_map = {d['id']: d for d in depreciations}
+                cache.set("depreciations:map", depreciation_map, 300)
+            else:
+                depreciation_map = {}
 
         return {
             "category_map": category_map,
@@ -411,27 +423,29 @@ class AssetViewSet(viewsets.ModelViewSet):
         status_map = cache.get("statuses:map")
         if not status_map:
             statuses = get_status_names()
-            status_map = {s['id']: s for s in statuses}
-            cache.set("statuses:map", status_map, 300)
+            if isinstance(statuses, list):
+                status_map = {s['id']: s for s in statuses}
+                cache.set("statuses:map", status_map, 300)
+            else:
+                status_map = {}
 
         # products
         product_map = cache.get("products:map")
         if not product_map:
             products = Product.objects.filter(is_deleted=False)
-            # products
-            product_map = cache.get("products:map")
-            if not product_map:
-                products = Product.objects.filter(is_deleted=False)
-                serialized = ProductNameSerializer(products, many=True).data
-                product_map = {p['id']: p for p in serialized}
-                cache.set("products:map", product_map, 300)
+            serialized = ProductNameSerializer(products, many=True).data
+            product_map = {p['id']: p for p in serialized}
+            cache.set("products:map", product_map, 300)
 
         # locations
         location_map = cache.get("locations:map")
         if not location_map:
             locations = get_locations_list()
-            location_map = {l['id']: l for l in locations}
-            cache.set("locations:map", location_map, 300)
+            if isinstance(locations, list):
+                location_map = {l['id']: l for l in locations}
+                cache.set("locations:map", location_map, 300)
+            else:
+                location_map = {}
 
         # tickets (unresolved)
         ticket_map = cache.get("tickets:map")
@@ -550,7 +564,7 @@ class AssetViewSet(viewsets.ModelViewSet):
             notes=f"Asset '{instance.name}' updated"
         )
     
-    @action(detail=False, methods=['get'], url_path='by-product/(?P<product_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'by-product/(?P<product_id>\d+)')
     def by_product(self, request, product_id=None):
         """Get all assets for a specific product"""
         assets = Asset.objects.filter(product=product_id, is_deleted=False).order_by('name')
