@@ -27,7 +27,7 @@ from drf_spectacular.utils import (
 from .service_authentication import APIKeyAuthentication
 
 from .models import (
-    Account, AccountType, BudgetProposal, Department, ExpenseCategory,
+    Account, AccountType, BudgetProposal, BudgetTransfer, Department, ExpenseCategory,
     FiscalYear, BudgetAllocation, Expense, JournalEntry, JournalEntryLine,
     ProposalComment, ProposalHistory, UserActivityLog, Project
 )
@@ -42,6 +42,7 @@ from .serializers_budget import (
     BudgetAdjustmentSerializer,
     BudgetProposalListSerializer,
     BudgetProposalMessageSerializer,
+    BudgetTransferSerializer,
     ProposalCommentCreateSerializer,
     BudgetProposalSummarySerializer,
     BudgetProposalDetailSerializer,
@@ -53,7 +54,8 @@ from .serializers_budget import (
     ProposalCommentSerializer,
     ProposalHistorySerializer,
     ProposalReviewBudgetOverviewSerializer,
-    ProposalReviewSerializer
+    ProposalReviewSerializer,
+    SupplementalBudgetRequestSerializer
 )
 
 
@@ -1692,6 +1694,52 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         self.perform_create(serializer)
         response_serializer = JournalEntryListSerializer(self.created_instance)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+# MODIFICATION START: Endpoint for Operators to Request Supplemental Budget
+@extend_schema(
+    tags=["Supplemental Budget"],
+    summary="Request Supplemental Budget (Operator)",
+    description="Creates a pending BudgetTransfer record of type 'SUPPLEMENTAL'. Does not affect ledger until approved.",
+    request=SupplementalBudgetRequestSerializer,
+    responses={201: OpenApiResponse(description="Request submitted successfully")}
+)
+class SupplementalBudgetRequestView(generics.CreateAPIView):
+    permission_classes = [IsBMSUser] # General users can request
+    serializer_class = SupplementalBudgetRequestSerializer
+
+    def perform_create(self, serializer):
+        data = serializer.validated_data
+        user = self.request.user
+        
+        # Create Transfer Record with status PENDING
+        BudgetTransfer.objects.create(
+            fiscal_year=data['fiscal_year_obj'],
+            source_allocation=None, # Supplemental = Source is Null (New Money)
+            destination_allocation=data['allocation_obj'],
+            amount=data['amount'],
+            reason=data['reason'],
+            transfer_type='SUPPLEMENTAL',
+            status='PENDING',
+            transferred_by_user_id=user.id,
+            transferred_by_username=getattr(user, 'username', 'N/A')
+        )
+        
+        # Optional: Log activity
+        UserActivityLog.objects.create(
+            user_id=user.id,
+            user_username=getattr(user, 'username', 'N/A'),
+            log_type='CREATE',
+            action=f"Requested supplemental budget of {data['amount']} for {data['department_obj'].code}",
+            status='SUCCESS',
+            details={'category': data['allocation_obj'].category.name}
+        )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({"message": "Supplemental budget request submitted for approval."}, status=status.HTTP_201_CREATED)
+# MODIFICATION END
     
 class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
     """
@@ -1709,3 +1757,131 @@ class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
         # Service users don't have a standard user ID, assign a system ID (e.g. 0)
         # or handle gracefully in the serializer if user context is missing
         serializer.save()
+
+# MODIFICATION START: Manage Budget Transfers (Approval Workflow)
+@extend_schema(tags=['Supplemental Budget'])
+class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet to List Pending Transfers and Approve/Reject them.
+    Used for the 'Supplemental Budget Approval' tab in BudgetAllocation.jsx.
+    """
+    # MODIFIED: Allow all BMS users to view list, but restrict actions
+    permission_classes = [IsBMSUser] 
+    serializer_class = BudgetTransferSerializer
+    pagination_class = FiveResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['reason', 'destination_allocation__department__name', 'transferred_by_username']
+    filterset_fields = ['status', 'transfer_type']
+
+    def get_queryset(self):
+        user = self.request.user
+        bms_role = get_user_bms_role(user)
+
+        # Base Query
+        queryset = BudgetTransfer.objects.filter(
+            transfer_type='SUPPLEMENTAL'
+        ).select_related(
+            'destination_allocation__department', 
+            'destination_allocation__category'
+        ).order_by('-transferred_at')
+
+        # DATA ISOLATION
+        if bms_role in ['ADMIN', 'FINANCE_HEAD']:
+            return queryset
+        else:
+            # General User (Operator) sees only their department's requests
+            department_id = getattr(user, 'department_id', None)
+            if department_id:
+                return queryset.filter(destination_allocation__department_id=department_id)
+            return queryset.none()
+
+    @extend_schema(
+        summary="Approve a Supplemental Budget Request",
+        request=None,
+        responses={200: OpenApiResponse(description="Request Approved and Budget Updated")}
+    )
+    # MODIFIED: Explicit permission check for action
+    @action(detail=True, methods=['post'], permission_classes=[IsBMSFinanceHead])
+    def approve(self, request, pk=None):
+        # ... (Keep existing approve logic) ...
+        # (I will include the full method in the code block below)
+        transfer = self.get_object()
+        
+        if transfer.status != 'PENDING':
+            return Response({"error": "Only pending requests can be approved."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            # 1. Update Transfer Status
+            transfer.status = 'APPROVED'
+            transfer.approved_by_user_id = request.user.id
+            transfer.approved_by_username = getattr(request.user, 'username', 'N/A')
+            transfer.approval_date = timezone.now()
+            transfer.save()
+
+            # 2. Update Allocation (Add Money)
+            allocation = transfer.destination_allocation
+            allocation.amount += transfer.amount
+            allocation.save()
+
+            # 3. Create Journal Entry (Ledger)
+            # Find Equity Account
+            equity_account = Account.objects.filter(
+                Q(account_type__name='Equity') | Q(name__icontains='Treasury')
+            ).first() or Account.objects.filter(is_active=True).first()
+
+            je = JournalEntry.objects.create(
+                date=timezone.now().date(),
+                category='PROJECTS',
+                description=f"Approved Supplemental Budget: {transfer.reason}",
+                total_amount=transfer.amount,
+                status='POSTED',
+                department=allocation.department,
+                created_by_user_id=request.user.id,
+                created_by_username=getattr(request.user, 'username', 'N/A')
+            )
+
+            # Debit Line (Increase Allocation)
+            JournalEntryLine.objects.create(
+                journal_entry=je,
+                account=allocation.account,
+                transaction_type='DEBIT',
+                journal_transaction_type='TRANSFER',
+                amount=transfer.amount,
+                description=f"Supplemental increase for {allocation.category.name}",
+                expense_category=allocation.category
+            )
+
+            # Credit Line (Source)
+            JournalEntryLine.objects.create(
+                journal_entry=je,
+                account=equity_account,
+                transaction_type='CREDIT',
+                journal_transaction_type='TRANSFER',
+                amount=transfer.amount,
+                description="Funding source for supplemental budget",
+                expense_category=None
+            )
+
+        return Response({"message": "Supplemental budget approved and ledger updated."}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Reject a Supplemental Budget Request",
+        request=None,
+        responses={200: OpenApiResponse(description="Request Rejected")}
+    )
+    # MODIFIED: Explicit permission check for action
+    @action(detail=True, methods=['post'], permission_classes=[IsBMSFinanceHead])
+    def reject(self, request, pk=None):
+        transfer = self.get_object()
+        
+        if transfer.status != 'PENDING':
+            return Response({"error": "Only pending requests can be rejected."}, status=status.HTTP_400_BAD_REQUEST)
+
+        transfer.status = 'REJECTED'
+        transfer.rejected_by_user_id = request.user.id
+        transfer.rejected_by_username = getattr(request.user, 'username', 'N/A')
+        transfer.rejection_date = timezone.now()
+        transfer.save()
+
+        return Response({"message": "Request rejected."}, status=status.HTTP_200_OK)
+# MODIFICATION END

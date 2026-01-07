@@ -1,7 +1,7 @@
 from decimal import Decimal
 from .models import (
     Account, AccountType, BudgetAllocation, BudgetProposal, BudgetProposalItem, Department, Expense,
-    FiscalYear, JournalEntry, JournalEntryLine, ProposalComment, ProposalHistory
+    FiscalYear, JournalEntry, JournalEntryLine, ProposalComment, ProposalHistory, BudgetTransfer
 )
 from rest_framework import serializers
 from django.db.models import Sum
@@ -772,6 +772,83 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid Department")
 
         return data
+    
+# MODIFICATION START: Serializer for Operators to REQUEST supplemental budget
+class SupplementalBudgetRequestSerializer(serializers.Serializer):
+    department_input = serializers.CharField(
+        help_text="Department Code (e.g., 'IT') or ID"
+    )
+    category_id = serializers.IntegerField(
+        help_text="ID of the Expense Category to increase"
+    )
+    amount = serializers.DecimalField(
+        max_digits=15, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    reason = serializers.CharField(
+        max_length=1000, 
+        help_text="Justification for the additional budget"
+    )
+    fiscal_year_id = serializers.IntegerField(required=False)
+
+    def validate(self, data):
+        # 1. Resolve Department
+        dept_input = data.get('department_input')
+        dept = None
+        if str(dept_input).isdigit():
+            dept = Department.objects.filter(id=int(dept_input)).first()
+        else:
+            dept = Department.objects.filter(code__iexact=dept_input).first()
+        
+        if not dept:
+            raise serializers.ValidationError({"department_input": "Invalid Department"})
+        
+        # 2. Resolve Fiscal Year (Default to active)
+        fy_id = data.get('fiscal_year_id')
+        if fy_id:
+            fy = FiscalYear.objects.filter(id=fy_id).first()
+        else:
+            today = timezone.now().date()
+            fy = FiscalYear.objects.filter(start_date__lte=today, end_date__gte=today, is_active=True).first()
+        
+        if not fy:
+            raise serializers.ValidationError({"fiscal_year_id": "No active fiscal year found."})
+
+        # 3. Resolve Category & Allocation
+        cat_id = data.get('category_id')
+        # We need to find the specific allocation bucket to attach this request to
+        # Note: We look for the main allocation for this Dept+Category
+        allocation = BudgetAllocation.objects.filter(
+            department=dept,
+            fiscal_year=fy,
+            category_id=cat_id,
+            is_active=True
+        ).first()
+
+        if not allocation:
+            raise serializers.ValidationError({"category_id": "No active allocation found for this category. Cannot supplement non-existent budget."})
+
+        data['department_obj'] = dept
+        data['fiscal_year_obj'] = fy
+        data['allocation_obj'] = allocation
+        
+        return data
+# MODIFICATION END
+
+# MODIFICATION START: Serializer for Listing/Approving Transfers
+class BudgetTransferSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='destination_allocation.department.name', read_only=True)
+    category_name = serializers.CharField(source='destination_allocation.category.name', read_only=True)
+    request_id = serializers.CharField(source='id', read_only=True) # UI expects request_id
+    date_submitted = serializers.DateTimeField(source='transferred_at', format="%Y-%m-%d", read_only=True)
+    requester_name = serializers.CharField(source='transferred_by_username', read_only=True)
+
+    class Meta:
+        model = BudgetTransfer  
+        fields = [
+            'id', 'request_id', 'department_name', 'category_name', 
+            'amount', 'reason', 'status', 'date_submitted', 'requester_name', 'transfer_type'
+        ]
+# MODIFICATION END
 
 class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     category = serializers.CharField()

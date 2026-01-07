@@ -91,13 +91,18 @@ function App() {
         <Route path="/finance/proposal-history" element={<ProposalHistory />} />
         <Route path="/finance/expense-history" element={<ExpenseHistory />} />
         <Route path="/finance/budget-variance-report" element={<BudgetVarianceReport />} />
+        
+        {/* MODIFICATION START: Moved to general access so Operators can create/request items */}
+        <Route path="/finance/budget-allocation" element={<BudgetAllocation />} />
+        <Route path="/finance/budget-proposal" element={<BudgetProposal />} />
+        <Route path="/finance/expense-tracking" element={<ExpenseTracking />} />
+        {/* MODIFICATION END */}
       </Route>
 
       {/* Protected Routes - ADMIN and FINANCE_HEAD only */}
       <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'FINANCE_HEAD']} />}>
-        <Route path="/finance/budget-allocation" element={<BudgetAllocation />} />
-        <Route path="/finance/budget-proposal" element={<BudgetProposal />} />
-        <Route path="/finance/expense-tracking" element={<ExpenseTracking />} />
+         {/* Currently empty as core workflows require Operator input. 
+             If you add "System Settings" or "User Management" pages later, put them here. */}
       </Route>
 
       {/* Catch-all route for 404 */}
