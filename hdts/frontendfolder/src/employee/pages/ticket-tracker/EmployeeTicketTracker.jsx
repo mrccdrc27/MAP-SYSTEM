@@ -373,7 +373,7 @@ const renderAttachments = (files) => {
         const url = f?.file || f?.url || f?.downloadUrl || f?.download_url || (typeof f === 'string' ? f : '#');
         
         // Build the protected API URL - backend returns paths like /api/media/ticket_attachments/file.ext
-        const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
         let finalUrl = url;
         
         // If the URL is a relative path (starts with /api/media/), prepend the backend URL

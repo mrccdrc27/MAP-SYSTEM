@@ -91,7 +91,7 @@ export default function SmartSupportResetPassword() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/employee/reset-password/",
+        "http://localhost:8080/api/employee/reset-password/",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

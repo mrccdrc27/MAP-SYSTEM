@@ -42,7 +42,7 @@ const CoordinatorAdminNavBar = () => {
   const { user: currentUser } = useAuth();
   console.debug('[CoordinatorAdminNav] currentUser:', currentUser);
   const DEFAULT_PROFILE_IMAGE = '/media/employee_images/default-profile.png'; // relative path on backend (matches backend filename)
-  const BACKEND_BASE_URL = 'http://localhost:8000';
+  const BACKEND_BASE_URL = 'http://localhost:8080';
   // Inline SVG fallback used if the PNG looks wrong or fails to load
   const FALLBACK_SVG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23007bff"/%3E%3Ctext x="50" y="55" text-anchor="middle" font-size="36" fill="%23fff"%3E%3C/tspan%3E%3C/text%3E%3C/svg%3E';
 

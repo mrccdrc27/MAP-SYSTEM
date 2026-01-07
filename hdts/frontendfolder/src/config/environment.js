@@ -16,7 +16,7 @@ export const API_CONFIG = {
   BACKEND: {
     BASE_URL: import.meta.env.VITE_HDTS_BACKEND_URL || 
               import.meta.env.VITE_API_URL || 
-              'http://localhost:8000/helpdesk',
+              'http://localhost:8080/helpdesk',
     TIMEOUT: 10000
   },
   
@@ -31,7 +31,7 @@ export const API_CONFIG = {
   WORKFLOW: {
     BASE_URL: import.meta.env.VITE_WORKFLOW_API_URL || 
               import.meta.env.VITE_TTS_WORKFLOW_URL || 
-              'http://localhost:8000/workflow',
+              'http://localhost:8080/workflow',
     TIMEOUT: 10000
   },
   
