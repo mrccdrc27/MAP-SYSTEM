@@ -1,4 +1,4 @@
-# File: CapstoneBP/auth_service/users/views.py
+# File: bms/auth_service/users/views.py
 
 import os
 import re

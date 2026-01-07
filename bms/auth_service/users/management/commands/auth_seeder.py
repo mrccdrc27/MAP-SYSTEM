@@ -1,4 +1,4 @@
-# File: CapstoneBP/auth_service/users/management/commands/auth_seeder.py
+# File: bms/auth_service/users/management/commands/auth_seeder.py
 from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model

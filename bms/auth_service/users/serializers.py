@@ -1,4 +1,4 @@
-# File: CapstoneBP/auth_service/users/serializers.py
+# File: bms/auth_service/users/serializers.py
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate

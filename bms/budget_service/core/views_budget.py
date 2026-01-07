@@ -104,8 +104,20 @@ class BudgetProposalSummaryView(generics.GenericAPIView):
     def get(self, request):
         user = request.user
         bms_role = get_user_bms_role(user)
+        
+        # --- NEW CODE: Filter by Current Fiscal Year ---
+        today = timezone.now().date()
+        current_fiscal_year = FiscalYear.objects.filter(
+            start_date__lte=today, 
+            end_date__gte=today, 
+            is_active=True
+        ).first()
 
         active_proposals = BudgetProposal.objects.filter(is_deleted=False)
+        
+        if current_fiscal_year:
+            active_proposals = active_proposals.filter(fiscal_year=current_fiscal_year)
+        # -----------------------------------------------
 
         # DATA ISOLATION
         if bms_role in ['ADMIN', 'FINANCE_HEAD']:
@@ -1581,7 +1593,6 @@ def export_budget_variance_excel(request):
     responses={201: JournalEntryListSerializer}
 )
 class BudgetAdjustmentView(generics.CreateAPIView):
-    # CHANGED: From IsAuthenticated/IsBMSUser to IsBMSFinanceHead
     # Only Finance Heads can legally modify the budget allocation.
     permission_classes = [IsBMSFinanceHead]
     serializer_class = BudgetAdjustmentSerializer
@@ -1590,20 +1601,32 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         data = serializer.validated_data
         user = self.request.user
         amount = data['amount']
+        
+        # --- NEW CODE: Extract Transfer Type ---
+        transfer_type = data.get('transfer_type', 'TRANSFER')
+        # ---------------------------------------
 
         source_alloc = data.get('source_alloc')
         dest_alloc = data.get('dest_alloc')
         dept = data['department']
-        description = data.get('description') or f"Budget Adjustment/Transfer"
+        
+        # --- NEW CODE: Description Update ---
+        description = data.get('description') or f"Budget {transfer_type.title()}"
+        # ------------------------------------
 
         with transaction.atomic():
             # 1. Update Allocations (Real Impact)
-            if source_alloc:
-                source_alloc.amount -= amount  # Reduce source
-                if source_alloc.amount < 0:
-                    raise serializers.ValidationError(
-                        "Source allocation cannot go negative")
-                source_alloc.save()
+            
+            # --- NEW CODE: Handle Transfer vs Supplemental ---
+            if transfer_type == 'TRANSFER':
+                if source_alloc:
+                    source_alloc.amount -= amount  # Reduce source
+                    if source_alloc.amount < 0:
+                        raise serializers.ValidationError("Source allocation cannot go negative")
+                    source_alloc.save()
+            
+            # For Supplemental, we DO NOT deduct from source (it's new money)
+            # -------------------------------------------------
 
             if dest_alloc:
                 dest_alloc.amount += amount  # Increase destination
@@ -1620,16 +1643,33 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 created_by_user_id=user.id,
                 created_by_username=getattr(user, 'username', 'N/A')
             )
+            
+            # --- NEW CODE: Source Account Logic for JE ---
+            source_account = data.get('source_account_obj')
+            
+            if transfer_type == 'SUPPLEMENTAL':
+                # If Supplemental, we credit a generic "Treasury" or "Equity" account
+                # because the money isn't coming from another allocation.
+                if not source_account:
+                    # Fallback lookup for a system account
+                    source_account = Account.objects.filter(
+                        Q(name__icontains='Treasury') | Q(account_type__name='Equity')
+                    ).first()
+            
+            if not source_account:
+                 # Safety fallback to prevent crash, though in production this should be configured
+                 source_account = Account.objects.filter(is_active=True).first()
+            # ---------------------------------------------
 
             # For Asset Accounts (Budget Accounts):
-            # CREDIT the source (money decreasing)
+            # CREDIT the source (money decreasing OR Equity increasing)
             JournalEntryLine.objects.create(
                 journal_entry=je,
-                account=data['source_account_obj'],
-                transaction_type='CREDIT',  # Decrease in asset
+                account=source_account,
+                transaction_type='CREDIT',  # Decrease in asset / Increase in Equity
                 journal_transaction_type='TRANSFER',
                 amount=amount,
-                description=f"Transfer out from {data['source_account_obj'].name}",
+                description=f"{transfer_type.title()} source: {source_account.name}",
                 expense_category=source_alloc.category if source_alloc else None
             )
 
@@ -1640,7 +1680,7 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 transaction_type='DEBIT',  # Increase in asset
                 journal_transaction_type='TRANSFER',
                 amount=amount,
-                description=f"Transfer in to {data['destination_account_obj'].name}",
+                description=f"{transfer_type.title()} to {data['destination_account_obj'].name}",
                 expense_category=dest_alloc.category if dest_alloc else None
             )
 

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from core.models import Account, BudgetAllocation, Department, Expense, ExpenseAttachment, ExpenseCategory, FiscalYear, Project
+from core.models import Account, BudgetAllocation, Department, DepartmentBudgetCap, Expense, ExpenseAttachment, ExpenseCategory, FiscalYear, Project, SubCategoryBudgetCap
 from rest_framework import serializers
 from django.db.models import Sum
 from django.utils import timezone
@@ -13,10 +13,9 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
     """
     ticket_id = serializers.CharField(
         write_only=True, source='transaction_id', required=True)
-    
-    # MODIFIED: Changed from project_id to order_number to match AMS flow
+
     order_number = serializers.CharField(
-        write_only=True, 
+        write_only=True,
         required=True,
         help_text="The Reference ID (e.g. from TTS) of the approved Budget Proposal."
     )
@@ -33,12 +32,10 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         order_number = validated_data.pop('order_number')
-        
+
         try:
-            # Logic: Find the Project linked to the Proposal with this External ID
-            # AMS calls this 'Order Number', BMS calls it 'external_system_id' or 'reference
-            project = Project.objects.get(budget_proposal__external_system_id=order_number)
-            
+            project = Project.objects.get(
+                budget_proposal__external_system_id=order_number)
             account = Account.objects.get(code=validated_data['account_code'])
             category = ExpenseCategory.objects.get(
                 code=validated_data['category_code'])
@@ -90,7 +87,6 @@ class ExpenseTrackingSerializer(serializers.ModelSerializer):
         source='transaction_id', read_only=True)
     department_name = serializers.CharField(
         source='department.name', read_only=True)
-    # The main category (e.g., CAPEX, OPEX) is the parent of the assigned expense category.
     category_name = serializers.CharField(
         source='category.parent_category.name', read_only=True, allow_null=True)
     sub_category_name = serializers.CharField(
@@ -100,30 +96,17 @@ class ExpenseTrackingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = [
-            'id',
-            'reference_no',       # Corresponds to "Ticket ID"
-            'date',               # Corresponds to "Date"
-            'department_name',    # Corresponds to "Department"
-            'category_name',      # Corresponds to "Category"
-            'sub_category_name',  # Corresponds to "Sub-category"
-            'description',
-            'vendor',  # Added Vendor
-            'amount',             # Corresponds to "Amount"
-            'status',             # Corresponds to "Status"
-            'accomplished'        # Corresponds to "Accomplished"
+            'id', 'reference_no', 'date', 'department_name', 'category_name',
+            'sub_category_name', 'description', 'vendor', 'amount', 'status', 'accomplished'
         ]
 
     def get_accomplished(self, obj):
-        # Return "Yes" if is_accomplished is True, else "No"
         return "Yes" if obj.is_accomplished else "No"
 
 # MODIFICATION START: New serializer for the expense review action
 
 
 class ExpenseReviewSerializer(serializers.Serializer):
-    """
-    Serializer for validating the input for approving or rejecting an expense.
-    """
     status = serializers.ChoiceField(choices=['APPROVED', 'REJECTED'])
     notes = serializers.CharField(
         required=False, allow_blank=True, help_text="Reason for approval or rejection.")
@@ -133,36 +116,36 @@ class ExpenseReviewSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "Status must be either 'APPROVED' or 'REJECTED'.")
         return value
-# MODIFICATION END
 
 
 class ExpenseDetailForModalSerializer(serializers.ModelSerializer):
-    proposal_id = serializers.IntegerField(source='project.budget_proposal.id', read_only=True)
-    vendor = serializers.CharField(read_only=True)  # ADD THIS LINE
-    date = serializers.DateField(read_only=True)    # ADD THIS LINE
-    amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)  # ADD THIS LINE
-    description = serializers.CharField(read_only=True)  # ADD THIS LINE
-    department_name = serializers.CharField(source='department.name', read_only=True)  # ADD THIS LINE
-    category_name = serializers.CharField(source='category.name', read_only=True)  # ADD THIS LINE
-    sub_category_name = serializers.CharField(source='category.parent_category.name', read_only=True, allow_null=True)  # ADD THIS LINE
-    project_title = serializers.CharField(source='project.budget_proposal.title', read_only=True)  # ADD THIS LINE
-    performance_end_date = serializers.DateField(source='project.budget_proposal.performance_end_date', read_only=True)  # ADD THIS LINE
+    proposal_id = serializers.IntegerField(
+        source='project.budget_proposal.id', read_only=True)
+    vendor = serializers.CharField(read_only=True)
+    date = serializers.DateField(read_only=True)
+    amount = serializers.DecimalField(
+        max_digits=15, decimal_places=2, read_only=True)
+    description = serializers.CharField(read_only=True)
+    department_name = serializers.CharField(
+        source='department.name', read_only=True)
+    category_name = serializers.CharField(
+        source='category.name', read_only=True)
+    sub_category_name = serializers.CharField(
+        source='category.parent_category.name', read_only=True, allow_null=True)
+    project_title = serializers.CharField(
+        source='project.budget_proposal.title', read_only=True)
+    performance_end_date = serializers.DateField(
+        source='project.budget_proposal.performance_end_date', read_only=True)
+
     class Meta:
         model = Expense
         fields = [
-            'id', 
-            'proposal_id',
-            'vendor',           # ADDED
-            'date',             # ADDED
-            'amount',           # ADDED
-            'description',      # ADDED
-            'department_name',  # ADDED
-            'category_name',    # ADDED
-            'sub_category_name', # ADDED
-            'project_title',    # ADDED
-            'performance_end_date'  # ADDED
+            'id', 'proposal_id', 'vendor', 'date', 'amount', 'description',
+            'department_name', 'category_name', 'sub_category_name',
+            'project_title', 'performance_end_date'
         ]
-        
+
+
 class ExpenseCreateSerializer(serializers.ModelSerializer):
     # MODIFICATION: Require Project ID instead of Department ID
     project_id = serializers.IntegerField(write_only=True)
@@ -189,29 +172,138 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
             'notes': {'required': False, 'allow_blank': True},
         }
 
+    # --- MODIFICATION START: New Cap Validation Logic and return JSON structured ERRORS ---
+    def validate_caps(self, department, category, amount, notes):
+        """
+        Validates Department-Level and SubCategory-Level Budget Caps.
+        Raises ValidationError with specific JSON structure for external integrations.
+        """
+        today = timezone.now().date()
+        fiscal_year = FiscalYear.objects.filter(
+            start_date__lte=today, end_date__gte=today, is_active=True
+        ).first()
+
+        if not fiscal_year:
+            return # Cannot validate caps without FY context
+
+        # 1. Calculate Organization Totals (Expensive query, simplistic for MVP)
+        # In a real system, these totals would be cached or pre-calculated fields on FiscalYear
+        total_org_allocations = BudgetAllocation.objects.filter(
+            fiscal_year=fiscal_year, is_active=True
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        # 2. Check Department Cap
+        try:
+            dept_cap = DepartmentBudgetCap.objects.get(
+                department=department, fiscal_year=fiscal_year, is_active=True
+            )
+            
+            dept_limit = total_org_allocations * (dept_cap.percentage_of_total / 100)
+            
+            current_dept_spent = Expense.objects.filter(
+                department=department, 
+                budget_allocation__fiscal_year=fiscal_year,
+                status__in=['APPROVED', 'SUBMITTED']
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            projected_dept_total = current_dept_spent + amount
+            remaining_dept = max(dept_limit - current_dept_spent, Decimal('0.00'))
+            
+            if projected_dept_total > dept_limit:
+                # Structure matches "Department-Level Cap Errors" in IntegrationV2.1
+                error_payload = {
+                    "error": "DEPARTMENT_BUDGET_CAP_EXCEEDED",
+                    "detail": f"{department.code} Department has exceeded its annual budget cap of {dept_cap.percentage_of_total}%",
+                    "cap_info": {
+                        "department": department.code,
+                        "cap_percentage": float(dept_cap.percentage_of_total),
+                        "cap_amount": float(dept_limit),
+                        "current_spent": float(current_dept_spent),
+                        "remaining": float(remaining_dept)
+                    }
+                }
+                
+                if dept_cap.cap_type == 'HARD':
+                    raise serializers.ValidationError(error_payload)
+                elif dept_cap.cap_type == 'SOFT':
+                    if not notes or len(notes) < 10:
+                        error_payload['error'] = "DEPARTMENT_SOFT_CAP_EXCEEDED"
+                        error_payload['detail'] += " Justification is required."
+                        raise serializers.ValidationError(error_payload)
+
+        except DepartmentBudgetCap.DoesNotExist:
+            pass 
+
+        # 3. Check Sub-Category Cap
+        try:
+            cat_cap = SubCategoryBudgetCap.objects.get(
+                expense_category=category, department=department, fiscal_year=fiscal_year, is_active=True
+            )
+            
+            dept_total_alloc = BudgetAllocation.objects.filter(
+                department=department, fiscal_year=fiscal_year, is_active=True
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            cat_limit = dept_total_alloc * (cat_cap.percentage_of_department / 100)
+            
+            current_cat_spent = Expense.objects.filter(
+                department=department,
+                category=category,
+                budget_allocation__fiscal_year=fiscal_year,
+                status__in=['APPROVED', 'SUBMITTED']
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            projected_cat_total = current_cat_spent + amount
+            remaining_cat = max(cat_limit - current_cat_spent, Decimal('0.00'))
+            
+            if projected_cat_total > cat_limit:
+                # Structure matches "Hard/Soft Cap Violation" in IntegrationV2.1
+                error_code = "BUDGET_HARD_CAP_EXCEEDED" if cat_cap.cap_type == 'HARD' else "BUDGET_SOFT_CAP_EXCEEDED"
+                
+                error_payload = {
+                    "error": error_code,
+                    "detail": f"This expense exceeds the {cat_cap.cap_type.lower()} cap for {category.name}.",
+                    "cap_info": {
+                        "category": category.code,
+                        "cap_type": cat_cap.cap_type,
+                        "cap_amount": float(cat_limit),
+                        "current_spent": float(current_cat_spent),
+                        "remaining": float(remaining_cat),
+                        "requested": float(amount)
+                    }
+                }
+
+                if cat_cap.cap_type == 'HARD':
+                    raise serializers.ValidationError(error_payload)
+                elif cat_cap.cap_type == 'SOFT':
+                    if not notes or len(notes) < 10:
+                        error_payload['detail'] += " Justification is required."
+                        raise serializers.ValidationError(error_payload)
+
+        except SubCategoryBudgetCap.DoesNotExist:
+            pass
+    # --- MODIFICATION END ---
+
     def validate(self, data):
         project_id = data.get('project_id')
         category_code = data.get('category_code')
         expense_amount = data.get('amount')
+        notes = data.get('notes', '')
 
         try:
-            # PROJECT-FIRST LOGIC:
             project = Project.objects.get(id=project_id)
-            # Department is derived from Project
             department = project.department
 
-            # --- MODIFICATION START: Strict Department Check ---
+            # --- Strict Department Check ---
             request = self.context.get('request')
             if request and hasattr(request.user, 'roles'):
                 bms_role = get_user_bms_role(request.user)
-                # If user is GENERAL_USER (Operator), ensure they match the project department
                 if bms_role == 'GENERAL_USER':
                     user_dept_id = getattr(request.user, 'department_id', None)
                     if user_dept_id and user_dept_id != project.department_id:
                         raise serializers.ValidationError(
                             {'project_id': "You cannot submit expenses for other departments."}
                         )
-            # --- MODIFICATION END ---
 
             sub_category = ExpenseCategory.objects.get(
                 code=category_code, is_active=True)
@@ -222,21 +314,22 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'category_code': 'Active expense sub-category not found.'})
 
+        # --- Trigger Cap Validation ---
+        self.validate_caps(department, sub_category, expense_amount, notes)
+
         # --- INTELLIGENT ALLOCATION FINDING ---
-        # Find active allocation specific to THIS Project + Category
         allocations = BudgetAllocation.objects.filter(
-            project=project,          # Key Change: Filter by Project
+            project=project,
             category=sub_category,
             is_active=True,
-            is_locked=False
+            is_locked=False # Ensure we only use unlocked allocations
         )
 
         if not allocations.exists():
             raise serializers.ValidationError(
-                f'No active budget found for Project "{project.name}" and Category "{sub_category.name}".'
+                f'No active, unlocked budget found for Project "{project.name}" and Category "{sub_category.name}". Finance Manager approval required.'
             )
 
-        # Calculate funds (Logic remains same, just scoped to project allocation now)
         allocation_to_charge = allocations.first()
         total_budget = allocation_to_charge.amount
         total_spent = Expense.objects.filter(
@@ -367,7 +460,6 @@ class ExpenseDetailSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(
         source='department.name', read_only=True)
     receipt_url = serializers.SerializerMethodField()
-    # MODIFICATION START: Add a field for multiple attachments
     attachments = serializers.SerializerMethodField()
     is_accomplished = serializers.BooleanField(read_only=True)
 

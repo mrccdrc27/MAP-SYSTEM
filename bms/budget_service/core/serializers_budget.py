@@ -657,6 +657,13 @@ class ProposalReviewSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid status for review.")
         return value
 
+    def validate(self, data):
+        if data.get('status') == 'APPROVED' and not data.get('signature'):
+            raise serializers.ValidationError(
+                {'signature': "Signature attachment is required for approval."}
+            )
+        return data
+
 
 class ProposalReviewBudgetOverviewSerializer(serializers.Serializer):
     """
@@ -682,12 +689,20 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
 
     # UI inputs (Strings)
     department_name = serializers.CharField()
-    category_name = serializers.CharField()
-    source_account_name = serializers.CharField()  # Where money comes FROM
+    # category_name = serializers.CharField() # Not strictly used for allocation lookup logic if using accounts, but kept if UI sends it
+    
+    transfer_type = serializers.ChoiceField(
+        choices=['TRANSFER', 'SUPPLEMENTAL'], 
+        default='TRANSFER'
+    )
+    
+    source_account_name = serializers.CharField(required=False, allow_blank=True)  # Where money comes FROM (Optional for Supplemental)
     destination_account_name = serializers.CharField()  # Where money goes TO
 
     def validate(self, data):
         try:
+            transfer_type = data.get('transfer_type', 'TRANSFER')
+
             # 1. Resolve Department
             try:
                 department = Department.objects.get(
@@ -696,41 +711,55 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                 department = Department.objects.get(
                     code__iexact=data['department_name'])
 
-            # 2. Find Account objects
-            source_account = Account.objects.filter(
-                name__iexact=data['source_account_name']).first()
+            # 2. Find Destination Account object (Always required)
             destination_account = Account.objects.filter(
                 name__iexact=data['destination_account_name']).first()
 
-            if not source_account or not destination_account:
-                raise serializers.ValidationError("Invalid accounts selected.")
-
-            # 3. Find Budget Allocations
-            source_alloc = BudgetAllocation.objects.filter(
-                department=department,
-                account=source_account,
-                is_active=True
-            ).first()
+            if not destination_account:
+                raise serializers.ValidationError({'destination_account_name': "Invalid destination account selected."})
 
             dest_alloc = BudgetAllocation.objects.filter(
                 department=department,
                 account=destination_account,
                 is_active=True
             ).first()
+            
+            # Initialize source variables
+            source_account = None
+            source_alloc = None
 
-            # 4. Validate that source has enough funds
-            if source_alloc:
-                total_expenses = Expense.objects.filter(
-                    budget_allocation=source_alloc,
-                    status='APPROVED'
-                ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            # 3. Handle TRANSFER Logic
+            if transfer_type == 'TRANSFER':
+                source_account_name = data.get('source_account_name')
+                if not source_account_name:
+                    raise serializers.ValidationError({'source_account_name': "Source account is required for Transfers."})
 
-                available_funds = source_alloc.amount - total_expenses
+                source_account = Account.objects.filter(name__iexact=source_account_name).first()
+                if not source_account:
+                    raise serializers.ValidationError({'source_account_name': "Invalid source account selected."})
 
-                if data['amount'] > available_funds:
-                    raise serializers.ValidationError(
-                        f"Insufficient funds in source account. Available: {available_funds:,.2f}, Requested: {data['amount']:,.2f}"
-                    )
+                source_alloc = BudgetAllocation.objects.filter(
+                    department=department,
+                    account=source_account,
+                    is_active=True
+                ).first()
+
+                # Validate source funds
+                if source_alloc:
+                    total_expenses = Expense.objects.filter(
+                        budget_allocation=source_alloc,
+                        status='APPROVED'
+                    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+                    available_funds = source_alloc.amount - total_expenses
+
+                    if data['amount'] > available_funds:
+                        raise serializers.ValidationError(
+                            f"Insufficient funds in source account. Available: {available_funds:,.2f}, Requested: {data['amount']:,.2f}"
+                        )
+                else:
+                    # If no allocation exists for source, they have 0 funds
+                    raise serializers.ValidationError(f"No active allocation found for source account {source_account.name}.")
 
             # Store resolved objects
             data['department'] = department
@@ -743,7 +772,6 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid Department")
 
         return data
-
 
 class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     category = serializers.CharField()
