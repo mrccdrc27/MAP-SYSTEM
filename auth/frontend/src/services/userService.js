@@ -79,9 +79,9 @@ export const validateToken = async () => {
   });
 };
 
-// Get user's available systems
+// Get user's available systems (Note: systems are included in /me response as system_roles)
 export const getUserSystems = async () => {
-  return await apiRequest('/api/v1/users/systems/', {
+  return await apiRequest('/auth/api/v1/users/systems/', {
     method: 'GET',
     includeAuth: true,
   });
@@ -89,7 +89,7 @@ export const getUserSystems = async () => {
 
 // Select a system
 export const selectSystem = async (systemSlug) => {
-  return await apiRequest('/api/v1/users/systems/select/', {
+  return await apiRequest('/auth/api/v1/users/systems/select/', {
     method: 'POST',
     includeAuth: true,
     body: JSON.stringify({ system_slug: systemSlug }),

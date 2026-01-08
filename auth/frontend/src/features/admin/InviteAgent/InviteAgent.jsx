@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiRequest } from '../../../services/api';
+import { getInviteData, submitInvite } from '../../../services/adminService';
 import { useToast, Button, Modal, Table, Badge, Card, Input } from '../../../components/common';
 import styles from './InviteAgent.module.css';
 
@@ -34,7 +34,7 @@ const InviteAgent = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('/api/v1/users/invite-agent/', { method: 'GET', includeAuth: true });
+      const response = await getInviteData();
       if (response.ok) {
         setAvailableUsers(response.data.available_users || []);
         setSystems(response.data.systems || []);
@@ -54,10 +54,10 @@ const InviteAgent = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const response = await apiRequest('/api/v1/users/invite-agent/', {
-        method: 'POST',
-        includeAuth: true,
-        body: JSON.stringify({ user_id: selectedUser.id, system_id: parseInt(formData.system_id), role_id: parseInt(formData.role_id) }),
+      const response = await submitInvite({ 
+        user_id: selectedUser.id, 
+        system_id: parseInt(formData.system_id), 
+        role_id: parseInt(formData.role_id) 
       });
       if (response.ok) {
         success('Success', 'User invited');

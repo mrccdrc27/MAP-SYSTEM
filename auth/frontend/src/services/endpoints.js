@@ -28,12 +28,12 @@ export const EMPLOYEE_ENDPOINTS = {
   TOKEN_REFRESH: '/auth/api/v1/hdts/employees/api/token/refresh/',
   PROFILE: '/auth/api/v1/hdts/employees/api/profile/',
   ME: '/auth/api/v1/hdts/employees/api/me/',
-  FORGOT_PASSWORD: '/api/v1/hdts/employees/api/password/forgot/',
-  RESET_PASSWORD: '/api/v1/hdts/employees/api/password/reset/',
-  CHANGE_PASSWORD: '/api/v1/hdts/employees/api/profile/change-password/',
-  REQUEST_OTP: '/api/v1/hdts/employees/api/2fa/request-otp/',
-  ENABLE_2FA: '/api/v1/hdts/employees/api/2fa/enable/',
-  DISABLE_2FA: '/api/v1/hdts/employees/api/2fa/disable/',
+  FORGOT_PASSWORD: '/auth/api/v1/hdts/employees/api/password/forgot/',
+  RESET_PASSWORD: '/auth/api/v1/hdts/employees/api/password/reset/',
+  CHANGE_PASSWORD: '/auth/api/v1/hdts/employees/api/profile/change-password/',
+  REQUEST_OTP: '/auth/api/v1/hdts/employees/api/2fa/request-otp/',
+  ENABLE_2FA: '/auth/api/v1/hdts/employees/api/2fa/enable/',
+  DISABLE_2FA: '/auth/api/v1/hdts/employees/api/2fa/disable/',
 };
 
 // Get endpoints based on user type
