@@ -30,6 +30,26 @@ const getInitials = (name) => {
     .slice(0, 2);
 };
 
+// Normalize names and text: collapse multiple spaces and trim
+const normalizeText = (t) => {
+  if (!t && t !== 0) return '';
+  try {
+    return String(t).replace(/\s+/g, ' ').trim();
+  } catch (e) {
+    return String(t || '');
+  }
+};
+
+const buildFullName = (user) => {
+  if (!user) return null;
+  if (typeof user === 'string') return normalizeText(user);
+  const first = user.first_name || user.firstName || user.name || user.full_name || '';
+  const last = user.last_name || user.lastName || '';
+  const combined = `${first} ${last}`;
+  const cleaned = normalizeText(combined);
+  return cleaned || null;
+};
+
 export default function TicketMessaging({ initialMessages = [], ticketId = null, ticketNumber = null }) {
   const [messages, setMessages] = useState(
     initialMessages.map(msg => ({
@@ -57,7 +77,7 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
     if (u) {
       const parsed = JSON.parse(u);
       currentUserId = parsed?.id || parsed?.user_id || parsed?.username || parsed?.email || 'employee';
-      currentUserName = parsed?.first_name || parsed?.firstName || parsed?.name || 'Employee';
+      currentUserName = buildFullName(parsed) || parsed?.username || parsed?.email || 'Employee';
     }
   } catch (e) {
     currentUserId = 'employee';
@@ -121,6 +141,12 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
         const tktNum = ticketNumber || ticketId;
         const response = await backendTicketService.getTicketByNumber(tktNum);
         if (response?.comments && response.comments.length > 0) {
+          // Determine ticket owner/requester name (prefer structured names)
+          let ticketOwnerName = null;
+          if (response.requester) {
+            ticketOwnerName = buildFullName(response.requester) || response.requester?.full_name || response.requester?.requester_name || null;
+          }
+          ticketOwnerName = ticketOwnerName || response.requester_name || response.requesterName || null;
           // Filter out internal comments
           const visibleComments = response.comments.filter(c => !c.is_internal && !c.isInternal);
           
@@ -147,7 +173,7 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
               return {
                 id: comment.id,
                 sender: 'You',
-                message: comment.comment || comment.message || '',
+                message: normalizeText(comment.comment || comment.message || ''),
                 timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
               };
             }
@@ -157,17 +183,18 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
               return {
                 id: comment.id,
                 sender: 'Support Team',
-                message: comment.comment || comment.message || '',
+                message: normalizeText(comment.comment || comment.message || ''),
                 timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
               };
             }
 
             // Fallback: show provided user name or default label
-            const fallbackName = commentUser?.first_name || commentUser?.name || commentUser?.full_name || commentUser?.username || 'Employee';
+            const userNameFromComment = buildFullName(commentUser) || commentUser?.full_name || commentUser?.username || null;
+            const finalName = userNameFromComment || ticketOwnerName || 'Employee';
             return {
               id: comment.id,
-              sender: fallbackName,
-              message: comment.comment || comment.message || '',
+              sender: finalName,
+              message: normalizeText(comment.comment || comment.message || ''),
               timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
             };
           });

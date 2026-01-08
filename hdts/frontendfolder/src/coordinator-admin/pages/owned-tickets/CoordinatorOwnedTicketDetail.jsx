@@ -52,6 +52,43 @@ const CoordinatorOwnedTicketDetail = () => {
   // Real-time messaging with TTS agents
   const userDisplayName = `${currentUser?.first_name || ''} ${currentUser?.last_name || ''}`.trim() || 
     currentUser?.username || currentUser?.email || 'Coordinator';
+
+  // Helpers: normalize text and build full name including middle name
+  const normalizeText = (t) => {
+    if (!t && t !== 0) return '';
+    try {
+      return String(t).replace(/\s+/g, ' ').trim();
+    } catch (e) {
+      return String(t || '');
+    }
+  };
+
+  const buildFullName = (user) => {
+    if (!user) return null;
+    if (typeof user === 'string') return normalizeText(user);
+    const first = user.first_name || user.firstName || user.name || user.full_name || '';
+    const middle = user.middle_name || user.middleName || '';
+    const last = user.last_name || user.lastName || '';
+    const combined = `${first} ${middle} ${last}`;
+    const cleaned = normalizeText(combined);
+    return cleaned || null;
+  };
+
+  const formatDateTime = (d) => {
+    try {
+      const dt = new Date(d);
+      const pad = (n) => String(n).padStart(2, '0');
+      const day = pad(dt.getDate());
+      const month = pad(dt.getMonth() + 1);
+      const year = dt.getFullYear();
+      const hours = pad(dt.getHours());
+      const minutes = pad(dt.getMinutes());
+      const seconds = pad(dt.getSeconds());
+      return `${day}/${month}/${year} at ${hours}:${minutes}:${seconds}`;
+    } catch (e) {
+      return String(d);
+    }
+  };
   
   const {
     messages: agentMessages,
@@ -193,40 +230,99 @@ const CoordinatorOwnedTicketDetail = () => {
 
           // Use real comments from helpdesk if available
           if (helpdeskData?.comments && helpdeskData.comments.length > 0) {
-            const formattedComments = helpdeskData.comments.map(comment => ({
-              id: comment.id,
-              sender: comment.user 
-                ? `${comment.user.first_name || ''} ${comment.user.last_name || ''}`.trim() || 'Unknown'
-                : 'Unknown',
-              role: comment.user?.role || 'Employee',
-              timestamp: new Date(comment.created_at).toLocaleDateString(),
-              time: new Date(comment.created_at).toLocaleTimeString(),
-              content: comment.comment,
-              isInternal: comment.is_internal,
-              isOwn: comment.user?.id === currentUser?.id
-            }));
+            // In the helpdesk system:
+            // - "employee" is the person who CREATED/SUBMITTED the ticket (the requester) = "Ticket Owner" in business terms
+            // - Staff members responding are "Employees" from coordinator's view
+            const requesterId = helpdeskData?.employee?.id; // The ticket requester's ID
             
-            // Public comments go to requester messages (internal messages now use real-time WebSocket)
-            const publicComments = formattedComments.filter(c => !c.isInternal);
-            
-            setRequesterMessages(publicComments.length > 0 ? publicComments : [{
+            // Build full name for the ticket requester (stored in employee field)
+            const requester = helpdeskData?.employee || {};
+            const requesterFullName = buildFullName(requester) 
+              || requester.full_name 
+              || requester.fullName 
+              || requester.name 
+              || `${requester.first_name || ''} ${requester.middle_name || ''} ${requester.last_name || ''}`.replace(/\s+/g, ' ').trim()
+              || requester.username
+              || mergedData.requester 
+              || 'Unknown';
+
+            const formattedComments = helpdeskData.comments.map(comment => {
+              const user = comment.user || {};
+              const userId = user?.id || comment.user_id;
+              const isSystem = !!comment.system || comment.is_system || (comment.comment || '').includes('Thank you for your message');
+              
+              // Check if this comment is from the ticket requester (the "Ticket Owner")
+              const isTicketRequester = userId && requesterId && String(userId) === String(requesterId);
+              
+              // Build full name from the comment's user object
+              const commentUserFullName = buildFullName(user) 
+                || user.full_name 
+                || user.fullName 
+                || user.name 
+                || `${user.first_name || ''} ${user.middle_name || ''} ${user.last_name || ''}`.replace(/\s+/g, ' ').trim()
+                || user.username;
+              
+              // Determine display name
+              let fullName;
+              if (isSystem) {
+                fullName = 'Support Team';
+              } else if (isTicketRequester) {
+                // Use the requester's full name
+                fullName = requesterFullName;
+              } else {
+                // Staff member - use their name from the comment user object
+                fullName = commentUserFullName || 'Staff Member';
+              }
+              
+              // Determine role label
+              let roleLabel;
+              if (isSystem) {
+                roleLabel = 'System';
+              } else if (isTicketRequester) {
+                roleLabel = 'Ticket Owner';
+              } else {
+                roleLabel = 'Employee';
+              }
+              
+              // Internal messages should not be seen by ticket owner
+              const isInternal = !!comment.is_internal || isSystem;
+              
+              return {
+                id: comment.id,
+                sender: fullName,
+                role: roleLabel,
+                datetime: formatDateTime(comment.created_at || comment.createdAt || new Date()),
+                content: normalizeText(comment.comment || comment.message || ''),
+                isInternal: isInternal,
+                isOwn: user?.id === currentUser?.id,
+                system: isSystem,
+              };
+            });
+
+            // For admin/coordinator view we show all comments (both public and internal), marking internal ones.
+            setRequesterMessages(formattedComments.length > 0 ? formattedComments : [{
               id: '1',
-              sender: mergedData.requester || 'Requester',
-              role: 'Requester',
-              timestamp: new Date(mergedData.createdDate).toLocaleDateString(),
-              time: new Date(mergedData.createdDate).toLocaleTimeString(),
-              content: mergedData.description || 'No description provided',
+              sender: requesterFullName,
+              role: 'Ticket Owner',
+              datetime: formatDateTime(mergedData.createdDate),
+              content: normalizeText(mergedData.description || 'No description provided'),
               isOwn: false
             }]);
           } else {
             // Initialize requester messages only (agent messages use real-time WebSocket)
+            // In the fallback case, use the requester/employee info for ticket owner display
+            const emp = mergedData.employee || {};
+            const requesterFullName = buildFullName(emp) 
+              || emp.full_name 
+              || emp.name 
+              || mergedData.requester 
+              || 'Unknown';
             setRequesterMessages([{
               id: '1',
-              sender: mergedData.requester || 'Requester',
-              role: 'Requester',
-              timestamp: new Date(mergedData.createdDate).toLocaleDateString(),
-              time: new Date(mergedData.createdDate).toLocaleTimeString(),
-              content: mergedData.description || 'No description provided',
+              sender: requesterFullName,
+              role: 'Ticket Owner',
+              datetime: formatDateTime(mergedData.createdDate),
+              content: normalizeText(mergedData.description || 'No description provided'),
               isOwn: false
             }]);
           }
@@ -438,6 +534,21 @@ const CoordinatorOwnedTicketDetail = () => {
   const displayedRequesterMessages = showAllMessages 
     ? requesterMessages 
     : requesterMessages.slice(-3);
+
+  // Agent messages: prefer real-time/agent messages, but fall back to helpdesk comments
+  const displayedAgentMessages = (agentMessages && agentMessages.length > 0)
+    ? agentMessages
+    : (ticket?.comments && ticket.comments.length > 0)
+      ? ticket.comments.map((c) => ({
+          message_id: c.id,
+          message: c.comment || c.message || '',
+          sender: c.user ? (buildFullName(c.user) || c.user.full_name || c.user.name) : (c.system ? 'Support Team' : (ticket.requester || 'Requester')),
+          sender_role: c.user?.role || (c.system ? 'System' : 'Employee'),
+          created_at: c.created_at || c.createdAt || c.timestamp || new Date().toISOString(),
+          attachments: c.attachments || c.files || [],
+          is_edited: !!c.is_edited || !!c.edited_at,
+        }))
+      : [];
 
   const getPriorityColor = (priority) => {
     switch (priority?.toUpperCase()) {
@@ -751,11 +862,9 @@ const CoordinatorOwnedTicketDetail = () => {
                   {displayedRequesterMessages.map((msg) => (
                     <div key={msg.id} className={`${styles['message']} ${msg.isOwn ? styles['own'] : ''}`}>
                       <div className={styles['message-header']}>
-                        <span className={styles['sender']}>{msg.sender}</span>
-                        <span className={styles['role']}>({msg.role})</span>
-                        <span className={styles['timestamp']}>
-                          {msg.timestamp} at {msg.time}
-                        </span>
+                        <div className={styles['sender']}>{msg.sender}{msg.isInternal ? ' (this message should not be seen by the Ticket Owner)' : ''}</div>
+                        <div className={styles['role']}>({msg.role})</div>
+                        <div className={styles['timestamp']}>{msg.datetime || `${msg.timestamp} at ${msg.time}`}</div>
                       </div>
                       <div className={styles['message-body']}>{msg.content}</div>
                     </div>
@@ -773,7 +882,7 @@ const CoordinatorOwnedTicketDetail = () => {
                 {/* Reply Section */}
                 <div className={styles['reply-section']}>
                   <div className={styles['reply-to']}>
-                    To: <strong>{ticket.requester || 'Requester'}</strong>
+                    To: <strong>{buildFullName(ticket?.employee) || ticket?.requester || 'Requester'}</strong>
                     {employeeTyping && (
                       <span className={styles['typing-hint']}> — {employeeTyping} is typing...</span>
                     )}
@@ -944,15 +1053,15 @@ const CoordinatorOwnedTicketDetail = () => {
                 </div>
                 
                 <div className={styles['message-list']}>
-                  {messagingLoading && agentMessages.length === 0 ? (
+                  {messagingLoading && displayedAgentMessages.length === 0 ? (
                     <div className={styles['loading-messages']}>Loading messages...</div>
-                  ) : agentMessages.length === 0 ? (
+                  ) : displayedAgentMessages.length === 0 ? (
                     <div className={styles['no-messages']}>
                       No messages yet. Start a conversation with TTS agents.
                     </div>
                   ) : (
-                    agentMessages.map((msg) => {
-                      const isOwnMessage = msg.user_id === (currentUser?.id || currentUser?.user_id);
+                    displayedAgentMessages.map((msg) => {
+                      const isOwnMessage = (msg.user_id || msg.user?.id || msg.user_id) === (currentUser?.id || currentUser?.user_id);
                       return (
                         <div 
                           key={msg.message_id || msg.id} 
@@ -967,7 +1076,7 @@ const CoordinatorOwnedTicketDetail = () => {
                             <div className={styles['msg-attachments']}>
                               {msg.attachments.map((att, idx) => (
                                 <span key={att.attachment_id || idx} className={styles['attachment-tag']}>
-                                  📎 {att.filename}
+                                  📎 {att.filename || att.file_name || att.filename}
                                 </span>
                               ))}
                             </div>
