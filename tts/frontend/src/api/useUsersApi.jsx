@@ -14,10 +14,13 @@ const useUsersApi = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${baseUrl}/api/v1/system-roles/user-system-roles/`);
-      setUsers(response.data);
+      // Ensure response.data is an array
+      const userData = Array.isArray(response.data) ? response.data : [];
+      setUsers(userData);
       setError("");
     } catch (err) {
       setError("Failed to fetch users");
+      setUsers([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }
