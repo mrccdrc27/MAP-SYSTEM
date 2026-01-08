@@ -511,4 +511,4 @@ class ExpenseDetailSerializer(serializers.ModelSerializer):
 class ExpenseCategoryDropdownSerializerV2(serializers.ModelSerializer):
     class Meta:
         model = ExpenseCategory
-        fields = ['code', 'name', 'classification']
+        fields = ['id','code', 'name', 'classification']

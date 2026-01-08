@@ -1699,23 +1699,46 @@ class BudgetAdjustmentView(generics.CreateAPIView):
 @extend_schema(
     tags=["Supplemental Budget"],
     summary="Request Supplemental Budget (Operator)",
-    description="Creates a pending BudgetTransfer record of type 'SUPPLEMENTAL'. Does not affect ledger until approved.",
+    description="Creates a pending BudgetTransfer. Automatically creates a 0-balance allocation bucket if one does not exist for the Project+Category.",
     request=SupplementalBudgetRequestSerializer,
     responses={201: OpenApiResponse(description="Request submitted successfully")}
 )
 class SupplementalBudgetRequestView(generics.CreateAPIView):
-    permission_classes = [IsBMSUser] # General users can request
+    permission_classes = [IsBMSUser] 
     serializer_class = SupplementalBudgetRequestSerializer
 
     def perform_create(self, serializer):
         data = serializer.validated_data
         user = self.request.user
         
+        allocation = data.get('allocation_obj')
+        
+        # If allocation doesn't exist, create a placeholder one ($0)
+        if not allocation:
+            with transaction.atomic():
+                # Simplified Account selection: Use default Expense account
+                account = Account.objects.filter(account_type__name='Expense').first()
+                if not account:
+                     # Absolute fallback
+                     account = Account.objects.first()
+
+                allocation = BudgetAllocation.objects.create(
+                    fiscal_year=data['fiscal_year_obj'],
+                    department=data['department_obj'],
+                    category=data['category_obj'],
+                    account=account,
+                    project=data['project_obj'],
+                    amount=Decimal('0.00'),
+                    created_by_name='System (Supplemental Request)',
+                    is_active=True,
+                    is_locked=False # Unlocked so it can receive funds
+                )
+
         # Create Transfer Record with status PENDING
         BudgetTransfer.objects.create(
             fiscal_year=data['fiscal_year_obj'],
-            source_allocation=None, # Supplemental = Source is Null (New Money)
-            destination_allocation=data['allocation_obj'],
+            source_allocation=None, 
+            destination_allocation=allocation,
             amount=data['amount'],
             reason=data['reason'],
             transfer_type='SUPPLEMENTAL',
@@ -1731,7 +1754,7 @@ class SupplementalBudgetRequestView(generics.CreateAPIView):
             log_type='CREATE',
             action=f"Requested supplemental budget of {data['amount']} for {data['department_obj'].code}",
             status='SUCCESS',
-            details={'category': data['allocation_obj'].category.name}
+            details={'category': data['category_obj'].name, 'project': data['project_obj'].name}
         )
 
     def create(self, request, *args, **kwargs):

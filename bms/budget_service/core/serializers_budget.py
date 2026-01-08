@@ -1,7 +1,7 @@
 from decimal import Decimal
 from .models import (
-    Account, AccountType, BudgetAllocation, BudgetProposal, BudgetProposalItem, Department, Expense,
-    FiscalYear, JournalEntry, JournalEntryLine, ProposalComment, ProposalHistory, BudgetTransfer
+    Account, AccountType, BudgetAllocation, BudgetProposal, BudgetProposalItem, Department, Expense, ExpenseCategory,
+    FiscalYear, JournalEntry, JournalEntryLine, Project, ProposalComment, ProposalHistory, BudgetTransfer
 )
 from rest_framework import serializers
 from django.db.models import Sum
@@ -336,7 +336,7 @@ class JournalEntryListSerializer(serializers.ModelSerializer):
         if credit_line:
             account_name = credit_line.account.name
             if credit_line.expense_category:
-                 return credit_line.expense_category.name
+                return credit_line.expense_category.name
             return account_name
         return "N/A"
 
@@ -349,11 +349,11 @@ class JournalEntryListSerializer(serializers.ModelSerializer):
                 return 'CapEx'
             if classification == 'OPEX':
                 return 'OpEx'
-        
+
         # 2. Fallback to the JE category field, formatted nicely
         if obj.category:
             return obj.category.replace('_', ' ').title()
-            
+
         return "General"
 
 
@@ -690,13 +690,15 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
     # UI inputs (Strings)
     department_name = serializers.CharField()
     # category_name = serializers.CharField() # Not strictly used for allocation lookup logic if using accounts, but kept if UI sends it
-    
+
     transfer_type = serializers.ChoiceField(
-        choices=['TRANSFER', 'SUPPLEMENTAL'], 
+        choices=['TRANSFER', 'SUPPLEMENTAL'],
         default='TRANSFER'
     )
-    
-    source_account_name = serializers.CharField(required=False, allow_blank=True)  # Where money comes FROM (Optional for Supplemental)
+
+    # Where money comes FROM (Optional for Supplemental)
+    source_account_name = serializers.CharField(
+        required=False, allow_blank=True)
     destination_account_name = serializers.CharField()  # Where money goes TO
 
     def validate(self, data):
@@ -716,14 +718,15 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                 name__iexact=data['destination_account_name']).first()
 
             if not destination_account:
-                raise serializers.ValidationError({'destination_account_name': "Invalid destination account selected."})
+                raise serializers.ValidationError(
+                    {'destination_account_name': "Invalid destination account selected."})
 
             dest_alloc = BudgetAllocation.objects.filter(
                 department=department,
                 account=destination_account,
                 is_active=True
             ).first()
-            
+
             # Initialize source variables
             source_account = None
             source_alloc = None
@@ -732,11 +735,14 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
             if transfer_type == 'TRANSFER':
                 source_account_name = data.get('source_account_name')
                 if not source_account_name:
-                    raise serializers.ValidationError({'source_account_name': "Source account is required for Transfers."})
+                    raise serializers.ValidationError(
+                        {'source_account_name': "Source account is required for Transfers."})
 
-                source_account = Account.objects.filter(name__iexact=source_account_name).first()
+                source_account = Account.objects.filter(
+                    name__iexact=source_account_name).first()
                 if not source_account:
-                    raise serializers.ValidationError({'source_account_name': "Invalid source account selected."})
+                    raise serializers.ValidationError(
+                        {'source_account_name': "Invalid source account selected."})
 
                 source_alloc = BudgetAllocation.objects.filter(
                     department=department,
@@ -759,7 +765,8 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                         )
                 else:
                     # If no allocation exists for source, they have 0 funds
-                    raise serializers.ValidationError(f"No active allocation found for source account {source_account.name}.")
+                    raise serializers.ValidationError(
+                        f"No active allocation found for source account {source_account.name}.")
 
             # Store resolved objects
             data['department'] = department
@@ -772,11 +779,18 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid Department")
 
         return data
-    
+
+# MODIFICATION START: Serializer for Operators to REQUEST supplemental budget
+
+
 # MODIFICATION START: Serializer for Operators to REQUEST supplemental budget
 class SupplementalBudgetRequestSerializer(serializers.Serializer):
     department_input = serializers.CharField(
         help_text="Department Code (e.g., 'IT') or ID"
+    )
+    project_id = serializers.IntegerField(
+        help_text="ID of the Project this budget is for",
+        required=True
     )
     category_id = serializers.IntegerField(
         help_text="ID of the Expense Category to increase"
@@ -794,15 +808,25 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
         # 1. Resolve Department
         dept_input = data.get('department_input')
         dept = None
+        
         if str(dept_input).isdigit():
             dept = Department.objects.filter(id=int(dept_input)).first()
         else:
+            # Try Code first, then Name
             dept = Department.objects.filter(code__iexact=dept_input).first()
+            if not dept:
+                 dept = Department.objects.filter(name__iexact=dept_input).first()
         
         if not dept:
-            raise serializers.ValidationError({"department_input": "Invalid Department"})
+            raise serializers.ValidationError({"department_input": f"Invalid Department: '{dept_input}' not found."})
         
-        # 2. Resolve Fiscal Year (Default to active)
+        # 2. Resolve Project
+        project_id = data.get('project_id')
+        project = Project.objects.filter(id=project_id, department=dept).first()
+        if not project:
+            raise serializers.ValidationError({"project_id": "Project not found or does not belong to this department."})
+
+        # 3. Resolve Fiscal Year (Default to active)
         fy_id = data.get('fiscal_year_id')
         if fy_id:
             fy = FiscalYear.objects.filter(id=fy_id).first()
@@ -813,42 +837,70 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
         if not fy:
             raise serializers.ValidationError({"fiscal_year_id": "No active fiscal year found."})
 
-        # 3. Resolve Category & Allocation
+        # 4. Resolve Category
         cat_id = data.get('category_id')
-        # We need to find the specific allocation bucket to attach this request to
-        # Note: We look for the main allocation for this Dept+Category
+        category = ExpenseCategory.objects.filter(id=cat_id).first()
+        if not category:
+             raise serializers.ValidationError({"category_id": "Invalid Category."})
+
+        # 5. Find OR Prepare Creation of Allocation
         allocation = BudgetAllocation.objects.filter(
-            department=dept,
-            fiscal_year=fy,
-            category_id=cat_id,
+            project=project,
+            category=category,
             is_active=True
         ).first()
 
-        if not allocation:
-            raise serializers.ValidationError({"category_id": "No active allocation found for this category. Cannot supplement non-existent budget."})
+        # We don't error if allocation is missing. We pass components to View to create it.
 
         data['department_obj'] = dept
+        data['project_obj'] = project
         data['fiscal_year_obj'] = fy
-        data['allocation_obj'] = allocation
+        data['category_obj'] = category
+        data['allocation_obj'] = allocation # Can be None
         
         return data
 # MODIFICATION END
 
 # MODIFICATION START: Serializer for Listing/Approving Transfers
+
+
 class BudgetTransferSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='destination_allocation.department.name', read_only=True)
     category_name = serializers.CharField(source='destination_allocation.category.name', read_only=True)
-    request_id = serializers.CharField(source='id', read_only=True) # UI expects request_id
-    date_submitted = serializers.DateTimeField(source='transferred_at', format="%Y-%m-%d", read_only=True)
+    
+    # OLD: request_id = serializers.CharField(source='id', read_only=True)
+    # NEW: Formatted ID
+    request_id = serializers.SerializerMethodField()
+    
+    date_submitted = serializers.DateTimeField(source='transferred_at', format="%Y-%m-%d %H:%M", read_only=True)
     requester_name = serializers.CharField(source='transferred_by_username', read_only=True)
+    
+    approval_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    rejection_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    approver_name = serializers.CharField(source='approved_by_username', read_only=True)
+    rejector_name = serializers.CharField(source='rejected_by_username', read_only=True)
 
     class Meta:
         model = BudgetTransfer  
         fields = [
             'id', 'request_id', 'department_name', 'category_name', 
-            'amount', 'reason', 'status', 'date_submitted', 'requester_name', 'transfer_type'
+            'amount', 'reason', 'status', 'date_submitted', 'requester_name', 'transfer_type',
+            'approval_date', 'rejection_date', 'approver_name', 'rejector_name'
         ]
-# MODIFICATION END
+
+    def get_request_id(self, obj):
+        # Format: TYPE-YEAR-ID (e.g., SUP-2026-001)
+        prefix = "SUP" if obj.transfer_type == 'SUPPLEMENTAL' else "TRF"
+        year = obj.transferred_at.year if obj.transferred_at else timezone.now().year
+        return f"{prefix}-{year}-{obj.id:03d}"
+
+    def to_representation(self, instance):
+        # Clean up Status presentation
+        data = super().to_representation(instance)
+        if data.get('status'):
+            data['status'] = data['status'].title() # "PENDING" -> "Pending"
+        return data
+
 
 class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     category = serializers.CharField()
