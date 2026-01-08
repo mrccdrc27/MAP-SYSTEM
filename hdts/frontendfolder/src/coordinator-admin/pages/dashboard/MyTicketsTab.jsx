@@ -432,7 +432,7 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
   // Handle row click to navigate to ticket detail
   const handleRowClick = (row) => {
     if (row && row.ticketNumber) {
-      navigate(`/admin/ticket-tracker/${row.ticketNumber}`);
+      navigate(`/admin/owned-tickets/${row.ticketNumber}`);
     }
   };
 

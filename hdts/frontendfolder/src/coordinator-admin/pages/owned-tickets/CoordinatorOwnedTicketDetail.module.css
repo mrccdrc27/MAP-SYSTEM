@@ -356,6 +356,7 @@
   gap: 1rem;
 }
 
+/* Make requester message thread scrollable and limit its height so users can scroll to the latest */
 .message {
   border-left: 4px solid var(--gray-300);
   padding: 1rem;
@@ -401,6 +402,50 @@
 .show-more {
   text-align: center;
   padding: 0.75rem;
+}
+
+.message-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Limited view: render all messages but constrain height and allow scrolling
+   so the ticket owner can scroll through the thread without clicking Show all. */
+.message-thread.limited {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 8px;
+  /* Reserve space equal to the reply-section height so the show-more can sit just above it */
+  padding-bottom: 180px;
+}
+
+/* Expanded view: show all messages with no scroll (full list visible) */
+.message-thread.expanded {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+/* Keep the show-more control pinned near the bottom even when expanded */
+.message-thread.expanded .show-more {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), #fff 40%);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Make show-more sticky inside the scrollable area so it always appears at the bottom
+   of the visible messages, directly above the reply section. */
+.message-thread.limited .show-more {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), #fff 40%);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-top: 0; /* no extra margin; positioning handled by padding-bottom */
 }
 
 .show-more button {

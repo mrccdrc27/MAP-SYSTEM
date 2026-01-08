@@ -167,6 +167,11 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
               currentUserId = null;
             }
 
+            // Build attachment fields from backend's singular attachment/attachment_name/attachment_type
+            const attachmentUrl = comment.attachment || null;
+            const attachmentName = comment.attachment_name || (attachmentUrl ? attachmentUrl.split('/').pop() : null);
+            const attachmentType = comment.attachment_type || '';
+
             // Determine if this comment was created by the current (employee) user
             const commentUserId = commentUser?.id || comment.user_id || comment.user_cookie_id || null;
             if (commentUserId && currentUserId && String(commentUserId) === String(currentUserId)) {
@@ -175,6 +180,9 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
                 sender: 'You',
                 message: normalizeText(comment.comment || comment.message || ''),
                 timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
+                attachment: attachmentUrl,
+                attachmentName: attachmentName,
+                attachmentType: attachmentType,
               };
             }
 
@@ -185,6 +193,9 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
                 sender: 'Support Team',
                 message: normalizeText(comment.comment || comment.message || ''),
                 timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
+                attachment: attachmentUrl,
+                attachmentName: attachmentName,
+                attachmentType: attachmentType,
               };
             }
 
@@ -196,6 +207,9 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
               sender: finalName,
               message: normalizeText(comment.comment || comment.message || ''),
               timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
+              attachment: attachmentUrl,
+              attachmentName: attachmentName,
+              attachmentType: attachmentType,
             };
           });
           

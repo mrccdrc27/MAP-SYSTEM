@@ -28,6 +28,8 @@ const CoordinatorOwnedTicketDetail = () => {
   // Local message states (for requester communication)
   const [requesterMessages, setRequesterMessages] = useState([]);
   const [replyContent, setReplyContent] = useState('');
+  const [requesterAttachments, setRequesterAttachments] = useState([]);
+  const fileInputRef = useRef(null);
   const [showAllMessages, setShowAllMessages] = useState(false);
   
   // HTTP-based typing indicator for requester communication
@@ -37,6 +39,10 @@ const CoordinatorOwnedTicketDetail = () => {
   // TTS Agent messaging input
   const [agentMessageInput, setAgentMessageInput] = useState('');
   const messagesEndRef = useRef(null);
+  // Requester message thread scrolling refs
+  const requesterThreadRef = useRef(null);
+  const requesterMessagesEndRef = useRef(null);
+  const prevShowAllRef = useRef(undefined);
 
   // Priority and status states
   const [ticketStatus, setTicketStatus] = useState('LOW');
@@ -117,6 +123,8 @@ const CoordinatorOwnedTicketDetail = () => {
     }
   }, [agentMessages, activeTab]);
 
+  // Keep requester thread scroll position under user control (no auto-scroll here)
+
   useEffect(() => {
     const loadTicket = async () => {
       try {
@@ -158,11 +166,25 @@ const CoordinatorOwnedTicketDetail = () => {
 
         if (taskData || helpdeskData) {
           // Merge task data (workflow info) with helpdesk data (full ticket details)
+          // Build ticket owner full name from taskData if available
+          // For owned tickets page, the current user IS the ticket owner, so use that as fallback
+          const ticketOwnerFullName = taskData?.ticket_owner_full_name 
+            || (taskData?.ticket_owner_first_name || taskData?.ticket_owner_last_name
+                ? `${taskData?.ticket_owner_first_name || ''} ${taskData?.ticket_owner_middle_name || ''} ${taskData?.ticket_owner_last_name || ''}`.replace(/\s+/g, ' ').trim()
+                : null)
+            || taskData?.ticket_owner_name
+            // On owned tickets page, the current user IS the owner - use their name
+            || buildFullName(currentUser)
+            || `${currentUser?.first_name || ''} ${currentUser?.middle_name || ''} ${currentUser?.last_name || ''}`.replace(/\s+/g, ' ').trim()
+            || (typeof helpdeskData?.assigned_to === 'string' ? helpdeskData.assigned_to : null)
+            || null;
+          
           const mergedData = {
             // Task/workflow info (from workflow_api)
             taskId: taskData?.task_id,
             ticketOwnerId: taskData?.ticket_owner_id,
             ticketOwnerName: taskData?.ticket_owner_name,
+            ticketOwnerFullName: ticketOwnerFullName,
             ticketOwnerRole: taskData?.ticket_owner_role,
             workflowName: taskData?.workflow_name || 'N/A',
             currentStepName: taskData?.current_step_name || 'N/A',
@@ -192,9 +214,13 @@ const CoordinatorOwnedTicketDetail = () => {
             requesterEmail: helpdeskData?.employee?.email || 'N/A',
             requesterDepartment: helpdeskData?.employee?.department || helpdeskData?.department || 'N/A',
             
-            // Assigned to (from helpdesk)
+            // Assigned to (from helpdesk) - handle both string and object formats
+            // StringRelatedField returns a string like "Maria Garcia", 
+            // while nested serializer returns an object with first_name, etc.
             assignedTo: helpdeskData?.assigned_to 
-              ? `${helpdeskData.assigned_to.first_name || ''} ${helpdeskData.assigned_to.last_name || ''}`.trim()
+              ? (typeof helpdeskData.assigned_to === 'string' 
+                  ? helpdeskData.assigned_to 
+                  : `${helpdeskData.assigned_to.first_name || ''} ${helpdeskData.assigned_to.middle_name || ''} ${helpdeskData.assigned_to.last_name || ''}`.replace(/\s+/g, ' ').trim())
               : taskData?.ticket_owner_name || taskData?.assigned_to || 'N/A',
             
             // Attachments (from helpdesk)
@@ -343,9 +369,15 @@ const CoordinatorOwnedTicketDetail = () => {
           }
           
           if (logEntries.length === 0) {
+            // Build full name for action log
+            const ownerFullName = mergedData.ticketOwnerFullName 
+              || mergedData.ticketOwnerName 
+              || buildFullName(currentUser) 
+              || `${currentUser?.first_name || ''} ${currentUser?.middle_name || ''} ${currentUser?.last_name || ''}`.replace(/\s+/g, ' ').trim() 
+              || 'You';
             logEntries.push({
               id: '1',
-              user: mergedData.ticketOwnerName || currentUser?.first_name || 'You',
+              user: ownerFullName,
               role: mergedData.ticketOwnerRole || 'Coordinator',
               action: 'Assigned as Ticket Owner',
               timestamp: new Date(mergedData.createdDate || new Date()).toLocaleDateString(),
@@ -412,6 +444,23 @@ const CoordinatorOwnedTicketDetail = () => {
     backendTicketService.setTypingStatus(ticketNumber, false, currentUser?.id, userDisplayName).catch(() => {});
   };
 
+  const handleAttachClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  const handleFilesSelected = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setRequesterAttachments((prev) => [...prev, ...files]);
+    }
+    // reset input so same file can be selected again if removed
+    e.target.value = '';
+  };
+
+  const removeAttachment = (index) => {
+    setRequesterAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Send message to TTS agents via real-time WebSocket
   const handleSendAgentMessage = async () => {
     if (!agentMessageInput.trim()) return;
@@ -433,29 +482,74 @@ const CoordinatorOwnedTicketDetail = () => {
   };
 
   const handleSendRequesterMessage = async () => {
-    if (replyContent.trim()) {
+    if (replyContent.trim() || requesterAttachments.length > 0) {
       handleRequesterTypingStop(); // Stop typing indicator via HTTP
+
+      // Create preview URLs for optimistic display
+      const previewAttachments = requesterAttachments.map((f) => ({
+        filename: f.name,
+        previewUrl: URL.createObjectURL(f),
+        uploading: true,
+      }));
+
+      const tempId = `temp-${Date.now()}`;
       const newMsg = {
-        id: Date.now().toString(),
+        id: tempId,
         sender: currentUser?.first_name || 'You',
         role: currentUser?.role || 'Coordinator',
         timestamp: new Date().toLocaleDateString(),
         time: new Date().toLocaleTimeString(),
         content: replyContent,
-        isOwn: true
+        attachments: previewAttachments,
+        isOwn: true,
       };
-      
+
       // Optimistically add to UI
-      setRequesterMessages([...requesterMessages, newMsg]);
+      setRequesterMessages((prev) => [...prev, newMsg]);
       const messageToSend = replyContent;
       setReplyContent('');
-      
+
       // Persist to backend so employee can see the message
       try {
         const ticketId = helpdeskTicket?.id || ticket?.id || ticket?.ticketId;
         if (ticketId) {
-          await backendTicketService.createComment(ticketId, messageToSend, false); // is_internal = false so employee can see
-          console.log('Comment sent to backend successfully');
+          if (requesterAttachments.length === 0) {
+            await backendTicketService.createComment(ticketId, messageToSend, false);
+          } else {
+            // Send first attachment with the comment, then any remaining attachments as separate comments
+            const [first, ...rest] = requesterAttachments;
+            try {
+              await backendTicketService.createCommentWithAttachment(ticketId, messageToSend, first, false);
+            } catch (e) {
+              console.warn('Failed to upload first attachment:', e);
+            }
+            for (const file of rest) {
+              try {
+                await backendTicketService.createCommentWithAttachment(ticketId, '', file, false);
+              } catch (e) {
+                console.warn('Failed to upload attachment:', e);
+              }
+            }
+
+            // clear attachments after sending
+            setRequesterAttachments([]);
+          }
+
+          // After uploads complete, refresh comments to get canonical server data
+          try {
+            await refreshComments();
+          } catch (e) {
+            console.warn('Failed to refresh comments after upload:', e);
+          }
+
+          // Revoke preview object URLs to avoid memory leak
+          try {
+            previewAttachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
+          } catch (e) {
+            // ignore
+          }
+
+          console.log('Comment and attachments uploaded');
         }
       } catch (error) {
         console.error('Failed to send comment to backend:', error);
@@ -471,22 +565,79 @@ const CoordinatorOwnedTicketDetail = () => {
       if (!tktNum) return;
       
       const helpdeskData = await backendTicketService.getHelpdeskTicketByNumber(tktNum);
+      
       if (helpdeskData?.comments && helpdeskData.comments.length > 0) {
-        const formattedComments = helpdeskData.comments.map(comment => ({
-          id: comment.id,
-          sender: comment.user 
-            ? `${comment.user.first_name || ''} ${comment.user.last_name || ''}`.trim() || 'Unknown'
-            : 'Unknown',
-          role: comment.user?.role || 'Employee',
-          timestamp: new Date(comment.created_at).toLocaleDateString(),
-          time: new Date(comment.created_at).toLocaleTimeString(),
-          content: comment.comment,
-          isInternal: comment.is_internal,
-          isOwn: comment.user?.id === currentUser?.id || comment.user_cookie_id === currentUser?.id
-        }));
+        const formattedComments = helpdeskData.comments.map(comment => {
+          // Backend returns singular attachment/attachment_name fields, not an array
+          const attachments = [];
+          if (comment.attachment) {
+            // Backend returns /media/... URLs - these go through Vite's /media proxy directly
+            // Don't prepend /helpdesk as that's a different proxy route
+            let fileUrl = comment.attachment;
+            if (fileUrl.startsWith('http')) {
+              // Already absolute URL - extract path for proxy
+              try {
+                const urlObj = new URL(fileUrl);
+                fileUrl = urlObj.pathname;
+              } catch (e) {
+                // keep as-is
+              }
+            }
+            // The backend returns /api/media/... but vite proxy expects /media/...
+            // Convert /api/media/... to /media/... so proxy can route correctly
+            if (fileUrl.startsWith('/api/media/')) {
+              fileUrl = fileUrl.replace('/api/media/', '/media/');
+            }
+            attachments.push({
+              id: comment.id,
+              file: fileUrl,
+              filename: comment.attachment_name || comment.attachment.split('/').pop() || 'attachment',
+              type: comment.attachment_type || ''
+            });
+          }
+          // Also check for attachments array in case backend changes
+          if (Array.isArray(comment.attachments) && comment.attachments.length > 0) {
+            comment.attachments.forEach(att => {
+              attachments.push({
+                id: att.id || att.attachment_id,
+                file: att.previewUrl || att.file || att.file_url || att.url || att.download_url || att.path || null,
+                filename: att.filename || att.file_name || att.name || 'attachment'
+              });
+            });
+          }
+          
+          return {
+            id: comment.id,
+            sender: comment.user 
+              ? `${comment.user.first_name || ''} ${comment.user.last_name || ''}`.trim() || 'Unknown'
+              : 'Unknown',
+            role: comment.user?.role || 'Employee',
+            timestamp: new Date(comment.created_at).toLocaleDateString(),
+            time: new Date(comment.created_at).toLocaleTimeString(),
+            content: comment.comment,
+            isInternal: comment.is_internal,
+            isOwn: comment.user?.id === currentUser?.id || comment.user_cookie_id === currentUser?.id,
+            attachments
+          };
+        });
         
         const publicComments = formattedComments.filter(c => !c.isInternal);
         setRequesterMessages(publicComments);
+
+        // Update the ticket object so the agent messages pane (which falls back to ticket.comments)
+        // immediately sees the newly returned comments/attachments without requiring a full page reload.
+        setTicket((prev) => ({
+          ...(prev || {}),
+          comments: helpdeskData.comments
+        }));
+
+        // Helpful debug: expose the raw returned comments to console when attachments are involved
+        try {
+          const hadAttachments = helpdeskData.comments.some(c => (c.attachments || c.files || []).length > 0);
+          if (hadAttachments) console.debug('refreshComments: got helpdesk comments with attachments', helpdeskData.comments);
+        } catch (e) {
+          // ignore
+        }
       }
     } catch (error) {
       console.error('Failed to refresh comments:', error);
@@ -531,24 +682,29 @@ const CoordinatorOwnedTicketDetail = () => {
     ]);
   };
 
-  const displayedRequesterMessages = showAllMessages 
-    ? requesterMessages 
-    : requesterMessages.slice(-3);
+  // Render all messages in the DOM; CSS controls the visible area.
+  const displayedRequesterMessages = requesterMessages;
 
-  // Agent messages: prefer real-time/agent messages, but fall back to helpdesk comments
+  // Auto-scroll the limited requester thread to bottom on initial load
+  // or when collapsing from expanded -> limited so latest messages are visible.
+  useEffect(() => {
+    const prev = prevShowAllRef.current;
+    // Start limited view scrolled to top so users see the beginning of the thread.
+    if (!showAllMessages && requesterThreadRef.current) {
+      try {
+        requesterThreadRef.current.scrollTop = 0;
+      } catch (e) {
+        // ignore
+      }
+    }
+    prevShowAllRef.current = showAllMessages;
+  }, [showAllMessages, requesterMessages.length]);
+
+  // Agent messages: ONLY show real-time/TTS agent messages
+  // Do NOT fall back to helpdesk comments - those are for Requester Communication tab only
   const displayedAgentMessages = (agentMessages && agentMessages.length > 0)
     ? agentMessages
-    : (ticket?.comments && ticket.comments.length > 0)
-      ? ticket.comments.map((c) => ({
-          message_id: c.id,
-          message: c.comment || c.message || '',
-          sender: c.user ? (buildFullName(c.user) || c.user.full_name || c.user.name) : (c.system ? 'Support Team' : (ticket.requester || 'Requester')),
-          sender_role: c.user?.role || (c.system ? 'System' : 'Employee'),
-          created_at: c.created_at || c.createdAt || c.timestamp || new Date().toISOString(),
-          attachments: c.attachments || c.files || [],
-          is_edited: !!c.is_edited || !!c.edited_at,
-        }))
-      : [];
+    : [];
 
   const getPriorityColor = (priority) => {
     switch (priority?.toUpperCase()) {
@@ -573,7 +729,10 @@ const CoordinatorOwnedTicketDetail = () => {
 
   // Determine user permissions for escalation/transfer
   // Use is_owner and is_admin flags from the API response (set by backend after validation)
-  const isTicketOwner = ticket?.is_owner === true;
+  // IMPORTANT: On the Owned Tickets page, the current user IS the ticket owner by definition
+  // (the page only shows tickets owned by the current user), so we default to true here
+  // when the workflow API is unavailable (is_owner flag not set)
+  const isTicketOwner = ticket?.is_owner === true || ticket?.is_owner === undefined;
   const isAdminFromAPI = ticket?.is_admin === true;
   
   // Fallback: Check if user is a Ticket Coordinator - case-insensitive comparison
@@ -671,15 +830,7 @@ const CoordinatorOwnedTicketDetail = () => {
         title={`Ticket No. ${ticket.id}`}
       />
 
-      {/* Status and Priority Badges */}
-      <div className={styles['header-badges']}>
-        <span className={`${styles['status-badge']} ${getStatusColor(ticket.status)}`}>
-          {ticket.status}
-        </span>
-        <span className={`${styles['priority-badge']} ${getPriorityColor(ticketStatus)}`}>
-          {ticketStatus}
-        </span>
-      </div>
+      {/* Header badges removed (priority/status shown in Details tab) */}
 
       {/* Main Content */}
       <div className={styles['content-wrapper']}>
@@ -691,13 +842,7 @@ const CoordinatorOwnedTicketDetail = () => {
             <span className={styles['stage-value']}>{lifecycle}</span>
           </div>
 
-          {/* Priority Display */}
-          <div className={styles['priority-display']}>
-            <label>Priority:</label>
-            <span className={`${styles['priority-value']} ${styles[`priority-${ticketStatus.toLowerCase()}`]}`}>
-              {ticketStatus}
-            </span>
-          </div>
+          {/* Priority display removed (shown in Ticket Details section) */}
 
           {/* Tabs */}
           <div className={styles['tabs']}>
@@ -819,9 +964,25 @@ const CoordinatorOwnedTicketDetail = () => {
                   <div className={styles['attachments-list']}>
                     {ticket.attachments.map((attachment, index) => {
                       const fileName = attachment.file_name || attachment.file?.split('/').pop() || `Attachment ${index + 1}`;
-                      const fileUrl = attachment.file?.startsWith('http') 
-                        ? attachment.file 
-                        : `${API_CONFIG.BACKEND.BASE_URL}${attachment.file}`;
+                      // Convert backend URLs to use /media proxy route
+                      let fileUrl = attachment.file || '';
+                      if (fileUrl.startsWith('http')) {
+                        try {
+                          const urlObj = new URL(fileUrl);
+                          fileUrl = urlObj.pathname;
+                        } catch (e) {
+                          // keep as-is
+                        }
+                      }
+                      // The backend returns /api/media/... but vite proxy expects /media/...
+                      // Convert /api/media/... to /media/... so proxy can route correctly
+                      if (fileUrl.startsWith('/api/media/')) {
+                        fileUrl = fileUrl.replace('/api/media/', '/media/');
+                      }
+                      const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+                      const mimeType = attachment.file_type || '';
+                      const isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
+                        || mimeType.startsWith('image/') || mimeType === 'application/pdf';
                       
                       return (
                         <div key={attachment.id || index} className={styles['attachment-item']}>
@@ -841,8 +1002,9 @@ const CoordinatorOwnedTicketDetail = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles['download-btn']}
+                            {...(!isViewable && fileUrl ? { download: fileName } : {})}
                           >
-                            <FaDownload /> Download
+                            {isViewable ? <><FaFile /> View</> : <><FaDownload /> Download</>}
                           </a>
                         </div>
                       );
@@ -858,7 +1020,7 @@ const CoordinatorOwnedTicketDetail = () => {
             ) : (
               <div className={styles['requester-comms']}>
                 {/* Message Thread */}
-                <div className={styles['message-thread']}>
+                <div className={`${styles['message-thread']} ${showAllMessages ? styles['expanded'] : styles['limited']}`} ref={requesterThreadRef}>
                   {displayedRequesterMessages.map((msg) => (
                     <div key={msg.id} className={`${styles['message']} ${msg.isOwn ? styles['own'] : ''}`}>
                       <div className={styles['message-header']}>
@@ -867,17 +1029,48 @@ const CoordinatorOwnedTicketDetail = () => {
                         <div className={styles['timestamp']}>{msg.datetime || `${msg.timestamp} at ${msg.time}`}</div>
                       </div>
                       <div className={styles['message-body']}>{msg.content}</div>
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className={styles['message-attachments']}>
+                          {msg.attachments.map((att, idx) => {
+                            // The file URL should already be normalized from refreshComments
+                            const fileUrl = att.file || att.previewUrl || null;
+                            const displayName = att.filename || 'attachment';
+                            const fileExt = displayName.split('.').pop()?.toLowerCase() || '';
+                            const mimeType = att.type || '';
+                            // Viewable files should open in new tab without download prompt
+                            const isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt) 
+                              || mimeType.startsWith('image/') || mimeType === 'application/pdf';
+                            
+                            return (
+                              <div key={att.id || `${displayName}-${idx}`} className={styles['attachment-inline']}>
+                                <a 
+                                  href={fileUrl || '#'} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className={styles['attachment-link']}
+                                  {...(!isViewable && fileUrl ? { download: displayName } : {})}
+                                >
+                                  {isViewable ? '🔗' : '📎'} {displayName}
+                                </a>
+                                {att.uploading && <span className={styles['uploading-tag']}> uploading...</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
-
-                  {requesterMessages.length > 3 && (
-                    <div className={styles['show-more']}>
-                      <button onClick={() => setShowAllMessages(!showAllMessages)}>
-                        {showAllMessages ? 'Show fewer messages' : `Show all ${requesterMessages.length} messages`}
-                      </button>
-                    </div>
-                  )}
+                  <div ref={requesterMessagesEndRef} />
                 </div>
+
+                {/* Show more/fewer toggle - outside scroll area so it stays at bottom */}
+                {requesterMessages.length > 3 && (
+                  <div className={styles['show-more']}>
+                    <button onClick={() => setShowAllMessages(!showAllMessages)}>
+                      {showAllMessages ? 'Show fewer messages' : `Show all ${requesterMessages.length} messages`}
+                    </button>
+                  </div>
+                )}
 
                 {/* Reply Section */}
                 <div className={styles['reply-section']}>
@@ -896,13 +1089,30 @@ const CoordinatorOwnedTicketDetail = () => {
                     rows="4"
                   />
                   <div className={styles['reply-actions']}>
-                    <button className={styles['attach-btn']}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={handleFilesSelected}
+                    />
+                    <button type="button" className={styles['attach-btn']} onClick={handleAttachClick}>
                       📎 Attach files
                     </button>
+                    {requesterAttachments && requesterAttachments.length > 0 && (
+                      <div className={styles['attached-list']}>
+                        {requesterAttachments.map((f, i) => (
+                          <div key={`${f.name}-${i}`} className={styles['attached-item']}>
+                            <span className={styles['attached-name']}>{f.name}</span>
+                            <button type="button" className={styles['remove-attach']} onClick={() => removeAttachment(i)}>Remove</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <button
                       className={styles['send-btn']}
                       onClick={handleSendRequesterMessage}
-                      disabled={!replyContent.trim()}
+                      disabled={!replyContent.trim() && requesterAttachments.length === 0}
                     >
                       Send
                     </button>
@@ -938,16 +1148,13 @@ const CoordinatorOwnedTicketDetail = () => {
                 <h3>Ticket Information</h3>
                 <div className={styles['info-item']}>
                   <label>Ticket Owner:</label>
-                  <p>{ticket.ticketOwnerName || ticket.assignedTo}</p>
+                  <p>{ticket.ticketOwnerFullName || ticket.ticketOwnerName || ticket.assignedTo || 'N/A'}</p>
                 </div>
                 <div className={styles['info-item']}>
                   <label>Status:</label>
                   <p>{ticket.status}</p>
                 </div>
-                <div className={styles['info-item']}>
-                  <label>Priority:</label>
-                  <p>{ticketStatus}</p>
-                </div>
+                {/* Priority info removed (displayed in Ticket Details) */}
                 <div className={styles['info-item']}>
                   <label>Workflow:</label>
                   <p>{ticket.workflowName || 'N/A'}</p>
@@ -1024,15 +1231,8 @@ const CoordinatorOwnedTicketDetail = () => {
                     </button>
                   )}
 
-                  {/* Show info message for non-owners */}
-                  {!isTicketOwner && !isAdmin && (
-                    <p className={styles['no-actions-text']}>
-                      You are not the owner of this ticket. Only the owner can escalate.
-                    </p>
-                  )}
-                  
                   {/* Show message if owner but no actions available */}
-                  {isTicketOwner && !isTicketCoordinator && !isAdmin && (
+                  {!isTicketCoordinator && !isAdmin && (
                     <p className={styles['no-actions-text']}>
                       No owner management actions available for your role.
                     </p>
@@ -1074,11 +1274,28 @@ const CoordinatorOwnedTicketDetail = () => {
                           <p className={styles['msg-text']}>{msg.message || msg.content}</p>
                           {msg.attachments && msg.attachments.length > 0 && (
                             <div className={styles['msg-attachments']}>
-                              {msg.attachments.map((att, idx) => (
-                                <span key={att.attachment_id || idx} className={styles['attachment-tag']}>
-                                  📎 {att.filename || att.file_name || att.filename}
-                                </span>
-                              ))}
+                              {msg.attachments.map((att, idx) => {
+                                // Attachment file URL should already be normalized from displayedAgentMessages mapping
+                                const fileVal = att.file || null;
+                                const nameVal = att.filename || 'attachment';
+                                const fileExt = nameVal.split('.').pop()?.toLowerCase() || '';
+                                const mimeType = att.type || '';
+                                const isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
+                                  || mimeType.startsWith('image/') || mimeType === 'application/pdf';
+                                return (
+                                  <a 
+                                    key={att.id || idx} 
+                                    href={fileVal || '#'} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className={styles['attachment-tag']}
+                                    style={{ textDecoration: 'none' }}
+                                    {...(!isViewable && fileVal ? { download: nameVal } : {})}
+                                  >
+                                    {isViewable ? '🔗' : '📎'} {nameVal}
+                                  </a>
+                                );
+                              })}
                             </div>
                           )}
                           <span className={styles['msg-time']}>
