@@ -34,6 +34,7 @@ import TicketsTab from './TicketsTab';
 import UsersTab from './UsersTab';
 import KnowledgeBaseTab from './KnowledgeBaseTab';
 import CSATTab from './CSATTab';
+import MyTicketsTab from './MyTicketsTab';
 
 // === Main Component ===
 const CoordinatorAdminDashboard = () => {
@@ -48,9 +49,11 @@ const CoordinatorAdminDashboard = () => {
   const dashboardTabs = isTicketCoordinator
     ? [
       { label: 'Tickets', value: 'tickets' },
+      { label: 'My Tickets', value: 'my-tickets' },
     ]
     : [
       { label: 'Tickets', value: 'tickets' },
+      { label: 'My Tickets', value: 'my-tickets' },
       { label: 'Users', value: 'users' },
       { label: 'Knowledge Base', value: 'kb' },
       { label: 'CSAT', value: 'csat' },
@@ -123,6 +126,9 @@ const CoordinatorAdminDashboard = () => {
                   pieRange={pieRange}
                   setPieRange={setPieRange}
                 />
+              )}
+              {activeTab === 'my-tickets' && (
+                <MyTicketsTab />
               )}
               {activeTab === 'users' && (
                 <UsersTab

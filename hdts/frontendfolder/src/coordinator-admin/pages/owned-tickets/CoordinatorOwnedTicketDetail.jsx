@@ -30,6 +30,10 @@ const CoordinatorOwnedTicketDetail = () => {
   const [replyContent, setReplyContent] = useState('');
   const [showAllMessages, setShowAllMessages] = useState(false);
   
+  // HTTP-based typing indicator for requester communication
+  const [employeeTyping, setEmployeeTyping] = useState(null);
+  const typingTimeoutRef = useRef(null);
+  
   // TTS Agent messaging input
   const [agentMessageInput, setAgentMessageInput] = useState('');
   const messagesEndRef = useRef(null);
@@ -265,6 +269,53 @@ const CoordinatorOwnedTicketDetail = () => {
     loadTicket();
   }, [ticketNumber, currentUser]);
 
+  // HTTP-based polling for employee typing status (for requester communication)
+  useEffect(() => {
+    if (!ticketNumber || !currentUser?.id) return;
+
+    const pollEmployeeTypingStatus = async () => {
+      try {
+        const result = await backendTicketService.getTypingStatus(ticketNumber, currentUser.id);
+        if (result?.is_typing && result?.user_name) {
+          setEmployeeTyping(result.user_name);
+        } else {
+          setEmployeeTyping(null);
+        }
+      } catch (err) {
+        // Silently ignore typing status errors
+      }
+    };
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollEmployeeTypingStatus, 2000);
+    pollEmployeeTypingStatus(); // Initial poll
+
+    return () => clearInterval(interval);
+  }, [ticketNumber, currentUser?.id]);
+
+  // Send typing status to backend when coordinator types in requester reply box
+  const handleRequesterTypingStart = () => {
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Send typing indicator to backend
+    backendTicketService.setTypingStatus(ticketNumber, true, currentUser?.id, userDisplayName).catch(() => {});
+    
+    // Auto-stop typing after 3 seconds of no input
+    typingTimeoutRef.current = setTimeout(() => {
+      backendTicketService.setTypingStatus(ticketNumber, false, currentUser?.id, userDisplayName).catch(() => {});
+    }, 3000);
+  };
+
+  const handleRequesterTypingStop = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    backendTicketService.setTypingStatus(ticketNumber, false, currentUser?.id, userDisplayName).catch(() => {});
+  };
+
   // Send message to TTS agents via real-time WebSocket
   const handleSendAgentMessage = async () => {
     if (!agentMessageInput.trim()) return;
@@ -285,8 +336,9 @@ const CoordinatorOwnedTicketDetail = () => {
     startTyping();
   };
 
-  const handleSendRequesterMessage = () => {
+  const handleSendRequesterMessage = async () => {
     if (replyContent.trim()) {
+      handleRequesterTypingStop(); // Stop typing indicator via HTTP
       const newMsg = {
         id: Date.now().toString(),
         sender: currentUser?.first_name || 'You',
@@ -296,10 +348,62 @@ const CoordinatorOwnedTicketDetail = () => {
         content: replyContent,
         isOwn: true
       };
+      
+      // Optimistically add to UI
       setRequesterMessages([...requesterMessages, newMsg]);
+      const messageToSend = replyContent;
       setReplyContent('');
+      
+      // Persist to backend so employee can see the message
+      try {
+        const ticketId = helpdeskTicket?.id || ticket?.id || ticket?.ticketId;
+        if (ticketId) {
+          await backendTicketService.createComment(ticketId, messageToSend, false); // is_internal = false so employee can see
+          console.log('Comment sent to backend successfully');
+        }
+      } catch (error) {
+        console.error('Failed to send comment to backend:', error);
+        // Message is already added to UI, so we don't need to remove it
+      }
     }
   };
+
+  // Function to refresh comments from backend
+  const refreshComments = async () => {
+    try {
+      const tktNum = ticketNumber || ticket?.ticket_number || ticket?.ticketNumber;
+      if (!tktNum) return;
+      
+      const helpdeskData = await backendTicketService.getHelpdeskTicketByNumber(tktNum);
+      if (helpdeskData?.comments && helpdeskData.comments.length > 0) {
+        const formattedComments = helpdeskData.comments.map(comment => ({
+          id: comment.id,
+          sender: comment.user 
+            ? `${comment.user.first_name || ''} ${comment.user.last_name || ''}`.trim() || 'Unknown'
+            : 'Unknown',
+          role: comment.user?.role || 'Employee',
+          timestamp: new Date(comment.created_at).toLocaleDateString(),
+          time: new Date(comment.created_at).toLocaleTimeString(),
+          content: comment.comment,
+          isInternal: comment.is_internal,
+          isOwn: comment.user?.id === currentUser?.id || comment.user_cookie_id === currentUser?.id
+        }));
+        
+        const publicComments = formattedComments.filter(c => !c.isInternal);
+        setRequesterMessages(publicComments);
+      }
+    } catch (error) {
+      console.error('Failed to refresh comments:', error);
+    }
+  };
+
+  // Poll for new comments every 10 seconds when on messages tab
+  useEffect(() => {
+    if (activeTab !== 'messages' && mainTab !== 'requester') return;
+    
+    const interval = setInterval(refreshComments, 10000);
+    return () => clearInterval(interval);
+  }, [activeTab, mainTab, ticketNumber, currentUser?.id]);
 
   const handleStatusChange = (newStatus) => {
     setTicketStatus(newStatus);
@@ -670,10 +774,14 @@ const CoordinatorOwnedTicketDetail = () => {
                 <div className={styles['reply-section']}>
                   <div className={styles['reply-to']}>
                     To: <strong>{ticket.requester || 'Requester'}</strong>
+                    {employeeTyping && (
+                      <span className={styles['typing-hint']}> — {employeeTyping} is typing...</span>
+                    )}
                   </div>
                   <textarea
                     value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
+                    onChange={(e) => { setReplyContent(e.target.value); handleRequesterTypingStart(); }}
+                    onBlur={handleRequesterTypingStop}
                     placeholder="Type your message..."
                     className={styles['reply-textarea']}
                     rows="4"
@@ -877,8 +985,10 @@ const CoordinatorOwnedTicketDetail = () => {
                   
                   {/* Typing indicator */}
                   {typingUsers.length > 0 && (
-                    <div className={styles['typing-indicator']}>
-                      {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+                    <div className={styles['typing-indicator']} aria-live="polite" aria-label={`${typingUsers.join(', ')} is typing`}>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
                   )}
                   

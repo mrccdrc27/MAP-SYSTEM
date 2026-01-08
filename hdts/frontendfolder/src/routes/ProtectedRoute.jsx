@@ -38,10 +38,13 @@ export default function ProtectedRoute({ requireAdmin = false, requireAgent = fa
     );
   }
 
-  // If not authenticated, redirect to login
+  // If not authenticated, redirect to root (login page) or external auth
   if (!user) {
-    // Redirect to login, preserving the intended destination
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // For HDTS, users should login through auth-frontend
+    // Redirect to auth-frontend employee login
+    const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
+    window.location.href = `${authFrontendUrl}/employee`;
+    return null;
   }
 
   // Check for TTS system access first

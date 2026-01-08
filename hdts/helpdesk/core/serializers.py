@@ -215,12 +215,12 @@ class TicketSerializer(serializers.ModelSerializer):
                 'issue_type', 'other_issue', 'performance_start_date', 'performance_end_date',
                 'approved_by', 'cost_items', 'requested_budget', 'fiscal_year', 'department_input',
                 'dynamic_data', 'status', 'submit_date', 'update_date', 'assigned_to', 'attachments',
-        'employee', 'rejected_by', 'date_completed', 'csat_rating', 'feedback'
+        'employee', 'rejected_by', 'date_completed', 'csat_rating', 'feedback', 'ticket_owner_id'
         ]
         read_only_fields = [
             'id', 'ticket_number', 'submit_date', 'update_date',
             'response_time', 'resolution_time', 'time_closed', 'date_completed', 'assigned_to',
-            'employee'
+            'employee', 'ticket_owner_id'
         ]
 
     def create(self, validated_data):

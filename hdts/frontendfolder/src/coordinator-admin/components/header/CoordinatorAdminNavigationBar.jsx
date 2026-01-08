@@ -41,18 +41,29 @@ const CoordinatorAdminNavBar = () => {
   const navRef = useRef(null);
   const { user: currentUser } = useAuth();
   console.debug('[CoordinatorAdminNav] currentUser:', currentUser);
-  const DEFAULT_PROFILE_IMAGE = '/media/employee_images/default-profile.png'; // relative path on backend (matches backend filename)
-  const BACKEND_BASE_URL = 'http://localhost:8080';
+  const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg'; // Default profile image matching auth frontend
+  // Use relative URL - Vite proxy will forward to helpdesk-backend
+  const BACKEND_BASE_URL = '';
   // Inline SVG fallback used if the PNG looks wrong or fails to load
   const FALLBACK_SVG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23007bff"/%3E%3Ctext x="50" y="55" text-anchor="middle" font-size="36" fill="%23fff"%3E%3C/tspan%3E%3C/text%3E%3C/svg%3E';
 
   // State to hold the actual profile image URL fetched from backend
-  const [profileImageUrl, setProfileImageUrl] = useState(FALLBACK_SVG);
+  const [profileImageUrl, setProfileImageUrl] = useState(DEFAULT_PROFILE_IMAGE);
 
   // Fetch current employee profile from backend to get freshest image path
   useEffect(() => {
     const fetchProfileImage = async () => {
       try {
+        // First, try to get profile picture from currentUser (auth context)
+        if (currentUser?.profile_picture) {
+          const resolved = resolveMediaUrl(currentUser.profile_picture);
+          if (resolved) {
+            console.debug('[CoordinatorAdminNav] Using profile image from auth context:', resolved);
+            setProfileImageUrl(resolved);
+            return;
+          }
+        }
+
         const token = localStorage.getItem('access_token');
 
         if (token) {
@@ -74,7 +85,7 @@ const CoordinatorAdminNavBar = () => {
           }
         }
 
-        // Fallback: setProfileImageUrl stays as FALLBACK_SVG
+        // Fallback: setProfileImageUrl stays as DEFAULT_PROFILE_IMAGE
       } catch (err) {
         console.error('Unexpected error fetching profile image:', err);
       }
@@ -106,9 +117,18 @@ const CoordinatorAdminNavBar = () => {
         // fall through to re-fetch below
       }
 
-      // Fallback: re-fetch profile from backend
+      // Fallback: re-fetch profile from backend or context
       const refetchProfile = async () => {
         try {
+          // First check if currentUser has the profile picture
+          if (currentUser?.profile_picture) {
+            const resolved = resolveMediaUrl(currentUser.profile_picture);
+            if (resolved) {
+              setProfileImageUrl(resolved);
+              return;
+            }
+          }
+
           const token = localStorage.getItem('access_token');
           if (token) {
             const data = await backendEmployeeService.getCurrentEmployee();
@@ -220,12 +240,18 @@ const CoordinatorAdminNavBar = () => {
 
     setIsMobileMenuOpen(false);
 
-    // Redirect to auth service login page (use configured AUTH base; defaults to localhost:8003)
+    // Redirect to main app landing (clear cookies/localStorage above first)
     try {
-      const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
-      window.location.href = `${AUTH_BASE}/login`;
+      // Use a hard redirect to the frontend auth landing page
+      window.location.href = 'http://localhost:3001/';
     } catch (e) {
-      navigate('/', { state: { fromLogout: true } });
+      // Fallback to SPA route if redirect is blocked
+      try {
+        navigate('/', { state: { fromLogout: true } });
+      } catch (navErr) {
+        // last resort: reload current page
+        window.location.reload();
+      }
     }
   };
 
@@ -428,7 +454,7 @@ const CoordinatorAdminNavBar = () => {
             <div className={styles['profile-avatar-large']}>
               <img 
                 src={profileImageUrl} 
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_SVG; }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_PROFILE_IMAGE; }}
                 alt="Profile" 
                 className={styles['avatar-image']} 
               />
@@ -438,7 +464,7 @@ const CoordinatorAdminNavBar = () => {
               <div className={styles['mobile-profile-actions']}>
                 <button 
                   className={styles['mobile-settings-btn']}
-                  onClick={() => handleNavigate('/admin/settings')}
+                  onClick={() => window.location.href = 'http://localhost:3001/profile'}
                 >
                   Settings
                 </button>
@@ -541,20 +567,20 @@ const CoordinatorAdminNavBar = () => {
 
         <div className={styles['profile-container']}>
           <div className={styles['profile-avatar']} onClick={() => toggleDropdown('profile')}>
-            <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_SVG; }} />
+            <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_PROFILE_IMAGE; }} />
           </div>
           {openDropdown === 'profile' && (
             <div className={styles['profile-dropdown']}>
               <div className={styles['profile-header']}>
                 <div className={styles['profile-avatar-large']}>
-                  <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_SVG; }} />
+                  <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_PROFILE_IMAGE; }} />
                 </div>
                 <div className={styles['profile-info']}>
                   <h3>{getFullName()}</h3>
                 </div>
               </div>
               <div className={styles['profile-menu']}>
-                <button onClick={() => handleNavigate('/admin/settings')}>Settings</button>
+                <button onClick={() => window.location.href = 'http://localhost:3001/profile'}>Settings</button>
                 <button className={styles['logout-btn']} onClick={handleLogout}>Log Out</button>
               </div>
             </div>

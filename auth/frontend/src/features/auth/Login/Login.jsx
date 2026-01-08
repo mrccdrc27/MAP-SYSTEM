@@ -8,6 +8,9 @@ import { useToast, Button, Input } from '../../../components/common';
 import { AuthLayout } from '../../../components/layout';
 import styles from './Login.module.css';
 
+// External app URLs for redirect after login
+const HDTS_FRONTEND_URL = import.meta.env.VITE_HDTS_FRONTEND_URL || 'http://localhost:5173';
+
 const Login = ({ userType = 'staff' }) => {
   const navigate = useNavigate();
   const { isAuthenticated, loading, login } = useAuth();
@@ -25,9 +28,20 @@ const Login = ({ userType = 'staff' }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Helper to redirect based on user type
+  const redirectAfterLogin = () => {
+    if (isEmployee) {
+      // Redirect employees to HDTS frontend
+      window.location.href = `${HDTS_FRONTEND_URL}/employee/home`;
+    } else {
+      // Redirect staff to HDTS frontend admin dashboard
+      window.location.href = `${HDTS_FRONTEND_URL}/admin/dashboard`;
+    }
+  };
+
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      navigate('/profile');
+      redirectAfterLogin();
     }
   }, [isAuthenticated, loading, navigate]);
 
@@ -47,7 +61,7 @@ const Login = ({ userType = 'staff' }) => {
         if (profileResponse.ok) {
           login(profileResponse.data);
           success('Success', 'Logged in successfully!');
-          setTimeout(() => navigate('/profile'), 1000);
+          setTimeout(() => redirectAfterLogin(), 1000);
         } else {
            error('Login Failed', 'Could not retrieve user profile.');
         }
@@ -84,7 +98,7 @@ const Login = ({ userType = 'staff' }) => {
         if (profileResponse.ok) {
           login(profileResponse.data);
           success('Success', 'Logged in successfully!');
-          setTimeout(() => navigate('/profile'), 1000);
+          setTimeout(() => redirectAfterLogin(), 1000);
         } else {
            error('Verification Failed', 'Could not retrieve user profile.');
         }
@@ -127,6 +141,7 @@ const Login = ({ userType = 'staff' }) => {
           <>
             <Input
               label="Email:"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -138,6 +153,7 @@ const Login = ({ userType = 'staff' }) => {
 
             <Input
               label="Password:"
+              name="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -186,6 +202,14 @@ const Login = ({ userType = 'staff' }) => {
                   <i className="fa-solid fa-question-circle"></i> Forgot Password?
                 </Link>
               </div>
+
+              {isEmployee && (
+                <div className={styles.forgotLink}>
+                  <Link to="/" className={styles.backToPortalLink}>
+                    <i className="fa-solid fa-arrow-left"></i> Back to Portal
+                  </Link>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -196,6 +220,7 @@ const Login = ({ userType = 'staff' }) => {
 
             <Input
               label="OTP Code:"
+              name="otpCode"
               type="text"
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}

@@ -1,6 +1,6 @@
 // Configuration file to toggle between local and backend API
 
-// Set to true for local development, false for backend API
+// Set to true for local development (mock data), false for backend API
 export const USE_LOCAL_API = false;
 
 // API Configuration
@@ -12,26 +12,25 @@ export const API_CONFIG = {
     MOCK_DELAY_MS: 500
   },
   
-  // HDTS Backend API settings - Routes through Kong Gateway with /helpdesk prefix
+  // HDTS Backend API settings - Use relative URL for Vite proxy
   BACKEND: {
     BASE_URL: import.meta.env.VITE_HDTS_BACKEND_URL || 
               import.meta.env.VITE_API_URL || 
-              'http://localhost:8080/helpdesk',
+              '/helpdesk',  // Relative URL goes through Vite proxy
     TIMEOUT: 10000
   },
   
-  // Auth service settings (direct connection, not through Kong)
+  // Auth service settings - Use relative URL for Vite proxy
   AUTH: {
-    BASE_URL: import.meta.env.VITE_AUTH_URL || 
-              'http://localhost:8003',
+    BASE_URL: import.meta.env.VITE_AUTH_URL || '',  // Relative URL
     TIMEOUT: 10000
   },
   
-  // TTS Workflow API settings - Routes through Kong Gateway with /workflow prefix
+  // TTS Workflow API settings - Use relative URL for Vite proxy
   WORKFLOW: {
     BASE_URL: import.meta.env.VITE_WORKFLOW_API_URL || 
               import.meta.env.VITE_TTS_WORKFLOW_URL || 
-              'http://localhost:8080/workflow',
+              '/workflow',  // Relative URL goes through Vite proxy
     TIMEOUT: 10000
   },
   

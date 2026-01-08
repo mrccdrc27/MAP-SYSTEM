@@ -309,6 +309,37 @@ class EmployeeProfileView(generics.RetrieveUpdateAPIView):
         )
 
 
+class EmployeeVerifyPasswordView(APIView):
+    """
+    API endpoint to verify employee's current password.
+    POST: Verify password without changing it
+    """
+    permission_classes = (IsEmployeeAuthenticated,)
+
+    def post(self, request):
+        """Verify employee's current password."""
+        current_password = request.data.get('current_password')
+        
+        if not current_password:
+            return Response(
+                {'detail': 'Current password is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        employee = request.employee if hasattr(request, 'employee') else Employees.objects.get(id=request.user.id)
+        
+        if not employee.check_password(current_password):
+            return Response(
+                {'detail': 'Password is incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response(
+            {'detail': 'Password verified successfully'},
+            status=status.HTTP_200_OK
+        )
+
+
 class EmployeeChangePasswordView(APIView):
     """
     API endpoint for changing employee password.

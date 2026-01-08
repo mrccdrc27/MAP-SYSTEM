@@ -27,7 +27,8 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Redirect to landing page (/) which lets user choose staff or employee login
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return children;

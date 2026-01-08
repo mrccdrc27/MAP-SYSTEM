@@ -114,23 +114,29 @@ def set_employee_cookies(response, access_token, refresh_token):
     access_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('ACCESS_TOKEN_LIFETIME', timedelta(minutes=5))
     refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
     
+    # SameSite=Lax allows cookies on same-site navigations.
+    # Setting domain=localhost makes cookies available to all ports on localhost.
+    cookie_samesite = 'Lax'
+    
     response.set_cookie(
         'access_token',
         access_token,
         httponly=True,
         secure=use_secure,
-        samesite='Lax',
+        samesite=cookie_samesite,
         max_age=int(access_lifetime.total_seconds()),
-        path='/'
+        path='/',
+        domain='localhost',  # Share cookie across all localhost ports
     )
     response.set_cookie(
         'refresh_token',
         refresh_token,
         httponly=True,
         secure=use_secure,
-        samesite='Lax',
+        samesite=cookie_samesite,
         max_age=int(refresh_lifetime.total_seconds()),
-        path='/'
+        path='/',
+        domain='localhost',  # Share cookie across all localhost ports
     )
     return response
 

@@ -136,3 +136,18 @@
 .registerLink:hover {
   text-decoration: underline;
 }
+
+.backToPortalLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backToPortalLink:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}

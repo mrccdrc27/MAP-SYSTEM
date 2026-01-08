@@ -169,6 +169,11 @@
   background-color: #fcfcfc;
 }
 
+/* Stronger hover state for clickable rows */
+.clickableRow:hover {
+  background-color: #f3f4f6; /* slightly darker */
+}
+
 .tableCell {
   padding: 0.625rem 0.75rem;
   font-size: 0.8125rem;

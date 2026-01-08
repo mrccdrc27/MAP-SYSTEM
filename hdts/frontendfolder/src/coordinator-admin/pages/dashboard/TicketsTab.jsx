@@ -8,6 +8,15 @@ import styles from './CoordinatorAdminDashboard.module.css';
 import authService from '../../../utilities/service/authService';
 import { backendTicketService } from '../../../services/backend/ticketService';
 
+const isTicketCoordinatorUser = (user) => {
+  if (!user) return false;
+  if (user.role === 'Ticket Coordinator') return true;
+  if (Array.isArray(user.roles)) {
+    return user.roles.some(r => (r.system === 'hdts' && r.role === 'Ticket Coordinator') || r.role === 'Ticket Coordinator');
+  }
+  return false;
+};
+
 const ticketPaths = [
   { label: "New Tickets", path: "/admin/ticket-management/new-tickets" },
   { label: "Pending Tickets", path: "/admin/ticket-management/pending-tickets" },
@@ -43,7 +52,7 @@ const StatCard = ({ label, count, isHighlight, position, onClick, statusType }) 
   );
 };
 
-const DataTable = ({ title, headers, data, maxVisibleRows, loading = false }) => {
+const DataTable = ({ title, headers, data, maxVisibleRows, loading = false, onRowClick }) => {
   const skeletonRows = maxVisibleRows || 5;
   if (loading) {
     return (
@@ -102,7 +111,12 @@ const DataTable = ({ title, headers, data, maxVisibleRows, loading = false }) =>
             </thead>
             <tbody>
               {data.map((row, i) => (
-                <tr key={i} className={tableStyles.tableRow}>
+                <tr
+                  key={i}
+                  className={`${tableStyles.tableRow} ${onRowClick ? tableStyles.clickableRow : ''}`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  style={onRowClick ? { cursor: 'pointer' } : undefined}
+                >
                   {Object.values(row).map((cell, j) => (
                     <td key={j} className={tableStyles.tableCell}>
                       {typeof cell === 'object' ? (
@@ -330,7 +344,7 @@ const TicketsTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
   };
 
   const filterByRole = (tickets) => {
-    if (currentUser?.role === 'Ticket Coordinator') {
+    if (isTicketCoordinatorUser(currentUser)) {
       return tickets.filter(t => t.assignedTo === currentUser.id || t.reviewedById === currentUser.id || t.assignedToName === currentUser?.name);
     }
     return tickets;
@@ -604,13 +618,17 @@ const TicketsTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
         ))}
       </div>
 
-      {currentUser?.role === 'Ticket Coordinator' && (
+      {isTicketCoordinatorUser(currentUser) && (
         <DataTable
           title="Tickets to Review"
           headers={['Ticket Number', 'Subject', 'Category', 'Sub-Category', 'Status', 'Date Created']}
           data={ticketData.tableData}
           maxVisibleRows={5}
           loading={isLoading}
+          onRowClick={(row) => {
+            const ticketNumber = row.ticketNumber || row.ticket_number || row.id || row.ticketId;
+            if (ticketNumber) navigate(`/admin/ticket-tracker/${ticketNumber}`);
+          }}
         />
       )}
 

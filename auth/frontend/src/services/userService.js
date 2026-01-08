@@ -46,24 +46,37 @@ export const updateProfile = async (profileData, isFormData = false) => {
 
 // Change password (authenticated)
 export const changePassword = async (currentPassword, newPassword, confirmPassword) => {
-  const endpoints = getEndpoints(getUserType());
+  const userType = getUserType();
+  const endpoints = getEndpoints(userType);
+  
+  // Employee endpoints use old_password, staff endpoints use current_password
+  const passwordFieldName = userType === USER_TYPES.EMPLOYEE ? 'old_password' : 'current_password';
+  
   return await apiRequest(endpoints.CHANGE_PASSWORD, {
     method: 'POST',
     includeAuth: true,
     body: JSON.stringify({
-      current_password: currentPassword,
+      [passwordFieldName]: currentPassword,
       new_password: newPassword,
       confirm_password: confirmPassword,
     }),
   });
 };
 
-// Verify current password (staff only)
+// Verify current password (works for both staff and employees)
 export const verifyPassword = async (password) => {
-  return await apiRequest(STAFF_ENDPOINTS.VERIFY_PASSWORD, {
+  const userType = getUserType();
+  const endpoints = getEndpoints(userType);
+  
+  // Staff uses 'password' field, employee uses 'current_password' field
+  const body = userType === USER_TYPES.EMPLOYEE 
+    ? { current_password: password }
+    : { current_password: password };
+  
+  return await apiRequest(endpoints.VERIFY_PASSWORD, {
     method: 'POST',
     includeAuth: true,
-    body: JSON.stringify({ password }),
+    body: JSON.stringify(body),
   });
 };
 
