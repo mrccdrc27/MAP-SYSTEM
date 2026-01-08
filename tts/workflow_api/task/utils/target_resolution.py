@@ -125,6 +125,19 @@ def calculate_target_resolution_for_task(ticket, workflow):
         
         # Calculate target resolution using full SLA (no step weight applied)
         now = timezone.now()
+        
+        # 🕒 Time Travel Support: Use original submit_date if available (for historical data/seeding)
+        submit_date_str = ticket.ticket_data.get('submit_date')
+        if submit_date_str:
+            try:
+                from django.utils.dateparse import parse_datetime
+                parsed_date = parse_datetime(submit_date_str)
+                if parsed_date:
+                    logger.info(f"⏳ Using historical submit date for SLA calculation: {parsed_date}")
+                    now = parsed_date
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to parse submit_date '{submit_date_str}', using current time: {e}")
+                
         target_resolution = now + sla
         
         logger.info(
@@ -189,6 +202,18 @@ def calculate_target_resolution_for_task_item(ticket, step, workflow):
         
         # Calculate target resolution
         now = timezone.now()
+
+        # 🕒 Time Travel Support: Use original submit_date if available
+        submit_date_str = ticket.ticket_data.get('submit_date')
+        if submit_date_str:
+            try:
+                from django.utils.dateparse import parse_datetime
+                parsed_date = parse_datetime(submit_date_str)
+                if parsed_date:
+                    now = parsed_date
+            except Exception:
+                pass
+
         target_resolution = now + step_sla
         
         logger.info(

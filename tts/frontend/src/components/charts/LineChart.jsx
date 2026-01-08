@@ -11,6 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 
 ChartJS.register(
@@ -20,7 +21,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 export default function LineChart({
@@ -28,25 +30,56 @@ export default function LineChart({
   dataPoints = [],
   chartLabel = "Documents",
   chartTitle = "Monthly Document Uploads",
+  fill = false,
+  tension = 0.4,
 }) {
   // Normalize dataPoints: if single array, wrap it in a dataset object
   const isMultiLine = Array.isArray(dataPoints) && Array.isArray(dataPoints[0]) === false && typeof dataPoints[0] === "object";
   
+  const getBackgroundColor = (color, index) => {
+    if (!color) return `hsla(${index * 60}, 70%, 50%, 0.2)`;
+    
+    // Handle rgba
+    if (color.startsWith('rgba')) {
+      return color.replace(/[\d\.]+\)$/, '0.2)');
+    }
+    
+    // Handle rgb
+    if (color.startsWith('rgb')) {
+      return color.replace('rgb', 'rgba').replace(')', ', 0.2)');
+    }
+    
+    // Handle hex
+    if (color.startsWith('#')) {
+      return `${color}33`; // 33 is approx 0.2 opacity in hex
+    }
+    
+    return color;
+  };
+
   const datasets = isMultiLine
     ? dataPoints.map((ds, index) => ({
         label: ds.label || `Line ${index + 1}`,
         data: ds.data || [],
         borderColor: ds.borderColor || `hsl(${index * 60}, 70%, 50%)`,
-        fill: false,
-        tension: 0.1,
+        backgroundColor: ds.backgroundColor || getBackgroundColor(ds.borderColor, index),
+        fill: ds.fill !== undefined ? ds.fill : fill,
+        tension: ds.tension !== undefined ? ds.tension : tension,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        borderWidth: 3,
       }))
     : [
         {
           label: chartLabel,
           data: dataPoints,
           borderColor: "rgba(75,192,192,1)",
-          fill: false,
-          tension: 0.1,
+          backgroundColor: "rgba(75,192,192,0.2)",
+          fill: fill,
+          tension: tension,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          borderWidth: 3,
         },
       ];
 
@@ -57,10 +90,45 @@ export default function LineChart({
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" },
+      legend: { 
+        position: "top",
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: { size: 12 }
+        }
+      },
       title: { display: true, text: chartTitle },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        padding: 12,
+      }
     },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          maxRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 10
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+          drawBorder: false,
+        },
+        beginAtZero: true,
+      }
+    },
+    interaction: {
+      mode: 'nearest',
+      axis: 'x',
+      intersect: false
+    }
   };
 
   return (

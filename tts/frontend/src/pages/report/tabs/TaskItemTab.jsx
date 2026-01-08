@@ -25,11 +25,15 @@ export default function TaskItemTab({
   timeFilter,
   analyticsData = {},
   trendData = {},
+  fetchTrendData,
   loading,
   error,
 }) {
   const tasksReport = analyticsData || {};
   const taskItemTrends = trendData || {};
+
+  // Trend filter state
+  const [trendDays, setTrendDays] = useState(30);
 
   // Drilldown state
   const [drilldownOpen, setDrilldownOpen] = useState(false);
@@ -48,7 +52,11 @@ export default function TaskItemTab({
     clearDrilldownData,
   } = useDrilldownAnalytics();
 
-  if (loading) {
+  // Extract data from aggregated response
+  const summary = tasksReport.summary || {};
+  const statusDist = tasksReport.status_distribution || [];
+
+  if (loading && statusDist.length === 0) {
     return (
       <div className={styles.tabContent}>
         <ComponentSkeleton className="report-skeleton">
@@ -69,12 +77,9 @@ export default function TaskItemTab({
     );
   }
   if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
-  if (!tasksReport.status_distribution)
+  if (statusDist.length === 0)
     return <div style={{ padding: "20px" }}>No task item data available</div>;
 
-  // Extract data from aggregated response
-  const summary = tasksReport.summary || {};
-  const statusDist = tasksReport.status_distribution || [];
   const originDist = tasksReport.origin_distribution || [];
   const perf = tasksReport.performance || {};
   const userPerf = tasksReport.user_performance || [];
@@ -195,6 +200,14 @@ export default function TaskItemTab({
     clearDrilldownData();
   };
 
+  const handleTrendDaysChange = async (e) => {
+    const days = parseInt(e.target.value);
+    setTrendDays(days);
+    if (fetchTrendData) {
+      await fetchTrendData(days);
+    }
+  };
+
   const kpiData = [
     {
       title: "Avg. Time to Action (hrs)",
@@ -293,7 +306,20 @@ export default function TaskItemTab({
       <div className={styles.chartsGrid}>
         {/* Task Item Trend Section */}
         <div className={styles.chartSection}>
-          <h2>Task Item Trends (Last 30 Days)</h2>
+          <div className={styles.trendHeader}>
+            <h2>Task Item Trends (Last {trendDays} Days)</h2>
+            <select 
+              className={styles.trendSelect}
+              value={trendDays}
+              onChange={handleTrendDaysChange}
+            >
+              <option value={7}>Last 7 Days</option>
+              <option value={30}>Last 30 Days</option>
+              <option value={90}>Last 90 Days</option>
+              <option value={180}>Last 180 Days</option>
+              <option value={365}>Last 365 Days</option>
+            </select>
+          </div>
           <div className={styles.chartRow}>
             <ChartContainer title="Task Item Status Trends Over Time">
               <LineChart

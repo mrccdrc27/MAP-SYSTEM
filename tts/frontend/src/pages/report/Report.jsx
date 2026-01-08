@@ -36,6 +36,8 @@ export default function Report() {
     taskItemTrends,
     ticketCategories,
     fetchAllAnalytics,
+    fetchTicketTrends,
+    fetchTaskItemTrends,
   } = useReportingAnalytics();
 
   // Fetch all analytics on component mount
@@ -75,11 +77,11 @@ export default function Report() {
 
     switch (activeTab) {
       case "taskitem":
-        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} trendData={taskItemTrends} loading={loading} error={error} />;
+        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} trendData={taskItemTrends} fetchTrendData={fetchTaskItemTrends} loading={loading} error={error} />;
       case "agent":
         return <AgentTab timeFilter={timeFilter} analyticsData={agentData} loading={loading} error={error} />;
       case "ticket":
-        return <TicketTab timeFilter={timeFilter} analyticsData={ticketsReport} trendData={ticketTrends} categoryData={ticketCategories} loading={loading} error={error} />;
+        return <TicketTab timeFilter={timeFilter} analyticsData={ticketsReport} trendData={ticketTrends} fetchTrendData={fetchTicketTrends} categoryData={ticketCategories} loading={loading} error={error} />;
       case "workflow":
         return <WorkflowTab timeFilter={timeFilter} analyticsData={workflowsReport} loading={loading} error={error} />;
       case "integration":
