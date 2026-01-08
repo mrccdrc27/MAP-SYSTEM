@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const ticketTrackingAxios = axios.create({
-  baseURL: import.meta.env.VITE_INTEGRATION_TICKET_TRACKING_API_URL,
+  baseURL: "http://localhost:8010/", // Pointing to mock server
   timeout: 10000,
 });
 

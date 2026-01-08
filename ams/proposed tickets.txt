@@ -1,0 +1,743 @@
+Module: Ticket Integration
+Have dropdown here for: 
+Approved Tickets
+Resolve Tickets
+
+
+Tab Content on Ticket Pages:
+Then each dropdown choice will have a page on it with the following tabs: Registration, Checkin/Checkout, Incident, and Disposal.
+
+
+
+Ticket Table Data :
+Asset Request (Asset Proposal) - Resolved
+Note: Asset Request Ticket Tab will show only on Resolved Category. This is needed if the asset registration is physically given by the IT operator that manages the AMS (if the asset really needs an asap registration) to view the order number.
+
+
+Ticket ID
+Category
+Sub-Category
+Asset Model Number
+Order Number
+Quantity
+Action
+
+Action: View -> Ticket View Page
+Asset Request Ticket View Page 
+Category
+Sub-Category
+Asset Model Number
+Subject
+Category
+Manufacturer
+Supplier
+
+
+Specs:
+Cpu
+Gpu
+Os
+Ram
+Screen Size
+Storage
+Purchased Cost
+Eol Date
+Depreciation Months
+Justification (Notes)
+Quantity
+Total Cost Request
+File Attachments
+
+
+
+Asset Request Ticket Propose Model:
+Input Data from Requestor
+Fetch from AMS (Json)
+Category (Ticket)
+Category
+Sub-Category
+Manufacturer
+Subject
+
+
+Asset Model Number
+Supplier
+Justification (Notes)
+Specs:
+Cpu
+Gpu
+Os
+Ram
+Screen Size
+Storage
+Quantity
+Purchased Cost
+
+
+Total Cost Request (Generated)
+Eol Date
+File Attachments
+Depreciation Months
+
+
+
+
+Asset Request Ticket Propose Workflow:
+Note: Please specify if the agent and users are correct. Validates if workflow is correct.
+
+Asset Request Endpoint:
+Note: Input Here by Backend Dev
+Asset Request Payload:
+Note: Input Here by Backend Dev
+Asset Request Response:
+Note: Input Here by Backend Dev
+
+Asset Registration (Acquisition) -  Resolved and Approved
+Note: This registration process is 1:1 registration of assets. However we will include here our proposed in terms bulk-registration can be supported.
+
+
+1:1 Registration of Asset
+Ticket ID
+Category
+Sub-Category
+Asset Model Name
+Asset Serial Number
+Purchased Date
+Action
+
+Action: View -> Ticket View Page
+	 (+) Register -> Navigator to Asset Registration Page (Approved Only Page)
+Asset Registration Ticket View Page (1:1)
+Category (Ticket)
+Sub-Category
+Request Reference
+Asset Model Name
+Category
+Order Number
+Serial Number
+Purchase Cost
+Quantity(if bulk)
+Warranty Exp 
+Location
+Department
+Purchase Date
+Justification / Notes
+File Attachments
+
+
+
+IF Bulk Registration of Asset
+Ticket ID
+Category
+Sub-Category
+Asset Model Name
+Asset Serial Number
+Purchased Date
+Quantity
+Action
+
+Action: View -> Ticket View Page
+	 (+) Register -> Navigator to Asset Registration Page (Approved Only Page)
+Asset Registration Ticket View Page (Bulk)
+Buttons: (+ New) Registration of Asset (Approved Only)
+Category (Ticket)
+Sub-Category
+Request Reference
+Asset Model Name
+Category
+Order Number
+Quantity
+Serial Number
+Purchase Cost
+Quantity(if bulk)
+Warranty Exp 
+Location
+Department
+Purchase Date
+Justification / Notes
+File Attachments
+
+
+
+
+
+
+Asset Registration Ticket Propose Model:
+Input Data from Requestor
+Fetch from TICKET (Json)
+Category (Ticket)
+Asset Model Name
+Sub-Category
+Category
+Subject
+Order Number
+Request Reference
+
+
+Serial Number
+
+
+Purchase Cost
+
+
+Quantity(if bulk)
+
+
+Warranty Exp 
+
+
+Location
+
+
+Department
+
+
+Purchase Date
+
+
+Justification / Notes
+
+
+File Attachments
+
+
+
+Asset Registration  Ticket Propose Workflow:
+
+
+Note: Please specify if the agent and users are correct. Validates if workflow is achievable.
+
+
+
+
+Asset Registration Endpoint:
+Note: Input Here by Backend Dev
+Asset Registration Payload:
+Note: Input Here by Backend Dev
+Asset Registration Response:
+Note: Input Here by Backend Dev
+
+
+
+
+
+
+
+
+
+
+
+
+Asset Checkout -  Resolved and Approved
+Note: In asset checkout in HDTS side, change the lowstock approach of checking available assets into fetching assets that have the status of “Deployable.” Assets are 1:1 so no stock. One employee can have multiple different assets. Each asset is allocated only into 1 employee. 
+
+ 
+Asset Checkout Table Columns
+Ticket ID
+Category
+Sub-Category
+Asset ID Number
+Location
+Request Date
+Checkin/Checkout
+Action
+
+Action: View Button -> View Ticket Page 
+Checkin / Checkout Button: -> Checkout Form
+Note: Checkout Button is visible only in approved tickets. Also, the checkout form must be prefilled with ticket info but can still be changed.
+
+Asset Checkout Ticket AMS View Page
+Category
+Sub-Category
+Subject
+Asset ID Number
+Asset Serial Number
+
+
+
+Employee Name
+Checkout Date
+Expected Return Date
+Condition
+Notes
+
+
+Location
+Department
+File Attachment
+
+
+Asset Checkout Request Ticket HDTS Page (Employee)
+Category
+Sub-Category
+Subject
+Asset ID Number
+Asset Serial Number
+Employee Name
+Employee ID
+Request Date
+Department
+Location
+Notes
+
+
+
+Asset Checkout Request Ticket Propose Model:
+Input Data from Requestor
+Input Data from Ticket Coordinator/Admin
+Input Data from AMS
+Fetch from AMS (Json)
+Category (Ticket)
+Location
+Condition
+Asset Serial Number
+Sub-Category
+Expected Return Date (Use Employe company contract to company hypothetically) 
+
+
+
+
+Subject
+Notes
+
+
+
+
+Checkout To (Employee Name / ID)
+
+
+
+
+
+
+Department
+
+
+
+
+
+
+Checkout Date (Request Date)
+
+
+
+
+
+
+File Attachment
+
+
+
+
+
+
+Asset ID Number
+
+
+
+
+
+
+
+Asset Checkout Request Ticket Propose Workflow:
+
+Note: Ticket Status and Asset Status are different. Upon AMS change status of asset, it must automatically update ticket status to resolve. HDTS notified employees to resolve tickets and ready for employee feedback.
+
+
+
+Asset Checkout Endpoint:
+Note: Input Here by Backend Dev
+Asset Registration Payload:
+Note: Input Here by Backend Dev
+Asset Registration Response:
+Note: Input Here by Backend Dev
+
+
+Asset CheckIn -  Resolved and Approved
+Note: In asset check-in on the HDTS side, an employee must be able to select only assets that are allocated to the employee.
+
+
+Asset Check-in Table Columns
+Ticket ID
+Category
+Sub-Category
+Asset ID Number
+Status
+Checkin Date
+Checkin/Checkout
+Action
+
+Action: View Button -> View Ticket Page 
+Checkin / Checkout Button: -> Checkin Form
+Note: Check-in Button is visible only in approved tickets. Also, the check=in form must be prefilled with ticket info but can still be changed.
+
+Asset Checkout Ticket AMS View Page 
+Category
+Sub-Category
+Subject
+Checkout Ticket Reference
+Asset ID Number
+Asset Serial Number
+
+
+
+Checkin Date
+Location
+Department
+Condition
+Notes
+File Attachments
+
+
+Asset Checkout Ticket HDTS Page (Employee)
+Category
+Sub-Category
+Subject
+Checkout Ticket Reference
+Asset ID Number
+Asset Serial Number
+
+
+
+Checkin Date
+Notes
+File Attachments
+
+
+Note: Once ticket reference is selected, Asset ID, Serial, Check-in date must be automatically field. Check-in date is based on expected return date, not strict so it can still be modified by the employee.
+
+
+
+Asset Checkin Request Ticket Propose Model:
+Input Data from Requestor
+Input Data from Ticket Coordinator/Admin
+Fetch from Ticket (Json)
+Category (Ticket)
+Condition
+Asset ID Number
+Sub-Category
+Location
+Asset Serial Number
+Subject
+Department
+Checkin Date
+Checkout Reference Ticket
+
+
+
+
+Notes
+
+
+
+
+File Attachment
+
+
+
+
+
+Asset Checkin Request Ticket Propose Workflow:
+
+
+Note: Upon check-in, there is additional field but for ams only, the asset status. Once updated, HDTS will update employees on successful check-in of assets not necessarily the status set by the ams.
+
+Asset Registration Endpoint:
+Note: Input Here by Backend Dev
+Asset Registration Payload:
+Note: Input Here by Backend Dev
+Asset Registration Response:
+Note: Input Here by Backend Dev
+
+Asset Repair -  Resolved and Approved
+Note: The users that will create ticket here are the IT supports. 
+
+Asset Check-in Table Columns
+Ticket ID
+Category
+Sub-Category
+Repair Name
+Repair Type
+Start Date
+End Date
+Action
+
+Action: View Button -> View Ticket Page 
+	 (+) New Repair Button -> Repair Form
+Note: (+) Button is visible only in approved tickets. Also, the repair form must be prefilled with ticket info but can still be changed.
+
+Asset Repair Ticket AMS View Page 
+Category
+Sub-Category
+Subject
+Repair Name 
+Asset ID Number
+Supplier
+Repair Type
+Repair Name
+Start Date
+End Date
+Cost 
+Notes
+File Attachment
+COMPONENT
+Component Name
+Category
+Supplier
+Manufacturer
+Location
+Model Number
+Order Number
+Purchased Date
+Quantity
+Purchased Cost
+
+
+Note: Only Corrective, Upgrade, and Part Replacement has cost and only type can be received by bms for approval. Other types are just for record.
+
+Asset Repair Request Ticket Propose Model:
+Input Data from Requestor
+Fetch from AMS Component (Json)
+If New Component Require
+Category (Ticket)
+Component Name
+Component Name
+Sub-Category
+Category
+Category
+Subject
+Quantity
+Supplier
+Asset ID
+Cost
+Manufacturer
+Repair Name
+
+
+Location
+Repair Type
+
+
+Model Number
+Start Date
+
+
+Order Number
+End Date
+
+
+Estimated Purchase Date
+Cost
+
+
+Quantity
+Notes
+
+
+Purchased Cost
+File Attachment
+
+
+
+
+
+Asset Repair Ticket
+This ticket will be created by the IT operator to track record of asset repair/maintenance. This repair has 2 versions depending if repair is done inside and outside the company. Assets can be repaired inside the company and outside. If inside, no need for service fee unless there is an upgrade. If outside, service fee and component cost will be listed.
+
+Category
+Option 1: Service only, no cost needed if inside the company just record of repair done and no need for ticket. If outside, service will have a fee and need for a ticket to send cost on bms for approval.
+
+Option 2: If upgrade, component in inventory and component to buy cost will be sent to bms for approval. Also, if new acquirers, bms must provide an order number which is from a financial operator.
+
+Repair Type / Sub-Category
+Green sub-category required approval from bms as it has cost and need order number
+
+Choice
+Definition
+Real-World Example
+Corrective Repair
+The asset is broken and you are fixing it to restore functionality.
+Fixing a loose hinge; soldering a power jack.
+Preventive Maintenance
+The asset works fine, but you are servicing it to keep it that way.
+"PM Schedule": Cleaning dust from server fans; applying new thermal paste.
+Upgrade
+The asset works, but you are making it better or faster.
+Increasing RAM from 8GB to 16GB; installing a GPU.
+Part Replacement
+A specific component failed and was swapped out.
+Dead battery replaced with a new one.
+OS Re-imaging
+Purely software-level fix for viruses or slow systems.
+Reformatting a laptop that has become slow or infected.
+Warranty Service
+You didn't fix it yourself; you sent it to the vendor.
+Sending a MacBook to Apple for a recall issue.
+
+
+Asset Repair Request Ticket Propose Workflow:
+Repair (Outside Map and has Cost) :
+IT Support creates ticket for Corrective Repair Ticket
+HDTS Ticket Coordinator/Admin checks submitted ticket
+If approve, send to TTS for document review
+If rejected, closed ticket
+TTS Review Document. Agent: Document Controller
+If approve, send to bms for approval of budget
+If rejected, closed ticket
+BMS will review the budget
+If approve, return order number
+If rejected, closed ticket
+Once order number are present, ticket will be pass to AMS
+AMS will record the repair 
+Set Status of repair “In Progress” and will automatically change its status to “Completed” once the end date. Use formula using start date and end date
+Once the repair status changes into “Completed”, the ticket must automatically set its status to resolve and update employees. 
+Repair Inside Map :
+Same approach to paid but skip BMS part. It include process with component include (Upgrade and Part Replacement)
+Asset Registration Endpoint:
+Note: Input Here by Backend Dev
+Asset Registration Payload:
+Note: Input Here by Backend Dev
+Asset Registration Response:
+Note: Input Here by Backend Dev
+
+Asset Incident Ticket
+
+Note:This ticket will be submitted by any employee in case an incident happens on an asset they have. Once this ticket is approved, the asset will change its status for a “Needs Audit” However, if an employee dies, it can be an employee from HR or what.
+
+
+Incident Type:
+Stolen
+Damage (Scenario where after check-out, asset has been damaged or broken. Can also be the employee broke the asset)
+Employee Resign (Includes if employee die)
+Asset Incident Table Columns
+Ticket ID
+Category
+Sub-Category
+Asset ID Number
+Incident Date
+Employee Name
+Schedule Audit
+Action
+
+Action: View Button -> View Ticket Page 
+Schedule Audit:  Schedule Audit Button -> Schedule Audit Form (Approved Ticket Tabs Only)
+Asset Incident Ticket AMS View Page 
+Category
+Sub-Category
+Subject
+Asset ID
+Employee Name
+Incident Date
+Notes
+File Attachments
+STOLEN
+Last Location
+
+DAMAGE
+Schedule Check-in Date
+Damage Description
+
+RESIGN
+Schedule Check-in Date
+
+
+Note: Schedule check in date is required as a basis for schedule audit date. It will also be the basis for the date when the employee will check in the asset.
+
+Asset Incident Request Ticket Propose Model:
+Input Data from Requestor
+Category (Ticket)
+Sub-Category
+Subject
+Asset ID
+Employee Name
+Incident Date
+Notes
+Last Location
+Schedule Check-in Date
+Damage Description
+File Attachment
+
+Asset Incident Request Ticket Propose Workflow:
+Employee/HR Employee creates ticket for incident report on asset.
+HDTS Ticket Coordinator/Admin will review the submitted ticket.
+If reject, close the ticket
+If approve, forward to TTS
+TTS agent for document controller will review the ticket
+If tickets are stolen and damaged by an employee, forward the ticket to bms for employee charge.
+If ticket are employee resign or die, forward ticket to HR agent for verification
+If BMS and HR agent reject, close the ticket. If approved, forward to AMS.
+Once AMS receive the Ticket, IT operator will schedule and audit using schedule checkout date by requestor
+Once the asset has been check-in physically, IT operator will perform an audit and update Asset Status.
+Once the status of the asset in the incident changes, tickets are now resolved and the ticket must update the employee about the resolved ticket to give feedback.
+
+Asset Registration Endpoint:
+Note: Input Here by Backend Dev
+Asset Registration Payload:
+Note: Input Here by Backend Dev
+Asset Registration Response:
+Note: Input Here by Backend Dev
+
+
+Asset Disposal Ticket
+Note:This ticket is more on Attachment of report files to check by management and bms. Only ADMIN employees from AMS can submit this ticket.
+
+
+Asset Incident Table Columns
+Ticket ID
+Category
+Sub-Category
+Subject
+Command Note
+Action
+
+Action: View Button -> View Ticket Page
+ Disposed Icon -> Confirmation that the action command note has been done. 
+Asset Incident Ticket AMS View Page 
+Category
+Sub-Category
+Subject
+Notes
+Command Note
+File Attachments
+
+
+Note: Command Note will be given by BMS before approval.
+
+
+
+
+
+
+
+
+
+
+
+
+Asset Disposal Ticket Propose Model:
+Input Data from Requestor
+Category (Ticket)
+Sub-Category
+Subject
+Command Notes
+Notes
+File attachments
+
+Asset Disposal Request Ticket Propose Workflow:
+AMS Operator / Admin Employee will submit a ticket of asset to be disposed.
+HDTS Ticket Coordinator/Admin will verify the submitted tickets.
+If approve, forward to TTS
+If reject, closed the ticket
+TTS will review the submitted documents. Agent: Document Controller.
+If Approve, forward to BMS for  Journal Entries
+If rejected, closed the ticket
+Once BMS receive the ticket for disposal, they will perform journal entries. Once done, include command notes before forwarding to AMS.
+Once the AMS receives the ticket, AMS Admin will perform bulk update on status of the following assets into Disposed or Write-off. 
+Once updated, AMS admin will click resolve ticket action, update ticket status into resolved. 
+
+Asset Registration Endpoint:
+Note: Input Here by Backend Dev
+Asset Registration Payload:
+Note: Input Here by Backend Dev
+Asset Registration Response:
+Note: Input Here by Backend Dev

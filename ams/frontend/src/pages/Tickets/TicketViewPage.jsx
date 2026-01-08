@@ -34,62 +34,127 @@ function TicketViewPage() {
   };
 
   const confirmDelete = () => {
-    console.log("Deleting ticket:", ticket.id);
+    // console.log("Deleting ticket:", ticket.id);
     closeDeleteModal();
     navigate("/approved-tickets");
   };
 
-  const handleCheckOut = async () => {
-    try {
-      const asset = await fetchAssetById(ticket.asset);
-      navigate(`/assets/check-out/${ticket.asset}`, {
-        state: { ticket, asset, employeeName: ticket.employeeName, fromAsset: false },
-      });
-    } catch (error) {
-      console.error("Failed to fetch asset data:", error);
-      setErrorMessage("Failed to fetch asset data. Please try again later.");
-    }
-  };
-
-  const handleCheckIn = async () => {
-    try {
-      const asset = await fetchAssetById(ticket.asset);
-      const checkout = await fetchAssetCheckoutById(ticket.asset_checkout);
-      navigate(`/assets/check-in/${ticket.asset}`, {
-        state: { ticket, asset, checkout, fromAsset: false },
-      });
-    } catch (error) {
-      console.error("Failed to fetch asset/checkout data:", error);
-      setErrorMessage("Failed to fetch asset/checkout data. Please try again later.");
-    }
+  const handleRegister = () => {
+      // Navigate to asset registration page with pre-filled data
+      // navigate('/assets/registration', { state: { ticket } });
+      alert("Navigate to Registration Page");
   };
 
   const handleDeleteClick = () => {
     setDeleteModalOpen(true);
   };
 
-  // Create action buttons - show only relevant check-in/out button based on ticket type
+  // Dynamic Fields Rendering
+  const renderTicketFields = () => {
+      const commonFields = [
+          { label: "Ticket Number", value: ticket.ticket_number },
+          { label: "Category", value: ticket.category },
+          { label: "Sub-Category", value: ticket.sub_category },
+          { label: "Subject", value: ticket.subject },
+          { label: "Employee", value: ticket.employeeName || ticket.requestor_details?.name },
+          { label: "Status", value: <Status type={ticket.is_resolved ? 'resolved' : 'pending'} name={ticket.is_resolved ? 'Resolved' : 'Approved'} /> }
+      ];
+
+      let specificFields = [];
+
+      switch (ticket.ticket_type) {
+          case 'asset_request':
+              specificFields = [
+                  { label: "Asset Model Number", value: ticket.asset_model_number },
+                  { label: "Manufacturer", value: ticket.manufacturer },
+                  { label: "Supplier", value: ticket.supplier },
+                  { label: "Quantity", value: ticket.quantity },
+                  { label: "Total Cost", value: ticket.total_cost_request },
+                  { label: "Justification", value: ticket.justification },
+                  { label: "Specs", value: ticket.specs ? JSON.stringify(ticket.specs) : '-' }
+              ];
+              break;
+          case 'asset_registration':
+              specificFields = [
+                  { label: "Asset Model Name", value: ticket.asset_model_name },
+                  { label: "Serial Number", value: ticket.asset_serial_number },
+                  { label: "Order Number", value: ticket.order_number },
+                  { label: "Purchase Cost", value: ticket.purchase_cost },
+                  { label: "Purchased Date", value: ticket.purchased_date },
+                  { label: "Warranty Exp", value: ticket.warranty_exp },
+                  { label: "Location", value: ticket.location },
+                  { label: "Department", value: ticket.department },
+                  { label: "Notes", value: ticket.justification }
+              ];
+              break;
+          case 'asset_checkout':
+              specificFields = [
+                  { label: "Asset ID", value: ticket.asset_id_number },
+                  { label: "Serial Number", value: ticket.asset_serial_number },
+                  { label: "Checkout Date", value: ticket.checkout_date },
+                  { label: "Return Date", value: ticket.expected_return_date },
+                  { label: "Condition", value: ticket.condition },
+                  { label: "Location", value: ticket.location },
+                  { label: "Notes", value: ticket.notes }
+              ];
+              break;
+          case 'asset_checkin':
+              specificFields = [
+                  { label: "Asset ID", value: ticket.asset_id_number },
+                  { label: "Serial Number", value: ticket.asset_serial_number },
+                  { label: "Checkin Date", value: ticket.checkin_date },
+                  { label: "Ref Ticket", value: ticket.checkout_ticket_reference },
+                  { label: "Condition", value: ticket.condition },
+                  { label: "Notes", value: ticket.notes }
+              ];
+              break;
+          case 'asset_repair':
+              specificFields = [
+                  { label: "Repair Name", value: ticket.repair_name },
+                  { label: "Repair Type", value: ticket.repair_type },
+                  { label: "Asset ID", value: ticket.asset_id_number },
+                  { label: "Start Date", value: ticket.start_date },
+                  { label: "End Date", value: ticket.end_date },
+                  { label: "Cost", value: ticket.cost },
+                  { label: "Supplier", value: ticket.supplier },
+                  { label: "Notes", value: ticket.notes }
+              ];
+              break;
+          case 'asset_incident':
+              specificFields = [
+                  { label: "Asset ID", value: ticket.asset_id_number },
+                  { label: "Incident Date", value: ticket.incident_date },
+                  { label: "Last Location", value: ticket.last_location },
+                  { label: "Schedule Audit", value: ticket.schedule_audit },
+                  { label: "Damage Desc", value: ticket.damage_description },
+                  { label: "Notes", value: ticket.notes }
+              ];
+              break;
+          case 'asset_disposal':
+              specificFields = [
+                  { label: "Command Note", value: ticket.command_note },
+                  { label: "Notes", value: ticket.notes }
+              ];
+              break;
+          default:
+              break;
+      }
+
+      return [...commonFields, ...specificFields];
+  };
+
+  // Create action buttons
   const actionButtons = (
     <div className="ticket-vertical-action-buttons">
-      {ticket.isCheckInOrOut === "Check-Out" && (
-        <button
-          type="button"
-          className="ticket-action-btn ticket-checkout-btn"
-          onClick={handleCheckOut}
-        >
-          <i className="fas fa-sign-out-alt"></i>
-          Check-Out
-        </button>
-      )}
-      {ticket.isCheckInOrOut === "Check-In" && (
-        <button
-          type="button"
-          className="ticket-action-btn ticket-checkin-btn"
-          onClick={handleCheckIn}
-        >
-          <i className="fas fa-sign-in-alt"></i>
-          Check-In
-        </button>
+      {ticket.ticket_type === 'asset_registration' && !ticket.is_resolved && (
+          <button
+            type="button"
+            className="ticket-action-btn ticket-checkin-btn" // Reusing style
+            onClick={handleRegister}
+          >
+            <i className="fas fa-plus"></i>
+            Register Asset
+          </button>
       )}
       <MediumButtons
         type="delete"
@@ -100,66 +165,22 @@ function TicketViewPage() {
 
   // Tabs configuration
   const tabs = [
-    { label: "About" }
+    { label: "About" },
+    { label: "Attachments" } // Added placeholder for file attachments
   ];
 
   // Custom About tab content for Ticket Details
   const ticketDetailsContent = (
     <div className="ticket-about-section">
       <div className="ticket-details-section">
-        <h3 className="ticket-section-header">Ticket Details</h3>
+        <h3 className="ticket-section-header">Ticket Details ({ticket.ticket_type?.replace('asset_', '').toUpperCase()})</h3>
         <div className="ticket-details-grid">
-          <div className="ticket-detail-row">
-            <label>Ticket Number</label>
-            <span>{ticket.ticket_number}</span>
-          </div>
-          <div className="ticket-detail-row">
-            <label>Type</label>
-            <span>{ticket.ticket_type === 'checkout' ? 'Check-Out' : 'Check-In'}</span>
-          </div>
-          <div className="ticket-detail-row">
-            <label>Employee</label>
-            <span>{ticket.employeeName}</span>
-          </div>
-          <div className="ticket-detail-row">
-            <label>Subject</label>
-            <span>{ticket.subject}</span>
-          </div>
-          <div className="ticket-detail-row">
-            <label>Location</label>
-            <span>{ticket.location_details?.city || 'N/A'}</span>
-          </div>
-          <div className="ticket-detail-row">
-            <label>Status</label>
-            <span>
-              <Status
-                type={ticket.is_resolved ? 'resolved' : 'pending'}
-                name={ticket.is_resolved ? 'Resolved' : 'Pending'}
-              />
-            </span>
-          </div>
-          {ticket.ticket_type === 'checkout' && (
-            <>
-              <div className="ticket-detail-row">
-                <label>Checkout Date</label>
-                <span>{ticket.checkout_date || 'N/A'}</span>
-              </div>
-              <div className="ticket-detail-row">
-                <label>Return Date</label>
-                <span>{ticket.return_date || 'N/A'}</span>
-              </div>
-            </>
-          )}
-          {ticket.ticket_type === 'checkin' && (
-            <div className="ticket-detail-row">
-              <label>Checkin Date</label>
-              <span>{ticket.checkin_date || 'N/A'}</span>
-            </div>
-          )}
-          <div className="ticket-detail-row">
-            <label>Created</label>
-            <span>{ticket.formattedDate}</span>
-          </div>
+            {renderTicketFields().map((field, index) => (
+                <div className="ticket-detail-row" key={index}>
+                    <label>{field.label}</label>
+                    <span>{field.value || '-'}</span>
+                </div>
+            ))}
         </div>
       </div>
     </div>
@@ -188,7 +209,7 @@ function TicketViewPage() {
         onTabChange={setActiveTab}
         actionButtons={actionButtons}
       >
-        {ticketDetailsContent}
+        {activeTab === 0 ? ticketDetailsContent : <div className="p-4">No attachments</div>}
       </DetailedViewPage>
     </>
   );

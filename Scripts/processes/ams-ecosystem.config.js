@@ -137,8 +137,9 @@ module.exports = {
         VITE_AUTH_API_URL: "http://localhost:8000/",
         VITE_ASSETS_API_URL: "http://localhost:8002/",
         VITE_CONTEXTS_API_URL: "http://localhost:8003/",
-        VITE_INTEGRATION_HELP_DESK_API_URL: "http://localhost:8000/",
-        VITE_INTEGRATION_TICKET_TRACKING_API_URL: "http://localhost:8000/"
+        // Mock API for approved tickets (ticket tracking)
+        VITE_INTEGRATION_HELP_DESK_API_URL: "http://localhost:8003/",
+        VITE_INTEGRATION_TICKET_TRACKING_API_URL: "http://localhost:8010/"
       }
     }
   ]
