@@ -5,7 +5,7 @@ import { login as apiLogin, verifyOtpLogin } from '../../../services/authService
 import { getProfile } from '../../../services/userService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
-import { AuthLayout } from '../../../components/layout';
+import { AuthLayout } from '../../../components/Layout';
 import styles from './Login.module.css';
 
 const Login = ({ userType = 'staff' }) => {

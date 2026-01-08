@@ -3,7 +3,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { resetPassword } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
-import { AuthLayout } from '../../../components/layout';
+import { AuthLayout } from "../../../components/Layout";
 import styles from './ResetPassword.module.css';
 
 const ResetPassword = ({ userType = 'staff' }) => {

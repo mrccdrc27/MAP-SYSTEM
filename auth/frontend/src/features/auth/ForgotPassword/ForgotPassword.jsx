@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { forgotPassword } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
-import { AuthLayout } from '../../../components/layout';
+import { AuthLayout } from '../../../components/Layout';
 import styles from './ForgotPassword.module.css';
 
 const ForgotPassword = ({ userType = 'staff' }) => {
