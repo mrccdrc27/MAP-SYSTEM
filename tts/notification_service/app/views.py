@@ -61,6 +61,7 @@ class MyNotificationsListView(generics.ListAPIView):
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Return all notifications without pagination
     
     def get_queryset(self):
         user_id = self.request.user.id
@@ -92,6 +93,7 @@ class MyUnreadNotificationsListView(generics.ListAPIView):
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Return all unread notifications without pagination
     
     def get_queryset(self):
         user_id = self.request.user.id
@@ -121,6 +123,7 @@ class MyReadNotificationsListView(generics.ListAPIView):
     serializer_class = InAppNotificationSerializer
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Return all read notifications without pagination
     
     def get_queryset(self):
         user_id = self.request.user.id
