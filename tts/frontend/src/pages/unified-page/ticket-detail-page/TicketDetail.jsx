@@ -33,14 +33,19 @@ export default function TicketDetail() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { ticketNumber } = useParams();
+  
+  // Get task_item_id from query params to identify specific TaskItem
+  // This is critical when user has multiple TaskItems for the same ticket
+  const [searchParams, setSearchParams] = useSearchParams();
+  const taskItemIdFromUrl = searchParams.get("task_item_id");
+  
   const {
     stepInstance,
     loading: instanceLoading,
     error: instanceError,
-  } = useTicketDetail(ticketNumber);
+  } = useTicketDetail(ticketNumber, taskItemIdFromUrl);
 
   // Tabs with URL sync
-  const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") || "Details";
   const [activeTab, setActiveTab] = useState(urlTab);
 
