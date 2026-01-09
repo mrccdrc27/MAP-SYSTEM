@@ -64,7 +64,7 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
         {/* Progress Tracker */}
         <div className={styles.ticketProgress}>
           <h3>Current Progress</h3>
-          <WorkflowVisualizer2 workflowData={tracker} />
+          <WorkflowVisualizer2 workflowData={tracker} ticketStatus={matchedTicket?.ticket_status || matchedTicket?.status} />
         </div>
 
         {/* Ticket Details */}

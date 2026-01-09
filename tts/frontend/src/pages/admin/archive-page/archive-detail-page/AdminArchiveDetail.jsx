@@ -654,7 +654,7 @@ export default function AdminArchiveDetail() {
 
                     {/* Workflow Tracker */}
                     {has_workflow && (
-                      <WorkflowTracker2 workflowData={tracker} />
+                      <WorkflowTracker2 workflowData={tracker} ticketStatus={ticket?.status} />
                     )}
 
                     {/* sla */}

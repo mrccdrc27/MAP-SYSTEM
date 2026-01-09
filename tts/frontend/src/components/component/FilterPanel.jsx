@@ -25,8 +25,10 @@ export default function FilterPanel({
   return (
     <div className={styles.filterPanel}>
       {" "}
-      <div className={styles.fpShowFilter} onClick={toggleFilter}>
-        <span>{showFilter ? "Hide Filter" : "Show Filter"}</span>
+      <div className={`${styles.fpShowFilter} ${showFilter ? styles.active : ''}`} onClick={toggleFilter}>
+        <span title="Show filter panel">
+          <i className="fa-solid fa-filter"></i>
+        </span>
       </div>
       {showFilter && (
         <div className={styles.filterPanelCont}>
