@@ -33,7 +33,9 @@ router.register(r'external-budget-proposals',
 router.register(r'external-expenses', ExternalExpenseViewSet, basename='external-expenses')
 # NEW: Add Journal Entry endpoint for external services
 router.register(r'external-journal-entries', views_budget.ExternalJournalEntryViewSet, basename='external-journal-entries')
-# Router for UI calls from authenticated users (JWT protected)
+router.register(r'fiscal-years', views_budget.FiscalYearViewSet, basename='fiscal-years')
+
+ # Router for UI calls from authenticated users (JWT protected)
 ui_router = DefaultRouter()
 ui_router.register(r'budget-proposals', views_budget.BudgetProposalUIViewSet, basename='budget-proposals')
 # MODIFICATION START: The router now handles all primary expense endpoints

@@ -1908,3 +1908,38 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({"message": "Request rejected."}, status=status.HTTP_200_OK)
 # MODIFICATION END
+
+class FiscalYearViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for Fiscal Years.
+    Used for the Fiscal Year Management dashboard.
+    """
+    queryset = FiscalYear.objects.all().order_by('-start_date')
+    serializer_class = FiscalYearSerializer
+    permission_classes = [IsBMSFinanceHead] # Restricted to Finance Head/Admin
+
+    @action(detail=True, methods=['post'])
+    def set_status(self, request, pk=None):
+        """
+        Custom endpoint to change status (Open, Locked, Closed).
+        Payload: { "status": "Locked" }
+        """
+        fiscal_year = self.get_object()
+        status_action = request.data.get('status') # Open, Locked, Closed
+
+        if status_action == 'Open':
+            # Ensure only one open year exists? 
+            # For now, just set flags. Business logic usually implies one active.
+            fiscal_year.is_active = True
+            fiscal_year.is_locked = False
+        elif status_action == 'Locked':
+            fiscal_year.is_locked = True
+            # Keep active=True so we can still read data, just not edit
+        elif status_action == 'Closed':
+            fiscal_year.is_active = False
+            fiscal_year.is_locked = True
+        else:
+            return Response({'error': 'Invalid status'}, status=400)
+        
+        fiscal_year.save()
+        return Response(self.get_serializer(fiscal_year).data)
