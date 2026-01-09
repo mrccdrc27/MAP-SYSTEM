@@ -1,3 +1,5 @@
+#bms/budget_service/capstone/settings.py
+
 """
 Django settings for capstone project.
 
@@ -346,13 +348,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
-    {
-        'NAME': 'core.password_validators.CustomPasswordValidator',
-        'OPTIONS': {
-            'min_length': 8,  # Minimum 8 characters as per requirements
-            'max_length': 64,  # Maximum 64 characters as per requirements
-        }
-    },
+    # {
+    #     'NAME': 'core.password_validators.CustomPasswordValidator',
+    #     'OPTIONS': {
+    #         'min_length': 8,  # Minimum 8 characters as per requirements
+    #         'max_length': 64,  # Maximum 64 characters as per requirements
+    #     }
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
