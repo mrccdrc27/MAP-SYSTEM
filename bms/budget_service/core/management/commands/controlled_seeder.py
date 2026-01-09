@@ -207,11 +207,13 @@ class Command(BaseCommand):
             )
             
             # ✅ ALWAYS set password explicitly
-            user.set_password(u_data['password'])
+            default_password = "password123"  # You can change this to any default
+            user.set_password(default_password)
             user.save()
-            
+
+            # And optionally log the password for testing:
             if created:
-                self.stdout.write(f"  Created local user: {username}")
+                self.stdout.write(f"  Created local user: {username} (password: {default_password})")
             else:
                 self.stdout.write(f"  Updated local user: {username}")
 
