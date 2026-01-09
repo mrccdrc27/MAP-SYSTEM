@@ -108,20 +108,30 @@ class TaskTransitionView(CreateAPIView):
             )
         
         # Validate user is assigned to this task with "new" or "in progress" status
+        # Note: A user can have multiple TaskItems for the same task (due to re-assignments after rejection)
+        # We need to find the one that is currently actionable
         user_assignment = None
         try:
-            # Get TaskItem by user
-            task_item = TaskItem.objects.select_related('role_user').get(
+            # Get all TaskItems for this user on this task
+            task_items = TaskItem.objects.filter(
                 task=task,
                 role_user__user_id=current_user_id
-            )
+            ).select_related('role_user').prefetch_related('taskitemhistory_set').order_by('-assigned_on')
             
-            # Check if latest history status is 'new' or 'in progress'
-            latest_history = task_item.taskitemhistory_set.order_by('-created_at').first()
-            if latest_history and latest_history.status in ['new', 'in progress']:
-                user_assignment = task_item
-            else:
-                raise TaskItem.DoesNotExist
+            if not task_items.exists():
+                raise TaskItem.DoesNotExist("No TaskItems found for user")
+            
+            # Find the TaskItem with 'new' or 'in progress' status (actionable)
+            for task_item in task_items:
+                latest_history = task_item.taskitemhistory_set.order_by('-created_at').first()
+                if latest_history and latest_history.status in ['new', 'in progress']:
+                    user_assignment = task_item
+                    logger.info(f"Found actionable TaskItem {task_item.task_item_id} for user {current_user_id}")
+                    break
+            
+            if not user_assignment:
+                # User has TaskItems but none are actionable
+                raise TaskItem.DoesNotExist("No actionable TaskItems found")
                 
         except TaskItem.DoesNotExist:
             # User has no "new" or "in progress" records - either not assigned or already acted on all assignments
