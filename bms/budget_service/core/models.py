@@ -1091,8 +1091,7 @@ class ForecastDataPoint(models.Model):
 
 class CustomUserManager(BaseUserManager):
     """
-    Simplified manager. BMS does not handle password hashing or login.
-    This model exists purely to satisfy Django's ORM requirements for the User model.
+    MODIFIED: Now supports both local auth (temporary) and Central Auth (production).
     """
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -1102,14 +1101,20 @@ class CustomUserManager(BaseUserManager):
 
         email = self.normalize_email(email)
         user = self.model(email=email, username=username, **extra_fields)
-        # Password is not used in BMS, but we set an unusable one to be safe
-        user.set_unusable_password() 
+        
+        # MODIFICATION: Allow password setting for local BMS auth
+        if password:
+            user.set_password(password)  # ✅ Hash and store password
+        else:
+            user.set_unusable_password()  # For Central Auth sync users
+        
         user.save(using=self._db)
         return user
 
     def create_superuser(self, email, username, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'ADMIN')  # Ensure superuser has admin role
         return self.create_user(email, username, password, **extra_fields)
 
 

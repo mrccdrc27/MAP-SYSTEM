@@ -184,16 +184,10 @@ class Command(BaseCommand):
         
         dept_name_map = {d['code']: d['name'] for d in DEPARTMENTS_CONFIG}
 
-        # Introspect the User model to see which fields are valid
-        valid_fields = {f.name for f in User._meta.get_fields()}
-
         for u_data in SIMULATED_USERS:
             dept_code = u_data['dept']
             dept_name = dept_name_map.get(dept_code)
             username = u_data['username']
-            
-            # GENERATE A DUMMY EMAIL if not provided
-            # This prevents the Unique Constraint error on empty emails
             email = f"{username}@example.com" 
 
             defaults = {
@@ -201,23 +195,19 @@ class Command(BaseCommand):
                 'last_name': ' '.join(u_data['full_name'].split(' ')[1:]),
                 'is_active': True,
                 'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD'],
-                'email': email  # Explicitly set the email
+                'email': email,
+                'role': u_data['role'],
+                'department_name': dept_name,
+                'department_id': None  # Set if you have a Department FK
             }
             
-            if 'role' in valid_fields:
-                defaults['role'] = u_data['role']
-            
-            if 'department_name' in valid_fields:
-                defaults['department_name'] = dept_name
-            
-            # Use update_or_create on USERNAME, but update email too
             user, created = User.objects.update_or_create(
                 username=username,
                 defaults=defaults
             )
             
-            # --- CRITICAL FIX: Set Password ---
-            user.set_password('password123') 
+            # ✅ ALWAYS set password explicitly
+            user.set_password(u_data['password'])
             user.save()
             
             if created:

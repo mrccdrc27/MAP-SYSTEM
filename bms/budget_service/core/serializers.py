@@ -101,16 +101,33 @@ class BMSTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
 
-        # Add custom claims
-        token['username'] = user.username
+        # Match Central Auth structure exactly
         token['email'] = user.email
-        token['role'] = user.role  # This is the flat 'FINANCE_HEAD' from local DB
-        token['department_id'] = user.department_id
+        token['username'] = user.username
+        token['full_name'] = user.get_full_name()  # ✅ Now works with both models
+        token['user_type'] = 'staff'
         
-        # Emulate the structure Central Auth uses if Frontend expects it
-        token['roles'] = {
-            'bms': user.role 
-        }
+        # Department handling
+        if user.department_name:
+            token['department'] = user.department_name
+            token['department_name'] = user.department_name
+        elif user.department_id:
+            # Resolve department name from ID
+            try:
+                from core.models import Department
+                dept = Department.objects.get(id=user.department_id)
+                token['department'] = dept.name
+                token['department_name'] = dept.name
+            except Department.DoesNotExist:
+                pass
+        
+        # CRITICAL: Match Central Auth roles structure (array of dicts)
+        token['roles'] = [
+            {
+                'system': 'bms',
+                'role': user.role
+            }
+        ]
 
         return token
 
