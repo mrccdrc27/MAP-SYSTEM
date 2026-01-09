@@ -4,6 +4,7 @@ from .models import FiscalYear, Department, ExpenseCategory, Expense
 from drf_spectacular.utils import extend_schema_field
 import re
 from django.db.models import Q
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class DepartmentSerializer(serializers.ModelSerializer):
     """
@@ -93,7 +94,25 @@ class ValidProjectAccountSerializer(serializers.Serializer):
     account_title = serializers.CharField()
     department_name = serializers.CharField()
     fiscal_year_name = serializers.CharField()
+    
+    
+class BMSTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
 
+        # Add custom claims
+        token['username'] = user.username
+        token['email'] = user.email
+        token['role'] = user.role  # This is the flat 'FINANCE_HEAD' from local DB
+        token['department_id'] = user.department_id
+        
+        # Emulate the structure Central Auth uses if Frontend expects it
+        token['roles'] = {
+            'bms': user.role 
+        }
+
+        return token
 
 """
 class UserSerializer(serializers.ModelSerializer):

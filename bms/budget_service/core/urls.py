@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 
+from core.serializers import BMSTokenObtainPairSerializer
 from core.views_analytics import SpendingHeatmapView, SpendingTrendsView, TopCategoriesView
 from .views_utils import get_server_time
 from .views_budget import AccountDropdownView, AccountSetupListView, BudgetAdjustmentView, BudgetProposalSummaryView, BudgetTransferViewSet, BudgetVarianceReportView, FiscalYearDropdownView, JournalEntryCreateView, JournalEntryDetailView, JournalEntryListView, LedgerExportView, ProposalHistoryView, LedgerViewList, ProposalReviewBudgetOverview, SupplementalBudgetRequestView, export_budget_proposal_excel, export_budget_variance_excel, journal_choices, DepartmentDropdownView, AccountTypeDropdownView
@@ -27,6 +28,9 @@ from .views_expense import (
 from .views_closing import YearEndClosingPreviewView, ProcessYearEndClosingView 
 from core import views_budget
 
+class BMSTokenObtainPairView(TokenObtainPairView):
+    serializer_class = BMSTokenObtainPairSerializer
+
 user_management_router = DefaultRouter()
 user_management_router.register(
     r'departments', DepartmentViewSet, basename='department')
@@ -50,7 +54,7 @@ ui_router.register(r'budget-transfers', BudgetTransferViewSet, basename='budget-
 
 urlpatterns = [
      
-path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/', BMSTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     path('', include(router.urls)), 
