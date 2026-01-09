@@ -205,7 +205,7 @@ services:
       TTS_SYSTEM_URL: "http://localhost:1000/"
       AMS_SYSTEM_URL: "http://localhost:3000/ams"
       HDTS_SYSTEM_URL: "http://localhost:3000/hdts"
-      BMS_SYSTEM_URL: "http://localhost:3000/bms"
+      BMS_SYSTEM_URL: "http://localhost:5173/"
       DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
     ports:

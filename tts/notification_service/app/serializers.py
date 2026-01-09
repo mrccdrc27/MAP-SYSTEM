@@ -1,3 +1,4 @@
+#tts_/notification_service/app/serializers.py
 from rest_framework import serializers
 from .models import InAppNotification, NOTIFICATION_TYPE_CHOICES
 
