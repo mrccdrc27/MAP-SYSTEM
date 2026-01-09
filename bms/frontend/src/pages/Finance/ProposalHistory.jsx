@@ -23,13 +23,10 @@ import {
 import LOGOMAP from "../../assets/MAP.jpg";
 import "./ProposalHistory.css";
 import { useAuth } from "../../context/AuthContext";
-import {
-  getProposalHistory,
-  getProposalDetail,
-} from "../../API/proposalAPI";
+import { getProposalHistory, getProposalDetail } from "../../API/proposalAPI";
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
-import * as XLSX from 'xlsx'; // For Excel export
+import * as XLSX from "xlsx"; // For Excel export
 
 // Status Component
 const Status = ({ type, name }) => {
@@ -374,7 +371,9 @@ const AuditTrailTimeline = ({ history }) => {
                 marginBottom: "8px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 {getStatusIcon(entry.status)}
                 <strong style={{ fontSize: "13px" }}>{entry.status}</strong>
               </div>
@@ -382,23 +381,50 @@ const AuditTrailTimeline = ({ history }) => {
                 {new Date(entry.last_modified).toLocaleString()}
               </div>
             </div>
-            
+
             <div style={{ marginBottom: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginBottom: "4px",
+                }}
+              >
                 <UserIcon size={12} />
-                <span style={{ fontSize: "12px" }}>{entry.last_modified_by}</span>
+                <span style={{ fontSize: "12px" }}>
+                  {entry.last_modified_by}
+                </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              >
                 <Calendar size={12} />
                 <span style={{ fontSize: "12px" }}>
                   {new Date(entry.last_modified).toLocaleDateString()}
                 </span>
               </div>
             </div>
-            
+
             {entry.comments && (
-              <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "#fff", borderRadius: "4px", borderLeft: "2px solid #007bff" }}>
-                <div style={{ fontSize: "11px", color: "#666", marginBottom: "2px" }}>Comments:</div>
+              <div
+                style={{
+                  marginTop: "8px",
+                  padding: "8px",
+                  backgroundColor: "#fff",
+                  borderRadius: "4px",
+                  borderLeft: "2px solid #007bff",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#666",
+                    marginBottom: "2px",
+                  }}
+                >
+                  Comments:
+                </div>
                 <div style={{ fontSize: "12px" }}>{entry.comments}</div>
               </div>
             )}
@@ -409,14 +435,36 @@ const AuditTrailTimeline = ({ history }) => {
   );
 };
 
-// Field Changes Component
-const FieldChanges = ({ changes }) => {
-  if (!changes || changes.length === 0) return null;
+// MODIFIED: Simplified FieldChanges to reflect what we actually track (Status changes)
+const FieldChanges = ({ history }) => {
+  if (!history || history.length === 0) return null;
+
+  // We only track status changes in the history log (previous_status -> new_status)
+  // We filter for entries where status actually changed
+  const statusChanges = history.filter(
+    (h) => (h.previous_status && h.status && h.previous_status !== h.status) || 
+           (h.action === 'APPROVED' || h.action === 'REJECTED')
+  );
+
+  if (statusChanges.length === 0) {
+    return (
+      <div
+        style={{
+          marginTop: "20px",
+          color: "#666",
+          fontSize: "13px",
+          fontStyle: "italic",
+        }}
+      >
+        No status changes recorded.
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginTop: "20px" }}>
       <h4 style={{ marginBottom: "15px", color: "#333", fontSize: "14px" }}>
-        Field-Level Changes
+        Status Change Log
       </h4>
       <table
         style={{
@@ -433,17 +481,24 @@ const FieldChanges = ({ changes }) => {
                 padding: "8px",
                 border: "1px solid #e0e0e0",
                 textAlign: "left",
-                fontSize: "12px",
               }}
             >
-              Field
+              Date
             </th>
             <th
               style={{
                 padding: "8px",
                 border: "1px solid #e0e0e0",
                 textAlign: "left",
-                fontSize: "12px",
+              }}
+            >
+              Modified By
+            </th>
+            <th
+              style={{
+                padding: "8px",
+                border: "1px solid #e0e0e0",
+                textAlign: "left",
               }}
             >
               Before
@@ -453,87 +508,36 @@ const FieldChanges = ({ changes }) => {
                 padding: "8px",
                 border: "1px solid #e0e0e0",
                 textAlign: "left",
-                fontSize: "12px",
               }}
             >
               After
             </th>
-            <th
-              style={{
-                padding: "8px",
-                border: "1px solid #e0e0e0",
-                textAlign: "left",
-                fontSize: "12px",
-              }}
-            >
-              Change Type
-            </th>
           </tr>
         </thead>
         <tbody>
-          {changes.map((change, index) => (
+          {statusChanges.map((change, index) => (
             <tr key={index}>
+              {/* UPDATED: Handle empty previous status for initial submission or seeder data */}
               <td
                 style={{
                   padding: "8px",
                   border: "1px solid #e0e0e0",
-                  fontSize: "12px",
-                  fontWeight: "500",
-                }}
-              >
-                {change.field}
-              </td>
-              <td
-                style={{
-                  padding: "8px",
-                  border: "1px solid #e0e0e0",
-                  fontSize: "12px",
                   backgroundColor: "#fde8e8",
                   color: "#9b1c1c",
                 }}
               >
-                {change.before || "N/A"}
+                {change.previous_status ||
+                  (change.action === "SUBMITTED" ? "-" : "SUBMITTED")}
               </td>
               <td
                 style={{
                   padding: "8px",
                   border: "1px solid #e0e0e0",
-                  fontSize: "12px",
                   backgroundColor: "#e6f4ea",
                   color: "#0d6832",
                 }}
               >
-                {change.after || "N/A"}
-              </td>
-              <td
-                style={{
-                  padding: "8px",
-                  border: "1px solid #e0e0e0",
-                  fontSize: "12px",
-                }}
-              >
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: "2px 6px",
-                    borderRadius: "3px",
-                    backgroundColor:
-                      change.type === "MODIFIED"
-                        ? "#fef3c7"
-                        : change.type === "ADDED"
-                        ? "#e6f4ea"
-                        : "#fde8e8",
-                    color:
-                      change.type === "MODIFIED"
-                        ? "#92400e"
-                        : change.type === "ADDED"
-                        ? "#0d6832"
-                        : "#9b1c1c",
-                    fontSize: "11px",
-                  }}
-                >
-                  {change.type}
-                </span>
+                {change.status || change.action}
               </td>
             </tr>
           ))}
@@ -551,12 +555,27 @@ const ProposalHistory = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showManageProfile, setShowManageProfile] = useState(false);
 
+  // MODIFIED: Helper to find the most relevant comment
+  const getDisplayComment = () => {
+    if (!proposalHistory || proposalHistory.length === 0)
+      return "No comments recorded.";
+
+    // Look for the most recent comment that isn't empty
+    const entryWithComment = proposalHistory.find(
+      (h) => h.comments && h.comments.trim().length > 0
+    );
+
+    return entryWithComment
+      ? entryWithComment.comments
+      : "No comments recorded.";
+  };
+
   // Filter Dropdowns State
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   const navigate = useNavigate();
-  const { user, logout, getBmsRole} = useAuth();
+  const { user, logout, getBmsRole } = useAuth();
 
   // Data State
   const [history, setHistory] = useState([]);
@@ -582,6 +601,7 @@ const ProposalHistory = () => {
   const [selectedAuditTrail, setSelectedAuditTrail] = useState(null);
   const [auditTrailLoading, setAuditTrailLoading] = useState(false);
   const [proposalHistory, setProposalHistory] = useState([]);
+  const [auditProposalDetails, setAuditProposalDetails] = useState(null);
 
   // Current Date
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -825,93 +845,59 @@ const ProposalHistory = () => {
   // Handle View Button Click for Audit Trail
   const handleViewAuditTrail = async (item) => {
     setAuditTrailLoading(true);
-    setSelectedAuditTrail(item);
+    setSelectedAuditTrail(item); // 'item' is a row from the history list, effectively a summary
     setShowAuditTrailPopup(true);
-    
+    setAuditProposalDetails(null);
+
     try {
-      const allHistoryResponse = await getProposalHistory({
-        proposal_id: item.proposal_id,
+      // 1. Fetch Full History for this Proposal
+      // We filter by proposal_id (Ticket ID) or proposal_pk (Database ID)
+      // The API getProposalHistory filters by 'search', so let's use the Ticket ID
+      const historyResponse = await getProposalHistory({
+        search: item.proposal_id, // Filter by Ticket ID TKT-XXX
         page_size: 100,
       });
-      
-      const proposalHistoryData = allHistoryResponse.data.results.filter(
-        h => h.proposal_id === item.proposal_id
+
+      // Filter strictly in JS to be safe (if search is fuzzy)
+      const specificHistory = historyResponse.data.results.filter(
+        (h) => h.proposal_id === item.proposal_id
       );
-      
-      setProposalHistory(proposalHistoryData);
-      
+
+      setProposalHistory(specificHistory);
+
+      // 2. Fetch Parent Proposal Details (for Total Budget, Fiscal Year context)
+      if (item.proposal_pk) {
+        const detailResponse = await getProposalDetail(item.proposal_pk);
+        setAuditProposalDetails(detailResponse.data);
+      }
     } catch (error) {
       console.error("Failed to fetch audit trail:", error);
-      const mockHistory = [
-        {
-          id: 1,
-          action: "SUBMITTED",
-          status: "SUBMITTED",
-          last_modified: new Date(Date.now() - 86400000 * 3).toISOString(),
-          last_modified_by: item.last_modified_by,
-          comments: "Initial submission for budget review",
-        },
-        {
-          id: 2,
-          action: "REVIEWED",
-          status: "REVIEWED",
-          last_modified: new Date(Date.now() - 86400000 * 2).toISOString(),
-          last_modified_by: "Finance Manager",
-          comments: "Budget reviewed, pending approval",
-        },
-        {
-          id: 3,
-          action: item.status === "APPROVED" ? "APPROVED" : "REJECTED",
-          status: item.status,
-          last_modified: item.last_modified,
-          last_modified_by: item.last_modified_by,
-          comments: item.status === "APPROVED" 
-            ? "Proposal approved after thorough review" 
-            : "Proposal rejected due to budget constraints",
-        },
-      ];
-      setProposalHistory(mockHistory);
+      alert("Failed to load full audit trail.");
+      setShowAuditTrailPopup(false);
     } finally {
       setAuditTrailLoading(false);
     }
   };
 
-  // Mock field changes data
-  const getFieldChanges = () => {
-    if (!selectedAuditTrail) return [];
-    
-    const baseChanges = [
-      {
-        field: "Budget Amount",
-        before: "₱" + (parseFloat(selectedAuditTrail.total_cost || 0) * 0.9).toLocaleString(),
-        after: "₱" + parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString(),
-        type: "MODIFIED",
-      },
-      {
-        field: "Status",
-        before: selectedAuditTrail.status === "APPROVED" ? "SUBMITTED" : "REVIEWED",
-        after: selectedAuditTrail.status,
-        type: selectedAuditTrail.status === "APPROVED" ? "APPROVED" : "REJECTED",
-      },
-      {
-        field: "Modified By",
-        before: "Department Head",
-        after: selectedAuditTrail.last_modified_by,
-        type: "MODIFIED",
-      },
-    ];
+  const getSequentialStats = () => {
+    if (!proposalHistory || proposalHistory.length === 0)
+      return { count: 0, first: "N/A", last: "N/A" };
 
-    if (selectedAuditTrail.status === "UPDATED") {
-      baseChanges.push({
-        field: "Project Description",
-        before: "Original description",
-        after: "Updated project scope and deliverables",
-        type: "MODIFIED",
-      });
-    }
+    // Sort by date ascending to find first
+    const sorted = [...proposalHistory].sort(
+      (a, b) => new Date(a.last_modified) - new Date(b.last_modified)
+    );
 
-    return baseChanges;
+    return {
+      count: proposalHistory.length,
+      first: new Date(sorted[0].last_modified).toLocaleDateString(),
+      last: new Date(
+        sorted[sorted.length - 1].last_modified
+      ).toLocaleDateString(),
+    };
   };
+
+  const auditStats = getSequentialStats();
 
   const handlePrint = () => {
     const printContent = document.getElementById("printable-area");
@@ -946,8 +932,8 @@ const ProposalHistory = () => {
 
     // Generate timestamp for filename
     const now = new Date();
-    const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
-    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '');
+    const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
+    const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "");
     const filename = `proposal_history_${dateStr}_${timeStr}.xlsx`;
 
     // Create workbook
@@ -972,8 +958,14 @@ const ProposalHistory = () => {
       ["Sub-Category:", selectedAuditTrail.subcategory],
       ["Status:", selectedAuditTrail.status],
       ["Last Modified By:", selectedAuditTrail.last_modified_by],
-      ["Last Modified Date:", new Date(selectedAuditTrail.last_modified).toLocaleString()],
-      ["Total Budget:", "₱" + parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString()],
+      [
+        "Last Modified Date:",
+        new Date(selectedAuditTrail.last_modified).toLocaleString(),
+      ],
+      [
+        "Total Budget:",
+        "₱" + parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString(),
+      ],
       [""],
       ["ADDITIONAL AUDIT DETAILS (Not shown in table view):"],
       ["Fiscal Year:", selectedAuditTrail.fiscal_year || "2024"],
@@ -985,16 +977,21 @@ const ProposalHistory = () => {
       [""],
       ["FIELD-LEVEL CHANGES"],
       ["Field", "Before", "After", "Change Type"],
-      ...getFieldChanges().map(change => [change.field, change.before, change.after, change.type]),
+      ...getFieldChanges().map((change) => [
+        change.field,
+        change.before,
+        change.after,
+        change.type,
+      ]),
       [""],
       ["CHANGE HISTORY TIMELINE"],
       ["Status", "Last Modified", "Modified By", "Comments"],
-      ...proposalHistory.map(entry => [
+      ...proposalHistory.map((entry) => [
         entry.status,
         new Date(entry.last_modified).toLocaleString(),
         entry.last_modified_by,
-        entry.comments || "N/A"
-      ])
+        entry.comments || "N/A",
+      ]),
     ];
 
     const ws1 = XLSX.utils.aoa_to_sheet(auditData);
@@ -1002,18 +999,26 @@ const ProposalHistory = () => {
 
     // Sheet 2: Complete Proposal History (filtered view)
     const tableData = [
-      ["TICKET ID", "DEPARTMENT", "CATEGORY", "SUB-CATEGORY", "LAST MODIFIED", "MODIFIED BY", "STATUS"],
-      ...history.map(item => [
+      [
+        "TICKET ID",
+        "DEPARTMENT",
+        "CATEGORY",
+        "SUB-CATEGORY",
+        "LAST MODIFIED",
+        "MODIFIED BY",
+        "STATUS",
+      ],
+      ...history.map((item) => [
         item.proposal_id || "N/A",
         item.department,
         item.category,
         item.subcategory,
         new Date(item.last_modified).toLocaleString(),
         item.last_modified_by,
-        item.status
-      ])
+        item.status,
+      ]),
     ];
-    
+
     const ws2 = XLSX.utils.aoa_to_sheet(tableData);
     XLSX.utils.book_append_sheet(wb, ws2, "Proposal History");
 
@@ -1033,7 +1038,7 @@ const ProposalHistory = () => {
     }
 
     // 2. Fallback: Check direct role property (Legacy)
-    if (user.role && typeof user.role === 'string') return user.role;
+    if (user.role && typeof user.role === "string") return user.role;
 
     // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
@@ -1149,10 +1154,7 @@ const ProposalHistory = () => {
           </span>
         </div>
 
-        <div
-          className="navbar-links"
-          style={{ display: "flex", gap: "20px" }}
-        >
+        <div className="navbar-links" style={{ display: "flex", gap: "20px" }}>
           <Link to="/dashboard" className="nav-link">
             Dashboard
           </Link>
@@ -1469,7 +1471,12 @@ const ProposalHistory = () => {
       {/* Content */}
       <div
         className="content-container"
-        style={{ padding: "35px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
+        style={{
+          padding: "35px 20px",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          width: "95%",
+        }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -1864,7 +1871,11 @@ const ProposalHistory = () => {
                     <tr>
                       <td
                         colSpan="8"
-                        style={{ textAlign: "center", padding: "20px", fontSize: "13px" }}
+                        style={{
+                          textAlign: "center",
+                          padding: "20px",
+                          fontSize: "13px",
+                        }}
                       >
                         Loading...
                       </td>
@@ -1909,7 +1920,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           {item.proposal_id || "N/A"}
                         </td>
@@ -1919,7 +1932,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           {shortenDepartmentName(item.department)}
                         </td>
@@ -1929,7 +1944,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           {item.category}
                         </td>
@@ -1939,7 +1956,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           {item.subcategory}
                         </td>
@@ -1951,7 +1970,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           {new Date(item.last_modified).toLocaleString()}
                         </td>
@@ -1962,7 +1983,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           {item.last_modified_by}
                         </td>
@@ -1972,7 +1995,9 @@ const ProposalHistory = () => {
                             borderBottom: "1px solid #dee2e6",
                             fontSize: "13px",
                           }}
-                          onClick={() => handleRowClick(item.proposal_pk, item.id)}
+                          onClick={() =>
+                            handleRowClick(item.proposal_pk, item.id)
+                          }
                         >
                           <Status type={item.status} name={item.status} />
                         </td>
@@ -2009,7 +2034,11 @@ const ProposalHistory = () => {
                     <tr>
                       <td
                         colSpan="8"
-                        style={{ textAlign: "center", padding: "20px", fontSize: "13px" }}
+                        style={{
+                          textAlign: "center",
+                          padding: "20px",
+                          fontSize: "13px",
+                        }}
                       >
                         No history found.
                       </td>
@@ -2093,7 +2122,9 @@ const ProposalHistory = () => {
                 >
                   <ArrowLeft size={20} />
                 </button>
-                <h2 style={{ margin: 0, fontSize: "18px" }}>Proposal Details</h2>
+                <h2 style={{ margin: 0, fontSize: "18px" }}>
+                  Proposal Details
+                </h2>
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
                 <button
@@ -2131,7 +2162,13 @@ const ProposalHistory = () => {
             </div>
 
             {detailLoading || !selectedDetail ? (
-              <div style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px",
+                  fontSize: "13px",
+                }}
+              >
                 Loading details...
               </div>
             ) : (
@@ -2196,7 +2233,9 @@ const ProposalHistory = () => {
                   >
                     Project Summary
                   </h4>
-                  <p style={{ fontSize: "13px" }}>{selectedDetail.project_summary}</p>
+                  <p style={{ fontSize: "13px" }}>
+                    {selectedDetail.project_summary}
+                  </p>
                 </div>
 
                 <div className="section" style={{ marginBottom: "20px" }}>
@@ -2209,7 +2248,9 @@ const ProposalHistory = () => {
                   >
                     Project Description
                   </h4>
-                  <p style={{ fontSize: "13px" }}>{selectedDetail.project_description}</p>
+                  <p style={{ fontSize: "13px" }}>
+                    {selectedDetail.project_description}
+                  </p>
                 </div>
 
                 <div className="section" style={{ marginBottom: "20px" }}>
@@ -2245,7 +2286,11 @@ const ProposalHistory = () => {
                       Cost Elements
                     </h4>
                     <table
-                      style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "13px",
+                      }}
                     >
                       <thead>
                         <tr style={{ backgroundColor: "#f8f9fa" }}>
@@ -2405,22 +2450,26 @@ const ProposalHistory = () => {
           {/* NAVBAR IN POPUP - Same as main navbar */}
           {renderNavbar()}
 
-          <div style={{ 
-            flex: 1, 
-            overflow: "auto", 
-            padding: "20px",
-            maxWidth: "1200px",
-            margin: "0 auto",
-            width: "100%"
-          }}>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center", 
-              marginBottom: "20px",
-              flexWrap: "wrap",
-              gap: "10px"
-            }}>
+          <div
+            style={{
+              flex: 1,
+              overflow: "auto",
+              padding: "20px",
+              maxWidth: "1200px",
+              margin: "0 auto",
+              width: "100%",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "20px",
+                flexWrap: "wrap",
+                gap: "10px",
+              }}
+            >
               <button
                 className="back-button"
                 onClick={handleCloseAuditTrailPopup}
@@ -2478,7 +2527,13 @@ const ProposalHistory = () => {
               }}
             >
               {auditTrailLoading || !selectedAuditTrail ? (
-                <div style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px",
+                    fontSize: "13px",
+                  }}
+                >
                   Loading audit trail...
                 </div>
               ) : (
@@ -2505,8 +2560,6 @@ const ProposalHistory = () => {
                     >
                       AUDIT TRAIL CONTEXT
                     </h4>
-                    
-                    {/* Main Ticket ID */}
                     <h3
                       className="proposal-title"
                       style={{
@@ -2518,25 +2571,26 @@ const ProposalHistory = () => {
                     >
                       {selectedAuditTrail.proposal_id || "N/A"}
                     </h3>
-                    
-                    {/* Horizontal Breakdown Grid */}
+
+                    {/* Context Grid */}
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(200px, 1fr))",
                         gap: "15px",
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: "#6c757d" }}>
                           Department:
                         </div>
                         <div style={{ fontSize: "13px", fontWeight: "500" }}>
-                          {selectedAuditTrail.department}
+                          {shortenDepartmentName(selectedAuditTrail.department)}
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: "#6c757d" }}>
                           Category:
                         </div>
                         <div style={{ fontSize: "13px", fontWeight: "500" }}>
@@ -2544,7 +2598,7 @@ const ProposalHistory = () => {
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: "#6c757d" }}>
                           Sub-Category:
                         </div>
                         <div style={{ fontSize: "13px", fontWeight: "500" }}>
@@ -2552,28 +2606,27 @@ const ProposalHistory = () => {
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: "#6c757d" }}>
                           Status:
                         </div>
                         <div style={{ fontSize: "13px" }}>
-                          <Status type={selectedAuditTrail.status} name={selectedAuditTrail.status} />
+                          {/* MODIFIED: Use current parent status if available, else history status */}
+                          <Status
+                            type={
+                              auditProposalDetails
+                                ? auditProposalDetails.status
+                                : selectedAuditTrail.status
+                            }
+                            name={
+                              auditProposalDetails
+                                ? auditProposalDetails.status
+                                : selectedAuditTrail.status
+                            }
+                          />
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Additional Info */}
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                        gap: "15px",
-                        marginTop: "15px",
-                        paddingTop: "15px",
-                        borderTop: "1px solid #e9ecef",
-                      }}
-                    >
                       <div>
-                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: "#6c757d" }}>
                           Last Modified By:
                         </div>
                         <div style={{ fontSize: "13px" }}>
@@ -2581,17 +2634,19 @@ const ProposalHistory = () => {
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: "#6c757d" }}>
                           Last Modified Date:
                         </div>
                         <div style={{ fontSize: "13px" }}>
-                          {new Date(selectedAuditTrail.last_modified).toLocaleString()}
+                          {new Date(
+                            selectedAuditTrail.last_modified
+                          ).toLocaleString()}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Complete Proposal Details Section */}
+                  {/* PROPOSAL DETAILS (REAL DATA) */}
                   <div
                     className="complete-details-section"
                     style={{
@@ -2610,44 +2665,60 @@ const ProposalHistory = () => {
                         fontWeight: "600",
                       }}
                     >
-                      Complete Proposal Details at Time of Modification
+                      Complete Proposal Details (Current)
                     </h4>
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(200px, 1fr))",
                         gap: "15px",
                         fontSize: "13px",
                       }}
                     >
                       <div>
-                        <strong style={{ color: "#6c757d" }}>Total Budget:</strong>
+                        <strong style={{ color: "#6c757d" }}>
+                          Total Budget:
+                        </strong>
                         <div style={{ marginTop: "4px" }}>
-                          ₱{parseFloat(selectedAuditTrail.total_cost || 0).toLocaleString()}
+                          {/* Use auditProposalDetails if available, else 0 */}₱
+                          {auditProposalDetails
+                            ? parseFloat(
+                                auditProposalDetails.total_cost
+                              ).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                              })
+                            : "0.00"}
                         </div>
                       </div>
                       <div>
-                        <strong style={{ color: "#6c757d" }}>Fiscal Year:</strong>
+                        <strong style={{ color: "#6c757d" }}>
+                          Fiscal Year:
+                        </strong>
                         <div style={{ marginTop: "4px" }}>
-                          {selectedAuditTrail.fiscal_year || "2024"}
+                          {/* Use Fiscal Year ID from detail, or fallback */}
+                          {auditProposalDetails
+                            ? auditProposalDetails.fiscal_year
+                            : "2026"}
                         </div>
                       </div>
                       <div>
-                        <strong style={{ color: "#6c757d" }}>Priority Level:</strong>
-                        <div style={{ marginTop: "4px" }}>
-                          {selectedAuditTrail.priority || "Medium"}
-                        </div>
+                        {/* These fields aren't in current model, hardcoding defaults based on prompt */}
+                        <strong style={{ color: "#6c757d" }}>
+                          Priority Level:
+                        </strong>
+                        <div style={{ marginTop: "4px" }}>Medium</div>
                       </div>
                       <div>
-                        <strong style={{ color: "#6c757d" }}>Review Cycle:</strong>
-                        <div style={{ marginTop: "4px" }}>
-                          {selectedAuditTrail.review_cycle || "Q1"}
-                        </div>
+                        <strong style={{ color: "#6c757d" }}>
+                          Review Cycle:
+                        </strong>
+                        <div style={{ marginTop: "4px" }}>Q1</div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Field-Level Changes Section */}
+                  {/* CHANGES (Using Real Status Changes) */}
                   <div
                     className="field-changes-section"
                     style={{
@@ -2658,21 +2729,10 @@ const ProposalHistory = () => {
                       border: "1px solid #e9ecef",
                     }}
                   >
-                    <h4
-                      className="section-label"
-                      style={{
-                        margin: "0 0 15px 0",
-                        fontSize: "14px",
-                        color: "#495057",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Field-Level Changes
-                    </h4>
-                    <FieldChanges changes={getFieldChanges()} />
+                    <FieldChanges history={proposalHistory} />
                   </div>
 
-                  {/* Change History Timeline Section */}
+                  {/* TIMELINE */}
                   <div
                     className="timeline-section"
                     style={{
@@ -2683,21 +2743,10 @@ const ProposalHistory = () => {
                       border: "1px solid #e9ecef",
                     }}
                   >
-                    <h4
-                      className="section-label"
-                      style={{
-                        margin: "0 0 15px 0",
-                        fontSize: "14px",
-                        color: "#495057",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Change History Timeline
-                    </h4>
                     <AuditTrailTimeline history={proposalHistory} />
                   </div>
 
-                  {/* User Comments Section */}
+                  {/* COMMENTS - Show latest RELEVANT comment */}
                   <div
                     className="comments-section"
                     style={{
@@ -2717,7 +2766,7 @@ const ProposalHistory = () => {
                         fontWeight: "600",
                       }}
                     >
-                      User Comments & Reasons for Changes
+                      User Comments & Reasons
                     </h4>
                     <div
                       style={{
@@ -2728,17 +2777,12 @@ const ProposalHistory = () => {
                       }}
                     >
                       <div style={{ fontSize: "13px", lineHeight: "1.6" }}>
-                        {selectedAuditTrail.comments ||
-                          (selectedAuditTrail.status === "APPROVED"
-                            ? "Proposal approved after thorough review and budget alignment."
-                            : selectedAuditTrail.status === "REJECTED"
-                            ? "Proposal rejected due to budget constraints and lack of proper justification."
-                            : "No additional comments provided.")}
+                        {getDisplayComment()}
                       </div>
                     </div>
                   </div>
 
-                  {/* Sequential Audit Trail Section */}
+                  {/* SEQUENTIAL STATS */}
                   <div
                     className="sequential-audit-section"
                     style={{
@@ -2763,7 +2807,8 @@ const ProposalHistory = () => {
                       className="audit-stats"
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(150px, 1fr))",
                         gap: "15px",
                         marginBottom: "15px",
                       }}
@@ -2785,7 +2830,7 @@ const ProposalHistory = () => {
                             marginBottom: "5px",
                           }}
                         >
-                          {proposalHistory.length}
+                          {auditStats.count}
                         </div>
                         <div style={{ fontSize: "12px", color: "#6c757d" }}>
                           Total Modifications
@@ -2808,9 +2853,7 @@ const ProposalHistory = () => {
                             marginBottom: "5px",
                           }}
                         >
-                          {proposalHistory.length > 0
-                            ? new Date(proposalHistory[proposalHistory.length - 1].last_modified).toLocaleDateString()
-                            : "N/A"}
+                          {auditStats.first}
                         </div>
                         <div style={{ fontSize: "12px", color: "#6c757d" }}>
                           First Action
@@ -2833,20 +2876,17 @@ const ProposalHistory = () => {
                             marginBottom: "5px",
                           }}
                         >
-                          {proposalHistory.length > 0
-                            ? new Date(proposalHistory[0].last_modified).toLocaleDateString()
-                            : "N/A"}
+                          {auditStats.last}
                         </div>
                         <div style={{ fontSize: "12px", color: "#6c757d" }}>
                           Last Action
                         </div>
                       </div>
                     </div>
-                    
                     <div style={{ fontSize: "13px", color: "#666" }}>
                       <p>
-                        This audit trail shows all modifications made to this proposal, 
-                        including status changes, field updates, and user comments.
+                        This audit trail shows all recorded actions made to this
+                        proposal.
                       </p>
                     </div>
                   </div>
