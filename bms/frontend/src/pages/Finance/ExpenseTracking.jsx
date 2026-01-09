@@ -11,6 +11,8 @@ import {
   Settings,
   X,
   Paperclip,
+  CheckCircle, // Added icon
+  AlertCircle, // Added icon
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LOGOMAP from "../../assets/MAP.jpg";
@@ -28,7 +30,234 @@ import {
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
 
-// --- ADD THIS CUSTOM COMPONENT BEFORE THE ExpenseTracking COMPONENT ---
+// --- INSERT: Alert Modal Component ---
+const AlertModal = ({ isOpen, onClose, message, type = "info" }) => {
+  if (!isOpen) return null;
+
+  const isError = type === "error";
+  const iconColor = isError ? "#dc3545" : "#28a745";
+  const Icon = isError ? AlertCircle : CheckCircle;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 4000, // Topmost layer
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "8px",
+          width: "400px",
+          maxWidth: "90%",
+          padding: "24px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          textAlign: "center",
+          animation: "fadeIn 0.2s ease-out",
+        }}
+      >
+        <div
+          style={{
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <Icon size={48} color={iconColor} />
+        </div>
+
+        <h3
+          style={{ margin: "0 0 10px 0", color: "#333", fontSize: "1.25rem" }}
+        >
+          {isError ? "Error" : "Success"}
+        </h3>
+
+        <p
+          style={{
+            margin: "0 0 24px 0",
+            color: "#666",
+            fontSize: "1rem",
+            lineHeight: "1.5",
+          }}
+        >
+          {message}
+        </p>
+
+        <button
+          onClick={onClose}
+          style={{
+            padding: "10px 24px",
+            backgroundColor: isError ? "#dc3545" : "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            fontSize: "14px",
+            fontWeight: "500",
+            cursor: "pointer",
+            outline: "none",
+            minWidth: "100px",
+          }}
+        >
+          OK
+        </button>
+      </div>
+      <style>
+        {`@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}
+      </style>
+    </div>
+  );
+};
+
+// --- INSERT 1: Soft Cap Modal Component ---
+const SoftCapModal = ({ isOpen, onClose, onSubmit, capInfo }) => {
+  const [justification, setJustification] = useState("");
+
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    if (!justification.trim() || justification.length < 10) {
+      alert("Please provide a justification (minimum 10 characters).");
+      return;
+    }
+    onSubmit(justification);
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 3000, // Higher than Add Expense Modal
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#fff",
+          padding: "24px",
+          borderRadius: "8px",
+          width: "500px",
+          maxWidth: "90%",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "16px",
+            gap: "10px",
+          }}
+        >
+          <div style={{ color: "#f59e0b" }}>
+            <Bell size={24} />
+          </div>
+          <h3 style={{ margin: 0, color: "#333", fontSize: "1.25rem" }}>
+            Budget Soft Cap Exceeded
+          </h3>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: "#fff3cd",
+            border: "1px solid #ffeeba",
+            color: "#856404",
+            padding: "12px",
+            borderRadius: "4px",
+            marginBottom: "16px",
+            fontSize: "0.9rem",
+          }}
+        >
+          {capInfo?.detail ||
+            "This expense exceeds the designated soft cap for this category."}
+        </div>
+
+        {capInfo?.cap_info && (
+          <div
+            style={{ marginBottom: "16px", fontSize: "0.9rem", color: "#555" }}
+          >
+            <p style={{ margin: "4px 0" }}>
+              <strong>Remaining:</strong> ₱
+              {capInfo.cap_info.remaining?.toLocaleString()}
+            </p>
+            <p style={{ margin: "4px 0" }}>
+              <strong>Requested:</strong> ₱
+              {capInfo.cap_info.requested?.toLocaleString()}
+            </p>
+          </div>
+        )}
+
+        <label
+          style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}
+        >
+          Justification Required <span style={{ color: "red" }}>*</span>
+        </label>
+        <textarea
+          value={justification}
+          onChange={(e) => setJustification(e.target.value)}
+          placeholder="Explain why this expense is necessary despite exceeding the budget guidance..."
+          style={{
+            width: "100%",
+            minHeight: "100px",
+            padding: "10px",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            marginBottom: "20px",
+            fontSize: "14px",
+            fontFamily: "inherit",
+          }}
+        />
+
+        <div
+          style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              backgroundColor: "white",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            style={{
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "4px",
+              backgroundColor: "#f59e0b", // Warning color
+              color: "white",
+              fontWeight: "500",
+              cursor: "pointer",
+            }}
+          >
+            Proceed with Exception
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SearchableSelect = ({
   options,
   value,
@@ -417,6 +646,25 @@ const ExpenseTracking = () => {
   const [showManageProfile, setShowManageProfile] = useState(false);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
 
+  // --- INSERT 2: New State for Soft Cap Logic ---
+  const [showSoftCapModal, setShowSoftCapModal] = useState(false);
+  const [softCapInfo, setSoftCapInfo] = useState(null);
+
+  // --- INSERT: New Alert State ---
+  const [alertState, setAlertState] = useState({
+    isOpen: false,
+    message: "",
+    type: "info", // 'success' or 'error'
+  });
+
+  const showAlert = (message, type = "error") => {
+    setAlertState({ isOpen: true, message, type });
+  };
+
+  const closeAlert = () => {
+    setAlertState((prev) => ({ ...prev, isOpen: false }));
+  };
+
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [reviewAction, setReviewAction] = useState(""); // "APPROVED" or "REJECTED"
@@ -473,7 +721,7 @@ const ExpenseTracking = () => {
       const res = await getExpenseTrackingList(params);
       setExpenses(res.data.results);
     } catch (error) {
-      alert("Failed to review expense: " + error.message);
+      showAlert("Failed to review expense: " + error.message, "error"); // UPDATED
     }
   };
 
@@ -481,7 +729,7 @@ const ExpenseTracking = () => {
     if (!window.confirm("Mark this expense as accomplished?")) return;
     try {
       await markExpenseAsAccomplished(expense.id);
-      // Refresh list logic (same as above)
+      // Refresh list logic
       const params = {
         page: currentPage,
         page_size: pageSize,
@@ -490,7 +738,7 @@ const ExpenseTracking = () => {
       const res = await getExpenseTrackingList(params);
       setExpenses(res.data.results);
     } catch (error) {
-      alert("Failed to mark as accomplished: " + error.message);
+      showAlert("Failed to mark as accomplished: " + error.message, "error"); // UPDATED
     }
   };
 
@@ -505,8 +753,6 @@ const ExpenseTracking = () => {
     attachments: [],
   };
   const [newExpense, setNewExpense] = useState(initialExpenseState);
-
-  // Date/Time
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
@@ -521,7 +767,7 @@ const ExpenseTracking = () => {
     }
 
     // 2. Fallback: Check direct role property (Legacy)
-    if (user.role && typeof user.role === 'string') return user.role;
+    if (user.role && typeof user.role === "string") return user.role;
 
     // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
@@ -744,12 +990,22 @@ const ExpenseTracking = () => {
     }
   };
 
+  // --- UPDATED: Handle Input Change with Decimal Validation ---
   const handleModalInputChange = (e) => {
     const { name, value } = e.target;
 
     // Date Validation to prevent overflow
     if (name === "date") {
-      if (value.length > 10) return; // Prevent more than 4 chars for year (YYYY-MM-DD)
+      if (value.length > 10) return; 
+    }
+
+    // Amount Validation: Allow only numbers and up to 2 decimal places
+    if (name === "amount") {
+      // Regex: Optional digits, optional decimal point, max 2 digits after decimal
+      const regex = /^\d*\.?\d{0,2}$/;
+      if (value !== "" && !regex.test(value)) {
+        return; // Ignore invalid input
+      }
     }
 
     setNewExpense((prev) => ({ ...prev, [name]: value }));
@@ -761,23 +1017,22 @@ const ExpenseTracking = () => {
 
     const validFiles = files.filter((file) => allowedTypes.includes(file.type));
     if (validFiles.length !== files.length) {
-      alert("Only JPG, PNG, and PDF files are allowed.");
+      showAlert("Only JPG, PNG, and PDF files are allowed.", "error"); // UPDATED
     }
 
     setNewExpense((prev) => ({ ...prev, attachments: validFiles }));
   };
 
+  // --- UPDATED: Handle Submit with Custom Alert ---
   const handleSubmitExpense = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (parseFloat(newExpense.amount) < 0) {
-      alert("Amount cannot be negative.");
+      showAlert("Amount cannot be negative.", "error"); // UPDATED
       return;
     }
     const formData = new FormData();
 
-    // Append all fields
     formData.append("project_id", newExpense.project_id);
     formData.append("category_code", newExpense.category_code);
     formData.append("vendor", newExpense.vendor);
@@ -785,23 +1040,21 @@ const ExpenseTracking = () => {
     formData.append("date", newExpense.date);
     formData.append("description", newExpense.description || "");
 
-    // Append multiple attachments
     newExpense.attachments.forEach((file) => {
       formData.append("attachments", file);
     });
 
     try {
       await createExpense(formData);
-      // alert("Expense submitted successfully!");
+      
+      // Success flow
       setShowAddExpenseModal(false);
       setNewExpense(initialExpenseState);
-      // Clear categories to reset dependent dropdown
       setCategories([]);
-
+      
       // Refresh data
       const summaryRes = await getExpenseSummary();
       setSummaryData(summaryRes.data);
-
       const params = {
         page: currentPage,
         page_size: pageSize,
@@ -809,17 +1062,77 @@ const ExpenseTracking = () => {
       };
       if (selectedDepartment) params.department = selectedDepartment;
       if (selectedCategory) params.category__classification = selectedCategory;
-
       const expensesRes = await getExpenseTrackingList(params);
       setExpenses(expensesRes.data.results);
       setTotalItems(expensesRes.data.count);
+
+      showAlert("Expense submitted successfully!", "success"); // UPDATED
+
     } catch (error) {
       console.error("Failed to submit expense:", error);
+
+      // Soft Cap Check
+      if (error.response?.data?.error === "BUDGET_SOFT_CAP_EXCEEDED") {
+        setSoftCapInfo(error.response.data);
+        setShowSoftCapModal(true);
+        return;
+      }
+
       const errorMsg =
         error.response?.data?.amount ||
         error.response?.data?.non_field_errors?.[0] ||
+        error.response?.data?.detail ||
         "An unexpected error occurred.";
-      alert(`Error: ${errorMsg}`);
+      
+      showAlert(`Error: ${errorMsg}`, "error"); // UPDATED
+    }
+  };
+
+  // --- UPDATED: Handle Soft Cap Submit with Custom Alert ---
+  const handleSoftCapSubmit = async (justification) => {
+    const formData = new FormData();
+
+    formData.append("project_id", newExpense.project_id);
+    formData.append("category_code", newExpense.category_code);
+    formData.append("vendor", newExpense.vendor);
+    formData.append("amount", newExpense.amount);
+    formData.append("date", newExpense.date);
+    formData.append("description", newExpense.description || "");
+    formData.append("notes", justification);
+
+    newExpense.attachments.forEach((file) => {
+      formData.append("attachments", file);
+    });
+
+    try {
+      await createExpense(formData);
+
+      setShowSoftCapModal(false);
+      setShowAddExpenseModal(false);
+      setSoftCapInfo(null);
+      setNewExpense(initialExpenseState);
+      setCategories([]);
+
+      // Refresh data logic...
+      const summaryRes = await getExpenseSummary();
+      setSummaryData(summaryRes.data);
+      const params = {
+        page: currentPage,
+        page_size: pageSize,
+        search: debouncedSearchTerm,
+      };
+      if (selectedDepartment) params.department = selectedDepartment;
+      if (selectedCategory) params.category__classification = selectedCategory;
+      const expensesRes = await getExpenseTrackingList(params);
+      setExpenses(expensesRes.data.results);
+      setTotalItems(expensesRes.data.count);
+
+      showAlert("Expense submitted with exception justification.", "success"); // UPDATED
+
+    } catch (error) {
+      console.error("Failed to submit soft cap exception:", error);
+      const errorMsg = error.response?.data?.detail || "Failed to submit exception.";
+      showAlert(`Error: ${errorMsg}`, "error"); // UPDATED
     }
   };
 
@@ -1359,10 +1672,17 @@ const ExpenseTracking = () => {
           </div>
         </div>
       </nav>
+      
+
 
       <div
         className="content-container"
-        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
+        style={{
+          padding: "10px 20px",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          width: "95%",
+        }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -3155,6 +3475,24 @@ const ExpenseTracking = () => {
           </div>
         </div>
       )}
+      {/* AlertModal */}
+      <AlertModal
+        isOpen={alertState.isOpen}
+        message={alertState.message}
+        type={alertState.type}
+        onClose={closeAlert}
+      />
+      
+      {/* Soft Cap Modal */}
+      <SoftCapModal
+        isOpen={showSoftCapModal}
+        onClose={() => {
+          setShowSoftCapModal(false);
+          setSoftCapInfo(null);
+        }}
+        onSubmit={handleSoftCapSubmit}
+        capInfo={softCapInfo}
+      />
     </div>
   );
 };
