@@ -30,6 +30,7 @@ module.exports = {
       windowsHide: true,
       env: {
         VITE_API_BASE_URL: "http://165.22.247.50:8080",
+        VITE_TTS_SYSTEM_URL: "http://165.22.247.50:1000",
         VITE_ENV: "development",
         VITE_DEBUG: "true",
         VITE_AUTH_LOGIN_ENDPOINT: "/auth/api/v1/users/login/api",
@@ -56,6 +57,8 @@ module.exports = {
       windowsHide: true,
       env: {
         VITE_AUTH_URL: "http://165.22.247.50:8003",
+        VITE_AUTH_NEW_URL: "http://165.22.247.50:3001",
+        VITE_AUTH_LOGIN: "http://165.22.247.50:3001/staff/login",
         VITE_WORKFLOW_API: "http://165.22.247.50:8080/workflow",
         VITE_BACKEND_API: "http://165.22.247.50:8080/workflow",
         VITE_NOTIFICATION_API: "http://165.22.247.50:8080/notification",
