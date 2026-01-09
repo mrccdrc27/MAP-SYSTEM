@@ -63,7 +63,7 @@ function WorkflowItem({ item }) {
           }}
           title="Edit workflow"
         >
-          ✏️
+          <i class="fa-solid fa-pencil"></i>
         </button>
       </td>
     </tr>

@@ -643,23 +643,21 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Escalate - disabled when canAct is false, hidden for admins */}
-                {!isAdmin() && (
-                  <button
-                    className={
-                      !state.canAct
-                        ? styles.escalateButtonDisabled
-                        : styles.escalateButton
-                    }
-                    onClick={() => setOpenEscalateModal(true)}
-                    disabled={!state.canAct}
-                  >
-                    <span className={styles.iconTextWrapper}>
-                      <i className="fa fa-arrow-up"></i>
-                      {getButtonText("escalate")}
-                    </span>
-                  </button>
-                )}
+                {/* Escalate - disabled when canAct is false */}
+                <button
+                  className={
+                    !state.canAct
+                      ? styles.escalateButtonDisabled
+                      : styles.escalateButton
+                  }
+                  onClick={() => setOpenEscalateModal(true)}
+                  disabled={!state.canAct}
+                >
+                  <span className={styles.iconTextWrapper}>
+                    <i className="fa fa-arrow-up"></i>
+                    {getButtonText("escalate")}
+                  </span>
+                </button>
 
                 {/* Transfer (Admin only) - disabled when canAct is false */}
                 {isAdmin() && (

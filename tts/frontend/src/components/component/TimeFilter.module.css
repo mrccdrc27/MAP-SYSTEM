@@ -1,13 +1,30 @@
 .fpShowFilter {
   display: flex;
   justify-content: flex-end;
-  /* margin-bottom: 10px; */
+  margin-bottom: 10px;  
 }
 
+/* not active */
 .fpShowFilter span {
   color: var(--primary-color);
   font-size: var(--table-head-size);
   cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px 5px;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.fpShowFilter span:hover {
+  border-color: var(--primary-color);
+}
+
+/* active */
+.fpShowFilter.active span {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
 }
 
 .tfContainer {
@@ -15,7 +32,7 @@
   flex-wrap: wrap;
   gap: 1rem;
   background-color: var(--bg1-color);
-  box-shadow: var(--box-shadow, 0 2px 8px rgba(0, 0, 0, 0.08));
+  /* box-shadow: var(--box-shadow, 0 2px 8px rgba(0, 0, 0, 0.08)); */
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 20px;

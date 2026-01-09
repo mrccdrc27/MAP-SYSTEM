@@ -1429,8 +1429,11 @@ class TaskViewSet(viewsets.ModelViewSet):
             
             # Build nodes from versioned definition
             for node in workflow_nodes:
-                # Determine status based on current step
-                if node['id'] == current_step_id:
+                # Determine status based on current step and task completion
+                if task.status == 'completed':
+                    # If task is completed, all nodes should be 'done'
+                    node_status = 'done'
+                elif node['id'] == current_step_id:
                     node_status = 'active'
                 elif node['order'] < (task.current_step.order if task.current_step else 0):
                     node_status = 'done'
@@ -1469,8 +1472,11 @@ class TaskViewSet(viewsets.ModelViewSet):
             
             # Build nodes from database
             for step in workflow_steps:
-                # Determine status based on current step
-                if step.step_id == current_step_id:
+                # Determine status based on current step and task completion
+                if task.status == 'completed':
+                    # If task is completed, all nodes should be 'done'
+                    node_status = 'done'
+                elif step.step_id == current_step_id:
                     node_status = 'active'
                 elif step.order < (task.current_step.order if task.current_step else 0):
                     node_status = 'done'

@@ -30,7 +30,7 @@ export default function Track() {
     }
   }, [tickets]);
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   // search bar states
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,8 +38,8 @@ export default function Track() {
   const [notFound, setNotFound] = useState(false);
 
   // state and tracker hook
-  const [taskId, setTaskId] = useState(null); 
-  const { tracker } = useWorkflowProgress(taskId); 
+  const [taskId, setTaskId] = useState(null);
+  const { tracker } = useWorkflowProgress(taskId);
   const handleSearch = (e) => {
     e.preventDefault();
 

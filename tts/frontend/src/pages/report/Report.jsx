@@ -23,8 +23,11 @@ export default function Report() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") || "taskitem";
   const [activeTab, setActiveTab] = useState(tabFromUrl);
-  const [timeFilter, setTimeFilter] = useState({ startDate: null, endDate: null });
-  
+  const [timeFilter, setTimeFilter] = useState({
+    startDate: null,
+    endDate: null,
+  });
+
   // Unified reporting analytics hook
   const {
     loading,
@@ -56,8 +59,12 @@ export default function Report() {
     if (timeFilter.startDate || timeFilter.endDate) {
       // Convert dates to ISO format (YYYY-MM-DD)
       const dateRange = {
-        start_date: timeFilter.startDate ? timeFilter.startDate.toISOString().split('T')[0] : null,
-        end_date: timeFilter.endDate ? timeFilter.endDate.toISOString().split('T')[0] : null,
+        start_date: timeFilter.startDate
+          ? timeFilter.startDate.toISOString().split("T")[0]
+          : null,
+        end_date: timeFilter.endDate
+          ? timeFilter.endDate.toISOString().split("T")[0]
+          : null,
       };
       fetchAllAnalytics(dateRange);
     }
@@ -77,21 +84,68 @@ export default function Report() {
 
     switch (activeTab) {
       case "taskitem":
-        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} trendData={taskItemTrends} fetchTrendData={fetchTaskItemTrends} loading={loading} error={error} />;
+        return (
+          <TaskItemTab
+            timeFilter={timeFilter}
+            analyticsData={tasksReport}
+            trendData={taskItemTrends}
+            fetchTrendData={fetchTaskItemTrends}
+            loading={loading}
+            error={error}
+          />
+        );
       case "agent":
-        return <AgentTab timeFilter={timeFilter} analyticsData={agentData} loading={loading} error={error} />;
+        return (
+          <AgentTab
+            timeFilter={timeFilter}
+            analyticsData={agentData}
+            loading={loading}
+            error={error}
+          />
+        );
       case "ticket":
-        return <TicketTab timeFilter={timeFilter} analyticsData={ticketsReport} trendData={ticketTrends} fetchTrendData={fetchTicketTrends} categoryData={ticketCategories} loading={loading} error={error} />;
+        return (
+          <TicketTab
+            timeFilter={timeFilter}
+            analyticsData={ticketsReport}
+            trendData={ticketTrends}
+            fetchTrendData={fetchTicketTrends}
+            categoryData={ticketCategories}
+            loading={loading}
+            error={error}
+          />
+        );
       case "workflow":
-        return <WorkflowTab timeFilter={timeFilter} analyticsData={workflowsReport} loading={loading} error={error} />;
+        return (
+          <WorkflowTab
+            timeFilter={timeFilter}
+            analyticsData={workflowsReport}
+            loading={loading}
+            error={error}
+          />
+        );
       case "integration":
-        return <IntegrationTab analyticsData={ticketsReport} loading={loading} error={error} />;
+        return (
+          <IntegrationTab
+            analyticsData={ticketsReport}
+            loading={loading}
+            error={error}
+          />
+        );
       case "insights":
         return <InsightsTab timeFilter={timeFilter} />;
       case "forecast":
         return <ForecastTab timeFilter={timeFilter} />;
       default:
-        return <TaskItemTab timeFilter={timeFilter} analyticsData={tasksReport} trendData={taskItemTrends} loading={loading} error={error} />;
+        return (
+          <TaskItemTab
+            timeFilter={timeFilter}
+            analyticsData={tasksReport}
+            trendData={taskItemTrends}
+            loading={loading}
+            error={error}
+          />
+        );
     }
   };
 
@@ -123,7 +177,15 @@ export default function Report() {
         <section className={styles.rpBody}>
           {/* Tabs */}
           <div className={styles.rpTabs}>
-            {["taskitem", "agent", "ticket", "workflow", "insights", "forecast", "integration"].map((tab) => {
+            {[
+              "taskitem",
+              "agent",
+              "ticket",
+              "workflow",
+              "insights",
+              "forecast",
+              "integration",
+            ].map((tab) => {
               const tabLabels = {
                 taskitem: "Tasks",
                 agent: "Agent",
@@ -131,7 +193,7 @@ export default function Report() {
                 workflow: "Workflow",
                 insights: "Insights",
                 forecast: "Forecast",
-                integration: "Integration"
+                integration: "Integration",
               };
               return (
                 <a
@@ -150,13 +212,11 @@ export default function Report() {
 
           {/* Time Filter */}
           <div className={styles.timeFilter}>
-            <TimeFilter onFilterApply={setTimeFilter}/>
+            <TimeFilter onFilterApply={setTimeFilter} />
           </div>
 
           {/* Render Active Tab */}
-          <ErrorBoundary>
-            {renderActiveTab()}
-          </ErrorBoundary>
+          <ErrorBoundary>{renderActiveTab()}</ErrorBoundary>
         </section>
       </main>
     </>
