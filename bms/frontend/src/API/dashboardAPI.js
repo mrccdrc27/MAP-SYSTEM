@@ -88,3 +88,26 @@ export const getProjectDetails = (projectId) => {
     return budgetApi.get(`/dashboard/projects/${projectId}/`);
 };
 
+/**
+ * Get Spending Trends Data
+ * @param {Object} params { start_date, end_date, department, granularity }
+ */
+export const getSpendingTrends = (params) => {
+    return budgetApi.get('/dashboard/analytics/spending-trends/', { params });
+};
+
+/**
+ * Get Top Spending Categories
+ * @param {Object} params { start_date, end_date, department }
+ */
+export const getTopSpendingCategories = (params) => {
+    return budgetApi.get('/dashboard/analytics/top-categories/', { params });
+};
+
+/**
+ * Get Heatmap Data
+ * @param {Object} params { start_date, end_date, department, aggregation }
+ */
+export const getSpendingHeatmap = (params) => {
+    return budgetApi.get('/dashboard/analytics/heatmap/', { params });
+};

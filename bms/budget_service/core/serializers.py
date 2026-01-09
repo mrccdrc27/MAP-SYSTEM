@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from .models import FiscalYear, Department, ExpenseCategory, Expense
 from drf_spectacular.utils import extend_schema_field
 import re
-
+from django.db.models import Q
 
 class DepartmentSerializer(serializers.ModelSerializer):
     """
@@ -51,12 +51,39 @@ class DepartmentBudgetSerializer(serializers.ModelSerializer):
 
 class FiscalYearSerializer(serializers.ModelSerializer):
     """
-    Serializer for fiscal year information
+    Serializer for fiscal year information with validation for date overlaps.
     """
     class Meta:
         model = FiscalYear
         fields = ['id', 'name', 'start_date', 'end_date', 'is_active', 'is_locked']
+        # Prevent users from manually setting active/locked on creation if desired, 
+        # but the ViewSet usually handles the initial state logic.
 
+    def validate(self, data):
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if start_date and end_date:
+            if end_date <= start_date:
+                raise serializers.ValidationError("End date must be after start date.")
+
+            # Check for overlaps: (StartA <= EndB) and (EndA >= StartB)
+            overlapping = FiscalYear.objects.filter(
+                start_date__lte=end_date,
+                end_date__gte=start_date
+            )
+            
+            # Exclude self if performing an update
+            if self.instance:
+                overlapping = overlapping.exclude(pk=self.instance.pk)
+
+            if overlapping.exists():
+                conflict = overlapping.first()
+                raise serializers.ValidationError(
+                    f"Date range overlaps with existing fiscal year: {conflict.name} ({conflict.start_date} - {conflict.end_date})"
+                )
+        
+        return data
 
 class ValidProjectAccountSerializer(serializers.Serializer):
     project_id = serializers.IntegerField()

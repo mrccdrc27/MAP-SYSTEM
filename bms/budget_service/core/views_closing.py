@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db import transaction
-from django.db.models import Sum, Q # Added Q
+from django.db.models import Sum, Q  # Added Q
 from django.db.models.functions import Coalesce
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,10 +8,12 @@ from rest_framework import status, serializers
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, inline_serializer
 
 from .models import (
-    FiscalYear, BudgetAllocation, BudgetTransfer, JournalEntry, 
+    FiscalYear, BudgetAllocation, BudgetTransfer, JournalEntry,
     JournalEntryLine, Account, Expense, UserActivityLog
 )
 from .permissions import IsBMSFinanceHead
+from django.utils import timezone
+
 
 class YearEndClosingPreviewView(APIView):
     permission_classes = [IsBMSFinanceHead]
@@ -21,7 +23,8 @@ class YearEndClosingPreviewView(APIView):
         summary="Preview Year-End Closing Data",
         description="Calculates remaining budgets for all allocations in the closing year to assist in carry-over decisions.",
         parameters=[
-            OpenApiParameter(name="closing_year_id", type=int, required=True, description="ID of the Fiscal Year to close"),
+            OpenApiParameter(name="closing_year_id", type=int, required=True,
+                             description="ID of the Fiscal Year to close"),
         ],
         responses={
             200: inline_serializer(
@@ -47,7 +50,7 @@ class YearEndClosingPreviewView(APIView):
 
         # Get all active allocations for the closing year
         allocations = BudgetAllocation.objects.filter(
-            fiscal_year=closing_fy, 
+            fiscal_year=closing_fy,
             is_active=True
         ).select_related('department', 'category', 'account', 'project')
 
@@ -97,7 +100,8 @@ class ProcessYearEndClosingView(APIView):
                 'allocation_ids': serializers.ListField(child=serializers.IntegerField(), help_text="List of allocation IDs to carry over. Use empty list to expire all."),
             }
         ),
-        responses={200: OpenApiResponse(description="Closing process completed successfully")}
+        responses={200: OpenApiResponse(
+            description="Closing process completed successfully")}
     )
     def post(self, request):
         closing_year_id = request.data.get('closing_year_id')
@@ -125,19 +129,20 @@ class ProcessYearEndClosingView(APIView):
             # 1. Prepare Journal Entry for the Carryover Batch
             # We need a source account (Equity/Retained Earnings) to balance the ledger
             equity_account = Account.objects.filter(
-                Q(account_type__name='Equity') | Q(name__icontains='Retained Earnings') | Q(name__icontains='Fund Balance')
+                Q(account_type__name='Equity') | Q(
+                    name__icontains='Retained Earnings') | Q(name__icontains='Fund Balance')
             ).first()
-            
+
             # Fallback if no equity account exists (prevents crash, though setup should have one)
             if not equity_account:
                 equity_account = Account.objects.filter(is_active=True).first()
 
             # Create the Parent Journal Entry
             je = JournalEntry.objects.create(
-                date=opening_fy.start_date, # Date is start of NEW fiscal year
-                category='PROJECTS', # or 'OPENING_BALANCE'
+                date=opening_fy.start_date,  # Date is start of NEW fiscal year
+                category='PROJECTS',  # or 'OPENING_BALANCE'
                 description=f"Opening Balance Carryover from {closing_fy.name}",
-                total_amount=Decimal('0.00'), # Will update later
+                total_amount=Decimal('0.00'),  # Will update later
                 status='POSTED',
                 created_by_user_id=user.id,
                 created_by_username=getattr(user, 'username', 'N/A')
@@ -154,15 +159,15 @@ class ProcessYearEndClosingView(APIView):
                     budget_allocation=old_alloc,
                     status='APPROVED'
                 ).aggregate(total=Coalesce(Sum('amount'), Decimal('0.00')))['total']
-                
+
                 remaining = old_alloc.amount - total_spent
 
                 if remaining <= 0:
-                    continue 
+                    continue
 
                 if old_alloc.id in selected_ids:
                     # --- CARRY OVER LOGIC ---
-                    
+
                     # A. Create/Get New Allocation
                     new_alloc, created = BudgetAllocation.objects.get_or_create(
                         fiscal_year=opening_fy,
@@ -185,25 +190,27 @@ class ProcessYearEndClosingView(APIView):
                     # B. Create Audit Log (BudgetTransfer)
                     BudgetTransfer.objects.create(
                         fiscal_year=opening_fy,
-                        source_allocation=None, 
+                        source_allocation=None,
                         destination_allocation=new_alloc,
                         amount=remaining,
                         reason=f"Carryover from {closing_fy.name}",
                         transfer_type='SUPPLEMENTAL',
                         transferred_by_user_id=user.id,
-                        transferred_by_username=getattr(user, 'username', 'N/A'),
+                        transferred_by_username=getattr(
+                            user, 'username', 'N/A'),
                         status='APPROVED',
                         approved_by_user_id=user.id,
                         approved_by_username=getattr(user, 'username', 'N/A'),
-                        approval_date=transaction.get_connection().ops.value_to_db_datetime(transaction.get_connection().ops.last_executed_query)
+                        # --- FIX: Use timezone.now() ---
+                        approval_date=timezone.now()
                     )
 
                     # C. Create Journal Entry Lines (Ledger)
                     # Debit: Increase expense allocation capability (Logic: Budget Entry)
                     JournalEntryLine.objects.create(
                         journal_entry=je,
-                        account=old_alloc.account, # The specific expense account
-                        transaction_type='DEBIT', 
+                        account=old_alloc.account,  # The specific expense account
+                        transaction_type='DEBIT',
                         journal_transaction_type='TRANSFER',
                         amount=remaining,
                         description=f"Carryover to {old_alloc.department.code} - {old_alloc.category.name}",

@@ -1,6 +1,8 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
+
+from core.views_analytics import SpendingHeatmapView, SpendingTrendsView, TopCategoriesView
 from .views_utils import get_server_time
 from .views_budget import AccountDropdownView, AccountSetupListView, BudgetAdjustmentView, BudgetProposalSummaryView, BudgetTransferViewSet, BudgetVarianceReportView, FiscalYearDropdownView, JournalEntryCreateView, JournalEntryListView, LedgerExportView, ProposalHistoryView, LedgerViewList, ProposalReviewBudgetOverview, SupplementalBudgetRequestView, export_budget_proposal_excel, export_budget_variance_excel, journal_choices, DepartmentDropdownView, AccountTypeDropdownView
 from . import views_expense, views_dashboard
@@ -60,6 +62,11 @@ urlpatterns = [
          name='dashboard-overall-monthly-flow'),
     path('dashboard/category-budget-status/', get_category_budget_status,
          name='dashboard-category-budget-status'),
+    
+    # --- Analytics Endpoints ---
+    path('dashboard/analytics/spending-trends/', SpendingTrendsView.as_view(), name='analytics-trends'),
+    path('dashboard/analytics/top-categories/', TopCategoriesView.as_view(), name='analytics-categories'),
+    path('dashboard/analytics/heatmap/', SpendingHeatmapView.as_view(), name='analytics-heatmap'),
 
     # --- Budget Proposal Endpoints (BEFORE router inclusion) ---
     path('budget-proposals/summary/', BudgetProposalSummaryView.as_view(),

@@ -15,7 +15,8 @@ Calculations: Math is done consistently using Decimal on the backend.
 Consistency: The Pie Chart and Department List will now scale down when you select "Monthly" or "Quarterly", matching the Summary Cards.
 Accuracy: Division happens before subtraction, reducing rounding drift.
 
-
+TODO: Filter out fiscal years in Old Dropdown to only show years where end_date is in the past or today.
+TODO: Make Export on spendingTrendsData better and not just the two cards
 */
 import React, { useState, useEffect } from "react";
 import { Line, Pie, Bar } from "react-chartjs-2";
@@ -59,6 +60,9 @@ import {
   getForecastAccuracy,
   getTopCategoryAllocations,
   getDepartmentBudgetData,
+  getSpendingTrends,
+  getTopSpendingCategories,
+  getSpendingHeatmap,
 } from "../../API/dashboardAPI";
 import { useAuth } from "../../context/AuthContext";
 import ManageProfile from "./ManageProfile";
@@ -457,13 +461,15 @@ const exportSpendingReport = (type, data, filters) => {
         ["Time Granularity:", filters.granularity],
         [""],
         ["Period", "Total Spent", "Percentage Change", "Status"],
-        ...(data.chartData?.labels?.map((label, index) => [
+        // FIX: Access data.labels directly, not data.chartData.labels
+        ...(data.labels?.map((label, index) => [
           label,
-          formatPeso(data.chartData.datasets[0].data[index] || 0),
-          data.chartData.datasets[0].percentageChange?.[index]
-            ? `${data.chartData.datasets[0].percentageChange[index]}%`
+          // FIX: Access data.datasets[0] directly
+          formatPeso(data.datasets[0].data[index] || 0),
+          data.datasets[0].percentageChange?.[index]
+            ? `${data.datasets[0].percentageChange[index]}%`
             : "N/A",
-          data.chartData.datasets[0].percentageChange?.[index] >= 0
+          data.datasets[0].percentageChange?.[index] >= 0
             ? "Increase"
             : "Decrease",
         ]) || []),
@@ -627,7 +633,6 @@ const getMockHeatmapData = (department, aggregation) => {
 function BudgetDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  
 
   // UI State
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
@@ -697,11 +702,11 @@ function BudgetDashboard() {
   });
 
   const calculateProgress = (start, end) => {
-      const total = new Date(end) - new Date(start);
-      const elapsed = new Date() - new Date(start);
-      return Math.min(100, Math.max(0, (elapsed / total) * 100)).toFixed(1);
+    const total = new Date(end) - new Date(start);
+    const elapsed = new Date() - new Date(start);
+    return Math.min(100, Math.max(0, (elapsed / total) * 100)).toFixed(1);
   };
-  const currentActiveYear = fiscalYears.find(fy => fy.is_active);
+  const currentActiveYear = fiscalYears.find((fy) => fy.is_active);
 
   // Fiscal Year Management State
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -856,29 +861,57 @@ function BudgetDashboard() {
     timeAggregation,
   ]);
 
-  const fetchSpendingAnalyticsData = () => {
-    // Mock API calls - replace with actual API calls
-    if (activeSpendingTab === "trends") {
-      const data = getMockDepartmentSpendingTrends(
-        selectedDepartment,
-        dateRange.startDate,
-        dateRange.endDate,
-        timeGranularity
-      );
-      setSpendingTrendsData(data);
-    } else if (activeSpendingTab === "categories") {
-      const data = getMockHighestSpendingCategories(
-        selectedCategoryDepartment,
-        categoryDateRange.startDate,
-        categoryDateRange.endDate
-      );
-      setHighestSpendingCategories(data);
-    } else if (activeSpendingTab === "heatmap") {
-      const data = getMockHeatmapData(
-        selectedHeatmapDepartment,
-        timeAggregation
-      );
-      setHeatmapData(data);
+  const fetchSpendingAnalyticsData = async () => {
+    // console.log("Fetching Analytics for:", activeSpendingTab);
+
+    try {
+      if (activeSpendingTab === "trends") {
+        const params = {
+          department: selectedDepartment,
+          start_date: dateRange.startDate,
+          end_date: dateRange.endDate,
+          granularity: timeGranularity,
+        };
+        const res = await getSpendingTrends(params);
+
+        const chartData = {
+          labels: res.data.labels,
+          datasets: [
+            {
+              label: `Spending - ${selectedDepartment}`,
+              data: res.data.data,
+              percentageChange: res.data.percentage_changes,
+              borderColor: "#007bff",
+              backgroundColor: "rgba(0, 123, 255, 0.1)",
+              tension: 0.4,
+              fill: true,
+            },
+          ],
+          totalAmount: res.data.total_amount,
+          avgPercentageChange: res.data.avg_percentage_change,
+        };
+        setSpendingTrendsData(chartData);
+      } else if (activeSpendingTab === "categories") {
+        const params = {
+          department: selectedCategoryDepartment,
+          start_date: categoryDateRange.startDate,
+          end_date: categoryDateRange.endDate,
+        };
+        const res = await getTopSpendingCategories(params);
+        setHighestSpendingCategories(res.data);
+      } else if (activeSpendingTab === "heatmap") {
+        const params = {
+          department: selectedHeatmapDepartment,
+          // FIX: Use the state variables from the UI
+          start_date: categoryDateRange.startDate, 
+          end_date: categoryDateRange.endDate,
+          aggregation: timeAggregation
+        };
+        const res = await getSpendingHeatmap(params);
+        setHeatmapData(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
     }
   };
 
@@ -896,6 +929,24 @@ function BudgetDashboard() {
       console.error("Failed to fetch fiscal years", error);
     }
   };
+
+  // Add to useEffect that runs on mount
+  useEffect(() => {
+    if (!isFinanceManager && user?.department) {
+      // Auto-set department for General Users
+      const mappedDept = Object.keys(DEPARTMENTS_MAPPING).find((key) =>
+        DEPARTMENTS_MAPPING[key].some((keyword) =>
+          user.department.includes(keyword)
+        )
+      );
+
+      if (mappedDept) {
+        setSelectedDepartment(mappedDept);
+        setSelectedCategoryDepartment(mappedDept);
+        setSelectedHeatmapDepartment(mappedDept);
+      }
+    }
+  }, [isFinanceManager, user]);
 
   // --- EVENT HANDLERS ---
 
@@ -1584,13 +1635,13 @@ function BudgetDashboard() {
                 style={{
                   background: "none",
                   border: "none",
-                  fontSize: "16px",
+                  fontSize: "14px",
                   cursor: "pointer",
-                  color: activeView === "fiscal-year" ? "#007bff" : "#333",
-                  fontWeight: 500,
+                  color: activeView === "fiscal-year" ? "#007bff" : "#5f5f5fff",
+                  fontWeight: 400,
                 }}
               >
-                Fiscal Year Management
+                FY Management
               </button>
             )}
 
@@ -3066,6 +3117,7 @@ function BudgetDashboard() {
                           alignItems: "end",
                         }}
                       >
+                        {/* Department Filter with Role-Based Rendering */}
                         <div>
                           <label
                             style={{
@@ -3078,48 +3130,68 @@ function BudgetDashboard() {
                           >
                             Department
                           </label>
-                          <div style={{ position: "relative" }}>
-                            <select
-                              value={selectedDepartment}
-                              onChange={(e) =>
-                                setSelectedDepartment(e.target.value)
-                              }
+                          {isFinanceManager ? (
+                            // Finance/Admin: Show dropdown with all departments
+                            <div style={{ position: "relative" }}>
+                              <select
+                                value={selectedDepartment}
+                                onChange={(e) =>
+                                  setSelectedDepartment(e.target.value)
+                                }
+                                style={{
+                                  width: "100%",
+                                  padding: "10px 12px",
+                                  paddingRight: "35px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #ced4da",
+                                  backgroundColor: "white",
+                                  fontSize: "14px",
+                                  appearance: "none",
+                                  outline: "none",
+                                  height: "40px",
+                                }}
+                              >
+                                <option value="All Departments">
+                                  All Departments
+                                </option>
+                                {DEPARTMENTS.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown
+                                size={14}
+                                style={{
+                                  position: "absolute",
+                                  right: "12px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  color: "#6c757d",
+                                  pointerEvents: "none",
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            // General User: Show static department name (no dropdown)
+                            <div
                               style={{
                                 width: "100%",
                                 padding: "10px 12px",
-                                paddingRight: "35px",
                                 borderRadius: "6px",
-                                border: "1px solid #ced4da",
-                                backgroundColor: "white",
+                                border: "1px solid #e9ecef",
+                                backgroundColor: "#f8f9fa",
                                 fontSize: "14px",
-                                appearance: "none",
-                                outline: "none",
+                                color: "#495057",
                                 height: "40px",
+                                display: "flex",
+                                alignItems: "center",
                               }}
                             >
-                              <option value="All Departments">
-                                All Departments
-                              </option>
-                              {DEPARTMENTS.map((dept) => (
-                                <option key={dept} value={dept}>
-                                  {dept}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown
-                              size={14}
-                              style={{
-                                position: "absolute",
-                                right: "12px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "#6c757d",
-                                pointerEvents: "none",
-                              }}
-                            />
-                          </div>
+                              {user?.department || "My Department"}
+                            </div>
+                          )}
                         </div>
-
                         <div>
                           <label
                             style={{
@@ -3219,7 +3291,6 @@ function BudgetDashboard() {
                             </div>
                           </div>
                         </div>
-
                         <div>
                           <label
                             style={{
@@ -3267,9 +3338,8 @@ function BudgetDashboard() {
                             />
                           </div>
                         </div>
-
                         <div>
-                          <button
+                          {/* <button
                             onClick={fetchSpendingAnalyticsData}
                             style={{
                               width: "100%",
@@ -3295,7 +3365,7 @@ function BudgetDashboard() {
                             }
                           >
                             Generate Report
-                          </button>
+                          </button> */}
                         </div>
                       </div>
 
@@ -3407,10 +3477,7 @@ function BudgetDashboard() {
                             borderRadius: "8px",
                             fontSize: "14px",
                           }}
-                        >
-                          Select filters and click "Generate Report" to view
-                          spending trends
-                        </div>
+                        ></div>
                       )}
                     </div>
                   )}
@@ -3481,46 +3548,65 @@ function BudgetDashboard() {
                           >
                             Department
                           </label>
-                          <div style={{ position: "relative" }}>
-                            <select
-                              value={selectedCategoryDepartment}
-                              onChange={(e) =>
-                                setSelectedCategoryDepartment(e.target.value)
-                              }
+                          {isFinanceManager ? (
+                            <div style={{ position: "relative" }}>
+                              <select
+                                value={selectedCategoryDepartment}
+                                onChange={(e) =>
+                                  setSelectedCategoryDepartment(e.target.value)
+                                }
+                                style={{
+                                  width: "100%",
+                                  padding: "10px 12px",
+                                  paddingRight: "35px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #ced4da",
+                                  backgroundColor: "white",
+                                  fontSize: "14px",
+                                  appearance: "none",
+                                  outline: "none",
+                                  height: "40px",
+                                }}
+                              >
+                                <option value="All Departments">
+                                  All Departments
+                                </option>
+                                {DEPARTMENTS.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown
+                                size={14}
+                                style={{
+                                  position: "absolute",
+                                  right: "12px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  color: "#6c757d",
+                                  pointerEvents: "none",
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
                               style={{
                                 width: "100%",
                                 padding: "10px 12px",
-                                paddingRight: "35px",
                                 borderRadius: "6px",
-                                border: "1px solid #ced4da",
-                                backgroundColor: "white",
+                                border: "1px solid #e9ecef",
+                                backgroundColor: "#f8f9fa",
                                 fontSize: "14px",
-                                appearance: "none",
-                                outline: "none",
+                                color: "#495057",
                                 height: "40px",
+                                display: "flex",
+                                alignItems: "center",
                               }}
                             >
-                              <option value="All Departments">
-                                All Departments
-                              </option>
-                              {DEPARTMENTS.map((dept) => (
-                                <option key={dept} value={dept}>
-                                  {dept}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown
-                              size={14}
-                              style={{
-                                position: "absolute",
-                                right: "12px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "#6c757d",
-                                pointerEvents: "none",
-                              }}
-                            />
-                          </div>
+                              {user?.department || "My Department"}
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -3624,7 +3710,7 @@ function BudgetDashboard() {
                         </div>
 
                         <div>
-                          <button
+                          {/* <button
                             onClick={fetchSpendingAnalyticsData}
                             style={{
                               width: "100%",
@@ -3650,11 +3736,11 @@ function BudgetDashboard() {
                             }
                           >
                             Generate Report
-                          </button>
+                          </button> */}
                         </div>
                       </div>
 
-                      {/* Categories List */}
+                      {/* Categories Chart and Table */}
                       {highestSpendingCategories.length > 0 ? (
                         <>
                           <div
@@ -3701,9 +3787,7 @@ function BudgetDashboard() {
                                     grid: { display: false },
                                     ticks: {
                                       maxRotation: 45,
-                                      font: {
-                                        size: 12,
-                                      },
+                                      font: { size: 12 },
                                     },
                                   },
                                   y: {
@@ -3713,9 +3797,7 @@ function BudgetDashboard() {
                                       callback: function (value) {
                                         return formatPeso(value);
                                       },
-                                      font: {
-                                        size: 12,
-                                      },
+                                      font: { size: 12 },
                                     },
                                   },
                                 },
@@ -3861,14 +3943,12 @@ function BudgetDashboard() {
                             borderRadius: "8px",
                             fontSize: "14px",
                           }}
-                        >
-                          No spending categories found for the selected filters
-                        </div>
+                        ></div>
                       )}
                     </div>
                   )}
 
-                  {/* Spending Heatmaps */}
+                  {/* 3. Heatmap Content */}
                   {activeSpendingTab === "heatmap" && (
                     <div>
                       <div
@@ -3896,22 +3976,17 @@ function BudgetDashboard() {
                             border: "none",
                             borderRadius: "4px",
                             cursor: "pointer",
-                            outline: "none",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            height: "32px",
                           }}
                         >
-                          Export Report
-                          <Download size={16} style={{ marginLeft: "6px" }} />
+                          Export Report <Download size={16} />
                         </button>
                       </div>
 
-                      {/* Filters */}
+                      {/* Heatmap Filters */}
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gridTemplateColumns: "repeat(4, 1fr)", // 4 Columns for layout
                           gap: "15px",
                           marginBottom: "25px",
                           backgroundColor: "#f8f9fa",
@@ -3920,71 +3995,145 @@ function BudgetDashboard() {
                           alignItems: "end",
                         }}
                       >
+                        {/* 1. Department */}
                         <div>
                           <label
                             style={{
                               display: "block",
                               marginBottom: "8px",
                               fontWeight: "500",
-                              color: "#495057",
                               fontSize: "13px",
+                              color: "#495057",
                             }}
                           >
                             Department
                           </label>
-                          <div style={{ position: "relative" }}>
-                            <select
-                              value={selectedHeatmapDepartment}
+                          {isFinanceManager ? (
+                            <div style={{ position: "relative" }}>
+                              <select
+                                value={selectedHeatmapDepartment}
+                                onChange={(e) =>
+                                  setSelectedHeatmapDepartment(e.target.value)
+                                }
+                                style={{
+                                  width: "100%",
+                                  padding: "10px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #ced4da",
+                                  appearance: "none",
+                           
+                                }}
+                              >
+                                <option value="All Departments">
+                                  All Departments
+                                </option>
+                                {DEPARTMENTS.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown
+                                size={14}
+                                style={{
+                                  position: "absolute",
+                                  right: "12px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  color: "#6c757d",
+                                  pointerEvents: "none",
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                width: "100%",
+                                padding: "10px",
+                                borderRadius: "6px",
+                                border: "1px solid #e9ecef",
+                                backgroundColor: "#f8f9fa",
+                                color: "#495057",
+                              }}
+                            >
+                              {user.department || "My Department"}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 2. Date Range (Crucial for seeing historical data) */}
+                        <div>
+                          <label
+                            style={{
+                              display: "block",
+                              marginBottom: "8px",
+                              fontWeight: "500",
+                              fontSize: "13px",
+                              color: "#495057",
+                            }}
+                          >
+                            Date Range
+                          </label>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "5px",
+                              alignItems: "center",
+                            }}
+                          >
+                            <input
+                              type="date"
+                              value={categoryDateRange.startDate}
                               onChange={(e) =>
-                                setSelectedHeatmapDepartment(e.target.value)
+                                setCategoryDateRange({
+                                  ...categoryDateRange,
+                                  startDate: e.target.value,
+                                })
                               }
                               style={{
                                 width: "100%",
-                                padding: "10px 12px",
-                                paddingRight: "35px",
+                                padding: "10px",
                                 borderRadius: "6px",
+                                background: "#ffffffff",
                                 border: "1px solid #ced4da",
-                                backgroundColor: "white",
-                                fontSize: "14px",
-                                appearance: "none",
-                                outline: "none",
-                                height: "40px",
+                                fontSize: "13px",
                               }}
-                            >
-                              <option value="All Departments">
-                                All Departments
-                              </option>
-                              {DEPARTMENTS.map((dept) => (
-                                <option key={dept} value={dept}>
-                                  {dept}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown
-                              size={14}
+                            />
+                            <span style={{ fontSize: "12px", color: "#666" }}>
+                              to
+                            </span>
+                            <input
+                              type="date"
+                              value={categoryDateRange.endDate}
+                              onChange={(e) =>
+                                setCategoryDateRange({
+                                  ...categoryDateRange,
+                                  endDate: e.target.value,
+                                })
+                              }
                               style={{
-                                position: "absolute",
-                                right: "12px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "#6c757d",
-                                pointerEvents: "none",
+                                width: "100%",
+                                padding: "10px",
+                                borderRadius: "6px",
+                                border: "1px solid #ced4da",background: "#ffffffff",
+                                fontSize: "13px",
                               }}
                             />
                           </div>
                         </div>
 
+                        {/* 3. Aggregation */}
                         <div>
                           <label
                             style={{
                               display: "block",
                               marginBottom: "8px",
                               fontWeight: "500",
-                              color: "#495057",
                               fontSize: "13px",
+                              color: "#495057",
                             }}
                           >
-                            Time Aggregation
+                            Aggregation
                           </label>
                           <div style={{ position: "relative" }}>
                             <select
@@ -3994,15 +4143,10 @@ function BudgetDashboard() {
                               }
                               style={{
                                 width: "100%",
-                                padding: "10px 12px",
-                                paddingRight: "35px",
+                                padding: "10px",
                                 borderRadius: "6px",
-                                border: "1px solid #ced4da",
-                                backgroundColor: "white",
-                                fontSize: "14px",
+                                border: "1px solid #ced4da",background: "#ffffffff",
                                 appearance: "none",
-                                outline: "none",
-                                height: "40px",
                               }}
                             >
                               <option value="Monthly">Monthly</option>
@@ -4022,137 +4166,94 @@ function BudgetDashboard() {
                           </div>
                         </div>
 
-                        <div>
-                          <button
-                            onClick={fetchSpendingAnalyticsData}
-                            style={{
-                              width: "100%",
-                              padding: "10px 12px",
-                              backgroundColor: "#007bff",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              outline: "none",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s",
-                              height: "40px",
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#0056b3")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#007bff")
-                            }
-                          >
-                            Generate Heatmap
-                          </button>
-                        </div>
+                        {/* 4. Button */}
+                        {/* <button
+                          onClick={fetchSpendingAnalyticsData}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            background: "#007bff",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontWeight: "500",
+                          }}
+                        >
+                          Generate Heatmap
+                        </button> */}
                       </div>
 
-                      {/* Heatmap */}
                       {heatmapData.length > 0 ? (
                         <>
                           <div
                             style={{
                               marginBottom: "25px",
                               backgroundColor: "#f8f9fa",
-                              padding: "16px",
+                              padding: "20px",
                               borderRadius: "8px",
                             }}
                           >
                             {renderHeatmap()}
                           </div>
-
                           <div
                             style={{
-                              backgroundColor: "#f8f9fa",
-                              padding: "12px",
+                              display: "flex",
+                              gap: "20px",
+                              padding: "15px",
+                              background: "#f8f9fa",
                               borderRadius: "8px",
+                              fontSize: "14px",
                             }}
                           >
-                            <h4
-                              style={{
-                                marginBottom: "8px",
-                                color: "#495057",
-                                fontSize: "14px",
-                              }}
-                            >
-                              Intensity Legend
-                            </h4>
+                            <strong>Legend:</strong>
                             <div
                               style={{
                                 display: "flex",
-                                gap: "15px",
                                 alignItems: "center",
+                                gap: "5px",
                               }}
                             >
                               <div
                                 style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
+                                  width: "12px",
+                                  height: "12px",
+                                  background: "#28a745",
                                 }}
-                              >
-                                <div
-                                  style={{
-                                    width: "16px",
-                                    height: "16px",
-                                    backgroundColor: "#28a745",
-                                    borderRadius: "4px",
-                                  }}
-                                ></div>
-                                <span
-                                  style={{ color: "#495057", fontSize: "13px" }}
-                                >
-                                  Low Spending
-                                </span>
-                              </div>
+                              ></div>{" "}
+                              Low
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
+                              }}
+                            >
                               <div
                                 style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
+                                  width: "12px",
+                                  height: "12px",
+                                  background: "#ffc107",
                                 }}
-                              >
-                                <div
-                                  style={{
-                                    width: "16px",
-                                    height: "16px",
-                                    backgroundColor: "#ffc107",
-                                    borderRadius: "4px",
-                                  }}
-                                ></div>
-                                <span
-                                  style={{ color: "#495057", fontSize: "13px" }}
-                                >
-                                  Medium Spending
-                                </span>
-                              </div>
+                              ></div>{" "}
+                              Medium
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
+                              }}
+                            >
                               <div
                                 style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
+                                  width: "12px",
+                                  height: "12px",
+                                  background: "#dc3545",
                                 }}
-                              >
-                                <div
-                                  style={{
-                                    width: "16px",
-                                    height: "16px",
-                                    backgroundColor: "#dc3545",
-                                    borderRadius: "4px",
-                                  }}
-                                ></div>
-                                <span
-                                  style={{ color: "#495057", fontSize: "13px" }}
-                                >
-                                  High Spending
-                                </span>
-                              </div>
+                              ></div>{" "}
+                              High
                             </div>
                           </div>
                         </>
@@ -4160,15 +4261,25 @@ function BudgetDashboard() {
                         <div
                           style={{
                             textAlign: "center",
-                            padding: "30px",
+                            padding: "40px",
                             color: "#6c757d",
                             backgroundColor: "#f8f9fa",
                             borderRadius: "8px",
-                            fontSize: "14px",
                           }}
                         >
-                          Select filters and click "Generate Heatmap" to view
-                          spending intensity
+                          <p
+                            style={{
+                              marginBottom: "10px",
+                              fontSize: "16px",
+                              fontWeight: "500",
+                            }}
+                          >
+                            No Data Available
+                          </p>
+                          <p style={{ fontSize: "13px" }}>
+                            Try adjusting the date range (e.g., set start date
+                            to 2023) or selecting a different department.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -5208,7 +5319,12 @@ function BudgetDashboard() {
                     >
                       <option value="">-- Select --</option>
                       {fiscalYears
-                        .filter((fy) => fy.is_active && !fy.is_locked)
+                        .filter(
+                          (fy) =>
+                            fy.is_active &&
+                            !fy.is_locked &&
+                            fy.id !== parseInt(closingYearId)
+                        ) // <--- ADD THIS CHECK
                         .map((fy) => (
                           <option key={fy.id} value={fy.id}>
                             {fy.name}
