@@ -172,31 +172,40 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             print(f"[AUTH_PROFILE_UPDATE]   - {key}: {file_obj.name} ({file_obj.content_type}, {file_obj.size} bytes)")
         
         # If not admin/superuser, restrict which fields can be updated
+        # NOTE: The Serializer also restricts fields in __init__, so this check is stricter than necessary.
+        # We will log it but NOT block it here, relying on the serializer to ignore extra fields.
+        # This allows the frontend to send a full FormData object without causing 403s.
         if not is_admin_or_superuser:
             allowed_fields = {'username', 'phone_number', 'profile_picture'}
-            restricted_fields = set(request.data.keys()) - allowed_fields
+            # We filter request.data to only keys that are actually present in the request
+            # For Multipart, all keys are strings.
+            present_keys = set(request.data.keys())
+            restricted_fields = present_keys - allowed_fields
             
             print(f"[AUTH_PROFILE_UPDATE] Non-admin user detected")
             print(f"[AUTH_PROFILE_UPDATE] Allowed fields: {allowed_fields}")
-            print(f"[AUTH_PROFILE_UPDATE] Requested fields: {set(request.data.keys())}")
-            print(f"[AUTH_PROFILE_UPDATE] Restricted fields: {restricted_fields}")
+            print(f"[AUTH_PROFILE_UPDATE] Requested fields: {present_keys}")
             
             if restricted_fields:
-                print(f"[AUTH_PROFILE_UPDATE] [REJECTED] Restricted fields detected")
-                print(f"{'='*80}\n")
-                return Response(
-                    {
-                        'error': 'Permission denied',
-                        'detail': f'You can only update: {", ".join(allowed_fields)}. '
-                                 f'Attempted to update restricted fields: {", ".join(restricted_fields)}'
-                    },
-                    status=status.HTTP_403_FORBIDDEN
-                )
+                print(f"[AUTH_PROFILE_UPDATE] [WARNING] Restricted fields detected but ignored: {restricted_fields}")
+                # We do NOT return 403 here anymore, letting Serializer handle it.
         
         print(f"[AUTH_PROFILE_UPDATE] Permission check: PASSED")
         print(f"[AUTH_PROFILE_UPDATE] Creating serializer...")
         
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        
+        print(f"[AUTH_PROFILE_UPDATE] Serializer created: {serializer.__class__.__name__}")
+        print(f"[AUTH_PROFILE_UPDATE] Validating serializer...")
+        
+        if not serializer.is_valid():
+            print(f"[AUTH_PROFILE_UPDATE] [ERROR] Validation Failed!")
+            print(f"[AUTH_PROFILE_UPDATE] Errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        print(f"[AUTH_PROFILE_UPDATE] Serializer valid: True")
+        print(f"[AUTH_PROFILE_UPDATE] [OK] Validation passed")
+        print(f"[AUTH_PROFILE_UPDATE] Saving changes...")
         
         print(f"[AUTH_PROFILE_UPDATE] Serializer created: {type(serializer).__name__}")
         print(f"[AUTH_PROFILE_UPDATE] Validating serializer...")

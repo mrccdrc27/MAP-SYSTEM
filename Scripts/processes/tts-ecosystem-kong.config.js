@@ -58,6 +58,8 @@ module.exports = {
         KONG_TRUSTED: "true",  // Services trust Kong's pre-validated JWT
         RECAPTCHA_ENABLED: "False",
         CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/",
+        // Media files served through Kong gateway
+        MEDIA_BASE_URL: "http://localhost:8080/auth",
         DJANGO_CORS_ALLOWED_ORIGINS: "http://localhost:1000,http://127.0.0.1:1000,http://localhost:8080,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173",
         DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:8080,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3000,http://127.0.0.1:3000",
         TTS_SYSTEM_URL: "http://localhost:1000/",
