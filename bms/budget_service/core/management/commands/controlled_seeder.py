@@ -216,6 +216,10 @@ class Command(BaseCommand):
                 defaults=defaults
             )
             
+            # --- CRITICAL FIX: Set Password ---
+            user.set_password('password123') 
+            user.save()
+            
             if created:
                 self.stdout.write(f"  Created local user: {username}")
             else:

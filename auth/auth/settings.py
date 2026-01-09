@@ -1,3 +1,4 @@
+#auth/auth/settings.py
 from pathlib import Path
 from decouple import config
 import os
@@ -192,14 +193,14 @@ JWT_SIGNING_KEY = config(
 )
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Short-lived for security, refresh via polling
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # CHANGED: Increased from 5 to 60 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': JWT_SIGNING_KEY,
-    'USER_ID_FIELD': 'id',  # Use the integer primary key field
-    'USER_ID_CLAIM': 'user_id',  # The claim in the token that will contain the user ID
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 }
 
 SPECTACULAR_SETTINGS = {
@@ -326,7 +327,7 @@ SYSTEM_TEMPLATE_URLS = {
     'tts': config('TTS_SYSTEM_URL', default='http://localhost:1000'),
     'ams': config('AMS_SYSTEM_URL', default='http://localhost:3000/ams'),
     'hdts': config('HDTS_SYSTEM_URL', default='http://localhost:5173/employee/home'),
-    'bms': config('BMS_SYSTEM_URL', default='http://localhost:3000/bms'),
+    'bms': config('BMS_SYSTEM_URL', default='http://localhost:5173'),
 }
 
 # Fallback system URL for unknown systems

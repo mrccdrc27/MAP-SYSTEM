@@ -148,7 +148,7 @@ class LoginView(FormView):
             'tts_system_url': settings.SYSTEM_TEMPLATE_URLS.get('tts', 'http://localhost:1000'),
             'ams_system_url': settings.SYSTEM_TEMPLATE_URLS.get('ams', 'http://localhost:3000/ams'),
             'hdts_system_url': settings.SYSTEM_TEMPLATE_URLS.get('hdts', 'http://localhost:5173'),
-            'bms_system_url': settings.SYSTEM_TEMPLATE_URLS.get('bms', 'http://localhost:3000/bms'),
+            'bms_system_url': settings.SYSTEM_TEMPLATE_URLS.get('bms', 'http://localhost:5173'),
             'default_system_url': settings.DEFAULT_SYSTEM_URL,
         })
         return context

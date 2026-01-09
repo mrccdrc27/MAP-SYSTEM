@@ -2,13 +2,24 @@
 import axios from 'axios';
 import { getAccessToken, removeAccessToken } from './TokenUtils';
 
+// 1. Config
+const USE_CENTRAL_AUTH = import.meta.env.VITE_USE_CENTRAL_AUTH === 'true';
+const CENTRAL_AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:8001").replace(/\/$/, "");
+const LOCAL_BMS_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000/api").replace(/\/$/, "");
+
+// 2. Select Base URL
+const BASE_URL = USE_CENTRAL_AUTH ? `${CENTRAL_AUTH_URL}/api/v1` : LOCAL_BMS_URL;
 const AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:18001").replace(/\/$/, "");
 
+
 const authApi = axios.create({
-    baseURL: `${AUTH_URL}/api/v1`, // Using V1
+    baseURL: BASE_URL,
     headers: { 'Content-Type': 'application/json' },
-    withCredentials: true,
+    // Only use credentials (cookies) if using Central Auth
+    withCredentials: USE_CENTRAL_AUTH, 
 });
+
+
 
 authApi.interceptors.request.use(
     (config) => {
@@ -20,7 +31,19 @@ authApi.interceptors.request.use(
 );
 
 export const login = async (email, password) => {
-    const response = await authApi.post('/token/obtain/', { email, password });
+    // 3. Select Endpoint
+    // Central Auth -> /users/login/api/ (Cookies)
+    // Local BMS -> /token/ (JSON Response)
+    const endpoint = USE_CENTRAL_AUTH ? '/users/login/api/' : '/token/';
+    
+    // SimpleJWT standard serializer expects 'username'
+    const payload = { 
+        email, 
+        password,
+        username: email 
+    };
+
+    const response = await authApi.post(endpoint, payload);
     return response.data;
 };
 

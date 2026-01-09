@@ -11,6 +11,10 @@ from .views_dashboard import (
     get_all_projects, get_dashboard_budget_summary, get_department_budget_status, get_forecast_accuracy,
     overall_monthly_budget_actual, get_category_budget_status, get_budget_forecast, ProjectDetailView
 )
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 from .views import (
     DepartmentViewSet,
     ValidProjectAccountView
@@ -45,6 +49,10 @@ ui_router.register(r'expenses', ExpenseViewSet, basename='expense')
 ui_router.register(r'budget-transfers', BudgetTransferViewSet, basename='budget-transfers')
 
 urlpatterns = [
+     
+path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
     path('', include(router.urls)), 
     
     # --- Dashboard Endpoints ---
