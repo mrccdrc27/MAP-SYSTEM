@@ -45,6 +45,23 @@ def receive_ticket(ticket_data):
             defaults={'ticket_data': ticket_data, 'priority': priority, 'status': status}
         )
         
+        # 🕒 Time Travel Support: Backdate creation timestamps if submit_date is in simulated past
+        if ticket_data.get('submit_date'):
+            try:
+                submit_date_str = ticket_data.get('submit_date')
+                parsed_date = parse_datetime(submit_date_str)
+                if parsed_date:
+                    # Force update auto_now_add fields
+                    WorkflowTicket.objects.filter(pk=ticket.pk).update(
+                        created_at=parsed_date,
+                        fetched_at=parsed_date
+                    )
+                    # Refresh instance to have correct timestamps in memory if needed
+                    ticket.refresh_from_db()
+                    print(f"⏳ Backdated ticket {ticket_number} to {parsed_date}")
+            except Exception as e:
+                print(f"⚠️ Failed to backdate ticket: {e}")
+
         action = "created" if created else "updated"
         print(f"✅ Ticket {action} with number: {ticket_number}, status: {status}")
 
@@ -153,6 +170,25 @@ def create_task_for_ticket(ticket_id):
             status='pending',
             fetched_at=timezone.now()
         )
+
+        # 🕒 Time Travel Support: Backdate task if ticket has simulated past date
+        historical_date = None
+        try:
+            submit_date_str = ticket.ticket_data.get('submit_date')
+            if submit_date_str:
+                parsed_date = parse_datetime(submit_date_str)
+                if parsed_date:
+                    historical_date = parsed_date
+                    # Force update task timestamps
+                    Task.objects.filter(pk=task.pk).update(
+                        created_at=parsed_date,
+                        fetched_at=parsed_date,
+                    )
+                    # Refresh to get updated fields
+                    task.refresh_from_db()
+                    print(f"⏳ Backdated task {task.task_id} to {parsed_date}")
+        except Exception as e:
+            print(f"⚠️ Failed to backdate task: {e}")
         
         # 4. Assign ticket owner (Ticket Coordinator) using round-robin
         from task.utils.assignment import assign_ticket_owner
@@ -169,6 +205,25 @@ def create_task_for_ticket(ticket_id):
             print(f"⚠️ No users assigned for role {first_step.role_id.name}")
             return {"status": "error", "message": "No users found for role"}
         
+        # 🕒 Time Travel Support: Backdate TaskItems and their History
+        if historical_date and assigned_items:
+            try:
+                from task.models import TaskItem, TaskItemHistory
+                item_ids = [item.task_item_id for item in assigned_items]
+                
+                # Update TaskItems assigned_on
+                TaskItem.objects.filter(task_item_id__in=item_ids).update(assigned_on=historical_date)
+                
+                # Update initial History records (status='new')
+                TaskItemHistory.objects.filter(
+                    task_item_id__in=item_ids, 
+                    status='new'
+                ).update(created_at=historical_date)
+                
+                print(f"⏳ Backdated {len(item_ids)} TaskItems and history to {historical_date}")
+            except Exception as e:
+                print(f"⚠️ Failed to backdate TaskItems: {e}")
+
         # Mark ticket as task allocated
         ticket.is_task_allocated = True
         ticket.save()

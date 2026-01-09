@@ -70,17 +70,6 @@
   min-height: 3em;
 }
 
-.permList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-md);
-}
-
-.permBadge {
-  text-transform: capitalize;
-}
-
 .systemNote {
   font-size: 10px;
   color: var(--color-danger);
@@ -95,13 +84,6 @@
   max-width: 800px;
 }
 
-.formRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-md);
-}
-
 .textarea {
   width: 100%;
   padding: var(--space-sm);
@@ -110,23 +92,6 @@
   background: var(--input-bg);
   color: var(--text-color);
   font-family: inherit;
-}
-
-.permGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-md);
-  background: var(--bg-content-color);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
-}
-
-.permItem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: var(--font-sm);
-  cursor: pointer;
 }
 
 .formActions {

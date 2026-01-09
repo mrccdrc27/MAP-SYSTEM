@@ -140,15 +140,6 @@ export default function TicketTable({
   const endIndex = startIndex + pageSize;
   const paginatedTickets = tickets.slice(startIndex, endIndex);
 
-  // 👇 Add this to inspect data
-  // console.log("Fetched tickets:", JSON.stringify(tickets, null, 2));
-
-   // 👇 Log the first item if it exists
-  if (tickets.length > 0) {
-    console.log("First ticket item:", tickets[0]);
-  }
-
-
   return (
     <div className={general.ticketTableSection}>
       <div className={general.tableHeader}>
@@ -171,7 +162,7 @@ export default function TicketTable({
               ))
             ) : tickets.length > 0 ? (
               paginatedTickets.map((ticket) => (
-                <TicketItem key={ticket.id} item={ticket} />
+                <TicketItem key={ticket.step_instance_id || ticket.ticket_number} item={ticket} />
               ))
             ) : (
               <tr>

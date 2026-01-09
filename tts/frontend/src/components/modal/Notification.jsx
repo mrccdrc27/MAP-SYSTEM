@@ -46,10 +46,17 @@ export default function Notification({
     // Context state is shared across all consumers, no need to refresh parent
   };
 
-  // Handle notification click - navigate to task if related_ticket_number exists
+  // Handle notification click - mark as read and navigate if possible
   const handleNotificationClick = async (notification) => {
+    // Check if unread using robust logic
+    const isUnread =
+      notification?.is_read === false ||
+      notification?.is_read === 0 ||
+      notification?.read === false ||
+      notification?.read === 0;
+
     // Mark as read first
-    if (!notification.is_read) {
+    if (isUnread) {
       await handleMarkAsRead(notification.id);
     }
     
@@ -142,50 +149,51 @@ export default function Notification({
           {!loading && !error && list.length === 0 ? (
             <p className={styles.emptyState}>No notifications.</p>
           ) : (
-            list.map((n) => (
-              <div 
-                key={n.id} 
-                className={`${styles.nItem} ${n.related_ticket_number ? styles.nItemClickable : ''}`}
-                onClick={() => n.related_ticket_number && handleNotificationClick(n)}
-                style={{ cursor: n.related_ticket_number ? 'pointer' : 'default' }}
-              >
-                <div className={styles.nUserAvatar}>
-                  <img
-                    className={styles.userAvatar}
-                    src="/map-logo.png"
-                    alt="User Avatar"
-                  />
-                </div>
-                <div className={styles.nContent}>
-                  <h3>{n.subject || "no subject"}</h3>
-                  <p>{n.message}</p>
-                  <span className={styles.nTime}>
-                    {n.created_at ? formatDate(n.created_at) : "Just now"}
-                  </span>
-                </div>
-                {/* show a small blue unread dot for notifications that are not read */}
-                {(() => {
-                  const isUnread =
-                    n?.is_read === false ||
-                    n?.is_read === 0 ||
-                    n?.read === false ||
-                    n?.read === 0 ||
-                    // some backends use `is_read` being undefined for unread
-                    (typeof n?.is_read === "undefined" && activeTab === "unread");
-                  return isUnread ? <span className={styles.nUnreadDot} /> : null;
-                })()}
+            list.map((n, index) => {
+              const isUnread =
+                n?.is_read === false ||
+                n?.is_read === 0 ||
+                n?.read === false ||
+                n?.read === 0 ||
+                // some backends use `is_read` being undefined for unread
+                (typeof n?.is_read === "undefined" && activeTab === "unread");
 
-                <div
-                  className={styles.nDeleteButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMarkAsRead(n.id);
-                  }}
+              return (
+                <div 
+                  key={n.id || `notif-${index}`} 
+                  className={`${styles.nItem} ${styles.nItemClickable}`}
+                  onClick={() => handleNotificationClick(n)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <i className="fa-solid fa-trash"></i>
+                  <div className={styles.nUserAvatar}>
+                    <img
+                      className={styles.userAvatar}
+                      src="/map-logo.png"
+                      alt="User Avatar"
+                    />
+                  </div>
+                  <div className={styles.nContent}>
+                    <h3>{n.subject || "no subject"}</h3>
+                    <p>{n.message}</p>
+                    <span className={styles.nTime}>
+                      {n.created_at ? formatDate(n.created_at) : "Just now"}
+                    </span>
+                  </div>
+                  {/* show a small blue unread dot for notifications that are not read */}
+                  {isUnread && <span className={styles.nUnreadDot} />}
+
+                  <div
+                    className={styles.nDeleteButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkAsRead(n.id);
+                    }}
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

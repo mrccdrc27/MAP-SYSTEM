@@ -112,6 +112,7 @@ const buildQueryString = (dateRange = null, additionalParams = {}) => {
  */
 const useReportingAnalytics = () => {
   const [loading, setLoading] = useState(false);
+  const [trendsLoading, setTrendsLoading] = useState(false);
   const [error, setError] = useState(null);
   
   // Ticket Analytics State
@@ -462,7 +463,7 @@ const useReportingAnalytics = () => {
   // ==================== TREND ANALYTICS ====================
 
   const fetchTicketTrends = useCallback(async (days = 30) => {
-    setLoading(true);
+    setTrendsLoading(true);
     setError(null);
     try {
       const data = await fetchEndpoint(ENDPOINTS.trends.tickets, null, { days });
@@ -472,12 +473,12 @@ const useReportingAnalytics = () => {
       setError(err.response?.data?.error || 'Failed to fetch ticket trends');
       return null;
     } finally {
-      setLoading(false);
+      setTrendsLoading(false);
     }
   }, [fetchEndpoint]);
 
   const fetchTaskItemTrends = useCallback(async (days = 30) => {
-    setLoading(true);
+    setTrendsLoading(true);
     setError(null);
     try {
       const data = await fetchEndpoint(ENDPOINTS.trends.taskItems, null, { days });
@@ -487,7 +488,7 @@ const useReportingAnalytics = () => {
       setError(err.response?.data?.error || 'Failed to fetch task item trends');
       return null;
     } finally {
-      setLoading(false);
+      setTrendsLoading(false);
     }
   }, [fetchEndpoint]);
 
@@ -821,6 +822,7 @@ const useReportingAnalytics = () => {
   return {
     // Loading/Error State
     loading,
+    trendsLoading,
     error,
     
     // Ticket Analytics State (granular)

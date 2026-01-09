@@ -23,13 +23,13 @@ export default function QuickAction() {
           Create Workflow
         </button>
 
-        <button
+        {/* <button
           className={styles.actionButton}
           onClick={() => navigate("/admin/agent")}
         >
           <i className="fas fa-edit"></i>
           Invite Agent
-        </button>
+        </button> */}
 
         <button
           className={styles.actionButton}

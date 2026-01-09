@@ -65,15 +65,13 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
             <div
               className={
                 general[
-                  `status-${
-                    matchedTicket?.ticket_status?.toLowerCase?.() ||
-                    matchedTicket?.status?.toLowerCase?.() ||
-                    ""
-                  }`
+                  `status-${matchedTicket?.status
+                    ?.toLowerCase()
+                    .replace(/\s+/g, "-")}`
                 ]
               }
             >
-              {matchedTicket.ticket_status || matchedTicket.status || "Unknown"}
+              {matchedTicket.status || "Unknown"}
             </div>
           </div>
         </div>
@@ -81,7 +79,7 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
         {/* Progress Tracker */}
         <div className={styles.ticketProgress}>
           <h3>Current Progress</h3>
-          <WorkflowVisualizer2 workflowData={tracker} />
+          <WorkflowVisualizer2 workflowData={tracker} ticketStatus={matchedTicket?.status} />
         </div>
 
         {/* Ticket Details */}
@@ -92,7 +90,7 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
           </div>
 
           <div className={styles.detailCard}>
-            <h3>Requested By</h3>
+            <h3>Current Ticket Holder</h3>
             <p>{matchedTicket.user_full_name || "N/A"}</p>
           </div>
           <div className={styles.detailCard}>
@@ -104,10 +102,8 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
             <p>{matchedTicket.origin || "N/A"}</p>
           </div>
           <div className={styles.detailCard}>
-            <h3>Ticket Status</h3>
-            <p>
-              {matchedTicket.ticket_status || matchedTicket.status || "N/A"}
-            </p>
+            <h3>Status</h3>
+            <p>{matchedTicket.status || "N/A"}</p>
           </div>
           <div className={styles.detailCard}>
             <h3>Current Step</h3>

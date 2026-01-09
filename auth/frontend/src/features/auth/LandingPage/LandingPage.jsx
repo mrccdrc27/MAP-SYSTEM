@@ -1,11 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import AuthLayout from '../../../components/Layout/AuthLayout';
 import Button from '../../../components/common/Button';
 import styles from './LandingPage.module.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
+
+  // Redirect authenticated users to /welcome
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate('/welcome', { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#fcfcfc'
+      }}>
+        <div className="spinner" style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #007bff',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+      </div>
+    );
+  }
 
   return (
     <AuthLayout
@@ -55,3 +86,4 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
+

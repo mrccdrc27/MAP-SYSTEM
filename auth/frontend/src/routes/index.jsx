@@ -5,6 +5,7 @@ import { SuperAdminProvider } from '../context/SuperAdminContext';
 // Components (Lazy loading could be added here later)
 import Login from '../features/auth/Login/Login';
 import LandingPage from '../features/auth/LandingPage';
+import Welcome from '../features/auth/Welcome';
 import Register from '../features/auth/Register/Register';
 import ForgotPassword from '../features/auth/ForgotPassword/ForgotPassword';
 import ResetPassword from '../features/auth/ResetPassword/ResetPassword';
@@ -35,6 +36,14 @@ const router = createBrowserRouter([
       {
         path: '/',
         element: <LandingPage />,
+      },
+      {
+        path: '/welcome',
+        element: (
+          <ProtectedRoute>
+            <Welcome />
+          </ProtectedRoute>
+        ),
       },
       {
         path: '/staff',

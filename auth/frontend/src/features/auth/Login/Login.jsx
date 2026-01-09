@@ -27,7 +27,7 @@ const Login = ({ userType = 'staff' }) => {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      navigate('/profile');
+      navigate('/welcome');
     }
   }, [isAuthenticated, loading, navigate]);
 
@@ -47,7 +47,7 @@ const Login = ({ userType = 'staff' }) => {
         if (profileResponse.ok) {
           login(profileResponse.data);
           success('Success', 'Logged in successfully!');
-          setTimeout(() => navigate('/profile'), 1000);
+          setTimeout(() => navigate('/welcome'), 1000);
         } else {
            error('Login Failed', 'Could not retrieve user profile.');
         }
@@ -84,7 +84,7 @@ const Login = ({ userType = 'staff' }) => {
         if (profileResponse.ok) {
           login(profileResponse.data);
           success('Success', 'Logged in successfully!');
-          setTimeout(() => navigate('/profile'), 1000);
+          setTimeout(() => navigate('/welcome'), 1000);
         } else {
            error('Verification Failed', 'Could not retrieve user profile.');
         }

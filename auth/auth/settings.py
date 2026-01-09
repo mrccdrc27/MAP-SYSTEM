@@ -238,6 +238,11 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Media Base URL for generating absolute URLs to media files
+# When behind Kong gateway, use the gateway URL (e.g., http://localhost:8080/auth)
+# When accessed directly, use the service URL (e.g., http://localhost:8003)
+MEDIA_BASE_URL = config('MEDIA_BASE_URL', default='')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

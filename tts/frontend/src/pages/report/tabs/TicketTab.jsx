@@ -27,10 +27,13 @@ import { useState } from "react";
 // styles
 import styles from "../report.module.css";
 
-export default function TicketTab({ timeFilter, analyticsData = {}, trendData = {}, categoryData = {}, loading, error }) {
+export default function TicketTab({ timeFilter, analyticsData = {}, trendData = {}, fetchTrendData, categoryData = {}, loading, error }) {
   const ticketsReport = analyticsData || {};
   const ticketTrends = trendData || {};
   const categoryAnalytics = categoryData || {};
+  
+  // Trend filter state
+  const [trendDays, setTrendDays] = useState(30);
   
   // Debug log to check category data
   console.log('TicketTab categoryData:', categoryData);
@@ -53,12 +56,13 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
     clearDrilldownData,
   } = useDrilldownAnalytics();
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
-  if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
-  if (!ticketsReport.dashboard) return <div style={{ padding: "20px" }}>No data available</div>;
-
   // Extract analytics data from aggregated response
   const dashboard = ticketsReport.dashboard || {};
+
+  if (loading && !dashboard?.total_tickets) return <div style={{ padding: "20px" }}>Loading analytics...</div>;
+  if (error) return <div style={{ color: "red", padding: "20px" }}>Error: {error}</div>;
+  if (!dashboard?.total_tickets) return <div style={{ padding: "20px" }}>No data available</div>;
+
   const statusSummary = ticketsReport.status_summary || [];
   const priorityDistribution = ticketsReport.priority_distribution || [];
   const ticketAge = ticketsReport.ticket_age || [];
@@ -128,6 +132,14 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
   const handleCloseDrilldown = () => {
     setDrilldownOpen(false);
     clearDrilldownData();
+  };
+
+  const handleTrendDaysChange = async (e) => {
+    const days = parseInt(e.target.value);
+    setTrendDays(days);
+    if (fetchTrendData) {
+      await fetchTrendData(days);
+    }
   };
 
   const kpiCardData = [
@@ -234,7 +246,20 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
       <div className={styles.chartsGrid}>
         {/* Ticket Trend Section */}
         <div className={styles.chartSection}>
-          <h2>Ticket Trends (Last 30 Days)</h2>
+          <div className={styles.trendHeader}>
+            <h2>Ticket Trends (Last {trendDays} Days)</h2>
+            <select 
+              className={styles.trendSelect}
+              value={trendDays}
+              onChange={handleTrendDaysChange}
+            >
+              <option value={7}>Last 7 Days</option>
+              <option value={30}>Last 30 Days</option>
+              <option value={90}>Last 90 Days</option>
+              <option value={180}>Last 180 Days</option>
+              <option value={365}>Last 365 Days</option>
+            </select>
+          </div>
           <div className={styles.chartRow}>
             <ChartContainer title="Ticket Creation vs Resolution Trend">
               <LineChart
@@ -297,6 +322,7 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
                 dataPoints={ageDataPoints}
                 chartTitle="Ticket Age Distribution"
                 chartLabel="Count"
+                horizontal={true}
                 onClick={({ label }) => handleAgeClick(label)}
               />
             </ChartContainer>
@@ -322,6 +348,7 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
                   dataPoints={subCategoryDataPoints}
                   chartTitle="Tickets by Sub-Category"
                   chartLabel="Count"
+                  horizontal={true}
                 />
               </ChartContainer>
               <ChartContainer title="Tickets by Department">

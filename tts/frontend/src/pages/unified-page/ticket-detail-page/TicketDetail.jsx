@@ -52,7 +52,7 @@ export default function TicketDetail() {
     instruction: "",
     taskid: null,
     currentOwner: null,
-    canAct: true,  // Can user take any action on this task item?
+    canAct: true, // Can user take any action on this task item?
   };
 
   function reducer(state, action) {
@@ -167,7 +167,7 @@ export default function TicketDetail() {
     if (stepInstance) {
       // Map ticket fields from the API response
       const t = stepInstance.task.ticket;
-      
+
       dispatch({
         type: "SET_TICKET",
         payload: {
@@ -227,7 +227,6 @@ export default function TicketDetail() {
   const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
 
   // Helper function to get button text based on ticket state
-  // Uses the simplified canAct flag from backend + specific status for messaging
   const getButtonText = (buttonType) => {
     const ticket = state.ticket;
     const canAct = state.canAct;
@@ -294,21 +293,32 @@ export default function TicketDetail() {
     let errorIcon = "fa-exclamation-circle";
     let errorTitle = "Ticket Not Found";
     let errorMessage = error;
-    let errorSubtext = "The ticket you're looking for doesn't exist or has been removed.";
+    let errorSubtext =
+      "The ticket you're looking for doesn't exist or has been removed.";
 
-    if (error.includes("no authorization") || error.includes("not assigned to you")) {
+    if (
+      error.includes("no authorization") ||
+      error.includes("not assigned to you")
+    ) {
       errorType = "unauthorized";
       errorIcon = "fa-lock";
       errorTitle = "Access Denied";
       errorMessage = "You don't have permission to view this ticket.";
       errorSubtext = "Only the assigned agent can view this ticket detail.";
-    } else if (error.includes("no assignment") || error.includes("You have no")) {
+    } else if (
+      error.includes("no assignment") ||
+      error.includes("You have no")
+    ) {
       errorType = "unassigned";
       errorIcon = "fa-user-slash";
       errorTitle = "No Assignment";
       errorMessage = "You have no assigned task for this ticket.";
-      errorSubtext = "This ticket has not been assigned to you. Please check the ticket list.";
-    } else if (error.includes("Authentication required") || error.includes("401")) {
+      errorSubtext =
+        "This ticket has not been assigned to you. Please check the ticket list.";
+    } else if (
+      error.includes("Authentication required") ||
+      error.includes("401")
+    ) {
       errorType = "unauthorized";
       errorIcon = "fa-user-circle";
       errorTitle = "Authentication Required";
@@ -325,7 +335,8 @@ export default function TicketDetail() {
       errorIcon = "fa-network-wired";
       errorTitle = "Connection Error";
       errorMessage = "Failed to fetch ticket data. Please try again.";
-      errorSubtext = "Check your internet connection and try refreshing the page.";
+      errorSubtext =
+        "Check your internet connection and try refreshing the page.";
     }
 
     return (
@@ -494,6 +505,7 @@ export default function TicketDetail() {
                   </div>
                 </div>
               </div>
+              {/* Description Section */}
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
                   <strong>Description: </strong>
@@ -502,6 +514,7 @@ export default function TicketDetail() {
                   {state.ticket?.ticket_description}
                 </p>
               </div>
+              {/* Instructions Section */}
               <div className={styles.tdInstructions}>
                 <div className={styles.iHeaderWrapper}>
                   <i className="fa-solid fa-lightbulb"></i>
@@ -512,7 +525,6 @@ export default function TicketDetail() {
                     "No instructions available for this step."}
                 </p>
               </div>
-              
               {/* Attachments Section */}
               <div className={styles.tdAttachment}>
                 <h3>Attachments</h3>
@@ -522,32 +534,55 @@ export default function TicketDetail() {
                     {state.ticket.attachments.map((file) => {
                       // Construct full URL for the attachment using helpdesk service URL
                       // Uses /api/attachments/ endpoint for public access to ticket attachments
-                      const baseUrl = import.meta.env.VITE_HELPDESK_SERVICE_URL || 'http://localhost:8000';
+                      const baseUrl =
+                        import.meta.env.VITE_HELPDESK_SERVICE_URL ||
+                        "http://localhost:8000";
                       const fileUrl = `${baseUrl}/api/attachments/${file.file_path}`;
-                      
+
                       // Determine icon based on file type
                       const getFileIcon = (fileType) => {
-                        if (fileType?.includes('pdf')) return 'fa-file-pdf';
-                        if (fileType?.includes('image')) return 'fa-file-image';
-                        if (fileType?.includes('word') || fileType?.includes('document')) return 'fa-file-word';
-                        if (fileType?.includes('excel') || fileType?.includes('spreadsheet')) return 'fa-file-excel';
-                        if (fileType?.includes('powerpoint') || fileType?.includes('presentation')) return 'fa-file-powerpoint';
-                        if (fileType?.includes('zip') || fileType?.includes('archive')) return 'fa-file-zipper';
-                        if (fileType?.includes('text')) return 'fa-file-lines';
-                        return 'fa-file';
+                        if (fileType?.includes("pdf")) return "fa-file-pdf";
+                        if (fileType?.includes("image")) return "fa-file-image";
+                        if (
+                          fileType?.includes("word") ||
+                          fileType?.includes("document")
+                        )
+                          return "fa-file-word";
+                        if (
+                          fileType?.includes("excel") ||
+                          fileType?.includes("spreadsheet")
+                        )
+                          return "fa-file-excel";
+                        if (
+                          fileType?.includes("powerpoint") ||
+                          fileType?.includes("presentation")
+                        )
+                          return "fa-file-powerpoint";
+                        if (
+                          fileType?.includes("zip") ||
+                          fileType?.includes("archive")
+                        )
+                          return "fa-file-zipper";
+                        if (fileType?.includes("text")) return "fa-file-lines";
+                        return "fa-file";
                       };
-                      
+
                       // Format file size
                       const formatFileSize = (bytes) => {
-                        if (!bytes) return '';
+                        if (!bytes) return "";
                         if (bytes < 1024) return `${bytes} B`;
-                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                        if (bytes < 1024 * 1024)
+                          return `${(bytes / 1024).toFixed(1)} KB`;
                         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
                       };
-                      
+
                       return (
                         <div key={file.id} className={styles.attachmentItem}>
-                          <i className={`fa-solid ${getFileIcon(file.file_type)} ${styles.attachmentIcon}`}></i>
+                          <i
+                            className={`fa-solid ${getFileIcon(
+                              file.file_type
+                            )} ${styles.attachmentIcon}`}
+                          ></i>
                           <div className={styles.attachmentInfo}>
                             <a
                               href={fileUrl}
@@ -583,7 +618,6 @@ export default function TicketDetail() {
                   </div>
                 )}
               </div>
-
               {/* Comment */}
               <TicketComments ticketId={state.ticket?.ticket_id} />
             </div>
@@ -609,21 +643,23 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Escalate - disabled when canAct is false */}
-                <button
-                  className={
-                    !state.canAct
-                      ? styles.escalateButtonDisabled
-                      : styles.escalateButton
-                  }
-                  onClick={() => setOpenEscalateModal(true)}
-                  disabled={!state.canAct}
-                >
-                  <span className={styles.iconTextWrapper}>
-                    <i className="fa fa-arrow-up"></i>
-                    {getButtonText("escalate")}
-                  </span>
-                </button>
+                {/* Escalate - disabled when canAct is false, hidden for admins */}
+                {!isAdmin() && (
+                  <button
+                    className={
+                      !state.canAct
+                        ? styles.escalateButtonDisabled
+                        : styles.escalateButton
+                    }
+                    onClick={() => setOpenEscalateModal(true)}
+                    disabled={!state.canAct}
+                  >
+                    <span className={styles.iconTextWrapper}>
+                      <i className="fa fa-arrow-up"></i>
+                      {getButtonText("escalate")}
+                    </span>
+                  </button>
+                )}
 
                 {/* Transfer (Admin only) - disabled when canAct is false */}
                 {isAdmin() && (
@@ -665,7 +701,7 @@ export default function TicketDetail() {
                 {activeTab === "Details" && (
                   <>
                     {/* workflow */}
-                    <WorkflowTracker2 workflowData={tracker} />
+                    <WorkflowTracker2 workflowData={tracker} ticketStatus={state.ticket?.status} />
                     <br />
                     {/* status */}
                     <div className={styles.tdStatusCard}>
