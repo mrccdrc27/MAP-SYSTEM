@@ -57,7 +57,7 @@ const EmployeeNavBar = () => {
   const [notifCount, setNotifCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // track profile image via state so we can update it dynamically
-  const [profileImageUrl, setProfileImageUrl] = useState(currentUser?.image || currentUser?.profileImage || DEFAULT_PROFILE_IMAGE);
+  const [profileImageUrl, setProfileImageUrl] = useState(currentUser?.image || currentUser?.profileImage || currentUser?.profile_picture || DEFAULT_PROFILE_IMAGE);
   const [backendAvailable, setBackendAvailable] = useState(true); // Always assume backend is available
   const scrolled = useScrollShrink(0, { debug: false });
 
@@ -88,9 +88,32 @@ const EmployeeNavBar = () => {
           return convertToSecureUrl(resolved) || resolved;
         };
 
-        // 1) Prefer cookie-based fetch (some deployments use cookie auth)
+        // Primary: Use the HDTS employee profile endpoint (same as profile page)
         try {
-          // Try the general profile endpoint first (auth service commonly exposes this)
+          const resp = await fetch(`${AUTH_BASE}/api/v1/hdts/employees/api/profile/`, { 
+            method: 'GET', 
+            credentials: 'include', 
+            headers: { 'Accept': 'application/json' } 
+          });
+          
+          if (resp && resp.ok) {
+            const profile = await resp.json();
+            if (import.meta.env.DEV) console.debug('[Navbar] HDTS employee profile:', profile);
+            const candidate = normalizeImageUrl(
+              profile.profile_picture || profile.image || profile.profile_image || profile.image_url || profile.imageUrl, 
+              AUTH_BASE
+            );
+            if (candidate) { 
+              setProfileImageUrl(candidate); 
+              return; 
+            }
+          }
+        } catch (err) {
+          if (import.meta.env.DEV) console.debug('[Navbar] HDTS employee profile fetch failed:', err);
+        }
+
+        // Fallback: Try the general users profile endpoint
+        try {
           let resp2 = await fetch(`${AUTH_BASE}/api/v1/users/profile/`, { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } });
           const contentType = resp2 ? (resp2.headers.get('content-type') || '') : '';
 
@@ -308,15 +331,9 @@ const EmployeeNavBar = () => {
     setShowProfileMenu(false);
     setIsMobileMenuOpen(false);
 
-    // Redirect to auth service logout endpoint which clears cookies and redirects to login
-    try {
-      const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
-      window.location.href = `${AUTH_BASE}/logout/`;
-    } catch (e) {
-      if (import.meta.env.DEV) console.debug('[EmployeeNavigationBar] Logout redirect failed', e);
-      // Fallback: navigate to root of frontend
-      navigate('/', { state: { fromLogout: true } });
-    }
+    // Redirect directly to auth service employee logout endpoint
+    // This ensures the browser receives Set-Cookie headers directly to clear HttpOnly cookies
+    window.location.href = 'http://localhost:8003/api/v1/users/logout/employee/';
   };
 
   const getFullName = () => {
@@ -591,12 +608,12 @@ const EmployeeNavBar = () => {
           {/* Mobile profile section - mirrors Coordinator mobile layout */}
           <li className={styles['mobile-profile-section']}>
             <div className={styles['profile-avatar-large']}>
-              <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} />
+              <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={e => e.target.src = DEFAULT_PROFILE_IMAGE} />
             </div>
             <div className={styles['mobile-profile-info']}>
               <h3>{getFullName()}</h3>
               <div className={styles['mobile-profile-actions']}>
-                <button className={styles['mobile-settings-btn']} onClick={() => { setIsMobileMenuOpen(false); setTimeout(() => navigate('/employee/settings'), 0); }}>Settings</button>
+                <button className={styles['mobile-settings-btn']} onClick={() => { setIsMobileMenuOpen(false); window.location.href = 'http://localhost:3001/profile'; }}>Settings</button>
                 <button className={styles['mobile-logout-btn']} onClick={handleLogout}>Log Out</button>
               </div>
             </div>
@@ -676,6 +693,7 @@ const EmployeeNavBar = () => {
                   src={profileImageUrl}
                   alt="Profile"
                   className={styles['avatar-placeholder']}
+                  onError={e => e.target.src = DEFAULT_PROFILE_IMAGE}
                 />
               </div>
               {showProfileMenu && (
@@ -686,6 +704,7 @@ const EmployeeNavBar = () => {
                         src={profileImageUrl}
                         alt="Profile"
                         className={styles['avatar-image']}
+                        onError={e => e.target.src = DEFAULT_PROFILE_IMAGE}
                       />
                     </div>
                     <div className={styles['profile-info']}>
@@ -696,8 +715,7 @@ const EmployeeNavBar = () => {
                     <button
                       onClick={() => {
                         setShowProfileMenu(false);
-                        // Small delay to ensure menu closes before navigation
-                        setTimeout(() => navigate('/employee/settings'), 0);
+                        window.location.href = 'http://localhost:3001/profile';
                       }}
                     >
                       Settings

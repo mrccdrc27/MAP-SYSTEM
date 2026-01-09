@@ -14,7 +14,7 @@ from system_roles.models import UserSystemRole
 from .decorators import hdts_admin_required # Import the decorator
 from django.views.decorators.http import require_POST
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from users.serializers import UserProfileSerializer
 from .serializers import EmployeeProfileSerializer
@@ -283,3 +283,54 @@ def get_hdts_user_profile_by_id(request, user_id: int):
     data = UserProfileSerializer(target_user, context={'request': request}).data
     # Optionally reduce fields if needed; for now return full profile serializer
     return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # Allow internal service calls without auth
+def get_ticket_coordinators_api(request):
+    """
+    API endpoint to get all HDTS Ticket Coordinators.
+    Returns only users with the 'Ticket Coordinator' role in the HDTS system.
+    This endpoint is designed for internal service-to-service communication
+    (e.g., for automatic ticket assignment in the helpdesk backend).
+    """
+    from roles.models import Role
+    
+    # Find the Ticket Coordinator role in HDTS system
+    hdts_system = System.objects.filter(slug='hdts').first()
+    if not hdts_system:
+        return Response({'error': 'HDTS system not found', 'coordinators': []}, status=404)
+    
+    # Get the Ticket Coordinator role
+    coordinator_role = Role.objects.filter(
+        system=hdts_system,
+        name='Ticket Coordinator'
+    ).first()
+    
+    if not coordinator_role:
+        return Response({'error': 'Ticket Coordinator role not found', 'coordinators': []}, status=404)
+    
+    # Get all users with this role
+    coordinator_user_roles = UserSystemRole.objects.filter(
+        system=hdts_system,
+        role=coordinator_role,
+        is_active=True
+    ).select_related('user')
+    
+    coordinators = []
+    for usr in coordinator_user_roles:
+        user = usr.user
+        coordinators.append({
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'username': user.username,
+            'is_active': user.is_active,
+            'role_assigned_at': usr.assigned_at.isoformat() if usr.assigned_at else None,
+        })
+    
+    return Response({
+        'count': len(coordinators),
+        'coordinators': coordinators
+    })

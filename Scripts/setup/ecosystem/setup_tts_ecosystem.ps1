@@ -57,4 +57,5 @@ function Print-Header {
     param ([string]$Title)
     Write-Host "`n========================================================" -ForegroundColor Cyan
     Write-Host " $Title" -ForegroundColor Cyan
-    Write-Host "========================================================
+    Write-Host "========================================================" -ForegroundColor Cyan
+}

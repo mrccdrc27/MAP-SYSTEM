@@ -45,13 +45,23 @@ export const apiRequest = async (endpoint, options = {}) => {
     credentials: 'include', // Include cookies
   };
   
+  // Check if body is FormData - if so, don't set Content-Type (browser will set it with boundary)
+  const isFormData = fetchOptions.body instanceof FormData;
+  
+  let mergedHeaders = {
+    ...defaultOptions.headers,
+    ...fetchOptions.headers,
+  };
+  
+  // Remove Content-Type for FormData so browser can set it correctly with boundary
+  if (isFormData) {
+    delete mergedHeaders['Content-Type'];
+  }
+  
   const mergedOptions = {
     ...defaultOptions,
     ...fetchOptions,
-    headers: {
-      ...defaultOptions.headers,
-      ...fetchOptions.headers,
-    },
+    headers: mergedHeaders,
   };
   
   try {

@@ -94,7 +94,8 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
   const absoluteFallback = (img) => {
     if (!img) return null;
     if (img.startsWith('http')) return img;
-    const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || 'http://localhost:8000/media/';
+    // Use relative URL - Vite proxy will forward to helpdesk-backend
+    const MEDIA_URL = '/media/';
     const clean = img.startsWith('/') ? img.slice(1) : img;
     return `${MEDIA_URL}${clean}`;
   };

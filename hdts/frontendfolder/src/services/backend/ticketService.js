@@ -218,6 +218,24 @@ export const backendTicketService = {
     }
   },
 
+  /**
+   * Get tickets owned by the current coordinator.
+   * Uses the ticket_owner_id field for external auth users.
+   */
+  async getMyTickets() {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/my-tickets/`, getFetchOptions('GET'));
+      handleAuthError(response);
+      if (!response.ok) {
+        throw new Error('Failed to fetch my tickets');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching my tickets:', error);
+      return [];
+    }
+  },
+
   async updateTicketStatus(ticketId, status, comment = '') {
     try {
       const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/update-status/`, getFetchOptions('POST', { status, comment }));
@@ -270,6 +288,81 @@ export const backendTicketService = {
       return await response.json();
     } catch (error) {
       console.error('Error creating comment:', error);
+      throw error;
+    }
+  },
+
+  // Create an auto-response comment (system-generated, marked as from Support Team)
+  async createAutoResponse(ticketId, responseText) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/auto-response/`, getFetchOptions('POST', { message: responseText }));
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || 'Failed to create auto-response');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating auto-response:', error);
+      throw error;
+    }
+  },
+
+  // Set typing status for a ticket (HTTP-based typing indicator)
+  async setTypingStatus(ticketNumber, isTyping, userId, userName) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/tickets/${encodeURIComponent(ticketNumber)}/typing/`, getFetchOptions('POST', {
+        is_typing: isTyping,
+        user_id: userId,
+        user_name: userName
+      }));
+      if (!response.ok) {
+        console.warn('Failed to set typing status');
+      }
+      return await response.json().catch(() => ({}));
+    } catch (error) {
+      // Silently fail - typing is non-critical
+      console.debug('Typing status error:', error);
+    }
+  },
+
+  // Get typing status for a ticket (who is typing)
+  async getTypingStatus(ticketNumber, excludeUserId = '') {
+    try {
+      const url = `${BASE_URL}/api/tickets/${encodeURIComponent(ticketNumber)}/typing/status/?exclude_user_id=${encodeURIComponent(excludeUserId)}`;
+      const response = await fetch(url, getFetchOptions('GET'));
+      if (!response.ok) {
+        return { is_typing: false };
+      }
+      return await response.json();
+    } catch (error) {
+      // Silently fail - typing is non-critical
+      return { is_typing: false };
+    }
+  },
+
+  async createCommentWithAttachment(ticketId, commentText, attachment, isInternal = false) {
+    try {
+      const formData = new FormData();
+      if (commentText) {
+        formData.append('comment', commentText);
+      }
+      if (attachment) {
+        formData.append('attachment', attachment);
+      }
+      formData.append('is_internal', isInternal);
+      
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/comments/`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.detail || 'Failed to create comment with attachment');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating comment with attachment:', error);
       throw error;
     }
   },
@@ -331,13 +424,8 @@ export const backendTicketService = {
    */
   async getOwnedTickets({ tab = '', search = '', page = 1, pageSize = 10 } = {}) {
     try {
-      const params = new URLSearchParams();
-      if (tab) params.append('tab', tab);
-      if (search) params.append('search', search);
-      params.append('page', page.toString());
-      params.append('page_size', pageSize.toString());
-      
-      const url = `${WORKFLOW_URL}/tasks/owned-tickets/?${params.toString()}`;
+      // Use the helpdesk backend's my-tickets endpoint which filters by ticket_owner_id
+      const url = `${BASE_URL}/api/tickets/my-tickets/`;
       console.log('Fetching owned tickets from:', url);
       
       const response = await fetch(url, getFetchOptions('GET'));
@@ -349,14 +437,38 @@ export const backendTicketService = {
         throw new Error(err.error || err.detail || `Failed to fetch owned tickets: ${response.status}`);
       }
       
-      const data = await response.json();
+      let data = await response.json();
       
-      // API returns paginated response: { count, next, previous, results }
+      // The my-tickets endpoint returns an array, not paginated
+      let results = Array.isArray(data) ? data : (data.results || []);
+      
+      // Apply client-side filtering if tab is specified
+      if (tab === 'active') {
+        results = results.filter(t => !['Closed', 'Withdrawn', 'Rejected'].includes(t.status));
+      } else if (tab === 'inactive') {
+        results = results.filter(t => ['Closed', 'Withdrawn', 'Rejected'].includes(t.status));
+      }
+      
+      // Apply search filter client-side
+      if (search) {
+        const searchLower = search.toLowerCase();
+        results = results.filter(t => 
+          (t.ticket_number && t.ticket_number.toLowerCase().includes(searchLower)) ||
+          (t.subject && t.subject.toLowerCase().includes(searchLower)) ||
+          (t.category && t.category.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      // Client-side pagination
+      const totalCount = results.length;
+      const startIndex = (page - 1) * pageSize;
+      const paginatedResults = results.slice(startIndex, startIndex + pageSize);
+      
       return {
-        results: data.results || [],
-        count: data.count || 0,
-        next: data.next,
-        previous: data.previous
+        results: paginatedResults,
+        count: totalCount,
+        next: startIndex + pageSize < totalCount ? page + 1 : null,
+        previous: page > 1 ? page - 1 : null
       };
     } catch (error) {
       console.error('Error fetching owned tickets:', error);

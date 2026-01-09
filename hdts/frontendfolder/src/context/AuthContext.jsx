@@ -12,8 +12,9 @@ import React, {
 import axios from "axios";
 
 const AuthContext = createContext(undefined);
-// Default to backend running on localhost:8003 when VITE_AUTH_URL is not provided
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
+// Use relative URLs to go through Vite proxy (makes cookies same-origin)
+// In production, set VITE_AUTH_URL to the actual backend URL
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || "";
 const ME_URL = `${AUTH_URL}/api/me/`; // Unified endpoint for both User and Employee
 const LOGIN_URL = `${AUTH_URL}/api/v1/token/obtain/`;
 const LOGOUT_URL = `${AUTH_URL}/api/v1/token/logout/`;
@@ -42,6 +43,12 @@ export const AuthProvider = ({ children }) => {
 
   const clearAuth = useCallback(() => {
     setUser(null);
+    // Clear localStorage sync
+    try {
+      localStorage.removeItem('user');
+    } catch (e) {
+      // Ignore storage errors
+    }
     // Clear refresh timeout when logging out
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
@@ -124,19 +131,11 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = useCallback(async () => {
     try {
-      if (import.meta.env.DEV) {
-        console.debug('AuthContext: Fetching user profile from:', ME_URL);
-      }
-      
       const response = await api.get(ME_URL);
       
       if (response.status === 200 && response.data.type && response.data.data) {
         const userType = response.data.type; // 'user' or 'employee'
         const profileData = response.data.data;
-        
-        if (import.meta.env.DEV) {
-          console.debug('AuthContext: Fetched profile, type:', userType);
-        }
         
         // Extract role for HDTS system
         let hdtsRole = null;
@@ -165,6 +164,13 @@ export const AuthProvider = ({ children }) => {
         
         setUser(userWithRole);
         
+        // Sync to localStorage so authService.getCurrentUser() works
+        try {
+          localStorage.setItem('user', JSON.stringify(userWithRole));
+        } catch (e) {
+          // Ignore storage errors
+        }
+        
         // Initialize dynamic token refresh when user is authenticated
         initializeTokenRefresh();
         
@@ -178,7 +184,11 @@ export const AuthProvider = ({ children }) => {
       return false;
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.debug('AuthContext: Failed to fetch user profile:', error.response?.status);
+        console.debug('AuthContext: Failed to fetch user profile:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
       }
       clearAuth();
       return false;
@@ -225,7 +235,8 @@ export const AuthProvider = ({ children }) => {
       console.warn("Logout endpoint error:", e);
     }
     clearAuth();
-    window.location.href = "/login";
+    // Redirect to auth-frontend login page
+    window.location.href = "http://localhost:3001/employee";
   };
 
   // Check if user has Admin role for HDTS (staff users only)

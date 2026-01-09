@@ -194,15 +194,84 @@ def validate_profile_picture_file_size(image):
     if image.size > max_file_size:
         raise ValidationError(f"Profile picture file size must be less than {max_file_size // (1024 * 1024)}MB.")
 
+def resize_image(image):
+    """Resize image to 1024x1024 and return as InMemoryUploadedFile"""
+    from io import BytesIO
+    from django.core.files.uploadedfile import InMemoryUploadedFile
+    try:
+        # Reset file pointer
+        if hasattr(image, 'seek'):
+            image.seek(0)
+        
+        img = Image.open(image)
+        target_size = (1024, 1024)
+        
+        # Convert RGBA to RGB if necessary (for JPEG compatibility)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'RGBA':
+                rgb_img.paste(img, mask=img.split()[3])
+            else:
+                rgb_img.paste(img)
+            img = rgb_img
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Resize image using LANCZOS filter for quality
+        try:
+            # Try newer LANCZOS API first
+            img = img.resize(target_size, Image.Resampling.LANCZOS)
+        except AttributeError:
+            # Fall back to older API for older Pillow versions
+            img = img.resize(target_size, Image.LANCZOS)
+        
+        # Save to BytesIO object
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=90)
+        output.seek(0)
+        
+        # Get the original filename
+        original_name = image.name if hasattr(image, 'name') else 'profile_picture.jpg'
+        # Change extension to jpg since we're converting to JPEG
+        if original_name.lower().endswith('.png'):
+            original_name = original_name[:-4] + '.jpg'
+        
+        # Wrap in InMemoryUploadedFile for Django compatibility
+        resized_file = InMemoryUploadedFile(
+            file=output,
+            field_name='profile_picture',
+            name=original_name,
+            content_type='image/jpeg',
+            size=output.getbuffer().nbytes,
+            charset=None
+        )
+        
+        print(f"[PROFILE_PICTURE_RESIZE] Image resized successfully: {resized_file.name}")
+        return resized_file
+    except Exception as e:
+        print(f"[PROFILE_PICTURE_RESIZE] Image resize error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise ValidationError("Failed to process image.")
+
 def validate_profile_picture_dimensions(image):
     max_width = 1024
     max_height = 1024
     try:
+        # Reset file pointer to beginning in case it was read by another validator
+        if hasattr(image, 'seek'):
+            image.seek(0)
         img = Image.open(image)
         width, height = img.size
         if width > max_width or height > max_height:
             raise ValidationError(f"Profile picture dimensions must not exceed {max_width}x{max_height} pixels.")
-    except Exception:
+        # Reset file pointer again after reading
+        if hasattr(image, 'seek'):
+            image.seek(0)
+    except ValidationError:
+        raise
+    except Exception as e:
+        print(f"[PROFILE_PICTURE_VALIDATION] Image validation error: {e}")
         raise ValidationError("Invalid image file.")
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -218,7 +287,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(
         required=False,
         allow_null=True,
-        validators=[validate_profile_picture_file_size, validate_profile_picture_dimensions]
+        validators=[validate_profile_picture_file_size]
     )
 
     class Meta:
@@ -247,7 +316,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
                     self.fields.pop(field_name)
 
     def validate_profile_picture(self, value):
-        """Validate and log profile picture field."""
+        """Resize and validate profile picture field."""
         print(f"[SERIALIZER] validate_profile_picture called")
         print(f"[SERIALIZER] profile_picture value: {value}")
         print(f"[SERIALIZER] profile_picture type: {type(value)}")
@@ -255,6 +324,15 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             print(f"[SERIALIZER] profile_picture.name: {value.name}")
             print(f"[SERIALIZER] profile_picture.size: {value.size}")
             print(f"[SERIALIZER] profile_picture.content_type: {value.content_type}")
+            
+            # Validate file size first
+            validate_profile_picture_file_size(value)
+            
+            # Resize the image to 1024x1024
+            print(f"[SERIALIZER] Resizing image to 1024x1024...")
+            value = resize_image(value)
+            print(f"[SERIALIZER] Image resized successfully")
+        
         return value
 
     def validate_email(self, value):

@@ -292,6 +292,14 @@ class Ticket(models.Model):
     submit_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tickets')
+    # Ticket Owner: The ticket coordinator assigned as owner when ticket is approved/opened
+    # Stores the external user ID from auth service (similar to employee_cookie_id)
+    ticket_owner_id = models.IntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Ticket Coordinator user ID from auth service who owns this ticket"
+    )
     response_time = models.DurationField(blank=True, null=True)
     resolution_time = models.DurationField(blank=True, null=True)
     time_closed = models.DateTimeField(blank=True, null=True)
@@ -411,8 +419,12 @@ class TicketComment(models.Model):
         db_index=True,
         help_text="User ID from external cookie-auth system"
     )
-    comment = models.TextField()
+    comment = models.TextField(blank=True, default='')
+    attachment = models.FileField(upload_to='comment_attachments/', null=True, blank=True)
+    attachment_name = models.CharField(max_length=255, null=True, blank=True)
+    attachment_type = models.CharField(max_length=100, null=True, blank=True)
     is_internal = models.BooleanField(default=False)  # For admin-only comments
+    is_auto_response = models.BooleanField(default=False)  # System-generated auto-response
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

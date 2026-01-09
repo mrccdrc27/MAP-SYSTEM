@@ -283,7 +283,8 @@ module.exports = {
     // -------------------
     // Auth Frontend (Port 3001)
     // -------------------
-    // Standalone login/registration UI that proxies through Kong
+    // Standalone login/registration UI - uses Vite proxy to route API calls
+    // This ensures cookies are same-origin (frontend proxies to backend)
     {
       name: 'auth-frontend',
       cwd: path.join(projectRoot, 'auth/frontend'),
@@ -292,16 +293,12 @@ module.exports = {
       watch: false,
       windowsHide: true,
       env: {
-        // Kong Gateway Mode - Route auth requests through Kong (port 8080)
-        VITE_API_BASE_URL: "http://localhost:8080",
+        // Empty = use relative paths, Vite proxy handles routing
+        VITE_API_BASE_URL: "",
         VITE_ENV: "development",
         VITE_DEBUG: "true",
-        // Auth endpoints use /auth prefix (Kong routes)
-        VITE_AUTH_LOGIN_ENDPOINT: "/auth/api/v1/users/login/api",
-        VITE_AUTH_REGISTER_ENDPOINT: "/auth/api/v1/users/register",
-        VITE_AUTH_LOGOUT_ENDPOINT: "/auth/api/v1/users/logout",
-        VITE_AUTH_REFRESH_ENDPOINT: "/auth/api/v1/users/token/refresh",
-        VITE_AUTH_PROFILE_ENDPOINT: "/auth/api/v1/users/profile",
+        // HDTS frontend URL for employee redirect after login
+        VITE_HDTS_FRONTEND_URL: "http://localhost:5173",
         // Feature flags
         VITE_ENABLE_REGISTRATION: "true",
         VITE_ENABLE_PASSWORD_RESET: "true",

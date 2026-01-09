@@ -373,15 +373,21 @@ const renderAttachments = (files) => {
         const url = f?.file || f?.url || f?.downloadUrl || f?.download_url || (typeof f === 'string' ? f : '#');
         
         // Build the protected API URL - backend returns paths like /api/media/ticket_attachments/file.ext
-        const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        // Use relative paths to go through Vite proxy (which handles auth cookies)
         let finalUrl = url;
         
-        // If the URL is a relative path (starts with /api/media/), prepend the backend URL
-        if (typeof url === 'string' && url.startsWith('/api/')) {
-          finalUrl = `${BACKEND_URL}${url}`;
+        // If the URL is a relative path (starts with /api/media/), use it directly (Vite proxy will handle)
+        if (typeof url === 'string' && url.startsWith('/api/media/')) {
+          // Rewrite /api/media/ to /media/ for direct helpdesk-backend access
+          finalUrl = url.replace('/api/media/', '/media/');
+        } else if (typeof url === 'string' && url.startsWith('/api/')) {
+          finalUrl = url;
+        } else if (typeof url === 'string' && url.includes('localhost:8080')) {
+          // Rewrite Kong URLs to use local proxy
+          finalUrl = url.replace(/http:\/\/localhost:8080\/api\/media\//, '/media/');
         } else if (typeof url === 'string' && !url.startsWith('http')) {
           // If it's a relative path without /api/, assume it's an old format
-          finalUrl = `${BACKEND_URL}/api/media/${url}`;
+          finalUrl = `/media/${url}`;
         }
         
         // final fallback to original url
@@ -680,7 +686,22 @@ export default function EmployeeTicketTracker() {
 
       const text = c.comment || c.message || c.body || '';
       // Use a time-only format for user-facing comments (HH:MM) so replies look like chat timestamps
-      msgs.push({ id: c.id || `c-${idx}`, sender, message: text, timestamp: createdAt ? formatTime(createdAt) : '' });
+      // Include attachment info if present
+      const messageObj = { 
+        id: c.id || `c-${idx}`, 
+        sender, 
+        message: text, 
+        timestamp: createdAt ? formatTime(createdAt) : '' 
+      };
+      
+      // Add attachment info if present
+      if (c.attachment || c.attachment_url) {
+        messageObj.attachment = c.attachment || c.attachment_url;
+        messageObj.attachmentName = c.attachment_name || c.attachmentName || '';
+        messageObj.attachmentType = c.attachment_type || c.attachmentType || '';
+      }
+      
+      msgs.push(messageObj);
     });
 
     return msgs;
