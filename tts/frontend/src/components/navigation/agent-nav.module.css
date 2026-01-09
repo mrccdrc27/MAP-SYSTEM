@@ -21,6 +21,11 @@
   transform: translateY(-100%);
 }
 
+.logoLink {
+  text-decoration: none;
+  color: inherit;
+}
+
 .logoSection {
   display: flex;
   gap: 10px;

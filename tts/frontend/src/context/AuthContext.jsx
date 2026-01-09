@@ -280,7 +280,9 @@ export const AuthProvider = ({ children }) => {
       clearAuth();
       setInitialized(true);
       setLoading(false);
-      window.location.href = "/login";
+      // Redirect to the main auth system instead of local login
+      const authSystemUrl = import.meta.env.VITE_AUTH_NEW_URL || "http://localhost:3001";
+      window.location.href = authSystemUrl;
     }
   };
 
