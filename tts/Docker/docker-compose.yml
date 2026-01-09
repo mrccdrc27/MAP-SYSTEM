@@ -221,6 +221,8 @@ services:
     build:
       context: ../../auth
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
@@ -259,6 +261,8 @@ services:
     build:
       context: ../../auth
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       DJANGO_ENV: "development"
       DJANGO_DEBUG: "True"
