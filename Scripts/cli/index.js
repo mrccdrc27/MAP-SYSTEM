@@ -88,6 +88,9 @@ const SCRIPTS = {
   setup: {
     name: 'Setup',
     description: 'Database seeding and configuration',
+    scripts: {
+      'install-cli': { file: 'install-cli.ps1', desc: 'Install Scripts CLI globally (PATH)' },
+    },
     subcategories: {
       python: {
         name: 'Python Environment',
