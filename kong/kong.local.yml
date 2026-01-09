@@ -73,6 +73,25 @@ services:
   # ---------------------------------------------------------------------------
   # AUTH SERVICE (Port 8003)
   # ---------------------------------------------------------------------------
+  # Auth media files (profile pictures, etc.) - no auth required
+  - name: auth-service-media
+    host: host.docker.internal
+    port: 8003
+    protocol: http
+    routes:
+      - name: auth-media-routes
+        paths:
+          - /auth/media
+        strip_path: false
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/auth", "")
+              kong.service.request.set_path(new_path)
+
   # Auth frontend routes (prefix: /auth/api/v1/)
   - name: auth-service-frontend
     host: host.docker.internal
