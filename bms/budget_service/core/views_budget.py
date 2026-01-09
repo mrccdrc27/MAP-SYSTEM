@@ -43,6 +43,7 @@ from .serializers_budget import (
     BudgetProposalListSerializer,
     BudgetProposalMessageSerializer,
     BudgetTransferSerializer,
+    JournalEntryDetailSerializer,
     ProposalCommentCreateSerializer,
     BudgetProposalSummarySerializer,
     BudgetProposalDetailSerializer,
@@ -1824,46 +1825,81 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
         responses={200: OpenApiResponse(description="Request Approved and Budget Updated")}
     )
     # MODIFIED: Explicit permission check for action
+    @extend_schema(
+        summary="Approve a Supplemental Budget Request",
+        request=None,
+        responses={200: OpenApiResponse(description="Request Approved and Budget Updated")}
+    )
+    # MODIFIED: Explicit permission check for action
     @action(detail=True, methods=['post'], permission_classes=[IsBMSFinanceHead])
     def approve(self, request, pk=None):
-        # ... (Keep existing approve logic) ...
-        # (I will include the full method in the code block below)
         transfer = self.get_object()
         
         if transfer.status != 'PENDING':
-            return Response({"error": "Only pending requests can be approved."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Only pending requests can be approved."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         with transaction.atomic():
-            # 1. Update Transfer Status
+            # 1. Get the allocation and verify department exists
+            allocation = transfer.destination_allocation
+            
+            # --- FIX: Explicit Department Check ---
+            if not allocation.department:
+                return Response(
+                    {"error": "Allocation is missing department. Cannot process supplemental budget."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            department = allocation.department
+            
+            # --- DEBUG LOGGING (Remove in production) ---
+            print(f"🔍 Approving Transfer {transfer.id}")
+            print(f"   Allocation ID: {allocation.id}")
+            print(f"   Department ID: {department.id if department else 'NONE'}")
+            print(f"   Department Name: {department.name if department else 'NONE'}")
+            
+            # 2. Find Equity/Treasury Account
+            equity_account = Account.objects.filter(
+                Q(account_type__name__iexact='Equity') | 
+                Q(name__icontains='Retained Earnings') |
+                Q(name__icontains='Treasury')
+            ).first()
+
+            if not equity_account:
+                return Response(
+                    {"error": "Configuration Error: No 'Equity' or 'Treasury' account found."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            # 3. Update Transfer Status
             transfer.status = 'APPROVED'
             transfer.approved_by_user_id = request.user.id
             transfer.approved_by_username = getattr(request.user, 'username', 'N/A')
             transfer.approval_date = timezone.now()
             transfer.save()
 
-            # 2. Update Allocation (Add Money)
-            allocation = transfer.destination_allocation
+            # 4. Update Allocation (Add Money)
             allocation.amount += transfer.amount
             allocation.save()
 
-            # 3. Create Journal Entry (Ledger)
-            # Find Equity Account
-            equity_account = Account.objects.filter(
-                Q(account_type__name='Equity') | Q(name__icontains='Treasury')
-            ).first() or Account.objects.filter(is_active=True).first()
-
+            # 5. Create Journal Entry with EXPLICIT Department
             je = JournalEntry.objects.create(
                 date=timezone.now().date(),
                 category='PROJECTS',
                 description=f"Approved Supplemental Budget: {transfer.reason}",
                 total_amount=transfer.amount,
                 status='POSTED',
-                department=allocation.department,
+                department=department,  # ✅ Now guaranteed to exist
                 created_by_user_id=request.user.id,
                 created_by_username=getattr(request.user, 'username', 'N/A')
             )
+            
+            # --- VERIFICATION LOG ---
+            print(f"✅ Created JE {je.entry_id} with Department: {je.department.name if je.department else 'STILL NONE!'}")
 
-            # Debit Line (Increase Allocation)
+            # 6. Create Journal Lines
             JournalEntryLine.objects.create(
                 journal_entry=je,
                 account=allocation.account,
@@ -1874,40 +1910,20 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
                 expense_category=allocation.category
             )
 
-            # Credit Line (Source)
             JournalEntryLine.objects.create(
                 journal_entry=je,
                 account=equity_account,
                 transaction_type='CREDIT',
                 journal_transaction_type='TRANSFER',
                 amount=transfer.amount,
-                description="Funding source for supplemental budget",
+                description=f"Funding source: {equity_account.name}",
                 expense_category=None
             )
 
-        return Response({"message": "Supplemental budget approved and ledger updated."}, status=status.HTTP_200_OK)
-
-    @extend_schema(
-        summary="Reject a Supplemental Budget Request",
-        request=None,
-        responses={200: OpenApiResponse(description="Request Rejected")}
-    )
-    # MODIFIED: Explicit permission check for action
-    @action(detail=True, methods=['post'], permission_classes=[IsBMSFinanceHead])
-    def reject(self, request, pk=None):
-        transfer = self.get_object()
-        
-        if transfer.status != 'PENDING':
-            return Response({"error": "Only pending requests can be rejected."}, status=status.HTTP_400_BAD_REQUEST)
-
-        transfer.status = 'REJECTED'
-        transfer.rejected_by_user_id = request.user.id
-        transfer.rejected_by_username = getattr(request.user, 'username', 'N/A')
-        transfer.rejection_date = timezone.now()
-        transfer.save()
-
-        return Response({"message": "Request rejected."}, status=status.HTTP_200_OK)
-# MODIFICATION END
+        return Response(
+            {"message": "Supplemental budget approved and ledger updated."}, 
+            status=status.HTTP_200_OK
+        )
 
 class FiscalYearViewSet(viewsets.ModelViewSet):
     """
@@ -1943,3 +1959,15 @@ class FiscalYearViewSet(viewsets.ModelViewSet):
         
         fiscal_year.save()
         return Response(self.get_serializer(fiscal_year).data)
+    
+@extend_schema(
+    tags=['Ledger View'],
+    summary="Retrieve Journal Entry Details",
+    description="Get full details of a journal entry including all debit/credit lines and audit info.",
+    responses={200: JournalEntryDetailSerializer}
+)
+class JournalEntryDetailView(generics.RetrieveAPIView):
+    queryset = JournalEntry.objects.all()
+    serializer_class = JournalEntryDetailSerializer
+    permission_classes = [IsBMSUser]
+    lookup_field = 'entry_id' # We will look up by "JE-2026-XXXX"

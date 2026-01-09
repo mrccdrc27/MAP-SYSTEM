@@ -23,8 +23,7 @@ import { Link, useNavigate } from "react-router-dom";
 import LOGOMAP from "../../assets/MAP.jpg";
 import "./LedgerView.css";
 import { useAuth } from "../../context/AuthContext";
-import { getLedgerEntries } from "../../API/ledgerAPI";
-// MODIFIED: Added department API import
+import { getLedgerEntries, getJournalEntryDetails } from "../../API/ledgerAPI";
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
 import * as XLSX from "xlsx"; // For Excel export
@@ -102,24 +101,9 @@ const Status = ({ type, name }) => {
   );
 };
 
-// Audit Trail Timeline Component (updated from Proposal History)
+// Audit Trail Timeline
 const AuditTrailTimeline = ({ history }) => {
   if (!history || history.length === 0) return null;
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-        return <CheckCircle size={14} color="#0d6832" />;
-      case "rejected":
-        return <XCircle size={14} color="#9b1c1c" />;
-      case "submitted":
-        return <FileText size={14} color="#1a56db" />;
-      case "updated":
-        return <RefreshCw size={14} color="#92400e" />;
-      default:
-        return <FileText size={14} color="#374151" />;
-    }
-  };
 
   return (
     <div style={{ marginTop: "20px" }}>
@@ -138,47 +122,36 @@ const AuditTrailTimeline = ({ history }) => {
               border: "1px solid #e0e0e0",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: "8px",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                {getStatusIcon(entry.status)}
-                <strong style={{ fontSize: "13px" }}>{entry.status}</strong>
+                <CheckCircle size={14} color="#0d6832" />
+                <strong style={{ fontSize: "13px" }}>{entry.action}</strong>
               </div>
               <div style={{ fontSize: "11px", color: "#666" }}>
-                {new Date(entry.last_modified).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+                {new Date(entry.date).toLocaleString()}
               </div>
             </div>
             
             <div style={{ marginBottom: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                <UserIcon size={12} />
-                <span style={{ fontSize: "12px" }}>{entry.last_modified_by}</span>
-              </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Calendar size={12} />
-                <span style={{ fontSize: "12px" }}>
-                  {new Date(entry.last_modified).toLocaleDateString()}
-                </span>
+                <UserIcon size={12} />
+                <span style={{ fontSize: "12px" }}>{entry.user}</span>
               </div>
             </div>
-            
+
+            {/* Explicitly Render Comment */}
             {entry.comments && (
-              <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "#fff", borderRadius: "4px", borderLeft: "2px solid #007bff" }}>
-                <div style={{ fontSize: "11px", color: "#666", marginBottom: "2px" }}>Comments:</div>
-                <div style={{ fontSize: "12px" }}>{entry.comments}</div>
-              </div>
+               <div style={{ 
+                   marginTop: "8px", 
+                   padding: "8px", 
+                   backgroundColor: "white", 
+                   border: "1px solid #dee2e6", 
+                   borderRadius: "4px",
+                   fontSize: "12px",
+                   color: "#555"
+               }}>
+                   <strong>Note:</strong> {entry.comments}
+               </div>
             )}
           </div>
         ))}
@@ -186,6 +159,7 @@ const AuditTrailTimeline = ({ history }) => {
     </div>
   );
 };
+
 
 // Pagination Component (Preserved)
 const Pagination = ({
@@ -420,10 +394,24 @@ const Pagination = ({
 };
 
 // NEW: Render Navbar Component (to reuse in popup)
-const renderNavbar = (showBudgetDropdown, showExpenseDropdown, showProfileDropdown, showNotifications, 
-  toggleBudgetDropdown, toggleExpenseDropdown, toggleProfileDropdown, toggleNotifications, 
-  handleNavigate, formattedDay, formattedDate, formattedTime, userProfile, 
-  handleManageProfile, userRole, handleLogout) => {
+const renderNavbar = (
+  showBudgetDropdown,
+  showExpenseDropdown,
+  showProfileDropdown,
+  showNotifications,
+  toggleBudgetDropdown,
+  toggleExpenseDropdown,
+  toggleProfileDropdown,
+  toggleNotifications,
+  handleNavigate,
+  formattedDay,
+  formattedDate,
+  formattedTime,
+  userProfile,
+  handleManageProfile,
+  userRole,
+  handleLogout
+) => {
   return (
     <nav
       className="navbar"
@@ -490,10 +478,7 @@ const renderNavbar = (showBudgetDropdown, showExpenseDropdown, showProfileDropdo
           </span>
         </div>
 
-        <div
-          className="navbar-links"
-          style={{ display: "flex", gap: "20px" }}
-        >
+        <div className="navbar-links" style={{ display: "flex", gap: "20px" }}>
           <Link to="/dashboard" className="nav-link">
             Dashboard
           </Link>
@@ -801,16 +786,35 @@ const renderNavbar = (showBudgetDropdown, showExpenseDropdown, showProfileDropdo
   );
 };
 
-// NEW COMPONENT: Journal Entry Details Modal (Updated to match Proposal History style)
-const JournalEntryDetailsModal = ({ entry, onClose, loading, 
-  showBudgetDropdown, showExpenseDropdown, showProfileDropdown, showNotifications,
-  toggleBudgetDropdown, toggleExpenseDropdown, toggleProfileDropdown, toggleNotifications,
-  handleNavigate, formattedDay, formattedDate, formattedTime, userProfile,
-  handleManageProfile, userRole, handleLogout }) => {
+// MODIFIED: JournalEntryDetailsModal to accept and render API data
+const JournalEntryDetailsModal = ({
+  entry,
+  onClose,
+  loading,
+  showBudgetDropdown,
+  showExpenseDropdown,
+  showProfileDropdown,
+  showNotifications,
+  toggleBudgetDropdown,
+  toggleExpenseDropdown,
+  toggleProfileDropdown,
+  toggleNotifications,
+  handleNavigate,
+  formattedDay,
+  formattedDate,
+  formattedTime,
+  userProfile,
+  handleManageProfile,
+  userRole,
+  handleLogout,
+}) => {
   if (!entry) return null;
 
   const formatAmount = (val) => {
-    return `₱${parseFloat(val).toLocaleString("en-US", {
+    // FIX: Handle cases where val might be undefined or string
+    const num = parseFloat(val);
+    if (isNaN(num)) return "₱0.00";
+    return `₱${num.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -840,6 +844,65 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
     ];
   };
 
+  // --- NEW: Export Detail Function ---
+  const handleExportDetailReport = () => {
+    try {
+      // 1. Prepare Metadata Rows
+      const metadata = [
+        ["JOURNAL ENTRY REPORT"],
+        ["Generated On", new Date().toLocaleString()],
+        [], // Spacer
+        ["Ticket ID", entry.entry_id || entry.reference_id || "N/A"],
+        ["Date", entry.date],
+        ["Department", entry.department_name || entry.department || "N/A"],
+        ["Category", entry.category],
+        ["Sub-Category", entry.sub_category || "General"],
+        ["Status", entry.status],
+        ["Description", entry.description],
+        ["Total Amount", formatAmount(entry.total_amount)],
+        [], // Spacer
+        ["DOUBLE ENTRY DETAILS"], // Section Header
+      ];
+
+      // 2. Prepare Table Headers
+      const tableHeaders = ["Account Code", "Account Name", "Type", "Amount"];
+
+      // 3. Prepare Table Data
+      const tableRows = (entry.lines || []).map((line) => [
+        line.account_code,
+        line.account_name,
+        line.transaction_type,
+        formatAmount(line.amount), // Use formatted amount with ₱
+      ]);
+
+      // 4. Combine into single sheet data structure
+      const sheetData = [...metadata, tableHeaders, ...tableRows];
+
+      // 5. Create Worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+      // 6. Styling: Adjust column widths
+      const wscols = [
+        { wch: 15 }, // Code
+        { wch: 30 }, // Name
+        { wch: 15 }, // Type
+        { wch: 20 }, // Amount
+      ];
+      worksheet["!cols"] = wscols;
+
+      // 7. Create Workbook and Download
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Journal Entry Details");
+      
+      const filename = `JE_Detail_${entry.entry_id || "Report"}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+      
+    } catch (error) {
+      console.error("Detail export failed:", error);
+      alert("Failed to export details.");
+    }
+  };
+
   // Create double entry data
   const getDoubleEntryData = () => {
     return [
@@ -858,12 +921,23 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
     ];
   };
 
-  const auditTrail = getAuditTrail();
-  const doubleEntries = getDoubleEntryData();
+  // 1. Audit Trail: Map from Created At/By
+  const auditTrail = [
+    {
+      action: "CREATED / POSTED",
+      date: entry.created_at,
+      user: entry.created_by || "System",
+      comments: entry.description, // Map description here
+    },
+  ];
+
+  // 2. Double Entries: Map from 'lines' array
+  const doubleEntries = entry.lines || [];
 
   // Utility function to shorten department names
   const shortenDepartmentName = (name, maxLength = 20) => {
-    if (!name || name.length <= maxLength) return name;
+    if (!name) return "N/A";
+    if (name.length <= maxLength) return name;
 
     const abbreviations = {
       Department: "Dept.",
@@ -883,7 +957,9 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
     }
 
     if (shortened.length <= maxLength) return shortened;
-    return shortened.substring(0, maxLength - 3) + "...";
+    return name.length > maxLength
+      ? name.substring(0, maxLength) + "..."
+      : name;
   };
 
   return (
@@ -921,22 +997,26 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
         handleLogout
       )}
 
-      <div style={{ 
-        flex: 1, 
-        overflow: "auto", 
-        padding: "20px",
-        maxWidth: "1200px",
-        margin: "0 auto",
-        width: "100%"
-      }}>
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
-          alignItems: "center", 
-          marginBottom: "20px",
-          flexWrap: "wrap",
-          gap: "10px"
-        }}>
+      <div
+        style={{
+          flex: 1,
+          overflow: "auto",
+          padding: "20px",
+          maxWidth: "1200px",
+          margin: "0 auto",
+          width: "100%",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
           <button
             className="back-button"
             onClick={onClose}
@@ -960,10 +1040,7 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
 
           {/* Export Button - Changed to "Export Report" */}
           <button
-            onClick={() => {
-              // Export functionality will be added
-              alert("Export Report feature will be implemented here");
-            }}
+            onClick={handleExportDetailReport}
             style={{
               display: "flex",
               alignItems: "center",
@@ -997,7 +1074,9 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
           }}
         >
           {loading ? (
-            <div style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}>
+            <div
+              style={{ textAlign: "center", padding: "40px", fontSize: "13px" }}
+            >
               Loading journal entry details...
             </div>
           ) : (
@@ -1024,7 +1103,7 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                 >
                   JOURNAL ENTRY DETAILS
                 </h4>
-                
+
                 {/* Main Ticket ID */}
                 <h3
                   className="proposal-title"
@@ -1035,9 +1114,9 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                     color: "#333",
                   }}
                 >
-                  {entry.reference_id || "N/A"}
+                  {entry.entry_id || entry.reference_id || "N/A"}
                 </h3>
-                
+
                 {/* Horizontal Breakdown Grid */}
                 <div
                   style={{
@@ -1047,15 +1126,27 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Department:
                     </div>
                     <div style={{ fontSize: "13px", fontWeight: "500" }}>
-                      {shortenDepartmentName(entry.department)}
+                      {shortenDepartmentName(entry.department_name || entry.department)}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Category:
                     </div>
                     <div style={{ fontSize: "13px", fontWeight: "500" }}>
@@ -1063,7 +1154,13 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Sub-Category:
                     </div>
                     <div style={{ fontSize: "13px", fontWeight: "500" }}>
@@ -1071,7 +1168,13 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Status:
                     </div>
                     <div style={{ fontSize: "13px" }}>
@@ -1079,8 +1182,8 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                     </div>
                   </div>
                 </div>
-                
-                {/* Additional Info */}
+
+                {/* Additional Info Grid */}
                 <div
                   style={{
                     display: "grid",
@@ -1092,33 +1195,54 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
-                      Account:
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Account (Primary):
                     </div>
+
                     <div style={{ fontSize: "13px" }}>
-                      {entry.account}
+                      {/* Show the first line account as summary, or N/A */}
+                      {entry.lines && entry.lines.length > 0
+                        ? entry.lines[0].account_name
+                        : "Mixed"}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Date:
                     </div>
-                    <div style={{ fontSize: "13px" }}>
-                      {entry.date}
-                    </div>
+                    <div style={{ fontSize: "13px" }}>{entry.date}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: "11px", color: "#6c757d", marginBottom: "4px" }}>
-                      Amount:
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6c757d",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Total Amount:
                     </div>
+                    {/* FIX: Use total_amount instead of amount */}
                     <div style={{ fontSize: "13px", fontWeight: "500" }}>
-                      {formatAmount(entry.amount)}
+                      {formatAmount(entry.total_amount)}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Double Entry Details Section */}
+              {/* Double Entry Table - REAL DATA */}
               <div
                 className="double-entry-section"
                 style={{
@@ -1130,57 +1254,93 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                 }}
               >
                 <h4
-                  className="section-label"
                   style={{
                     margin: "0 0 15px 0",
                     fontSize: "14px",
-                    color: "#495057",
                     fontWeight: "600",
                   }}
                 >
                   Double Entry Details
                 </h4>
-                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #dee2e6", fontSize: "13px" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    border: "1px solid #dee2e6",
+                    fontSize: "13px",
+                  }}
+                >
                   <thead>
                     <tr style={{ backgroundColor: "#f8f9fa" }}>
-                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
-                        Account
+                      <th style={{ padding: "10px", textAlign: "left" }}>
+                        Account Code
                       </th>
-                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
+                      <th style={{ padding: "10px", textAlign: "left" }}>
+                        Account Name
+                      </th>
+                      <th style={{ padding: "10px", textAlign: "left" }}>
                         Type
                       </th>
-                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
-                        Department
-                      </th>
-                      <th style={{ padding: "10px", border: "1px solid #dee2e6", textAlign: "left", fontSize: "14px" }}>
+                      <th style={{ padding: "10px", textAlign: "left" }}>
                         Amount
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {doubleEntries.map((line, index) => (
-                      <tr key={index} style={{ backgroundColor: index % 2 === 0 ? "#fff" : "#f8f9fa" }}>
-                        <td style={{ padding: "10px", border: "1px solid #dee2e6", color: "#000", fontSize: "13px" }}>
-                          {line.account}
+                      <tr
+                        key={index}
+                        style={{
+                          backgroundColor: index % 2 === 0 ? "#fff" : "#f8f9fa",
+                        }}
+                      >
+                        <td
+                          style={{
+                            padding: "10px",
+                            border: "1px solid #dee2e6",
+                          }}
+                        >
+                          {line.account_code}
                         </td>
-                        <td style={{ padding: "10px", border: "1px solid #dee2e6", fontSize: "13px" }}>
+                        <td
+                          style={{
+                            padding: "10px",
+                            border: "1px solid #dee2e6",
+                          }}
+                        >
+                          {line.account_name}
+                        </td>
+                        <td
+                          style={{
+                            padding: "10px",
+                            border: "1px solid #dee2e6",
+                          }}
+                        >
                           <span
                             style={{
-                              backgroundColor: line.entry_type === "DEBIT" ? "#d4edda" : "#f8d7da",
-                              color: line.entry_type === "DEBIT" ? "#155724" : "#721c24",
+                              backgroundColor:
+                                line.transaction_type === "DEBIT"
+                                  ? "#d4edda"
+                                  : "#f8d7da",
+                              color:
+                                line.transaction_type === "DEBIT"
+                                  ? "#155724"
+                                  : "#721c24",
                               padding: "4px 8px",
                               borderRadius: "4px",
                               fontSize: "12px",
                               fontWeight: "600",
                             }}
                           >
-                            {line.entry_type}
+                            {line.transaction_type}
                           </span>
                         </td>
-                        <td style={{ padding: "10px", border: "1px solid #dee2e6", color: "#000", fontSize: "13px" }}>
-                          {line.department}
-                        </td>
-                        <td style={{ padding: "10px", border: "1px solid #dee2e6", color: "#000", fontSize: "13px" }}>
+                        <td
+                          style={{
+                            padding: "10px",
+                            border: "1px solid #dee2e6",
+                          }}
+                        >
                           {formatAmount(line.amount)}
                         </td>
                       </tr>
@@ -1189,12 +1349,10 @@ const JournalEntryDetailsModal = ({ entry, onClose, loading,
                 </table>
               </div>
 
-              {/* Audit Information Section */}
+              {/* Audit Trail */}
               <div
                 className="timeline-section"
                 style={{
-                  marginBottom: "20px",
-                  backgroundColor: "white",
                   padding: "20px",
                   borderRadius: "8px",
                   border: "1px solid #e9ecef",
@@ -1233,7 +1391,7 @@ const LedgerView = () => {
     }
 
     // 2. Fallback: Check direct role property (Legacy)
-    if (user.role && typeof user.role === 'string') return user.role;
+    if (user.role && typeof user.role === "string") return user.role;
 
     // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
@@ -1429,14 +1587,26 @@ const LedgerView = () => {
   };
 
   // NEW: Handle Journal Entry Click
-  const handleJournalEntryClick = (entry) => {
-    setSelectedEntry(entry);
+  const handleJournalEntryClick = async (listEntry) => {
+    // 1. Show loading state immediately
     setDetailsLoading(true);
     setShowDetailsModal(true);
-    // Simulate loading
-    setTimeout(() => {
+    setSelectedEntry(null); // Clear previous data
+
+    try {
+      // 2. Fetch full details using the reference_id (e.g., JE-2026-001)
+      // listEntry is the row from the table, containing reference_id
+      const response = await getJournalEntryDetails(listEntry.reference_id);
+
+      // 3. Update state with full details
+      setSelectedEntry(response.data);
+    } catch (error) {
+      console.error("Failed to fetch JE details:", error);
+      alert("Could not load details.");
+      setShowDetailsModal(false);
+    } finally {
       setDetailsLoading(false);
-    }, 500);
+    }
   };
 
   // NEW: Close Details Modal
@@ -1445,47 +1615,60 @@ const LedgerView = () => {
     setSelectedEntry(null);
   };
 
+  
+
   // NEW: Export Functionality
   const handleExportLedger = async () => {
     setExporting(true);
-    
+
     try {
       // Generate 7-digit token
       const token = Math.floor(1000000 + Math.random() * 9000000).toString();
-      
+
       // Get current date for filename
       const today = new Date();
-      const dateString = today.toISOString().split('T')[0].replace(/-/g, '');
+      const dateString = today.toISOString().split("T")[0].replace(/-/g, "");
       const filename = `ledger_view_${dateString}_${token}.xlsx`;
-      
+
       // Prepare data for Excel
-      const exportData = ledgerEntries.map(item => ({
+      const exportData = ledgerEntries.map((item) => ({
         "TICKET ID": item.reference_id,
-        "DATE": item.date,
-        "DEPARTMENT": item.department,
-        "CATEGORY": item.category,
+        DATE: item.date,
+        DEPARTMENT: item.department,
+        CATEGORY: item.category,
         "SUB-CATEGORY": item.sub_category || "General",
-        "ACCOUNT": item.account,
-        "AMOUNT": parseFloat(item.amount).toFixed(2)
+        ACCOUNT: item.account,
+        // MODIFIED: Added Peso Sign and Formatting to Amount in Export
+        "AMOUNT": `₱${parseFloat(item.amount).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`,
       }));
-      
+
       // Add summary row if there's data
       if (exportData.length > 0) {
-        const totalAmount = ledgerEntries.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+        const totalAmount = ledgerEntries.reduce(
+          (sum, item) => sum + parseFloat(item.amount),
+          0
+        );
         exportData.push({
           "TICKET ID": "SUMMARY",
-          "DATE": "",
-          "DEPARTMENT": "",
-          "CATEGORY": "TOTAL",
+          DATE: "",
+          DEPARTMENT: "",
+          CATEGORY: "TOTAL",
           "SUB-CATEGORY": "",
-          "ACCOUNT": "",
-          "AMOUNT": totalAmount.toFixed(2)
+          ACCOUNT: "",
+          // MODIFIED: Added Peso Sign to Total
+          "AMOUNT": `₱${totalAmount.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
         });
       }
-      
+
       // Create worksheet
       const worksheet = XLSX.utils.json_to_sheet(exportData);
-      
+
       // Auto-size columns
       const wscols = [
         { wch: 15 },
@@ -1497,19 +1680,20 @@ const LedgerView = () => {
         { wch: 15 },
       ];
       worksheet["!cols"] = wscols;
-      
+
       // Create workbook
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger View");
-      
+
       // Generate and download file
       XLSX.writeFile(workbook, filename);
-      
+
       // Show success message
       setTimeout(() => {
-        alert(`Export completed successfully!\nFile: ${filename}\nRecords exported: ${ledgerEntries.length}`);
+        alert(
+          `Export completed successfully!\nFile: ${filename}\nRecords exported: ${ledgerEntries.length}`
+        );
       }, 500);
-      
     } catch (error) {
       console.error("Export failed:", error);
       alert("Export failed. Please try again.");
@@ -1603,7 +1787,12 @@ const LedgerView = () => {
       {/* Main Content */}
       <div
         className="content-container"
-        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
+        style={{
+          padding: "10px 20px",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          width: "95%",
+        }}
       >
         {/* Conditionally render either Dashboard content or ManageProfile */}
         {showManageProfile ? (
@@ -1632,12 +1821,15 @@ const LedgerView = () => {
                 marginBottom: "20px",
               }}
             >
-              <h2 className="page-title" style={{
-                margin: 0,
-                fontSize: "24px",
-                fontWeight: "bold",
-                color: "#0C0C0C",
-              }}>
+              <h2
+                className="page-title"
+                style={{
+                  margin: 0,
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#0C0C0C",
+                }}
+              >
                 Ledger View
               </h2>
               <div
@@ -2012,7 +2204,11 @@ const LedgerView = () => {
                     <tr>
                       <td
                         colSpan="8"
-                        style={{ textAlign: "center", padding: "20px", fontSize: "13px" }}
+                        style={{
+                          textAlign: "center",
+                          padding: "20px",
+                          fontSize: "13px",
+                        }}
                       >
                         Loading...
                       </td>
@@ -2134,7 +2330,11 @@ const LedgerView = () => {
                       <td
                         colSpan="8"
                         className="no-results"
-                        style={{ padding: "20px", textAlign: "center", fontSize: "13px" }}
+                        style={{
+                          padding: "20px",
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
                       >
                         No transactions match your search criteria.
                       </td>

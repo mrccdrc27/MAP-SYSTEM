@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 
 from core.views_analytics import SpendingHeatmapView, SpendingTrendsView, TopCategoriesView
 from .views_utils import get_server_time
-from .views_budget import AccountDropdownView, AccountSetupListView, BudgetAdjustmentView, BudgetProposalSummaryView, BudgetTransferViewSet, BudgetVarianceReportView, FiscalYearDropdownView, JournalEntryCreateView, JournalEntryListView, LedgerExportView, ProposalHistoryView, LedgerViewList, ProposalReviewBudgetOverview, SupplementalBudgetRequestView, export_budget_proposal_excel, export_budget_variance_excel, journal_choices, DepartmentDropdownView, AccountTypeDropdownView
+from .views_budget import AccountDropdownView, AccountSetupListView, BudgetAdjustmentView, BudgetProposalSummaryView, BudgetTransferViewSet, BudgetVarianceReportView, FiscalYearDropdownView, JournalEntryCreateView, JournalEntryDetailView, JournalEntryListView, LedgerExportView, ProposalHistoryView, LedgerViewList, ProposalReviewBudgetOverview, SupplementalBudgetRequestView, export_budget_proposal_excel, export_budget_variance_excel, journal_choices, DepartmentDropdownView, AccountTypeDropdownView
 from . import views_expense, views_dashboard
 from .views_dashboard import (
     DepartmentBudgetView, MonthlyBudgetActualViewSet, TopCategoryBudgetAllocationView,
@@ -87,7 +87,7 @@ urlpatterns = [
     # --- Ledger Endpoints ---
     path('ledger/', LedgerViewList.as_view(), name='ledger-view'),
     path('ledger/export/', LedgerExportView.as_view(), name='ledger-export'),
-
+    path('ledger/details/<str:entry_id>/', JournalEntryDetailView.as_view(), name='ledger-entry-detail'),
     # --- Report Endpoints ---
     path('reports/budget-variance/', BudgetVarianceReportView.as_view(),
          name='budget-variance-report'),

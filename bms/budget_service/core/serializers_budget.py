@@ -795,68 +795,90 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
     category_id = serializers.IntegerField(
         help_text="ID of the Expense Category to increase"
     )
-    amount = serializers.DecimalField(
-        max_digits=15, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))]
-    )
-    reason = serializers.CharField(
-        max_length=1000, 
-        help_text="Justification for the additional budget"
-    )
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+    reason = serializers.CharField(max_length=1000)
     fiscal_year_id = serializers.IntegerField(required=False)
 
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Budget amount must be greater than zero.")
+        return value
+
     def validate(self, data):
-        # 1. Resolve Department
+        # 1. Resolve Department (FIXED: More robust logic)
         dept_input = data.get('department_input')
         dept = None
         
+        # Try numeric ID first
         if str(dept_input).isdigit():
-            dept = Department.objects.filter(id=int(dept_input)).first()
-        else:
-            # Try Code first, then Name
-            dept = Department.objects.filter(code__iexact=dept_input).first()
-            if not dept:
-                 dept = Department.objects.filter(name__iexact=dept_input).first()
+            try:
+                dept = Department.objects.get(id=int(dept_input), is_active=True)
+            except Department.DoesNotExist:
+                pass
+        
+        # Try Code match
+        if not dept:
+            dept = Department.objects.filter(code__iexact=dept_input, is_active=True).first()
+        
+        # Try Name match
+        if not dept:
+            dept = Department.objects.filter(name__iexact=dept_input, is_active=True).first()
         
         if not dept:
-            raise serializers.ValidationError({"department_input": f"Invalid Department: '{dept_input}' not found."})
+            raise serializers.ValidationError({
+                "department_input": f"Invalid Department: '{dept_input}' not found or inactive."
+            })
+        
+        # --- DEBUG LOG ---
+        print(f"🔍 Resolved Department: {dept.name} (ID: {dept.id})")
         
         # 2. Resolve Project
         project_id = data.get('project_id')
         project = Project.objects.filter(id=project_id, department=dept).first()
         if not project:
-            raise serializers.ValidationError({"project_id": "Project not found or does not belong to this department."})
+            raise serializers.ValidationError({
+                "project_id": "Project not found or does not belong to this department."
+            })
 
-        # 3. Resolve Fiscal Year (Default to active)
+        # 3. Resolve Fiscal Year
         fy_id = data.get('fiscal_year_id')
         if fy_id:
-            fy = FiscalYear.objects.filter(id=fy_id).first()
+            fy = FiscalYear.objects.filter(id=fy_id, is_active=True).first()
         else:
             today = timezone.now().date()
-            fy = FiscalYear.objects.filter(start_date__lte=today, end_date__gte=today, is_active=True).first()
+            fy = FiscalYear.objects.filter(
+                start_date__lte=today, 
+                end_date__gte=today, 
+                is_active=True
+            ).first()
         
         if not fy:
-            raise serializers.ValidationError({"fiscal_year_id": "No active fiscal year found."})
+            raise serializers.ValidationError({
+                "fiscal_year_id": "No active fiscal year found."
+            })
 
         # 4. Resolve Category
         cat_id = data.get('category_id')
-        category = ExpenseCategory.objects.filter(id=cat_id).first()
+        category = ExpenseCategory.objects.filter(id=cat_id, is_active=True).first()
         if not category:
-             raise serializers.ValidationError({"category_id": "Invalid Category."})
+            raise serializers.ValidationError({
+                "category_id": "Invalid Category."
+            })
 
-        # 5. Find OR Prepare Creation of Allocation
+        # 5. Find OR Prepare Allocation Creation
         allocation = BudgetAllocation.objects.filter(
             project=project,
             category=category,
+            department=dept,  # ✅ Explicit department filter
             is_active=True
         ).first()
 
-        # We don't error if allocation is missing. We pass components to View to create it.
-
+        # Store resolved objects
         data['department_obj'] = dept
         data['project_obj'] = project
         data['fiscal_year_obj'] = fy
         data['category_obj'] = category
-        data['allocation_obj'] = allocation # Can be None
+        data['allocation_obj'] = allocation
         
         return data
 # MODIFICATION END
@@ -867,9 +889,7 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
 class BudgetTransferSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='destination_allocation.department.name', read_only=True)
     category_name = serializers.CharField(source='destination_allocation.category.name', read_only=True)
-    
-    # OLD: request_id = serializers.CharField(source='id', read_only=True)
-    # NEW: Formatted ID
+
     request_id = serializers.SerializerMethodField()
     
     date_submitted = serializers.DateTimeField(source='transferred_at', format="%Y-%m-%d %H:%M", read_only=True)
@@ -894,13 +914,6 @@ class BudgetTransferSerializer(serializers.ModelSerializer):
         year = obj.transferred_at.year if obj.transferred_at else timezone.now().year
         return f"{prefix}-{year}-{obj.id:03d}"
 
-    def to_representation(self, instance):
-        # Clean up Status presentation
-        data = super().to_representation(instance)
-        if data.get('status'):
-            data['status'] = data['status'].title() # "PENDING" -> "Pending"
-        return data
-
 
 class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     category = serializers.CharField()
@@ -912,3 +925,39 @@ class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     actual = serializers.DecimalField(max_digits=15, decimal_places=2)
     available = serializers.DecimalField(max_digits=15, decimal_places=2)
     children = serializers.ListField(child=serializers.DictField())
+    
+    
+# --- NEW: Serializers for Ledger Details Modal ---
+
+class JournalEntryLineDetailSerializer(serializers.ModelSerializer):
+    account_name = serializers.CharField(source='account.name', read_only=True)
+    account_code = serializers.CharField(source='account.code', read_only=True)
+    
+    class Meta:
+        model = JournalEntryLine
+        fields = ['id', 'account_name', 'account_code', 'transaction_type', 'amount', 'description']
+
+class JournalEntryDetailSerializer(serializers.ModelSerializer):
+    lines = JournalEntryLineDetailSerializer(many=True, read_only=True)
+    
+    # MODIFIED: Changed from source='department.name' to SerializerMethodField for safety
+    department_name = serializers.SerializerMethodField()
+    
+    # Audit info
+    created_by = serializers.CharField(source='created_by_username')
+    
+    # Category helpers for display
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+
+    class Meta:
+        model = JournalEntry
+        fields = [
+            'entry_id', 'date', 'category', 'category_display', 'description', 
+            'total_amount', 'status', 'department_name', 
+            'created_by', 'created_at', 'lines'
+        ]
+
+    def get_department_name(self, obj):
+        if obj.department:
+            return obj.department.name
+        return "N/A"

@@ -138,6 +138,7 @@ const SearchableSelect = ({
                 borderRadius: "4px",
                 fontSize: "13px",
                 outline: "none",
+                background: "white",
               }}
             />
           </div>
@@ -479,12 +480,13 @@ const DateFilter = ({ dateFilter, setDateFilter }) => {
 // Supplemental Request Status Badge
 const StatusBadge = ({ status }) => {
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Pending":
+    // MODIFIED: Switch to Uppercase matching to align with Backend constants
+    switch (status ? status.toUpperCase() : "") {
+      case "PENDING":
         return { bg: "#fff3cd", text: "#856404", border: "#ffeaa7" };
-      case "Approved":
+      case "APPROVED":
         return { bg: "#d4edda", text: "#155724", border: "#c3e6cb" };
-      case "Rejected":
+      case "REJECTED":
         return { bg: "#f8d7da", text: "#721c24", border: "#f5c6cb" };
       default:
         return { bg: "#e2e3e5", text: "#383d41", border: "#d6d8db" };
@@ -492,6 +494,12 @@ const StatusBadge = ({ status }) => {
   };
 
   const colors = getStatusColor(status);
+
+  // Helper to display Title Case text even if status is UPPERCASE
+  const formatStatus = (s) => {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  };
 
   return (
     <span
@@ -508,9 +516,10 @@ const StatusBadge = ({ status }) => {
         gap: "4px",
       }}
     >
-      {status === "Approved" && <CheckCircle size={12} />}
-      {status === "Rejected" && <XCircle size={12} />}
-      {status}
+      {/* Update Check to Uppercase */}
+      {status === "APPROVED" && <CheckCircle size={12} />}
+      {status === "REJECTED" && <XCircle size={12} />}
+      {formatStatus(status)} 
     </span>
   );
 };

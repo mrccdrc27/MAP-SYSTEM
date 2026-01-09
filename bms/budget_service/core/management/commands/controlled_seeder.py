@@ -260,8 +260,9 @@ class Command(BaseCommand):
         self.stdout.write("Seeding Accounts...")
         asset_type, _ = AccountType.objects.get_or_create(name='Asset')
         expense_type, _ = AccountType.objects.get_or_create(name='Expense')
-        liability_type, _ = AccountType.objects.get_or_create(
-            name='Liability')  # NEW
+        liability_type, _ = AccountType.objects.get_or_create(name='Liability')
+        # --- NEW: Add Equity Type ---
+        equity_type, _ = AccountType.objects.get_or_create(name='Equity')
 
         creator_id = 1
         creator_name = 'admin_auth'
@@ -299,6 +300,15 @@ class Command(BaseCommand):
                       'created_by_user_id': creator_id, 'created_by_username': creator_name}
         )
         acc_map['EXPENSE'] = acc_expense
+
+        # --- NEW: Equity Account (Required for Supplemental Budgets) ---
+        acc_equity, _ = Account.objects.update_or_create(
+            code='3000',
+            defaults={'name': 'Retained Earnings', 'account_type': equity_type,
+                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
+        )
+        acc_map['EQUITY'] = acc_equity
+        # -------------------------------------------------------------
 
         return acc_map
 
