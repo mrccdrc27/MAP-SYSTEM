@@ -11,6 +11,7 @@ import styles from "./create-workflow.module.css";
 import { useCreateWorkflow } from "../../../api/useCreateWorkflow";
 import { useWorkflowRoles } from "../../../api/useWorkflowRoles";
 import { workflowNameToSlug } from "../../../api/useWorkflowAPI";
+import useFetchWorkflows from "../../../api/useFetchWorkflows";
 
 // Shared Components
 import {
@@ -77,6 +78,7 @@ export default function CreateWorkflowPage() {
     error: createError,
   } = useCreateWorkflow();
   const { roles } = useWorkflowRoles();
+  const { workflows: existingWorkflows } = useFetchWorkflows();
 
   // Custom state management
   const {
@@ -99,7 +101,9 @@ export default function CreateWorkflowPage() {
     simpleEdges,
     nodes,
     edges,
-    editorMode
+    editorMode,
+    existingWorkflows,
+    null // currentWorkflowId is null for create mode
   );
 
   // Toast helper

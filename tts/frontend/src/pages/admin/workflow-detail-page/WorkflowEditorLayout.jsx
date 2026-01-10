@@ -15,12 +15,13 @@ import ConfirmDialog from './ConfirmDialog';
 import { LoadingState, UnsavedChangesWarning } from './components';
 
 // Shared Components
-import { WorkflowToolbar, ValidationPanel } from '../../../components/workflow/shared';
+import { WorkflowToolbar, ValidationPanel, VersionHistoryPanel, VersionPreviewModal } from '../../../components/workflow/shared';
 
 // Hooks
 import { useWorkflowEditor, useDeleteConfirmation } from './hooks';
 import { useWorkflowRoles } from '../../../api/useWorkflowRoles';
 import { useWorkflowRefresh } from '../../../components/workflow/WorkflowRefreshContext';
+import useWorkflowVersions from '../../../api/useWorkflowVersions';
 
 // Hook to compute validation errors from nodes/edges for the shared ValidationPanel
 function useGraphValidation(nodes = [], edges = [], isDataLoaded = false) {
@@ -83,6 +84,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
   
   // UI state
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [rightSidebarTab, setRightSidebarTab] = useState('editor'); // 'editor', 'validation', 'versions'
   const [currentNodes, setCurrentNodes] = useState([]);
   const [currentEdges, setCurrentEdges] = useState([]);
 
@@ -125,6 +127,17 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
   // The actual workflow_id to use for API calls (resolved from name if needed)
   const actualWorkflowId = resolvedWorkflowId || workflowData?.workflow?.workflow_id || identifier;
 
+  // Workflow versions hook
+  const {
+    versions,
+    selectedVersion,
+    loading: versionsLoading,
+    fetchVersions,
+    fetchVersionDetail,
+    rollbackToVersion,
+    clearSelectedVersion,
+  } = useWorkflowVersions(actualWorkflowId);
+
   // Delete confirmation
   const {
     confirmDialog,
@@ -163,6 +176,36 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
       console.warn('Failed to load roles:', rolesError);
     }
   }, [rolesError]);
+
+  // Fetch versions when page loads
+  useEffect(() => {
+    if (actualWorkflowId && !versionsLoading && (!versions || versions.length === 0)) {
+      fetchVersions();
+    }
+  }, [actualWorkflowId, versionsLoading, versions?.length, fetchVersions]);
+
+  // Handle version rollback
+  const handleVersionRollback = async (versionId) => {
+    try {
+      await rollbackToVersion(versionId);
+      // Trigger workflow refresh to reload the editor with new data
+      triggerRefresh();
+      // Navigate to force reload the page with new workflow data
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to rollback workflow:', error);
+    }
+  };
+
+  // Handle version preview
+  const handleVersionPreview = async (versionId) => {
+    try {
+      await fetchVersionDetail(versionId);
+      // The selectedVersion state will be updated with the full definition
+    } catch (error) {
+      console.error('Failed to fetch version details:', error);
+    }
+  };
 
   // Loading state
   if (!workflowData) {
@@ -231,23 +274,103 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
               </div>
             </main>
 
-            {/* RIGHT SIDEBAR - Selection Editor & Validation */}
+            {/* RIGHT SIDEBAR - Selection Editor, Validation & Versions */}
             <aside className={styles.rightSidebar}>
-              {/* Validation Panel - Using shared component */}
-              <ValidationPanel errors={validationErrors} />
-              
-              {/* Selection Panel */}
-              <div style={{ flex: 1, overflow: 'auto' }}>
-                <WorkflowEditorSidebar
-                  selectedElement={selectedElement}
-                  workflowData={workflowData}
-                  roles={roles}
-                  onUpdateStep={handleUpdateStep}
-                  onUpdateTransition={handleUpdateTransition}
-                  onDeleteStep={handleDeleteStep}
-                  onDeleteTransition={handleDeleteTransition}
-                  onClose={() => setSelectedElement(null)}
-                />
+              {/* Sidebar Tab Navigation */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                padding: '12px 16px',
+                borderBottom: 'var(--border-bottom)',
+                background: 'var(--bg-content-color)',
+              }}>
+                <button
+                  onClick={() => setRightSidebarTab('editor')}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: rightSidebarTab === 'editor' ? '600' : '500',
+                    border: 'none',
+                    borderRadius: '6px',
+                    background: rightSidebarTab === 'editor' ? 'var(--primary-color)' : 'transparent',
+                    color: rightSidebarTab === 'editor' ? 'white' : 'var(--text-color)',
+                    cursor: 'pointer',
+                    transition: 'var(--transition)',
+                  }}
+                >
+                  Editor
+                </button>
+                <button
+                  onClick={() => setRightSidebarTab('validation')}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: rightSidebarTab === 'validation' ? '600' : '500',
+                    border: 'none',
+                    borderRadius: '6px',
+                    background: rightSidebarTab === 'validation' ? 'var(--primary-color)' : 'transparent',
+                    color: rightSidebarTab === 'validation' ? 'white' : 'var(--text-color)',
+                    cursor: 'pointer',
+                    transition: 'var(--transition)',
+                  }}
+                >
+                  Validation ({validationErrors.length})
+                </button>
+                <button
+                  onClick={() => setRightSidebarTab('versions')}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: rightSidebarTab === 'versions' ? '600' : '500',
+                    border: 'none',
+                    borderRadius: '6px',
+                    background: rightSidebarTab === 'versions' ? 'var(--primary-color)' : 'transparent',
+                    color: rightSidebarTab === 'versions' ? 'white' : 'var(--text-color)',
+                    cursor: 'pointer',
+                    transition: 'var(--transition)',
+                  }}
+                >
+                  Versions ({versions.length})
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+                {/* Editor Tab - Selection Panel */}
+                {rightSidebarTab === 'editor' && (
+                  <WorkflowEditorSidebar
+                    selectedElement={selectedElement}
+                    workflowData={workflowData}
+                    roles={roles}
+                    onUpdateStep={handleUpdateStep}
+                    onUpdateTransition={handleUpdateTransition}
+                    onDeleteStep={handleDeleteStep}
+                    onDeleteTransition={handleDeleteTransition}
+                    onClose={() => setSelectedElement(null)}
+                  />
+                )}
+
+                {/* Validation Tab */}
+                {rightSidebarTab === 'validation' && (
+                  <div style={{ padding: '16px' }}>
+                    <ValidationPanel errors={validationErrors} />
+                  </div>
+                )}
+
+                {/* Versions Tab */}
+                {rightSidebarTab === 'versions' && (
+                  <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+                    <VersionHistoryPanel
+                      versions={versions}
+                      selectedVersion={selectedVersion}
+                      loading={versionsLoading}
+                      onFetchVersions={fetchVersions}
+                      onSelectVersion={fetchVersionDetail}
+                      onRollback={handleVersionRollback}
+                      onPreviewVersion={handleVersionPreview}
+                    />
+                  </div>
+                )}
               </div>
             </aside>
           </div>
@@ -286,6 +409,14 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
           variant="danger"
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
+        />
+      )}
+
+      {/* Version Preview Modal */}
+      {selectedVersion && (
+        <VersionPreviewModal
+          version={selectedVersion}
+          onClose={clearSelectedVersion}
         />
       )}
     </main>

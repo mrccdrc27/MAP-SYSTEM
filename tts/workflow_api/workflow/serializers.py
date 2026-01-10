@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
-from .models import Workflows
+from .models import Workflows, WorkflowVersion
 from step.models import Steps, StepTransition
 from role.models import Roles
 import logging
@@ -361,3 +361,37 @@ class CreateWorkflowWithGraphSerializer(serializers.Serializer):
                     )
         
         return value
+
+
+class WorkflowVersionSerializer(serializers.ModelSerializer):
+    """Serializer for workflow version history"""
+    workflow_name = serializers.CharField(source='workflow.name', read_only=True)
+    node_count = serializers.SerializerMethodField()
+    edge_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = WorkflowVersion
+        fields = [
+            'id', 'workflow', 'workflow_name', 'version', 
+            'created_at', 'is_active', 'node_count', 'edge_count'
+        ]
+        read_only_fields = ['id', 'workflow', 'workflow_name', 'version', 'created_at']
+    
+    def get_node_count(self, obj):
+        return len(obj.definition.get('nodes', [])) if obj.definition else 0
+    
+    def get_edge_count(self, obj):
+        return len(obj.definition.get('edges', [])) if obj.definition else 0
+
+
+class WorkflowVersionDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for workflow version with full definition"""
+    workflow_name = serializers.CharField(source='workflow.name', read_only=True)
+    
+    class Meta:
+        model = WorkflowVersion
+        fields = [
+            'id', 'workflow', 'workflow_name', 'version',
+            'created_at', 'is_active', 'definition'
+        ]
+        read_only_fields = fields

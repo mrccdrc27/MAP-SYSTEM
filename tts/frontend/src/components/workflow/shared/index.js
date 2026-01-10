@@ -15,3 +15,5 @@ export { default as TransitionListItem } from './TransitionListItem';
 // Panels
 export { default as SLAPanel } from './SLAPanel';
 export { default as ValidationPanel } from './ValidationPanel';
+export { default as VersionHistoryPanel } from './VersionHistoryPanel';
+export { default as VersionPreviewModal } from './VersionPreviewModal';
