@@ -68,6 +68,7 @@ const WorkflowEditorContent = forwardRef(({
   onStepClick, 
   onEdgeClick,
   onPaneClick,
+  onNodeUpdate,
   isEditingGraph,
   setHasUnsavedChanges,
   onToggleEditing,
@@ -146,7 +147,21 @@ const WorkflowEditorContent = forwardRef(({
       };
     }));
     setUnsavedChanges(true);
-  }, [setNodes]);
+    if (setHasUnsavedChanges) setHasUnsavedChanges(true);
+    // Notify parent about the update so sidebar can sync
+    if (onNodeUpdate) {
+      onNodeUpdate(nodeId, {
+        id: nodeId,
+        name: updates.label || updates.name,
+        label: updates.label || updates.name,
+        role: updates.role,
+        description: updates.description,
+        instruction: updates.instruction,
+        is_start: updates.is_start,
+        is_end: updates.is_end,
+      });
+    }
+  }, [setNodes, setHasUnsavedChanges, onNodeUpdate]);
 
   // Handle adding a new node
   const handleAddNode = useCallback((label = 'New Step', role = 'Unassigned') => {
@@ -165,14 +180,16 @@ const WorkflowEditorContent = forwardRef(({
         is_start: false,
         is_end: false,
         id: newNodeId,
-        onStepClick: () => onStepClick({
-          id: newNodeId,
-          name: label,
-          role: role,
-          description: '',
-          instruction: '',
-          is_start: false,
-          is_end: false,
+        // Pass through the current node data when clicked
+        onStepClick: (currentData) => onStepClick({
+          id: currentData?.id ?? newNodeId,
+          name: currentData?.label ?? label,
+          label: currentData?.label ?? label,
+          role: currentData?.role ?? role,
+          description: currentData?.description ?? '',
+          instruction: currentData?.instruction ?? '',
+          is_start: currentData?.is_start ?? false,
+          is_end: currentData?.is_end ?? false,
         }),
         // Use wrapper functions that access ref to avoid stale closures
         onUpdateStep: (nodeId, updates) => handlersRef.current.onUpdateStep(nodeId, updates),
@@ -297,7 +314,17 @@ const WorkflowEditorContent = forwardRef(({
         is_start: node.is_start || false,
         is_end: node.is_end || false,
         id: node.id,
-        onStepClick: () => onStepClick(node),
+        // Pass through the current node data when clicked, not the original data
+        onStepClick: (currentData) => onStepClick({
+          id: currentData?.id ?? node.id,
+          name: currentData?.label ?? node.name,
+          label: currentData?.label ?? node.name,
+          role: currentData?.role ?? node.role,
+          description: currentData?.description ?? node.description,
+          instruction: currentData?.instruction ?? node.instruction,
+          is_start: currentData?.is_start ?? node.is_start ?? false,
+          is_end: currentData?.is_end ?? node.is_end ?? false,
+        }),
         // Use wrapper functions that access ref to avoid stale closures
         onUpdateStep: (nodeId, updates) => handlersRef.current.onUpdateStep(nodeId, updates),
         onDeleteStep: (nodeId) => handlersRef.current.onDeleteStep(nodeId),

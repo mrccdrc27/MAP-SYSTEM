@@ -120,6 +120,17 @@ export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased
     setSelectedElement({ type: 'workflow' });
   }, []);
 
+  // Handle node update from inline editing - sync with selected element
+  const onNodeUpdate = useCallback((nodeId, updatedData) => {
+    setSelectedElement((prev) => {
+      // Only update if this node is currently selected
+      if (prev?.type === 'step' && String(prev.id) === String(nodeId)) {
+        return { ...prev, data: { ...prev.data, ...updatedData } };
+      }
+      return prev;
+    });
+  }, []);
+
   // Update handlers
   const handleUpdateStep = useCallback((stepId, updates) => {
     contentRef.current?.updateNodeData(stepId, {
@@ -185,6 +196,7 @@ export function useWorkflowEditor(identifier, roles, triggerRefresh, isNameBased
     onStepClick,
     onEdgeClick,
     onPaneClick,
+    onNodeUpdate,
     handleUpdateStep,
     handleUpdateTransition,
     handleWorkflowConfigUpdate,

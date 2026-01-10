@@ -839,6 +839,10 @@
   color: var(--text-color);
 }
 
+.inputGroup textarea {
+  resize: none;
+}
+
 .inputGroup input:focus,
 .inputGroup textarea:focus {
   outline: none;

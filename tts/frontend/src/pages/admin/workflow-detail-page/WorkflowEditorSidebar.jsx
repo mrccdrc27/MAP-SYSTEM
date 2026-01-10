@@ -17,20 +17,25 @@ export default function WorkflowEditorSidebar({
   // Get selected step or transition data
   const stepData = useMemo(() => {
     if (selectedElement?.type !== 'step') return null;
+    
+    // Prefer selectedElement.data as it contains the most up-to-date state
+    const elementData = selectedElement.data || {};
+    
+    // Only fall back to workflowData if we don't have current data
     const step = workflowData?.graph?.nodes?.find((s) => String(s.id) === String(selectedElement.id));
-    if (!step) return selectedElement.data || null;
+    
     return {
-      id: step.id,
-      name: step.name,
-      label: step.name,
-      role: step.role,
-      assignedRole: step.role,
-      type: step.is_start ? 'initial' : step.is_end ? 'terminal' : 'standard',
-      description: step.description,
-      instruction: step.instruction,
-      is_start: step.is_start,
-      is_end: step.is_end,
-      ...selectedElement.data,
+      id: elementData.id ?? step?.id ?? selectedElement.id,
+      name: elementData.name ?? elementData.label ?? step?.name,
+      label: elementData.label ?? elementData.name ?? step?.name,
+      role: elementData.role ?? step?.role,
+      assignedRole: elementData.role ?? step?.role,
+      type: (elementData.is_start ?? step?.is_start) ? 'initial' : 
+            (elementData.is_end ?? step?.is_end) ? 'terminal' : 'standard',
+      description: elementData.description ?? step?.description,
+      instruction: elementData.instruction ?? step?.instruction,
+      is_start: elementData.is_start ?? step?.is_start ?? false,
+      is_end: elementData.is_end ?? step?.is_end ?? false,
     };
   }, [selectedElement, workflowData]);
 

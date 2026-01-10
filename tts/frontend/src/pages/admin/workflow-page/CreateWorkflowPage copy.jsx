@@ -21,7 +21,6 @@ import {
 
 // Components
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
-import Toast from "../../../components/modal/Toast";
 import WorkflowCreationConfirmation from "./modals/WorkflowCreationConfirmation";
 import SequenceDiagramModal from "./modals/SequenceDiagramModal";
 import {
@@ -56,9 +55,6 @@ export default function CreateWorkflowPage() {
   const [leftSidebarTab, setLeftSidebarTab] = useState("details");
   const [centerViewMode, setCenterViewMode] = useState("edit");
   const [showFlowAnimation, setShowFlowAnimation] = useState(false);
-
-  // Toast state
-  const [toast, setToast] = useState(null);
 
   // Modal state
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -101,11 +97,6 @@ export default function CreateWorkflowPage() {
     edges,
     editorMode
   );
-
-  // Toast helper
-  const showToast = useCallback((message, type = "error") => {
-    setToast({ message, type });
-  }, []);
 
   // Handle template application with metadata update
   const handleApplyTemplate = useCallback(
@@ -177,27 +168,10 @@ export default function CreateWorkflowPage() {
       setShowConfirmation(true);
     } catch (error) {
       console.error("Failed to create workflow:", error);
-      
-      // Format error message properly
-      let errorMessage = "Failed to create workflow. Please check all required fields.";
-      
-      if (createError) {
-        // Handle structured error object
-        if (typeof createError === 'object' && !Array.isArray(createError)) {
-          const errors = Object.entries(createError)
-            .map(([field, messages]) => {
-              const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-              const errorMsg = Array.isArray(messages) ? messages[0] : messages;
-              return `${fieldName}: ${errorMsg}`;
-            })
-            .join('. ');
-          errorMessage = errors || errorMessage;
-        } else if (typeof createError === 'string') {
-          errorMessage = createError;
-        }
-      }
-      
-      showToast(errorMessage, "error");
+      alert(
+        createError ||
+          "Failed to create workflow. Please check the console for details."
+      );
     }
   }, [
     validationErrors,
@@ -209,7 +183,6 @@ export default function CreateWorkflowPage() {
     editorMode,
     createWorkflow,
     createError,
-    showToast,
   ]);
 
   // Navigation handlers
@@ -410,15 +383,6 @@ export default function CreateWorkflowPage() {
           </div>
         </div>
       </ReactFlowProvider>
-
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
 
       {/* Modals */}
       {showConfirmation && createdWorkflow && (

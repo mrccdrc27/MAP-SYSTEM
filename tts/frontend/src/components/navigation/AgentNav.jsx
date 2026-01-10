@@ -2,7 +2,7 @@
 import styles from "./agent-nav.module.css";
 
 // react
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
 // modal
@@ -20,9 +20,10 @@ export default function AgentNav() {
   const location = useLocation();
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const [openNotifModal, setOpenNotifModal] = useState(false);
-  
+
   // Use shared notification context (single WebSocket connection)
-  const { notifications, fetchNotifications, wsConnected, unreadCount } = useNotificationContext();
+  const { notifications, fetchNotifications, wsConnected, unreadCount } =
+    useNotificationContext();
   // nav hide on scroll
   const [hideNav, setHideNav] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -94,20 +95,21 @@ export default function AgentNav() {
     <>
       <nav className={`${styles.navBar} ${hideNav ? styles.hide : ""}`}>
         {/* logo */}
-        <div className={styles.logoSection}>
-          <div className={styles.logoImg}>
-            <img
-              src="/map-logo.png" // relative to the public folder
-              alt="logo"
-            />
+        <Link to="/dashboard" className={styles.logoLink}>
+          <div className={styles.logoSection}>
+            <div className={styles.logoImg}>
+              <img
+                src="/map-logo.png" // relative to the public folder
+                alt="logo"
+              />
+            </div>
+
+            <p>
+              {/* Ticket<span>Flow</span> */}
+              <span>TicketFlow</span>
+            </p>
           </div>
-
-          <p>
-            {/* Ticket<span>Flow</span> */}
-            <span>TicketFlow</span>
-          </p>
-        </div>
-
+        </Link>
         {/* nav-links */}
         <div className={`${styles.navLinks} ${menuOpen ? styles.active : ""}`}>
           <NavLink
@@ -173,9 +175,7 @@ export default function AgentNav() {
         </div>
 
         {openNotifModal && (
-          <Notification
-            closeNotifAction={() => setOpenNotifModal(false)}
-          />
+          <Notification closeNotifAction={() => setOpenNotifModal(false)} />
         )}
         {openProfileModal && (
           <ProfileModal closeProfileAction={() => setOpenProfileModal(false)} />

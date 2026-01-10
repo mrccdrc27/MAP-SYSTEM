@@ -13,7 +13,7 @@ Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Get the root directory (MAP-SYSTEM)
-$RootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$RootDir = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 Set-Location $RootDir
 
 Write-Host "Working directory: $RootDir" -ForegroundColor Yellow
