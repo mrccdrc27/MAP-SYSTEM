@@ -13,6 +13,14 @@ export default function EscalateTicket({
 
   const { escalateTask, loading, error } = useEscalateTask();
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   // Handle successful response
   useEffect(() => {
     if (!loading && !error && reason && showConfirmation) {
