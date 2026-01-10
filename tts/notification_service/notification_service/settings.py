@@ -116,8 +116,8 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if DJANGO_ENV.lower() == 'production':
-    # Use PostgreSQL in production via DATABASE_URL or individual env vars
+# Use PostgreSQL in production OR when DATABASE_URL is set (e.g., Docker development)
+if DJANGO_ENV.lower() == 'production' or config('DATABASE_URL', default=''):
     if config('DATABASE_URL', default=''):
         DATABASES = {
             'default': dj_database_url.config(
@@ -138,7 +138,7 @@ if DJANGO_ENV.lower() == 'production':
             }
         }
 else:
-    # Use SQLite in development
+    # Use SQLite in development (local only, without DATABASE_URL)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
