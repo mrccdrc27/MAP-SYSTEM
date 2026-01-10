@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       // Route AUTH API requests through Kong Gateway
       '/auth/api': {
-        target: 'http://localhost:8000',  // Kong Gateway
+        target: 'http://localhost:8080',  // Kong Gateway
         changeOrigin: true,
         secure: false,
         // Forward cookies properly

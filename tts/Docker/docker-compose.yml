@@ -231,7 +231,7 @@ services:
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,127.0.0.1,auth-service,host.docker.internal"
       KONG_TRUSTED: "true"
       RECAPTCHA_ENABLED: "False"
-      FRONTEND_URL: "http://165.22.247.50:1000"
+      FRONTEND_URL: "http://165.22.247.50:3001"
       PUBLIC_BASE_URL: "http://165.22.247.50:8080"
       COOKIE_DOMAIN: "165.22.247.50"
       DJANGO_SESSION_COOKIE_SECURE: "False"

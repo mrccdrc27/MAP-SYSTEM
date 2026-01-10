@@ -746,7 +746,7 @@ def send_password_reset_email(user, reset_token, request=None):
         if not base_url:
             base_url = 'http://localhost:3000'  # Final fallback for development
         
-        reset_url = f"{base_url}/api/v1/users/password/reset?token={reset_token.token}"
+        reset_url = f"{base_url}/reset-password?token={reset_token.token}"
         
         success, _, _ = get_email_service().send_password_reset_email(
             user_email=user.email,
