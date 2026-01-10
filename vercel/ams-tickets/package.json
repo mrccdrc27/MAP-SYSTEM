@@ -1,0 +1,16 @@
+{
+  "name": "tts-ams-api",
+  "version": "1.0.0",
+  "description": "Mock API for TTS-AMS integration",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

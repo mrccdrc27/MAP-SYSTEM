@@ -2,6 +2,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import *
+from .views_asset import (
+    ResolvedAssetTicketsView,
+    ResolvedAssetCheckoutTicketsView,
+    ResolvedAssetCheckinTicketsView,
+    AssetTicketDetailView,
+    AssetTicketsByEmployeeView,
+)
 
 router = DefaultRouter()
 router.register(r'tickets', WorkflowTicketViewSet)
@@ -14,7 +21,11 @@ urlpatterns = [
     # path("assign-task/<uuid:ticket_id>/<str:workflow_id>/", ManualTaskAssignmentView.as_view(), name="assign-task"),
 
     path("assign-task/", TaskAssignmentView.as_view(), name="assign-task"),
-
-
-
+    
+    # Asset Check-In/Check-Out endpoints for AMS integration
+    path("asset/resolved/", ResolvedAssetTicketsView.as_view(), name="resolved-asset-tickets"),
+    path("asset/checkout/", ResolvedAssetCheckoutTicketsView.as_view(), name="resolved-asset-checkout"),
+    path("asset/checkin/", ResolvedAssetCheckinTicketsView.as_view(), name="resolved-asset-checkin"),
+    path("asset/<str:ticket_number>/", AssetTicketDetailView.as_view(), name="asset-ticket-detail"),
+    path("asset/employee/", AssetTicketsByEmployeeView.as_view(), name="asset-tickets-by-employee"),
 ]
