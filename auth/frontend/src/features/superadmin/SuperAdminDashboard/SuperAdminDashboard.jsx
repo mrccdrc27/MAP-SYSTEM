@@ -15,7 +15,7 @@ const SuperAdminDashboard = () => {
 
   const loadStats = async () => {
     try {
-      const response = await fetch('http://localhost:8003/superadmin/api/stats/', {
+      const response = await fetch('/superadmin/api/stats/', {
         credentials: 'include',
       });
 

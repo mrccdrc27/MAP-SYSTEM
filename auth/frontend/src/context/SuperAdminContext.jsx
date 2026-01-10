@@ -17,8 +17,8 @@ export const SuperAdminProvider = ({ children }) => {
 
   const checkSession = async () => {
     try {
-      // Use the correct port (8003) based on the auth service configuration  
-      const response = await fetch('http://localhost:8003/superadmin/api/session/', {
+      // Use relative path - Vite proxy will route to correct backend
+      const response = await fetch('/superadmin/api/session/', {
         credentials: 'include',
       });
 
@@ -46,8 +46,8 @@ export const SuperAdminProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Use the correct port (8003) based on the auth service configuration
-      await fetch('http://localhost:8003/superadmin/api/logout/', {
+      // Use relative path - Vite proxy will route to correct backend
+      await fetch('/superadmin/api/logout/', {
         method: 'POST',
         credentials: 'include',
       });

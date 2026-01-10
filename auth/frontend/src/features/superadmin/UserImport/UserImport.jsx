@@ -71,7 +71,7 @@ const UserImport = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8003/superadmin/api/users/import/', {
+      const response = await fetch('/superadmin/api/users/import/', {
         method: 'POST',
         credentials: 'include',
         body: formData,

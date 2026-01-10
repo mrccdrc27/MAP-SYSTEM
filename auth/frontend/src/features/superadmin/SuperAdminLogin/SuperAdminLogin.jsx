@@ -33,8 +33,8 @@ const SuperAdminLogin = () => {
 
     setLoading(true);
     try {
-      // Use the correct port (8003) based on the auth service configuration
-      const response = await fetch('http://localhost:8003/superadmin/api/login/', {
+      // Use relative path - Vite proxy will route to correct backend
+      const response = await fetch('/superadmin/api/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

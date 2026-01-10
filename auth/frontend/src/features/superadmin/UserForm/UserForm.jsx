@@ -39,7 +39,7 @@ const UserForm = () => {
 
   const loadUser = async () => {
     try {
-      const response = await fetch(`http://localhost:8003/superadmin/api/users/${userId}/`, {
+      const response = await fetch(`/superadmin/api/users/${userId}/`, {
         credentials: 'include',
       });
 
@@ -103,8 +103,8 @@ const UserForm = () => {
 
     try {
       const url = isEditMode
-        ? `http://localhost:8003/superadmin/api/users/${userId}/`
-        : 'http://localhost:8003/superadmin/api/users/create/';
+        ? `/superadmin/api/users/${userId}/`
+        : '/superadmin/api/users/create/';
 
       const method = isEditMode ? 'PUT' : 'POST';
 
