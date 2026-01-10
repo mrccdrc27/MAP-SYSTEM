@@ -113,11 +113,14 @@ export default function EditableEdge({
   }, [isEditing]);
 
   const isReturn = data?.isReturn;
+  const isDeleted = data?.to_delete === true;
+  
   const edgeStyle = {
     ...style,
-    stroke: isReturn ? '#3b82f6' : '#3b82f6',
+    stroke: isDeleted ? '#dc2626' : (isReturn ? '#3b82f6' : '#3b82f6'),
     strokeWidth: selected ? 3 : 2,
-    strokeDasharray: isReturn ? '5,5' : undefined,
+    strokeDasharray: isDeleted ? '8,4' : (isReturn ? '5,5' : undefined),
+    opacity: isDeleted ? 0.4 : 1,
   };
 
   return (
@@ -129,11 +132,11 @@ export default function EditableEdge({
       />
       <EdgeLabelRenderer>
         <div
-          className={`${styles.edgeLabelWrapper} ${isEditingGraph ? styles.edgeLabelEditable : ''}`}
+          className={`${styles.edgeLabelWrapper} ${isEditingGraph ? styles.edgeLabelEditable : ''} ${isDeleted ? styles.edgeDeletedLabel : ''}`}
           style={{
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-            pointerEvents: 'all',
+            pointerEvents: isDeleted ? 'none' : 'all',
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -153,16 +156,16 @@ export default function EditableEdge({
             />
           ) : labelText ? (
             <span className={styles.edgeLabelText}>
-              {labelText}
+              {isDeleted ? `${labelText} (deleted)` : labelText}
             </span>
           ) : (
             <span className={`${styles.edgeLabelText} ${styles.edgeLabelPlaceholder}`}>
-              {isEditingGraph ? 'Double-click to name' : 'Transition'}
+              {isDeleted ? 'Deleted' : (isEditingGraph ? 'Double-click to name' : 'Transition')}
             </span>
           )}
           
-          {/* Delete button - visible on hover in edit mode */}
-          {isEditingGraph && isHovered && !isEditing && (
+          {/* Delete button - visible on hover in edit mode, hidden if already deleted */}
+          {isEditingGraph && isHovered && !isEditing && !isDeleted && (
             <button
               onClick={handleDelete}
               className={styles.edgeDeleteBtn}

@@ -112,6 +112,7 @@ export default function StepNode({ data, selected }) {
   const isStartNode = formData.is_start;
   const isEndNode = formData.is_end;
   const isRegularNode = !isStartNode && !isEndNode;
+  const isDeleted = data.to_delete === true;
 
   const nodeClasses = [
     styles.stepNode,
@@ -119,12 +120,13 @@ export default function StepNode({ data, selected }) {
     isStartNode && styles.stepNodeStart,
     isEndNode && styles.stepNodeEnd,
     isExpanded && styles.stepNodeExpanded,
+    isDeleted && styles.stepNodeDeleted,
   ].filter(Boolean).join(' ');
 
   const roles = data.availableRoles || [];
   
-  // Check if we can delete this node (not start/end and delete handler exists)
-  const canDelete = data.onDeleteStep && !isStartNode && !isEndNode;
+  // Check if we can delete this node (not start/end, delete handler exists, and not already deleted)
+  const canDelete = data.onDeleteStep && !isStartNode && !isEndNode && !isDeleted;
 
   return (
     <div 

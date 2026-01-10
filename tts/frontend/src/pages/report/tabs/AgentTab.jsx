@@ -9,6 +9,21 @@ import BarChart from "../../../components/charts/BarChart";
 import DoughnutChart from "../../../components/charts/DoughnutChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
 
+// icons
+import { 
+  Users, 
+  ShieldCheck, 
+  AlertTriangle, 
+  UserCheck,
+  Zap,
+  Clock,
+  ListChecks,
+  User,
+  Trophy,
+  BarChart2,
+  CheckCircle
+} from "lucide-react";
+
 // styles
 import styles from "../report.module.css";
 
@@ -25,10 +40,22 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
               <div className={styles.skeletonSubtitle}>Fetching agent performance data</div>
             </div>
             <div className={styles.skeletonGrid}>
-              <div className={styles.skeletonCard}>👨‍💼 Agent Performance</div>
-              <div className={styles.skeletonCard}>⏱️ SLA Compliance</div>
-              <div className={styles.skeletonCard}>📋 Task Distribution</div>
-              <div className={styles.skeletonCard}>🎯 Resolution Rates</div>
+              <div className={styles.skeletonCard}>
+                <Users size={16} style={{ marginRight: '8px' }} />
+                Agent Performance
+              </div>
+              <div className={styles.skeletonCard}>
+                <ShieldCheck size={16} style={{ marginRight: '8px' }} />
+                SLA Compliance
+              </div>
+              <div className={styles.skeletonCard}>
+                <Zap size={16} style={{ marginRight: '8px' }} />
+                Task Distribution
+              </div>
+              <div className={styles.skeletonCard}>
+                <UserCheck size={16} style={{ marginRight: '8px' }} />
+                Resolution Rates
+              </div>
             </div>
           </div>
         </ComponentSkeleton>
@@ -68,13 +95,57 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
   const taskUserEscalated = taskUserPerf?.map((u) => u.escalated || 0) || [];
 
   // Dashboard metrics for KPI
-  const slaComplianceRate = dashboard?.sla_compliance_rate || 0;
+  const slaComplianceRate = Math.round(dashboard?.sla_compliance_rate || 0);
   const totalUsers = dashboard?.total_users || 0;
-  const escalationRate = dashboard?.escalation_rate || 0;
+  const escalationRate = Math.round(dashboard?.escalation_rate || 0);
 
   return (
-    <div className={styles.chartsGrid}>
-      {/* Agent Performance */}
+    <div className={styles.tabContent}>
+      {/* KPI Section */}
+      <div className={styles.chartSection} style={{ marginBottom: '24px' }}>
+        <h2>Agent & SLA KPI</h2>
+        <div className={styles.kpiGrid}>
+          <div className={styles.kpiCard}>
+            <div>
+              <p>SLA Compliance</p>
+              <h2>{slaComplianceRate}%</h2>
+            </div>
+            <div className={styles.kpiIcon}>
+              <ShieldCheck size={28} color="#7ed321" />
+            </div>
+          </div>
+          <div className={styles.kpiCard}>
+            <div>
+              <p>Total Agents</p>
+              <h2>{totalUsers}</h2>
+            </div>
+            <div className={styles.kpiIcon}>
+              <Users size={28} color="#4a90e2" />
+            </div>
+          </div>
+          <div className={styles.kpiCard}>
+            <div>
+              <p>Escalation Rate</p>
+              <h2>{escalationRate}%</h2>
+            </div>
+            <div className={styles.kpiIcon}>
+              <AlertTriangle size={28} color="#f5a623" />
+            </div>
+          </div>
+          <div className={styles.kpiCard}>
+            <div>
+              <p>Avg. Response</p>
+              <h2>{"< 2h"}</h2>
+            </div>
+            <div className={styles.kpiIcon}>
+              <Clock size={28} color="#50e3c2" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.chartsGrid}>
+        {/* Agent Performance */}
       <div className={styles.chartSection}>
         <h2>Agent & SLA Performance</h2>
         <div className={styles.chartRow}>
@@ -121,57 +192,95 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
           </ChartContainer>
         </div>
       </div>
+    </div>
 
       {/* Per-User Task Item Performance */}
       {taskUserPerf.length > 0 && (
-        <div className={styles.chartSection}>
-          <h2>Per-User Task Item Performance</h2>
-          <div className={styles.userPerformanceTable}>
+        <div className={styles.chartSection} style={{ marginTop: '24px' }}>
+          <div className={styles.trendHeader}>
+            <h2>
+              <Trophy size={20} style={{ marginRight: '8px', color: '#f1c40f' }} />
+              Per-User Task Item Performance
+            </h2>
+            <small style={{ color: 'var(--secondary-color)' }}>Showing top agents by activity</small>
+          </div>
+          <div className={styles.tableResponsive}>
             <table className={styles.performanceTable}>
               <thead>
                 <tr>
-                  <th>Agent</th>
-                  <th>Total</th>
-                  <th style={{ color: '#7ed321' }}>Resolved</th>
-                  <th style={{ color: '#e74c3c' }}>Escalated</th>
-                  <th style={{ color: '#f5a623' }}>Breached</th>
-                  <th>Resolution Rate</th>
+                  <th><User size={14} style={{ marginRight: '6px' }} /> Agent</th>
+                  <th className={styles.textCenter}><Zap size={14} style={{ marginRight: '6px' }} /> Total</th>
+                  <th className={styles.textCenter}><CheckCircle size={14} style={{ marginRight: '6px' }} /> Resolved</th>
+                  <th className={styles.textCenter}><AlertTriangle size={14} style={{ marginRight: '6px' }} /> Escalated</th>
+                  <th className={styles.textCenter}><Clock size={14} style={{ marginRight: '6px' }} /> Breached</th>
+                  <th className={styles.textCenter}><BarChart2 size={14} style={{ marginRight: '6px' }} /> Resolution Rate</th>
                 </tr>
               </thead>
               <tbody>
-                {taskUserPerf.slice(0, 10).map((user, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.userName}>{user.user_name || `User ${user.user_id}`}</td>
-                    <td>{user.total_items || 0}</td>
-                    <td>
-                      <span className={styles.statBadge} style={{ backgroundColor: '#7ed32120', color: '#7ed321' }}>
-                        {user.resolved || 0}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={styles.statBadge} style={{ backgroundColor: '#e74c3c20', color: '#e74c3c' }}>
-                        {user.escalated || 0}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={styles.statBadge} style={{ backgroundColor: '#f5a62320', color: '#f5a623' }}>
-                        {user.breached || 0}
-                      </span>
-                    </td>
-                    <td>
-                      <div className={styles.progressBarContainer}>
-                        <div 
-                          className={styles.progressBar} 
-                          style={{ 
-                            width: `${user.resolution_rate || 0}%`,
-                            backgroundColor: (user.resolution_rate || 0) >= 80 ? '#7ed321' : (user.resolution_rate || 0) >= 50 ? '#f5a623' : '#e74c3c'
-                          }}
-                        />
-                        <span className={styles.progressText}>{(user.resolution_rate || 0).toFixed(1)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {taskUserPerf.slice(0, 10).map((user, idx) => {
+                  const initials = (user.user_name || 'U')
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+                  
+                  const resRate = Math.round(user.resolution_rate || 0);
+                  let badgeStatusClass = styles.badgeSuccess;
+                  if (resRate < 80) badgeStatusClass = styles.badgeWarning;
+                  if (resRate < 50) badgeStatusClass = styles.badgeDanger;
+
+                  return (
+                    <tr key={idx}>
+                      <td>
+                        <div className={styles.userInfo}>
+                          <div className={styles.userAvatar} style={{
+                            backgroundColor: `hsl(${(idx * 137) % 360}, 70%, 85%)`,
+                            color: `hsl(${(idx * 137) % 360}, 70%, 30%)`,
+                            border: 'none'
+                          }}>
+                            {initials}
+                          </div>
+                          <span className={styles.userName}>{user.user_name || `User ${user.user_id}`}</span>
+                        </div>
+                      </td>
+                      <td className={styles.textCenter}>
+                        <span className={styles.statsBold}>{user.total_items || 0}</span>
+                      </td>
+                      <td className={styles.textCenter}>
+                        <span className={`${styles.badge} ${styles.badgeSuccess}`}>
+                          {user.resolved || 0}
+                        </span>
+                      </td>
+                      <td className={styles.textCenter}>
+                        <span className={`${styles.badge} ${styles.badgeDanger}`}>
+                          {user.escalated || 0}
+                        </span>
+                      </td>
+                      <td className={styles.textCenter}>
+                        <span className={`${styles.badge} ${styles.badgeWarning}`}>
+                          {user.breached || 0}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.progressContainer}>
+                          <div className={styles.progressStats}>
+                            <span className={`${styles.badge} ${badgeStatusClass}`}>{resRate}%</span>
+                          </div>
+                          <div className={styles.progressBar}>
+                            <div 
+                              className={styles.progressFill} 
+                              style={{ 
+                                width: `${resRate}%`,
+                                backgroundColor: resRate >= 80 ? '#2ecc71' : resRate >= 50 ? '#f1c40f' : '#e74c3c'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

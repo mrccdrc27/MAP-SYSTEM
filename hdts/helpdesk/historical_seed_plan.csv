@@ -1,0 +1,14 @@
+date,time,category,sub_category,count,priority,department,days_ago
+2025-12-20,09:30,IT Support,Technical Assistance,1,Critical,IT Department,
+2025-12-20,14:15,IT Support,Hardware Troubleshooting,1,High,IT Department,
+2025-12-24,08:45,Asset Check Out,Laptop,2,Medium,Asset Department,
+2025-12-24,16:30,New Budget Proposal,Capital Expenses (CapEx),1,High,Budget Department,
+2026-01-02,10:00,IT Support,Virus/Malware Check,1,Critical,IT Department,
+2026-01-02,11:30,Others,,3,Low,IT Department,
+2026-01-05,09:00,Asset Check In,Monitor,1,Low,Asset Department,
+2026-01-05,13:00,IT Support,Software Installation/Update,2,Medium,IT Department,
+2026-01-07,15:45,New Budget Proposal,Operational Expenses (OpEx),1,Medium,Budget Department,
+2026-01-08,08:15,IT Support,Internet/Network Connectivity Issue,1,High,IT Department,
+,09:00,IT Support,Data Backup/Restore,2,Medium,IT Department,5
+,14:00,Asset Check Out,Keyboard,1,Low,Asset Department,3
+,10:30,Others,General Inquiry,2,Low,IT Department,1

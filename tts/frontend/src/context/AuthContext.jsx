@@ -18,7 +18,7 @@ const AUTH_URL = import.meta.env.VITE_AUTH_URL || "";
 const ME_URL = `${AUTH_URL}/api/me/`; // Unified endpoint for both User and Employee
 const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGIN_URL = `${AUTH_URL}/api/v1/token/obtain/`;
-const LOGOUT_URL = `${AUTH_URL}/logout/`;
+const LOGOUT_URL = `${AUTH_URL}/api/v1/users/logout/`; // Updated to match auth service endpoint
 const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/cookie/`; // Cookie-based refresh
 
 // Default refresh interval (fallback if server doesn't provide expires_in)
@@ -280,7 +280,9 @@ export const AuthProvider = ({ children }) => {
       clearAuth();
       setInitialized(true);
       setLoading(false);
-      window.location.href = "/login";
+      // Redirect to the main auth system instead of local login
+      const authSystemUrl = import.meta.env.VITE_AUTH_NEW_URL || "http://localhost:3001";
+      window.location.href = authSystemUrl;
     }
   };
 

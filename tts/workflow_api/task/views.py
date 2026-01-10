@@ -503,9 +503,30 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Get or create TaskItem for this user
+        # Get the actionable TaskItem for this user (handles multiple TaskItems scenario)
         try:
-            task_item = TaskItem.objects.get(task=task, role_user__user_id=user_id)
+            # Find TaskItems for this user on this task
+            task_items = TaskItem.objects.filter(
+                task=task, 
+                role_user__user_id=user_id
+            ).prefetch_related('taskitemhistory_set').order_by('-assigned_on')
+            
+            if not task_items.exists():
+                raise TaskItem.DoesNotExist("No TaskItems found")
+            
+            # Find the actionable one (with 'new' or 'in progress' status)
+            task_item = None
+            for ti in task_items:
+                latest_history = ti.taskitemhistory_set.order_by('-created_at').first()
+                current_status = latest_history.status if latest_history else 'new'
+                if current_status in ['new', 'in progress']:
+                    task_item = ti
+                    break
+            
+            if not task_item:
+                # No actionable TaskItem, use the most recent one for the response
+                task_item = task_items.first()
+            
             old_task_item = deepcopy(task_item)
             task_item.status = new_status
             task_item.save()
@@ -660,12 +681,17 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         URL Path: /tasks/detail/by-ticket/{ticket_number}/
         
+        Query Parameters:
+        - task_item_id: (optional) Specific TaskItem ID to fetch. This is critical when
+                        a user has multiple TaskItems for the same ticket (e.g., assigned
+                        at step 1, rejected, then assigned again at step 3).
+        
         This endpoint finds the current user's TaskItem for the given ticket.
         Each user will get their own TaskItem for the same ticket.
         
         Example:
-        - User A calls /tasks/detail/by-ticket/TX20251227638396/ → returns TaskItem 70
-        - User B calls /tasks/detail/by-ticket/TX20251227638396/ → returns TaskItem 71
+        - User A calls /tasks/detail/by-ticket/TX20251227638396/ → returns most recent TaskItem
+        - User A calls /tasks/detail/by-ticket/TX20251227638396/?task_item_id=70 → returns TaskItem 70 specifically
         """
         if not ticket_number:
             return Response(
@@ -674,6 +700,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         
         user_id = request.user.user_id
+        
+        # Get optional task_item_id from query params for specific TaskItem lookup
+        task_item_id_param = request.query_params.get('task_item_id')
         
         # Find the ticket by ticket_number
         try:
@@ -689,8 +718,8 @@ class TaskViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
         
-        # Find the user's TaskItem for this ticket (most recent non-terminal one first, then any)
-        task_item = TaskItem.objects.filter(
+        # Build base queryset for user's TaskItems on this ticket
+        base_queryset = TaskItem.objects.filter(
             task__ticket_id=ticket,
             role_user__user_id=user_id
         ).select_related(
@@ -702,7 +731,40 @@ class TaskViewSet(viewsets.ModelViewSet):
             'assigned_on_step__role_id',
             'assigned_on_step__workflow_id',
             'transferred_to',
-        ).prefetch_related('taskitemhistory_set').order_by('-assigned_on').first()
+        ).prefetch_related('taskitemhistory_set')
+        
+        # If specific task_item_id is provided, fetch that specific TaskItem
+        if task_item_id_param:
+            try:
+                task_item = base_queryset.get(task_item_id=task_item_id_param)
+                logger.info(f"📋 Fetching specific TaskItem {task_item_id_param} for ticket {ticket_number}")
+            except TaskItem.DoesNotExist:
+                return Response(
+                    {'error': f'TaskItem {task_item_id_param} not found or not assigned to you'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        else:
+            # No specific task_item_id - find the most relevant TaskItem
+            # Priority: non-terminal (actionable) TaskItems first, then most recent
+            terminal_statuses = ['resolved', 'escalated', 'reassigned', 'breached']
+            
+            # First try to find an actionable (non-terminal) TaskItem
+            actionable_items = []
+            for item in base_queryset.order_by('-assigned_on'):
+                latest_status = item.taskitemhistory_set.order_by('-created_at').first()
+                status_value = latest_status.status if latest_status else 'new'
+                if status_value not in terminal_statuses:
+                    actionable_items.append(item)
+            
+            if actionable_items:
+                # Return the most recently assigned actionable TaskItem
+                task_item = actionable_items[0]
+                logger.info(f"📋 Found actionable TaskItem {task_item.task_item_id} for ticket {ticket_number}")
+            else:
+                # No actionable items, fall back to most recent
+                task_item = base_queryset.order_by('-assigned_on').first()
+                if task_item:
+                    logger.info(f"📋 No actionable items, using most recent TaskItem {task_item.task_item_id} for ticket {ticket_number}")
         
         if not task_item:
             # Check if user is admin and allow viewing any task item for the ticket
@@ -1429,8 +1491,11 @@ class TaskViewSet(viewsets.ModelViewSet):
             
             # Build nodes from versioned definition
             for node in workflow_nodes:
-                # Determine status based on current step
-                if node['id'] == current_step_id:
+                # Determine status based on current step and task completion
+                if task.status == 'completed':
+                    # If task is completed, all nodes should be 'done'
+                    node_status = 'done'
+                elif node['id'] == current_step_id:
                     node_status = 'active'
                 elif node['order'] < (task.current_step.order if task.current_step else 0):
                     node_status = 'done'
@@ -1469,8 +1534,11 @@ class TaskViewSet(viewsets.ModelViewSet):
             
             # Build nodes from database
             for step in workflow_steps:
-                # Determine status based on current step
-                if step.step_id == current_step_id:
+                # Determine status based on current step and task completion
+                if task.status == 'completed':
+                    # If task is completed, all nodes should be 'done'
+                    node_status = 'done'
+                elif step.step_id == current_step_id:
                     node_status = 'active'
                 elif step.order < (task.current_step.order if task.current_step else 0):
                     node_status = 'done'

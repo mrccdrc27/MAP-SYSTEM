@@ -32,11 +32,11 @@ export default function TransferTask({
   }, [success, transferLoading]);
 
   // Filter users based on search term (include all users, even current user)
-  const filteredUsers = users.filter(
+  const filteredUsers = (users || []).filter(
     (user) =>
-      user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+      (user?.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user?.last_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user?.role || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleProceed = () => {
@@ -87,7 +87,7 @@ export default function TransferTask({
   };
 
   // Find selected user object for display
-  const selectedUser = users.find((u) => u.id === parseInt(selectedUserId));
+  const selectedUser = (users || []).find((u) => u.id === parseInt(selectedUserId));
   const currentTicketOwner = ticket?.user_assignment;
 
   if (!showConfirmation) {
@@ -366,7 +366,7 @@ export default function TransferTask({
           {success && (
             <div className={styles.ttSuccessMessage}>
               <i className="fa-solid fa-circle-check"></i>
-              <p>✅ Task transferred successfully!</p>
+              <p>Task transferred successfully!</p>
             </div>
           )}
         </div>

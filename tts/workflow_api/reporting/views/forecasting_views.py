@@ -151,16 +151,131 @@ def calculate_confidence_interval(values, confidence=0.95):
     }
 
 
+def weighted_volume_forecast(daily_data, forecast_periods=14, include_yearly=True):
+    """
+    Weighted volume forecast optimized for ticketing systems.
+    
+    Weights:
+    - 60% → last 30 days average
+    - 25% → last 7 days average (recent trend)
+    - 15% → same week last year (seasonal pattern, optional)
+    
+    Args:
+        daily_data: List of dicts with 'date' and 'count' keys, ordered by date
+        forecast_periods: Number of days to forecast
+        include_yearly: Whether to include yearly seasonal data (if available)
+    
+    Returns:
+        List of predicted values for each forecast period
+    """
+    if not daily_data:
+        return [0] * forecast_periods
+    
+    # Extract counts and dates
+    counts = [entry['count'] for entry in daily_data]
+    dates = [entry['date'] for entry in daily_data]
+    
+    # Calculate weighted components
+    # Last 30 days average (60% weight)
+    last_30_days = counts[-30:] if len(counts) >= 30 else counts
+    avg_30_days = float(np.mean(last_30_days)) if last_30_days else 0
+    
+    # Last 7 days average (25% weight) - captures recent trend
+    last_7_days = counts[-7:] if len(counts) >= 7 else counts
+    avg_7_days = float(np.mean(last_7_days)) if last_7_days else 0
+    
+    # Same week last year (15% weight) - seasonal pattern
+    avg_yearly = None
+    if include_yearly and len(counts) >= 365:
+        # Get data from approximately same time last year
+        yearly_window = counts[-365:-358] if len(counts) >= 365 else None
+        if yearly_window:
+            avg_yearly = float(np.mean(yearly_window))
+    
+    # Calculate base forecast using weights
+    if avg_yearly is not None:
+        # Full weighted average: 60% + 25% + 15%
+        base_forecast = (0.60 * avg_30_days) + (0.25 * avg_7_days) + (0.15 * avg_yearly)
+        weights_used = {'last_30_days': 0.60, 'last_7_days': 0.25, 'same_week_last_year': 0.15}
+    else:
+        # Adjusted weights without yearly: 70% + 30%
+        base_forecast = (0.70 * avg_30_days) + (0.30 * avg_7_days)
+        weights_used = {'last_30_days': 0.70, 'last_7_days': 0.30, 'same_week_last_year': 0}
+    
+    # Calculate trend from last 7 days for projection
+    if len(last_7_days) >= 2:
+        # Simple trend: average daily change
+        daily_changes = [last_7_days[i] - last_7_days[i-1] for i in range(1, len(last_7_days))]
+        trend = float(np.mean(daily_changes)) * 0.3  # Dampen trend to avoid over-projection
+    else:
+        trend = 0
+    
+    # Calculate day-of-week seasonality from last 30 days
+    day_of_week_factors = {i: 1.0 for i in range(7)}
+    if len(daily_data) >= 14:
+        recent_data = daily_data[-30:] if len(daily_data) >= 30 else daily_data
+        day_counts = defaultdict(list)
+        for entry in recent_data:
+            if isinstance(entry['date'], str):
+                try:
+                    from datetime import datetime
+                    dt = datetime.strptime(entry['date'].split()[0], '%Y-%m-%d')
+                    day_of_week = dt.weekday()
+                except:
+                    continue
+            else:
+                day_of_week = entry['date'].weekday()
+            day_counts[day_of_week].append(entry['count'])
+        
+        overall_avg = float(np.mean([e['count'] for e in recent_data])) or 1
+        for day in range(7):
+            if day_counts[day]:
+                day_avg = float(np.mean(day_counts[day]))
+                day_of_week_factors[day] = day_avg / overall_avg if overall_avg > 0 else 1.0
+    
+    # Generate forecasts with trend and seasonality
+    forecasts = []
+    from datetime import datetime
+    now = timezone.now() if hasattr(timezone, 'now') else datetime.now()
+    
+    for i in range(forecast_periods):
+        forecast_date = now + timedelta(days=i+1)
+        day_of_week = forecast_date.weekday()
+        
+        # Apply seasonality factor
+        seasonal_factor = day_of_week_factors.get(day_of_week, 1.0)
+        
+        # Calculate forecast with dampened trend
+        predicted = (base_forecast + trend * (i + 1)) * seasonal_factor
+        forecasts.append(max(0, round(float(predicted), 1)))
+    
+    return forecasts, {
+        'weights_used': weights_used,
+        'avg_30_days': round(avg_30_days, 2),
+        'avg_7_days': round(avg_7_days, 2),
+        'avg_yearly': round(avg_yearly, 2) if avg_yearly else None,
+        'base_forecast': round(base_forecast, 2),
+        'trend_per_day': round(trend, 3),
+        'yearly_data_available': avg_yearly is not None
+    }
+
+
 # ==================== FORECASTING VIEWS ====================
 
 class TicketVolumeForecastView(BaseReportingView):
     """
-    Forecast future ticket volumes using ML techniques.
+    Forecast future ticket volumes using weighted ML techniques.
+    
+    Weights optimized for ticketing systems:
+    - 60% → last 30 days (baseline)
+    - 25% → last 7 days (recent trend)
+    - 15% → same week last year (seasonal, if available)
     
     Query params:
     - forecast_days: Number of days to forecast (default: 14)
-    - history_days: Historical data to use (default: 90)
+    - history_days: Historical data to use (default: 90, use 400+ for yearly seasonality)
     - granularity: 'daily', 'weekly', or 'monthly' (default: 'daily')
+    - include_yearly: Include same-week-last-year data if available (default: true)
     """
     
     def get(self, request):
@@ -168,8 +283,16 @@ class TicketVolumeForecastView(BaseReportingView):
             forecast_days = int(request.query_params.get('forecast_days', 14))
             history_days = int(request.query_params.get('history_days', 90))
             granularity = request.query_params.get('granularity', 'daily')
+            include_yearly = request.query_params.get('include_yearly', 'true').lower() == 'true'
             
-            cutoff_date = timezone.now() - timedelta(days=history_days)
+            # For yearly seasonality, we need at least 365 days of data
+            # Extend history if yearly is requested and history is too short
+            if include_yearly and history_days < 400:
+                extended_history_days = 400  # Fetch enough for yearly comparison
+            else:
+                extended_history_days = history_days
+            
+            cutoff_date = timezone.now() - timedelta(days=extended_history_days)
             
             # Get historical data
             if granularity == 'weekly':
@@ -188,30 +311,42 @@ class TicketVolumeForecastView(BaseReportingView):
             ).order_by('period')
             
             # Prepare data for forecasting
-            periods = []
-            counts = []
             historical_list = []
-            
-            for i, entry in enumerate(historical_data):
-                periods.append(i)
-                counts.append(entry['count'])
+            for entry in historical_data:
                 historical_list.append({
                     'date': str(entry['period']),
                     'count': entry['count']
                 })
             
-            # Generate forecasts using multiple methods
+            counts = [entry['count'] for entry in historical_list]
+            
+            # Determine forecast periods based on granularity
             forecast_periods = forecast_days if granularity == 'daily' else (forecast_days // 7 if granularity == 'weekly' else forecast_days // 30)
             forecast_periods = max(1, forecast_periods)
             
-            linear_forecasts = linear_regression_forecast(periods, counts, forecast_periods)
-            exp_forecasts = exponential_smoothing(counts, alpha=0.3, forecast_periods=forecast_periods)
-            
-            # Combine forecasts (ensemble averaging)
-            ensemble_forecasts = [
-                round((linear_forecasts[i] + exp_forecasts[i]) / 2, 1)
-                for i in range(len(linear_forecasts))
-            ]
+            # Use weighted volume forecast (primary method for daily granularity)
+            if granularity == 'daily':
+                weighted_forecasts, weight_info = weighted_volume_forecast(
+                    historical_list, 
+                    forecast_periods=forecast_periods,
+                    include_yearly=include_yearly
+                )
+                ensemble_forecasts = weighted_forecasts
+                methods_used = ['weighted_average']
+                if weight_info['yearly_data_available']:
+                    methods_used.append('yearly_seasonality')
+                methods_used.append('day_of_week_seasonality')
+            else:
+                # For weekly/monthly, use traditional ensemble approach
+                periods = list(range(len(counts)))
+                linear_forecasts = linear_regression_forecast(periods, counts, forecast_periods)
+                exp_forecasts = exponential_smoothing(counts, alpha=0.3, forecast_periods=forecast_periods)
+                ensemble_forecasts = [
+                    round((linear_forecasts[i] + exp_forecasts[i]) / 2, 1)
+                    for i in range(len(linear_forecasts))
+                ]
+                weight_info = None
+                methods_used = ['linear_regression', 'exponential_smoothing']
             
             # Calculate confidence intervals
             confidence = calculate_confidence_interval(counts)
@@ -229,25 +364,43 @@ class TicketVolumeForecastView(BaseReportingView):
                 
                 forecast_list.append({
                     'date': forecast_date.strftime('%Y-%m-%d'),
-                    'predicted_count': round(forecast, 1),
-                    'confidence_lower': round(max(0, forecast - confidence['std']), 1),
-                    'confidence_upper': round(forecast + confidence['std'], 1)
+                    'predicted_count': round(float(forecast), 1),
+                    'confidence_lower': round(max(0, float(forecast) - confidence['std']), 1),
+                    'confidence_upper': round(float(forecast) + confidence['std'], 1)
                 })
             
             # Summary statistics
             avg_historical = float(np.mean(counts)) if counts else 0
             avg_forecast = float(np.mean(ensemble_forecasts)) if ensemble_forecasts else 0
-            trend_direction = 'increasing' if avg_forecast > avg_historical else ('decreasing' if avg_forecast < avg_historical else 'stable')
+            trend_direction = 'increasing' if avg_forecast > avg_historical * 1.05 else ('decreasing' if avg_forecast < avg_historical * 0.95 else 'stable')
+            
+            # Build model info
+            model_info = {
+                'methods': methods_used,
+                'ensemble': 'weighted_average' if granularity == 'daily' else 'simple_average',
+                'history_days': history_days,
+                'forecast_periods': forecast_periods
+            }
+            
+            # Add weight details for daily granularity
+            if weight_info:
+                model_info['weights'] = weight_info['weights_used']
+                model_info['weight_details'] = {
+                    'avg_last_30_days': weight_info['avg_30_days'],
+                    'avg_last_7_days': weight_info['avg_7_days'],
+                    'avg_same_week_last_year': weight_info['avg_yearly'],
+                    'base_forecast': weight_info['base_forecast'],
+                    'trend_per_day': weight_info['trend_per_day'],
+                    'yearly_data_available': weight_info['yearly_data_available']
+                }
+            
+            # Limit historical data returned to requested history_days
+            display_historical = historical_list[-history_days:] if len(historical_list) > history_days else historical_list
             
             return Response({
                 'forecast_type': 'ticket_volume',
                 'granularity': granularity,
-                'model_info': {
-                    'methods': ['linear_regression', 'exponential_smoothing'],
-                    'ensemble': 'average',
-                    'history_days': history_days,
-                    'forecast_periods': forecast_periods
-                },
+                'model_info': model_info,
                 'summary': {
                     'historical_average': round(avg_historical, 1),
                     'forecast_average': round(avg_forecast, 1),
@@ -255,7 +408,7 @@ class TicketVolumeForecastView(BaseReportingView):
                     'confidence_level': 0.95,
                     'confidence_interval': confidence
                 },
-                'historical_data': historical_list,
+                'historical_data': display_historical,
                 'forecasts': forecast_list
             }, status=status.HTTP_200_OK)
             
@@ -692,6 +845,11 @@ class ComprehensiveForecastView(BaseReportingView):
     """
     Combined forecasting dashboard with all prediction types.
     
+    Uses weighted volume forecast:
+    - 60% → last 30 days (baseline)
+    - 25% → last 7 days (recent trend)
+    - 15% → same week last year (seasonal, if available)
+    
     Query params:
     - days: Historical days for analysis (default: 60)
     - forecast_days: Days to forecast (default: 14)
@@ -704,7 +862,7 @@ class ComprehensiveForecastView(BaseReportingView):
             now = timezone.now()
             cutoff_date = now - timedelta(days=history_days)
             
-            # Quick volume forecast
+            # Quick volume forecast using weighted approach
             daily_counts = Task.objects.filter(
                 created_at__gte=cutoff_date
             ).annotate(
@@ -713,8 +871,16 @@ class ComprehensiveForecastView(BaseReportingView):
                 count=Count('task_id')
             ).order_by('date')
             
-            counts = [entry['count'] for entry in daily_counts]
-            volume_forecasts = exponential_smoothing(counts, alpha=0.3, forecast_periods=forecast_days)
+            # Prepare data for weighted forecast
+            historical_list = [{'date': str(entry['date']), 'count': entry['count']} for entry in daily_counts]
+            counts = [entry['count'] for entry in historical_list]
+            
+            # Use weighted volume forecast for better accuracy
+            volume_forecasts, weight_info = weighted_volume_forecast(
+                historical_list, 
+                forecast_periods=forecast_days,
+                include_yearly=False  # Comprehensive dashboard uses shorter history
+            )
             
             # Quick resolution time stats
             resolved_tasks = Task.objects.filter(

@@ -29,6 +29,7 @@ export default function BarChart({
   chartLabel = "Data",
   chartTitle = "Bar Chart",
   onClick,
+  horizontal = false,
 }) {
   const chartRef = useRef(null);
 
@@ -46,12 +47,23 @@ export default function BarChart({
   };
 
   const options = {
+    indexAxis: horizontal ? "y" : "x",
     responsive: true,
     plugins: {
       legend: { position: "top" },
       title: { display: true, text: chartTitle },
     },
-    scales: { y: { beginAtZero: true } },
+    scales: { 
+      x: { 
+        beginAtZero: true,
+        ticks: {
+          autoSkip: false
+        }
+      },
+      y: { 
+        beginAtZero: true 
+      } 
+    },
   };
 
   const handleClick = (event) => {

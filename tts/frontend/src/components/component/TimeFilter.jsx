@@ -76,8 +76,16 @@ const TimeFilter = ({ onFilterApply }) => {
 
   return (
     <>
-      <div className={styles.fpShowFilter} onClick={toggleFilter}>
+      {/* <div className={styles.fpShowFilter} onClick={toggleFilter}>
         <span>{showFilter ? "Hide Filter" : "Show Filter"}</span>
+      </div> */}
+      <div
+        className={`${styles.fpShowFilter} ${showFilter ? styles.active : ""}`}
+        onClick={toggleFilter}
+      >
+        <span title="Show filter panel">
+          <i className="fa-solid fa-filter"></i>
+        </span>
       </div>
       {showFilter && (
         <div className={styles.tfContainer}>

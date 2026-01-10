@@ -156,7 +156,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     def get_profile_picture(self, obj):
         """Get the full URL for the profile picture."""
+        from django.conf import settings
+        
         if obj.profile_picture:
+            # Use MEDIA_BASE_URL if configured (for Kong gateway routing)
+            if getattr(settings, 'MEDIA_BASE_URL', ''):
+                return f"{settings.MEDIA_BASE_URL.rstrip('/')}{obj.profile_picture.url}"
+            
+            # Fall back to request-based URL building
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.profile_picture.url)
@@ -258,20 +265,27 @@ def validate_profile_picture_dimensions(image):
     max_width = 1024
     max_height = 1024
     try:
-        # Reset file pointer to beginning in case it was read by another validator
+        # Reset file pointer before reading
+        if hasattr(image, 'seek'):
+            image.seek(0)
+        img = Image.open(image)
+        img.verify()  # Verify it's a valid image
+        # Re-open after verify (verify() can only be called once)
         if hasattr(image, 'seek'):
             image.seek(0)
         img = Image.open(image)
         width, height = img.size
         if width > max_width or height > max_height:
             raise ValidationError(f"Profile picture dimensions must not exceed {max_width}x{max_height} pixels.")
-        # Reset file pointer again after reading
+        # Reset file pointer for Django to save
         if hasattr(image, 'seek'):
             image.seek(0)
     except ValidationError:
         raise
     except Exception as e:
-        print(f"[PROFILE_PICTURE_VALIDATION] Image validation error: {e}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Image validation error: {type(e).__name__}: {e}")
         raise ValidationError("Invalid image file.")
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

@@ -17,7 +17,7 @@ const ticketHeaders = [
   "TITLE",
   "DESCRIPTION",
   "PRIORITY",
-  "STATUS",
+  "TASK STATUS",
   // "CATEGORY",
   "OPENED ON",
   "TARGET RESOLUTION",
@@ -39,7 +39,12 @@ function TicketItem({ item }) {
   // console.log("id", item);
   
   const handleRowClick = () => {
-    navigate(`/ticket/${item.ticket_number}`);
+    // Include task_item_id as query param to identify the specific task item
+    // This is critical when the same user has multiple task items for the same ticket
+    const url = item.task_item_id 
+      ? `/ticket/${item.ticket_number}?task_item_id=${item.task_item_id}`
+      : `/ticket/${item.ticket_number}`;
+    navigate(url);
   };
   
   return (
@@ -98,7 +103,11 @@ function TicketItem({ item }) {
           className={general.btnView}
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/ticket/${item.ticket_number}`);
+            // Include task_item_id as query param for specific task item identification
+            const url = item.task_item_id 
+              ? `/ticket/${item.ticket_number}?task_item_id=${item.task_item_id}`
+              : `/ticket/${item.ticket_number}`;
+            navigate(url);
           }}
           title="View ticket details"
         >
@@ -140,15 +149,6 @@ export default function TicketTable({
   const endIndex = startIndex + pageSize;
   const paginatedTickets = tickets.slice(startIndex, endIndex);
 
-  // 👇 Add this to inspect data
-  // console.log("Fetched tickets:", JSON.stringify(tickets, null, 2));
-
-   // 👇 Log the first item if it exists
-  if (tickets.length > 0) {
-    console.log("First ticket item:", tickets[0]);
-  }
-
-
   return (
     <div className={general.ticketTableSection}>
       <div className={general.tableHeader}>
@@ -171,7 +171,7 @@ export default function TicketTable({
               ))
             ) : tickets.length > 0 ? (
               paginatedTickets.map((ticket) => (
-                <TicketItem key={ticket.id} item={ticket} />
+                <TicketItem key={ticket.task_item_id || ticket.step_instance_id || ticket.ticket_number} item={ticket} />
               ))
             ) : (
               <tr>

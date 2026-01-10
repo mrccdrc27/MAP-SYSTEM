@@ -1,0 +1,52 @@
+[
+  {
+    "days_ago": 30,
+    "tickets": [
+      {
+        "category": "IT Support",
+        "sub_category": "Technical Assistance",
+        "count": 3,
+        "priority": "Critical"
+      },
+      {
+        "category": "IT Support",
+        "sub_category": "Hardware Troubleshooting",
+        "count": 2,
+        "priority": "High"
+      }
+    ]
+  },
+  {
+    "days_ago": 15,
+    "tickets": [
+      {
+        "category": "Asset Check Out",
+        "sub_category": "Laptop",
+        "count": 4,
+        "priority": "Medium"
+      },
+      {
+        "category": "New Budget Proposal",
+        "sub_category": "Capital Expenses (CapEx)",
+        "count": 1,
+        "priority": "High"
+      }
+    ]
+  },
+  {
+    "days_ago": 5,
+    "tickets": [
+      {
+        "category": "IT Support",
+        "sub_category": "Virus/Malware Check",
+        "count": 2,
+        "priority": "Critical"
+      },
+      {
+        "category": "Others",
+        "count": 5,
+        "priority": "Low"
+      }
+    ]
+  }
+]

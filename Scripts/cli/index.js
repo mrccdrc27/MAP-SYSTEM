@@ -176,6 +176,8 @@ const SCRIPTS = {
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees (Auth)' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees (HDTS)' },
       'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass user transition (Admin workflow tool)' },
+      'seed-controlled': { file: 'seed_controlled.sh', desc: 'Seed Controlled Historical Tickets (HDTS)', shell: 'bash' },
+      'bulk-resolve': { file: 'bulk_resolve.sh', desc: 'Bulk Resolve Tasks with Controlled Rates (TTS)', shell: 'bash' },
     }
   },
   'docker-utils': {
@@ -187,6 +189,8 @@ const SCRIPTS = {
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees in Auth Container' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees in HDTS Container' },
       'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass Workflow Transition (Docker)' },
+      'seed-controlled': { file: 'seed_controlled.sh', desc: 'Seed Controlled Historical Tickets (Docker)', shell: 'bash' },
+      'bulk-resolve': { file: 'bulk_resolve.sh', desc: 'Bulk Resolve Tasks with Controlled Rates (Docker)', shell: 'bash' },
     }
   },
   pm2: {
@@ -199,6 +203,7 @@ const SCRIPTS = {
         scripts: {
           'start': { cmd: 'pm2 start Scripts/processes/tts-ecosystem.config.js', desc: 'Start Ecosystem' },
           'start-kong': { cmd: 'pm2 start Scripts/processes/tts-ecosystem-kong.config.js', desc: 'Start Ecosystem (Kong Gateway Mode)' },
+          'start-frontends': { cmd: 'pm2 start Scripts/processes/frontends-only.config.js', desc: 'Start Frontends Only (Auth, TTS, HDTS)' },
           'stop': { cmd: 'pm2 stop all', desc: 'Stop All Services' },
           'restart': { cmd: 'pm2 restart all', desc: 'Restart All Services' },
           'logs': { cmd: 'pm2 logs', desc: 'View Realtime Logs' },

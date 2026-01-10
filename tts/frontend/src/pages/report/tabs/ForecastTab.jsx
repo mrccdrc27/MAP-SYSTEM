@@ -32,6 +32,26 @@ import styles from "../report.module.css";
 
 // ==================== HELPER COMPONENTS ====================
 
+// Format hour (0-23) to 12-hour AM/PM format
+const formatHour = (hour) => {
+  const h = parseInt(hour);
+  if (isNaN(h)) return hour;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayHour = h % 12 || 12;
+  return `${displayHour} ${ampm}`;
+};
+
+// Format date to include day of week (e.g., "Mon 01-09")
+const formatDateWithDay = (dateStr) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr.substring(5);
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayName = days[date.getDay()];
+  const monthDay = dateStr.substring(5); // Assuming YYYY-MM-DD
+  return `${dayName} ${monthDay}`;
+};
+
 // KPI Card for summary stats
 function ForecastKpiCard({ title, value, subtitle, icon: Icon, color, trend, trendValue }) {
   return (
@@ -422,7 +442,7 @@ export default function ForecastTab({ timeFilter }) {
 
     // Prepare chart data for next 7 days forecast
     const next7Days = volumeData.next_7_days || [];
-    const chartLabels = next7Days.map(d => d.date?.substring(5) || '');
+    const chartLabels = next7Days.map(d => formatDateWithDay(d.date));
     const chartData = next7Days.map(d => d.predicted || 0);
 
     return (
@@ -504,8 +524,8 @@ export default function ForecastTab({ timeFilter }) {
 
     // Combine for chart
     const allLabels = [
-      ...historical.slice(-14).map(h => h.date?.substring(5) || ''),
-      ...forecasts.map(f => f.date?.substring(5) || '')
+      ...historical.slice(-14).map(h => formatDateWithDay(h.date)),
+      ...forecasts.map(f => formatDateWithDay(f.date))
     ];
     
     const historicalData = [
@@ -784,7 +804,7 @@ export default function ForecastTab({ timeFilter }) {
     const forecast = data.workload_forecast || [];
 
     // Hourly chart data
-    const hourLabels = hourlyDist.map(h => `${h.hour}:00`);
+    const hourLabels = hourlyDist.map(h => formatHour(h.hour));
     const hourData = hourlyDist.map(h => h.count);
 
     // Daily chart data
@@ -797,7 +817,7 @@ export default function ForecastTab({ timeFilter }) {
         <div className={styles.kpiRow}>
           <ForecastKpiCard
             title="Peak Hours"
-            value={patterns.peak_hours?.join(', ') || 'N/A'}
+            value={patterns.peak_hours?.map(formatHour).join(', ') || 'N/A'}
             subtitle="busiest times"
             icon={Zap}
             color="var(--status-danger-color)"

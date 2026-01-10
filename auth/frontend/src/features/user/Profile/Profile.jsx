@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { getProfile, updateProfile } from '../../../services/userService';
 import { useToast, Button, Input, Card, Badge } from '../../../components/common';
+import ImageCropperModal from '../../../components/ImageCropperModal/ImageCropperModal';
 import styles from './Profile.module.css';
 
 const defaultProfileImage = 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg';
@@ -21,6 +22,8 @@ const Profile = () => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [profilePreview, setProfilePreview] = useState(defaultProfileImage);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImageForCrop, setSelectedImageForCrop] = useState(null);
 
   useEffect(() => { fetchProfile(); }, []);
 
@@ -67,28 +70,42 @@ const Profile = () => {
         setHasChanges(false);
         setProfilePicture(null);
       } else {
-        console.error('Profile update error response:', response);
-        console.error('Profile update error data:', response.data);
-        
-        // Handle field-specific validation errors
-        let errorMessage = 'Failed to update profile picture';
-        if (response.data?.profile_picture && Array.isArray(response.data.profile_picture)) {
-          errorMessage = response.data.profile_picture[0];
-        } else if (response.data?.detail) {
-          errorMessage = response.data.detail;
-        } else if (response.data?.error) {
-          errorMessage = response.data.error;
-        } else if (typeof response.data === 'string') {
-          errorMessage = response.data;
+        // Handle validation errors
+        const errors = response.data;
+        if (errors.profile_picture) {
+          error('Profile Picture Error', errors.profile_picture.join(' '));
+        } else if (errors.detail) {
+          error('Error', errors.detail);
+        } else {
+          const firstError = Object.values(errors)[0];
+          error('Error', Array.isArray(firstError) ? firstError[0] : firstError);
         }
-        
-        error('Error', errorMessage);
       }
     } catch (err) {
-      error('Error', 'Failed to update profile picture');
-    } finally { 
-      setIsSaving(false); 
+      error('Error', 'Failed to update profile');
+    } finally { setIsSaving(false); }
+  };
+
+  const handleProfilePictureSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Read file as data URL and open cropper
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setSelectedImageForCrop(event.target.result);
+        setShowCropper(true);
+      };
+      reader.onerror = () => {
+        error('Error', 'Failed to read file');
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropperSave = (croppedFile) => {
+    setProfilePicture(croppedFile);
+    setProfilePreview(URL.createObjectURL(croppedFile));
+    setHasChanges(true);
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleString('en-US', { 
@@ -100,6 +117,17 @@ const Profile = () => {
   return (
     <div className="page-wrapper">
       <ToastContainer />
+
+      <ImageCropperModal
+        isOpen={showCropper}
+        onClose={() => {
+          setShowCropper(false);
+          setSelectedImageForCrop(null);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }}
+        onSave={handleCropperSave}
+        initialImage={selectedImageForCrop}
+      />
       
       <header className="page-header">
         <div className="page-title-section">
@@ -126,7 +154,7 @@ const Profile = () => {
               <img src={profilePreview} alt="Profile" className={styles.avatarImg} onError={e => e.target.src = defaultProfileImage} />
               {isEditing && <div className={styles.avatarOverlay}><i className="fa fa-camera"></i></div>}
             </div>
-            <input type="file" ref={fileInputRef} className={styles.hiddenInput} accept="image/*" onChange={e => { const f = e.target.files[0]; if (f) { setProfilePicture(f); setProfilePreview(URL.createObjectURL(f)); setHasChanges(true); } }} />
+            <input type="file" ref={fileInputRef} className={styles.hiddenInput} accept="image/*" onChange={handleProfilePictureSelect} />
             
             <div className={styles.basicInfo}>
               <h3>{profileData?.first_name} {profileData?.middle_name ? `${profileData.middle_name} ` : ''}{profileData?.last_name}</h3>

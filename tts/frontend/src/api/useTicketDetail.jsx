@@ -2,12 +2,17 @@ import { useState, useEffect } from "react";
 import api from "./axios";
 
 /**
- * Hook to fetch ticket details by ticket_number.
+ * Hook to fetch ticket details by ticket_number and optionally task_item_id.
  * The backend resolves the ticket_number to the current user's TaskItem.
  * 
+ * When task_item_id is provided, it fetches that specific TaskItem instead of
+ * the most recent one. This is critical when a user has multiple TaskItems
+ * for the same ticket (e.g., assigned at step 1, rejected, assigned again at step 3).
+ * 
  * @param {string} ticketNumber - The ticket number (e.g., "TX20251227638396")
+ * @param {string|number|null} taskItemId - Optional specific task item ID to fetch
  */
-const useTicketDetail = (ticketNumber) => {
+const useTicketDetail = (ticketNumber, taskItemId = null) => {
   const [stepInstance, setStepInstance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,8 +29,13 @@ const useTicketDetail = (ticketNumber) => {
       setError("");
       
       try {
-        // Use the by-ticket endpoint that resolves ticket_number to user's TaskItem
-        const response = await api.get(`tasks/detail/by-ticket/${ticketNumber}/`);
+        // Build URL - include task_item_id as query param if provided
+        let url = `tasks/detail/by-ticket/${ticketNumber}/`;
+        if (taskItemId) {
+          url += `?task_item_id=${taskItemId}`;
+        }
+        
+        const response = await api.get(url);
         setStepInstance(response.data);
       } catch (err) {
         console.error('Failed to fetch ticket detail:', err);
@@ -45,14 +55,20 @@ const useTicketDetail = (ticketNumber) => {
     };
 
     fetchStepInstance();
-  }, [ticketNumber]);
+  }, [ticketNumber, taskItemId]);
 
   const refetch = () => {
     if (ticketNumber) {
       setLoading(true);
       setError("");
       
-      api.get(`tasks/detail/by-ticket/${ticketNumber}/`)
+      // Build URL - include task_item_id as query param if provided
+      let url = `tasks/detail/by-ticket/${ticketNumber}/`;
+      if (taskItemId) {
+        url += `?task_item_id=${taskItemId}`;
+      }
+      
+      api.get(url)
         .then(response => {
           setStepInstance(response.data);
         })

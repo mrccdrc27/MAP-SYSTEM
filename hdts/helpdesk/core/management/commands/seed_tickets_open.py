@@ -82,9 +82,21 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--count', type=int, default=10, help='Number of tickets to create')
+        parser.add_argument('--days-ago', type=int, default=0, help='Create tickets as if submitted N days ago (for historical data/forecasting)')
+        parser.add_argument('--days-range', type=int, default=0, help='Randomize days-ago within range [days-ago - days-range, days-ago]. E.g., --days-ago 30 --days-range 30 creates tickets spread across last 30 days')
 
     def handle(self, *args, **options):
         count = options['count']
+        days_ago = options['days_ago']
+        days_range = options['days_range']
+        
+        # Show simulation mode info
+        if days_ago > 0:
+            self.stdout.write(self.style.WARNING(
+                f'⏳ SIMULATION MODE: Creating tickets {days_ago} days in the past'
+                + (f' (±{days_range} days range)' if days_range > 0 else '')
+            ))
+        
         employees = list(Employee.objects.all())
         if not employees:
             self.stderr.write('No employees found to assign tickets to. Please seed employees first.')
@@ -193,7 +205,29 @@ class Command(BaseCommand):
                 t.full_clean()
                 t.save()
                 
+                # 🕒 Time Travel: Force backdate if days_ago is specified
+                if days_ago > 0:
+                    # Calculate actual days ago (with optional randomization)
+                    actual_days_ago = days_ago
+                    if days_range > 0:
+                        # Random offset within range, ensuring we don't go into the future
+                        actual_days_ago = random.randint(max(0, days_ago - days_range), days_ago)
+                    
+                    # Calculate the simulated past date
+                    simulated_date = timezone.now() - timedelta(days=actual_days_ago)
+                    
+                    # Force update the auto_now_add fields in the database directly
+                    # This bypasses Django's auto_now_add restriction
+                    Ticket.objects.filter(pk=t.pk).update(
+                        submit_date=simulated_date
+                    )
+                    
+                    # Refresh the instance to get the updated timestamp
+                    t.refresh_from_db()
+                    self.stdout.write(f'  ⏳ Ticket {t.ticket_number} backdated to {simulated_date.date()}')
+                
                 # Update to 'Open' status to trigger the Celery workflow signal
+                # The signal will send submit_date (now backdated) to TTS
                 t.status = 'Open'
                 t.save()
                 

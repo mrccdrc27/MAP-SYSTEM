@@ -2,12 +2,6 @@
 import React from "react";
 import styles from "./WorkflowTrackerBase.module.css";
 
-// const statusIcons = {
-//   done: "✅",
-//   active: "🔥",
-//   pending: "⏳",
-// };
-
 const statusIcons = {
   done: (
     <span className={styles.icon}>
@@ -26,9 +20,13 @@ const statusIcons = {
   ),
 };
 
-export default function WorkflowVisualizer2({ workflowData }) {
-  // if (!workflowData) {
-  //   return <div className={styles.loading}>Loading tracker...</div>;
+export default function WorkflowVisualizer2({ workflowData, ticketStatus }) {
+  // Debug logging to check node statuses
+  // console.log("WorkflowVisualizer2 - workflowData:", workflowData);
+  // if (workflowData?.nodes) {
+  //   workflowData.nodes.forEach((node, index) => {
+  //     console.log(`Node ${index}: ${node.label} - Status: ${node.status}`);
+  //   });
   // }
 
   if (
@@ -42,8 +40,19 @@ export default function WorkflowVisualizer2({ workflowData }) {
   const nodes = workflowData.nodes;
   const isSingle = nodes.length === 1;
 
+  // Fix for last node: if ticket status is "resolved", the last node should be "done" instead of "active"
+  const processedNodes = nodes.map((node, index) => {
+    const isLastNode = index === nodes.length - 1;
+    
+    if (isLastNode && node.status === 'active' && ticketStatus?.toLowerCase() === 'resolved') {
+      return { ...node, status: 'done' };
+    }
+    
+    return node;
+  });
+
   const renderConnector = (index, currentStatus, nextStatus) => {
-    if (index === workflowData.nodes.length - 1) return null;
+    if (index === processedNodes.length - 1) return null;
 
     const isActive =
       currentStatus === "done" ||
@@ -61,8 +70,8 @@ export default function WorkflowVisualizer2({ workflowData }) {
     <div className={styles.container}>
       {/* og */}
       <div className={`${styles.workflow} ${isSingle ? styles.single : ""}`}>
-        {nodes.map((node, index) => {
-          const nextNode = nodes[index + 1];
+        {processedNodes.map((node, index) => {
+          const nextNode = processedNodes[index + 1];
 
           return (
             <React.Fragment key={node.id}>
@@ -73,9 +82,7 @@ export default function WorkflowVisualizer2({ workflowData }) {
 
                 <div className={styles.nodeInfo}>
                   <div className={styles.nodeLabel}>{node.label}</div>
-                  <div className={styles.nodeRole}>
-                    {node.role}
-                  </div>
+                  <div className={styles.nodeRole}>{node.role}</div>
                 </div>
               </div>
 

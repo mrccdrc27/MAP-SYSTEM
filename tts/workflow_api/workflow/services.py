@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
 from django.core.exceptions import ValidationError
 from copy import deepcopy
 import logging
@@ -7,7 +8,7 @@ from audit.utils import log_action
 from .models import Workflows
 from step.models import Steps, StepTransition
 from role.models import Roles
-from .utils import apply_edge_handles_to_transitions, calculate_default_node_design
+from .utils import apply_edge_handles_to_transitions, calculate_default_node_design, compute_workflow_status
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,9 @@ class WorkflowGraphService:
         Returns:
             dict: Changes summary for audit logging.
         """
+        # Import signal handler to disconnect/reconnect during atomic block
+        from .signals import update_workflow_status
+        
         try:
             # Track changes for audit logging
             graph_changes = {
@@ -155,9 +159,54 @@ class WorkflowGraphService:
                 'edges_deleted': 0,
             }
             
-            with transaction.atomic():
-                temp_id_mapping = {}  # Maps temp-ids to actual DB ids
-                workflow_id = workflow.workflow_id
+            # Disconnect signals during the atomic transaction to avoid nested queries breaking
+            post_save.disconnect(update_workflow_status, sender=Steps)
+            post_delete.disconnect(update_workflow_status, sender=Steps)
+            post_save.disconnect(update_workflow_status, sender=StepTransition)
+            post_delete.disconnect(update_workflow_status, sender=StepTransition)
+            
+            try:
+                with transaction.atomic():
+                    temp_id_mapping = {}  # Maps temp-ids to actual DB ids
+                    workflow_id = workflow.workflow_id
+                
+                # Collect node IDs that will be deleted (to skip edge deletion for cascaded edges)
+                nodes_to_delete = set()
+                for node in nodes_data:
+                    if node.get('to_delete', False) and not str(node.get('id')).startswith('temp-'):
+                        nodes_to_delete.add(str(node.get('id')))
+                
+                # ===== PROCESS EDGES FIRST (delete edges before nodes to avoid cascade conflicts) =====
+                for edge in edges_data:
+                    edge_id = edge.get('id')
+                    from_id = edge.get('from')
+                    to_id = edge.get('to')
+                    to_delete = edge.get('to_delete', False)
+                    
+                    # Resolve temp IDs to actual IDs
+                    if str(from_id).startswith('temp-'):
+                        from_id = temp_id_mapping.get(from_id, from_id)
+                    if str(to_id).startswith('temp-'):
+                        to_id = temp_id_mapping.get(to_id, to_id)
+                    
+                    if to_delete:
+                        # Skip edge deletion if connected node is also being deleted (will cascade)
+                        if str(from_id) in nodes_to_delete or str(to_id) in nodes_to_delete:
+                            logger.info(f"⏭️ Skipping edge {edge_id} deletion (will cascade from node deletion)")
+                            continue
+                            
+                        # Delete existing edge
+                        if not str(edge_id).startswith('temp-'):
+                            try:
+                                transition = StepTransition.objects.get(
+                                    transition_id=int(edge_id),
+                                    workflow_id=workflow_id
+                                )
+                                transition.delete()
+                                logger.info(f"✅ Deleted edge: {edge_id}")
+                                graph_changes['edges_deleted'] += 1
+                            except StepTransition.DoesNotExist:
+                                logger.warning(f"⚠️ Edge {edge_id} not found for deletion")
                 
                 # ===== PROCESS NODES =====
                 for node in nodes_data:
@@ -251,12 +300,16 @@ class WorkflowGraphService:
                             except Steps.DoesNotExist:
                                 logger.warning(f"⚠️ Node {node_id} not found for update")
                 
-                # ===== PROCESS EDGES =====
+                # ===== PROCESS EDGE CREATES/UPDATES (deletions already handled above) =====
                 for edge in edges_data:
                     edge_id = edge.get('id')
                     from_id = edge.get('from')
                     to_id = edge.get('to')
                     to_delete = edge.get('to_delete', False)
+                    
+                    # Skip edges marked for deletion (already processed)
+                    if to_delete:
+                        continue
                     
                     # Resolve temp IDs to actual IDs
                     if str(from_id).startswith('temp-'):
@@ -264,65 +317,51 @@ class WorkflowGraphService:
                     if str(to_id).startswith('temp-'):
                         to_id = temp_id_mapping.get(to_id, to_id)
                     
-                    if to_delete:
-                        # Delete existing edge
-                        if not str(edge_id).startswith('temp-'):
-                            try:
-                                transition = StepTransition.objects.get(
-                                    transition_id=int(edge_id),
-                                    workflow_id=workflow_id
-                                )
-                                transition.delete()
-                                logger.info(f"✅ Deleted edge: {edge_id}")
-                                graph_changes['edges_deleted'] += 1
-                            except StepTransition.DoesNotExist:
-                                logger.warning(f"⚠️ Edge {edge_id} not found for deletion")
+                    # Create or update edge
+                    if str(edge_id).startswith('temp-'):
+                        # Create new edge
+                        try:
+                            from_step = Steps.objects.get(step_id=int(from_id), workflow_id=workflow_id)
+                            to_step = Steps.objects.get(step_id=int(to_id), workflow_id=workflow_id)
+                            
+                            new_transition = StepTransition.objects.create(
+                                workflow_id=workflow,
+                                from_step_id=from_step,
+                                to_step_id=to_step,
+                                name=edge.get('name', '')
+                            )
+                            logger.info(f"✅ Created edge: {edge_id} -> DB ID {new_transition.transition_id}")
+                            graph_changes['edges_added'] += 1
+                        except Steps.DoesNotExist as e:
+                            raise ValidationError(f'Step not found: {str(e)}')
                     else:
-                        # Create or update edge
-                        if str(edge_id).startswith('temp-'):
-                            # Create new edge
-                            try:
-                                from_step = Steps.objects.get(step_id=int(from_id), workflow_id=workflow_id)
-                                to_step = Steps.objects.get(step_id=int(to_id), workflow_id=workflow_id)
-                                
-                                new_transition = StepTransition.objects.create(
-                                    workflow_id=workflow,
-                                    from_step_id=from_step,
-                                    to_step_id=to_step,
-                                    name=edge.get('name', '')
-                                )
-                                logger.info(f"✅ Created edge: {edge_id} -> DB ID {new_transition.transition_id}")
-                                graph_changes['edges_added'] += 1
-                            except Steps.DoesNotExist as e:
-                                raise ValidationError(f'Step not found: {str(e)}')
-                        else:
-                            # Update existing edge
-                            try:
-                                transition = StepTransition.objects.get(
-                                    transition_id=int(edge_id),
-                                    workflow_id=workflow_id
-                                )
-                                
-                                if 'name' in edge:
-                                    transition.name = edge['name']
-                                if 'from' in edge:
-                                    try:
-                                        from_step = Steps.objects.get(step_id=int(from_id), workflow_id=workflow_id)
-                                        transition.from_step_id = from_step
-                                    except Steps.DoesNotExist:
-                                        raise ValidationError(f'From step {from_id} not found')
-                                if 'to' in edge:
-                                    try:
-                                        to_step = Steps.objects.get(step_id=int(to_id), workflow_id=workflow_id)
-                                        transition.to_step_id = to_step
-                                    except Steps.DoesNotExist:
-                                        raise ValidationError(f'To step {to_id} not found')
-                                
-                                transition.save()
-                                logger.info(f"✅ Updated edge: {edge_id}")
-                                graph_changes['edges_updated'] += 1
-                            except StepTransition.DoesNotExist:
-                                logger.warning(f"⚠️ Edge {edge_id} not found for update")
+                        # Update existing edge
+                        try:
+                            transition = StepTransition.objects.get(
+                                transition_id=int(edge_id),
+                                workflow_id=workflow_id
+                            )
+                            
+                            if 'name' in edge:
+                                transition.name = edge['name']
+                            if 'from' in edge:
+                                try:
+                                    from_step = Steps.objects.get(step_id=int(from_id), workflow_id=workflow_id)
+                                    transition.from_step_id = from_step
+                                except Steps.DoesNotExist:
+                                    raise ValidationError(f'From step {from_id} not found')
+                            if 'to' in edge:
+                                try:
+                                    to_step = Steps.objects.get(step_id=int(to_id), workflow_id=workflow_id)
+                                    transition.to_step_id = to_step
+                                except Steps.DoesNotExist:
+                                    raise ValidationError(f'To step {to_id} not found')
+                            
+                            transition.save()
+                            logger.info(f"✅ Updated edge: {edge_id}")
+                            graph_changes['edges_updated'] += 1
+                        except StepTransition.DoesNotExist:
+                            logger.warning(f"⚠️ Edge {edge_id} not found for update")
                 
                 # Log updates if any
                 if any(graph_changes.values()):
@@ -336,10 +375,37 @@ class WorkflowGraphService:
                         )
                     except Exception as e:
                         logger.error(f"Failed to log audit for update_workflow: {e}")
-                
-                return graph_changes, temp_id_mapping
+                    
+            finally:
+                # Always reconnect signals after the atomic block
+                post_save.connect(update_workflow_status, sender=Steps)
+                post_delete.connect(update_workflow_status, sender=Steps)
+                post_save.connect(update_workflow_status, sender=StepTransition)
+                post_delete.connect(update_workflow_status, sender=StepTransition)
+            
+            # Compute workflow status once after all changes (outside atomic block)
+            compute_workflow_status(workflow.workflow_id)
+            
+            # Create a new workflow version if graph was modified
+            if any(graph_changes.values()):
+                from .signals import create_workflow_version
+                workflow.refresh_from_db()
+                if workflow.status == "initialized":
+                    create_workflow_version(workflow)
+                    logger.info(f"📸 Created new workflow version after graph update")
+            
+            return graph_changes, temp_id_mapping
 
         except Exception as e:
+            # Ensure signals are reconnected even on error
+            try:
+                from .signals import update_workflow_status
+                post_save.connect(update_workflow_status, sender=Steps)
+                post_delete.connect(update_workflow_status, sender=Steps)
+                post_save.connect(update_workflow_status, sender=StepTransition)
+                post_delete.connect(update_workflow_status, sender=StepTransition)
+            except:
+                pass
             if isinstance(e, ValidationError):
                 raise e
             logger.error(f"❌ Error updating workflow graph: {str(e)}")

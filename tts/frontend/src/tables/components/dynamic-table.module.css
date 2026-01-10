@@ -2,7 +2,7 @@
 .dtSection {
   background-color: var(--bg1-color);
   border-radius: 8px;
-  box-shadow: var(--box-shadow, 0 4px 10px rgba(0, 0, 0, 0.05));
+  /* box-shadow: var(--box-shadow, 0 4px 10px rgba(0, 0, 0, 0.05)); */
   border: 1px solid var(--border-color);
 }
 

@@ -3,11 +3,13 @@ import { apiRequest } from './api';
 /**
  * Admin Service
  * Handles system management, role management, and user administration
+ * 
+ * Note: All endpoints use /auth prefix for Kong gateway routing
  */
 
 // Get agents/users for a specific system
 export const getSystemAgents = async (systemSlug) => {
-  return await apiRequest(`/api/v1/system-roles/systems/${systemSlug}/users/`, {
+  return await apiRequest(`/auth/api/v1/system-roles/systems/${systemSlug}/users/`, {
     method: 'GET',
     includeAuth: true,
   });
@@ -15,7 +17,7 @@ export const getSystemAgents = async (systemSlug) => {
 
 // Get all user system roles
 export const getUserSystemRoles = async () => {
-  return await apiRequest('/api/v1/system-roles/user-system-roles/', {
+  return await apiRequest('/auth/api/v1/system-roles/user-system-roles/', {
     method: 'GET',
     includeAuth: true,
   });
@@ -23,7 +25,7 @@ export const getUserSystemRoles = async () => {
 
 // Update a user's system role
 export const updateUserSystemRole = async (roleId, data) => {
-  return await apiRequest(`/api/v1/system-roles/user-system-roles/${roleId}/`, {
+  return await apiRequest(`/auth/api/v1/system-roles/user-system-roles/${roleId}/`, {
     method: 'PATCH',
     includeAuth: true,
     body: JSON.stringify(data),
@@ -32,7 +34,7 @@ export const updateUserSystemRole = async (roleId, data) => {
 
 // Delete a user's system role
 export const deleteUserSystemRole = async (roleId) => {
-  return await apiRequest(`/api/v1/system-roles/user-system-roles/${roleId}/`, {
+  return await apiRequest(`/auth/api/v1/system-roles/user-system-roles/${roleId}/`, {
     method: 'DELETE',
     includeAuth: true,
   });
@@ -40,7 +42,7 @@ export const deleteUserSystemRole = async (roleId) => {
 
 // Invite a user to a system
 export const inviteAgent = async (inviteData) => {
-  return await apiRequest('/api/v1/system-roles/invite/', {
+  return await apiRequest('/auth/api/v1/system-roles/invite/', {
     method: 'POST',
     includeAuth: true,
     body: JSON.stringify(inviteData),
@@ -49,7 +51,7 @@ export const inviteAgent = async (inviteData) => {
 
 // Get all systems
 export const getAllSystems = async () => {
-  return await apiRequest('/api/v1/systems/', {
+  return await apiRequest('/auth/api/v1/systems/', {
     method: 'GET',
     includeAuth: true,
   });
@@ -57,7 +59,7 @@ export const getAllSystems = async () => {
 
 // Get roles for a specific system
 export const getSystemRoles = async (systemSlug) => {
-  return await apiRequest(`/api/v1/roles/?system=${systemSlug}`, {
+  return await apiRequest(`/auth/api/v1/roles/?system=${systemSlug}`, {
     method: 'GET',
     includeAuth: true,
   });
@@ -65,7 +67,7 @@ export const getSystemRoles = async (systemSlug) => {
 
 // Create a new role
 export const createRole = async (roleData) => {
-  return await apiRequest('/api/v1/roles/', {
+  return await apiRequest('/auth/api/v1/roles/', {
     method: 'POST',
     includeAuth: true,
     body: JSON.stringify(roleData),
@@ -74,7 +76,7 @@ export const createRole = async (roleData) => {
 
 // Update a role
 export const updateRole = async (roleId, roleData) => {
-  return await apiRequest(`/api/v1/roles/${roleId}/`, {
+  return await apiRequest(`/auth/api/v1/roles/${roleId}/`, {
     method: 'PATCH',
     includeAuth: true,
     body: JSON.stringify(roleData),
@@ -83,7 +85,7 @@ export const updateRole = async (roleId, roleData) => {
 
 // Delete a role
 export const deleteRole = async (roleId) => {
-  return await apiRequest(`/api/v1/roles/${roleId}/`, {
+  return await apiRequest(`/auth/api/v1/roles/${roleId}/`, {
     method: 'DELETE',
     includeAuth: true,
   });
@@ -91,7 +93,7 @@ export const deleteRole = async (roleId) => {
 
 // Update user profile by admin
 export const updateUserByAdmin = async (userId, userData) => {
-  return await apiRequest(`/api/v1/users/${userId}/`, {
+  return await apiRequest(`/auth/api/v1/users/${userId}/`, {
     method: 'PATCH',
     includeAuth: true,
     body: JSON.stringify(userData),
@@ -100,7 +102,7 @@ export const updateUserByAdmin = async (userId, userData) => {
 
 // Get available users and systems for invitation
 export const getInviteData = async () => {
-  return await apiRequest('/api/v1/users/invite-agent/', {
+  return await apiRequest('/auth/api/v1/users/invite-agent/', {
     method: 'GET',
     includeAuth: true,
   });
@@ -108,7 +110,7 @@ export const getInviteData = async () => {
 
 // Invite a user to a system (via user endpoint)
 export const submitInvite = async (inviteData) => {
-  return await apiRequest('/api/v1/users/invite-agent/', {
+  return await apiRequest('/auth/api/v1/users/invite-agent/', {
     method: 'POST',
     includeAuth: true,
     body: JSON.stringify(inviteData),
@@ -117,7 +119,7 @@ export const submitInvite = async (inviteData) => {
 
 // Get TTS assignments
 export const getTTSAssignments = async () => {
-  return await apiRequest('/api/v1/tts/manage-assignments-api/', {
+  return await apiRequest('/auth/api/v1/tts/manage-assignments-api/', {
     method: 'GET',
     includeAuth: true,
   });
@@ -125,7 +127,7 @@ export const getTTSAssignments = async () => {
 
 // Update TTS assignment
 export const updateTTSAssignment = async (assignmentId, data) => {
-  return await apiRequest(`/api/v1/tts/update-assignment/${assignmentId}/`, {
+  return await apiRequest(`/auth/api/v1/tts/update-assignment/${assignmentId}/`, {
     method: 'PUT',
     includeAuth: true,
     body: JSON.stringify(data),

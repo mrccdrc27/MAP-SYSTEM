@@ -101,24 +101,64 @@ def apply_round_robin_assignment(task, user_ids, role_name, step=None):
         return []
 
     # Create TaskItem for the assigned user
-    # Include assigned_on_step in lookup to allow same user to be assigned at different steps
-    task_item, created = TaskItem.objects.get_or_create(
+    # Check if user already has an ACTIVE (non-terminal) TaskItem for this step
+    # Terminal statuses: resolved, escalated, reassigned, breached
+    # If existing TaskItem is terminal, create a NEW one (for re-assignment scenarios like rejection loops)
+    
+    terminal_statuses = ['resolved', 'escalated', 'reassigned', 'breached']
+    
+    # Look for existing TaskItem at this step
+    existing_item = TaskItem.objects.filter(
         task=task,
         role_user=role_users,
         assigned_on_step=target_step,
-        defaults={
-            'origin': 'System',
-            'target_resolution': target_resolution,
-        }
-    )
+    ).prefetch_related('taskitemhistory_set').first()
     
-    if created:
+    if existing_item:
+        # Check if the existing TaskItem has a terminal status
+        latest_history = existing_item.taskitemhistory_set.order_by('-created_at').first()
+        existing_status = latest_history.status if latest_history else 'new'
+        
+        if existing_status in terminal_statuses:
+            # Existing TaskItem is terminal - CREATE A NEW ONE for re-assignment
+            logger.info(f"[INFO] Existing TaskItem {existing_item.task_item_id} for User {user_id} at step {target_step.name} has terminal status '{existing_status}'. Creating new TaskItem for re-assignment.")
+            task_item = TaskItem.objects.create(
+                task=task,
+                role_user=role_users,
+                assigned_on_step=target_step,
+                origin='System',
+                target_resolution=target_resolution,
+            )
+            # Create initial history record with 'new' status
+            TaskItemHistory.objects.create(
+                task_item=task_item,
+                status='new'
+            )
+            logger.info(f"[OK] Created NEW TaskItem {task_item.task_item_id}: User {user_id} RE-assigned to Task {task.task_id} at step {target_step.name}")
+            created = True
+        else:
+            # Existing TaskItem is still active - use it (don't duplicate)
+            task_item = existing_item
+            created = False
+            logger.info(f"[WARNING] TaskItem {task_item.task_item_id} already exists and is active (status: {existing_status}): User {user_id} for Task {task.task_id}")
+    else:
+        # No existing TaskItem - create new one
+        task_item = TaskItem.objects.create(
+            task=task,
+            role_user=role_users,
+            assigned_on_step=target_step,
+            origin='System',
+            target_resolution=target_resolution,
+        )
         # Create initial history record with 'new' status
         TaskItemHistory.objects.create(
             task_item=task_item,
             status='new'
         )
-        logger.info(f"[OK] Created TaskItem: User {user_id} assigned to Task {task.task_id}")
+        logger.info(f"[OK] Created TaskItem {task_item.task_item_id}: User {user_id} assigned to Task {task.task_id}")
+        created = True
+    
+    if created:
         # Send assignment notification via Celery
         task_title = str(task.ticket_id.subject) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"
         ticket_number = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') and hasattr(task.ticket_id, 'ticket_number') else task_title
@@ -142,8 +182,6 @@ def apply_round_robin_assignment(task, user_ids, role_name, step=None):
                 status='pending'
             )
             logger.info("[OK] Task assignment succeeded, notification queued for retry")
-    else:
-        logger.info(f"[WARNING] TaskItem already exists: User {user_id} for Task {task.task_id}")
 
     # Update round-robin state for next assignment
     round_robin_state.current_index = (current_index + 1) % len(user_ids)
