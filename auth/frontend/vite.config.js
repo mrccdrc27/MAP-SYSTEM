@@ -13,6 +13,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Forward Kong/gateway prefixed auth routes to backend as well
+      '/auth': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
       // Static files and media (direct to backend)
       '/static': {
         target: 'http://localhost:8003',

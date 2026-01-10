@@ -1,7 +1,8 @@
-import { apiRequest } from './api';
+import { apiRequest, api } from './api';
 import { getEndpoints, STAFF_ENDPOINTS, EMPLOYEE_ENDPOINTS } from './endpoints';
 import { setUserType, getUserType, clearAuthState } from '../utils/storage';
 import { USER_TYPES } from '../utils/constants';
+import { getCSRFToken } from '../utils/csrf';
 
 /**
  * Auth Service
@@ -11,6 +12,17 @@ import { USER_TYPES } from '../utils/constants';
 // Login with email and password
 export const login = async (email, password, userType = USER_TYPES.STAFF, recaptchaResponse = '') => {
   const endpoints = getEndpoints(userType);
+  // Ensure CSRF cookie is present for views requiring it (Django session auth)
+  try {
+    if (!getCSRFToken()) {
+      // Attempt a harmless GET to the ME endpoint to set CSRF cookie via Set-Cookie
+      await api.get(endpoints.ME);
+    }
+  } catch (err) {
+    // Ignore errors - this is just to obtain CSRF cookie if backend sets it on GET
+    // eslint-disable-next-line no-console
+    console.debug('CSRF preflight request failed (safe to ignore):', err?.message || err);
+  }
   const response = await apiRequest(endpoints.LOGIN, {
     method: 'POST',
     body: JSON.stringify({
