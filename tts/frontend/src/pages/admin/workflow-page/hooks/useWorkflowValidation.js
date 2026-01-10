@@ -41,8 +41,16 @@ export const extractTotalMinutes = (sla) => {
 
 /**
  * Custom hook for workflow validation
+ * @param {Object} workflowMetadata - The workflow metadata being created/edited
+ * @param {Array} simpleNodes - Simple mode nodes
+ * @param {Array} simpleEdges - Simple mode edges
+ * @param {Array} nodes - Flow mode nodes
+ * @param {Array} edges - Flow mode edges
+ * @param {string} editorMode - 'simple' or 'flow'
+ * @param {Array} existingWorkflows - List of existing workflows for duplicate checking
+ * @param {number|null} currentWorkflowId - ID of current workflow (for edit mode, to exclude self)
  */
-export function useWorkflowValidation(workflowMetadata, simpleNodes, simpleEdges, nodes, edges, editorMode) {
+export function useWorkflowValidation(workflowMetadata, simpleNodes, simpleEdges, nodes, edges, editorMode, existingWorkflows = [], currentWorkflowId = null) {
   const validateWorkflowData = useCallback(() => {
     const errors = [];
     const currentNodes = editorMode === 'simple' ? simpleNodes : nodes;
@@ -58,8 +66,42 @@ export function useWorkflowValidation(workflowMetadata, simpleNodes, simpleEdges
     if (!workflowMetadata.department.trim()) errors.push('Department is required');
     if (workflowMetadata.department.length > 64) errors.push('Department must be 64 characters or less');
     
-    if (workflowMetadata.description && workflowMetadata.description.length > 256) {
+    if (!workflowMetadata.description || !workflowMetadata.description.trim()) {
+      errors.push('Description is required');
+    } else if (workflowMetadata.description.length > 256) {
       errors.push('Description must be 256 characters or less');
+    }
+
+    // Duplicate workflow validation (only if we have existing workflows to check against)
+    if (existingWorkflows && existingWorkflows.length > 0) {
+      const trimmedName = workflowMetadata.name.trim().toLowerCase();
+      const trimmedCategory = workflowMetadata.category.trim().toLowerCase();
+      const trimmedSubCategory = workflowMetadata.sub_category.trim().toLowerCase();
+
+      // Check for duplicate workflow name
+      const duplicateName = existingWorkflows.find(wf => {
+        // Skip the current workflow in edit mode
+        if (currentWorkflowId && wf.id === currentWorkflowId) return false;
+        return wf.name?.toLowerCase() === trimmedName;
+      });
+
+      if (duplicateName && trimmedName) {
+        errors.push(`A workflow with the name "${duplicateName.name}" already exists`);
+      }
+
+      // Check for duplicate category + sub_category pair
+      const duplicateCategoryPair = existingWorkflows.find(wf => {
+        // Skip the current workflow in edit mode
+        if (currentWorkflowId && wf.id === currentWorkflowId) return false;
+        return (
+          wf.category?.toLowerCase() === trimmedCategory &&
+          wf.sub_category?.toLowerCase() === trimmedSubCategory
+        );
+      });
+
+      if (duplicateCategoryPair && trimmedCategory && trimmedSubCategory) {
+        errors.push(`A workflow with category "${duplicateCategoryPair.category}" and sub-category "${duplicateCategoryPair.sub_category}" already exists`);
+      }
     }
 
     // SLA ordering validation
@@ -116,7 +158,7 @@ export function useWorkflowValidation(workflowMetadata, simpleNodes, simpleEdges
     }
 
     return errors;
-  }, [editorMode, simpleNodes, simpleEdges, nodes, edges, workflowMetadata]);
+  }, [editorMode, simpleNodes, simpleEdges, nodes, edges, workflowMetadata, existingWorkflows, currentWorkflowId]);
 
   const validationErrors = useMemo(() => {
     return validateWorkflowData();

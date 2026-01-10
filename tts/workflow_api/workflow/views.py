@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
 import logging
 from copy import deepcopy
 
 from audit.utils import log_action, compare_models
-from .models import Workflows
+from .models import Workflows, WorkflowVersion
 from .serializers import (
     WorkflowBasicSerializer,
     CreateWorkflowSerializer,
@@ -19,6 +20,8 @@ from .serializers import (
     UpdateStepDetailsSerializer,
     TransitionSerializer,
     UpdateTransitionDetailsSerializer,
+    WorkflowVersionSerializer,
+    WorkflowVersionDetailSerializer,
 )
 from .services import WorkflowGraphService
 from step.models import Steps, StepTransition
@@ -362,6 +365,190 @@ class WorkflowViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, viewset
             logger.error(f"❌ Error deleting workflow: {str(e)}")
             return Response(
                 {'error': f'Failed to delete workflow: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['get'], url_path='versions')
+    def list_versions(self, request, workflow_id=None):
+        """
+        List all versions of a workflow.
+        GET /workflows/{workflow_id}/versions/
+        """
+        try:
+            workflow = Workflows.objects.get(workflow_id=workflow_id)
+        except Workflows.DoesNotExist:
+            return Response(
+                {'error': f'Workflow with ID {workflow_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        versions = WorkflowVersion.objects.filter(workflow=workflow).order_by('-version')
+        serializer = WorkflowVersionSerializer(versions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='versions/(?P<version_id>[^/.]+)')
+    def get_version(self, request, workflow_id=None, version_id=None):
+        """
+        Get a specific version's full definition.
+        GET /workflows/{workflow_id}/versions/{version_id}/
+        """
+        try:
+            workflow = Workflows.objects.get(workflow_id=workflow_id)
+        except Workflows.DoesNotExist:
+            return Response(
+                {'error': f'Workflow with ID {workflow_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            version = WorkflowVersion.objects.get(workflow=workflow, id=version_id)
+        except WorkflowVersion.DoesNotExist:
+            return Response(
+                {'error': f'Version with ID {version_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = WorkflowVersionDetailSerializer(version)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='versions/(?P<version_id>[^/.]+)/rollback')
+    def rollback_version(self, request, workflow_id=None, version_id=None):
+        """
+        Rollback workflow to a specific version.
+        Copies the version's definition to the current workflow structure.
+        POST /workflows/{workflow_id}/versions/{version_id}/rollback/
+        """
+        try:
+            workflow = Workflows.objects.get(workflow_id=workflow_id)
+        except Workflows.DoesNotExist:
+            return Response(
+                {'error': f'Workflow with ID {workflow_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            version = WorkflowVersion.objects.get(workflow=workflow, id=version_id)
+        except WorkflowVersion.DoesNotExist:
+            return Response(
+                {'error': f'Version with ID {version_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            from workflow.signals import update_workflow_status, create_workflow_version
+            from role.models import Roles
+            
+            # Temporarily disable signals to prevent double version creation
+            post_save.disconnect(update_workflow_status, sender=Steps)
+            post_delete.disconnect(update_workflow_status, sender=Steps)
+            post_save.disconnect(update_workflow_status, sender=StepTransition)
+            post_delete.disconnect(update_workflow_status, sender=StepTransition)
+            
+            try:
+                with transaction.atomic():
+                    definition = version.definition
+                    
+                    # Update workflow metadata from version
+                    metadata = definition.get('metadata', {})
+                    if metadata:
+                        workflow.description = metadata.get('description', workflow.description)
+                        # Note: We don't update name/category/subcategory as those are identifiers
+                        workflow.save()
+                    
+                    # Delete current steps and transitions
+                    Steps.objects.filter(workflow_id=workflow.workflow_id).delete()
+                    
+                    # Recreate steps from version definition
+                    nodes = definition.get('nodes', [])
+                    step_id_mapping = {}  # old_id -> new_step
+                    
+                    for node in nodes:
+                        role = None
+                        if node.get('role_name'):
+                            role = Roles.objects.filter(name=node['role_name']).first()
+                        elif node.get('role_id'):
+                            role = Roles.objects.filter(role_id=node['role_id']).first()
+                        
+                        step = Steps.objects.create(
+                            workflow_id=workflow,
+                            name=node.get('label', ''),
+                            description=node.get('description', ''),
+                            instruction=node.get('instruction', ''),
+                            role_id=role,
+                            order=node.get('order', 0),
+                            weight=node.get('weight', 0.5),
+                            is_start=node.get('is_start', False),
+                            is_end=node.get('is_end', False),
+                            is_initialized=True,
+                        )
+                        step_id_mapping[node['id']] = step
+                    
+                    # Recreate transitions from version definition
+                    edges = definition.get('edges', [])
+                    for edge in edges:
+                        from_step = step_id_mapping.get(edge.get('from_step_id'))
+                        to_step = step_id_mapping.get(edge.get('to_step_id'))
+                        
+                        if from_step and to_step:
+                            StepTransition.objects.create(
+                                workflow_id=workflow,
+                                from_step_id=from_step,
+                                to_step_id=to_step,
+                                name=edge.get('name', ''),
+                            )
+                
+                # Re-enable signals after transaction
+                post_save.connect(update_workflow_status, sender=Steps)
+                post_delete.connect(update_workflow_status, sender=Steps)
+                post_save.connect(update_workflow_status, sender=StepTransition)
+                post_delete.connect(update_workflow_status, sender=StepTransition)
+                
+                # Manually create a single new version for the rollback
+                create_workflow_version(workflow)
+                
+                # Log the rollback action
+                try:
+                    log_action(
+                        request.user, 
+                        'rollback_workflow', 
+                        target=workflow, 
+                        request=request,
+                        details={'rolled_back_to_version': version.version}
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log audit for rollback_workflow: {e}")
+                
+                logger.info(f"✅ Workflow '{workflow.name}' rolled back to version {version.version}")
+                
+                return Response({
+                    'message': f'Workflow successfully rolled back to version {version.version}',
+                    'workflow_id': workflow.workflow_id,
+                    'rolled_back_to_version': version.version
+                }, status=status.HTTP_200_OK)
+                
+            finally:
+                # Ensure signals are always re-enabled even if exception occurs
+                try:
+                    post_save.connect(update_workflow_status, sender=Steps)
+                except:
+                    pass
+                try:
+                    post_delete.connect(update_workflow_status, sender=Steps)
+                except:
+                    pass
+                try:
+                    post_save.connect(update_workflow_status, sender=StepTransition)
+                except:
+                    pass
+                try:
+                    post_delete.connect(update_workflow_status, sender=StepTransition)
+                except:
+                    pass
+        
+        except Exception as e:
+            logger.error(f"❌ Error rolling back workflow: {str(e)}")
+            return Response(
+                {'error': f'Failed to rollback workflow: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
