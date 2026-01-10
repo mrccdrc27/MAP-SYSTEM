@@ -6,18 +6,30 @@ export default defineConfig({
   // For development server
   server: {
     port: 3001,
+    host: '0.0.0.0',  // Listen on all interfaces for remote access
     proxy: {
-      // Route all /api requests to auth service directly
-      '/api': {
-        target: 'http://localhost:8003',
+      // Route AUTH API requests through Kong Gateway
+      '/auth/api': {
+        target: 'http://localhost:8080',  // Kong Gateway
         changeOrigin: true,
         secure: false,
+        // Forward cookies properly
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
+        // Uncomment to bypass Kong and hit backend directly:
+        // target: 'http://localhost:8003',
       },
-      // Forward Kong/gateway prefixed auth routes to backend as well
-      '/auth': {
+      // Route SUPERADMIN API requests directly to auth backend
+      '/superadmin/api': {
         target: 'http://localhost:8003',
         changeOrigin: true,
         secure: false,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
+        headers: {
+          'X-Forwarded-Host': '165.22.247.50',
+          'X-Forwarded-Proto': 'http',
+        },
       },
       // Static files and media (direct to backend)
       '/static': {

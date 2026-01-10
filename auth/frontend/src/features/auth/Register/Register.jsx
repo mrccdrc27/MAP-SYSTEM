@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { register } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
-import { AuthLayout } from '../../../components/layout';
+import { AuthLayout } from '../../../components/Layout';
 import EmployeeRegister from './EmployeeRegister';
 import styles from './Register.module.css';
 

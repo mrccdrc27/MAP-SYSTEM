@@ -33,7 +33,7 @@ const UserMasterlist = () => {
     setLoading(true);
     try {
       // Fetch all users without params for frontend pagination
-      const response = await fetch('http://localhost:8003/superadmin/api/users/', {
+      const response = await fetch('/superadmin/api/users/', {
         credentials: 'include',
       });
 
@@ -119,7 +119,7 @@ const UserMasterlist = () => {
   const handleDeleteConfirm = async () => {
     if (!deleteModalUser) return;
     try {
-      const response = await fetch(`http://localhost:8003/superadmin/api/users/${deleteModalUser.id}/`, {
+      const response = await fetch(`/superadmin/api/users/${deleteModalUser.id}/`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -137,7 +137,7 @@ const UserMasterlist = () => {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('http://localhost:8003/superadmin/api/users/export/', {
+      const response = await fetch('/superadmin/api/users/export/', {
         credentials: 'include',
       });
       if (response.ok) {

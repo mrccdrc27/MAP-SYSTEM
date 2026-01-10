@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast, Button, Input } from '../../../components/common';
-import { AuthLayout } from '../../../components/layout';
+import { AuthLayout } from '../../../components/Layout';
 import { useSuperAdmin } from '../../../context/SuperAdminContext';
 import styles from './SuperAdminLogin.module.css';
 
@@ -33,8 +33,8 @@ const SuperAdminLogin = () => {
 
     setLoading(true);
     try {
-      // Use the correct port (8003) based on the auth service configuration
-      const response = await fetch('http://localhost:8003/superadmin/api/login/', {
+      // Use relative path - Vite proxy will route to correct backend
+      const response = await fetch('/superadmin/api/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

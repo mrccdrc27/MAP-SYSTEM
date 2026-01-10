@@ -21,10 +21,18 @@ export default function TransferTask({
   const { transferTask, loading: transferLoading, error: transferError, success } =
     useTransferTask();
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   // Handle successful transfer
   useEffect(() => {
     if (success && !transferLoading) {
-      console.log("✅ Task transferred successfully");
+      console.log("Task transferred successfully");
       setTimeout(() => {
         window.location.reload();
       }, 1500);

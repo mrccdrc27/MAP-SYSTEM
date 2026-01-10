@@ -34,7 +34,7 @@ export default function WorkflowVisualizer2({ workflowData, ticketStatus }) {
     !Array.isArray(workflowData.nodes) ||
     workflowData.nodes.length === 0
   ) {
-    return <div className={styles.loading}>Loading visual workflow...</div>;
+    return <div className={styles.workflowLoading}>Loading visual workflow...</div>;
   }
 
   const nodes = workflowData.nodes;

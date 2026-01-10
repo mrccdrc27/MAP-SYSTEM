@@ -17,6 +17,14 @@ export default function TicketAction({
   const [confirmMessage, setConfirmMessage] = useState("");
   const [errors, setErrors] = useState({});
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   // Get the actual transition_id from the selected index
   const selectedActionId = selectedActionIndex >= 0 ? action?.[selectedActionIndex]?.transition_id : undefined;
 

@@ -272,7 +272,10 @@ COOKIE_DOMAIN = config('COOKIE_DOMAIN', default='localhost')
 # Only enforce secure cookies in production with HTTPS
 # For development, allow HTTP even when DEBUG=False
 SESSION_COOKIE_SECURE = config('DJANGO_SESSION_COOKIE_SECURE', default='False' if not IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+SESSION_COOKIE_SAMESITE = config('DJANGO_SESSION_COOKIE_SAMESITE', default='Lax')
+SESSION_COOKIE_HTTPONLY = config('DJANGO_SESSION_COOKIE_HTTPONLY', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
 CSRF_COOKIE_SECURE = config('DJANGO_CSRF_COOKIE_SECURE', default='False' if not IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+CSRF_COOKIE_SAMESITE = config('DJANGO_CSRF_COOKIE_SAMESITE', default='Lax')
 # Set to True in production with HTTPS
 
 # CSRF Trusted Origins - Required for Django 4.0+

@@ -3,7 +3,8 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { resetPassword } from '../../../services/authService';
 import { USER_TYPES } from '../../../utils/constants';
 import { useToast, Button, Input } from '../../../components/common';
-import { AuthLayout } from '../../../components/layout';
+import { AuthLayout } from "../../../components/Layout";
+import { calculatePasswordStrength, getStrengthColor } from '../../../utils/passwordStrength';
 import styles from './ResetPassword.module.css';
 
 const ResetPassword = ({ userType = 'staff' }) => {
@@ -27,6 +28,12 @@ const ResetPassword = ({ userType = 'staff' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    strength: 'none',
+    label: '',
+    feedback: []
+  });
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -67,10 +74,26 @@ const ResetPassword = ({ userType = 'staff' }) => {
           error('Invalid Link', 'The reset link is invalid or expired.');
         } else {
           const apiErrors = {};
+          let hasFieldErrors = false;
+          
           for (const [field, messages] of Object.entries(response.data)) {
-            apiErrors[field] = Array.isArray(messages) ? messages[0] : messages;
+            const errorMsg = Array.isArray(messages) ? messages[0] : messages;
+            apiErrors[field] = errorMsg;
+            hasFieldErrors = true;
           }
+          
           setErrors(apiErrors);
+          
+          // Show toast for general errors or field-specific errors
+          if (apiErrors.password) {
+            error('Invalid Password', apiErrors.password);
+          } else if (apiErrors.confirm_password || apiErrors.password_confirm) {
+            error('Password Error', apiErrors.confirm_password || apiErrors.password_confirm);
+          } else if (apiErrors.error || apiErrors.detail) {
+            error('Error', apiErrors.error || apiErrors.detail);
+          } else if (!hasFieldErrors) {
+            error('Error', 'Unable to reset password. Please try again.');
+          }
         }
       }
     } catch (err) {
@@ -137,12 +160,22 @@ const ResetPassword = ({ userType = 'staff' }) => {
     >
       <ToastContainer />
       <form onSubmit={handleSubmit} className={styles.resetForm}>
+        {/* General error display */}
+        {(errors.error || errors.detail || errors.non_field_errors) && (
+          <div className={styles.errorAlert}>
+            <i className="fa-solid fa-circle-exclamation"></i>
+            <span>{errors.error || errors.detail || errors.non_field_errors}</span>
+          </div>
+        )}
+
         <Input
           label="New Password:"
           type={showPassword ? 'text' : 'password'}
           value={password}
           onChange={(e) => {
-            setPassword(e.target.value);
+            const newPassword = e.target.value;
+            setPassword(newPassword);
+            setPasswordStrength(calculatePasswordStrength(newPassword));
             if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
           }}
           placeholder="Enter new password"
@@ -169,6 +202,41 @@ const ResetPassword = ({ userType = 'staff' }) => {
           required
           className={styles.roundedInput}
         />
+
+        {/* Password Strength Indicator */}
+        {(password || confirmPassword) && (
+          <div className={styles.passwordStrength}>
+            <div className={styles.strengthBar}>
+              <div 
+                className={`${styles.strengthBarFill} ${styles[passwordStrength.strength]}`}
+                style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
+              />
+            </div>
+            <div className={styles.strengthInfo}>
+              <span 
+                className={styles.strengthLabel}
+                style={{ color: getStrengthColor(passwordStrength.strength) }}
+              >
+                <i className="fa-solid fa-shield-halved"></i> {passwordStrength.label}
+              </span>
+              {passwordStrength.feedback.length > 0 && (
+                <span className={styles.strengthFeedback}>
+                  {passwordStrength.feedback.join(', ')}
+                </span>
+              )}
+            </div>
+            {password && confirmPassword && password === confirmPassword && (
+              <div className={styles.passwordMatch}>
+                <i className="fa-solid fa-circle-check"></i> Passwords match
+              </div>
+            )}
+            {password && confirmPassword && password !== confirmPassword && (
+              <div className={styles.passwordMismatch}>
+                <i className="fa-solid fa-circle-xmark"></i> Passwords do not match
+              </div>
+            )}
+          </div>
+        )}
 
         <Button 
           type="submit" 

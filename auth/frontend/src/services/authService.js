@@ -107,7 +107,7 @@ export const resetPassword = async (token, password, confirmPassword, userType =
     body: JSON.stringify({
       token,
       password,
-      confirm_password: confirmPassword,
+      password_confirm: confirmPassword,
     }),
   });
 };
