@@ -8,7 +8,15 @@ export default defineConfig({
     port: 3001,
     host: '0.0.0.0',  // Listen on all interfaces for remote access
     proxy: {
-      // Route AUTH API requests through Kong Gateway
+      // Route /api requests directly to auth backend (when not using Kong prefix)
+      '/api': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
+      },
+      // Route AUTH API requests through Kong Gateway (when using /auth prefix)
       '/auth/api': {
         target: 'http://localhost:8080',  // Kong Gateway
         changeOrigin: true,
