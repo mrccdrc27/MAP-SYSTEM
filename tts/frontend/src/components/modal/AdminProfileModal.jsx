@@ -43,8 +43,8 @@ export default function AdminProfileModal({ closeProfileAction }) {
             onClick={() => {
               closeProfileAction(false);
 
-              const base = import.meta.env.VITE_AUTH_URL || "http://localhost:3001";
-              const url = `${base.replace(/\/$/, "")}/staff/settings/profile/`;
+              const base = import.meta.env.VITE_AUTH_NEW_URL || "http://localhost:3001";
+              const url = `${base.replace(/\/$/, "")}/profile/`;
 
               window.open(url, "_blank", "noopener,noreferrer");
             }}
@@ -57,8 +57,8 @@ export default function AdminProfileModal({ closeProfileAction }) {
             onClick={() => {
               closeProfileAction(false);
 
-              const base = import.meta.env.VITE_AUTH_URL || "http://localhost:3001";
-              const url = `${base.replace(/\/$/, "")}/staff/agents`;
+              const base = import.meta.env.VITE_AUTH_NEW_URL || "http://localhost:3001";
+              const url = `${base.replace(/\/$/, "")}/agents`;
 
               window.open(url, "_blank", "noopener,noreferrer");
             }}

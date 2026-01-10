@@ -1,6 +1,5 @@
 // style
 import { useAuth } from "../../context/AuthContext";
-import { useLogout } from "../../api/Authentication/useLogout";
 import styles from "./profile-modal.module.css";
 
 // react
@@ -8,9 +7,7 @@ import { useNavigate } from "react-router-dom";
 export default function ProfileModal({ closeProfileAction }) {
   // navigate
   const navigate = useNavigate();
-  const { logout } = useLogout();
-
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   // console.log(user)
 
   if (loading) return <p>Loading...</p>;
@@ -46,8 +43,8 @@ export default function ProfileModal({ closeProfileAction }) {
               // close modal first
               closeProfileAction(false);
               // construct external URL from Vite env var and endpoint
-              const base = import.meta.env.VITE_AUTH_URL || '';
-              const url = `${base.replace(/\/$/, '')}/staff/settings/profile/`;
+              const base = import.meta.env.VITE_AUTH_NEW_URL || '';
+              const url = `${base.replace(/\/$/, '')}/profile/`;
               // open in a new browser window/tab safely
               window.open(url, "_blank", "noopener,noreferrer");
             }}
