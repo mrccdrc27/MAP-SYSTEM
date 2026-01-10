@@ -43,21 +43,33 @@ const CoordinatorAdminDashboard = () => {
   const [pieRange, setPieRange] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
   const currentUser = authService.getCurrentUser();
-
   // Ticket Coordinators should see a reduced dashboard (no CSAT tab)
   const isTicketCoordinator = currentUser?.role === 'Ticket Coordinator';
-  const dashboardTabs = isTicketCoordinator
-    ? [
+  const isSystemAdmin = (currentUser?.role === 'System Admin' || currentUser?.role === 'Admin');
+
+  // Build tabs based on role. System Admins should NOT see the "My Tickets" tab.
+  let dashboardTabs;
+  if (isTicketCoordinator) {
+    dashboardTabs = [
       { label: 'Tickets', value: 'tickets' },
       { label: 'My Tickets', value: 'my-tickets' },
-    ]
-    : [
+    ];
+  } else if (isSystemAdmin) {
+    dashboardTabs = [
+      { label: 'Tickets', value: 'tickets' },
+      { label: 'Users', value: 'users' },
+      { label: 'Knowledge Base', value: 'kb' },
+      { label: 'CSAT', value: 'csat' },
+    ];
+  } else {
+    dashboardTabs = [
       { label: 'Tickets', value: 'tickets' },
       { label: 'My Tickets', value: 'my-tickets' },
       { label: 'Users', value: 'users' },
       { label: 'Knowledge Base', value: 'kb' },
       { label: 'CSAT', value: 'csat' },
     ];
+  }
 
   // Simulate loading completion
   useEffect(() => {

@@ -37,6 +37,14 @@ from .views import (
     serve_protected_media,
     serve_ticket_attachment,
 )
+from .views.notification_views import (
+    list_notifications,
+    get_unread_count,
+    mark_as_read,
+    mark_all_as_read,
+    delete_notification,
+    clear_all_notifications,
+)
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from .serializers import TicketSerializer
@@ -83,6 +91,14 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/finalize/', finalize_ticket, name='finalize_ticket'),  # <-- add this line
     # Activity logs for user profile
     path('activity-logs/user/<int:user_id>/', get_user_activity_logs, name='get_user_activity_logs'),
+
+    # Employee Notifications
+    path('notifications/', list_notifications, name='list_notifications'),
+    path('notifications/unread-count/', get_unread_count, name='get_unread_count'),
+    path('notifications/<int:notification_id>/read/', mark_as_read, name='mark_notification_read'),
+    path('notifications/read-all/', mark_all_as_read, name='mark_all_notifications_read'),
+    path('notifications/<int:notification_id>/', delete_notification, name='delete_notification'),
+    path('notifications/clear/', clear_all_notifications, name='clear_all_notifications'),
 
     # Protected media files - require authentication
     path('media/<path:file_path>', serve_protected_media, name='serve_protected_media'),

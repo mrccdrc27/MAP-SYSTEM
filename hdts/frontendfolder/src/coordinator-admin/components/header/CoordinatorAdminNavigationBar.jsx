@@ -417,8 +417,9 @@ const CoordinatorAdminNavBar = () => {
     // Use coordinator-specific Knowledge Base placeholder
     navSections = [ticketsSection, ownedTicketsSection, amsSection, bmsSection, reportsSection, kbCoordinatorSection];
   } else if (role === 'System Admin') {
-    // System Admin: Dashboard (all), Ticket Management (view-only), User Access, Assigned Tickets, Reports, KB, CSAT
-    navSections = [ticketsSection, usersSection, assignedTicketsSection, reportsSection, kbSection, csatSection];
+    // System Admin: Dashboard (all), Ticket Management (view-only), User Access, Reports, KB, CSAT
+    // NOTE: Assigned Tickets should be hidden for System Admins per requirements.
+    navSections = [ticketsSection, usersSection, reportsSection, kbSection, csatSection];
   } else {
     // Default: show everything
     navSections = [ticketsSection, usersSection, reportsSection, kbSection];

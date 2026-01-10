@@ -8,7 +8,7 @@ from rest_framework.decorators import permission_classes
 from ..authentication import CookieJWTAuthentication, ExternalUser
 from ..models import KnowledgeArticle, KnowledgeArticleVersion, ARTICLE_CATEGORY_CHOICES
 from ..serializers import KnowledgeArticleSerializer
-from .permissions import IsAdminOrSystemAdmin
+from .permissions import IsAdminOrSystemAdmin, IsAdminOrCoordinator
 
 
 class KnowledgeArticleViewSet(viewsets.ModelViewSet):
@@ -17,10 +17,14 @@ class KnowledgeArticleViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Allow safe (read-only) methods to be accessible without Admin permission.
-        Unsafe methods (create/update/delete) still require IsAuthenticated and IsAdminOrSystemAdmin.
+        Unsafe methods (create/update/delete) require IsAuthenticated.
+        Delete requires IsAdminOrCoordinator.
+        Create/update still require IsAdminOrSystemAdmin.
         """
         if self.request.method in ['GET', 'HEAD', 'OPTIONS']:
             return [AllowAny()]
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated(), IsAdminOrCoordinator()]
         return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
@@ -94,7 +98,7 @@ class KnowledgeArticleViewSet(viewsets.ModelViewSet):
         article.save()
         return Response({'detail': 'Article restored successfully.'}, status=status.HTTP_200_OK)
     
-    @action(detail=False, methods=['get'], url_path='choices', permission_classes=[AllowAny])
+    @action(detail=False, methods=['get'], url_path='choices')
     def choices(self, request):
         """Return available category choices for knowledge articles"""
         return Response({

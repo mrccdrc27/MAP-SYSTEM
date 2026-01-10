@@ -1,8 +1,10 @@
 // Backend user service (auth users)
 import { API_CONFIG } from '../../config/environment.js';
 
-// Prefer the AUTH service base URL for user endpoints (auth app serves /api/v1/users/)
-const AUTH_BASE = API_CONFIG.AUTH.BASE_URL || API_CONFIG.BACKEND.BASE_URL;
+// Auth service base URL for user endpoints (auth app serves /api/v1/users/)
+// Use empty string for relative URLs that go through Vite proxy to auth service (localhost:8003)
+// Note: Empty string is valid (proxied via /api -> localhost:8003), don't fallback to BACKEND
+const AUTH_BASE = API_CONFIG.AUTH.BASE_URL !== undefined ? API_CONFIG.AUTH.BASE_URL : '';
 
 // Helper function to get fetch options with proper cookie-based authentication
 const getFetchOptions = (method = 'GET', body = null) => {

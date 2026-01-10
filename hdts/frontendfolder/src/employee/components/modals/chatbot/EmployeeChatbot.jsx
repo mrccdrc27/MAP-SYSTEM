@@ -6,6 +6,96 @@ import styles from "./EmployeeChatbot.module.css";
 import axios from 'axios';
 import { API_CONFIG } from '../../../../config/environment.js';
 
+// IndexedDB helper functions for storing files
+const DB_NAME = 'chatbot_files_db';
+const STORE_NAME = 'attachments';
+const DB_VERSION = 1;
+
+const openDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+  });
+};
+
+const saveFilesToDB = async (files) => {
+  try {
+    // Read all file data BEFORE opening transaction (to avoid transaction closing)
+    const fileData = await Promise.all(
+      files.map(async (file, i) => ({
+        id: i,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: await file.arrayBuffer()
+      }))
+    );
+    
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    
+    // Clear existing files first
+    store.clear();
+    
+    // Save each file (synchronously within transaction)
+    fileData.forEach(fd => store.put(fd));
+    
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    
+    db.close();
+    return true;
+  } catch (e) {
+    console.error('Error saving files to IndexedDB:', e);
+    return false;
+  }
+};
+
+const loadFilesFromDB = async () => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    
+    const files = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+    
+    // Convert stored data back to File objects
+    return files.map(f => new File([f.data], f.name, { type: f.type }));
+  } catch (e) {
+    console.error('Error loading files from IndexedDB:', e);
+    return [];
+  }
+};
+
+const clearFilesFromDB = async () => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    await new Promise((resolve) => { tx.oncomplete = resolve; });
+    db.close();
+  } catch (e) {
+    console.error('Error clearing files from IndexedDB:', e);
+  }
+};
+
 // Natural language date parser
 function parseNaturalDate(input) {
   const lowerInput = input.toLowerCase().trim();
@@ -208,8 +298,28 @@ const MOCK_ASSETS = {
 
 const DEVICE_TYPES = ['Laptop', 'Printer', 'Projector', 'Monitor', 'Other'];
 
+// Helper to load saved messages from localStorage
+const loadSavedMessages = () => {
+  try {
+    const saved = localStorage.getItem("chatbotMessages");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Restore Date objects for time fields
+        return parsed.map(msg => ({
+          ...msg,
+          time: msg.time ? new Date(msg.time) : new Date()
+        }));
+      }
+    }
+  } catch (e) {
+    console.error('Error loading saved messages:', e);
+  }
+  return [];
+};
+
 const EmployeeChatbot = ({ closeModal }) => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => loadSavedMessages());
   const [faqs, setFaqs] = useState([]);
   
   // Ticket creation conversation state
@@ -247,6 +357,7 @@ const EmployeeChatbot = ({ closeModal }) => {
   const messagesEndRef = useRef(null);
   const chatMessagesRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [menuOpenIndex, setMenuOpenIndex] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
@@ -292,8 +403,7 @@ const EmployeeChatbot = ({ closeModal }) => {
 
   useEffect(() => {
     try {
-      const isAuth = !!localStorage.getItem('loggedInUser');
-      if (!isAuth) return; // do not persist chat history for unauthenticated users
+      // Always persist chat history to localStorage
       localStorage.setItem("chatbotMessages", JSON.stringify(messages));
     } catch (e) {
       // ignore storage errors
@@ -700,8 +810,21 @@ const EmployeeChatbot = ({ closeModal }) => {
 
     switch (step) {
       case 'subject':
-        updatedData.subject = userInput;
-        botMessage = `Great! Your ticket subject is: "${userInput}"\n\nNow, please select a category for your ticket:`;
+        // Handle "keep" command when editing existing data
+        if (userInput.toLowerCase() === 'keep' && updatedData.subject) {
+          botMessage = `Keeping your subject: "${updatedData.subject}"\n\nNow, please select a category for your ticket:`;
+        } else {
+          // Validate subject length (minimum 5 characters)
+          const trimmedSubject = userInput.trim();
+          if (trimmedSubject.length < 5) {
+            botMessage = `❌ Subject must be at least 5 characters long. Your subject is ${trimmedSubject.length} character(s).\n\nPlease provide a longer subject:`;
+            nextStep = 'subject';
+            suggestions = [{ label: 'Cancel', type: 'cancel-ticket', value: 'cancel' }];
+            break;
+          }
+          updatedData.subject = trimmedSubject;
+          botMessage = `Great! Your ticket subject is: "${trimmedSubject}"\n\nNow, please select a category for your ticket:`;
+        }
         nextStep = 'category';
         suggestions = TICKET_CATEGORIES.map(cat => ({ label: cat, type: 'ticket-category', value: cat }));
         break;
@@ -912,12 +1035,79 @@ const EmployeeChatbot = ({ closeModal }) => {
         break;
 
       case 'description':
+        // Handle "keep" command when editing existing data
+        if (userInput.toLowerCase() === 'keep' && updatedData.description) {
+          // Keep existing description and proceed to summary
+          const trimmedInput = updatedData.description;
+          
+          // Build summary based on category
+          let summary = `Keeping your description.\n\n📋 Ticket Summary:\n\n`;
+          summary += `Subject: ${updatedData.subject}\n`;
+          summary += `Category: ${updatedData.category}\n`;
+          
+          if (updatedData.subCategory) {
+            summary += `Sub-category: ${updatedData.subCategory}\n`;
+          }
+          
+          if (updatedData.assetName) {
+            summary += `Asset: ${updatedData.assetName}\n`;
+            summary += `Serial Number: ${updatedData.serialNumber}\n`;
+          }
+          
+          if (updatedData.location) {
+            summary += `Location: ${updatedData.location}\n`;
+          }
+          
+          if (updatedData.expectedReturnDate) {
+            summary += `Expected Return: ${updatedData.expectedReturnDate}\n`;
+          }
+          
+          if (updatedData.issueType) {
+            summary += `Issue Type: ${updatedData.issueType}\n`;
+          }
+          
+          if (updatedData.deviceType) {
+            summary += `Device Type: ${updatedData.customDeviceType || updatedData.deviceType}\n`;
+          }
+          
+          if (updatedData.softwareAffected) {
+            summary += `Software Affected: ${updatedData.softwareAffected}\n`;
+          }
+          
+          if (updatedData.scheduledRequest) {
+            summary += `Schedule: ${updatedData.scheduledRequest}\n`;
+          }
+          
+          summary += `Description: ${trimmedInput}\n`;
+          
+          if (ticketCreation.attachments?.length > 0) {
+            summary += `\nAttachments: ${ticketCreation.attachments.length} file(s)\n`;
+          }
+          
+          summary += `\nWould you like me to prepare this ticket for you to review?`;
+          
+          botMessage = summary;
+          nextStep = 'confirm';
+          suggestions = [
+            { label: 'Yes, Prepare Ticket', type: 'ticket-confirm', value: 'yes' },
+            { label: 'No, Cancel', type: 'ticket-confirm', value: 'no' }
+          ];
+          break;
+        }
+        
         // Validate description is not empty and not placeholder text
         const trimmedInput = userInput.trim();
         const invalidDescriptions = ['none', 'n/a', 'na', 'skip', 'no', 'nothing', '-'];
         
         if (!trimmedInput || invalidDescriptions.includes(trimmedInput.toLowerCase())) {
           botMessage = `Description is required and cannot be empty. Please provide a meaningful description for this ticket:`;
+          nextStep = 'description';
+          break;
+        }
+        
+        // Validate description length (minimum 10 characters)
+        if (trimmedInput.length < 10) {
+          botMessage = `❌ Description must be at least 10 characters long. Your description is ${trimmedInput.length} character(s).\n\nPlease provide a more detailed description:`;
           nextStep = 'description';
           break;
         }
@@ -965,8 +1155,8 @@ const EmployeeChatbot = ({ closeModal }) => {
         botMessage = `${summary}\nWould you like to submit this ticket now or schedule it for later?`;
         nextStep = 'schedule_request';
         suggestions = [
-          { label: 'Submit Now', type: 'ticket-schedule', value: 'now' },
-          { label: 'Schedule for Later', type: 'ticket-schedule', value: 'later' }
+          { label: 'Submit Now', type: 'silent-schedule-now', value: 'now' },
+          { label: 'Schedule for Later', type: 'silent-schedule-later', value: 'later' }
         ];
         break;
 
@@ -976,8 +1166,8 @@ const EmployeeChatbot = ({ closeModal }) => {
           botMessage = `Great! Your ticket will be submitted immediately.\n\nDo you have any attachments (pictures, documents) you'd like to add?\n\n📎 Allowed: PNG, JPG, PDF, Word, Excel, CSV (max 10MB each)`;
           nextStep = 'attachments_prompt';
           suggestions = [
-            { label: 'Yes, Add Attachments', type: 'ticket-attachment-prompt', value: 'yes' },
-            { label: 'No Attachments', type: 'ticket-attachment-prompt', value: 'no' }
+            { label: 'Yes, Add Attachments', type: 'silent-add-attachments', value: 'yes' },
+            { label: 'No Attachments', type: 'silent-no-attachments', value: 'no' }
           ];
         } else if (userInput.toLowerCase().includes('later') || userInput.toLowerCase().includes('schedule')) {
           botMessage = `When would you like this ticket to be processed?`;
@@ -986,8 +1176,8 @@ const EmployeeChatbot = ({ closeModal }) => {
           botMessage = `Please choose whether to submit now or schedule for later:`;
           nextStep = 'schedule_request';
           suggestions = [
-            { label: 'Submit Now', type: 'ticket-schedule', value: 'now' },
-            { label: 'Schedule for Later', type: 'ticket-schedule', value: 'later' }
+            { label: 'Submit Now', type: 'silent-schedule-now', value: 'now' },
+            { label: 'Schedule for Later', type: 'silent-schedule-later', value: 'later' }
           ];
         }
         break;
@@ -1015,20 +1205,24 @@ const EmployeeChatbot = ({ closeModal }) => {
         botMessage = `Perfect! This ticket will be scheduled for ${scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.\n\nDo you have any attachments (pictures, documents) you'd like to add?\n\n📎 Allowed: PNG, JPG, PDF, Word, Excel, CSV (max 10MB each)`;
         nextStep = 'attachments_prompt';
         suggestions = [
-          { label: 'Yes, Add Attachments', type: 'ticket-attachment-prompt', value: 'yes' },
-          { label: 'No Attachments', type: 'ticket-attachment-prompt', value: 'no' }
+          { label: 'Yes, Add Attachments', type: 'silent-add-attachments', value: 'yes' },
+          { label: 'No Attachments', type: 'silent-no-attachments', value: 'no' }
         ];
         break;
 
       case 'attachments_prompt':
         if (userInput.toLowerCase().includes('yes')) {
-          botMessage = `Please upload your file.\n\nClick the 📎 icon below to select a file.\n\n✅ Allowed: PNG, JPG, PDF, Word, Excel, CSV\n📏 Max size: 10MB per file`;
+          botMessage = `Please upload your file.\n\nClick the button below or the 📎 icon to select a file.\n\n✅ Allowed: PNG, JPG, PDF, Word, Excel, CSV\n📏 Max size: 10MB per file`;
           nextStep = 'waiting_for_attachment';
+          suggestions = [
+            { label: '📎 Choose File', type: 'trigger-file-upload', value: 'upload' },
+            { label: 'Skip Attachments', type: 'skip-attachments', value: 'skip' }
+          ];
         } else {
           botMessage = `No attachments added.\n\nReady to submit your ticket?`;
           nextStep = 'confirm';
           suggestions = [
-            { label: 'Yes, Submit Ticket', type: 'ticket-confirm', value: 'yes' },
+            { label: 'Yes, Submit Ticket', type: 'confirm-submit', value: 'yes' },
             { label: 'Cancel', type: 'ticket-confirm', value: 'no' }
           ];
         }
@@ -1043,7 +1237,7 @@ const EmployeeChatbot = ({ closeModal }) => {
           botMessage = `Great! You've added ${attachmentCount} attachment(s).\n\nReady to submit your ticket?`;
           nextStep = 'confirm';
           suggestions = [
-            { label: 'Yes, Submit Ticket', type: 'ticket-confirm', value: 'yes' },
+            { label: 'Yes, Submit Ticket', type: 'confirm-submit', value: 'yes' },
             { label: 'Cancel', type: 'ticket-confirm', value: 'no' }
           ];
         }
@@ -1051,9 +1245,9 @@ const EmployeeChatbot = ({ closeModal }) => {
 
       case 'confirm':
         if (userInput.toLowerCase().includes('yes') || userInput.toLowerCase() === 'y') {
-          // Submit the ticket
-          await submitTicketFromChat(updatedData, ticketCreation.attachments);
-          return; // submitTicketFromChat handles the response
+          // Save prefilled ticket data (instead of submitting directly)
+          await savePrefilledTicket(updatedData, ticketCreation.attachments);
+          return; // savePrefilledTicket handles the response
         } else {
           botMessage = `No problem! Ticket creation cancelled. How else can I help you?`;
           setTicketCreation({ active: false, step: null, data: {}, attachments: [] });
@@ -1089,95 +1283,68 @@ const EmployeeChatbot = ({ closeModal }) => {
     setIsTyping(false);
   };
 
-  // Submit ticket from chat conversation
-  const submitTicketFromChat = async (ticketData, attachments = []) => {
+  // Save prefilled ticket data to localStorage and show view button
+  const savePrefilledTicket = async (ticketData, attachments = []) => {
     try {
-      const { backendTicketService } = await import('../../../../services/backend/ticketService');
-      
-      const payload = {
-        subject: ticketData.subject,
-        category: ticketData.category,
-        description: ticketData.description,
+      // Build the prefill object for the ticket submission form
+      const prefillData = {
+        subject: ticketData.subject || '',
+        category: ticketData.category || '',
+        subCategory: ticketData.subCategory || '',
+        description: ticketData.description || '',
+        deviceType: ticketData.customDeviceType || ticketData.deviceType || '',
+        customDeviceType: ticketData.customDeviceType || '',
+        softwareAffected: ticketData.softwareAffected || '',
+        assetName: ticketData.assetName || '',
+        serialNumber: ticketData.serialNumber || '',
+        location: ticketData.location || '',
+        expectedReturnDate: ticketData.expectedReturnDate || '',
+        issueType: ticketData.issueType || '',
+        otherIssue: ticketData.otherIssue || '',
+        schedule: ticketData.scheduledRequest || '',
+        // Files are stored separately in IndexedDB
+        hasAttachments: attachments && attachments.length > 0,
+        attachmentCount: attachments ? attachments.length : 0,
+        attachmentNames: attachments ? attachments.map(f => f.name) : [],
+        createdAt: new Date().toISOString(),
       };
-      
-      // Build dynamic_data object for category-specific fields
-      const dynamicData = {};
-      
-      // Add scheduled request to dynamic_data if provided
-      if (ticketData.scheduledRequest) {
-        dynamicData.scheduleRequest = {
-          date: ticketData.scheduledRequest,
-          time: '',
-          notes: ''
-        };
-      }
-      
-      // Add category-specific fields to dynamic_data
-      if (ticketData.subCategory) {
-        payload.sub_category = ticketData.subCategory;
-      }
-      
-      if (ticketData.assetName) {
-        dynamicData.assetName = ticketData.assetName;
-      }
-      
-      if (ticketData.serialNumber) {
-        dynamicData.serialNumber = ticketData.serialNumber;
-      }
-      
-      if (ticketData.location) {
-        dynamicData.location = ticketData.location;
-      }
-      
-      if (ticketData.expectedReturnDate) {
-        dynamicData.expectedReturnDate = ticketData.expectedReturnDate;
-      }
-      
-      if (ticketData.issueType) {
-        dynamicData.issueType = ticketData.issueType;
-      }
-      
-      if (ticketData.otherIssue) {
-        dynamicData.otherIssue = ticketData.otherIssue;
-      }
-      
-      if (ticketData.deviceType) {
-        dynamicData.deviceType = ticketData.customDeviceType || ticketData.deviceType;
-      }
-      
-      if (ticketData.softwareAffected) {
-        dynamicData.softwareAffected = ticketData.softwareAffected;
-      }
 
-      console.log('Submitting ticket from chatbot:', payload);
-      console.log('Dynamic data:', dynamicData);
-      console.log('Attachments:', attachments);
+      // Save to localStorage
+      localStorage.setItem('chatbot_prefilled_ticket', JSON.stringify(prefillData));
       
-      // Create FormData (always use FormData to support both files and dynamic_data)
-      const formData = new FormData();
-      
-      // Add basic payload fields
-      formData.append('subject', payload.subject);
-      formData.append('category', payload.category);
-      formData.append('sub_category', payload.sub_category || '');
-      formData.append('description', payload.description);
-      
-      // Add dynamic_data as JSON string
-      if (Object.keys(dynamicData).length > 0) {
-        formData.append('dynamic_data', JSON.stringify(dynamicData));
-      }
-      
-      // Add attachments with the correct key
+      // Save files to IndexedDB if there are attachments
       if (attachments && attachments.length > 0) {
-        attachments.forEach((file) => {
-          formData.append('files[]', file);
-        });
+        await saveFilesToDB(attachments);
       }
       
-      const response = await backendTicketService.createTicket(formData);
+      console.log('Prefilled ticket saved to localStorage:', prefillData);
       
-      const ticketNumber = response.ticket_number || response.id;
-      const successMessage = `✅ Your ticket has been submitted successfully!\n\nTicket Number: ${ticketNumber}\n\nYou can track this ticket and all your other tickets in the "My Tickets" section.`;
+      // Build summary message
+      let summaryLines = [
+        `✅ Your ticket is ready for review!`,
+        ``,
+        `📋 Summary:`,
+        `• Subject: ${prefillData.subject}`,
+        `• Category: ${prefillData.category}`,
+      ];
+      
+      if (prefillData.subCategory) {
+        summaryLines.push(`• Sub-Category: ${prefillData.subCategory}`);
+      }
+      if (prefillData.deviceType) {
+        summaryLines.push(`• Device Type: ${prefillData.deviceType}`);
+      }
+      if (prefillData.schedule) {
+        summaryLines.push(`• Schedule: ${prefillData.schedule}`);
+      }
+      if (prefillData.hasAttachments) {
+        summaryLines.push(`• Attachments: ${prefillData.attachmentCount} file(s) included`);
+      }
+      
+      summaryLines.push(``);
+      summaryLines.push(`Click "View Ticket" to review and submit your ticket.`);
+      
+      const successMessage = summaryLines.join('\n');
       
       setMessages((prev) => [
         ...prev,
@@ -1186,9 +1353,8 @@ const EmployeeChatbot = ({ closeModal }) => {
           sender: "bot",
           time: new Date(),
           suggestions: [
-            { label: 'View Requested Ticket', type: 'redirect', route: `/employee/ticket-tracker/${ticketNumber}` },
-            { label: 'Submit Another Ticket', type: 'start-ticket', value: 'new' },
-            { label: 'Browse FAQs', type: 'redirect', route: '/employee/frequently-asked-questions' }
+            { label: 'View Ticket', type: 'redirect', route: '/employee/submit-ticket' },
+            { label: 'Start Chat Again', type: 'reset-chat', value: 'reset' }
           ],
         },
       ]);
@@ -1196,11 +1362,11 @@ const EmployeeChatbot = ({ closeModal }) => {
       // Reset ticket creation state
       setTicketCreation({ active: false, step: null, data: {}, attachments: [] });
     } catch (error) {
-      console.error('Error submitting ticket from chat:', error);
+      console.error('Error saving prefilled ticket:', error);
       setMessages((prev) => [
         ...prev,
         {
-          text: `❌ Sorry, there was an error submitting your ticket: ${error.message}\n\nPlease try again or use the ticket submission form.`,
+          text: `❌ Sorry, there was an error preparing your ticket: ${error.message}\n\nPlease try again or use the ticket submission form directly.`,
           sender: "bot",
           time: new Date(),
           suggestions: [
@@ -1216,25 +1382,124 @@ const EmployeeChatbot = ({ closeModal }) => {
     }
   };
 
-  // Start ticket creation conversation
-  const startTicketCreation = () => {
+  // Check if there's an existing prefilled ticket
+  const checkExistingPrefill = () => {
+    try {
+      const existing = localStorage.getItem('chatbot_prefilled_ticket');
+      if (existing) {
+        return JSON.parse(existing);
+      }
+    } catch (e) {
+      console.error('Error checking existing prefill:', e);
+    }
+    return null;
+  };
+
+  // Start ticket creation conversation - optionally from a specific step with existing data
+  const startTicketCreation = (fromStep = null, existingData = null) => {
+    // Check if there's already a prefilled ticket
+    const existingPrefill = checkExistingPrefill();
+    
+    if (existingPrefill && !fromStep && !existingData) {
+      // Show options to continue with existing, edit, or start fresh
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: `📋 I found a ticket you started earlier:\n\n• Subject: "${existingPrefill.subject}"\n• Category: ${existingPrefill.category}\n\nWhat would you like to do?`,
+          sender: "bot",
+          time: new Date(),
+          suggestions: [
+            { label: 'View & Submit It', type: 'redirect', route: '/employee/submit-ticket' },
+            { label: 'Edit Subject', type: 'edit-prefill-field', value: 'subject' },
+            { label: 'Edit Category', type: 'edit-prefill-field', value: 'category' },
+            { label: 'Edit Description', type: 'edit-prefill-field', value: 'description' },
+            { label: 'Start Fresh', type: 'clear-prefill-and-start', value: 'new' }
+          ],
+        },
+      ]);
+      return;
+    }
+
+    // Start from a specific step with existing data (for editing)
+    const step = fromStep || 'subject';
+    const data = existingData || {};
+    
     setTicketCreation({
       active: true,
-      step: 'subject',
-      data: {},
+      step: step,
+      data: data,
+      attachments: [],
     });
+    
+    // Generate the appropriate message for the step
+    let stepMessage = '';
+    let suggestions = [{ label: 'Cancel', type: 'cancel-ticket', value: 'cancel' }];
+    
+    switch (step) {
+      case 'subject':
+        stepMessage = data.subject 
+          ? `Your current subject is: "${data.subject}"\n\nPlease enter a new subject or type "keep" to keep it:`
+          : "Let's create a ticket together! 🎫\n\nFirst, what would you like the subject of your ticket to be?\n\n(Please provide a brief, clear subject line)";
+        break;
+      case 'category':
+        stepMessage = `Please select a category for your ticket:`;
+        suggestions = [
+          ...TICKET_CATEGORIES.map(cat => ({ label: cat, type: 'ticket-category', value: cat })),
+          { label: 'Cancel', type: 'cancel-ticket', value: 'cancel' }
+        ];
+        break;
+      case 'description':
+        stepMessage = data.description
+          ? `Your current description is:\n"${data.description}"\n\nPlease enter a new description or type "keep" to keep it:`
+          : "Please provide a detailed description of your issue or request:";
+        break;
+      default:
+        stepMessage = "Let's create a ticket together! 🎫\n\nFirst, what would you like the subject of your ticket to be?\n\n(Please provide a brief, clear subject line)";
+    }
     
     setMessages((prev) => [
       ...prev,
       {
-        text: "Let's create a ticket together! 🎫\n\nFirst, what would you like the subject of your ticket to be?\n\n(Please provide a brief, clear subject line)",
+        text: stepMessage,
         sender: "bot",
         time: new Date(),
-        suggestions: [
-          { label: 'Cancel', type: 'cancel-ticket', value: 'cancel' }
-        ],
+        suggestions,
       },
     ]);
+  };
+
+  // Edit a specific field in the prefilled ticket
+  const editPrefilledField = (fieldName) => {
+    const existingPrefill = checkExistingPrefill();
+    if (!existingPrefill) {
+      // No existing prefill, start fresh
+      startTicketCreation();
+      return;
+    }
+    
+    // Convert localStorage prefill to ticket creation data format
+    const existingData = {
+      subject: existingPrefill.subject || '',
+      category: existingPrefill.category || '',
+      subCategory: existingPrefill.subCategory || '',
+      description: existingPrefill.description || '',
+      deviceType: existingPrefill.deviceType || '',
+      customDeviceType: existingPrefill.customDeviceType || '',
+      softwareAffected: existingPrefill.softwareAffected || '',
+      assetName: existingPrefill.assetName || '',
+      serialNumber: existingPrefill.serialNumber || '',
+      location: existingPrefill.location || '',
+      expectedReturnDate: existingPrefill.expectedReturnDate || '',
+      issueType: existingPrefill.issueType || '',
+      otherIssue: existingPrefill.otherIssue || '',
+      scheduledRequest: existingPrefill.schedule || '',
+    };
+    
+    // Clear the prefilled ticket from localStorage (we'll save it again after editing)
+    localStorage.removeItem('chatbot_prefilled_ticket');
+    
+    // Start from the specified field
+    startTicketCreation(fieldName, existingData);
   };
 
   const getDefaultSuggestions = () => [
@@ -1439,6 +1704,13 @@ const EmployeeChatbot = ({ closeModal }) => {
                     navigate(sugg.route, { state: { prefill } });
                   } else if (sugg.type === 'start-ticket') {
                     startTicketCreation();
+                  } else if (sugg.type === 'clear-prefill-and-start') {
+                    // Clear any existing prefilled ticket data and start fresh
+                    localStorage.removeItem('chatbot_prefilled_ticket');
+                    startTicketCreation(null, null);
+                  } else if (sugg.type === 'edit-prefill-field') {
+                    // Edit a specific field in the prefilled ticket
+                    editPrefilledField(sugg.value);
                   } else if (sugg.type === 'cancel-ticket') {
                     setTicketCreation({ active: false, step: null, data: {} });
                     setMessages((prev) => [
@@ -1450,16 +1722,49 @@ const EmployeeChatbot = ({ closeModal }) => {
                         suggestions: getDefaultSuggestions(),
                       },
                     ]);
-                  } else if (sugg.type === 'ticket-category' || sugg.type === 'ticket-subcategory' || sugg.type === 'ticket-device' || sugg.type === 'ticket-confirm' || sugg.type === 'ticket-asset' || sugg.type === 'ticket-location' || sugg.type === 'ticket-issue' || sugg.type === 'ticket-description' || sugg.type === 'ticket-schedule' || sugg.type === 'ticket-attachment-prompt' || sugg.type === 'ticket-attachment-more') {
-                    // Auto-send selection without populating input field
+                  } else if (sugg.type === 'ticket-category' || sugg.type === 'ticket-subcategory' || sugg.type === 'ticket-device' || sugg.type === 'ticket-confirm' || sugg.type === 'ticket-asset' || sugg.type === 'ticket-location' || sugg.type === 'ticket-issue' || sugg.type === 'ticket-description' || sugg.type === 'ticket-attachment-more') {
+                    // Auto-send selection WITH user message (for selections like categories, subcategories)
                     const userMsg = {
-                      text: sugg.value,
+                      text: sugg.label || sugg.value, // Use label for display, fallback to value
                       sender: "user",
                       time: new Date(),
                     };
                     setMessages((prev) => [...prev, userMsg]);
                     setIsTyping(true);
                     handleTicketCreationStep(sugg.value);
+                  } else if (sugg.type === 'trigger-file-upload') {
+                    // Trigger file input click
+                    if (fileInputRef.current) {
+                      fileInputRef.current.click();
+                    }
+                  } else if (sugg.type === 'skip-attachments') {
+                    // Skip attachments without showing user message, go directly to confirm
+                    setIsTyping(true);
+                    handleTicketCreationStep('no'); // Triggers the 'no' path in attachments_more
+                  } else if (sugg.type === 'confirm-submit') {
+                    // Confirm and submit without showing "yes" as user message
+                    setIsTyping(true);
+                    handleTicketCreationStep('yes'); // Triggers the confirm path
+                  } else if (sugg.type === 'silent-schedule-now') {
+                    // Submit now without showing user message
+                    setIsTyping(true);
+                    handleTicketCreationStep('now');
+                  } else if (sugg.type === 'silent-schedule-later') {
+                    // Schedule for later without showing user message
+                    setIsTyping(true);
+                    handleTicketCreationStep('later');
+                  } else if (sugg.type === 'silent-add-attachments') {
+                    // Add attachments without showing user message
+                    setIsTyping(true);
+                    handleTicketCreationStep('yes');
+                  } else if (sugg.type === 'silent-no-attachments') {
+                    // No attachments without showing user message
+                    setIsTyping(true);
+                    handleTicketCreationStep('no');
+                  } else if (sugg.type === 'reset-chat') {
+                    // Reset chat to welcome message
+                    setMessages([welcomeMessage]);
+                    setTicketCreation({ active: false, step: null, data: {}, attachments: [] });
                   }
                 }}
               >
@@ -1513,7 +1818,7 @@ const EmployeeChatbot = ({ closeModal }) => {
         <div className={styles["chat-input-container"]}>
           <div className={styles["chat-input-area"]}>
             <label className={styles["upload-btn"]}>
-              <input type="file" onChange={handleFileUpload} hidden />
+              <input type="file" onChange={handleFileUpload} hidden ref={fileInputRef} />
               <FiPaperclip className={styles["upload-icon"]} />
             </label>
             <input

@@ -10,7 +10,7 @@ const SIZE_MAP = {
   full: '100vw',
 };
 
-const ModalWrapper = ({ children, onClose, className, contentProps = {}, size, maxWidth, disableEscClose = false, disableOutsideClick = false }) => {
+const ModalWrapper = ({ children, onClose, className, contentProps = {}, size, maxWidth, disableEscClose = false, disableOutsideClick = false, hideCloseButton = false }) => {
   // Lock background scroll while modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -62,7 +62,7 @@ const ModalWrapper = ({ children, onClose, className, contentProps = {}, size, m
   return ReactDOM.createPortal(
     <div className={styles["modal-overlay"]} onClick={handleOverlayClick}>
       <div className={contentClass} {...mergedContentProps}>
-        {onClose && (
+        {onClose && !hideCloseButton && (
           <button aria-label="Close modal" className={styles['modal-close']} onClick={() => onClose?.()}>
             ×
           </button>

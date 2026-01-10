@@ -1,0 +1,114 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 24px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 640px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.2);
+  /* add extra top padding so the close button sits inside but away from content */
+  padding: 40px 20px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; /* tighter spacing */
+  transform-origin: center center;
+  transform: scale(0.96);
+  opacity: 0;
+  animation: modalScaleIn 220ms cubic-bezier(.2,.9,.3,1) forwards;
+}
+
+.successIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 0 8px; /* less bottom spacing */
+  background: #10B981;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+/* Success pop + check reveal animation */
+.successIcon {
+  transform: scale(0.8);
+  animation: popIn 420ms cubic-bezier(.2,.9,.3,1) forwards;
+}
+
+.check {
+  display: inline-block;
+  transform: scale(0.2) rotate(-15deg);
+  opacity: 0;
+  color: white;
+  animation: revealCheck 360ms cubic-bezier(.2,.9,.3,1) 220ms forwards;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes revealCheck {
+  0% { transform: scale(0.2) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.05) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.modalTitle {
+  /* use EmployeeHome ticket subject sizing for modal title */
+  font-size: 0.9375rem; /* ~15px */
+  font-weight: 700;
+  color: #0C0C0C;
+  margin: 4px 0 6px;
+}
+.modalSubtitle {
+  /* use EmployeeHome ticket value sizing for modal subtitle */
+  font-size: 0.8125rem; /* ~13px */
+  color: #6B7280;
+  margin: 0 0 12px;
+  max-width: 520px;
+}
+
+.modalPrimary {
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 0; /* allow button to flex to available space */
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modalActions {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.modalActions > button {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: auto;
+  max-width: 240px;
+}
+
+@keyframes modalScaleIn {
+  0% { transform: scale(0.96); opacity: 0; }
+  60% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}

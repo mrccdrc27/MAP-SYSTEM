@@ -17,10 +17,57 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.reverse import reverse
 
 from ..authentication import CookieJWTAuthentication, ExternalUser
-from ..models import Ticket, TicketAttachment, TicketComment, ActivityLog, PRIORITY_LEVELS, DEPARTMENT_CHOICES
+from ..models import Ticket, TicketAttachment, TicketComment, ActivityLog, EmployeeNotification, PRIORITY_LEVELS, DEPARTMENT_CHOICES
 from ..serializers import TicketSerializer, TicketAttachmentSerializer
 from .permissions import IsAdminOrCoordinator, IsEmployeeOrAdmin
 from .helpers import _actor_display_name, get_external_employee_data
+
+
+def create_employee_notification(ticket, notification_type, title=None, message=None, actor_name=None):
+    """
+    Helper function to create employee notifications.
+    Uses the ticket's employee_cookie_id as the notification recipient.
+    """
+    try:
+        employee_id = getattr(ticket, 'employee_cookie_id', None)
+        if not employee_id and ticket.employee:
+            employee_id = ticket.employee.id
+        
+        if not employee_id:
+            return None
+        
+        if notification_type == 'ticket_submitted':
+            return EmployeeNotification.create_ticket_submitted_notification(employee_id, ticket)
+        elif notification_type in ['ticket_approved', 'ticket_rejected', 'ticket_in_progress', 
+                                   'ticket_on_hold', 'ticket_resolved', 'ticket_closed', 'ticket_withdrawn']:
+            # Map notification type to status
+            status_map = {
+                'ticket_approved': 'Open',
+                'ticket_rejected': 'Rejected',
+                'ticket_in_progress': 'In Progress',
+                'ticket_on_hold': 'On Hold',
+                'ticket_resolved': 'Resolved',
+                'ticket_closed': 'Closed',
+                'ticket_withdrawn': 'Withdrawn',
+            }
+            status_value = status_map.get(notification_type)
+            return EmployeeNotification.create_ticket_status_notification(employee_id, ticket, status_value, actor_name)
+        elif notification_type in ['new_reply', 'owner_reply']:
+            return EmployeeNotification.create_reply_notification(employee_id, ticket, actor_name)
+        else:
+            # Custom notification
+            if title and message:
+                return EmployeeNotification.create_notification(
+                    employee_id=employee_id,
+                    notification_type=notification_type,
+                    title=title,
+                    message=message,
+                    ticket=ticket,
+                    link_type='ticket'
+                )
+    except Exception as e:
+        print(f"[Notification] Error creating notification: {e}")
+        return None
 
 
 class TicketViewSet(viewsets.ModelViewSet):
@@ -195,6 +242,10 @@ class TicketViewSet(viewsets.ModelViewSet):
             user = self.request.user
             print(f"[perform_create] ExternalUser profile: {user.first_name} {user.last_name}, {user.department}, {user.company_id}")
             ticket = serializer.save(employee=None, employee_cookie_id=user.id)
+            
+            # Create notification for ticket submission (ExternalUser)
+            create_employee_notification(ticket, 'ticket_submitted')
+            
             return ticket
         else:
             ticket = serializer.save(employee=self.request.user)
@@ -209,6 +260,10 @@ class TicketViewSet(viewsets.ModelViewSet):
                 )
             except Exception:
                 pass
+            
+            # Create notification for ticket submission
+            create_employee_notification(ticket, 'ticket_submitted')
+            
             return ticket
         
     def perform_update(self, serializer):
@@ -798,6 +853,12 @@ def add_ticket_comment(request, ticket_id):
             'attachment_type': comment.attachment_type,
         }
 
+        # Create notification for reply if it's from ticket owner (admin/coordinator) to employee
+        # Only notify the employee if the comment is from someone else and not internal
+        if not is_internal and is_admin_or_coordinator and not is_ticket_owner:
+            replier_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip() or 'Support Team'
+            create_employee_notification(ticket, 'owner_reply', actor_name=replier_name)
+
         return Response(comment_data, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -993,6 +1054,9 @@ def approve_ticket(request, ticket_id):
                 is_internal=True  # Internal note about assignment
             )
 
+        # Create notification for ticket approval
+        create_employee_notification(ticket, 'ticket_approved', actor_name=user_display_name)
+
         return Response({
             'message': 'Ticket approved successfully',
             'ticket_id': ticket.id,
@@ -1053,6 +1117,9 @@ def reject_ticket(request, ticket_id):
                 comment=f"Ticket rejected by {user_display_name}. Reason: {rejection_reason}",
                 is_internal=True
             )
+        
+        # Create notification for ticket rejection
+        create_employee_notification(ticket, 'ticket_rejected', actor_name=user_display_name)
         
         return Response({
             'message': 'Ticket rejected successfully',
@@ -1176,6 +1243,19 @@ def update_ticket_status(request, ticket_id):
         except Exception:
             pass
         
+        # Create notification for status change (exclude Open and Rejected as they have specific handlers)
+        if new_status not in ['Open', 'Rejected', 'New']:
+            notification_type_map = {
+                'In Progress': 'ticket_in_progress',
+                'On Hold': 'ticket_on_hold',
+                'Resolved': 'ticket_resolved',
+                'Closed': 'ticket_closed',
+            }
+            notif_type = notification_type_map.get(new_status)
+            if notif_type:
+                user_display_name = _actor_display_name(request)
+                create_employee_notification(ticket, notif_type, actor_name=user_display_name)
+        
         return Response({
             'message': 'Ticket status updated successfully',
             'ticket_id': ticket.id,
@@ -1234,6 +1314,9 @@ def withdraw_ticket(request, ticket_id):
                 comment=withdrawal_comment,
                 is_internal=False
             )
+        
+        # Create notification for withdrawal
+        create_employee_notification(ticket, 'ticket_withdrawn', actor_name=user_display_name)
         
         return Response({
             'message': 'Ticket withdrawn successfully',

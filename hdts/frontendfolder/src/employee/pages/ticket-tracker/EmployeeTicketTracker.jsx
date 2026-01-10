@@ -831,17 +831,20 @@ export default function EmployeeTicketTracker() {
   }
 
   // Success handlers to add new log entries without reloading the page
-  const handleWithdrawSuccess = (tNum, newStatus) => {
+  const handleWithdrawSuccess = async (tNum, newStatus) => {
     try {
       const ts = new Date().toISOString();
       const keyNum = tNum || num;
       appendStatusHistory(keyNum, { status: newStatus, timestamp: ts, user: 'You', source: 'Portal' });
       // Update in-memory ticket so header/status badges refresh
       try {
-        // mutate shallow copy in state if possible
-        // eslint-disable-next-line no-unused-vars
         setShowWithdrawModal(false);
         setActiveTab('logs');
+        // Refetch the ticket to get updated status
+        if (ticketNumber) {
+          const fetched = await backendTicketService.getTicketByNumber(ticketNumber);
+          if (fetched) setTicket(fetched);
+        }
       } catch (_) {}
     } catch (e) {
       // ignore

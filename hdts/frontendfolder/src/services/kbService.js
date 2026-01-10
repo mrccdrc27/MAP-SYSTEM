@@ -349,16 +349,11 @@ export const updateArticle = (id, patch = {}) => {
 export const archiveArticle = (articleId) => {
   // Prefer backend custom archive endpoint, fallback to updateArticle
   return backendArticleService.archiveArticle(articleId)
-    .then(a => ({
-      id: a.id,
-      title: a.title || a.name,
-      content: a.content || a.body || a.description,
-      category_id: a.category_id || (a.category && a.category.id) || a.category,
-      visibility: normalizeVisibility(a.visibility || a.access || 'Employee'),
-      date_created: a.date_created || a.created_at || new Date().toISOString(),
-      date_modified: a.date_modified || a.updated_at || new Date().toISOString(),
-      archived: !!a.archived || !!a.is_archived || false,
-    }))
+    .then(response => {
+      // Backend returns { detail: 'Article archived successfully.' }
+      // Just return success indicator with the article id
+      return { id: articleId, archived: true, success: true };
+    })
     .catch(() => {
       // fallback to mock behavior
       const idx = mockArticles.findIndex(a => a.id === Number(articleId));
