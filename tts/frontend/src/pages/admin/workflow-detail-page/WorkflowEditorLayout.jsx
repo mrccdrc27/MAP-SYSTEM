@@ -116,6 +116,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
     onStepClick,
     onEdgeClick,
     onPaneClick,
+    onNodeUpdate,
     handleUpdateStep,
     handleUpdateTransition,
     handleWorkflowConfigUpdate,
@@ -195,80 +196,84 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
           onTabChange={handleTabChange}
         />
 
-        {/* Content Area */}
-        {activeTab === 'editor' ? (
-          /* Editor View - Three column layout */
-          <div className={styles.simpleMode}>
-            <div className={styles.simpleLayout}>
-              {/* LEFT SIDEBAR - Workflow Info */}
-              <WorkflowInfoSidebar workflowData={workflowData} />
+        {/* Content Area - Both views rendered but only one visible to preserve state */}
+        
+        {/* Editor View - Three column layout (hidden when not active) */}
+        <div 
+          className={styles.simpleMode}
+          style={{ display: activeTab === 'editor' ? 'flex' : 'none' }}
+        >
+          <div className={styles.simpleLayout}>
+            {/* LEFT SIDEBAR - Workflow Info */}
+            <WorkflowInfoSidebar workflowData={workflowData} />
 
-              {/* CENTER PANEL - Flow Editor */}
-              <main className={styles.centerPanel}>
-                {/* Flow Canvas */}
-                <div className={styles.flowContainer} style={{ flex: 1, minHeight: '400px' }}>
-                  <WorkflowEditorContent
-                    ref={contentRef}
-                    workflowId={actualWorkflowId}
-                    workflowData={workflowData}
-                    roles={roles}
-                    onStepClick={onStepClick}
-                    onEdgeClick={onEdgeClick}
-                    onPaneClick={onPaneClick}
-                    isEditingGraph={isEditingGraph}
-                    setHasUnsavedChanges={setHasUnsavedChanges}
-                    onToggleEditing={() => setIsEditingGraph(!isEditingGraph)}
-                    onSave={handleSave}
-                    onAddStep={() => handleAddStep()}
-                    isSaving={isSaving}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                  />
-                </div>
-              </main>
+            {/* CENTER PANEL - Flow Editor */}
+            <main className={styles.centerPanel}>
+              {/* Flow Canvas */}
+              <div className={styles.flowContainer} style={{ flex: 1, minHeight: '400px' }}>
+                <WorkflowEditorContent
+                  ref={contentRef}
+                  workflowId={actualWorkflowId}
+                  workflowData={workflowData}
+                  roles={roles}
+                  onStepClick={onStepClick}
+                  onEdgeClick={onEdgeClick}
+                  onPaneClick={onPaneClick}
+                  onNodeUpdate={onNodeUpdate}
+                  isEditingGraph={isEditingGraph}
+                  setHasUnsavedChanges={setHasUnsavedChanges}
+                  onToggleEditing={() => setIsEditingGraph(!isEditingGraph)}
+                  onSave={handleSave}
+                  onAddStep={() => handleAddStep()}
+                  isSaving={isSaving}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                />
+              </div>
+            </main>
 
-              {/* RIGHT SIDEBAR - Selection Editor & Validation */}
-              <aside className={styles.rightSidebar}>
-                {/* Validation Panel - Using shared component */}
-                <ValidationPanel errors={validationErrors} />
-                
-                {/* Selection Panel */}
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                  <WorkflowEditorSidebar
-                    selectedElement={selectedElement}
-                    workflowData={workflowData}
-                    roles={roles}
-                    onUpdateStep={handleUpdateStep}
-                    onUpdateTransition={handleUpdateTransition}
-                    onDeleteStep={handleDeleteStep}
-                    onDeleteTransition={handleDeleteTransition}
-                    onClose={() => setSelectedElement(null)}
-                  />
-                </div>
-              </aside>
-            </div>
+            {/* RIGHT SIDEBAR - Selection Editor & Validation */}
+            <aside className={styles.rightSidebar}>
+              {/* Validation Panel - Using shared component */}
+              <ValidationPanel errors={validationErrors} />
+              
+              {/* Selection Panel */}
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                <WorkflowEditorSidebar
+                  selectedElement={selectedElement}
+                  workflowData={workflowData}
+                  roles={roles}
+                  onUpdateStep={handleUpdateStep}
+                  onUpdateTransition={handleUpdateTransition}
+                  onDeleteStep={handleDeleteStep}
+                  onDeleteTransition={handleDeleteTransition}
+                  onClose={() => setSelectedElement(null)}
+                />
+              </div>
+            </aside>
           </div>
-        ) : (
-          /* Configuration View - Full screen */
+        </div>
+
+        {/* Configuration View - Full screen (hidden when not active) */}
+        <div style={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          padding: 0,
+          background: 'var(--bg-content-color)',
+          display: activeTab === 'config' ? 'block' : 'none'
+        }}>
           <div style={{ 
-            flex: 1, 
-            overflow: 'auto', 
-            padding: 0,
-            background: 'var(--bg-content-color)'
+            background: 'var(--bg1-color)',
+            borderRadius: '8px',
+            boxShadow: 'var(--shadow)',
+            overflow: 'hidden'
           }}>
-            <div style={{ 
-              background: 'var(--bg1-color)',
-              borderRadius: '8px',
-              boxShadow: 'var(--shadow)',
-              overflow: 'hidden'
-            }}>
-              <WorkflowConfigPanel
-                workflow={workflowData?.workflow}
-                workflowId={actualWorkflowId}
-                onUpdate={handleWorkflowConfigUpdate}
-              />
-            </div>
+            <WorkflowConfigPanel
+              workflow={workflowData?.workflow}
+              workflowId={actualWorkflowId}
+              onUpdate={handleWorkflowConfigUpdate}
+            />
           </div>
-        )}
+        </div>
       </ReactFlowProvider>
 
       {/* Confirmation Dialog */}
