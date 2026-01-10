@@ -2,7 +2,7 @@
 import styles from "./admin-nav.module.css";
 
 // react
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 // modal
@@ -23,9 +23,10 @@ export default function AdminNav() {
   const location = useLocation();
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const [openNotifModal, setOpenNotifModal] = useState(false);
-  
+
   // Use shared notification context (single WebSocket connection)
-  const { notifications, fetchNotifications, wsConnected, unreadCount } = useNotificationContext();
+  const { notifications, fetchNotifications, wsConnected, unreadCount } =
+    useNotificationContext();
   // nav hide on scroll
   const [hideNav, setHideNav] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -95,21 +96,19 @@ export default function AdminNav() {
     <>
       <nav className={`${styles.navBar} ${hideNav ? styles.hide : ""}`}>
         {/* logo */}
-        <div className={styles.logoSection}>
-          <div className={styles.logoImg}>
-            <img
-              src="/map-logo.png" // relative to the public folder
-              alt="logo"
-            />
+        <Link to="/dashboard" className={styles.logoLink}>
+          <div className={styles.logoSection}>
+            <div className={styles.logoImg}>
+              <img src="/map-logo.png" alt="logo" />
+            </div>
+
+            <p>
+              <span>TicketFlow</span>
+            </p>
+
+            <span className={styles.anAdminLogo}>admin</span>
           </div>
-
-          <p>
-            {/* Ticket<span>Flow</span> */}
-            <span>TicketFlow</span>
-          </p>
-
-          <span className={styles.anAdminLogo}>admin</span>
-        </div>
+        </Link>
 
         {/* nav-links */}
         <div className={`${styles.navLinks} ${menuOpen ? styles.active : ""}`}>
@@ -192,9 +191,7 @@ export default function AdminNav() {
         </div>
 
         {openNotifModal && (
-          <Notification
-            closeNotifAction={() => setOpenNotifModal(false)}
-          />
+          <Notification closeNotifAction={() => setOpenNotifModal(false)} />
         )}
         {openProfileModal && (
           <AdminProfileModal

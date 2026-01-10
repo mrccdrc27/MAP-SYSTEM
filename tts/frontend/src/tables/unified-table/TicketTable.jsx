@@ -17,7 +17,7 @@ const ticketHeaders = [
   "TITLE",
   "DESCRIPTION",
   "PRIORITY",
-  "STATUS",
+  "TASK STATUS",
   // "CATEGORY",
   "OPENED ON",
   "TARGET RESOLUTION",

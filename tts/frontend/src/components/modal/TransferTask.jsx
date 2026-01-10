@@ -366,7 +366,7 @@ export default function TransferTask({
           {success && (
             <div className={styles.ttSuccessMessage}>
               <i className="fa-solid fa-circle-check"></i>
-              <p>✅ Task transferred successfully!</p>
+              <p>Task transferred successfully!</p>
             </div>
           )}
         </div>
