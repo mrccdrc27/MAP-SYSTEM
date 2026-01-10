@@ -97,18 +97,23 @@ export default function ToDoTickets({ tickets = [] }) {
                 .toLowerCase();
               const allowed = ["critical", "high", "medium", "low"];
               const prio = allowed.includes(priorityRaw) ? priorityRaw : "low";
+              
+              // Build URL with task_item_id for proper task identification
+              const ticketUrl = t.task_item_id 
+                ? `/ticket/${t.ticket_number}?task_item_id=${t.task_item_id}`
+                : `/ticket/${t.ticket_number}`;
 
               return (
                 <div
-                  key={t.ticket_id || t.ticket_no || t.ticket_number}
+                  key={t.task_item_id || t.ticket_id || t.ticket_no || t.ticket_number}
                   className={styles.taskRow}
                   style={{ borderLeft: `4px solid var(--${prio}-color)` }}
-                  onClick={() => navigate(`/ticket/${t.ticket_number}`)}
+                  onClick={() => navigate(ticketUrl)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
-                      navigate(`/ticket/${t.ticket_number}`);
+                      navigate(ticketUrl);
                     }
                   }}
                 >

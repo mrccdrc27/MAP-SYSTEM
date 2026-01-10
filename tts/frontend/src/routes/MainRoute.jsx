@@ -138,14 +138,9 @@ function ExternalLoginRedirect() {
       window.location.replace("/dashboard");
     } else {
       // User is not authenticated - redirect to auth service
-      const authBase = import.meta.env.VITE_AUTH_LOGIN || "http://localhost:8003";
+      const authBase = import.meta.env.VITE_AUTH_LOGIN || "http://localhost:3001";
       const base = authBase.replace(/\/+$/g, "");
-      let target;
-      if (/\/staff\/login$/i.test(base)) {
-        target = base + "/"; // already includes staff/login
-      } else {
-        target = `${base}/staff/login/`;
-      }
+      const target = `${base}/staff`;
       window.location.replace(target);
     }
   }, [hasAuth, loading, initialized]);
