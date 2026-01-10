@@ -21,6 +21,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.conf import settings
 
+from ..models import UserSystemRole
 from systems.models import System
 from ..models import User, UserOTP
 from ..forms import LoginForm
@@ -33,6 +34,30 @@ from ..rate_limiting import (
     get_client_ip,
     generate_device_fingerprint
 )
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def debug_user_check(request):
+    email = request.GET.get('email', 'ops_user@example.com')
+    try:
+        user = User.objects.get(email=email)
+        return Response({
+            'exists': True,
+            'email': user.email,
+            'is_active': user.is_active,
+            'status': user.status,
+            'department': user.department,
+            'has_password': bool(user.password),
+            'password_algo': user.password.split('$')[0] if user.password else None,
+            'roles': [
+                {'system': r.system.slug, 'role': r.role.name} 
+                for r in UserSystemRole.objects.filter(user=user).select_related('system', 'role')
+            ]
+        })
+    except User.DoesNotExist:
+        return Response({'exists': False, 'email': email})
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +182,7 @@ class LoginView(FormView):
         """Handle successful form submission with JWT token authentication"""
         user = form.get_user()
         remember_me = form.cleaned_data.get('remember_me', False)
+        
 
         # Preserve password before clearing session state (OTP flow)
         session_password = self.request.session.get('otp_password')
@@ -234,26 +260,30 @@ class LoginView(FormView):
             access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
             refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
 
+        # Determine cookie settings based on environment
+        cookie_domain = '.onrender.com' if settings.IS_PRODUCTION else None
+        cookie_secure = settings.IS_PRODUCTION
+        cookie_samesite = 'None' if settings.IS_PRODUCTION else 'Lax'
         response.set_cookie(
             'access_token',
             access_token,
             max_age=access_max_age,
-            httponly=False,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite='Lax',
+            httponly=True,
+            secure=cookie_secure,
+            samesite=cookie_samesite,
             path='/',
-            domain=None
+            domain=cookie_domain
         )
 
         response.set_cookie(
             'refresh_token',
             refresh_token,
             max_age=refresh_max_age,
-            httponly=False,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite='Lax',
+            httponly=True,
+            secure=cookie_secure,
+            samesite=cookie_samesite,
             path='/',
-            domain=None
+            domain=cookie_domain
         )
 
         if selected_system:

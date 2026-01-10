@@ -14,8 +14,21 @@ SECRET_KEY = config(
     'DJANGO_SECRET_KEY',
     default='insecure-test-secret-key-change-in-production' if not IS_PRODUCTION else None
 )
-if IS_PRODUCTION and not config('DJANGO_SECRET_KEY', default=None):
-    raise ValueError('DJANGO_SECRET_KEY must be set in production environment')
+# Share cookies across *.onrender.com subdomains
+if IS_PRODUCTION:
+    SESSION_COOKIE_DOMAIN = '.onrender.com'
+    CSRF_COOKIE_DOMAIN = '.onrender.com'
+    SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-domain
+    CSRF_COOKIE_SAMESITE = 'None'
+    # Must be True when SameSite=None (HTTPS required)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    # Local development
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DJANGO_DEBUG', default='False' if IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))

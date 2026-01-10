@@ -25,18 +25,16 @@ export const hasAccessToken = () => {
  * @returns {string|null} The access token or null if not found
  */
 export const getAccessToken = () => {
-  // First try to get token from localStorage
+  // First try localStorage (for API login endpoint)
   const localToken = localStorage.getItem('accessToken');
   if (localToken) {
     return localToken;
   }
 
-  // Fall back to cookies if not in localStorage
-  const tokenCookie = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('access_token='));
-  
-  return tokenCookie ? tokenCookie.split('=')[1] : null;
+  // ⚠️ HttpOnly cookies CANNOT be read by JavaScript
+  // The browser will automatically send them with requests via withCredentials
+  // Return null here - axios will use cookies automatically
+  return null;
 };
 
 /**
