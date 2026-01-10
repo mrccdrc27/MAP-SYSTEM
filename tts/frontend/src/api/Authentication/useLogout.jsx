@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // Use the specified auth URL and endpoint
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:3001";
 
 export function useLogout() {
   const navigate = useNavigate();

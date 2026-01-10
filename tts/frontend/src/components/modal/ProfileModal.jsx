@@ -27,7 +27,7 @@ export default function ProfileModal({ closeProfileAction }) {
             <img
               src={
                 user.profile_picture ||
-                "https://i.pinimg.com/736x/01/c2/09/01c209e18fd7a17c9c5dcc7a4e03db0e.jpg"
+                "https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg"
               }
               alt="Anime Avatar"
             />
