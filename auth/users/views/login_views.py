@@ -21,7 +21,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.conf import settings
 
-from ..models import UserSystemRole
+from system_roles.models import UserSystemRole
 from systems.models import System
 from ..models import User, UserOTP
 from ..forms import LoginForm
