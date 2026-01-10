@@ -61,6 +61,9 @@ const Profile = () => {
         success('Success', 'Profile updated');
         setProfileData(response.data);
         updateUser(response.data);
+        if (response.data.profile_picture) {
+          setProfilePreview(response.data.profile_picture);
+        }
         setIsEditing(false);
         setHasChanges(false);
         setProfilePicture(null);

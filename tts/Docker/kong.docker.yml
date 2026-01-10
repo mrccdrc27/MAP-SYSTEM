@@ -147,6 +147,7 @@ services:
           - /static
           - /admin
           - /api-auth
+          - /media
         strip_path: false
         preserve_host: true
 
