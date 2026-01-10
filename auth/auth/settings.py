@@ -14,6 +14,28 @@ SECRET_KEY = config(
     'DJANGO_SECRET_KEY',
     default='insecure-test-secret-key-change-in-production' if not IS_PRODUCTION else None
 )
+if IS_PRODUCTION and not config('DJANGO_SECRET_KEY', default=None):
+    raise ValueError('DJANGO_SECRET_KEY must be set in production environment')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DJANGO_DEBUG', default='False' if IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+
+ALLOWED_HOSTS = config(
+    'DJANGO_ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,auth_service' if not IS_PRODUCTION else 'localhost',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# Always allow the Render domain, regardless of DEBUG setting
+ALLOWED_HOSTS.extend([
+    'auth-service-cdln.onrender.com',
+    '.onrender.com'
+])
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    
 # Share cookies across *.onrender.com subdomains
 if IS_PRODUCTION:
     SESSION_COOKIE_DOMAIN = '.onrender.com'
