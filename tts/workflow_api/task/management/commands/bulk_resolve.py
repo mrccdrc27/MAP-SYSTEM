@@ -6,30 +6,34 @@ This command resolves tasks in bulk with support for:
 - Resolution rate percentage (e.g., 70% resolved)
 - Halfway completion rate for unresolved tasks
 - SLA compliance rate (resolved within SLA vs late)
+- Historical date backdating for resolutions
 - Proper workflow step progression (not just status marking)
 
 Usage:
-    # Resolve 70% of all tasks, with 80% of unresolved at least started
-    python manage.py bulk_resolve --resolution-rate 70 --halfway-rate 80
+    # Resolve 70% of all tasks, with 80% of unresolved at least started (using historical dates by default)
+    python manage.py bulk_resolve --resolution-rate 70 --halfway-rate 80 --use-historical-dates
 
-    # Resolve tasks from a specific date range
-    python manage.py bulk_resolve --start-date 2025-01-01 --end-date 2025-12-31 --resolution-rate 70
+    # Resolve tasks from a specific date range with historical backdating
+    python manage.py bulk_resolve --start-date 2025-01-01 --end-date 2025-12-31 --resolution-rate 70 --use-historical-dates
 
-    # Resolve all tasks (100%)
-    python manage.py bulk_resolve --resolution-rate 100
+    # Resolve all tasks with custom historical date range (5-20 days after creation)
+    python manage.py bulk_resolve --resolution-rate 100 --use-historical-dates --min-resolution-days 5 --max-resolution-days 20
+
+    # Resolve tasks with today's date (old behavior - NOT recommended for historical data)
+    python manage.py bulk_resolve --resolution-rate 70
 
     # Dry run to see what would happen
-    python manage.py bulk_resolve --resolution-rate 70 --dry-run
+    python manage.py bulk_resolve --resolution-rate 70 --dry-run --use-historical-dates
 
     # Test with a single date
-    python manage.py bulk_resolve --date 2025-08-13 --resolution-rate 100
+    python manage.py bulk_resolve --date 2025-08-13 --resolution-rate 100 --use-historical-dates
 
-    # SLA compliance options:
+    # SLA compliance options with historical dates:
     # Resolve 70% of tasks, 85% within SLA, 15% with 1-7 day delays
-    python manage.py bulk_resolve --resolution-rate 70 --sla-rate 85
+    python manage.py bulk_resolve --resolution-rate 70 --sla-rate 85 --use-historical-dates
 
     # Custom delay range for SLA breaches (1-3 days)
-    python manage.py bulk_resolve --resolution-rate 70 --sla-rate 80 --min-delay-days 1 --max-delay-days 3
+    python manage.py bulk_resolve --resolution-rate 70 --sla-rate 80 --min-delay-days 1 --max-delay-days 3 --use-historical-dates
 """
 
 from django.core.management.base import BaseCommand, CommandError
@@ -109,6 +113,26 @@ class Command(BaseCommand):
             help='Maximum delay in days for SLA breaches. Default: 7'
         )
         
+        # Historical date options
+        parser.add_argument(
+            '--use-historical-dates',
+            action='store_true',
+            default=False,
+            help='Use historical dates for resolutions (relative to task creation date)'
+        )
+        parser.add_argument(
+            '--min-resolution-days',
+            type=int,
+            default=1,
+            help='Minimum days after task creation to resolve (only with --use-historical-dates). Default: 1'
+        )
+        parser.add_argument(
+            '--max-resolution-days',
+            type=int,
+            default=30,
+            help='Maximum days after task creation to resolve (only with --use-historical-dates). Default: 30'
+        )
+        
         # Output options
         parser.add_argument(
             '--json',
@@ -136,6 +160,9 @@ class Command(BaseCommand):
         sla_rate = options['sla_rate']
         min_delay_days = options['min_delay_days']
         max_delay_days = options['max_delay_days']
+        use_historical_dates = options['use_historical_dates']
+        min_resolution_days = options['min_resolution_days']
+        max_resolution_days = options['max_resolution_days']
         output_json = options['json']
         dry_run = options['dry_run']
         verbose = options['verbose']
@@ -153,9 +180,18 @@ class Command(BaseCommand):
             raise CommandError('Maximum delay days must be >= minimum delay days')
         if max_progress_days < 1:
             raise CommandError('Max progress days must be at least 1')
+        if min_resolution_days < 1:
+            raise CommandError('Minimum resolution days must be at least 1')
+        if max_resolution_days < min_resolution_days:
+            raise CommandError('Maximum resolution days must be >= minimum resolution days')
 
         # Store max_progress_days for use in _progress_task_halfway
         self.max_progress_days = max_progress_days
+        
+        # Store historical date settings
+        self.use_historical_dates = use_historical_dates
+        self.min_resolution_days = min_resolution_days
+        self.max_resolution_days = max_resolution_days
 
         # Parse dates
         if single_date:
@@ -209,6 +245,10 @@ class Command(BaseCommand):
             self.stdout.write(f"  SLA Compliance Rate: {sla_rate}%")
             if sla_rate < 100:
                 self.stdout.write(f"  SLA Breach Delay: {min_delay_days}-{max_delay_days} days")
+            if use_historical_dates:
+                self.stdout.write(f"  Historical Dates: Enabled (resolve {min_resolution_days}-{max_resolution_days} days after creation)")
+            else:
+                self.stdout.write(self.style.WARNING("  Historical Dates: Disabled (using current date for resolutions)"))
             if dry_run:
                 self.stdout.write(self.style.WARNING("\n  [DRY RUN MODE - No changes will be made]"))
             self.stdout.write("")
@@ -419,16 +459,32 @@ class Command(BaseCommand):
         max_iterations = 10  # Safety limit
         iteration = 0
         
-        # Calculate resolution timestamp (now + delay for SLA breaches)
+        # Calculate resolution timestamp
         base_resolution_time = task.created_at or timezone.now()
-        if sla_delay_days > 0:
-            # Add delay days plus some random hours for realism
-            delay = timedelta(days=sla_delay_days, hours=random.randint(1, 23), minutes=random.randint(0, 59))
-            resolution_time = base_resolution_time + delay
+        
+        if self.use_historical_dates:
+            # Historical mode: resolve X days after task creation
+            # Pick a random resolution time within the specified range
+            resolution_days = random.randint(self.min_resolution_days, self.max_resolution_days)
+            resolution_time = base_resolution_time + timedelta(
+                days=resolution_days,
+                hours=random.randint(1, 23),
+                minutes=random.randint(0, 59)
+            )
+            
+            # Don't let resolution time be in the future
+            if resolution_time > timezone.now():
+                resolution_time = timezone.now() - timedelta(hours=random.randint(1, 48))
         else:
-            # Within SLA: resolve within 1-3 days for realism
-            quick_delay = timedelta(days=random.randint(0, 2), hours=random.randint(1, 12), minutes=random.randint(0, 59))
-            resolution_time = base_resolution_time + quick_delay
+            # Current mode: resolve with today's date (old behavior)
+            if sla_delay_days > 0:
+                # Add delay days plus some random hours for realism
+                delay = timedelta(days=sla_delay_days, hours=random.randint(1, 23), minutes=random.randint(0, 59))
+                resolution_time = timezone.now() + delay
+            else:
+                # Within SLA: resolve within 1-3 days for realism
+                quick_delay = timedelta(days=random.randint(0, 2), hours=random.randint(1, 12), minutes=random.randint(0, 59))
+                resolution_time = timezone.now() + quick_delay
 
         # Get active task item
         active_item = self._get_or_create_active_task_item(task)

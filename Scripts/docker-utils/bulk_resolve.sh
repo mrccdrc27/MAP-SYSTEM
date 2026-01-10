@@ -39,6 +39,9 @@ MAX_PROGRESS_DAYS=7
 SLA_RATE=100
 MIN_DELAY_DAYS=1
 MAX_DELAY_DAYS=7
+USE_HISTORICAL_DATES=true
+MIN_RESOLUTION_DAYS=1
+MAX_RESOLUTION_DAYS=30
 DRY_RUN=false
 VERBOSE=false
 JSON_OUTPUT=false
@@ -63,6 +66,10 @@ show_help() {
     echo "  --sla-rate <0-100>        Percentage of resolved tasks within SLA (default: 100)"
     echo "  --min-delay-days <1+>     Minimum delay days for SLA breaches (default: 1)"
     echo "  --max-delay-days <1+>     Maximum delay days for SLA breaches (default: 7)"
+    echo "  --use-historical-dates    Use historical dates for resolutions (default: true)"
+    echo "  --no-historical-dates     Resolve with today's date instead of historical"
+    echo "  --min-resolution-days <1+> Min days after creation to resolve (default: 1)"
+    echo "  --max-resolution-days <1+> Max days after creation to resolve (default: 30)"
     echo "  --dry-run                 Preview changes without applying"
     echo "  --verbose                 Show detailed per-task progress"
     echo "  --json                    Output as JSON"
@@ -83,6 +90,12 @@ show_help() {
     echo ""
     echo "  # Use different service"
     echo "  ./bulk_resolve.sh --service tts-workflow --resolution-rate 70"
+    echo ""
+    echo "  # Resolve tasks with today's date (not historical)"
+    echo "  ./bulk_resolve.sh --no-historical-dates --resolution-rate 70"
+    echo ""
+    echo "  # Custom resolution timing (5-20 days after creation)"
+    echo "  ./bulk_resolve.sh --min-resolution-days 5 --max-resolution-days 20"
     echo ""
     echo "  # Preview what would happen"
     echo "  ./bulk_resolve.sh --dry-run --verbose"
@@ -131,6 +144,22 @@ while [[ $# -gt 0 ]]; do
             ;;
         --max-delay-days)
             MAX_DELAY_DAYS="$2"
+            shift 2
+            ;;
+        --use-historical-dates)
+            USE_HISTORICAL_DATES=true
+            shift
+            ;;
+        --no-historical-dates)
+            USE_HISTORICAL_DATES=false
+            shift
+            ;;
+        --min-resolution-days)
+            MIN_RESOLUTION_DAYS="$2"
+            shift 2
+            ;;
+        --max-resolution-days)
+            MAX_RESOLUTION_DAYS="$2"
             shift 2
             ;;
         --dry-run)
@@ -199,6 +228,12 @@ CMD_ARGS+=("--max-progress-days" "$MAX_PROGRESS_DAYS")
 CMD_ARGS+=("--sla-rate" "$SLA_RATE")
 CMD_ARGS+=("--min-delay-days" "$MIN_DELAY_DAYS")
 CMD_ARGS+=("--max-delay-days" "$MAX_DELAY_DAYS")
+
+if [[ "$USE_HISTORICAL_DATES" == true ]]; then
+    CMD_ARGS+=("--use-historical-dates")
+    CMD_ARGS+=("--min-resolution-days" "$MIN_RESOLUTION_DAYS")
+    CMD_ARGS+=("--max-resolution-days" "$MAX_RESOLUTION_DAYS")
+fi
 
 if [[ "$DRY_RUN" == true ]]; then
     CMD_ARGS+=("--dry-run")
