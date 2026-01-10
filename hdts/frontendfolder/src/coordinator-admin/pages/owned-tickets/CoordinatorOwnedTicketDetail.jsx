@@ -12,6 +12,8 @@ import { API_CONFIG } from '../../../config/environment';
 import { useMessaging } from '../../../shared/hooks/messaging';
 import EscalateTicketModal from '../../components/modals/EscalateTicketModal';
 import TransferTicketModal from '../../components/modals/TransferTicketModal';
+import WorkflowVisualizer2 from '../../../shared/components/WorkflowVisualizer/WorkflowVisualizer2';
+import { useWorkflowProgress } from '../../../shared/hooks/useWorkflowProgress';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CoordinatorOwnedTicketDetail = () => {
@@ -58,6 +60,9 @@ const CoordinatorOwnedTicketDetail = () => {
   // Real-time messaging with TTS agents
   const userDisplayName = `${currentUser?.first_name || ''} ${currentUser?.last_name || ''}`.trim() || 
     currentUser?.username || currentUser?.email || 'Coordinator';
+
+  // Fetch workflow visualization data for this ticket
+  const { tracker: workflowData, loading: workflowLoading, error: workflowError } = useWorkflowProgress(ticketNumber);
 
   // Helpers: normalize text and build full name including middle name
   const normalizeText = (t) => {
@@ -841,6 +846,13 @@ const CoordinatorOwnedTicketDetail = () => {
             <label>Stage:</label>
             <span className={styles['stage-value']}>{lifecycle}</span>
           </div>
+
+          {/* Workflow Visualizer - shows the ticket's progress through the TTS workflow */}
+          {workflowData && !workflowError && (
+            <div className={styles['workflow-section']}>
+              <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={ticket?.status} />
+            </div>
+          )}
 
           {/* Priority display removed (shown in Ticket Details section) */}
 

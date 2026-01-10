@@ -15,6 +15,8 @@ import ErrorBoundary from '../../../shared/components/ErrorBoundary';
 import Button from '../../../shared/components/Button';
 import ViewCard from '../../../shared/components/ViewCard';
 import Tabs from '../../../shared/components/Tabs';
+import WorkflowVisualizer2 from '../../../shared/components/WorkflowVisualizer/WorkflowVisualizer2';
+import { useWorkflowProgress } from '../../../shared/hooks/useWorkflowProgress';
 import { 
   FaFileImage, 
   FaFilePdf, 
@@ -472,6 +474,10 @@ export default function EmployeeTicketTracker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketNumber, JSON.stringify(tickets)]);
 
+  // Fetch workflow visualization data for this ticket
+  const workflowTicketId = ticket?.ticket_number || ticket?.ticketNumber || ticketNumber;
+  const { tracker: workflowData, loading: workflowLoading, error: workflowError } = useWorkflowProgress(workflowTicketId);
+
   // selected ticket ready for render
   // If we don't yet have a ticket, show the loading skeleton until the
   // backend returns the real ticket. This avoids flashing the "No Ticket Found"
@@ -896,6 +902,11 @@ export default function EmployeeTicketTracker() {
                   <span className={styles.ticketMetaLabel}>Date Updated <span className={styles.ticketMetaValue}>{formatDate(lastUpdatedRaw)}</span> </span>
                 </div>
               </div>
+
+              {/* Workflow Visualizer - shows the ticket's progress through the workflow */}
+              {workflowData && !workflowError && (
+                <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={status} />
+              )}
 
               {/* Ticket Details - consolidated and always present */}
               <div className={styles.detailsGrid}>

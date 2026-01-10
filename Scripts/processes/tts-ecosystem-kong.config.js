@@ -279,7 +279,16 @@ module.exports = {
       script: './node_modules/vite/bin/vite.js',
       interpreter: 'node',
       watch: false,
-      windowsHide: true
+      windowsHide: true,
+      env: {
+        // Kong Gateway Mode - All API calls routed through Kong (port 8080)
+        VITE_AUTH_URL: "http://localhost:8003",
+        VITE_HDTS_BACKEND_URL: "http://localhost:8080/helpdesk",
+        VITE_WORKFLOW_API_URL: "http://localhost:8080/workflow",
+        VITE_MESSAGING_API_URL: "http://localhost:8080/messaging",
+        VITE_MESSAGING_WS_URL: "ws://localhost:8080/messaging/ws",
+        VITE_MEDIA_URL: "http://localhost:8080/helpdesk/media/"
+      }
     },
 
     // -------------------

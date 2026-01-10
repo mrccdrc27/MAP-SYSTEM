@@ -466,52 +466,7 @@ export default function TicketDetail() {
 
               {/* SLA Status Component */}
 
-              {/* Ticket Owner */}
-              <div className={styles.tdpSection}>
-                <div className={styles.tdpTitle}>
-                  <strong>Owner Description:</strong>
-                </div>
-                <div className={styles.tdpOwnerDescWrapper}>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Name:</div>
-                    <div className={styles.tdpODWValue}>
-                      {state.ticket?.user_assignment?.first_name
-                        ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
-                        : "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Email:</div>
-                    <div className={styles.tdpODWValue}>
-                      {state.ticket?.user_assignment?.email || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Company ID:</div>
-                    <div className={styles.tdpODWValue}>
-                      {state.ticket?.user_assignment?.company_id || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Department:</div>
-                    <div className={styles.tdpODWValue}>
-                      {state.ticket?.user_assignment?.department || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Role:</div>
-                    <div className={styles.tdpODWValue}>
-                      {state.ticket?.user_assignment?.role || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Current Owner:</div>
-                    <div className={styles.tdpODWValue}>
-                      {state.currentOwner?.user_full_name || "N/A"}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Ticket Owner section removed per request */}
               {/* Description Section */}
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>

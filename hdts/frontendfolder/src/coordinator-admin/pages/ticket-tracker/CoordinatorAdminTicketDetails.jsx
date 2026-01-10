@@ -6,6 +6,8 @@ import styles from './CoordinatorAdminTicketDetails.module.css';
 import { backendEmployeeService } from '../../../services/backend/employeeService';
 import authService from '../../../utilities/service/authService';
 import { convertToSecureUrl, getAccessToken, isSecureUrl } from '../../../utilities/secureMedia';
+import WorkflowVisualizer2 from '../../../shared/components/WorkflowVisualizer/WorkflowVisualizer2';
+import { useWorkflowProgress } from '../../../shared/hooks/useWorkflowProgress';
 
 const DEFAULT_AVATAR = '/MapLogo.png';
 
@@ -83,6 +85,10 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
   const userRole = authService.getUserRole();
   const isTicketCoordinator = userRole === 'Ticket Coordinator';
   const isSystemAdmin = userRole === 'System Admin';
+
+  // Fetch workflow visualization data for this ticket
+  const workflowTicketId = ticket?.ticket_number || ticket?.ticketNumber;
+  const { tracker: workflowData, loading: workflowLoading, error: workflowError } = useWorkflowProgress(workflowTicketId);
 
   // Use embedded employee data from ticket or resolved remoteEmployee state
   const [remoteEmployee, setRemoteEmployee] = useState(null);
@@ -283,6 +289,14 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
         </div>
         {/* Controls */}
         {/* controls removed: raw JSON viewer button intentionally omitted */}
+
+        {/* Workflow Visualizer - shows the ticket's progress through the TTS workflow */}
+        {workflowData && !workflowError && (
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Workflow Progress</div>
+            <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={ticket?.status} />
+          </div>
+        )}
 
         {/* EMPLOYEE SECTION - Always visible */}
         <div className={styles.section}>

@@ -129,6 +129,12 @@
   border-radius: 0.375rem;
 }
 
+/* Workflow Visualizer Section */
+.workflow-section {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-300);
+}
+
 /* Priority Display */
 .priority-display {
   display: flex;

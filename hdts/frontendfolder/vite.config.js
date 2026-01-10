@@ -26,10 +26,19 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => '/api' + path,  // /media/... -> /api/media/...
       },
-      // Workflow API through Kong (uses header auth)
+      // Workflow API DIRECT to workflow_api service (not Kong)
+      // This allows cookie-based auth to work since we're going through auth service
       '/workflow': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:1001',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/workflow/, ''),
+      },
+      // Messaging Service
+      '/messaging': {
+        target: 'http://localhost:1002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/messaging/, ''), 
+        websocket: true,
       },
     },
   },
