@@ -735,11 +735,16 @@ def send_otp_email(user, otp_code):
 def send_password_reset_email(user, reset_token, request=None):
     """Send password reset email."""
     try:
-        # Build reset URL
-        if request:
+        # Build reset URL - prefer configured URL over request host for user-facing links
+        # This prevents internal Docker hostnames (e.g., auth-service:8000) from being used
+        base_url = getattr(settings, 'FRONTEND_URL', None) or getattr(settings, 'PUBLIC_URL', None)
+        
+        if not base_url and request:
+            # Fallback to request only if no configured URL
             base_url = f"{request.scheme}://{request.get_host()}"
-        else:
-            base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        
+        if not base_url:
+            base_url = 'http://localhost:3000'  # Final fallback for development
         
         reset_url = f"{base_url}/api/v1/users/password/reset?token={reset_token.token}"
         
