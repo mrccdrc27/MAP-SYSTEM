@@ -90,8 +90,8 @@ services:
       context: ../workflow_api
       dockerfile: Dockerfile
     environment:
-      DJANGO_ENV: "production"
-      DJANGO_DEBUG: "False"
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,127.0.0.1,workflow-worker"
@@ -105,7 +105,7 @@ services:
       DJANGO_CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DJANGO_NOTIFICATION_SERVICE_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       DJANGO_AUTH_SERVICE_URL: "http://auth-service:8000"
-      DJANGO_NOTIFICATION_SERVICE_URL: "http://notification-service:8001"
+      DJANGO_NOTIFICATION_SERVICE_URL: "http://kong:8000/notification"
       C_FORCE_ROOT: "false"
     volumes:
       - media_files:/app/media
@@ -182,8 +182,8 @@ services:
       context: ../workflow_api
       dockerfile: Dockerfile
     environment:
-      DJANGO_ENV: "production"
-      DJANGO_DEBUG: "False"
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,127.0.0.1,workflow-api,host.docker.internal"
@@ -311,8 +311,8 @@ services:
       context: ../notification_service
       dockerfile: Dockerfile
     environment:
-      DJANGO_ENV: "production"
-      DJANGO_DEBUG: "False"
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,127.0.0.1,notification-service,host.docker.internal"
@@ -351,8 +351,8 @@ services:
       context: ../notification_service
       dockerfile: Dockerfile
     environment:
-      DJANGO_ENV: "production"
-      DJANGO_DEBUG: "False"
+      DJANGO_ENV: "development"
+      DJANGO_DEBUG: "True"
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,127.0.0.1,notification-worker"

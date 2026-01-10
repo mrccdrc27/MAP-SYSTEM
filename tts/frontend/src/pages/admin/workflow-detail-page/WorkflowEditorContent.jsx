@@ -93,9 +93,10 @@ const WorkflowEditorContent = forwardRef(({
 
   // Handle edge deletion
   const handleDeleteEdge = useCallback((edgeId) => {
+    const edgeIdStr = String(edgeId);
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === edgeId
+        e.id === edgeIdStr
           ? { ...e, data: { ...e.data, to_delete: true }, className: 'deleted-edge' }
           : e
       )
@@ -117,17 +118,31 @@ const WorkflowEditorContent = forwardRef(({
     if (setHasUnsavedChanges) setHasUnsavedChanges(true);
   }, [setEdges, setHasUnsavedChanges]);
 
-  // Handle node deletion
+  // Handle node deletion - also marks connected edges as deleted
   const handleDeleteNode = useCallback((nodeId) => {
+    const nodeIdStr = String(nodeId);
+    
+    // Mark the node as deleted
     setNodes((nds) =>
       nds.map((n) =>
-        n.id === nodeId
+        n.id === nodeIdStr
           ? { ...n, data: { ...n.data, to_delete: true }, className: 'deleted-node' }
           : n
       )
     );
+    
+    // Mark all connected edges (incoming and outgoing) as deleted
+    setEdges((eds) =>
+      eds.map((e) =>
+        (e.source === nodeIdStr || e.target === nodeIdStr)
+          ? { ...e, data: { ...e.data, to_delete: true }, className: 'deleted-edge' }
+          : e
+      )
+    );
+    
     setUnsavedChanges(true);
-  }, [setNodes]);
+    if (setHasUnsavedChanges) setHasUnsavedChanges(true);
+  }, [setNodes, setEdges, setHasUnsavedChanges]);
 
   // Handle inline node update from expanded node form
   const handleInlineNodeUpdate = useCallback((nodeId, updates) => {

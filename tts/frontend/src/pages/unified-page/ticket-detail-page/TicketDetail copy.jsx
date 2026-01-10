@@ -33,14 +33,19 @@ export default function TicketDetail() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { ticketNumber } = useParams();
+
+  // Get task_item_id from query params to identify specific TaskItem
+  // This is critical when user has multiple TaskItems for the same ticket
+  const [searchParams, setSearchParams] = useSearchParams();
+  const taskItemIdFromUrl = searchParams.get("task_item_id");
+
   const {
     stepInstance,
     loading: instanceLoading,
     error: instanceError,
-  } = useTicketDetail(ticketNumber);
+  } = useTicketDetail(ticketNumber, taskItemIdFromUrl);
 
   // Tabs with URL sync
-  const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") || "Details";
   const [activeTab, setActiveTab] = useState(urlTab);
 
@@ -270,18 +275,20 @@ export default function TicketDetail() {
         <Nav />
         <main className={styles.ticketDetailPage}>
           <section className={styles.tdpHeader}>
-            <button
-              className={styles.tdBack}
-              onClick={handleBack}
-              aria-label="Go back"
-              type="button"
-            >
-              <i className="fa fa-chevron-left"></i>
-            </button>
-            <h1>Loading...</h1>
+            <div>
+              <button
+                className={styles.wpdBack}
+                onClick={handleBack}
+                aria-label="Go back to tickets"
+                type="button"
+              >
+                Tasks{" "}
+              </button>
+              <span className={styles.wpdCurrent}> / Task Detail</span>
+            </div>
           </section>
-          <section className={styles.tdpBody}>
-            <div style={{ padding: "2rem" }}>Fetching ticket data...</div>
+          <section className={styles.tdpHeaderTitle}>
+            <h1>Task Overview</h1>
           </section>
         </main>
       </>
@@ -350,7 +357,7 @@ export default function TicketDetail() {
               aria-label="Go back to tickets"
               type="button"
             >
-              Tickets
+              Tasks
             </button>
             <span className={styles.wpdCurrent}> / Error</span>
           </section>
@@ -410,13 +417,13 @@ export default function TicketDetail() {
               aria-label="Go back to tickets"
               type="button"
             >
-              Tickets{" "}
+              Tasks{" "}
             </button>
-            <span className={styles.wpdCurrent}> / Ticket Detail</span>
+            <span className={styles.wpdCurrent}> / Task Detail</span>
           </div>
         </section>
         <section className={styles.tdpHeaderTitle}>
-          <h1>Ticket Overview</h1>
+          <h1>Task Overview</h1>
         </section>
         <section className={styles.tdpBody}>
           <div className={styles.layoutFlex}>
@@ -643,21 +650,23 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
-                {/* Escalate - disabled when canAct is false */}
-                <button
-                  className={
-                    !state.canAct
-                      ? styles.escalateButtonDisabled
-                      : styles.escalateButton
-                  }
-                  onClick={() => setOpenEscalateModal(true)}
-                  disabled={!state.canAct}
-                >
-                  <span className={styles.iconTextWrapper}>
-                    <i className="fa fa-arrow-up"></i>
-                    {getButtonText("escalate")}
-                  </span>
-                </button>
+                {/* Escalate - disabled when canAct is false, hidden for admins */}
+                {!isAdmin() && (
+                  <button
+                    className={
+                      !state.canAct
+                        ? styles.escalateButtonDisabled
+                        : styles.escalateButton
+                    }
+                    onClick={() => setOpenEscalateModal(true)}
+                    disabled={!state.canAct}
+                  >
+                    <span className={styles.iconTextWrapper}>
+                      <i className="fa fa-arrow-up"></i>
+                      {getButtonText("escalate")}
+                    </span>
+                  </button>
+                )}
 
                 {/* Transfer (Admin only) - disabled when canAct is false */}
                 {isAdmin() && (
@@ -698,12 +707,12 @@ export default function TicketDetail() {
                 {/* Detail Section */}
                 {activeTab === "Details" && (
                   <>
-                    {/* workflow */}
-                    <WorkflowTracker2 workflowData={tracker} ticketStatus={state.ticket?.status} />
-                    <br />
                     {/* status */}
-                    <div className={styles.tdStatusCard}>
-                      <h4>Status</h4>
+                    <div
+                      className={styles.tdStatusCard}
+                      title="Overall Ticket Status"
+                    >
+                      <h4>Ticket Status</h4>
                       <div
                         className={
                           general[
@@ -716,6 +725,12 @@ export default function TicketDetail() {
                         {state.ticket?.status}
                       </div>
                     </div>
+                    {/* workflow */}
+                    <WorkflowTracker2
+                      workflowData={tracker}
+                      ticketStatus={state.ticket?.status}
+                    />
+                    <br />
                     <br />
                     {/* sla */}
                     <div className={styles.tdSLA}>
