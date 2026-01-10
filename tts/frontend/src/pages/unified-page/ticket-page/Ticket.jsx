@@ -200,7 +200,7 @@ export default function Ticket() {
       <Nav />
       <main className={styles.ticketPage}>
         <section className={styles.tpHeader}>
-          <h1>Tickets</h1>
+          <h1>Task</h1>
         </section>
         <section className={styles.tpBody}>
           {/* Tabs */}

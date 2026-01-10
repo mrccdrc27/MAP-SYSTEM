@@ -1,7 +1,7 @@
-import React, { memo } from 'react';
-import { FileText, ClipboardList } from 'lucide-react';
-import { WORKFLOW_TEMPLATES } from '../constants/workflowTemplates';
-import styles from '../create-workflow.module.css';
+import React, { memo } from "react";
+import { FileText, ClipboardList } from "lucide-react";
+import { WORKFLOW_TEMPLATES } from "../constants/workflowTemplates";
+import styles from "../create-workflow.module.css";
 
 /**
  * Left sidebar with workflow details and template selection
@@ -12,38 +12,42 @@ const WorkflowDetailsSidebar = memo(function WorkflowDetailsSidebar({
   workflowMetadata,
   setWorkflowMetadata,
   selectedTemplate,
-  applyTemplate
+  applyTemplate,
 }) {
   return (
     <aside className={styles.leftSidebar}>
       {/* Tab Switcher */}
       <div className={styles.sidebarTabs}>
         <button
-          onClick={() => setLeftSidebarTab('details')}
-          className={`${styles.sidebarTab} ${leftSidebarTab === 'details' ? styles.sidebarTabActive : ''}`}
+          onClick={() => setLeftSidebarTab("details")}
+          className={`${styles.sidebarTab} ${
+            leftSidebarTab === "details" ? styles.sidebarTabActive : ""
+          }`}
         >
           <FileText size={14} /> Details
         </button>
         <button
-          onClick={() => setLeftSidebarTab('templates')}
-          className={`${styles.sidebarTab} ${leftSidebarTab === 'templates' ? styles.sidebarTabActive : ''}`}
+          onClick={() => setLeftSidebarTab("templates")}
+          className={`${styles.sidebarTab} ${
+            leftSidebarTab === "templates" ? styles.sidebarTabActive : ""
+          }`}
         >
           <ClipboardList size={14} /> Templates
         </button>
       </div>
 
       {/* Tab Content */}
-      {leftSidebarTab === 'details' ? (
-        <WorkflowDetailsForm 
-          workflowMetadata={workflowMetadata} 
-          setWorkflowMetadata={setWorkflowMetadata} 
+      {leftSidebarTab === "details" ? (
+        <WorkflowDetailsForm
+          workflowMetadata={workflowMetadata}
+          setWorkflowMetadata={setWorkflowMetadata}
         />
       ) : (
-        <TemplateList 
+        <TemplateList
           selectedTemplate={selectedTemplate}
           onSelectTemplate={(key) => {
             applyTemplate(key);
-            setLeftSidebarTab('details');
+            setLeftSidebarTab("details");
           }}
         />
       )}
@@ -54,58 +58,69 @@ const WorkflowDetailsSidebar = memo(function WorkflowDetailsSidebar({
 /**
  * Workflow details form inputs
  */
-const WorkflowDetailsForm = memo(function WorkflowDetailsForm({ workflowMetadata, setWorkflowMetadata }) {
+const WorkflowDetailsForm = memo(function WorkflowDetailsForm({
+  workflowMetadata,
+  setWorkflowMetadata,
+}) {
   const handleChange = (field, value) => {
-    setWorkflowMetadata(prev => ({ ...prev, [field]: value }));
+    setWorkflowMetadata((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className={styles.sidebarSection}>
       <div className={styles.compactForm}>
         <div className={styles.inputGroup}>
-          <label>Name <span className={styles.required}>*</span></label>
+          <label>
+            Name <span className={styles.required}>*</span>
+          </label>
           <input
             type="text"
             value={workflowMetadata.name}
-            onChange={(e) => handleChange('name', e.target.value)}
+            onChange={(e) => handleChange("name", e.target.value)}
             placeholder="Workflow name"
           />
         </div>
         <div className={styles.inputRow}>
           <div className={styles.inputGroup}>
-            <label>Category <span className={styles.required}>*</span></label>
+            <label>
+              Category <span className={styles.required}>*</span>
+            </label>
             <input
               type="text"
               value={workflowMetadata.category}
-              onChange={(e) => handleChange('category', e.target.value)}
+              onChange={(e) => handleChange("category", e.target.value)}
               placeholder="IT, HR"
             />
           </div>
           <div className={styles.inputGroup}>
-            <label>Sub-Cat <span className={styles.required}>*</span></label>
+            <label>
+              Sub-Cat <span className={styles.required}>*</span>
+            </label>
             <input
               type="text"
               value={workflowMetadata.sub_category}
-              onChange={(e) => handleChange('sub_category', e.target.value)}
+              onChange={(e) => handleChange("sub_category", e.target.value)}
               placeholder="Support"
             />
           </div>
         </div>
         <div className={styles.inputGroup}>
-          <label>Department <span className={styles.required}>*</span></label>
+          <label>
+            Department <span className={styles.required}>*</span>
+          </label>
           <input
             type="text"
             value={workflowMetadata.department}
-            onChange={(e) => handleChange('department', e.target.value)}
+            onChange={(e) => handleChange("department", e.target.value)}
             placeholder="IT Support"
           />
         </div>
         <div className={styles.inputGroup}>
-          <label>Description</label>
+          <label>Description <span className={styles.required}>*</span></label>
           <textarea
             value={workflowMetadata.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-            placeholder="Optional..."
+            onChange={(e) => handleChange("description", e.target.value)}
+            placeholder="Brief description of the workflow"
             rows={2}
           />
         </div>
@@ -117,7 +132,10 @@ const WorkflowDetailsForm = memo(function WorkflowDetailsForm({ workflowMetadata
 /**
  * Template selection list
  */
-const TemplateList = memo(function TemplateList({ selectedTemplate, onSelectTemplate }) {
+const TemplateList = memo(function TemplateList({
+  selectedTemplate,
+  onSelectTemplate,
+}) {
   return (
     <div className={styles.sidebarSection}>
       <div className={styles.templateGrid}>
@@ -125,7 +143,9 @@ const TemplateList = memo(function TemplateList({ selectedTemplate, onSelectTemp
           <button
             key={key}
             onClick={() => onSelectTemplate(key)}
-            className={`${styles.templateCard} ${selectedTemplate === key ? styles.templateCardSelected : ''}`}
+            className={`${styles.templateCard} ${
+              selectedTemplate === key ? styles.templateCardSelected : ""
+            }`}
           >
             <div className={styles.templateCardHeader}>
               {template.icon}
