@@ -1746,6 +1746,7 @@ function BudgetAllocation() {
     closeAllDropdowns();
     setSupplementalCurrentPage(1);
   };
+  // MODIFIED: Pass the action string explicitly to openModalWithAction
   const handleActionSelect = (action) => {
     setSelectedAction(action);
     closeAllDropdowns();
@@ -1753,14 +1754,14 @@ function BudgetAllocation() {
     if (action === "add") {
       if (isFinanceManager) {
         // Finance Manager adds via direct adjustment (existing modal)
-        openModalWithAction();
+        openModalWithAction("add"); // Pass "add" explicitly
       } else {
         // Operator requests supplemental budget (new modal)
         setShowRequestModal(true);
       }
     } else if (action === "modify") {
       if (selectedRowId) {
-        openModalWithAction();
+        openModalWithAction("modify"); // Pass "modify" explicitly
       }
     }
   };
@@ -1790,13 +1791,16 @@ function BudgetAllocation() {
     else setSelectedRowId(entry.id);
   };
 
-  const openModalWithAction = () => {
-    setModalType(selectedAction);
+  // MODIFIED: Accepts an explicit action to bypass async state update issues
+  const openModalWithAction = (explicitAction = null) => {
+    // Determine which action to use: the one passed directly, or fall back to state
+    const actionToUse = explicitAction || selectedAction;
+    
+    setModalType(actionToUse);
 
-    if (selectedAction === "modify") {
+    if (actionToUse === "modify") {
       // For Modify Budget, we need a selected row
       if (!selectedRowId) {
-        // Don't show alert, just return
         return;
       }
       const selectedEntry = adjustments.find((e) => e.id === selectedRowId);
@@ -1816,7 +1820,7 @@ function BudgetAllocation() {
       // For Add Budget, start with empty form
       setModalData({
         id: null,
-        ticket_id: "", // REMOVED: "N/A" placeholder
+        ticket_id: "", 
         date: getISODate(),
         department: "",
         category: "",

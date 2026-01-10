@@ -679,7 +679,8 @@ class ProposalReviewBudgetOverviewSerializer(serializers.Serializer):
         max_digits=15, decimal_places=2)
 
 
-# MODIFICATION START: Update BudgetAdjustmentSerializer to handle UI inputs (names)
+# MODIFICATION START: Update BudgetAdjustmentSerializer to handle GL accounts
+# MODIFICATION START: Update BudgetAdjustmentSerializer to handle GL accounts
 class BudgetAdjustmentSerializer(serializers.Serializer):
     date = serializers.DateField()
     description = serializers.CharField(
@@ -689,8 +690,6 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
 
     # UI inputs (Strings)
     department_name = serializers.CharField()
-    # category_name = serializers.CharField() # Not strictly used for allocation lookup logic if using accounts, but kept if UI sends it
-
     transfer_type = serializers.ChoiceField(
         choices=['TRANSFER', 'SUPPLEMENTAL'],
         default='TRANSFER'
@@ -744,29 +743,54 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                     raise serializers.ValidationError(
                         {'source_account_name': "Invalid source account selected."})
 
-                source_alloc = BudgetAllocation.objects.filter(
-                    department=department,
-                    account=source_account,
-                    is_active=True
-                ).first()
+                # --- FIX START: Enhanced check for GL Funding Sources ---
+                # Exempt Liability, Equity, and specific Liquid Asset accounts (Cash/Bank) 
+                # from needing a budget allocation.
+                
+                is_liability_or_equity = source_account.account_type.name in ['Liability', 'Equity']
+                
+                # Check for Cash/Bank (GL Assets) vs Capital Assets (Budget Assets)
+                # Using code '1010' (Cash) or name matching as fallback
+                is_cash_account = (
+                    source_account.code == '1010' or 
+                    'cash' in source_account.name.lower() or 
+                    'bank' in source_account.name.lower()
+                )
 
-                # Validate source funds
-                if source_alloc:
-                    total_expenses = Expense.objects.filter(
-                        budget_allocation=source_alloc,
-                        status='APPROVED'
-                    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+                # A "Budget Account" is an Expense or Asset account that is NOT Cash
+                is_budget_account = (
+                    source_account.account_type.name in ['Expense', 'Asset'] 
+                    and not is_cash_account
+                )
 
-                    available_funds = source_alloc.amount - total_expenses
+                if not is_liability_or_equity and is_budget_account:
+                    source_alloc = BudgetAllocation.objects.filter(
+                        department=department,
+                        account=source_account,
+                        is_active=True
+                    ).first()
 
-                    if data['amount'] > available_funds:
+                    # Validate source funds
+                    if source_alloc:
+                        total_expenses = Expense.objects.filter(
+                            budget_allocation=source_alloc,
+                            status='APPROVED'
+                        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+                        available_funds = source_alloc.amount - total_expenses
+
+                        if data['amount'] > available_funds:
+                            raise serializers.ValidationError(
+                                f"Insufficient funds in source account. Available: {available_funds:,.2f}, Requested: {data['amount']:,.2f}"
+                            )
+                    else:
+                        # If no allocation exists for source, they have 0 funds
                         raise serializers.ValidationError(
-                            f"Insufficient funds in source account. Available: {available_funds:,.2f}, Requested: {data['amount']:,.2f}"
-                        )
+                            f"No active allocation found for source account {source_account.name}.")
                 else:
-                    # If no allocation exists for source, they have 0 funds
-                    raise serializers.ValidationError(
-                        f"No active allocation found for source account {source_account.name}.")
+                    # It is a Funding Source (Cash/GL). No allocation record exists, but we allow the transfer.
+                    source_alloc = None
+                # --- FIX END ---
 
             # Store resolved objects
             data['department'] = department
