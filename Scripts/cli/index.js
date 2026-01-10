@@ -176,6 +176,8 @@ const SCRIPTS = {
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees (Auth)' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees (HDTS)' },
       'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass user transition (Admin workflow tool)' },
+      'seed-controlled': { file: 'seed_controlled.sh', desc: 'Seed Controlled Historical Tickets (HDTS)', shell: 'bash' },
+      'bulk-resolve': { file: 'bulk_resolve.sh', desc: 'Bulk Resolve Tasks with Controlled Rates (TTS)', shell: 'bash' },
     }
   },
   'docker-utils': {
@@ -187,6 +189,8 @@ const SCRIPTS = {
       'seed-employees-auth': { file: 'seed_employees_auth.ps1', desc: 'Seed Employees in Auth Container' },
       'seed-employees-hdts': { file: 'seed_employees_hdts.ps1', desc: 'Seed Employees in HDTS Container' },
       'bypass-transition': { file: 'bypass_transition.ps1', desc: 'Bypass Workflow Transition (Docker)' },
+      'seed-controlled': { file: 'seed_controlled.sh', desc: 'Seed Controlled Historical Tickets (Docker)', shell: 'bash' },
+      'bulk-resolve': { file: 'bulk_resolve.sh', desc: 'Bulk Resolve Tasks with Controlled Rates (Docker)', shell: 'bash' },
     }
   },
   pm2: {
