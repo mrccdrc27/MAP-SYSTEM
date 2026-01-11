@@ -105,6 +105,8 @@ INSTALLED_APPS = [
     # 'finance',
     # 'budgeting',
     # 'expenses',
+    'cloudinary_storage',
+    'cloudinary',
     'core',
 ]
 
@@ -198,8 +200,27 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
+
+# Cloudinary Configuration
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+# Configure Cloudinary using CLOUDINARY_URL (reads from environment automatically)
+cloudinary.config(
+    cloudinary_url=os.getenv('CLOUDINARY_URL')
+)
+
+# Media File Storage Configuration
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Use Cloudinary in production (Render), local filesystem in development
+if DEBUG:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 
 # Debug toolbar settings
 INTERNAL_IPS = [
