@@ -532,6 +532,7 @@ class Command(BaseCommand):
 
         current_month = datetime.now().month
         current_year = datetime.now().year
+        current_day = datetime.now().day  # NEW: Get current day
 
         # Seasonal multipliers to create realistic curves
         SEASONAL_MULTIPLIERS = {
@@ -546,19 +547,38 @@ class Command(BaseCommand):
             year = alloc.fiscal_year.start_date.year
             project_end = alloc.project.end_date
 
-            # Only create expenses within project timeline
-            end_month = min(12, project_end.month) if year <= project_end.year else 12
+            # --- MODIFIED: Determine end month based on year ---
+            if year < current_year:
+                # Historical years: Create all 12 months
+                end_month = min(12, project_end.month) if year <= project_end.year else 12
+            elif year == current_year:
+                # Current year: Only create up to current month
+                end_month = current_month
+            else:
+                # Future years: Skip entirely
+                continue
+            # --------------------------------------------------
             
             for month in range(1, end_month + 1):
                 # 70% chance of expense in any given month
                 if random.random() < 0.3:
                     continue
                 
-                # If it's the project end month, limit the day
-                if month == project_end.month and year == project_end.year:
+                # --- MODIFIED: Determine max_day based on month and year ---
+                if year == current_year and month == current_month:
+                    # Current month: Only create expenses up to current day
+                    max_day = min(28, current_day - 1)  # -1 to avoid today
+                elif month == project_end.month and year == project_end.year:
+                    # Project end month: Limit to project end day
                     max_day = min(28, project_end.day)
                 else:
+                    # Other months: Full month (safe value of 28)
                     max_day = 28
+                # ----------------------------------------------------------
+                
+                # Skip if max_day is invalid (e.g., current month just started)
+                if max_day < 1:
+                    continue
                 
                 # Calculate day ONCE and use it
                 day = random.randint(1, max_day)
@@ -575,17 +595,11 @@ class Command(BaseCommand):
                 )
                 finance_head = SIMULATED_USERS[1]
 
-                # --- NEW CALCULATION LOGIC ---
-                # 1. Base burn rate: 1.5% to 3.5% of total budget per expense
+                # --- Calculation Logic (unchanged) ---
                 burn_rate = Decimal(random.uniform(0.015, 0.035))
-
-                # 2. Apply Seasonal Multiplier
                 seasonal_factor = Decimal(str(SEASONAL_MULTIPLIERS.get(month, 1.0)))
-
-                # 3. Apply Yearly Growth (Inflation)
                 year_diff = year - 2023
                 growth_factor = Decimal(1.0 + (year_diff * 0.05))
-
                 amount = alloc.amount * burn_rate * seasonal_factor * growth_factor
                 amount = round(amount, 2)
 
@@ -593,14 +607,21 @@ class Command(BaseCommand):
                 if alloc.get_remaining_budget() < amount:
                     continue
 
-                # Current year data might be mixed status
+                # --- MODIFIED: Status logic for current year ---
                 if year == current_year:
                     if month < current_month:
+                        # Past months in current year: Approved
                         status = 'APPROVED'
+                    elif month == current_month:
+                        # Current month: Mix of statuses
+                        status = random.choice(['APPROVED', 'APPROVED', 'SUBMITTED'])
                     else:
-                        status = random.choice(['APPROVED', 'SUBMITTED', 'SUBMITTED'])
+                        # Future months: Should not occur with new logic
+                        continue
                 else:
+                    # Historical years: All approved
                     status = 'APPROVED'
+                # -------------------------------------------------
 
                 global_txn_counter += 1
                 txn_id = f"TXN-{year}{month:02d}-{global_txn_counter:05d}"

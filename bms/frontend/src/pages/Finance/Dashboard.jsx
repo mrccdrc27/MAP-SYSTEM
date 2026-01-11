@@ -4010,7 +4010,7 @@ function BudgetDashboard() {
                             Department
                           </label>
                           {isFinanceManager ? (
-                            <div style={{ position: "relative" }}>
+                            <div style={{ position: "relative"}}>
                               <select
                                 value={selectedHeatmapDepartment}
                                 onChange={(e) =>
@@ -4022,6 +4022,9 @@ function BudgetDashboard() {
                                   borderRadius: "6px",
                                   border: "1px solid #ced4da",
                                   appearance: "none",
+backgroundColor: "white",           // ← Add this
+    color: "#212529",                   // ← Add this (Bootstrap dark gray)
+
                            
                                 }}
                               >

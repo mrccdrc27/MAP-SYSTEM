@@ -192,16 +192,11 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     Covers listing (Expense Tracking), creating (Submit Expense),
     and marking expenses as accomplished.
     """
-    permission_classes = [IsBMSUser]  # Allows Dept Heads to List/Create
+    permission_classes = [IsBMSUser]
     pagination_class = FiveResultsSetPagination
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
-    search_fields = [
-        'description', 'vendor', 'transaction_id',
-        'account__account_type__name', 'status', 'date'
-    ]
-    filterset_fields = ['category__code',
-                        'department', 'category__classification']
-    # MODIFICATION: Add JSONParser to support non-file actions like Review
+    search_fields = ['description', 'vendor', 'transaction_id', 'account__account_type__name', 'status', 'date']
+    filterset_fields = ['category__code', 'department', 'category__classification']
     parser_classes = [MultiPartParser, FormParser, JSONParser] 
 
     def get_queryset(self):
@@ -296,56 +291,58 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
             expense.save()
         
-        # Outbound Notification Logic (Webhooks)
-        # Outbound Notification Logic (Webhooks)
+        # --- MODIFICATION: Robust Outbound Notification Logic ---
         if expense.transaction_id:
-            target_url = None
-            api_key_to_use = None # New Variable
-            
-            tid = expense.transaction_id.upper()
-            
-            # 1. AMS (Assets/Repairs)
-            if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"): 
-                target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
-                # MODIFICATION: Use specific AMS key if available, fallback to generic
-                api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None) 
-            
-            # 2. HDTS (Help Desk/Travel)
-            elif tid.startswith("HD") or tid.startswith("TRV"):
-                target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
-                api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
-            
-            # 3. TTS/DTS (General Tickets)
-            elif tid.startswith("TICKET") or tid.startswith("REQ") or tid.startswith("GEN"):
-                target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
-                api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
-
-            # 4. Fallback
-            if not target_url:
-                 target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
-                 api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
-
-            if target_url:
-                payload = {
-                    "ticket_id": expense.transaction_id,
-                    "status": expense.status, 
-                    "reviewed_by": request.user.get_full_name() or request.user.username,
-                    "reviewed_at": timezone.now().isoformat(),
-                    "notes": notes or ""
-                }
+            try:
+                target_url = None
+                api_key_to_use = None
                 
-                # MODIFICATION: Use the specific key
-                headers = {
-                    "X-API-Key": api_key_to_use or '', 
-                    "Content-Type": "application/json"
-                }
+                # Normalize ID for prefix checking
+                tid = expense.transaction_id.upper()
                 
-                try:
-                    requests.post(target_url, json=payload, headers=headers, timeout=5)
-                except Exception as e:
-                    print(f"Failed to notify {target_url}: {e}")
+                # 1. AMS (Asset Management) - Prefix: AST, REP, REG
+                if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"):
+                     target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
+                     api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None)
+                
+                # 2. HDTS (Help Desk/Travel) - Prefix: HD, TRV
+                elif tid.startswith("HD") or tid.startswith("TRV"):
+                     target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
+                     api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
+
+                # 3. TTS/DTS (Ticketing) - Default Fallback
+                else:
+                     target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
+                     api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
+
+                if target_url:
+                    payload = {
+                        'ticket_id': expense.transaction_id,
+                        'status': new_status,  # 'APPROVED' or 'REJECTED'
+                        'notes': notes or "",
+                        'reviewed_by': reviewer.get_full_name() or reviewer.username,
+                        'reviewed_at': timezone.now().isoformat()
+                    }
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': api_key_to_use or ''
+                    }
                     
-        # --------------------------------------------------------
+                    # Send webhook with short timeout
+                    print(f"🔔 Sending Webhook to {target_url} for {tid}")
+                    response = requests.post(target_url, json=payload, headers=headers, timeout=5)
+                    
+                    if 200 <= response.status_code < 300:
+                        print(f"✅ Webhook Success: {tid}")
+                    else:
+                        print(f"⚠️ Webhook Failed {response.status_code}: {response.text}")
+
+                else:
+                    print(f"⚠️ No callback URL configured for prefix {tid}. Skipping notification.")
+
+            except Exception as e:
+                print(f"❌ Error notifying external system for expense {expense.id}: {e}")
+        # -----------------------------------------------------
 
         response_serializer = ExpenseDetailSerializer(
             expense, context={'request': request})
@@ -551,7 +548,7 @@ class ExpenseDetailViewForModal(generics.RetrieveAPIView):
         base_queryset = Expense.objects.select_related(
             'project__budget_proposal')
 
-        if bms_role == 'ADMIN':
+        if bms_role in ['ADMIN', 'FINANCE_HEAD']:
             return base_queryset.all()
 
         department_id = getattr(user, 'department_id', None)
@@ -590,7 +587,7 @@ class ExpenseHistoryDetailView(generics.RetrieveAPIView):
         base_queryset = Expense.objects.filter(status='APPROVED')
         bms_role = get_user_bms_role(user)
 
-        if bms_role == 'ADMIN':
+        if bms_role in ['ADMIN', 'FINANCE_HEAD']:
             return base_queryset.all()
 
         department_id = getattr(user, 'department_id', None)
@@ -598,4 +595,3 @@ class ExpenseHistoryDetailView(generics.RetrieveAPIView):
             return base_queryset.filter(department_id=department_id)
 
         return Expense.objects.none()
-# MODIFICATION END

@@ -27,6 +27,7 @@ import {
   reviewExpense,
   markExpenseAsAccomplished,
 } from "../../API/expenseAPI";
+import budgetApi from "../../API/budgetAPI";
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
 
@@ -406,7 +407,6 @@ const Status = ({ type, name }) => {
   );
 };
 
-
 // --- PAGINATION COMPONENT (From Original) ---
 const Pagination = ({
   currentPage,
@@ -694,11 +694,22 @@ const ExpenseTracking = () => {
   const [pageSize, setPageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
 
-  const handleOpenReview = (expense, action) => {
-    setSelectedExpense(expense);
+  const handleOpenReview = async (expense, action) => {
+    // Show loading state
+    setSelectedExpense({ ...expense, isLoadingDetails: true });
     setReviewAction(action);
     setReviewNotes("");
     setShowReviewModal(true);
+
+    try {
+      // Fetch full expense details including attachments
+      const res = await budgetApi.get(`/expenses/${expense.id}/`);
+      setSelectedExpense(res.data);
+    } catch (err) {
+      console.error("Failed to fetch expense details", err);
+      // Fallback to basic info from list
+      setSelectedExpense(expense);
+    }
   };
 
   const submitReview = async () => {
@@ -778,13 +789,16 @@ const ExpenseTracking = () => {
     return "User";
   };
 
-  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
   const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
     // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
+      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+        user.full_name ||
+        user.username ||
+        "User"
       : "User",
     role: userRole,
     avatar:
@@ -1025,20 +1039,27 @@ const ExpenseTracking = () => {
   };
 
   const handleClearFiles = () => {
-  setNewExpense((prev) => ({ ...prev, attachments: [] }));
-  if (fileInputRef.current) {
-    fileInputRef.current.value = "";
-  }
-};
+    setNewExpense((prev) => ({ ...prev, attachments: [] }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   // --- UPDATED: Handle Submit with Custom Alert ---
   const handleSubmitExpense = async (e) => {
     e.preventDefault();
 
     if (parseFloat(newExpense.amount) < 0) {
-      showAlert("Amount cannot be negative.", "error"); // UPDATED
+      showAlert("Amount cannot be negative.", "error");
       return;
     }
+
+    // Client-side validation for description (required field)
+    if (!newExpense.description || newExpense.description.trim() === "") {
+      showAlert("Description is required.", "error");
+      return;
+    }
+
     const formData = new FormData();
 
     formData.append("project_id", newExpense.project_id);
@@ -1075,7 +1096,7 @@ const ExpenseTracking = () => {
       setExpenses(expensesRes.data.results);
       setTotalItems(expensesRes.data.count);
 
-      showAlert("Expense submitted successfully!", "success"); // UPDATED
+      showAlert("Expense submitted successfully!", "success");
     } catch (error) {
       console.error("Failed to submit expense:", error);
 
@@ -1086,13 +1107,37 @@ const ExpenseTracking = () => {
         return;
       }
 
-      const errorMsg =
-        error.response?.data?.amount ||
-        error.response?.data?.non_field_errors?.[0] ||
-        error.response?.data?.detail ||
-        "An unexpected error occurred.";
+      // IMPROVED: Better error message extraction
+      let errorMsg = "An unexpected error occurred.";
 
-      showAlert(`Error: ${errorMsg}`, "error"); // UPDATED
+      if (error.response?.data) {
+        const data = error.response.data;
+
+        // Check for specific field errors
+        if (data.date) {
+          errorMsg = Array.isArray(data.date) ? data.date[0] : data.date;
+        } else if (data.attachments) {
+          errorMsg = Array.isArray(data.attachments)
+            ? data.attachments[0]
+            : data.attachments;
+        } else if (data.description) {
+          errorMsg = Array.isArray(data.description)
+            ? data.description[0]
+            : data.description;
+        } else if (data.amount) {
+          errorMsg = Array.isArray(data.amount) ? data.amount[0] : data.amount;
+        } else if (data.non_field_errors) {
+          errorMsg = Array.isArray(data.non_field_errors)
+            ? data.non_field_errors[0]
+            : data.non_field_errors;
+        } else if (data.detail) {
+          errorMsg = data.detail;
+        } else if (typeof data === "string") {
+          errorMsg = data;
+        }
+      }
+
+      showAlert(errorMsg, "error");
     }
   };
 
@@ -2908,7 +2953,7 @@ const ExpenseTracking = () => {
                         fontSize: "14px",
                       }}
                     >
-                      Description
+                      Description <span style={{ color: "red" }}>*</span>
                     </label>
                     <textarea
                       id="description"
@@ -2940,7 +2985,7 @@ const ExpenseTracking = () => {
                         fontSize: "14px",
                       }}
                     >
-                      Attachments
+                      Attachments <span style={{ color: "red" }}>*</span>
                     </label>
                     <div
                       style={{
@@ -3224,7 +3269,10 @@ const ExpenseTracking = () => {
               backgroundColor: "white",
               padding: "24px",
               borderRadius: "8px",
-              width: "500px",
+              width: "600px",
+              maxWidth: "90%",
+              maxHeight: "90vh",
+              overflowY: "auto",
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
             }}
           >
@@ -3246,7 +3294,7 @@ const ExpenseTracking = () => {
                   fontSize: "14px",
                 }}
               >
-                Ticket ID: <strong>{selectedExpense.reference_no}</strong>
+                {/* Ticket ID: <strong>{selectedExpense.reference_no}</strong> */}
               </p>
 
               {/* Expense Details */}
@@ -3305,6 +3353,156 @@ const ExpenseTracking = () => {
                       selectedExpense.sub_category_name}
                   </span>
                 </div>
+                {selectedExpense.description && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      paddingTop: "12px",
+                      borderTop: "1px solid #e9ecef",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: "#666",
+                        display: "block",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Description:
+                    </span>
+                    <span style={{ fontSize: "13px", fontWeight: "400" }}>
+                      {selectedExpense.description}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Attachments Section */}
+              <div
+                style={{
+                  marginBottom: "20px",
+                  padding: "12px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "6px",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <Paperclip size={16} color="#666" />
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "#333",
+                    }}
+                  >
+                    Attachments
+                  </span>
+                </div>
+
+                {selectedExpense.isLoadingDetails ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "20px",
+                      color: "#666",
+                      fontSize: "13px",
+                    }}
+                  >
+                    Loading attachments...
+                  </div>
+                ) : selectedExpense.attachments &&
+                  selectedExpense.attachments.length > 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {selectedExpense.attachments.map((attachment, idx) => (
+                      <a
+                        key={idx}
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "8px 12px",
+                          backgroundColor: "white",
+                          border: "1px solid #dee2e6",
+                          borderRadius: "4px",
+                          textDecoration: "none",
+                          color: "#007bff",
+                          fontSize: "13px",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#e7f3ff";
+                          e.currentTarget.style.borderColor = "#007bff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "white";
+                          e.currentTarget.style.borderColor = "#dee2e6";
+                        }}
+                      >
+                        <Paperclip size={14} />
+                        <span
+                          style={{
+                            flex: 1,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {attachment.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: "#6c757d",
+                            fontWeight: "500",
+                          }}
+                        >
+                          View
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "20px",
+                      color: "#dc3545",
+                      fontSize: "13px",
+                      backgroundColor: "#fff5f5",
+                      border: "1px solid #ffebee",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <AlertCircle
+                      size={20}
+                      style={{ marginBottom: "8px", color: "#dc3545" }}
+                    />
+                    <p style={{ margin: "0", fontWeight: "500" }}>
+                      No attachments found
+                    </p>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "12px" }}>
+                      This expense was submitted without supporting documents
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3390,7 +3588,7 @@ const ExpenseTracking = () => {
                   padding: "12px",
                   borderRadius: "4px",
                   border: "1px solid #ced4da",
-                  backgroundColor: "#f8f9fa", // Grey filled background
+                  backgroundColor: "#f8f9fa",
                   fontSize: "14px",
                   resize: "vertical",
                   outline: "none",
@@ -3399,11 +3597,11 @@ const ExpenseTracking = () => {
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = "#007bff";
-                  e.target.style.backgroundColor = "white"; // Changes to white when focused
+                  e.target.style.backgroundColor = "white";
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = "#ced4da";
-                  e.target.style.backgroundColor = "#f8f9fa"; // Returns to grey when not focused
+                  e.target.style.backgroundColor = "#f8f9fa";
                 }}
               />
             </div>

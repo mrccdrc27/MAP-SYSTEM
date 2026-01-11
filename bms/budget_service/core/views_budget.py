@@ -2089,3 +2089,14 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             'id', 'name', 'start_date', 'end_date'
         ).first()
         return Response(fy)
+
+
+    @action(detail=False, methods=['get'])
+    def accounts(self, request):
+        """Get valid General Ledger Accounts for External Systems"""
+        # Return ID, Name, Code, and Type so they can filter assets vs expenses
+        accounts = Account.objects.filter(is_active=True).values(
+            'id', 'name', 'code', 'account_type__name'
+        )
+        return Response(list(accounts))
+  

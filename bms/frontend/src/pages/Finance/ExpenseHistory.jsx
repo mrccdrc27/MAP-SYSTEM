@@ -1548,6 +1548,50 @@ const ExpenseHistory = () => {
                             </div>
                           </div>
                         </div>
+                        {/* Attachments Display */}
+                        {selectedExpense.attachments && selectedExpense.attachments.length > 0 && (
+                          <div style={{ marginTop: "20px", paddingTop: "15px", borderTop: "1px solid #dee2e6" }}>
+                            <strong style={{ color: "#6c757d", display: "block", marginBottom: "10px" }}>
+                              Attachments ({selectedExpense.attachments.length}):
+                            </strong>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                              {selectedExpense.attachments.map((attachment, idx) => (
+                                <a
+                                  key={idx}
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    padding: "10px 12px",
+                                    backgroundColor: "white",
+                                    borderRadius: "4px",
+                                    border: "1px solid #dee2e6",
+                                    textDecoration: "none",
+                                    color: "#007bff",
+                                    fontSize: "14px",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#f0f8ff";
+                                    e.currentTarget.style.borderColor = "#007bff";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "white";
+                                    e.currentTarget.style.borderColor = "#dee2e6";
+                                  }}
+                                >
+                                  <Download size={16} />
+                                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {attachment.name}
+                                  </span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div
