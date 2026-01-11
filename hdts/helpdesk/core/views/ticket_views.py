@@ -7,19 +7,67 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.http import FileResponse, Http404, HttpResponse
 from django.conf import settings
+from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, parser_classes, authentication_classes, action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.reverse import reverse
 
 from ..authentication import CookieJWTAuthentication, ExternalUser
-from ..models import Ticket, TicketAttachment, TicketComment, ActivityLog, PRIORITY_LEVELS, DEPARTMENT_CHOICES
+from ..models import Ticket, TicketAttachment, TicketComment, ActivityLog, EmployeeNotification, PRIORITY_LEVELS, DEPARTMENT_CHOICES
 from ..serializers import TicketSerializer, TicketAttachmentSerializer
 from .permissions import IsAdminOrCoordinator, IsEmployeeOrAdmin
 from .helpers import _actor_display_name, get_external_employee_data
+
+
+def create_employee_notification(ticket, notification_type, title=None, message=None, actor_name=None):
+    """
+    Helper function to create employee notifications.
+    Uses the ticket's employee_cookie_id as the notification recipient.
+    """
+    try:
+        employee_id = getattr(ticket, 'employee_cookie_id', None)
+        if not employee_id and ticket.employee:
+            employee_id = ticket.employee.id
+        
+        if not employee_id:
+            return None
+        
+        if notification_type == 'ticket_submitted':
+            return EmployeeNotification.create_ticket_submitted_notification(employee_id, ticket)
+        elif notification_type in ['ticket_approved', 'ticket_rejected', 'ticket_in_progress', 
+                                   'ticket_on_hold', 'ticket_resolved', 'ticket_closed', 'ticket_withdrawn']:
+            # Map notification type to status
+            status_map = {
+                'ticket_approved': 'Open',
+                'ticket_rejected': 'Rejected',
+                'ticket_in_progress': 'In Progress',
+                'ticket_on_hold': 'On Hold',
+                'ticket_resolved': 'Resolved',
+                'ticket_closed': 'Closed',
+                'ticket_withdrawn': 'Withdrawn',
+            }
+            status_value = status_map.get(notification_type)
+            return EmployeeNotification.create_ticket_status_notification(employee_id, ticket, status_value, actor_name)
+        elif notification_type in ['new_reply', 'owner_reply']:
+            return EmployeeNotification.create_reply_notification(employee_id, ticket, actor_name)
+        else:
+            # Custom notification
+            if title and message:
+                return EmployeeNotification.create_notification(
+                    employee_id=employee_id,
+                    notification_type=notification_type,
+                    title=title,
+                    message=message,
+                    ticket=ticket,
+                    link_type='ticket'
+                )
+    except Exception as e:
+        print(f"[Notification] Error creating notification: {e}")
+        return None
 
 
 class TicketViewSet(viewsets.ModelViewSet):
@@ -194,6 +242,10 @@ class TicketViewSet(viewsets.ModelViewSet):
             user = self.request.user
             print(f"[perform_create] ExternalUser profile: {user.first_name} {user.last_name}, {user.department}, {user.company_id}")
             ticket = serializer.save(employee=None, employee_cookie_id=user.id)
+            
+            # Create notification for ticket submission (ExternalUser)
+            create_employee_notification(ticket, 'ticket_submitted')
+            
             return ticket
         else:
             ticket = serializer.save(employee=self.request.user)
@@ -208,6 +260,10 @@ class TicketViewSet(viewsets.ModelViewSet):
                 )
             except Exception:
                 pass
+            
+            # Create notification for ticket submission
+            create_employee_notification(ticket, 'ticket_submitted')
+            
             return ticket
         
     def perform_update(self, serializer):
@@ -407,7 +463,17 @@ def get_ticket_detail(request, ticket_id):
                 'last_name': '',
                 'role': 'Employee'
             }
-            if comment.user:
+            
+            # Check if this is a system auto-response (no user and no cookie_id)
+            is_auto = getattr(comment, 'is_auto_response', False) or (comment.user is None and comment.user_cookie_id is None)
+            
+            if is_auto:
+                # System auto-response - show as Support Team
+                user_payload['id'] = 'system'
+                user_payload['first_name'] = 'Support'
+                user_payload['last_name'] = 'Team'
+                user_payload['role'] = 'System'
+            elif comment.user:
                 user_payload['first_name'] = getattr(comment.user, 'first_name', '') or ''
                 user_payload['last_name'] = getattr(comment.user, 'last_name', '') or ''
                 user_payload['role'] = getattr(comment.user, 'role', 'Employee')
@@ -430,7 +496,10 @@ def get_ticket_detail(request, ticket_id):
                 'comment': comment.comment,
                 'created_at': comment.created_at,
                 'is_internal': comment.is_internal,
-                'user': user_payload
+                'user': user_payload,
+                'attachment': comment.attachment.url if comment.attachment else None,
+                'attachment_name': comment.attachment_name,
+                'attachment_type': comment.attachment_type,
             })
         
         try:
@@ -622,7 +691,16 @@ def get_ticket_by_number(request, ticket_number):
                 'role': 'Employee'
             }
 
-            if comment.user:
+            # Check if this is a system auto-response (no user and no cookie_id)
+            is_auto = getattr(comment, 'is_auto_response', False) or (comment.user is None and comment.user_cookie_id is None)
+            
+            if is_auto:
+                # System auto-response - show as Support Team
+                user_payload['id'] = 'system'
+                user_payload['first_name'] = 'Support'
+                user_payload['last_name'] = 'Team'
+                user_payload['role'] = 'System'
+            elif comment.user:
                 user_payload['first_name'] = getattr(comment.user, 'first_name', '') or ''
                 user_payload['last_name'] = getattr(comment.user, 'last_name', '') or ''
                 user_payload['role'] = getattr(comment.user, 'role', 'Employee')
@@ -637,7 +715,10 @@ def get_ticket_by_number(request, ticket_number):
                 'comment': comment.comment,
                 'created_at': comment.created_at,
                 'is_internal': comment.is_internal,
-                'user': user_payload
+                'user': user_payload,
+                'attachment': comment.attachment.url if comment.attachment else None,
+                'attachment_name': comment.attachment_name,
+                'attachment_type': comment.attachment_type,
             })
         
         try:
@@ -694,12 +775,28 @@ def add_ticket_comment(request, ticket_id):
             return Response({'error': 'permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         comment_text = request.data.get('comment', '').strip()
-        if not comment_text:
-            return Response({'error': 'Comment text is required'}, status=status.HTTP_400_BAD_REQUEST)
+        attachment_file = request.FILES.get('attachment')
+        
+        # Allow either comment text or attachment (or both)
+        if not comment_text and not attachment_file:
+            return Response({'error': 'Comment text or attachment is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        is_internal = bool(request.data.get('is_internal', False))
+        # Parse is_internal - FormData sends booleans as strings
+        is_internal_raw = request.data.get('is_internal', False)
+        if isinstance(is_internal_raw, str):
+            is_internal = is_internal_raw.lower() in ('true', '1', 'yes')
+        else:
+            is_internal = bool(is_internal_raw)
+        
         if is_internal and not (request.user.is_staff or getattr(request.user, 'role', None) in ['System Admin', 'Ticket Coordinator', 'Admin']):
             return Response({'error': 'permission denied for internal comment'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Prepare attachment data
+        attachment_name = None
+        attachment_type = None
+        if attachment_file:
+            attachment_name = attachment_file.name
+            attachment_type = attachment_file.content_type or 'application/octet-stream'
 
         if isinstance(request.user, ExternalUser):
             comment = TicketComment.objects.create(
@@ -707,6 +804,9 @@ def add_ticket_comment(request, ticket_id):
                 user=None,
                 user_cookie_id=request.user.id,
                 comment=comment_text,
+                attachment=attachment_file,
+                attachment_name=attachment_name,
+                attachment_type=attachment_type,
                 is_internal=is_internal
             )
             first = getattr(request.user, 'first_name', '') or ''
@@ -730,6 +830,9 @@ def add_ticket_comment(request, ticket_id):
                 user=request.user,
                 user_cookie_id=None,
                 comment=comment_text,
+                attachment=attachment_file,
+                attachment_name=attachment_name,
+                attachment_type=attachment_type,
                 is_internal=is_internal
             )
             user_data = {
@@ -744,12 +847,138 @@ def add_ticket_comment(request, ticket_id):
             'comment': comment.comment,
             'created_at': comment.created_at,
             'is_internal': comment.is_internal,
-            'user': user_data
+            'user': user_data,
+            'attachment': comment.attachment.url if comment.attachment else None,
+            'attachment_name': comment.attachment_name,
+            'attachment_type': comment.attachment_type,
         }
+
+        # Create notification for reply if it's from ticket owner (admin/coordinator) to employee
+        # Only notify the employee if the comment is from someone else and not internal
+        if not is_internal and is_admin_or_coordinator and not is_ticket_owner:
+            replier_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip() or 'Support Team'
+            create_employee_notification(ticket, 'owner_reply', actor_name=replier_name)
 
         return Response(comment_data, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes([CookieJWTAuthentication, JWTAuthentication])
+@permission_classes([AllowAny])
+def add_auto_response(request, ticket_id):
+    """
+    Create an auto-response comment for a ticket (system-generated Support Team message).
+    This is used to persist the "Thank you for your message" auto-response.
+    """
+    try:
+        ticket = get_object_or_404(Ticket, id=ticket_id)
+        message = request.data.get('message', '').strip()
+        
+        if not message:
+            return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if auto-response already exists for this ticket
+        existing = TicketComment.objects.filter(
+            ticket=ticket,
+            comment__icontains='Thank you for your message'
+        ).exists()
+        
+        if existing:
+            return Response({'message': 'Auto-response already exists'}, status=status.HTTP_200_OK)
+        
+        # Create the auto-response comment (no user - system generated)
+        comment = TicketComment.objects.create(
+            ticket=ticket,
+            user=None,
+            user_cookie_id=None,
+            comment=message,
+            is_internal=False,
+            is_auto_response=True  # Mark as auto-response
+        )
+        
+        return Response({
+            'id': comment.id,
+            'comment': comment.comment,
+            'created_at': comment.created_at,
+            'is_internal': comment.is_internal,
+            'user': {
+                'id': 'system',
+                'first_name': 'Support',
+                'last_name': 'Team',
+                'role': 'System'
+            }
+        }, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# In-memory typing status store (ticket_number -> { user_id, user_name, timestamp })
+# In production, use Redis or database
+_typing_status = {}
+
+@api_view(['POST'])
+@authentication_classes([CookieJWTAuthentication, JWTAuthentication])
+@permission_classes([AllowAny])
+def set_typing_status(request, ticket_number):
+    """
+    Set typing status for a ticket. Call when user starts/stops typing.
+    POST body: { "is_typing": true/false, "user_id": "...", "user_name": "..." }
+    """
+    import time
+    global _typing_status
+    
+    is_typing = request.data.get('is_typing', False)
+    user_id = request.data.get('user_id', '')
+    user_name = request.data.get('user_name', 'Someone')
+    
+    if is_typing:
+        _typing_status[ticket_number] = {
+            'user_id': str(user_id),
+            'user_name': user_name,
+            'timestamp': time.time()
+        }
+    else:
+        # Clear typing status for this ticket if it was this user
+        if ticket_number in _typing_status:
+            if str(_typing_status[ticket_number].get('user_id', '')) == str(user_id):
+                del _typing_status[ticket_number]
+    
+    return Response({'success': True})
+
+
+@api_view(['GET'])
+@authentication_classes([CookieJWTAuthentication, JWTAuthentication])
+@permission_classes([AllowAny])
+def get_typing_status(request, ticket_number):
+    """
+    Get typing status for a ticket. Returns who is typing (if anyone).
+    Automatically expires typing status after 5 seconds.
+    """
+    import time
+    global _typing_status
+    
+    # Clean up expired entries (older than 5 seconds)
+    current_time = time.time()
+    expired = [k for k, v in _typing_status.items() if current_time - v.get('timestamp', 0) > 5]
+    for k in expired:
+        del _typing_status[k]
+    
+    # Get typing status for this ticket
+    status_entry = _typing_status.get(ticket_number)
+    
+    # Exclude current user from typing indicator
+    current_user_id = request.query_params.get('exclude_user_id', '')
+    
+    if status_entry and str(status_entry.get('user_id', '')) != str(current_user_id):
+        return Response({
+            'is_typing': True,
+            'user_id': status_entry.get('user_id'),
+            'user_name': status_entry.get('user_name', 'Someone')
+        })
+    
+    return Response({'is_typing': False})
 
 
 @api_view(['POST'])
@@ -782,6 +1011,19 @@ def approve_ticket(request, ticket_id):
         ticket.department = department
         user_display_name = _actor_display_name(request)
         ticket.approved_by = user_display_name
+        
+        # Auto-assign ticket coordinator as ticket owner
+        # Exclude the approving user if they are a coordinator
+        from ..services.coordinator_assignment import assign_ticket_coordinator
+        exclude_id = None
+        if isinstance(request.user, ExternalUser) and request.user.role == 'Ticket Coordinator':
+            exclude_id = request.user.id
+        
+        assigned_coordinator = assign_ticket_coordinator(ticket, exclude_coordinator_id=exclude_id)
+        
+        # If assignment succeeds, ticket_owner_id is already set on the ticket instance
+        # The save() call in assign_ticket_coordinator only updates ticket_owner_id
+        # So we need to save the other fields too
         ticket.save()
 
         if isinstance(request.user, ExternalUser):
@@ -800,6 +1042,20 @@ def approve_ticket(request, ticket_id):
                 comment=f"Status changed to Open (approved by {user_display_name})",
                 is_internal=False
             )
+        
+        # Add comment about ticket owner assignment
+        if assigned_coordinator:
+            owner_name = f"{assigned_coordinator.get('first_name', '')} {assigned_coordinator.get('last_name', '')}".strip() or assigned_coordinator.get('email', 'Unknown')
+            TicketComment.objects.create(
+                ticket=ticket,
+                user=None,
+                user_cookie_id=assigned_coordinator.get('id'),
+                comment=f"Ticket assigned to {owner_name} as ticket owner",
+                is_internal=True  # Internal note about assignment
+            )
+
+        # Create notification for ticket approval
+        create_employee_notification(ticket, 'ticket_approved', actor_name=user_display_name)
 
         return Response({
             'message': 'Ticket approved successfully',
@@ -807,7 +1063,13 @@ def approve_ticket(request, ticket_id):
             'status': ticket.status,
             'priority': ticket.priority,
             'department': ticket.department,
-            'approved_by': ticket.approved_by
+            'approved_by': ticket.approved_by,
+            'ticket_owner_id': ticket.ticket_owner_id,
+            'ticket_owner': {
+                'id': assigned_coordinator.get('id'),
+                'email': assigned_coordinator.get('email'),
+                'name': f"{assigned_coordinator.get('first_name', '')} {assigned_coordinator.get('last_name', '')}".strip()
+            } if assigned_coordinator else None
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -855,6 +1117,9 @@ def reject_ticket(request, ticket_id):
                 comment=f"Ticket rejected by {user_display_name}. Reason: {rejection_reason}",
                 is_internal=True
             )
+        
+        # Create notification for ticket rejection
+        create_employee_notification(ticket, 'ticket_rejected', actor_name=user_display_name)
         
         return Response({
             'message': 'Ticket rejected successfully',
@@ -978,6 +1243,19 @@ def update_ticket_status(request, ticket_id):
         except Exception:
             pass
         
+        # Create notification for status change (exclude Open and Rejected as they have specific handlers)
+        if new_status not in ['Open', 'Rejected', 'New']:
+            notification_type_map = {
+                'In Progress': 'ticket_in_progress',
+                'On Hold': 'ticket_on_hold',
+                'Resolved': 'ticket_resolved',
+                'Closed': 'ticket_closed',
+            }
+            notif_type = notification_type_map.get(new_status)
+            if notif_type:
+                user_display_name = _actor_display_name(request)
+                create_employee_notification(ticket, notif_type, actor_name=user_display_name)
+        
         return Response({
             'message': 'Ticket status updated successfully',
             'ticket_id': ticket.id,
@@ -1036,6 +1314,9 @@ def withdraw_ticket(request, ticket_id):
                 comment=withdrawal_comment,
                 is_internal=False
             )
+        
+        # Create notification for withdrawal
+        create_employee_notification(ticket, 'ticket_withdrawn', actor_name=user_display_name)
         
         return Response({
             'message': 'Ticket withdrawn successfully',
@@ -1198,14 +1479,32 @@ def get_open_tickets(request):
 @authentication_classes([CookieJWTAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated, IsAdminOrCoordinator])
 def get_my_tickets(request):
+    """
+    Get tickets owned by the current coordinator.
+    For external users (auth service), uses ticket_owner_id field.
+    For local users, falls back to assigned_to field.
+    """
     try:
         if not (request.user.is_staff or request.user.role in ['System Admin', 'Ticket Coordinator']):
             return Response({'error': 'permission denied'}, status=status.HTTP_403_FORBIDDEN)
         
-        my_tickets = Ticket.objects.filter(assigned_to=request.user).select_related('employee').order_by('-submit_date')
+        # For external users (from auth service), use ticket_owner_id
+        if isinstance(request.user, ExternalUser):
+            my_tickets = Ticket.objects.filter(ticket_owner_id=request.user.id).select_related('employee').order_by('-submit_date')
+        else:
+            # For local employees, check both assigned_to and ticket_owner_id
+            my_tickets = Ticket.objects.filter(
+                Q(assigned_to=request.user) | Q(ticket_owner_id=request.user.id)
+            ).select_related('employee').order_by('-submit_date')
         
         tickets_data = []
         for ticket in my_tickets:
+            employee_name = "Unknown"
+            employee_department = "Unknown"
+            if ticket.employee:
+                employee_name = f"{ticket.employee.first_name} {ticket.employee.last_name}"
+                employee_department = ticket.employee.department
+            
             tickets_data.append({
                 'id': ticket.id,
                 'ticket_number': ticket.ticket_number,
@@ -1216,9 +1515,11 @@ def get_my_tickets(request):
                 'status': ticket.status,
                 'submit_date': ticket.submit_date,
                 'update_date': ticket.update_date,
-                'employee_name': f"{ticket.employee.first_name} {ticket.employee.last_name}",
-                'employee_department': ticket.employee.department,
-                'has_attachment': bool(ticket.attachments.exists())
+                'employee_name': employee_name,
+                'employee_department': employee_department,
+                'employee_cookie_id': ticket.employee_cookie_id,
+                'has_attachment': bool(ticket.attachments.exists()),
+                'ticket_owner_id': ticket.ticket_owner_id
             })
         
         return Response(tickets_data, status=status.HTTP_200_OK)

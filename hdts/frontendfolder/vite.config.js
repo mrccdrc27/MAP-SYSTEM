@@ -7,5 +7,39 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false, // Allow fallback to other ports
+    // Proxy API requests - makes cookies same-origin
+    proxy: {
+      // Auth service endpoints
+      '/api': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+      },
+      // Helpdesk backend DIRECT (not Kong) - so cookies work
+      '/helpdesk': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/helpdesk/, ''),
+      },
+      // Media files from helpdesk backend - served at /api/media/
+      '/media': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: (path) => '/api' + path,  // /media/... -> /api/media/...
+      },
+      // Workflow API DIRECT to workflow_api service (not Kong)
+      // This allows cookie-based auth to work since we're going through auth service
+      '/workflow': {
+        target: 'http://localhost:1001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/workflow/, ''),
+      },
+      // Messaging Service
+      '/messaging': {
+        target: 'http://localhost:1002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/messaging/, ''), 
+        websocket: true,
+      },
+    },
   },
 })

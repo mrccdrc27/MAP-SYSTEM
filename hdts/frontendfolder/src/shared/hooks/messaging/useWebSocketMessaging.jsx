@@ -30,6 +30,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
 
       wsRef.current.onopen = () => {
         console.log('[WebSocket] Connected successfully');
+        console.debug('[WebSocket] onopen - readyState', wsRef.current && wsRef.current.readyState);
         setIsConnected(true);
         setError(null);
         reconnectAttemptsRef.current = 0;
@@ -42,6 +43,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
 
       wsRef.current.onmessage = (event) => {
         try {
+          console.debug('[WebSocket] Raw message received:', event.data);
           const data = JSON.parse(event.data);
           handleWebSocketMessage(data);
         } catch (err) {
@@ -51,6 +53,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
 
       wsRef.current.onclose = (event) => {
         console.log('[WebSocket] Connection closed:', event.code, event.reason);
+        console.debug('[WebSocket] onclose - readyState', wsRef.current && wsRef.current.readyState);
         setIsConnected(false);
 
         // Only reconnect on abnormal closure and within attempt limit
@@ -84,6 +87,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
         break;
 
       case 'typing_indicator':
+        console.debug('[WebSocket] typing_indicator:', data, 'currentUserId:', userId);
         setTypingUsers((prev) => {
           const newSet = new Set(prev);
           if (data.is_typing && data.user !== userId) {
@@ -91,6 +95,7 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
           } else {
             newSet.delete(data.user);
           }
+          console.debug('[WebSocket] typingUsers now:', Array.from(newSet));
           return newSet;
         });
         break;

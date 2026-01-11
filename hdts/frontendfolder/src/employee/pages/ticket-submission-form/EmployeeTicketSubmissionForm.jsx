@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { IoClose } from 'react-icons/io5';
-import LoadingButton from '../../../shared/buttons/LoadingButton';
+import { FaFileAlt, FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import Button from '../../../shared/components/Button';
+import InputField from '../../../shared/components/InputField';
+import EmployeeTicketSubmissionFormModal from "../../components/modals/ticket-submission-form/EmployeeTicketSubmissionFormModal.jsx";
+import ProgressBar from '../../../shared/components/ProgressBar';
 import styles from './EmployeeTicketSubmissionForm.module.css';
-import coordinatorStyles from '../../../coordinator-admin/pages/account-register/CoordinatorAdminAccountRegister.module.css';
-import formActions from '../../../shared/styles/formActions.module.css';
 import FormActions from '../../../shared/components/FormActions';
 import FormCard from '../../../shared/components/FormCard';
 import { backendTicketService } from '../../../services/backend/ticketService';
@@ -16,6 +17,7 @@ import ITSupportForm from './ITSupportForm';
 import AssetCheckInForm, { mockAssets } from './AssetCheckInForm';
 import AssetCheckOutForm from './AssetCheckOutForm';
 import BudgetProposalForm from './BudgetProposalForm';
+import { TICKET_CATEGORIES } from '../../../shared/constants/ticketCategories';
 
 const ALLOWED_FILE_TYPES = [
   'image/png',
@@ -27,8 +29,6 @@ const ALLOWED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/csv',
 ];
-
-import { TICKET_CATEGORIES } from '../../../shared/constants/ticketCategories';
 
 export default function EmployeeTicketSubmissionForm() {
   const navigate = useNavigate();
@@ -55,8 +55,125 @@ export default function EmployeeTicketSubmissionForm() {
     preparedBy: ''
   });
 
-  // If navigated with prefill state, populate initial fields
+  // Track if we loaded from chatbot prefill (to show notification)
+  const [loadedFromChatbot, setLoadedFromChatbot] = useState(false);
+
+  // IndexedDB helper functions for loading files
+  const loadFilesFromDB = async () => {
+    const DB_NAME = 'chatbot_files_db';
+    const STORE_NAME = 'attachments';
+    const DB_VERSION = 1;
+    
+    try {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+      });
+      
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      
+      const files = await new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      
+      db.close();
+      
+      // Convert stored data back to File objects
+      return files.map(f => new File([f.data], f.name, { type: f.type }));
+    } catch (e) {
+      console.error('Error loading files from IndexedDB:', e);
+      return [];
+    }
+  };
+
+  const clearFilesFromDB = async () => {
+    const DB_NAME = 'chatbot_files_db';
+    const STORE_NAME = 'attachments';
+    const DB_VERSION = 1;
+    
+    try {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+      });
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.clear();
+      await new Promise((resolve) => { tx.oncomplete = resolve; });
+      db.close();
+    } catch (e) {
+      console.error('Error clearing files from IndexedDB:', e);
+    }
+  };
+
+  // If navigated with prefill state OR localStorage has chatbot prefill, populate fields
   useEffect(() => {
+    // First check localStorage for chatbot prefilled data
+    const chatbotPrefill = localStorage.getItem('chatbot_prefilled_ticket');
+    if (chatbotPrefill) {
+      try {
+        const pre = JSON.parse(chatbotPrefill);
+        console.log('Loading prefilled ticket from chatbot:', pre);
+        
+        // Determine if we need to show custom device type
+        const isCustomDevice = pre.customDeviceType && pre.customDeviceType !== '';
+        if (isCustomDevice) {
+          setShowCustomDeviceType(true);
+        }
+        
+        setFormData((prev) => ({
+          ...prev,
+          subject: pre.subject || prev.subject,
+          description: pre.description || prev.description,
+          category: pre.category || prev.category,
+          subCategory: pre.subCategory || prev.subCategory,
+          deviceType: pre.deviceType || prev.deviceType,
+          customDeviceType: pre.customDeviceType || prev.customDeviceType,
+          softwareAffected: pre.softwareAffected || prev.softwareAffected,
+          assetName: pre.assetName || prev.assetName,
+          serialNumber: pre.serialNumber || prev.serialNumber,
+          location: pre.location || prev.location,
+          expectedReturnDate: pre.expectedReturnDate || prev.expectedReturnDate,
+          issueType: pre.issueType || prev.issueType,
+          otherIssue: pre.otherIssue || prev.otherIssue,
+          schedule: pre.schedule || prev.schedule,
+        }));
+        
+        setLoadedFromChatbot(true);
+        
+        // Clear the localStorage after loading (one-time use)
+        localStorage.removeItem('chatbot_prefilled_ticket');
+        
+        // Load files from IndexedDB if there were attachments
+        if (pre.hasAttachments && pre.attachmentCount > 0) {
+          loadFilesFromDB().then((files) => {
+            if (files && files.length > 0) {
+              setSelectedFiles(files);
+              // Clear the IndexedDB after loading
+              clearFilesFromDB();
+            }
+          });
+        }
+        
+        return; // Don't process location state if we loaded from localStorage
+      } catch (e) {
+        console.error('Error parsing chatbot prefill data:', e);
+        localStorage.removeItem('chatbot_prefilled_ticket');
+      }
+    }
+    
+    // Fall back to location state prefill
     if (location && location.state && location.state.prefill) {
       const pre = location.state.prefill;
       setFormData((prev) => ({
@@ -73,7 +190,7 @@ export default function EmployeeTicketSubmissionForm() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileError, setFileError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [budgetItems, setBudgetItems] = useState([{ cost_element: '', estimated_cost: '', description: '', account: 2 }]);
+  const [budgetItems, setBudgetItems] = useState([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
   const [showCustomDeviceType, setShowCustomDeviceType] = useState(false);
 
   // Local date string in YYYY-MM-DD to use for date input min (avoid UTC offset issues)
@@ -239,7 +356,7 @@ export default function EmployeeTicketSubmissionForm() {
         performanceEndDate: '',
         preparedBy: ''
       }));
-      setBudgetItems([{ cost_element: '', estimated_cost: '', description: '', account: 2 }]);
+      setBudgetItems([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
     }
 
     // Reset asset name and serial number when sub-category changes
@@ -295,24 +412,13 @@ export default function EmployeeTicketSubmissionForm() {
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
   };
 
-  // Calculate total budget for Budget Proposal
+  // Calculate total budget for Budget Proposal — sum numeric `estimatedCost` values
   const calculateTotalBudget = () => {
     return budgetItems.reduce((total, item) => {
-      if (!item.estimated_cost) return total;
-      
-      const range = item.estimated_cost;
-      let maxValue = 0;
-
-      if (range === '₱1,000,001 and above') {
-        maxValue = 1000001;
-      } else {
-        const numbers = range.match(/\d+/g);
-        if (numbers && numbers.length > 1) {
-          maxValue = parseInt(numbers[1].replace(/,/g, ''));
-        }
-      }
-
-      return total + maxValue;
+      if (!item.estimatedCost) return total;
+      const cleaned = String(item.estimatedCost).replace(/[₱, ]+/g, '').replace(/[^0-9.-]/g, '');
+      const val = parseFloat(cleaned) || 0;
+      return total + val;
     }, 0);
   };
 
@@ -494,7 +600,7 @@ export default function EmployeeTicketSubmissionForm() {
     setTouched({});
     setSelectedFiles([]);
     setFileError('');
-    setBudgetItems([{ cost_element: '', estimated_cost: '', description: '', account: 2 }]);
+    setBudgetItems([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
     setShowCustomDeviceType(false);
   };
 
@@ -502,6 +608,25 @@ export default function EmployeeTicketSubmissionForm() {
     <main className={styles.registration}>
       <section>
   <FormCard>
+          {/* Chatbot Prefill Banner */}
+          {loadedFromChatbot && (
+            <div className={styles.prefillBanner}>
+              <span className={styles.prefillBannerIcon}>🤖</span>
+              <div className={styles.prefillBannerContent}>
+                <strong>Prefilled from PAXI Chatbot</strong>
+                <p>Please review the information below and make any changes before submitting.</p>
+              </div>
+              <button 
+                type="button" 
+                className={styles.prefillBannerClose}
+                onClick={() => setLoadedFromChatbot(false)}
+                aria-label="Dismiss banner"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit}>
           {/* Main Form Fields */}
           <FormField

@@ -11,6 +11,9 @@ from .views import (
     reject_ticket,
     get_ticket_detail,
     add_ticket_comment,
+    add_auto_response,
+    set_typing_status,
+    get_typing_status,
     get_ticket_by_number,
     get_user_activity_logs,
     get_new_tickets,
@@ -33,6 +36,14 @@ from .views import (
     finalize_ticket,  # <-- add this import
     serve_protected_media,
     serve_ticket_attachment,
+)
+from .views.notification_views import (
+    list_notifications,
+    get_unread_count,
+    mark_as_read,
+    mark_all_as_read,
+    delete_notification,
+    clear_all_notifications,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
@@ -64,6 +75,9 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/', get_ticket_detail, name='get_ticket_detail'),
     path('tickets/number/<str:ticket_number>/', get_ticket_by_number, name='get_ticket_by_number'),
     path('tickets/<int:ticket_id>/comments/', add_ticket_comment, name='add_ticket_comment'),
+    path('tickets/<int:ticket_id>/auto-response/', add_auto_response, name='add_auto_response'),
+    path('tickets/<str:ticket_number>/typing/', set_typing_status, name='set_typing_status'),
+    path('tickets/<str:ticket_number>/typing/status/', get_typing_status, name='get_typing_status'),
     path('tickets/<int:ticket_id>/approve/', approve_ticket, name='approve_ticket'),
     path('tickets/<int:ticket_id>/reject/', reject_ticket, name='reject_ticket'),
     path('tickets/<int:ticket_id>/claim/', claim_ticket, name='claim_ticket'),
@@ -77,6 +91,14 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/finalize/', finalize_ticket, name='finalize_ticket'),  # <-- add this line
     # Activity logs for user profile
     path('activity-logs/user/<int:user_id>/', get_user_activity_logs, name='get_user_activity_logs'),
+
+    # Employee Notifications
+    path('notifications/', list_notifications, name='list_notifications'),
+    path('notifications/unread-count/', get_unread_count, name='get_unread_count'),
+    path('notifications/<int:notification_id>/read/', mark_as_read, name='mark_notification_read'),
+    path('notifications/read-all/', mark_all_as_read, name='mark_all_notifications_read'),
+    path('notifications/<int:notification_id>/', delete_notification, name='delete_notification'),
+    path('notifications/clear/', clear_all_notifications, name='clear_all_notifications'),
 
     # Protected media files - require authentication
     path('media/<path:file_path>', serve_protected_media, name='serve_protected_media'),

@@ -31,6 +31,10 @@ const AdminAssignedTicketDetail = () => {
   // TTS Agent messaging input
   const [agentMessageInput, setAgentMessageInput] = useState('');
   const messagesEndRef = useRef(null);
+  // Requester message thread refs for scrolling
+  const requesterThreadRef = useRef(null);
+  const requesterMessagesEndRef = useRef(null);
+  const prevShowAllRef = useRef(undefined);
 
   // Priority and status states
   const [ticketStatus, setTicketStatus] = useState('LOW');
@@ -72,6 +76,8 @@ const AdminAssignedTicketDetail = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [agentMessages, activeTab]);
+
+  // Keep requester thread scroll position under user control (no auto-scroll here)
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -233,6 +239,20 @@ const AdminAssignedTicketDetail = () => {
     }
   }, [ticketNumber, currentUser]);
 
+  // Auto-scroll the limited requester thread to bottom on initial load
+  // or when collapsing from expanded -> limited so latest messages are visible.
+  useEffect(() => {
+    const prev = prevShowAllRef.current;
+    if (!showAllMessages && requesterThreadRef.current) {
+      try {
+        requesterThreadRef.current.scrollTop = 0;
+      } catch (e) {
+        // ignore
+      }
+    }
+    prevShowAllRef.current = showAllMessages;
+  }, [showAllMessages, requesterMessages.length]);
+
   const handleAgentMessageInputChange = (e) => {
     setAgentMessageInput(e.target.value);
     if (e.target.value) {
@@ -340,15 +360,7 @@ const AdminAssignedTicketDetail = () => {
         title={`Ticket No. ${ticket.id}`}
       />
 
-      {/* Status and Priority Badges */}
-      <div className={styles['header-badges']}>
-        <span className={`${styles['status-badge']} ${getStatusColor(ticket.status)}`}>
-          {ticket.status}
-        </span>
-        <span className={`${styles['priority-badge']} ${getPriorityColor(ticketStatus)}`}>
-          {ticketStatus}
-        </span>
-      </div>
+      {/* Header badges removed (priority/status shown in Details tab) */}
 
       {/* Main Content */}
       <div className={styles['content-wrapper']}>
@@ -360,13 +372,7 @@ const AdminAssignedTicketDetail = () => {
             <span className={styles['stage-value']}>{lifecycle}</span>
           </div>
 
-          {/* Priority Display */}
-          <div className={styles['priority-display']}>
-            <label>Priority:</label>
-            <span className={`${styles['priority-value']} ${styles[`priority-${ticketStatus.toLowerCase()}`]}`}>
-              {ticketStatus}
-            </span>
-          </div>
+          {/* Priority display removed (shown in Ticket Details section) */}
 
           {/* Tabs */}
           <div className={styles['tabs']}>
@@ -441,20 +447,34 @@ const AdminAssignedTicketDetail = () => {
               <div className={styles['attachments-section']}>
                 {ticket.attachments && ticket.attachments.length > 0 ? (
                   <div className={styles['attachment-list']}>
-                    {ticket.attachments.map((att, index) => (
-                      <div key={att.id || index} className={styles['attachment-item']}>
-                        <FaFile className={styles['file-icon']} />
-                        <span className={styles['attachment-name']}>{att.file_name || att.filename || `Attachment ${index + 1}`}</span>
-                        <a 
-                          href={att.file_url || att.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className={styles['download-btn']}
-                        >
-                          <FaDownload /> Download
-                        </a>
-                      </div>
-                    ))}
+                    {ticket.attachments.map((att, index) => {
+                      // Convert backend /api/media/... URLs to /media/... for vite proxy
+                      let fileUrl = att.file || att.file_url || att.url || '';
+                      if (fileUrl.startsWith('/api/media/')) {
+                        fileUrl = fileUrl.replace('/api/media/', '/media/');
+                      }
+                      const fileName = att.file_name || att.filename || `Attachment ${index + 1}`;
+                      const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+                      const mimeType = att.file_type || '';
+                      const isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
+                        || mimeType.startsWith('image/') || mimeType === 'application/pdf';
+                      
+                      return (
+                        <div key={att.id || index} className={styles['attachment-item']}>
+                          <FaFile className={styles['file-icon']} />
+                          <span className={styles['attachment-name']}>{fileName}</span>
+                          <a 
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles['download-btn']}
+                            {...(!isViewable && fileUrl ? { download: fileName } : {})}
+                          >
+                            {isViewable ? <><FaFile /> View</> : <><FaDownload /> Download</>}
+                          </a>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className={styles['no-attachments']}>No attachments</p>
@@ -462,7 +482,7 @@ const AdminAssignedTicketDetail = () => {
               </div>
             ) : (
               <div className={styles['requester-messages']}>
-                <div className={styles['messages-list']}>
+                <div className={`${styles['messages-list']} ${showAllMessages ? styles['expanded'] : styles['limited']}`} ref={requesterThreadRef}>
                   {requesterMessages.map((msg) => (
                     <div 
                       key={msg.id} 
@@ -476,13 +496,21 @@ const AdminAssignedTicketDetail = () => {
                       <p className={styles['message-content']}>{msg.content}</p>
                     </div>
                   ))}
+                  <div ref={requesterMessagesEndRef} />
                 </div>
+
+                {/* Show more/fewer toggle - outside scroll area so it stays at bottom */}
+                {requesterMessages.length > 3 && (
+                  <div className={styles['show-more']}>
+                    <button onClick={() => setShowAllMessages(!showAllMessages)}>
+                      {showAllMessages ? 'Show fewer messages' : `Show all ${requesterMessages.length} messages`}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
-
-        {/* Right Panel */}
         <div className={styles['right-panel']}>
           {/* Details/Messages Tabs */}
           <div className={styles['sidebar-tabs']}>
@@ -513,10 +541,7 @@ const AdminAssignedTicketDetail = () => {
                   <label>Status:</label>
                   <p>{ticket.status}</p>
                 </div>
-                <div className={styles['info-item']}>
-                  <label>Priority:</label>
-                  <p>{ticketStatus}</p>
-                </div>
+                {/* Priority info removed (displayed in Ticket Details) */}
                 <div className={styles['info-item']}>
                   <label>Workflow:</label>
                   <p>{ticket.workflowName || 'N/A'}</p>

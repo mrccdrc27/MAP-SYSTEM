@@ -28,6 +28,7 @@ urlpatterns = [
     path('user-management/pending/', views.manage_pending_users_view, name='manage_pending_users'),
     path('user-management/pending/api/', views.get_pending_users_api, name='pending_users_api'),
     path('user-management/users/api/', views.get_all_hdts_users_api, name='all_users_api'),
+    path('user-management/coordinators/api/', views.get_ticket_coordinators_api, name='coordinators_api'),
     path('user-management/update-status/<int:user_id>/', views.update_user_status_view, name='update_user_status'),
     # Read-only basic profile fetch for HDTS users by ID (for cross-system integrations like HDTS backend)
     path('users/<int:user_id>/', views.get_hdts_user_profile_by_id, name='hdts_user_profile_by_id'),

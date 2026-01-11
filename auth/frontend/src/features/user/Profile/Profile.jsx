@@ -49,16 +49,21 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    if (!profilePicture) {
+      // No changes to save (only profile picture can be edited)
+      setIsEditing(false);
+      return;
+    }
+    
     setIsSaving(true);
     try {
-      let data = profilePicture ? new FormData() : formData;
-      if (profilePicture) {
-        Object.entries(formData).forEach(([k, v]) => data.append(k, v || ''));
-        data.append('profile_picture', profilePicture);
-      }
-      const response = await updateProfile(data, !!profilePicture);
+      // Only send profile picture - personal info fields are not editable
+      const data = new FormData();
+      data.append('profile_picture', profilePicture);
+      
+      const response = await updateProfile(data, true);
       if (response.ok) {
-        success('Success', 'Profile updated');
+        success('Success', 'Profile picture updated');
         setProfileData(response.data);
         updateUser(response.data);
         if (response.data.profile_picture) {
@@ -155,7 +160,7 @@ const Profile = () => {
             <input type="file" ref={fileInputRef} className={styles.hiddenInput} accept="image/*" onChange={handleProfilePictureSelect} />
             
             <div className={styles.basicInfo}>
-              <h3>{profileData?.first_name} {profileData?.last_name}</h3>
+              <h3>{profileData?.first_name} {profileData?.middle_name ? `${profileData.middle_name} ` : ''}{profileData?.last_name}</h3>
               <p>@{profileData?.username}</p>
               <div className={styles.badgeGroup}>
                 {profileData?.is_superuser && <Badge variant="danger">Superuser</Badge>}
@@ -198,12 +203,12 @@ const Profile = () => {
           <div className={styles.profileMain}>
             <Card title="Personal Information" flat>
               <div className={styles.formGrid}>
-                <Input label="First Name" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} disabled={!isEditing} />
-                <Input label="Middle Name" value={formData.middle_name} onChange={e => setFormData({...formData, middle_name: e.target.value})} disabled={!isEditing} />
-                <Input label="Last Name" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} disabled={!isEditing} />
-                <Input label="Suffix" value={formData.suffix} onChange={e => setFormData({...formData, suffix: e.target.value})} placeholder="Jr, Sr, etc." disabled={!isEditing} />
-                <Input label="Username" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} disabled={!isEditing} />
-                <Input label="Phone Number" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} disabled={!isEditing} />
+                <Input label="First Name" value={formData.first_name} disabled />
+                <Input label="Middle Name" value={formData.middle_name} disabled />
+                <Input label="Last Name" value={formData.last_name} disabled />
+                <Input label="Suffix" value={formData.suffix} placeholder="Jr, Sr, etc." disabled />
+                <Input label="Username" value={formData.username} disabled />
+                <Input label="Phone Number" value={formData.phone_number} disabled />
               </div>
             </Card>
 

@@ -26,6 +26,7 @@ from .ticket_views import (
     get_ticket_detail,
     get_ticket_by_number,
     add_ticket_comment,
+    add_auto_response,
     approve_ticket,
     reject_ticket,
     claim_ticket,
@@ -39,6 +40,8 @@ from .ticket_views import (
     download_attachment,
     finalize_ticket,
     custom_api_root,
+    set_typing_status,
+    get_typing_status,
 )
 
 from .knowledge_views import (
@@ -85,6 +88,8 @@ __all__ = [
     'download_attachment',
     'finalize_ticket',
     'custom_api_root',
+    'set_typing_status',
+    'get_typing_status',
     'KnowledgeArticleViewSet',
     'serve_protected_media',
     'serve_ticket_attachment',

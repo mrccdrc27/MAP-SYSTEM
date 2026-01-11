@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { logout as apiLogout } from '../services/authService';
-import { getMe } from '../services/userService';
-import { clearAuthState } from '../utils/storage';
-import { setOnUnauthorizedCallback } from '../services/api';
+import { clearAuthState, setUserType } from '../utils/storage';
+import { setOnUnauthorizedCallback, apiRequest } from '../services/api';
+import { USER_TYPES } from '../utils/constants';
 
 const AuthContext = createContext(null);
 
@@ -19,9 +19,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Handle unauthorized (401) from any API call
+  // Handle unauthorized (401) from any API call - silent on login page
   const handleUnauthorized = useCallback(() => {
-    console.log('Unauthorized - clearing auth state');
+    // Don't log on login pages - 401 is expected there
+    const isLoginPage = window.location.pathname.includes('/employee') || 
+                        window.location.pathname.includes('/login') ||
+                        window.location.pathname === '/';
+    if (!isLoginPage) {
+      console.log('Unauthorized - clearing auth state');
+    }
     clearAuthState();
     setUser(null);
     setIsAuthenticated(false);
@@ -33,17 +39,26 @@ export const AuthProvider = ({ children }) => {
     return () => setOnUnauthorizedCallback(null);
   }, [handleUnauthorized]);
 
-  // Check authentication status by calling /api/me
+  // Check authentication status by calling the unified /api/me/ endpoint
   const checkAuth = useCallback(async () => {
     setLoading(true);
     
     try {
-      // Call /api/me - the browser will automatically include cookies
-      const response = await getMe();
+      // Use unified /api/me/ endpoint that detects user type from cookie
+      const response = await apiRequest('/api/me/', { method: 'GET' });
       
-      // Must have ok response AND valid user data (with id or email)
-      if (response.ok && response.data && (response.data.id || response.data.email)) {
-        setUser(response.data);
+      // Must have ok response AND valid user data
+      if (response.ok && response.data) {
+        const { type, data } = response.data;
+        
+        // Store user type for subsequent API calls
+        if (type === 'employee') {
+          setUserType(USER_TYPES.EMPLOYEE);
+        } else {
+          setUserType(USER_TYPES.STAFF);
+        }
+        
+        setUser(data);
         setIsAuthenticated(true);
       } else {
         // Not authenticated or invalid response
@@ -51,7 +66,13 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // Only log errors if not on login page (401 is expected there)
+      const isLoginPage = window.location.pathname.includes('/employee') || 
+                          window.location.pathname.includes('/login') ||
+                          window.location.pathname === '/';
+      if (!isLoginPage) {
+        console.error('Auth check failed:', error);
+      }
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -83,9 +104,25 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => ({ ...prev, ...userData }));
   }, []);
 
-  // Check auth on mount
+  // Check auth on mount - but skip on login pages to avoid unnecessary 401 errors
   useEffect(() => {
-    checkAuth();
+    const path = window.location.pathname;
+    // Only skip auth check on actual login pages
+    const isLoginPage = path === '/employee' || 
+                        path === '/login' ||
+                        path === '/' ||
+                        path.startsWith('/login/') ||
+                        path === '/forgot-password' ||
+                        path === '/reset-password';
+    
+    if (isLoginPage) {
+      // On login pages, just mark as not authenticated without making API call
+      setUser(null);
+      setIsAuthenticated(false);
+      setLoading(false);
+    } else {
+      checkAuth();
+    }
   }, [checkAuth]);
 
   const value = {

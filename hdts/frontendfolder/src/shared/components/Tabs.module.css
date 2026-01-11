@@ -9,7 +9,7 @@
   /* subtle divider that matches card borders */
   border-bottom: 1px solid rgba(15,23,42,0.04);
   background: transparent; /* let the parent card background show through */
-  gap: 2rem;
+  gap: 0;
   align-items: stretch;
   box-sizing: border-box;
   position: relative; /* ensure stacking context */
@@ -17,13 +17,12 @@
 }
 
 .tab {
-  /* Fixed-width tabs: use the CSS variable for a single default size so
-     every tab has the same width even when there are multiple tabs. */
-  --tab-default-width: 220px;
-  flex: 0 0 var(--tab-default-width);
-  box-sizing: border-box;
-  min-width: 120px;
-  max-width: var(--tab-default-width);
+    /* Make tabs evenly distribute across the available width. Each tab will
+      take an equal share (flex:1) and may shrink when space is constrained. */
+    flex: 1 1 0;
+    box-sizing: border-box;
+    min-width: 0; /* allow flex items to shrink below content width when necessary */
+    max-width: none;
   padding: 12px 0 16px 0; /* extra bottom padding so indicator doesn't overlap text */
   background: none;
   border: none;
@@ -80,20 +79,15 @@
 /* Single-tab behavior: when there's only one tab, don't stretch it full-width.
    Center the tab and give it a reasonable min/max width so it looks like
    a single control rather than an entire bar. */
-.tabList {
-  /* Allow override of single-tab default width via a CSS variable. */
-  --tab-default-width: 220px;
-}
-
+/* Single-tab behavior: when there's only one tab, keep it compact and left-aligned */
 .tabList > .tab:only-child,
 .tabList > button:only-child {
-  /* Use a fixed default width for a single tab so it visually matches
-     the 'same default size' concept while the container remains full width. */
-  flex: 0 0 var(--tab-default-width);
+  display: inline-flex;
+  flex: 0 0 auto;
   margin-left: 0; /* left-align single tab */
   padding: 12px 24px;
-  min-width: calc(var(--tab-default-width) - 40px);
-  max-width: var(--tab-default-width);
+  min-width: 120px;
+  max-width: 480px;
   align-self: flex-start;
 }
 
@@ -110,7 +104,7 @@
 /* Responsive behavior */
 @media (max-width: 640px) {
   .tabList {
-    gap: 1rem;
+    gap: 0.5rem;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 6px;
@@ -129,11 +123,10 @@
   /* On small screens we allow horizontal scrolling but keep tabs visually consistent.
      Each tab will still try to take equal width but can shrink to fit within the scroll area. */
   .tab {
-    /* Slightly reduce the default tab width on small screens but keep fixed sizing
-       to maintain consistent appearance. Horizontal scrolling will allow access
-       when tabs exceed available width. */
-    flex: 0 0 calc(var(--tab-default-width, 220px) * 0.9);
+    /* On small screens allow tabs to shrink but keep even distribution when possible */
+    flex: 1 1 0;
     padding: 10px 14px;
     white-space: nowrap;
+    min-width: 100px;
   }
 }

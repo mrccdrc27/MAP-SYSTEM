@@ -292,6 +292,14 @@ class Ticket(models.Model):
     submit_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tickets')
+    # Ticket Owner: The ticket coordinator assigned as owner when ticket is approved/opened
+    # Stores the external user ID from auth service (similar to employee_cookie_id)
+    ticket_owner_id = models.IntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Ticket Coordinator user ID from auth service who owns this ticket"
+    )
     response_time = models.DurationField(blank=True, null=True)
     resolution_time = models.DurationField(blank=True, null=True)
     time_closed = models.DateTimeField(blank=True, null=True)
@@ -411,8 +419,12 @@ class TicketComment(models.Model):
         db_index=True,
         help_text="User ID from external cookie-auth system"
     )
-    comment = models.TextField()
+    comment = models.TextField(blank=True, default='')
+    attachment = models.FileField(upload_to='comment_attachments/', null=True, blank=True)
+    attachment_name = models.CharField(max_length=255, null=True, blank=True)
+    attachment_type = models.CharField(max_length=100, null=True, blank=True)
     is_internal = models.BooleanField(default=False)  # For admin-only comments
+    is_auto_response = models.BooleanField(default=False)  # System-generated auto-response
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -527,3 +539,160 @@ class HDTSUser(models.Model):
     
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.company_id})"
+
+
+# =====================================================
+# Employee Notification Model
+# =====================================================
+
+NOTIFICATION_TYPE_CHOICES = [
+    ('ticket_submitted', 'Ticket Submitted'),
+    ('ticket_approved', 'Ticket Approved'),
+    ('ticket_rejected', 'Ticket Rejected'),
+    ('ticket_in_progress', 'Ticket In Progress'),
+    ('ticket_on_hold', 'Ticket On Hold'),
+    ('ticket_resolved', 'Ticket Resolved'),
+    ('ticket_closed', 'Ticket Closed'),
+    ('ticket_withdrawn', 'Ticket Withdrawn'),
+    ('new_reply', 'New Reply'),
+    ('owner_reply', 'Owner Reply'),
+]
+
+
+class EmployeeNotification(models.Model):
+    """
+    Notification model for employee-side notifications in HDTS.
+    Tracks notifications related to ticket actions and status changes.
+    """
+    # The employee who receives this notification (external user ID from auth service)
+    employee_id = models.IntegerField(db_index=True, help_text="External employee ID from auth service")
+    
+    # Optional ticket reference
+    ticket = models.ForeignKey(
+        'Ticket',
+        on_delete=models.CASCADE,
+        related_name='employee_notifications',
+        null=True,
+        blank=True
+    )
+    
+    # Notification type for categorization and icon display
+    notification_type = models.CharField(
+        max_length=32,
+        choices=NOTIFICATION_TYPE_CHOICES,
+        default='ticket_submitted'
+    )
+    
+    # Display content
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    
+    # Read status
+    is_read = models.BooleanField(default=False, db_index=True)
+    
+    # Optional link destination (e.g., ticket detail, messaging)
+    # Can be 'ticket', 'message', or custom path
+    link_type = models.CharField(max_length=32, blank=True, null=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Employee Notification'
+        verbose_name_plural = 'Employee Notifications'
+        indexes = [
+            models.Index(fields=['employee_id', 'is_read']),
+            models.Index(fields=['employee_id', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Notification for Employee {self.employee_id}: {self.title}"
+    
+    def mark_as_read(self):
+        """Mark the notification as read."""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+    
+    @classmethod
+    def create_notification(cls, employee_id, notification_type, title, message, ticket=None, link_type=None):
+        """
+        Factory method to create a notification.
+        """
+        return cls.objects.create(
+            employee_id=employee_id,
+            notification_type=notification_type,
+            title=title,
+            message=message,
+            ticket=ticket,
+            link_type=link_type or ('ticket' if ticket else None)
+        )
+    
+    @classmethod
+    def create_ticket_submitted_notification(cls, employee_id, ticket):
+        """Create notification when employee submits a ticket."""
+        return cls.create_notification(
+            employee_id=employee_id,
+            notification_type='ticket_submitted',
+            title='Ticket Submitted',
+            message=f'Your ticket "{ticket.subject}" has been submitted successfully.',
+            ticket=ticket,
+            link_type='ticket'
+        )
+    
+    @classmethod
+    def create_ticket_status_notification(cls, employee_id, ticket, new_status, actor_name=None):
+        """Create notification when ticket status changes."""
+        status_messages = {
+            'Open': ('Ticket Approved', f'Your ticket "{ticket.subject}" has been approved and is now open.'),
+            'In Progress': ('Ticket In Progress', f'Your ticket "{ticket.subject}" is now being worked on.'),
+            'On Hold': ('Ticket On Hold', f'Your ticket "{ticket.subject}" has been put on hold.'),
+            'Resolved': ('Ticket Resolved', f'Your ticket "{ticket.subject}" has been resolved.'),
+            'Rejected': ('Ticket Rejected', f'Your ticket "{ticket.subject}" has been rejected.'),
+            'Closed': ('Ticket Closed', f'Your ticket "{ticket.subject}" has been closed.'),
+            'Withdrawn': ('Ticket Withdrawn', f'Your ticket "{ticket.subject}" has been withdrawn.'),
+        }
+        
+        notification_type_map = {
+            'Open': 'ticket_approved',
+            'In Progress': 'ticket_in_progress',
+            'On Hold': 'ticket_on_hold',
+            'Resolved': 'ticket_resolved',
+            'Rejected': 'ticket_rejected',
+            'Closed': 'ticket_closed',
+            'Withdrawn': 'ticket_withdrawn',
+        }
+        
+        if new_status not in status_messages:
+            return None
+        
+        title, message = status_messages[new_status]
+        notification_type = notification_type_map.get(new_status, 'ticket_submitted')
+        
+        return cls.create_notification(
+            employee_id=employee_id,
+            notification_type=notification_type,
+            title=title,
+            message=message,
+            ticket=ticket,
+            link_type='ticket'
+        )
+    
+    @classmethod
+    def create_reply_notification(cls, employee_id, ticket, replier_name=None):
+        """Create notification when ticket owner replies."""
+        message = f'New reply on your ticket "{ticket.subject}"'
+        if replier_name:
+            message = f'{replier_name} replied to your ticket "{ticket.subject}"'
+        
+        return cls.create_notification(
+            employee_id=employee_id,
+            notification_type='owner_reply',
+            title='New Reply',
+            message=message,
+            ticket=ticket,
+            link_type='message'
+        )

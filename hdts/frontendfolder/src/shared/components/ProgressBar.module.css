@@ -1,0 +1,111 @@
+.progressBarContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+  padding: 16px 12px;
+  box-sizing: border-box;
+}
+
+.progressBar {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 920px;
+  position: relative;
+  gap: 0;
+}
+
+.progressStepWrapper {
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Circles */
+.progressStep {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #F8F8F8;
+  border: 2px solid #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  z-index: 4;
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.stepNumber {
+  font-size: 14px;
+  font-weight: 700;
+  color: #666;
+}
+
+.checkIcon {
+  font-size: 16px;
+  color: var(--primary-color, #2563EB);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressStep.active {
+  background: var(--primary-color, #2563EB);
+  border-color: var(--primary-color, #2563EB);
+}
+.progressStep.active .stepNumber { color: white; }
+
+.progressStep.done {
+  background: rgba(0, 111, 230, 0.16);
+  border-color: rgba(0, 111, 230, 0.5);
+}
+
+/* Labels */
+.stepLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+  margin-top: 4px;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.stepLabel.activeLabel { color: var(--primary-color, #2563EB); }
+
+/* Completed step label: less opacity than active/current */
+.stepLabel.completedLabel { color: rgba(37, 99, 235, 0.6); }
+
+/* Explicit connector element between step wrappers */
+.connector {
+  height: 2px;
+  flex: 1 1 auto;
+  background: #E0E0E0;
+  z-index: 1;
+  margin-top: 23px;
+  align-self: flex-start;
+}
+
+.connectorUpcoming { background: #E0E0E0; }
+.connectorCompleted { background: rgba(0, 111, 230, 0.35); }
+.connectorCurrent { background: #E0E0E0; }
+
+/* Completed step: force check icon white */
+.progressStep.done .checkIcon {
+  color: rgba(0, 111, 230, 1);
+}
+/* Target FaCheck svg element when it has the checkIcon class, and any inner paths */
+.progressStep.done svg.checkIcon,
+.progressStep.done svg.checkIcon path,
+.progressStep.done svg.checkIcon circle,
+.progressStep.done .checkIcon path,
+.progressStep.done .checkIcon circle {
+  fill: rgba(0, 111, 230, 1) !important;
+  stroke: rgba(0, 111, 230, 1) !important;
+}

@@ -376,51 +376,7 @@ export default function AdminArchiveDetail() {
                 )}
               </div>
 
-              <div className={styles.tdpSection}>
-                <div className={styles.tdpTitle}>
-                  <strong>Owner Description:</strong>
-                </div>
-                <div className={styles.tdpOwnerDescWrapper}>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Name:</div>
-                    <div className={styles.tdpODWValue}>
-                      {ticket?.employee?.first_name
-                        ? `${ticket.employee.first_name} ${ticket.employee.last_name}`
-                        : "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Email:</div>
-                    <div className={styles.tdpODWValue}>
-                      {ticket?.employee?.email || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Company ID:</div>
-                    <div className={styles.tdpODWValue}>
-                      {ticket?.employee?.company_id || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Department:</div>
-                    <div className={styles.tdpODWValue}>
-                      {ticket?.employee?.department || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Role:</div>
-                    <div className={styles.tdpODWValue}>
-                      {ticket?.employee?.role || "N/A"}
-                    </div>
-                  </div>
-                  <div className={styles.tdpODWItem}>
-                    <div className={styles.tdpODWLabel}>Current Owner:</div>
-                    <div className={styles.tdpODWValue}>
-                      {current_owner?.user_full_name || "N/A"}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Owner Description removed per request */}
 
               {/* Ticket Owner Description */}
               <div className={styles.tdpSection}>

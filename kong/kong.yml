@@ -114,6 +114,12 @@ services:
           - /api/auth/verify-email
         strip_path: false
         preserve_host: true
+      # Unified /api/me endpoint - uses cookies for auth, backend handles authentication
+      - name: auth-me
+        paths:
+          - /api/me
+        strip_path: false
+        preserve_host: true
 
   # Protected auth endpoints
   - name: auth-service-protected

@@ -19,7 +19,7 @@ from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from django.urls import reverse_lazy
 from django.conf import settings
 
@@ -382,6 +382,7 @@ class CookieLogoutView(generics.GenericAPIView):
     
     def post(self, request, *args, **kwargs):
         from django.contrib.auth import logout as django_logout
+        from django.conf import settings
         
         # Also logout from Django session
         django_logout(request)
@@ -389,12 +390,20 @@ class CookieLogoutView(generics.GenericAPIView):
         response_data = {'message': 'Logout successful'}
         response = Response(response_data, status=status.HTTP_200_OK)
         
-        # Clear both access and refresh token cookies
-        response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
-        response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
+        # Get the cookie domain from settings (should be 'localhost' for dev)
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        
+        # Clear both access and refresh token cookies - must match domain used when setting
+        response.delete_cookie('access_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=cookie_domain, samesite='Lax')
+        
+        # Also try without domain in case cookies were set differently
+        response.delete_cookie('access_token', path='/', samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', samesite='Lax')
         
         # Also clear sessionid cookie just to be sure
-        response.delete_cookie('sessionid', path='/', domain=None, samesite='Lax')
+        response.delete_cookie('sessionid', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('sessionid', path='/', samesite='Lax')
         
         return response
 
@@ -457,8 +466,38 @@ class UILogoutView(TemplateView):
         
         response = redirect(logout_url)
         
-        # Clear JWT cookies
-        response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
-        response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
+        # Get the cookie domain from settings (should be 'localhost' for dev)
+        from django.conf import settings
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        
+        # Clear JWT cookies - must match domain used when setting
+        response.delete_cookie('access_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('access_token', path='/', samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', samesite='Lax')
+        
+        return response
+
+
+class EmployeeLogoutRedirectView(View):
+    """Logout endpoint for employees that clears cookies and redirects to auth-frontend."""
+    
+    def get(self, request, *args, **kwargs):
+        from django.conf import settings
+        
+        # Redirect to auth-frontend employee login
+        auth_frontend_url = getattr(settings, 'AUTH_FRONTEND_URL', 'http://localhost:3001')
+        response = redirect(f'{auth_frontend_url}/employee')
+        
+        # Get the cookie domain from settings
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        
+        # Clear JWT cookies - try both with and without domain
+        response.delete_cookie('access_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('access_token', path='/', samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', samesite='Lax')
+        response.delete_cookie('sessionid', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('sessionid', path='/', samesite='Lax')
         
         return response

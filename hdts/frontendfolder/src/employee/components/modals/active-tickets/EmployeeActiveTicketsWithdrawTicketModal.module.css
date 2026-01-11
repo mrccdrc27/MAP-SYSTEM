@@ -83,11 +83,11 @@
   color: #fff;
   cursor: pointer;
   transition: background-color 0.2s;
+  background-color: #007bff;   /* Default blue */
 }
 
 /* Contextual states */
-.confirm.close,
-.confirm.confirm {
+.confirm.close {
   background-color: #007bff;   /* Blue for confirm/close */
 }
 .confirm.delete {
@@ -104,6 +104,68 @@
 .confirm:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* === Success Modal === */
+.successModal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.successIcon {
+  margin-bottom: 16px;
+}
+
+.successHeading {
+  font-size: 20px;
+  font-weight: 600;
+  color: #28a745;
+  margin: 0 0 12px 0;
+}
+
+.successMessage {
+  font-size: 14px;
+  color: #212529;
+  margin: 0 0 24px 0;
+}
+
+.successCheck {
+  display: inline-block;
+  transform-origin: center;
+  animation: popIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  filter: drop-shadow(0 6px 14px rgba(40,167,69,0.18));
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.2) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) rotate(6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* === Confirmation Modal === */
+.confirmMessage {
+  font-size: 15px;
+  color: #212529;
+  margin: 16px 0 8px 0;
+  line-height: 1.5;
+}
+
+.confirmNote {
+  font-size: 13px;
+  color: #6c757d;
+  margin: 0 0 8px 0;
 }
 
 /* === Responsive Adjustments === */

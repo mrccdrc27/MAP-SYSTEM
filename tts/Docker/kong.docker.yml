@@ -121,6 +121,12 @@ services:
           - /api/v1/users/password
           - /api/v1/users/verify
         strip_path: false
+      
+      # Unified /api/me endpoint - uses cookies for auth, backend handles authentication
+      - name: auth-me
+        paths:
+          - /api/me
+        strip_path: false
         
       # Direct auth API access
       - name: auth-api-v1

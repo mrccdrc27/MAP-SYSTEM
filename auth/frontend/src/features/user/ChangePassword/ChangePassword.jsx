@@ -1,11 +1,87 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { changePassword, getProfile } from '../../../services/userService';
+import { changePassword, getProfile, verifyPassword } from '../../../services/userService';
 import { useToast, Button, Input, Card, Badge, Modal, Alert } from '../../../components/common';
 import Enable2FAModal from '../../../components/Enable2FAModal';
 import Disable2FAModal from '../../../components/Disable2FAModal';
-import useForm from '../../../hooks/useForm';
 import styles from './ChangePassword.module.css';
+
+// Password strength calculation
+const calculatePasswordStrength = (password) => {
+  if (!password) return { score: 0, label: '', color: '' };
+  
+  let score = 0;
+  const checks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>`~\-_=\\/;\'\[\]]/.test(password),
+    longLength: password.length >= 12,
+    veryLongLength: password.length >= 16,
+  };
+
+  if (checks.length) score += 1;
+  if (checks.uppercase) score += 1;
+  if (checks.lowercase) score += 1;
+  if (checks.number) score += 1;
+  if (checks.special) score += 1;
+  if (checks.longLength) score += 1;
+  if (checks.veryLongLength) score += 1;
+
+  // Determine strength level
+  if (score <= 2) return { score, label: 'Weak', color: '#dc2626', checks };
+  if (score <= 4) return { score, label: 'Fair', color: '#f59e0b', checks };
+  if (score <= 5) return { score, label: 'Good', color: '#10b981', checks };
+  return { score, label: 'Strong', color: '#059669', checks };
+};
+
+// Get detailed password error message
+const getPasswordErrorMessage = (password) => {
+  if (!password || password.trim() === "") {
+    return "Password must be at least 8 characters long and include uppercase, number, and special character.";
+  }
+  
+  const hasMinLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>`~\-_=\\/;\'\[\]]/.test(password);
+
+  const missing = {
+    upper: !hasUpper,
+    lower: !hasLower,
+    digit: !hasDigit,
+    special: !hasSpecial,
+  };
+
+  const missingKeys = Object.entries(missing)
+    .filter(([_, isMissing]) => isMissing)
+    .map(([key]) => key);
+
+  const descriptors = {
+    upper: "uppercase",
+    lower: "lowercase",
+    digit: "number",
+    special: "special character",
+  };
+
+  const buildList = (items) => {
+    if (items.length === 1) return descriptors[items[0]];
+    if (items.length === 2) return `${descriptors[items[0]]} and ${descriptors[items[1]]}`;
+    return items.slice(0, -1).map((key) => descriptors[key]).join(", ") + ", and " + descriptors[items[items.length - 1]];
+  };
+
+  if (!hasMinLength && missingKeys.length) {
+    return `Password must be at least 8 characters long and include ${buildList(missingKeys)}.`;
+  } else if (!hasMinLength) {
+    return "Password must be at least 8 characters long.";
+  } else if (missingKeys.length) {
+    return `Password must include ${buildList(missingKeys)}.`;
+  }
+
+  return null;
+};
 
 const AccountSecurity = () => {
   const navigate = useNavigate();
@@ -20,8 +96,21 @@ const AccountSecurity = () => {
   const [showDisable2FA, setShowDisable2FA] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const verifyTimerRef = useRef(null);
+
   useEffect(() => {
     fetchProfile();
+    return () => {
+      if (verifyTimerRef.current) clearTimeout(verifyTimerRef.current);
+    };
   }, []);
 
   const fetchProfile = async () => {
@@ -36,35 +125,100 @@ const AccountSecurity = () => {
     }
   };
 
-  const validate = (values) => {
-    const newErrors = {};
-    if (!values.currentPassword) newErrors.currentPassword = 'Required';
-    if (!values.newPassword) newErrors.newPassword = 'Required';
-    else if (values.newPassword.length < 8) newErrors.newPassword = 'Min 8 chars';
-    if (values.newPassword !== values.confirmPassword) newErrors.confirmPassword = 'Mismatch';
-    return newErrors;
+  // Verify current password with backend (debounced)
+  const verifyCurrentPassword = (pwd) => {
+    if (verifyTimerRef.current) clearTimeout(verifyTimerRef.current);
+    
+    setIsPasswordVerified(false);
+    setPasswordError('');
+    
+    if (!pwd || pwd.length === 0) {
+      setVerifyingPassword(false);
+      return;
+    }
+    
+    setVerifyingPassword(true);
+    
+    verifyTimerRef.current = setTimeout(async () => {
+      try {
+        const result = await verifyPassword(pwd);
+        if (result.ok) {
+          setIsPasswordVerified(true);
+          setPasswordError('');
+        } else {
+          setIsPasswordVerified(false);
+          setPasswordError('Incorrect current password.');
+        }
+      } catch (err) {
+        setIsPasswordVerified(false);
+        setPasswordError('Incorrect current password.');
+      } finally {
+        setVerifyingPassword(false);
+      }
+    }, 600);
   };
 
-  const onSubmit = async (values) => {
+  const handleCurrentPasswordChange = (e) => {
+    const v = e.target.value;
+    setCurrentPassword(v);
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsPasswordVerified(false);
+    setPasswordError('');
+    setVerifyingPassword(true);
+    verifyCurrentPassword(v);
+  };
+
+  const canSaveNewPassword = () => {
+    const pwError = getPasswordErrorMessage(newPassword);
+    return isPasswordVerified && 
+           newPassword.length >= 8 && 
+           newPassword === confirmPassword && 
+           !verifyingPassword &&
+           !pwError;
+  };
+
+  const handleClearPasswords = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsPasswordVerified(false);
+    setPasswordError('');
     setGeneralError('');
-    setSuccessMsg('');
+  };
+
+  const handleSaveNewPassword = async () => {
+    if (!canSaveNewPassword()) return;
+    
+    setIsSubmitting(true);
+    setGeneralError('');
+    
     try {
-      const response = await changePassword(values.currentPassword, values.newPassword, values.confirmPassword);
+      const response = await changePassword(currentPassword, newPassword, confirmPassword);
       if (response.ok) {
         setSuccessMsg('Password updated successfully');
-        resetForm();
+        handleClearPasswords();
         setIsPasswordModalOpen(false);
+        success('Success', 'Password changed successfully');
       } else {
-        setGeneralError(response.data?.detail || 'Update failed');
+        const msg = response.data?.detail || response.data?.message || 'Update failed';
+        setGeneralError(msg);
       }
     } catch (err) {
+      setGeneralError('Something went wrong');
       error('Error', 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const { values, errors, isSubmitting, handleChange, handleSubmit, resetForm } = useForm(
-    { currentPassword: '', newPassword: '', confirmPassword: '' }, validate, onSubmit
-  );
+  const handleCloseModal = () => {
+    setIsPasswordModalOpen(false);
+    handleClearPasswords();
+  };
+
+  const passwordStrength = calculatePasswordStrength(newPassword);
+  const newPasswordError = newPassword.length > 0 ? getPasswordErrorMessage(newPassword) : null;
 
   if (isLoading) return <div className={styles.loadingOverlay}><div className={styles.loadingSpinner}></div></div>;
 
@@ -128,9 +282,15 @@ const AccountSecurity = () => {
             <div className={styles.statusGrid}>
               <div className={styles.statusItem}>
                 <label>Account State</label>
-                <Badge variant={profileData?.is_active ? 'success' : 'danger'}>
-                  {profileData?.is_active ? 'Active' : 'Deactivated'}
-                </Badge>
+                {(() => {
+                  // Treat employee `status === 'Approved'` as active when `is_active` is missing
+                  const isActive = !!profileData?.is_active || profileData?.status === 'Approved';
+                  return (
+                    <Badge variant={isActive ? 'success' : 'danger'}>
+                      {isActive ? 'Active' : 'Deactivated'}
+                    </Badge>
+                  );
+                })()}
               </div>
               <div className={styles.statusItem}>
                 <label>Verification</label>
@@ -153,14 +313,14 @@ const AccountSecurity = () => {
 
       <Modal 
         isOpen={isPasswordModalOpen} 
-        onClose={() => { setIsPasswordModalOpen(false); resetForm(); setGeneralError(''); }}
+        onClose={handleCloseModal}
         title="Update Account Password"
         footer={
           <>
-            <Button variant="secondary" onClick={() => { setIsPasswordModalOpen(false); resetForm(); setGeneralError(''); }}>
+            <Button variant="secondary" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} isLoading={isSubmitting}>
+            <Button onClick={handleSaveNewPassword} isLoading={isSubmitting} disabled={!canSaveNewPassword()}>
               Save New Password
             </Button>
           </>
@@ -168,7 +328,7 @@ const AccountSecurity = () => {
       >
         <div className={styles.modalInfo}>
           <i className="fa-solid fa-circle-info"></i>
-          <p>Please enter your current password and choose a new secure password.</p>
+          <p>Enter your current password first. Once verified, you can set a new secure password.</p>
         </div>
 
         {generalError && (
@@ -178,9 +338,109 @@ const AccountSecurity = () => {
         )}
 
         <div className={styles.modalFormGrid}>
-          <Input label="Current Password" type={showPasswords.current ? 'text' : 'password'} name="currentPassword" value={values.currentPassword} onChange={handleChange} error={errors.currentPassword} icon={values.currentPassword ? <i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} onIconClick={() => setShowPasswords(p => ({ ...p, current: !p.current }))} required />
-          <Input label="New Password" type={showPasswords.new ? 'text' : 'password'} name="newPassword" value={values.newPassword} onChange={handleChange} error={errors.newPassword} icon={values.newPassword ? <i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} onIconClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))} required />
-          <Input label="Confirm New Password" type={showPasswords.confirm ? 'text' : 'password'} name="confirmPassword" value={values.confirmPassword} onChange={handleChange} error={errors.confirmPassword} icon={values.confirmPassword ? <i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} onIconClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))} required />
+          {/* Current Password with verification indicator */}
+          <div className={styles.passwordFieldWrapper}>
+            <Input 
+              label={
+                <span className={styles.passwordLabel}>
+                  Current Password <span style={{ color: '#dc2626' }}>*</span>
+                  <span className={styles.verificationIndicator}>
+                    {verifyingPassword && <i className="fa-solid fa-spinner fa-spin" style={{ color: '#6b7280' }}></i>}
+                    {!verifyingPassword && isPasswordVerified && <i className="fa-solid fa-check-circle" style={{ color: '#10b981' }}></i>}
+                    {!verifyingPassword && passwordError && <i className="fa-solid fa-times-circle" style={{ color: '#dc2626' }}></i>}
+                  </span>
+                </span>
+              }
+              type={showPasswords.current ? 'text' : 'password'} 
+              name="currentPassword" 
+              value={currentPassword} 
+              onChange={handleCurrentPasswordChange}
+              error={passwordError}
+              icon={currentPassword ? <i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} 
+              onIconClick={() => setShowPasswords(p => ({ ...p, current: !p.current }))} 
+              placeholder="Enter your current password"
+              autoComplete="off"
+            />
+          </div>
+
+          {/* New Password with strength indicator */}
+          <div className={styles.passwordFieldWrapper}>
+            <Input 
+              label="New Password" 
+              type={showPasswords.new ? 'text' : 'password'} 
+              name="newPassword" 
+              value={newPassword} 
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={!isPasswordVerified || verifyingPassword}
+              icon={newPassword ? <i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} 
+              onIconClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))} 
+              required 
+              placeholder={isPasswordVerified ? "Enter new password" : "Verify current password first"}
+              autoComplete="off"
+            />
+            
+            {/* Password Strength Indicator */}
+            {newPassword.length > 0 && (
+              <div className={styles.strengthIndicator}>
+                <div className={styles.strengthBar}>
+                  <div 
+                    className={styles.strengthFill} 
+                    style={{ 
+                      width: `${(passwordStrength.score / 7) * 100}%`,
+                      backgroundColor: passwordStrength.color 
+                    }}
+                  />
+                </div>
+                <span className={styles.strengthLabel} style={{ color: passwordStrength.color }}>
+                  {passwordStrength.label}
+                </span>
+              </div>
+            )}
+            
+            {/* Password requirements checklist */}
+            {newPassword.length > 0 && (
+              <div className={styles.requirementsList}>
+                <div className={`${styles.requirement} ${passwordStrength.checks?.length ? styles.met : styles.unmet}`}>
+                  <i className={`fa-solid ${passwordStrength.checks?.length ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>At least 8 characters</span>
+                </div>
+                <div className={`${styles.requirement} ${passwordStrength.checks?.uppercase ? styles.met : styles.unmet}`}>
+                  <i className={`fa-solid ${passwordStrength.checks?.uppercase ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>Uppercase letter</span>
+                </div>
+                <div className={`${styles.requirement} ${passwordStrength.checks?.lowercase ? styles.met : styles.unmet}`}>
+                  <i className={`fa-solid ${passwordStrength.checks?.lowercase ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>Lowercase letter</span>
+                </div>
+                <div className={`${styles.requirement} ${passwordStrength.checks?.number ? styles.met : styles.unmet}`}>
+                  <i className={`fa-solid ${passwordStrength.checks?.number ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>Number</span>
+                </div>
+                <div className={`${styles.requirement} ${passwordStrength.checks?.special ? styles.met : styles.unmet}`}>
+                  <i className={`fa-solid ${passwordStrength.checks?.special ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>Special character</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div className={styles.passwordFieldWrapper}>
+            <Input 
+              label="Confirm New Password" 
+              type={showPasswords.confirm ? 'text' : 'password'} 
+              name="confirmPassword" 
+              value={confirmPassword} 
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={!isPasswordVerified || verifyingPassword}
+              error={confirmPassword && confirmPassword !== newPassword ? 'Passwords do not match.' : ''}
+              icon={confirmPassword ? <i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`}></i> : null} 
+              onIconClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))} 
+              required 
+              placeholder={isPasswordVerified ? "Confirm new password" : ""}
+              autoComplete="off"
+            />
+          </div>
         </div>
       </Modal>
 

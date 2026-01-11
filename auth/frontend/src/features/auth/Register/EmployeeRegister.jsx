@@ -65,14 +65,11 @@ const getPasswordErrorMessage = (password) => {
 // Suffix options (same as HDTS)
 const suffixOptions = ["Jr.", "Sr.", "II", "III", "IV"];
 
-// Department options (same as HDTS)
+// Department options: restrict to allowed departments
 const departmentOptions = [
-  { value: "IT", label: "Information Technology" },
-  { value: "HR", label: "Human Resources" },
-  { value: "Finance", label: "Finance" },
-  { value: "Operations", label: "Operations" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "Sales", label: "Sales" },
+  { value: "IT Department", label: "IT Department" },
+  { value: "Asset Department", label: "Asset Department" },
+  { value: "Budget Department", label: "Budget Department" },
 ];
 
 export default function EmployeeRegister() {

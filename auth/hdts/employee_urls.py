@@ -11,6 +11,7 @@ from .employee_api_views import (
     EmployeeLogoutView,
     EmployeeProfileView,
     EmployeeChangePasswordView as EmployeeChangePasswordAPIView,
+    EmployeeVerifyPasswordView as EmployeeVerifyPasswordAPIView,
     RequestEmployeeOTPView,
     VerifyEmployeeOTPView,
     Enable2FAView,
@@ -69,6 +70,7 @@ urlpatterns = [
     path('api/token/refresh/', EmployeeTokenRefreshView.as_view(), name='employee-token-refresh'),
     path('api/logout/', EmployeeLogoutView.as_view(), name='employee-logout'),
     path('api/profile/', EmployeeProfileView.as_view(), name='employee-profile'),
+    path('api/profile/verify-password/', EmployeeVerifyPasswordAPIView.as_view(), name='employee-verify-password-api'),
     path('api/profile/change-password/', EmployeeChangePasswordAPIView.as_view(), name='employee-change-password-api'),
     
     # Password Reset API Endpoints

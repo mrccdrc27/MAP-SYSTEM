@@ -248,68 +248,35 @@ const CoordinatorAdminAccountRegister = () => {
           const token = localStorage.getItem('admin_access_token') || localStorage.getItem('access_token');
           const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-          // Try global roles endpoint first
-          const url = `${API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '')}/api/v1/roles/`;
+          // Fetch HDTS roles using the system__slug filter
+          const url = `${API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '')}/api/v1/roles/?system__slug=hdts`;
           const resp = await fetch(url, { credentials: 'include', headers });
           if (!mounted) return;
+          
           if (resp && resp.ok) {
             const json = await resp.json();
-            if (Array.isArray(json)) {
-              // api/v1/roles/ may return an array of role objects
-              const tc = json.find(r => String(r.name).toLowerCase() === 'ticket coordinator');
-              // Find Admin role in HDTS system
-              const adminHdts = json.find(r => String(r.name).toLowerCase() === 'admin' && (r.system && String(r.system.slug || r.system).toLowerCase() === 'hdts'));
+            if (Array.isArray(json) && json.length > 0) {
+              // Filter for Admin and Ticket Coordinator roles only
               const options = [];
+              const tc = json.find(r => String(r.name).toLowerCase() === 'ticket coordinator');
+              const admin = json.find(r => String(r.name).toLowerCase() === 'admin');
+              
               if (tc) options.push({ id: tc.id, name: 'Ticket Coordinator' });
-              if (adminHdts) options.push({ id: adminHdts.id, name: 'System Admin' });
-              // Ensure both options exist: prefer discovered ids, otherwise add fallbacks
-              const ensureOptions = [];
-              // Ticket Coordinator: prefer discovered, else include placeholder with null id
-              const foundTC = options.find(o => o.name === 'Ticket Coordinator');
-              if (foundTC) ensureOptions.push(foundTC); else ensureOptions.push({ id: null, name: 'Ticket Coordinator' });
-              // System Admin: prefer discovered, else include special token 'admin_hdts'
-              const foundAdmin = options.find(o => o.name === 'System Admin');
-              if (foundAdmin) ensureOptions.push(foundAdmin); else ensureOptions.push({ id: 'admin_hdts', name: 'System Admin' });
-
-              setRoleOptions(ensureOptions);
-              return;
-            }
-          }
-
-          // Fallback: try system-roles HDTS endpoint and look for Ticket Coordinator/Admin there
-          try {
-            const url2 = `${API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '')}/api/v1/system-roles/system/hdts/roles/`;
-            const resp2 = await fetch(url2, { credentials: 'include', headers });
-            if (!mounted) return;
-            if (resp2 && resp2.ok) {
-              const json2 = await resp2.json();
-              if (json2 && Array.isArray(json2.roles)) {
-                const tc = json2.roles.find(r => String(r.name).toLowerCase() === 'ticket coordinator');
-                const admin = json2.roles.find(r => String(r.name).toLowerCase() === 'admin');
-                const opts = [];
-                if (tc) opts.push({ id: tc.id, name: 'Ticket Coordinator' });
-                if (admin) opts.push({ id: admin.id, name: 'System Admin' });
-                // Ensure both options present
-                const ensured = [];
-                const fTC = opts.find(o => o.name === 'Ticket Coordinator');
-                if (fTC) ensured.push(fTC); else ensured.push({ id: null, name: 'Ticket Coordinator' });
-                const fAdmin = opts.find(o => o.name === 'System Admin');
-                if (fAdmin) ensured.push(fAdmin); else ensured.push({ id: 'admin_hdts', name: 'System Admin' });
-                if (ensured.length > 0) {
-                  setRoleOptions(ensured);
-                  return;
-                }
+              if (admin) options.push({ id: admin.id, name: 'System Admin' });
+              
+              if (options.length > 0) {
+                setRoleOptions(options);
+                return;
               }
             }
-          } catch (e) {
-            // ignore
           }
 
-          // Final fallback: provide fixed options where System Admin uses the special token
-          setRoleOptions([{ id: null, name: 'Ticket Coordinator' }, { id: 'admin_hdts', name: 'System Admin' }]);
+          // If no roles found, show error state (empty options)
+          console.warn('Could not fetch HDTS roles from auth service');
+          setRoleOptions([]);
         } catch (e) {
-          // ignore - leave roleOptions empty and rely on manual entry
-          setRoleOptions([{ id: null, name: 'Ticket Coordinator' }, { id: 'admin_hdts', name: 'System Admin' }]);
+          console.error('Error fetching roles:', e);
+          setRoleOptions([]);
         }
       })();
       return () => { mounted = false; };
@@ -434,10 +401,7 @@ const CoordinatorAdminAccountRegister = () => {
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))
                   ) : (
-                    <>
-                      <option value="">No roles available</option>
-                      <option value="admin_hdts">System Admin (HDTS)</option>
-                    </>
+                    <option value="" disabled>No roles available - check auth service</option>
                   )}
                 </select>
                 {errors.role && (

@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.generics import ListAPIView
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
@@ -1374,7 +1374,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         return Response(response_data, status=status.HTTP_200_OK)
     
-    @action(detail=False, methods=['get'], url_path='workflow-visualization')
+    @action(detail=False, methods=['get'], url_path='workflow-visualization', permission_classes=[AllowAny], authentication_classes=[])
     def workflow_visualization(self, request):
         """
         GET endpoint to retrieve workflow visualization data for a specific task.

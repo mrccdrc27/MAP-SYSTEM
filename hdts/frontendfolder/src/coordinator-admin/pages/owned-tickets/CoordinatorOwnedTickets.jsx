@@ -8,7 +8,6 @@ import TablePagination from '../../../shared/table/TablePagination';
 import Skeleton from '../../../shared/components/Skeleton/Skeleton';
 import CoordinatorTicketFilter from '../../components/filters/CoordinatorTicketFilter';
 import InputField from '../../../shared/components/InputField';
-import { mockOwnedTickets } from '../../../mock-data/ownedTickets';
 
 const CoordinatorOwnedTickets = () => {
   const navigate = useNavigate();
@@ -86,7 +85,7 @@ const CoordinatorOwnedTickets = () => {
         let count = 0;
         
         try {
-          // Use the new owned-tickets endpoint from workflow_api
+          // Use the helpdesk backend's my-tickets endpoint which filters by ticket_owner_id
           const response = await backendTicketService.getOwnedTickets({
             tab: activeFilters.status?.toLowerCase() === 'open' ? 'active' : 
                  activeFilters.status?.toLowerCase() === 'closed' ? 'inactive' : '',
@@ -98,40 +97,31 @@ const CoordinatorOwnedTickets = () => {
           ticketList = response.results || [];
           count = response.count || ticketList.length;
         } catch (err) {
-          console.warn('Failed to fetch from workflow API, using mock data:', err);
-          ticketList = mockOwnedTickets;
-          count = mockOwnedTickets.length;
-        }
-        
-        // If empty, use mock data
-        if (ticketList.length === 0 && !searchTerm) {
-          ticketList = mockOwnedTickets;
-          count = mockOwnedTickets.length;
+          console.warn('Failed to fetch owned tickets:', err);
+          ticketList = [];
+          count = 0;
         }
 
-        // Normalize tickets from the workflow_api response
+        // Normalize tickets from the helpdesk backend response
         const normalized = ticketList.map((t) => {
-          // Data comes from Task model with nested ticket data
-          const dateCreated = t.created_at || t.submit_date || t.submitDate || t.dateCreated || null;
-          const lastUpdated = t.updated_at || t.update_date || t.lastUpdated || dateCreated;
+          // Data comes from Ticket model via /api/tickets/my-tickets/
+          const dateCreated = t.submit_date || t.dateCreated || t.created_at || null;
+          const lastUpdated = t.update_date || t.lastUpdated || dateCreated;
           
           return {
             ...t,
-            // Use ticket_number from the API response
-            ticketNumber: t.ticket_number || t.ticket_id || t.ticketNumber || t.id,
-            subject: t.ticket_subject || t.subject || 'N/A',
-            description: t.ticket_description || t.description || '',
-            status: t.status || 'pending',
+            ticketNumber: t.ticket_number || t.ticketNumber || t.id,
+            subject: t.subject || 'N/A',
+            description: t.description || '',
+            status: t.status || 'New',
             priorityLevel: t.priority || t.priorityLevel || 'Medium',
             category: t.category || 'N/A',
-            subCategory: t.sub_category || t.subCategory || t.subcategory || '',
+            subCategory: t.sub_category || t.subCategory || '',
             dateCreated,
             lastUpdated,
-            assignedAgent: t.ticket_owner_name || t.assigned_to || t.assignedTo || currentUser?.first_name || '',
-            assignedDepartment: t.department || t.assignedDepartment || '',
-            workflowName: t.workflow_name || '',
-            currentStepName: t.current_step_name || '',
-            targetResolution: t.target_resolution,
+            assignedAgent: t.employee_name || currentUser?.first_name || '',
+            assignedDepartment: t.department || t.employee_department || '',
+            ticketOwnerId: t.ticket_owner_id,
             slaStatus: calculateSLAStatus({
               ...t,
               dateCreated,

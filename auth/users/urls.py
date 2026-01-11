@@ -6,7 +6,7 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.utils import extend_schema
 
 # Import directly from individual modules (API-only views)
-from .views.auth_views import RegisterView, CustomTokenObtainPairView, CookieTokenRefreshView, CookieLogoutView, ValidateTokenView, UILogoutView
+from .views.auth_views import RegisterView, CustomTokenObtainPairView, CookieTokenRefreshView, CookieLogoutView, ValidateTokenView, UILogoutView, EmployeeLogoutRedirectView
 from .views.profile_views import ProfileView, UserByCompanyIdView, MeView
 from .views.otp_views import RequestOTPView, Enable2FAView, Disable2FAView, request_otp_authenticated_view, verify_disable_otp_view
 from .views.password_views import ForgotPasswordView, ResetPasswordView, ProfilePasswordResetView, ChangePasswordView, VerifyPasswordView
@@ -82,6 +82,7 @@ urlpatterns = [
     path('token/validate/', ValidateTokenView.as_view(), name='validate-token'),
     path('logout/', CookieLogoutView.as_view(), name='cookie-logout'),
     path('logout/ui/', UILogoutView.as_view(), name='root_logout'),
+    path('logout/employee/', EmployeeLogoutRedirectView.as_view(), name='employee-logout-redirect'),
     
     # Me endpoint - check if user is authenticated
     path('me/', MeView.as_view(), name='user-me'),
