@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as authApi from '../API/authAPI';
 import { jwtDecode } from 'jwt-decode';
+import { getAccessToken, setAccessToken, removeAccessToken } from '../API/TokenUtils';
 
 const AuthContext = createContext(null);
 
@@ -13,7 +14,8 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
+            // Use TokenUtils to get the token (consistent with rest of app)
+            const token = getAccessToken();
             const storedUser = localStorage.getItem('user');
 
             if (token && storedUser) {
@@ -21,14 +23,14 @@ export const AuthProvider = ({ children }) => {
                 if (decodedToken.exp * 1000 > Date.now()) {
                     setUser(JSON.parse(storedUser));
                 } else {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
+                    // Token expired, clean up
+                    removeAccessToken();
                     localStorage.removeItem('user');
                 }
             }
         } catch (error) {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
+            console.error('[AuthLocal] Token validation error:', error);
+            removeAccessToken();
             localStorage.removeItem('user');
         } finally {
             setLoading(false);
@@ -38,9 +40,11 @@ export const AuthProvider = ({ children }) => {
     const login = async (identifier, password) => {
         try {
             const data = await authApi.login(identifier, password);
-            localStorage.setItem('access_token', data.access);
-            localStorage.setItem('refresh_token', data.refresh);
+            
+            // Store using TokenUtils for consistency
+            setAccessToken(data.access);
             localStorage.setItem('user', JSON.stringify(data.user)); 
+            
             setUser(data.user);
             navigate('/dashboard', { replace: true });
         } catch (error) {
@@ -53,12 +57,16 @@ export const AuthProvider = ({ children }) => {
         if (refreshToken) {
             try {
                 await authApi.logout(refreshToken);
-            } catch (error) {}
+            } catch (error) {
+                console.error('[AuthLocal] Logout API error:', error);
+            }
         }
+        
         setUser(null);
-        localStorage.removeItem('access_token');
+        removeAccessToken();
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
+        
         navigate('/login', { replace: true });
     };
 

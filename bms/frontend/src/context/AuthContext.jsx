@@ -17,40 +17,38 @@ import {
   isTokenExpired,
   getSystemRole,
 } from "../API/TokenUtils";
-import { AuthProvider as LocalAuthProvider } from './AuthContextLocal';
+import { AuthProvider as LocalAuthProvider } from "./AuthContextLocal";
 
 const AuthContext = createContext();
 
 // Remove trailing slash
-const AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:18001").replace(/\/$/, "");
+const AUTH_URL = (
+  import.meta.env.VITE_AUTH_URL || "http://localhost:18001"
+).replace(/\/$/, "");
 
-// === UPDATED ENDPOINTS ===
-// CRITICAL CHANGE: Use the specific API Login view that doesn't redirect
-const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`; 
-
-const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/validate/`; 
+// Use the API Login endpoint that returns tokens
+const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`;
+const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/validate/`;
 const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/`;
-const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`; 
+const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGOUT_URL = `${AUTH_URL}/logout/`;
 
 const createAuthRequest = () => {
-  const token = getAccessToken(); // Get token from LocalStorage
-  
-  const headers = { 
-      "Content-Type": "application/json",
-      "X-Requested-With": "XMLHttpRequest"
+  const token = getAccessToken();
+
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   };
 
-  // CRITICAL FIX: Manually attach the token here
-  // because cookies (withCredentials) are failing cross-domain
   if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   return axios.create({
     baseURL: AUTH_URL,
     headers: headers,
-    withCredentials: true, 
+    withCredentials: true,
   });
 };
 
@@ -59,28 +57,57 @@ const CentralAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // ... (Role Helpers remain the same) ...
-  const isAdmin = useCallback(() => user && hasSystemRole(user, "bms", "ADMIN"), [user]);
-  const isFinanceHead = useCallback(() => user && hasSystemRole(user, "bms", "FINANCE_HEAD"), [user]);
-  const hasBmsAccess = useCallback(() => user && hasAnySystemRole(user, "bms"), [user]);
-  const getBmsRole = useCallback(() => user ? getSystemRole(user, "bms") : null, [user]);
+  const isAdmin = useCallback(
+    () => user && hasSystemRole(user, "bms", "ADMIN"),
+    [user]
+  );
+  const isFinanceHead = useCallback(
+    () => user && hasSystemRole(user, "bms", "FINANCE_HEAD"),
+    [user]
+  );
+  const hasBmsAccess = useCallback(
+    () => user && hasAnySystemRole(user, "bms"),
+    [user]
+  );
+  const getBmsRole = useCallback(
+    () => (user ? getSystemRole(user, "bms") : null),
+    [user]
+  );
 
-  // 1. Fetch Profile (Acts as Verify)
-  // Since tokens are HttpOnly/Lax cookies, we can't read them in JS easily to verify signature.
-  // We rely on the API returning 200 OK or 401 Unauthorized.
+  // NEW: Check for tokens in URL (from centralized auth redirect)
+  const checkUrlForTokens = useCallback(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get("access_token");
+    const refreshToken = urlParams.get("refresh_token");
+
+    if (accessToken) {
+      console.log("[Auth] Found access_token in URL, storing in localStorage");
+      setAccessToken(accessToken);
+
+      // Clean URL to remove tokens
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+
+      return true;
+    }
+
+    return false;
+  }, []);
+
+  // Fetch Profile
   const fetchUserProfile = useCallback(async () => {
     try {
       const authApi = createAuthRequest();
       const response = await authApi.get(PROFILE_URL);
-      
+
       const apiData = response.data;
 
-      // MAP Profile API format (system_slug) to Token format (system)
+      // Map system_roles to roles format
       if (apiData.system_roles) {
-          apiData.roles = apiData.system_roles.map(r => ({
-              system: r.system_slug || r.system, // Handle both formats
-              role: r.role_name || r.role
-          }));
+        apiData.roles = apiData.system_roles.map((r) => ({
+          system: r.system_slug || r.system,
+          role: r.role_name || r.role,
+        }));
       }
 
       return apiData;
@@ -89,10 +116,29 @@ const CentralAuthProvider = ({ children }) => {
     }
   }, []);
 
-  // 2. Check Status
+  // Check Auth Status
   const checkAuthStatus = useCallback(async () => {
     try {
-      // 1. Try fetching full profile
+      // FIRST: Check if tokens are in URL (from centralized auth redirect)
+      const foundInUrl = checkUrlForTokens();
+
+      if (foundInUrl) {
+        console.log("[Auth] Tokens found in URL, will fetch profile");
+      }
+
+      // Check if we have a token at all
+      const token = getAccessToken();
+      if (!token) {
+        console.log("[Auth] No token found in localStorage or cookies");
+        setUser(null);
+        setLoading(false);
+        setInitialized(true);
+        return false;
+      }
+
+      console.log("[Auth] Token found, attempting to fetch profile");
+
+      // Try fetching full profile
       const userData = await fetchUserProfile();
 
       if (!hasAnySystemRole(userData, "bms")) {
@@ -103,6 +149,7 @@ const CentralAuthProvider = ({ children }) => {
         return false;
       }
 
+      console.log("[Auth] ✅ User authenticated with BMS access");
       setUser(userData);
       setLoading(false);
       setInitialized(true);
@@ -110,10 +157,14 @@ const CentralAuthProvider = ({ children }) => {
     } catch (error) {
       console.warn("[Auth] Profile fetch failed:", error);
 
-      // 2. FALLBACK: If API fails, check if we have a valid token locally
-      const localUser = getUserFromToken(); // decodes JWT from localStorage
+      // FALLBACK: Try to use token directly if profile fetch fails
+      const localUser = getUserFromToken();
 
-      if (localUser && !isTokenExpired(getAccessToken()) && hasAnySystemRole(localUser, "bms")) {
+      if (
+        localUser &&
+        !isTokenExpired(getAccessToken()) &&
+        hasAnySystemRole(localUser, "bms")
+      ) {
         console.log("[Auth] Recovering session from local token");
         setUser(localUser);
         setLoading(false);
@@ -121,29 +172,28 @@ const CentralAuthProvider = ({ children }) => {
         return true;
       }
 
-      // 3. Fail
+      // Failed
+      console.log("[Auth] Authentication failed completely");
       setUser(null);
       setLoading(false);
       setInitialized(true);
       return false;
     }
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, checkUrlForTokens]);
 
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  // 3. Login Function (Updated to handle LoginAPIView response format)
+  // Login Function
   const login = async (credentials) => {
     try {
       console.log("[Auth] Logging in via Public API...", credentials.email);
       const authApi = createAuthRequest();
-      
-      // The LoginAPIView expects this payload structure
+
       const payload = {
         email: credentials.email,
         password: credentials.password,
-        // g_recaptcha_response: "" // Optional if disabled in backend
       };
 
       const response = await authApi.post(TOKEN_OBTAIN_URL, payload);
@@ -152,67 +202,66 @@ const CentralAuthProvider = ({ children }) => {
 
       // Handle OTP Requirement
       if (response.data.otp_required) {
-          return { 
-              success: false, 
-              error: "OTP Required. Please login via the main portal for 2FA support.",
-              otp_required: true 
-          };
+        return {
+          success: false,
+          error:
+            "OTP Required. Please login via the main portal for 2FA support.",
+          otp_required: true,
+        };
       }
 
       // Handle Success
       if (response.data.success) {
-          console.log("[Auth] Login Successful. Response:", response.data);
-          
-          if (response.data.access_token) {
-             localStorage.setItem('accessToken', response.data.access_token);
-             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-          }
+        console.log("[Auth] Login Successful. Response:", response.data);
 
-          // --- FIX: Use the user data directly from login response ---
-          const userData = response.data.user;
-          
-          // Map roles if they exist in response (LoginResponseSerializer might put them in system_roles or roles)
-          if (response.data.system_roles) {
-              userData.roles = response.data.system_roles.map(r => ({
-                  system: r.system_slug || r.system,
-                  role: r.role_name || r.role
-              }));
-          } else if (response.data.user.roles) {
-             // Sometimes it is nested
-             userData.roles = response.data.user.roles;
-          }
+        // Store the access token in localStorage
+        if (response.data.access_token) {
+          console.log("[Auth] Storing access_token in localStorage");
+          setAccessToken(response.data.access_token);
+        }
 
-          // Verify BMS Access locally
-          if (!hasAnySystemRole(userData, "bms")) {
-             return { success: false, error: "No BMS Access." };
-          }
+        // CRITICAL FIX: Decode the token to get user data with roles
+        // The login response might not have all the data we need
+        const decodedUser = getUserFromToken();
 
-          // Set User State DIRECTLY (Skip fetchUserProfile for now)
-          setUser(userData);
-          setLoading(false);
-          setInitialized(true);
-          
-          return { success: true };
+        if (!decodedUser) {
+          console.error("[Auth] Failed to decode token after login");
+          return { success: false, error: "Invalid token received" };
+        }
+
+        console.log("[Auth] Decoded user from token:", decodedUser);
+
+        // Verify BMS Access using the decoded token data
+        if (!hasAnySystemRole(decodedUser, "bms")) {
+          console.error("[Auth] No BMS Access after login");
+          return { success: false, error: "No BMS Access." };
+        }
+
+        // Set User State using decoded token data
+        console.log("[Auth] Setting user state from token");
+        setUser(decodedUser);
+        setLoading(false);
+        setInitialized(true);
+
+        return { success: true };
       }
-      
-      // Handle Failure (if 200 OK but success=false)
-      return { success: false, error: "Invalid credentials" };
 
+      return { success: false, error: "Invalid credentials" };
     } catch (error) {
       console.error("[Auth] Login error:", error);
-      
-      // LoginAPIView returns 400 Bad Request on failure with specific error structure
+
       const errorData = error.response?.data;
       let msg = "Login failed.";
-      
+
       if (errorData?.errors) {
-          // Flatten error object
-          const errs = errorData.errors;
-          msg = errs.non_field_errors?.[0] || errs.email?.[0] || errs.password?.[0] || msg;
+        const errs = errorData.errors;
+        msg =
+          errs.non_field_errors?.[0] ||
+          errs.email?.[0] ||
+          errs.password?.[0] ||
+          msg;
       } else if (errorData?.detail) {
-          msg = errorData.detail;
-      } else if (typeof error.response?.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
-          msg = "Server redirected to HTML (Endpoint mismatch).";
+        msg = errorData.detail;
       }
 
       return { success: false, error: msg };
@@ -222,8 +271,11 @@ const CentralAuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       const authApi = createAuthRequest();
-      await authApi.post(LOGOUT_URL); // This clears cookies on server
+      await authApi.post(LOGOUT_URL);
+    } catch (error) {
+      console.error("[Auth] Logout error:", error);
     } finally {
+      removeAccessToken();
       setUser(null);
       setInitialized(true);
       setLoading(false);
@@ -232,14 +284,24 @@ const CentralAuthProvider = ({ children }) => {
   };
 
   const updateUserContext = (updatedUserData) => {
-    setUser(prevUser => ({ ...prevUser, ...updatedUserData }));
+    setUser((prevUser) => ({ ...prevUser, ...updatedUserData }));
   };
 
   const value = {
-    user, setUser, loading, logout, login, 
-    refreshAuth: checkAuthStatus, initialized, 
-    isAuthenticated: !!user, isAdmin, isFinanceHead, 
-    hasBmsAccess, getBmsRole, updateUserContext, checkAuthStatus
+    user,
+    setUser,
+    loading,
+    logout,
+    login,
+    refreshAuth: checkAuthStatus,
+    initialized,
+    isAuthenticated: !!user,
+    isAdmin,
+    isFinanceHead,
+    hasBmsAccess,
+    getBmsRole,
+    updateUserContext,
+    checkAuthStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -251,5 +313,7 @@ export const useAuth = () => {
   return context;
 };
 
-const USE_CENTRAL_AUTH = import.meta.env.VITE_USE_CENTRAL_AUTH === 'true';
-export const AuthProvider = USE_CENTRAL_AUTH ? CentralAuthProvider : LocalAuthProvider;
+const USE_CENTRAL_AUTH = import.meta.env.VITE_USE_CENTRAL_AUTH === "true";
+export const AuthProvider = USE_CENTRAL_AUTH
+  ? CentralAuthProvider
+  : LocalAuthProvider;

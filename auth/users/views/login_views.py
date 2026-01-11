@@ -517,7 +517,7 @@ class LoginAPIView(APIView):
     Must call /api/v1/users/verify-otp-login/ with temporary_token + otp_code.
     """
     permission_classes = [AllowAny]
-    
+    authentication_classes = [] 
     def post(self, request):
         from rest_framework import status
         from django.contrib.auth import login

@@ -26,9 +26,47 @@ from core.permissions import IsBMSUser
 from .serializers import DepartmentSerializer, ValidProjectAccountSerializer
 from .models import BudgetAllocation, Department, JournalEntryLine, UserActivityLog
 from .views_utils import get_user_bms_role
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from core.authentication import JWTCookieAuthentication
+import logging
 
 User = get_user_model()
 
+logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def debug_auth(request):
+    """
+    Debug endpoint to verify authentication is working correctly.
+    Access at: GET /api/debug/auth/
+    """
+    user = request.user
+    
+    debug_info = {
+        'authenticated': user.is_authenticated if hasattr(user, 'is_authenticated') else False,
+        'user_id': getattr(user, 'user_id', None),
+        'email': getattr(user, 'email', None),
+        'username': getattr(user, 'username', None),
+        'full_name': getattr(user, 'full_name', None),
+        'department': getattr(user, 'department', None),
+        'department_name': getattr(user, 'department_name', None),
+        'department_id': getattr(user, 'department_id', None),
+        'roles': getattr(user, 'roles', []),
+        'bms_roles': getattr(user, 'bms_roles', []),
+        'bms_role': user.get_bms_role() if hasattr(user, 'get_bms_role') else None,
+        'has_bms_access': user.has_system_access('bms') if hasattr(user, 'has_system_access') else False,
+    }
+    
+    logger.info(f"Debug Auth Info for {debug_info.get('email')}: {debug_info}")
+    
+    return Response({
+        'success': True,
+        'message': 'Authentication working correctly',
+        'user_info': debug_info
+    })
 
 def ratelimit_handler(request, exception):  # Not yet hooked up
     """Custom handler for rate limit exceeded"""
