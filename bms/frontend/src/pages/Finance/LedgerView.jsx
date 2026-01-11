@@ -1400,11 +1400,13 @@ const LedgerView = () => {
     return "User";
   };
 
-  const userRole = getUserRole();
+  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
+    // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "User"
+      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
       : "User",
     role: userRole,
     avatar:
