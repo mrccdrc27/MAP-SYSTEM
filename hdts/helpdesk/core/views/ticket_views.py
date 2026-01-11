@@ -509,6 +509,7 @@ def get_ticket_detail(request, ticket_id):
 
         ticket_data.update({
             'asset_name': ticket.asset_name,
+            'asset_id': ticket.asset_id,
             'serial_number': ticket.serial_number,
             'location': ticket.location,
             'check_out_date': ticket.check_out_date,
@@ -729,6 +730,7 @@ def get_ticket_by_number(request, ticket_number):
 
         ticket_data.update({
             'asset_name': ticket.asset_name,
+            'asset_id': ticket.asset_id,
             'serial_number': ticket.serial_number,
             'location': ticket.location,
             'check_out_date': ticket.check_out_date,

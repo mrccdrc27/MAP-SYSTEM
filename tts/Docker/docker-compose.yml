@@ -148,6 +148,7 @@ services:
       - "5001:8000"
     volumes:
       - media_files:/app/media
+      - ../workflow_api/assets.json:/app/assets.json:ro
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -314,13 +314,28 @@ export default function CoordinatorAdminTicketTracker() {
       // preserve dynamic_data and common asset/issue fields so admin view can render them
       dynamic_data: t.dynamic_data || t.dynamicData || {},
       asset_name: t.asset_name || t.assetName || t.dynamic_data?.assetName || t.dynamicData?.assetName || null,
+      asset_id: t.asset_id || t.assetId || t.dynamic_data?.assetId || t.dynamicData?.assetId || null,
       serial_number: t.serial_number || t.serialNumber || t.dynamic_data?.serialNumber || t.dynamicData?.serialNumber || null,
       location: t.location || t.dynamic_data?.location || t.dynamicData?.location || null,
       issue_type: t.issue_type || t.issueType || t.dynamic_data?.issueType || t.dynamicData?.issueType || null,
+      // Check out date for Asset Check Out
+      check_out_date: t.check_out_date || t.checkOutDate || t.dynamic_data?.checkOutDate || t.dynamicData?.checkOutDate || null,
+      checkOutDate: t.check_out_date || t.checkOutDate || t.dynamic_data?.checkOutDate || t.dynamicData?.checkOutDate || null,
       // Expected return fields for Asset Check Out (align with employee view keys)
       expectedReturnDate: t.expectedReturnDate || t.expected_return_date || t.expectedReturn || t.dynamic_data?.expectedReturnDate || t.dynamic_data?.expected_return_date || null,
       expected_return_date: t.expectedReturnDate || t.expected_return_date || t.expectedReturn || t.dynamic_data?.expectedReturnDate || t.dynamic_data?.expected_return_date || null,
       expectedReturn: t.expectedReturn || t.expectedReturnDate || t.expected_return_date || (t.dynamic_data && (t.dynamic_data.expectedReturn || t.dynamic_data.expected_return_date)) || null,
+      // Budget proposal fields
+      cost_items: t.cost_items || t.costItems || t.dynamic_data?.costItems || t.dynamicData?.costItems || null,
+      budgetItems: t.cost_items || t.costItems || t.budget_items || t.budgetItems || t.dynamic_data?.items || t.dynamic_data?.budgetItems || t.dynamicData?.items || t.dynamicData?.budgetItems || [],
+      budget_items: t.cost_items || t.costItems || t.budget_items || t.budgetItems || t.dynamic_data?.items || t.dynamic_data?.budgetItems || t.dynamicData?.items || t.dynamicData?.budgetItems || [],
+      requested_budget: t.requested_budget || t.requestedBudget || t.dynamic_data?.totalBudget || t.dynamic_data?.requestedBudget || t.dynamicData?.totalBudget || null,
+      totalBudget: t.requested_budget || t.requestedBudget || t.dynamic_data?.totalBudget || t.dynamicData?.totalBudget || null,
+      performanceStartDate: t.performance_start_date || t.performanceStartDate || t.dynamic_data?.performanceStartDate || t.dynamicData?.performanceStartDate || null,
+      performance_start_date: t.performance_start_date || t.performanceStartDate || t.dynamic_data?.performanceStartDate || t.dynamicData?.performanceStartDate || null,
+      performanceEndDate: t.performance_end_date || t.performanceEndDate || t.dynamic_data?.performanceEndDate || t.dynamicData?.performanceEndDate || null,
+      performance_end_date: t.performance_end_date || t.performanceEndDate || t.dynamic_data?.performanceEndDate || t.dynamicData?.performanceEndDate || null,
+      preparedBy: t.approved_by || t.preparedBy || t.dynamic_data?.preparedBy || t.dynamicData?.preparedBy || null,
       status: t.status || '',
       // Normalize priority across different backend shapes so admin UI can read it
       priorityLevel: t.priority || t.priorityLevel || t.priority_level || (t.coordinatorReview && (t.coordinatorReview.priority || t.coordinatorReview.priorityLevel)) || null,
@@ -810,6 +825,10 @@ export default function CoordinatorAdminTicketTracker() {
                             <div className={styles.detailValue}>{ticket.asset_name || ticket.assetName || 'N/A'}</div>
                           </div>
                           <div className={styles.detailItem}>
+                            <div className={styles.detailLabel}>Asset ID</div>
+                            <div className={styles.detailValue}>{ticket.asset_id || ticket.assetId || 'N/A'}</div>
+                          </div>
+                          <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Serial Number</div>
                             <div className={styles.detailValue}>{ticket.serial_number || ticket.serialNumber || 'N/A'}</div>
                           </div>
@@ -824,10 +843,16 @@ export default function CoordinatorAdminTicketTracker() {
                             </div>
                           ) : null}
                           {category === 'Asset Check Out' && (
-                            <div className={styles.detailItem}>
-                              <div className={styles.detailLabel}>Expected Return</div>
-                              <div className={styles.detailValue}>{ticket.expectedReturnDate || ticket.expected_return_date || ticket.expectedReturn || 'N/A'}</div>
-                            </div>
+                            <>
+                              <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Check Out Date</div>
+                                <div className={styles.detailValue}>{ticket.check_out_date || ticket.checkOutDate || 'N/A'}</div>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Expected Return</div>
+                                <div className={styles.detailValue}>{ticket.expectedReturnDate || ticket.expected_return_date || ticket.expectedReturn || 'N/A'}</div>
+                              </div>
+                            </>
                           )}
                         </div>
                       </>
@@ -859,7 +884,7 @@ export default function CoordinatorAdminTicketTracker() {
                               {(ticket.budgetItems || ticket.budget_items || []).length > 0 ? (
                                 (ticket.budgetItems || ticket.budget_items || []).map((item, idx) => (
                                   <div key={idx}>
-                                    {`${item.costElement || item.cost_element || item.name || 'Item'} — ${item.estimatedCost || item.estimated_cost || ''}`}
+                                    {`${item.costElement || item.cost_element || item.name || 'Item'}${item.description ? ` - ${item.description}` : ''} — ${item.estimatedCost || item.estimated_cost || ''}`}
                                   </div>
                                 ))
                               ) : (

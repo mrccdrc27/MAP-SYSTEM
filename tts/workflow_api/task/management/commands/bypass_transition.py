@@ -374,6 +374,7 @@ class Command(BaseCommand):
         
         # Build result
         task.refresh_from_db()
+        workflow_end_logic = task.workflow_id.end_logic if task.workflow_id else 'none'
         result = {
             'success': True,
             'ticket_number': ticket_number,
@@ -384,6 +385,8 @@ class Command(BaseCommand):
                 'step_id': task.current_step.step_id if task.current_step else None,
                 'name': task.current_step.name if task.current_step else None,
             },
+            'workflow_end_logic': workflow_end_logic,
+            'awaiting_external_resolution': task.status == 'pending_external',
             'steps': steps_log,
         }
         
@@ -393,6 +396,9 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"\n   [OK] Transition executed successfully!\n"))
             if task.status == 'completed':
                 self.stdout.write(self.style.SUCCESS(f"   [COMPLETED] Task completed!\n"))
+            elif task.status == 'pending_external':
+                workflow_end_logic = task.workflow_id.end_logic if task.workflow_id else 'unknown'
+                self.stdout.write(self.style.WARNING(f"   [PENDING EXTERNAL] Awaiting {workflow_end_logic.upper()} resolution\n"))
             else:
                 self.stdout.write(f"   Current step: {task.current_step.name if task.current_step else 'None'}\n")
     
@@ -400,7 +406,10 @@ class Command(BaseCommand):
         """Execute finalize action on end step"""
         current_step = task.current_step
         
-        # Create resolved history
+        # Check if workflow has end_logic set (ams/bms)
+        workflow_end_logic = task.workflow_id.end_logic if task.workflow_id else 'none'
+        
+        # Create resolved history (user's part is done regardless of end_logic)
         TaskItemHistory.objects.create(task_item=active_item, status='resolved')
         log_step("Created 'resolved' history entry", 'success')
         
@@ -411,22 +420,54 @@ class Command(BaseCommand):
         active_item.save()
         log_step("Updated TaskItem with action details", 'success')
         
-        # Mark task as completed
-        task.status = 'completed'
-        task.save()
-        log_step("Task marked as completed", 'success')
-        
-        # Update local WorkflowTicket status
-        try:
-            if hasattr(workflow_ticket, 'ticket_data'):
-                workflow_ticket.ticket_data['status'] = 'Resolved'
-                workflow_ticket.save()
-                log_step("Updated local ticket status to 'Resolved'", 'success')
-        except Exception as e:
-            log_step(f"Failed to update local ticket status: {str(e)}", 'warning')
-        
-        # Sync to HDTS
-        self._sync_status_to_hdts(workflow_ticket.ticket_number, 'Resolved', log_step)
+        # Handle end_logic - defer resolution to external system
+        if workflow_end_logic in ['ams', 'bms']:
+            # Mark task as pending_external instead of completed
+            task.status = 'pending_external'
+            task.save()
+            log_step(f"Task marked as 'pending_external' (awaiting {workflow_end_logic.upper()} resolution)", 'success')
+            
+            # Update local WorkflowTicket status to Pending External
+            try:
+                if hasattr(workflow_ticket, 'ticket_data'):
+                    workflow_ticket.ticket_data['status'] = 'Pending External'
+                    workflow_ticket.save()
+                    log_step("Updated local ticket status to 'Pending External'", 'success')
+            except Exception as e:
+                log_step(f"Failed to update local ticket status: {str(e)}", 'warning')
+            
+            # Sync to HDTS
+            self._sync_status_to_hdts(workflow_ticket.ticket_number, 'Pending External', log_step)
+            
+            # BMS-specific: Queue budget proposal submission
+            if workflow_end_logic == 'bms':
+                try:
+                    from task.tasks import submit_bms_budget_proposal
+                    submit_bms_budget_proposal.delay(task.task_id)
+                    log_step("Queued BMS budget proposal submission", 'success')
+                except Exception as e:
+                    log_step(f"Failed to queue BMS submission: {str(e)}", 'warning')
+            
+            log_step(f"Ticket is now pending external resolution by {workflow_end_logic.upper()}", 'info')
+            log_step(f"External service can fetch via: GET /external/{workflow_end_logic}/tickets/", 'info')
+            log_step(f"External service can resolve via: POST /external/resolve/ with ticket_number", 'info')
+        else:
+            # Normal completion (no end_logic or end_logic='none')
+            task.status = 'completed'
+            task.save()
+            log_step("Task marked as completed", 'success')
+            
+            # Update local WorkflowTicket status
+            try:
+                if hasattr(workflow_ticket, 'ticket_data'):
+                    workflow_ticket.ticket_data['status'] = 'Resolved'
+                    workflow_ticket.save()
+                    log_step("Updated local ticket status to 'Resolved'", 'success')
+            except Exception as e:
+                log_step(f"Failed to update local ticket status: {str(e)}", 'warning')
+            
+            # Sync to HDTS
+            self._sync_status_to_hdts(workflow_ticket.ticket_number, 'Resolved', log_step)
     
     def _execute_transition(self, task, active_item, transition_id, notes, log_step, workflow_ticket):
         """Execute a normal transition"""

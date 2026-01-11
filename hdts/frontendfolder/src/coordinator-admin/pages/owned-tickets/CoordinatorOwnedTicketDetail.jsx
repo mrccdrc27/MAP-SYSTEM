@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaPaperclip, FaDownload, FaFile, FaCircle } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
@@ -14,6 +14,7 @@ import EscalateTicketModal from '../../components/modals/EscalateTicketModal';
 import TransferTicketModal from '../../components/modals/TransferTicketModal';
 import WorkflowVisualizer2 from '../../../shared/components/WorkflowVisualizer/WorkflowVisualizer2';
 import { useWorkflowProgress } from '../../../shared/hooks/useWorkflowProgress';
+import { MessageBubble, MessageInput, DateDivider } from '../../../shared/components/Messaging';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CoordinatorOwnedTicketDetail = () => {
@@ -40,7 +41,9 @@ const CoordinatorOwnedTicketDetail = () => {
   
   // TTS Agent messaging input
   const [agentMessageInput, setAgentMessageInput] = useState('');
+  const [agentAttachments, setAgentAttachments] = useState([]);
   const messagesEndRef = useRef(null);
+  const agentMessagesContainerRef = useRef(null);
   // Requester message thread scrolling refs
   const requesterThreadRef = useRef(null);
   const requesterMessagesEndRef = useRef(null);
@@ -236,8 +239,10 @@ const CoordinatorOwnedTicketDetail = () => {
             
             // Additional ticket fields (from helpdesk)
             assetName: helpdeskData?.asset_name,
+            assetId: helpdeskData?.asset_id,
             serialNumber: helpdeskData?.serial_number,
             location: helpdeskData?.location,
+            checkOutDate: helpdeskData?.check_out_date,
             expectedReturnDate: helpdeskData?.expected_return_date,
             issueType: helpdeskData?.issue_type,
             otherIssue: helpdeskData?.other_issue,
@@ -466,14 +471,15 @@ const CoordinatorOwnedTicketDetail = () => {
     setRequesterAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Send message to TTS agents via real-time WebSocket
+  // Send message to TTS agents via real-time WebSocket with attachment support
   const handleSendAgentMessage = async () => {
-    if (!agentMessageInput.trim()) return;
+    if (!agentMessageInput.trim() && agentAttachments.length === 0) return;
     
     try {
       stopTyping();
-      await sendAgentMessage(agentMessageInput.trim());
+      await sendAgentMessage(agentMessageInput.trim(), agentAttachments);
       setAgentMessageInput('');
+      setAgentAttachments([]);
     } catch (err) {
       console.error('Failed to send message:', err);
       // Optionally show error toast
@@ -481,9 +487,20 @@ const CoordinatorOwnedTicketDetail = () => {
   };
 
   // Handle typing indicator for agent messages
-  const handleAgentMessageInputChange = (e) => {
-    setAgentMessageInput(e.target.value);
-    startTyping();
+  const handleAgentMessageInputChange = (value) => {
+    setAgentMessageInput(value);
+    if (value.trim()) {
+      startTyping();
+    } else {
+      stopTyping();
+    }
+  };
+
+  // Helper for date comparison (for message grouping)
+  const isSameDay = (d1, d2) => {
+    const date1 = new Date(d1);
+    const date2 = new Date(d2);
+    return date1.toDateString() === date2.toDateString();
   };
 
   const handleSendRequesterMessage = async () => {
@@ -923,6 +940,12 @@ const CoordinatorOwnedTicketDetail = () => {
                         <p>{ticket.assetName}</p>
                       </div>
                     )}
+                    {ticket.assetId && (
+                      <div>
+                        <label>Asset ID:</label>
+                        <p>{ticket.assetId}</p>
+                      </div>
+                    )}
                     {ticket.serialNumber && (
                       <div>
                         <label>Serial Number:</label>
@@ -933,6 +956,18 @@ const CoordinatorOwnedTicketDetail = () => {
                       <div>
                         <label>Location:</label>
                         <p>{ticket.location}</p>
+                      </div>
+                    )}
+                    {ticket.checkOutDate && (
+                      <div>
+                        <label>Check Out Date:</label>
+                        <p>{ticket.checkOutDate}</p>
+                      </div>
+                    )}
+                    {ticket.expectedReturnDate && (
+                      <div>
+                        <label>Expected Return Date:</label>
+                        <p>{ticket.expectedReturnDate}</p>
                       </div>
                     )}
                     {ticket.issueType && (
@@ -1254,7 +1289,7 @@ const CoordinatorOwnedTicketDetail = () => {
             </div>
           ) : (
             <div className={styles['sidebar-content']}>
-              {/* TTS Agent Messages - Real-time WebSocket */}
+              {/* TTS Agent Messages - Real-time WebSocket with improved UI */}
               <div className={styles['messages-section']}>
                 <div className={styles['messages-header']}>
                   <h3>TTS Agent Messages</h3>
@@ -1264,99 +1299,85 @@ const CoordinatorOwnedTicketDetail = () => {
                   </span>
                 </div>
                 
-                <div className={styles['message-list']}>
+                <div className={styles['message-list']} ref={agentMessagesContainerRef}>
                   {messagingLoading && displayedAgentMessages.length === 0 ? (
-                    <div className={styles['loading-messages']}>Loading messages...</div>
+                    <div className={styles['loading-messages']}>
+                      <div className={styles['loading-spinner']}></div>
+                      <p>Loading messages...</p>
+                    </div>
                   ) : displayedAgentMessages.length === 0 ? (
                     <div className={styles['no-messages']}>
-                      No messages yet. Start a conversation with TTS agents.
+                      <div className={styles['empty-icon']}>💬</div>
+                      <p>No messages yet</p>
+                      <span>Start a conversation with TTS agents!</span>
                     </div>
                   ) : (
-                    displayedAgentMessages.map((msg) => {
-                      const isOwnMessage = (msg.user_id || msg.user?.id || msg.user_id) === (currentUser?.id || currentUser?.user_id);
-                      return (
-                        <div 
-                          key={msg.message_id || msg.id} 
-                          className={`${styles['msg-item']} ${isOwnMessage ? styles['msg-own'] : ''}`}
-                        >
-                          <div className={styles['msg-sender']}>
-                            {msg.sender || 'Unknown'}
-                            {msg.sender_role && <span className={styles['msg-role']}> ({msg.sender_role})</span>}
-                          </div>
-                          <p className={styles['msg-text']}>{msg.message || msg.content}</p>
-                          {msg.attachments && msg.attachments.length > 0 && (
-                            <div className={styles['msg-attachments']}>
-                              {msg.attachments.map((att, idx) => {
-                                // Attachment file URL should already be normalized from displayedAgentMessages mapping
-                                const fileVal = att.file || null;
-                                const nameVal = att.filename || 'attachment';
-                                const fileExt = nameVal.split('.').pop()?.toLowerCase() || '';
-                                const mimeType = att.type || '';
-                                const isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt)
-                                  || mimeType.startsWith('image/') || mimeType === 'application/pdf';
-                                return (
-                                  <a 
-                                    key={att.id || idx} 
-                                    href={fileVal || '#'} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className={styles['attachment-tag']}
-                                    style={{ textDecoration: 'none' }}
-                                    {...(!isViewable && fileVal ? { download: nameVal } : {})}
-                                  >
-                                    {isViewable ? '🔗' : '📎'} {nameVal}
-                                  </a>
-                                );
-                              })}
-                            </div>
-                          )}
-                          <span className={styles['msg-time']}>
-                            {msg.created_at 
-                              ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                              : msg.time}
-                            {msg.is_edited && <span className={styles['edited-tag']}> (edited)</span>}
-                          </span>
-                        </div>
-                      );
-                    })
+                    <>
+                      {displayedAgentMessages.map((msg, index) => {
+                        const isOwnMessage = String(msg.user_id || msg.user?.id) === String(currentUser?.id || currentUser?.user_id);
+                        
+                        // Grouping logic
+                        const prevMsg = displayedAgentMessages[index - 1];
+                        const nextMsg = displayedAgentMessages[index + 1];
+                        
+                        const isFirstInGroup = !prevMsg || 
+                          String(prevMsg.user_id) !== String(msg.user_id) || 
+                          !isSameDay(prevMsg.created_at, msg.created_at);
+                        
+                        const isLastInGroup = !nextMsg || 
+                          String(nextMsg.user_id) !== String(msg.user_id) || 
+                          !isSameDay(nextMsg.created_at, msg.created_at);
+                        
+                        // Date divider logic
+                        const showDateDivider = !prevMsg || !isSameDay(prevMsg.created_at, msg.created_at);
+
+                        return (
+                          <React.Fragment key={msg.message_id || msg.id}>
+                            {showDateDivider && <DateDivider date={msg.created_at} />}
+                            <MessageBubble
+                              message={msg}
+                              isOwn={isOwnMessage}
+                              currentUserId={currentUser?.id || currentUser?.user_id}
+                              currentUserData={currentUser}
+                              isFirstInGroup={isFirstInGroup}
+                              isLastInGroup={isLastInGroup}
+                            />
+                          </React.Fragment>
+                        );
+                      })}
+                    </>
                   )}
                   
                   {/* Typing indicator */}
                   {typingUsers.length > 0 && (
-                    <div className={styles['typing-indicator']} aria-live="polite" aria-label={`${typingUsers.join(', ')} is typing`}>
-                      <span></span>
-                      <span></span>
-                      <span></span>
+                    <div className={styles['typing-indicator-wrapper']}>
+                      <div className={styles['typing-dots']}>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      <span className={styles['typing-text']}>
+                        {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+                      </span>
                     </div>
                   )}
                   
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Send Message */}
-                <div className={styles['send-msg-form']}>
-                  <textarea
-                    value={agentMessageInput}
-                    onChange={handleAgentMessageInputChange}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendAgentMessage();
-                      }
-                    }}
-                    placeholder="Type a message to TTS agents..."
-                    className={styles['msg-textarea']}
-                    rows="3"
-                    disabled={!wsConnected}
-                  />
-                  <button
-                    className={styles['send-msg-btn']}
-                    onClick={handleSendAgentMessage}
-                    disabled={!agentMessageInput.trim() || !wsConnected}
-                  >
-                    Send
-                  </button>
-                </div>
+                {/* Improved Message Input with attachments and emoji support */}
+                <MessageInput
+                  message={agentMessageInput}
+                  setMessage={handleAgentMessageInputChange}
+                  attachments={agentAttachments}
+                  setAttachments={setAgentAttachments}
+                  onSend={handleSendAgentMessage}
+                  onTyping={startTyping}
+                  onStopTyping={stopTyping}
+                  isLoading={messagingLoading}
+                  disabled={!wsConnected}
+                  placeholder="Type a message to TTS agents..."
+                />
               </div>
             </div>
           )}

@@ -144,7 +144,7 @@ export const mockTickets = [
     fileAttachments: [],
     scheduleRequest: null,
     budgetItems: [
-      { costElement: 'Software (long-term value like MS Office, Adobe Suite, Antivirus)', estimatedCost: '₱500,001 - ₱1,000,000' }
+      { costElement: 'Software (long-term value like MS Office, Adobe Suite, Antivirus)', description: 'Finance software upgrade', estimatedCost: '₱500,001 - ₱1,000,000' }
     ],
     totalBudget: 1000000,
     performanceStartDate: '2025-07-01',

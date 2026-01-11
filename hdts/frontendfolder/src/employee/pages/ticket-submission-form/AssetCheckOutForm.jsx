@@ -43,7 +43,13 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
     fetchCategories();
   }, []);
 
-  // Fetch assets when subCategory changes
+  // Find the selected category ID based on the subCategory name
+  const getSelectedCategoryId = () => {
+    const selectedCategory = categories.find(cat => cat.name === formData.subCategory);
+    return selectedCategory ? selectedCategory.id : null;
+  };
+
+  // Fetch assets when subCategory changes - filter by category ID
   useEffect(() => {
     const fetchAssets = async () => {
       if (!formData.subCategory) {
@@ -51,14 +57,18 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         return;
       }
 
+      const categoryId = getSelectedCategoryId();
+      if (!categoryId) {
+        setAssets([]);
+        return;
+      }
+
       try {
         setLoadingAssets(true);
-        // Fetch all assets and filter by status (only deployable assets)
-        const response = await fetch(`${AMS_ASSETS_URL}?status_type=deployable`);
+        // Fetch assets filtered by category ID and status (only deployable assets)
+        const response = await fetch(`${AMS_ASSETS_URL}?category=${categoryId}&status_type=deployable`);
         if (response.ok) {
           const data = await response.json();
-          // Filter assets - for now we get all deployable assets
-          // In the future, we could filter by category if the API supports it
           setAssets(data);
         } else {
           console.error('Failed to fetch assets:', response.status);
@@ -71,7 +81,7 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
     };
 
     fetchAssets();
-  }, [formData.subCategory]);
+  }, [formData.subCategory, categories]);
 
   // Handle asset selection - auto-populate serial number
   const handleAssetChange = (e) => {
@@ -84,6 +94,17 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
     // Call the callback to update serial number if asset is found
     if (selectedAsset && onAssetSelect) {
       onAssetSelect(selectedAsset);
+    }
+  };
+
+  // Handle category change - clear asset and serial number
+  const handleCategoryChange = (e) => {
+    // Call parent onChange for subCategory
+    onChange('subCategory')(e);
+    
+    // Clear asset-related fields when category changes
+    if (onAssetSelect) {
+      onAssetSelect(null); // Pass null to clear serial number
     }
   };
 
@@ -120,7 +141,7 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         render={() => (
           <select
             value={formData.subCategory}
-            onChange={onChange('subCategory')}
+            onChange={handleCategoryChange}
             onBlur={onBlur('subCategory')}
             disabled={loadingCategories}
           >

@@ -1,0 +1,312 @@
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: white;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Attachments Preview */
+.attachmentsPreview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  background: #F3F4F6;
+  border-radius: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.attachmentChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 200px;
+}
+
+.imageThumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.imageThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attachmentIcon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #007BFF;
+  color: #FFFFFF;
+  border-radius: 6px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.attachmentName {
+  font-size: 12px;
+  color: #0C0C0C;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.removeBtn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: #E5E7EB;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #6B7280;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Input Container */
+.inputContainer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.attachBtn,
+.emojiBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #6B7280;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.attachBtn:hover:not(:disabled),
+.emojiBtn:hover:not(:disabled) {
+  background: #F3F4F6;
+  color: #007BFF;
+}
+
+.attachBtn:disabled,
+.emojiBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Emoji Picker */
+.emojiPickerWrapper {
+  position: relative;
+}
+
+.emojiPicker {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 280px;
+  max-height: 300px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-bottom: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.emojiPickerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.emojiPickerHeader span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0C0C0C;
+}
+
+.emojiPickerClose {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #6B7280;
+  transition: all 0.2s ease;
+}
+
+.emojiPickerClose:hover {
+  background: #F3F4F6;
+  color: #0C0C0C;
+}
+
+.emojiPickerContent {
+  padding: 8px;
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.emojiCategory {
+  margin-bottom: 12px;
+}
+
+.emojiCategory:last-child {
+  margin-bottom: 0;
+}
+
+.emojiCategoryLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  padding: 4px 4px 8px;
+}
+
+.emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.emojiOption {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emojiOption:hover {
+  background: #F3F4F6;
+  transform: scale(1.15);
+}
+
+/* Textarea */
+.textarea {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #0C0C0C;
+  resize: none;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.4;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #FFFFFF;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #007BFF;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.textarea:disabled {
+  background: #F5F5F5;
+  cursor: not-allowed;
+}
+
+.textarea::placeholder {
+  color: #9CA3AF;
+}
+
+/* Send Button */
+.sendBtn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #007BFF;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sendBtn:hover:not(:disabled) {
+  background: #0056B3;
+  transform: scale(1.05);
+}
+
+.sendBtn:disabled {
+  background: #D1D5DB;
+  cursor: not-allowed;
+}
+
+/* Spinner Animation */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .emojiPicker {
+    width: 260px;
+    left: -50px;
+  }
+  
+  .emojiGrid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}

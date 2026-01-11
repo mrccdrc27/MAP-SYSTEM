@@ -1,0 +1,394 @@
+.messageWrapper {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  animation: slideIn 0.3s ease-out;
+  align-items: flex-end;
+  width: 100%;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.messageWrapper.own {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.messageWrapper.other {
+  flex-direction: row;
+  margin-right: auto;
+}
+
+.avatarContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #007BFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.avatarPlaceholder {
+  width: 32px;
+  height: 32px; 
+}
+
+.messageContent {
+  display: flex;
+  flex-direction: column;
+  max-width: 75%;
+  position: relative;
+  transition: max-width 0.3s ease;
+}
+
+.contentExpanded {
+  max-width: 90%;
+}
+
+.messageWrapper.own .messageContent {
+  align-items: flex-end;
+}
+
+.messageWrapper.other .messageContent {
+  align-items: flex-start;
+}
+
+.messageMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 0 8px;
+}
+
+.senderName {
+  font-weight: 600;
+  font-size: 12px;
+  color: #0C0C0C;
+}
+
+.senderRole {
+  font-size: 11px;
+  color: #414651;
+}
+
+/* Bubble Wrapper */
+.bubbleWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 4px;
+}
+
+.messageWrapper.own .bubbleWrapper {
+  flex-direction: row-reverse;
+}
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 16px;
+  word-wrap: break-word;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  transition: all 0.2s ease;
+  max-width: 100%;
+}
+
+.bubbleTime {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bubbleExpanded {
+  padding: 12px 18px;
+  border-radius: 20px;
+}
+
+.bubbleOwn {
+  background: #007BFF;
+  color: #FFFFFF;
+  border-bottom-right-radius: 4px;
+}
+
+.bubbleOwn .bubbleTime {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.bubbleOwn:hover {
+  background: #0056B3;
+}
+
+.bubbleOther {
+  background: #FFFFFF;
+  color: #0C0C0C;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #E0E0E0;
+}
+
+.bubbleOther .bubbleTime {
+  color: #414651;
+}
+
+.bubbleUnsent {
+  background: #F8F8F8;
+  border: 1px dashed #9CA3AF;
+  color: #6B7280;
+}
+
+.unsentText {
+  margin: 0;
+  font-size: 12px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.messageText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.editedTag {
+  font-size: 10px;
+  font-style: italic;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.messageTime {
+  font-size: 10px;
+  color: #6B7280;
+  padding: 2px 8px;
+  margin-top: 2px;
+}
+
+/* Inline reaction button */
+.inlineReactionBtn {
+  position: absolute;
+  bottom: -10px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.messageWrapper:hover .inlineReactionBtn {
+  opacity: 1;
+}
+
+.reactionLeft {
+  left: 8px;
+}
+
+.reactionRight {
+  right: 8px;
+}
+
+.reactionTrigger {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #E0E0E0;
+  background: #FFFFFF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #6B7280;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reactionTrigger:hover {
+  background: #F3F4F6;
+  color: #007BFF;
+  transform: scale(1.1);
+}
+
+/* Quick reaction picker */
+.quickReactionPicker {
+  position: absolute;
+  bottom: 100%;
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  margin-bottom: 8px;
+}
+
+.pickerLeft {
+  left: 0;
+}
+
+.pickerRight {
+  right: 0;
+}
+
+.quickReactionBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quickReactionBtn:hover {
+  background: #F3F4F6;
+  transform: scale(1.2);
+}
+
+/* Menu */
+.menuWrapper {
+  position: relative;
+}
+
+.menuBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #6B7280;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.messageWrapper:hover .menuBtn {
+  opacity: 1;
+}
+
+.menuBtn:hover {
+  background: #F3F4F6;
+  color: #0C0C0C;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 160px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.menuItem {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #0C0C0C;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.menuItem:hover {
+  background: #F3F4F6;
+}
+
+.menuItem svg {
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+/* Attachments */
+.attachmentWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.attachmentOnly {
+  margin-top: 0;
+}
+
+.attachmentsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attachmentsExpanded {
+  max-width: none;
+}
+
+/* Reactions */
+.reactionsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  padding-left: 8px;
+}
+
+.reactionBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid #E0E0E0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reactionBadge:hover {
+  background: #F3F4F6;
+  transform: scale(1.05);
+}

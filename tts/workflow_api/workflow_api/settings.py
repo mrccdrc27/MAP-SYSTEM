@@ -260,12 +260,20 @@ CELERY_TASK_ROUTES = {
     # Ticket receive queue - tickets from helpdesk
     'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
     'tickets.tasks.create_task_for_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    # BMS submission tasks - run in workflow worker
+    'task.submit_bms_budget_proposal': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    'task.retry_failed_bms_submissions': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    'task.retry_single_bms_submission': {'queue': 'TICKET_TASKS_PRODUCTION'},
 }
 
 # External Services
 USER_SERVICE_URL = config('DJANGO_USER_SERVICE_URL', default='http://localhost:8000')
 AUTH_SERVICE_URL = config('DJANGO_AUTH_SERVICE_URL', default='http://localhost:8000')
 BASE_URL = config('DJANGO_BASE_URL', default='http://localhost:8000')
+
+# BMS (Budget Management System) Integration
+BMS_API_BASE_URL = config('BMS_API_BASE_URL', default='https://budget-pro.onrender.com/api')
+BMS_API_KEY = config('BMS_API_KEY', default='tts-live-key-112233445')
 
 # Test Runner Configuration (Python 3.13 compatibility)
 TEST_RUNNER = 'workflow_api.test_runner.Python313CompatibleTestRunner'

@@ -1,0 +1,9 @@
+{
+  "external-budget-proposals": "https://budget-pro.onrender.com/api/external-budget-proposals/",
+  "external-expenses": "https://budget-pro.onrender.com/api/external-expenses/",
+  "external-journal-entries": "https://budget-pro.onrender.com/api/external-journal-entries/",
+  "fiscal-years": "https://budget-pro.onrender.com/api/fiscal-years/"
+}
+{
+  "detail": "You do not have permission to perform this action."
+}

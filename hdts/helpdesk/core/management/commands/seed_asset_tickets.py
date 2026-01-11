@@ -90,7 +90,7 @@ class Command(BaseCommand):
         parser.add_argument('--days-range', type=int, default=0, 
                           help='Randomize days-ago within range')
         parser.add_argument('--assets-file', type=str, 
-                          default='/root/MAP-SYSTEM/tts/workflow_api/assets.json',
+                          default='/app/assets.json',
                           help='Path to assets.json file')
 
     def handle(self, *args, **options):

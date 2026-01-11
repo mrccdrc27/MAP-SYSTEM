@@ -41,6 +41,7 @@ export default function EmployeeTicketSubmissionForm() {
     subCategory: '',
     description: '',
     assetName: '',
+    assetId: '',
     serialNumber: '',
     location: '',
     checkOutDate: '',
@@ -538,6 +539,7 @@ export default function EmployeeTicketSubmissionForm() {
       // Add Asset category-specific data
       if (isAnyAssetCategory) {
         dynamicData.assetName = formData.assetName;
+        dynamicData.assetId = formData.assetId;
         dynamicData.serialNumber = formData.serialNumber;
         dynamicData.location = formData.location;
       }
@@ -601,6 +603,7 @@ export default function EmployeeTicketSubmissionForm() {
       subCategory: '',
       description: '',
       assetName: '',
+      assetId: '',
       serialNumber: '',
       location: '',
       checkOutDate: '',
@@ -718,10 +721,13 @@ export default function EmployeeTicketSubmissionForm() {
               errors={errors}
               FormField={FormField}
               onAssetSelect={(asset) => {
-                // Update serial number when asset is selected from AMS API
+                // Update serial number, assetId, and assetName when asset is selected from AMS API
+                // Clear fields when asset is null (category changed)
                 setFormData(prev => ({
                   ...prev,
-                  serialNumber: asset.serial_number || ''
+                  assetName: asset ? prev.assetName : '',
+                  assetId: asset ? (asset.asset_id || '') : '',
+                  serialNumber: asset ? (asset.serial_number || '') : ''
                 }));
               }}
             />

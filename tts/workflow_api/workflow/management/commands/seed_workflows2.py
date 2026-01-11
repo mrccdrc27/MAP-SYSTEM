@@ -140,6 +140,7 @@ class Command(BaseCommand):
                     "sub_category": "Check In",
                     "department": "Asset Department",
                     "description": "Workflow for checking in company assets. (Triage -> Resolve -> Finalize)",
+                    "end_logic": "ams",  # AMS handles final resolution
                     "steps_config": create_3_step_config(
                         resolver_role='Asset_Manager',
                         resolver_instruction='resolve_asset',
@@ -152,6 +153,7 @@ class Command(BaseCommand):
                     "sub_category": "Check Out",
                     "department": "Asset Department",
                     "description": "Workflow for checking out company assets. (Triage -> Resolve -> Finalize)",
+                    "end_logic": "ams",  # AMS handles final resolution
                     "steps_config": create_3_step_config(
                         resolver_role='Asset_Manager',
                         resolver_instruction='resolve_asset',
@@ -164,6 +166,7 @@ class Command(BaseCommand):
                     "sub_category": "Budget Approval",
                     "department": "Budget Department",
                     "description": "Workflow for submitting and approving new project proposals. (Triage -> Resolve -> Finalize)",
+                    "end_logic": "bms",  # BMS handles final resolution
                     "steps_config": create_3_step_config(
                         resolver_role='Budget_Manager',
                         resolver_instruction='resolve_budget',
@@ -176,6 +179,7 @@ class Command(BaseCommand):
                     "sub_category": "Access Request",
                     "department": "IT Department",
                     "description": "Workflow for requesting access to systems or applications. (Single Step)",
+                    "end_logic": "none",  # Normal resolution (no external system)
                     "steps_config": [
                         {
                             'label': 'Process Access Request',
@@ -191,6 +195,7 @@ class Command(BaseCommand):
                     "sub_category": "Software Installation",
                     "department": "IT Department",
                     "description": "Workflow for requesting software installation. (Single Step)",
+                    "end_logic": "none",  # Normal resolution (no external system)
                     "steps_config": [
                         {
                             'label': 'Process Software Installation',
@@ -206,6 +211,7 @@ class Command(BaseCommand):
                     "sub_category": "Broken Path",
                     "department": "Test Department",
                     "description": "Intentionally broken workflow to test validation logic.",
+                    "end_logic": "none",  # Normal resolution (no external system)
                     "steps_config": [
                         {
                             'label': 'Step 1 (Start)',
@@ -247,6 +253,7 @@ class Command(BaseCommand):
                         'department': wf_data["department"],
                         'is_published': False,  # Let validation signals compute this
                         'status': 'draft',  # Let validation signals compute final status
+                        'end_logic': wf_data.get("end_logic", "none"),  # External system for final resolution
                         'urgent_sla': timedelta(hours=4),
                         'high_sla': timedelta(hours=8),
                         'medium_sla': timedelta(days=2),
@@ -256,8 +263,9 @@ class Command(BaseCommand):
 
                 if created:
                     total_workflows += 1
+                    end_logic_info = f" [end_logic={wf_data.get('end_logic', 'none')}]" if wf_data.get('end_logic', 'none') != 'none' else ""
                     self.stdout.write(self.style.SUCCESS(
-                        f'  ✓ Created workflow for {wf_data["department"]}'
+                        f'  ✓ Created workflow for {wf_data["department"]}{end_logic_info}'
                     ))
                 else:
                     self.stdout.write(self.style.WARNING(
@@ -407,21 +415,26 @@ class Command(BaseCommand):
             self.stdout.write(f'{self.style.MIGRATE_LABEL("Total Transitions Created:")} {total_transitions}')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflow Structure Summary:'))
-            self.stdout.write('  • Asset Department')
-            self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin)')
-            self.stdout.write('  • Budget Department')
-            self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin)')
-            self.stdout.write('  • IT Department')
-            self.stdout.write(f'    - Process (Asset Manager) [Single Step]')
+            self.stdout.write('  • Asset Department [end_logic=ams]')
+            self.stdout.write(f'    - Triage (Admin) -> Resolve (Asset Manager) -> Finalize (Admin) -> AMS Resolution')
+            self.stdout.write('  • Budget Department [end_logic=bms]')
+            self.stdout.write(f'    - Triage (Admin) -> Resolve (Budget Manager) -> Finalize (Admin) -> BMS Resolution')
+            self.stdout.write('  • IT Department [end_logic=none]')
+            self.stdout.write(f'    - Process (Asset Manager) [Single Step] -> Normal Resolution')
             
             self.stdout.write('\n' + self.style.MIGRATE_HEADING('Workflows Created:'))
-            self.stdout.write('  1. Asset Check In Workflow (Asset Management -> Check In)')
-            self.stdout.write('  2. Asset Check Out Workflow (Asset Management -> Check Out)')
-            self.stdout.write('  3. New Budget Proposal Workflow (Budget Management -> Budget Approval)')
-            self.stdout.write('  4. IT Support Access Request Workflow (IT Support -> Access Request)')
-            self.stdout.write('  5. IT Support Software Installation Workflow (IT Support -> Software Installation)')
+            self.stdout.write('  1. Asset Check In Workflow (Asset Management -> Check In) [end_logic=ams]')
+            self.stdout.write('  2. Asset Check Out Workflow (Asset Management -> Check Out) [end_logic=ams]')
+            self.stdout.write('  3. New Budget Proposal Workflow (Budget Management -> Budget Approval) [end_logic=bms]')
+            self.stdout.write('  4. IT Support Access Request Workflow (IT Support -> Access Request) [end_logic=none]')
+            self.stdout.write('  5. IT Support Software Installation Workflow (IT Support -> Software Installation) [end_logic=none]')
             self.stdout.write('  6. ⚠ BROKEN TEST Workflow (Test -> Broken Path) - Intentionally broken for validation testing')
             self.stdout.write('     └─ Tests detection of: deadend steps + orphaned/unreachable steps')
+            
+            self.stdout.write('\n' + self.style.MIGRATE_HEADING('End Logic Summary:'))
+            self.stdout.write('  • ams: Tickets pending external resolution via /external/ams/tickets/')
+            self.stdout.write('  • bms: Tickets pending external resolution via /external/bms/tickets/')
+            self.stdout.write('  • none: Normal workflow resolution (ticket marked as Resolved on finalize)')
             self.stdout.write('\n' + '='*70)
 
             if dry_run:

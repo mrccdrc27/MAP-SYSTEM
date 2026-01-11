@@ -251,3 +251,96 @@ class FailedNotification(models.Model):
     
     def __str__(self):
         return f'FailedNotification {self.failed_notification_id}: User {self.user_id} - TaskItem {self.task_item_id} ({self.status})'
+
+
+class FailedBMSSubmission(models.Model):
+    """
+    Stores failed BMS (Budget Management System) submission attempts for later retry.
+    When BMS service is unavailable or returns validation errors, submissions are stored here.
+    """
+    BMS_SUBMISSION_STATUS_CHOICES = [
+        ('pending', 'Pending Retry'),
+        ('retrying', 'Retrying'),
+        ('failed', 'Failed Permanently'),
+        ('success', 'Success'),
+    ]
+    
+    ERROR_TYPE_CHOICES = [
+        ('validation', 'Validation Error'),
+        ('service_unavailable', 'Service Unavailable'),
+        ('timeout', 'Request Timeout'),
+        ('unknown', 'Unknown Error'),
+    ]
+    
+    failed_bms_id = models.AutoField(primary_key=True)
+    
+    # Link to task/ticket
+    task = models.ForeignKey(
+        Task, 
+        on_delete=models.CASCADE,
+        related_name='failed_bms_submissions',
+        help_text="The task associated with this BMS submission"
+    )
+    ticket_number = models.CharField(max_length=50, help_text="Ticket number for reference")
+    
+    # Submission payload (transformed data)
+    submission_payload = models.JSONField(help_text="The transformed BMS API payload")
+    original_ticket_data = models.JSONField(help_text="Original ticket data for debugging")
+    
+    # Error tracking
+    status = models.CharField(
+        max_length=20,
+        choices=BMS_SUBMISSION_STATUS_CHOICES,
+        default='pending',
+        help_text="Current status of this submission"
+    )
+    error_type = models.CharField(
+        max_length=30,
+        choices=ERROR_TYPE_CHOICES,
+        default='unknown',
+        help_text="Type of error encountered"
+    )
+    error_message = models.TextField(blank=True, help_text="Error details from failed attempt")
+    error_response = models.JSONField(null=True, blank=True, help_text="Full error response from BMS API")
+    
+    # Retry tracking
+    retry_count = models.IntegerField(default=0, help_text="Number of retry attempts")
+    max_retries = models.IntegerField(default=5, help_text="Maximum retry attempts")
+    next_retry_at = models.DateTimeField(null=True, blank=True, help_text="Scheduled time for next retry")
+    
+    # Fallback tracking
+    used_fallback_fiscal_year = models.BooleanField(default=False, help_text="Whether fallback fiscal year was used")
+    used_fallback_accounts = models.BooleanField(default=False, help_text="Whether fallback accounts were used")
+    original_fiscal_year = models.IntegerField(null=True, blank=True, help_text="Original fiscal year before fallback")
+    original_accounts = models.JSONField(null=True, blank=True, help_text="Original account IDs before fallback")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, help_text="When submission first failed")
+    last_retry_at = models.DateTimeField(null=True, blank=True, help_text="Last retry attempt")
+    succeeded_at = models.DateTimeField(null=True, blank=True, help_text="When submission finally succeeded")
+    
+    # BMS Response (on success)
+    bms_response = models.JSONField(null=True, blank=True, help_text="Successful BMS API response")
+    bms_proposal_id = models.CharField(max_length=100, blank=True, help_text="BMS proposal ID if created")
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'next_retry_at']),
+            models.Index(fields=['ticket_number']),
+            models.Index(fields=['error_type', 'status']),
+        ]
+    
+    def __str__(self):
+        return f'FailedBMSSubmission {self.failed_bms_id}: {self.ticket_number} ({self.status})'
+    
+    def should_retry(self):
+        """Check if this submission should be retried"""
+        return (
+            self.status in ['pending', 'retrying'] and 
+            self.retry_count < self.max_retries
+        )
+    
+    def get_backoff_seconds(self):
+        """Calculate exponential backoff for next retry (30s, 60s, 120s, 240s, 480s)"""
+        return 30 * (2 ** self.retry_count)

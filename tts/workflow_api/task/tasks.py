@@ -9,6 +9,143 @@ INAPP_NOTIFICATION_QUEUE = getattr(settings, 'INAPP_NOTIFICATION_QUEUE', 'inapp-
 
 
 # =============================================================================
+# BMS (BUDGET MANAGEMENT SYSTEM) SUBMISSION TASKS
+# =============================================================================
+
+@shared_task(name="task.submit_bms_budget_proposal", bind=True, max_retries=0)
+def submit_bms_budget_proposal(self, task_id: int):
+    """
+    Celery task to submit a budget proposal to BMS when task reaches pending_external.
+    
+    This is triggered when a workflow with end_logic='bms' reaches its final step.
+    
+    Args:
+        task_id: ID of the Task to submit
+        
+    Returns:
+        dict: Status of the BMS submission
+    """
+    from task.models import Task
+    from task.services.bms_service import submit_budget_proposal
+    
+    logger.info(f"📋 BMS Submission Task started for task_id={task_id}")
+    
+    try:
+        task = Task.objects.select_related('ticket_id', 'workflow_id').get(task_id=task_id)
+    except Task.DoesNotExist:
+        logger.error(f"❌ Task {task_id} not found for BMS submission")
+        return {
+            'status': 'error',
+            'message': f'Task {task_id} not found',
+            'task_id': task_id
+        }
+    
+    # Verify this is a BMS workflow
+    if not task.workflow_id or task.workflow_id.end_logic != 'bms':
+        logger.warning(f"⚠️ Task {task_id} is not a BMS workflow, skipping")
+        return {
+            'status': 'skipped',
+            'message': 'Not a BMS workflow',
+            'task_id': task_id
+        }
+    
+    # Submit to BMS
+    result = submit_budget_proposal(task)
+    
+    if result.get('status') == 'success':
+        logger.info(f"✅ BMS submission successful for task {task_id}")
+    elif result.get('status') == 'pending_retry':
+        logger.info(f"⏳ BMS submission pending retry for task {task_id}")
+    else:
+        logger.error(f"❌ BMS submission failed for task {task_id}: {result.get('message')}")
+    
+    return result
+
+
+@shared_task(name="task.retry_failed_bms_submissions")
+def retry_failed_bms_submissions():
+    """
+    Periodic task to retry failed BMS submissions.
+    
+    Finds all FailedBMSSubmission records that:
+    - Are in 'pending' status
+    - Have next_retry_at <= now
+    - Have not exceeded max_retries
+    
+    Run this task periodically (e.g., every 30 seconds via Celery beat).
+    """
+    from django.utils import timezone
+    from task.models import FailedBMSSubmission
+    from task.services.bms_service import retry_failed_submission
+    
+    now = timezone.now()
+    
+    # Get pending submissions ready for retry
+    pending_submissions = FailedBMSSubmission.objects.filter(
+        status='pending',
+        next_retry_at__lte=now
+    ).select_related('task')[:10]  # Process max 10 at a time
+    
+    if not pending_submissions:
+        logger.debug("No pending BMS submissions to retry")
+        return {'status': 'ok', 'retried': 0}
+    
+    logger.info(f"🔄 Retrying {len(pending_submissions)} failed BMS submissions")
+    
+    results = []
+    for submission in pending_submissions:
+        result = retry_failed_submission(submission)
+        results.append({
+            'failed_bms_id': submission.failed_bms_id,
+            'ticket_number': submission.ticket_number,
+            'result': result.get('status')
+        })
+    
+    succeeded = sum(1 for r in results if r['result'] == 'success')
+    pending = sum(1 for r in results if r['result'] == 'pending_retry')
+    failed = sum(1 for r in results if r['result'] == 'error')
+    
+    logger.info(f"🔄 BMS retry results: {succeeded} succeeded, {pending} pending, {failed} failed")
+    
+    return {
+        'status': 'ok',
+        'retried': len(results),
+        'succeeded': succeeded,
+        'pending': pending,
+        'failed': failed,
+        'results': results
+    }
+
+
+@shared_task(name="task.retry_single_bms_submission")
+def retry_single_bms_submission(failed_bms_id: int):
+    """
+    Retry a specific failed BMS submission.
+    
+    Args:
+        failed_bms_id: ID of the FailedBMSSubmission to retry
+        
+    Returns:
+        dict: Status of the retry attempt
+    """
+    from task.models import FailedBMSSubmission
+    from task.services.bms_service import retry_failed_submission
+    
+    logger.info(f"🔄 Retrying BMS submission {failed_bms_id}")
+    
+    try:
+        submission = FailedBMSSubmission.objects.select_related('task').get(failed_bms_id=failed_bms_id)
+    except FailedBMSSubmission.DoesNotExist:
+        logger.error(f"❌ FailedBMSSubmission {failed_bms_id} not found")
+        return {
+            'status': 'error',
+            'message': f'Submission {failed_bms_id} not found'
+        }
+    
+    return retry_failed_submission(submission)
+
+
+# =============================================================================
 # TASK ASSIGNMENT NOTIFICATIONS
 # =============================================================================
 

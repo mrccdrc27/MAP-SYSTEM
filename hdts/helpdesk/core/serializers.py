@@ -194,6 +194,7 @@ class TicketSerializer(serializers.ModelSerializer):
     # Allow arbitrary JSON from the frontend
     dynamic_data = serializers.JSONField(required=False, allow_null=True)
     asset_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    asset_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     serial_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     location = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     check_out_date = serializers.DateField(required=False, allow_null=True)
@@ -212,7 +213,7 @@ class TicketSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'ticket_number', 'subject', 'category', 'sub_category',
             'description', 'scheduled_date', 'priority', 'department',
-                'asset_name', 'serial_number', 'location', 'check_out_date', 'expected_return_date',
+                'asset_name', 'asset_id', 'serial_number', 'location', 'check_out_date', 'expected_return_date',
                 'issue_type', 'other_issue', 'performance_start_date', 'performance_end_date',
                 'approved_by', 'cost_items', 'requested_budget', 'fiscal_year', 'department_input',
                 'dynamic_data', 'status', 'submit_date', 'update_date', 'current_agent', 'attachments',
@@ -233,6 +234,7 @@ class TicketSerializer(serializers.ModelSerializer):
         if dynamic and isinstance(dynamic, dict):
             for key, field in [
                 ('assetName', 'asset_name'),
+                ('assetId', 'asset_id'),
                 ('serialNumber', 'serial_number'),
                 ('location', 'location'),
                 ('checkOutDate', 'check_out_date'),

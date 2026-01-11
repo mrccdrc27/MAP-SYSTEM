@@ -271,6 +271,7 @@ class Ticket(models.Model):
     department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES, blank=True, null=True)
     # Explicit fields for commonly used dynamic data (easier querying)
     asset_name = models.CharField(max_length=255, blank=True, null=True)
+    asset_id = models.CharField(max_length=50, blank=True, null=True, help_text="AMS Asset ID (e.g., AST-20260110-00001-3451)")
     serial_number = models.CharField(max_length=255, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     check_out_date = models.DateField(blank=True, null=True)

@@ -267,10 +267,23 @@ class TaskTransitionView(CreateAPIView):
                 except Exception as e:
                     logger.error(f"Failed to sync status to HDTS: {str(e)}")
                 
+                # BMS-specific: Submit budget proposal to external BMS service
+                bms_submission_result = None
+                if workflow_end_logic == 'bms':
+                    try:
+                        from task.tasks import submit_bms_budget_proposal
+                        # Queue async task for BMS submission
+                        submit_bms_budget_proposal.delay(task_id)
+                        logger.info(f"Queued BMS budget proposal submission for task {task_id}")
+                        bms_submission_result = {'status': 'queued', 'message': 'BMS submission queued'}
+                    except Exception as e:
+                        logger.error(f"Failed to queue BMS submission: {str(e)}")
+                        bms_submission_result = {'status': 'error', 'message': str(e)}
+                
                 # Return response indicating external resolution is pending
                 serializer = TaskSerializer(task)
                 
-                return Response({
+                response_data = {
                     'status': 'success',
                     'message': f'Task moved to pending external resolution by {workflow_end_logic.upper()}',
                     'task_id': task_id,
@@ -286,7 +299,13 @@ class TaskTransitionView(CreateAPIView):
                     'is_finalize_action': True,
                     'awaiting_external_resolution': True,
                     'task_details': serializer.data,
-                }, status=status.HTTP_200_OK)
+                }
+                
+                # Add BMS submission info if applicable
+                if bms_submission_result:
+                    response_data['bms_submission'] = bms_submission_result
+                
+                return Response(response_data, status=status.HTTP_200_OK)
             
             # Normal finalize (no end_logic or end_logic='none')
             # Create history record for 'resolved' status
@@ -428,10 +447,23 @@ class TaskTransitionView(CreateAPIView):
                 except Exception as e:
                     logger.error(f"Failed to sync status to HDTS: {str(e)}")
                 
+                # BMS-specific: Submit budget proposal to external BMS service
+                bms_submission_result = None
+                if workflow_end_logic == 'bms':
+                    try:
+                        from task.tasks import submit_bms_budget_proposal
+                        # Queue async task for BMS submission
+                        submit_bms_budget_proposal.delay(task_id)
+                        logger.info(f"Queued BMS budget proposal submission for task {task_id}")
+                        bms_submission_result = {'status': 'queued', 'message': 'BMS submission queued'}
+                    except Exception as e:
+                        logger.error(f"Failed to queue BMS submission: {str(e)}")
+                        bms_submission_result = {'status': 'error', 'message': str(e)}
+                
                 # Return response indicating external resolution is pending
                 serializer = TaskSerializer(task)
                 
-                return Response({
+                response_data = {
                     'status': 'success',
                     'message': f'Task moved to pending external resolution by {workflow_end_logic.upper()}',
                     'task_id': task_id,
@@ -447,7 +479,13 @@ class TaskTransitionView(CreateAPIView):
                     'is_terminal': True,
                     'awaiting_external_resolution': True,
                     'task_details': serializer.data,
-                }, status=status.HTTP_200_OK)
+                }
+                
+                # Add BMS submission info if applicable
+                if bms_submission_result:
+                    response_data['bms_submission'] = bms_submission_result
+                
+                return Response(response_data, status=status.HTTP_200_OK)
             
             # Normal terminal transition (no end_logic or end_logic='none')
             # Create history record for 'resolved' status

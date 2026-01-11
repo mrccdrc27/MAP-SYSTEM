@@ -467,6 +467,51 @@ export default function TicketDetail() {
               {/* SLA Status Component */}
 
               {/* Ticket Owner section removed per request */}
+              <div className={styles.tdpSection}>
+                <div className={styles.tdpTitle}>
+                  <strong>Employee Description:</strong>
+                </div>
+                <div className={styles.tdpOwnerDescWrapper}>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Name:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.first_name
+                        ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Email:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.email || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Company ID:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.company_id || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Department:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.department || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Role:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.role || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Assigned Agent:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.currentOwner?.user_full_name || "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </div>
               {/* Description Section */}
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
@@ -491,7 +536,7 @@ export default function TicketDetail() {
               <div className={styles.tdAttachment}>
                 <h3>Attachments</h3>
                 {state.ticket?.attachments &&
-                state.ticket.attachments.length > 0 ? (
+                  state.ticket.attachments.length > 0 ? (
                   <div className={styles.attachmentList}>
                     {state.ticket.attachments.map((file) => {
                       // Construct full URL for the attachment using helpdesk service URL
@@ -649,9 +694,8 @@ export default function TicketDetail() {
                       style={{ flex: 1 }}
                       key={tab}
                       onClick={() => handleTabClick(tab)}
-                      className={`${styles.tdpTabLink} ${
-                        activeTab === tab ? styles.active : ""
-                      }`}
+                      className={`${styles.tdpTabLink} ${activeTab === tab ? styles.active : ""
+                        }`}
                       type="button"
                     >
                       {tab}
@@ -671,9 +715,9 @@ export default function TicketDetail() {
                       <div
                         className={
                           general[
-                            `status-${state.ticket?.status
-                              ?.replace(/\s+/g, "-")
-                              .toLowerCase()}`
+                          `status-${state.ticket?.status
+                            ?.replace(/\s+/g, "-")
+                            .toLowerCase()}`
                           ]
                         }
                       >

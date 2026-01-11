@@ -399,8 +399,8 @@ const TICKETS = [
     ],
     scheduleRequest: null,
     budgetItems: [
-      { costElement: "Software (long-term value like MS Office, Adobe Suite, Antivirus)", estimatedCost: "₱500,001 - ₱1,000,000" },
-      { costElement: "Equipment", estimatedCost: "₱100,001 - ₱500,000" }
+      { costElement: "Software (long-term value like MS Office, Adobe Suite, Antivirus)", description: "Financial reporting software upgrade", estimatedCost: "₱500,001 - ₱1,000,000" },
+      { costElement: "Equipment", description: "Server hardware for finance dept", estimatedCost: "₱100,001 - ₱500,000" }
     ],
     totalBudget: 1500000,
     performanceStartDate: "2025-07-01",

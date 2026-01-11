@@ -31,6 +31,8 @@ class ResolvedAssetTicketsView(APIView):
     Get all resolved asset tickets (both check-in and check-out).
     
     Query Parameters:
+        - id: Filter by ticket ID (exact match)
+        - ticket_number: Filter by ticket number (partial match, case-insensitive)
         - type: 'checkin' or 'checkout' (optional, filters by type)
         - status: Filter by ticket status (default: 'Resolved')
         - limit: Maximum number of results (default: 100)
@@ -66,6 +68,10 @@ class ResolvedAssetTicketsView(APIView):
         ticket_status = request.query_params.get('status', 'Resolved')
         limit = int(request.query_params.get('limit', 100))
         
+        # Search filters
+        ticket_id = request.query_params.get('id', None)
+        ticket_number = request.query_params.get('ticket_number', None)
+        
         # Build category filter
         if ticket_type == 'checkin':
             categories = [ASSET_CHECKIN_CATEGORY]
@@ -78,7 +84,15 @@ class ResolvedAssetTicketsView(APIView):
         queryset = WorkflowTicket.objects.filter(
             ticket_data__category__in=categories,
             ticket_data__status=ticket_status
-        ).order_by('-created_at')[:limit]
+        )
+        
+        # Apply search filters
+        if ticket_id:
+            queryset = queryset.filter(id=ticket_id)
+        if ticket_number:
+            queryset = queryset.filter(ticket_number__icontains=ticket_number)
+        
+        queryset = queryset.order_by('-created_at')[:limit]
         
         # Build flattened response data
         tickets = []

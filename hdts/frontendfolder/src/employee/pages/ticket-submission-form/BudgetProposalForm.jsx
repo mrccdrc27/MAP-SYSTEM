@@ -75,7 +75,7 @@ export default function BudgetProposalForm({
 
   const tomorrow = addDays(today, 1);
   const addBudgetItem = () => {
-    setBudgetItems([...budgetItems, { costElement: '', estimatedCost: '' }]);
+    setBudgetItems([...budgetItems, { costElement: '', description: '', estimatedCost: '' }]);
   };
 
   const removeBudgetItem = (index) => {
@@ -136,6 +136,14 @@ export default function BudgetProposalForm({
               onChange={(e) => updateBudgetItem(index, 'costElement', e.target.value)}
               disabled={!formData.subCategory}
               options={formData.subCategory ? (costElements[formData.subCategory]?.map(element => ({ value: element, label: element })) || []) : []}
+            />
+
+            {/* Description */}
+            <InputField
+              label="Description"
+              placeholder="Enter item description"
+              value={item.description || ''}
+              onChange={(e) => updateBudgetItem(index, 'description', e.target.value)}
             />
 
             {/* Estimated Cost */}
