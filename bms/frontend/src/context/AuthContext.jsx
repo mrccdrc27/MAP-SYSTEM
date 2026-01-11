@@ -83,6 +83,12 @@ const CentralAuthProvider = ({ children }) => {
     if (accessToken) {
       console.log("[Auth] Found access_token in URL, storing in localStorage");
       setAccessToken(accessToken);
+      
+      // FIXED: Store refresh token as well
+      if (refreshToken) {
+        console.log("[Auth] Found refresh_token in URL, storing in localStorage");
+        localStorage.setItem('refreshToken', refreshToken);
+      }
 
       // Clean URL to remove tokens
       const newUrl = window.location.pathname;
@@ -194,6 +200,8 @@ const CentralAuthProvider = ({ children }) => {
       const payload = {
         email: credentials.email,
         password: credentials.password,
+        // FIXED: Include reCAPTCHA response if provided
+        g_recaptcha_response: credentials.g_recaptcha_response || ''
       };
 
       const response = await authApi.post(TOKEN_OBTAIN_URL, payload);
@@ -214,10 +222,15 @@ const CentralAuthProvider = ({ children }) => {
       if (response.data.success) {
         console.log("[Auth] Login Successful. Response:", response.data);
 
-        // Store the access token in localStorage
+        // FIXED: Store BOTH access and refresh tokens
         if (response.data.access_token) {
           console.log("[Auth] Storing access_token in localStorage");
           setAccessToken(response.data.access_token);
+        }
+        
+        if (response.data.refresh_token) {
+          console.log("[Auth] Storing refresh_token in localStorage");
+          localStorage.setItem('refreshToken', response.data.refresh_token);
         }
 
         // CRITICAL FIX: Decode the token to get user data with roles
@@ -259,9 +272,12 @@ const CentralAuthProvider = ({ children }) => {
           errs.non_field_errors?.[0] ||
           errs.email?.[0] ||
           errs.password?.[0] ||
+          errs.g_recaptcha_response?.[0] ||  // FIXED: Handle reCAPTCHA errors
           msg;
       } else if (errorData?.detail) {
         msg = errorData.detail;
+      } else if (errorData?.message) {
+        msg = errorData.message;
       }
 
       return { success: false, error: msg };
@@ -275,7 +291,9 @@ const CentralAuthProvider = ({ children }) => {
     } catch (error) {
       console.error("[Auth] Logout error:", error);
     } finally {
+      // FIXED: Clean up both tokens
       removeAccessToken();
+      localStorage.removeItem('refreshToken');
       setUser(null);
       setInitialized(true);
       setLoading(false);

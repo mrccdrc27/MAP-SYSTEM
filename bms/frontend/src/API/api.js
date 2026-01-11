@@ -72,16 +72,34 @@ api.interceptors.response.use(
             // Start the refresh token request
             refreshTokenPromise = new Promise(async (resolve, reject) => {
                 try {
-                    // Call centralized auth service for token refresh
+                    // FIXED: Get refresh token from localStorage (not cookies)
+                    const refreshToken = localStorage.getItem('refreshToken');
+                    
+                    if (!refreshToken) {
+                        throw new Error('No refresh token available');
+                    }
+                    
+                    // FIXED: Call standard JWT refresh endpoint with token in body
                     const response = await axios.post(
                         `${AUTH_URL}/api/v1/token/refresh/`,
-                        {},
-                        { withCredentials: true }
+                        { refresh: refreshToken },  // Send in request body
+                        { 
+                            headers: { 'Content-Type': 'application/json' }
+                            // Removed withCredentials: true (we're not using cookies)
+                        }
                     );
+                    
                     const newAccessToken = response.data.access;
+                    const newRefreshToken = response.data.refresh; // Token rotation
                     
                     if (newAccessToken) {
                         setAccessToken(newAccessToken);
+                        
+                        // FIXED: Update refresh token if rotated
+                        if (newRefreshToken) {
+                            localStorage.setItem('refreshToken', newRefreshToken);
+                        }
+                        
                         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                         processQueue(null, newAccessToken);
                         resolve(newAccessToken);
@@ -91,7 +109,10 @@ api.interceptors.response.use(
                     
                 } catch (refreshError) {
                     console.error("Token refresh failed:", refreshError);
+                    
+                    // FIXED: Clean up both tokens
                     removeAccessToken();
+                    localStorage.removeItem('refreshToken');
                     
                     processQueue(refreshError, null);
                     reject(refreshError);
