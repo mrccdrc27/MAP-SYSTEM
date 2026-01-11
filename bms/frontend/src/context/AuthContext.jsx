@@ -34,13 +34,23 @@ const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGOUT_URL = `${AUTH_URL}/logout/`;
 
 const createAuthRequest = () => {
+  const token = getAccessToken(); // Get token from LocalStorage
+  
+  const headers = { 
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest"
+  };
+
+  // CRITICAL FIX: Manually attach the token here
+  // because cookies (withCredentials) are failing cross-domain
+  if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+  }
+
   return axios.create({
     baseURL: AUTH_URL,
-    headers: { 
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest"
-    },
-    withCredentials: true, // IMPORTANT: Allows sending/receiving cookies
+    headers: headers,
+    withCredentials: true, 
   });
 };
 
