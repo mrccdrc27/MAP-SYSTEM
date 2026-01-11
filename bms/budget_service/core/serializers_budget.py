@@ -985,3 +985,87 @@ class JournalEntryDetailSerializer(serializers.ModelSerializer):
         if obj.department:
             return obj.department.name
         return "N/A"
+    
+class ExternalJournalEntryLineSerializer(serializers.Serializer):
+    """
+    Input for JE Lines using Account CODE instead of ID.
+    """
+    account_code = serializers.CharField(
+        help_text="The Chart of Account code (e.g. '1010', '5000')."
+    )
+    transaction_type = serializers.ChoiceField(
+        choices=['DEBIT', 'CREDIT']
+    )
+    journal_transaction_type = serializers.ChoiceField(
+        choices=['CAPITAL_EXPENDITURE', 'OPERATIONAL_EXPENDITURE', 'TRANSFER']
+    )
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+
+
+class ExternalJournalEntrySerializer(serializers.Serializer):
+    """
+    Serializer for creating Journal Entries via API Key (Service-to-Service).
+    Handles 'System' user attribution and Account Code lookup.
+    """
+    date = serializers.DateField()
+    category = serializers.ChoiceField(
+        choices=[c[0] for c in JournalEntry._meta.get_field('category').choices]
+    )
+    description = serializers.CharField()
+    lines = ExternalJournalEntryLineSerializer(many=True)
+
+    def validate_lines(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError("At least 2 lines (Debit/Credit) are required.")
+        return value
+
+    def validate(self, data):
+        # 1. Balance Check
+        lines = data.get('lines', [])
+        total_debits = sum(l['amount'] for l in lines if l['transaction_type'] == 'DEBIT')
+        total_credits = sum(l['amount'] for l in lines if l['transaction_type'] == 'CREDIT')
+        
+        if total_debits != total_credits:
+            raise serializers.ValidationError(
+                f"Unbalanced Entry: Debits ({total_debits}) != Credits ({total_credits})"
+            )
+            
+        # 2. Account Code Validation (Check if they exist)
+        for line in lines:
+            code = line['account_code']
+            if not Account.objects.filter(code=code).exists():
+                raise serializers.ValidationError(
+                    {'lines': f"Account Code '{code}' does not exist in BMS."}
+                )
+        
+        return data
+
+    def create(self, validated_data):
+        lines_data = validated_data.pop('lines')
+        
+        # Calculate total amount (sum of debits)
+        total_amount = sum(l['amount'] for l in lines_data if l['transaction_type'] == 'DEBIT')
+
+        # 1. Create JE Header
+        # User ID 0 represents "System/External Service" since services have no ID
+        entry = JournalEntry.objects.create(
+            created_by_user_id=0, 
+            created_by_username="External Service (AMS)",
+            total_amount=total_amount,
+            status='POSTED', # Auto-post external entries? Or use 'DRAFT' if review needed.
+            **validated_data
+        )
+
+        # 2. Create Lines
+        for line in lines_data:
+            account = Account.objects.get(code=line['account_code'])
+            JournalEntryLine.objects.create(
+                journal_entry=entry,
+                account=account,
+                transaction_type=line['transaction_type'],
+                journal_transaction_type=line['journal_transaction_type'],
+                amount=line['amount'],
+                description=validated_data['description']
+            )
+            
+        return entry

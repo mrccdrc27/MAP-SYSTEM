@@ -20,6 +20,8 @@ from django.db.models.functions import Coalesce
 from core.service_authentication import APIKeyAuthentication
 from django.db import transaction
 from .views_utils import get_user_bms_role
+import requests
+from django.conf import settings
 
 def get_date_range_from_filter(filter_value):
     today = timezone.now().date()
@@ -293,6 +295,53 @@ class ExpenseViewSet(viewsets.ModelViewSet):
                 expense.approved_at = timezone.now()
 
             expense.save()
+        
+        # Outbound Notification Logic (Webhooks)
+        if expense.transaction_id:
+            # Determine target based on ID prefix (Agreement with External Teams)
+            target_url = None
+            tid = expense.transaction_id.upper()
+            
+            # Example Prefixes: AST/REP (Assets), HD/TRV (HelpDesk)
+            # Adjust these prefixes based on what AMS/HDTS sends
+            # 1. Check for AMS (Assets/Repairs)
+            if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"): 
+                target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
+            
+            # 2. Check for HDTS (Help Desk/Travel)
+            elif tid.startswith("HD") or tid.startswith("TRV"):
+                target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
+            
+            # 3. Check for TTS/DTS (General Tickets/Requests)
+            # Adjust these prefixes based on what TTS actually sends you
+            elif tid.startswith("TICKET") or tid.startswith("REQ") or tid.startswith("GEN"):
+                target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
+
+            # 4. Fallback: If no specific URL found, but DTS URL exists, default to DTS
+            # (Optional: Use this if TTS is the "main" hub for everything)
+            if not target_url:
+                 target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
+
+            if target_url:
+                payload = {
+                    "ticket_id": expense.transaction_id,
+                    "status": expense.status, 
+                    "reviewed_by": request.user.get_full_name() or request.user.username,
+                    "reviewed_at": timezone.now().isoformat(),
+                    "notes": notes or ""
+                }
+                
+                headers = {
+                    "X-API-Key": getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', ''),
+                    "Content-Type": "application/json"
+                }
+                
+                try:
+                    requests.post(target_url, json=payload, headers=headers, timeout=5)
+                except Exception as e:
+                    print(f"Failed to notify {target_url}: {e}")
+                    
+        # --------------------------------------------------------
 
         response_serializer = ExpenseDetailSerializer(
             expense, context={'request': request})
@@ -518,9 +567,9 @@ class ExternalExpenseViewSet(viewsets.ModelViewSet):
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsTrustedService]
     http_method_names = ['post']
+    parser_classes = [MultiPartParser, FormParser]
 
 
-# MODIFICATION START: New view for Expense History detail page
 @extend_schema(
     tags=['Expense History Page'],
     summary="Get full details for a single historical expense",

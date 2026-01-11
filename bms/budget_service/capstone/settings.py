@@ -121,6 +121,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://frontend-r2az.onrender.com",  # Old Render frontend (keep for safety or remove)
     "https://budget-pro-static-site.onrender.com",  # <--- ADD THIS NEW URL
     "https://auth-service-cdln.onrender.com",
+    
     os.getenv('FRONTEND_URL'),
     os.getenv('AUTH_SERVICE_URL'),
 ]
@@ -136,7 +137,15 @@ CORS_ALLOWED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin]
 
 # Settings for when THIS BMS service calls OTHER services
 BMS_AUTH_KEY_FOR_DTS = os.getenv('API_KEY_FOR_BMS_TO_CALL_DTS') # Key BMS uses
-DTS_STATUS_UPDATE_URL = os.getenv('DTS_STATUS_UPDATE_ENDPOINT_URL') # Target URL
+# --- OUTBOUND WEBHOOKS (BMS -> Other Services) ---
+# Where to send updates for Budget Proposals
+DTS_STATUS_UPDATE_URL = os.getenv('DTS_STATUS_UPDATE_ENDPOINT_URL') 
+
+# NEW: Where to send updates for Asset Expenses (AMS)
+AMS_STATUS_UPDATE_URL = os.getenv('AMS_STATUS_UPDATE_ENDPOINT_URL')
+
+# NEW: Where to send updates for HelpDesk Expenses (HDTS)
+HDTS_STATUS_UPDATE_URL = os.getenv('HDTS_STATUS_UPDATE_ENDPOINT_URL')
 
 # Keys expected from client services calling THIS (BMS) service
 

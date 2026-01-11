@@ -43,6 +43,7 @@ from .serializers_budget import (
     BudgetProposalListSerializer,
     BudgetProposalMessageSerializer,
     BudgetTransferSerializer,
+    ExternalJournalEntrySerializer,
     JournalEntryDetailSerializer,
     ProposalCommentCreateSerializer,
     BudgetProposalSummarySerializer,
@@ -1800,16 +1801,13 @@ class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
     Protected by API Key.
     """
     queryset = JournalEntry.objects.all()
-    serializer_class = JournalEntryCreateSerializer
-    # TODO: Double check to TTS, regarding API authentication
-    # Defined in core/service_authentication.py
+    # Use the new robust serializer
+    serializer_class = ExternalJournalEntrySerializer 
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsTrustedService]
     http_method_names = ['post']
 
     def perform_create(self, serializer):
-        # Service users don't have a standard user ID, assign a system ID (e.g. 0)
-        # or handle gracefully in the serializer if user context is missing
         serializer.save()
 
 # MODIFICATION START: Manage Budget Transfers (Approval Workflow)

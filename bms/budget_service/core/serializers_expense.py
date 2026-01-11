@@ -40,32 +40,33 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        order_number = validated_data.pop('order_number')
-        attachments_data = validated_data.pop('attachments', []) # Extract attachments
+        # Extract pre-resolved objects (if validate was called)
+        # Fallback to lookup if not present (safety)
+        if 'project_obj' in validated_data:
+            project = validated_data.pop('project_obj')
+            account = validated_data.pop('account_obj')
+            category = validated_data.pop('category_obj')
+            
+            # Remove string fields that are no longer needed
+            validated_data.pop('order_number', None)
+            validated_data.pop('account_code', None)
+            validated_data.pop('category_code', None)
+        else:
+            # ORIGINAL LOOKUP LOGIC (Keep this as fallback or remove if confident)
+            order_number = validated_data.pop('order_number')
+            project = Project.objects.get(budget_proposal__external_system_id=order_number)
+            account = Account.objects.get(code=validated_data.pop('account_code'))
+            category = ExpenseCategory.objects.get(code=validated_data.pop('category_code'))
 
-        try:
-            project = Project.objects.get(
-                budget_proposal__external_system_id=order_number)
-            account = Account.objects.get(code=validated_data['account_code'])
-            category = ExpenseCategory.objects.get(
-                code=validated_data['category_code'])
-        except Project.DoesNotExist:
-            raise serializers.ValidationError(
-                {'order_number': f'No approved project found for Order Number "{order_number}".'})
-        except Account.DoesNotExist:
-            raise serializers.ValidationError(
-                {'account_code': 'Account not found.'})
-        except ExpenseCategory.DoesNotExist:
-            raise serializers.ValidationError(
-                {'category_code': 'Expense category not found.'})
+        validated_data.pop('submitted_by_name', None) # Cleanup if needed
+        attachments_data = validated_data.pop('attachments', [])
 
         allocation = BudgetAllocation.objects.filter(
             project=project, is_active=True).first()
+        
         if not allocation:
-            raise serializers.ValidationError(
-                f'No active budget allocation found for project "{project.name}".')
+             raise serializers.ValidationError(f'No active budget allocation found for project "{project.name}".')
 
-        # Atomic transaction to ensure expense and files are saved together
         with transaction.atomic():
             expense = Expense.objects.create(
                 transaction_id=validated_data['transaction_id'],
@@ -79,8 +80,9 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
                 description=validated_data['description'],
                 vendor=validated_data['vendor'],
                 notes=validated_data.get('notes', ''),
-                submitted_by_username=validated_data['submitted_by_name'],
-                status='SUBMITTED' # Enforce manual approval
+                submitted_by_username=validated_data.get('submitted_by_name', 'System'),
+                status='SUBMITTED',
+                **validated_data
             )
 
             # --- ADDED: Save Attachments ---
@@ -90,6 +92,162 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
                         expense=expense, file=file)
 
         return expense
+    
+    # --- ADD : CAP VALIDATION LOGIC ---
+    def validate_caps(self, department, category, amount, notes):
+        """
+        Validates Department-Level and SubCategory-Level Budget Caps.
+        Raises ValidationError with specific JSON structure for external integrations.
+        """
+        today = timezone.now().date()
+        fiscal_year = FiscalYear.objects.filter(
+            start_date__lte=today, end_date__gte=today, is_active=True
+        ).first()
+
+        if not fiscal_year:
+            return # Cannot validate caps without FY context
+
+        # 1. Calculate Organization Totals
+        total_org_allocations = BudgetAllocation.objects.filter(
+            fiscal_year=fiscal_year, is_active=True
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        # 2. Check Department Cap
+        try:
+            dept_cap = DepartmentBudgetCap.objects.get(
+                department=department, fiscal_year=fiscal_year, is_active=True
+            )
+            
+            dept_limit = total_org_allocations * (dept_cap.percentage_of_total / 100)
+            
+            current_dept_spent = Expense.objects.filter(
+                department=department, 
+                budget_allocation__fiscal_year=fiscal_year,
+                status__in=['APPROVED', 'SUBMITTED']
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            projected_dept_total = current_dept_spent + amount
+            remaining_dept = max(dept_limit - current_dept_spent, Decimal('0.00'))
+            
+            if projected_dept_total > dept_limit:
+                # --- FULL DICTIONARY HERE ---
+                error_payload = {
+                    "error": "DEPARTMENT_BUDGET_CAP_EXCEEDED",
+                    "detail": f"{department.code} Department has exceeded its annual budget cap of {dept_cap.percentage_of_total}%",
+                    "cap_info": {
+                        "department": department.code,
+                        "cap_percentage": float(dept_cap.percentage_of_total),
+                        "cap_amount": float(dept_limit),
+                        "current_spent": float(current_dept_spent),
+                        "remaining": float(remaining_dept)
+                    }
+                }
+                
+                if dept_cap.cap_type == 'HARD':
+                    raise serializers.ValidationError(error_payload)
+                elif dept_cap.cap_type == 'SOFT':
+                    if not notes or len(notes) < 10:
+                        error_payload['error'] = "DEPARTMENT_SOFT_CAP_EXCEEDED"
+                        error_payload['detail'] += " Justification is required."
+                        raise serializers.ValidationError(error_payload)
+
+        except DepartmentBudgetCap.DoesNotExist:
+            pass 
+
+        # 3. Check Sub-Category Cap
+        try:
+            cat_cap = SubCategoryBudgetCap.objects.get(
+                expense_category=category, department=department, fiscal_year=fiscal_year, is_active=True
+            )
+            
+            dept_total_alloc = BudgetAllocation.objects.filter(
+                department=department, fiscal_year=fiscal_year, is_active=True
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            cat_limit = dept_total_alloc * (cat_cap.percentage_of_department / 100)
+            
+            current_cat_spent = Expense.objects.filter(
+                department=department,
+                category=category,
+                budget_allocation__fiscal_year=fiscal_year,
+                status__in=['APPROVED', 'SUBMITTED']
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            projected_cat_total = current_cat_spent + amount
+            remaining_cat = max(cat_limit - current_cat_spent, Decimal('0.00'))
+            
+            if projected_cat_total > cat_limit:
+                error_code = "BUDGET_HARD_CAP_EXCEEDED" if cat_cap.cap_type == 'HARD' else "BUDGET_SOFT_CAP_EXCEEDED"
+                
+                # --- FULL DICTIONARY HERE ---
+                error_payload = {
+                    "error": error_code,
+                    "detail": f"This expense exceeds the {cat_cap.cap_type.lower()} cap for {category.name}.",
+                    "cap_info": {
+                        "category": category.code,
+                        "cap_type": cat_cap.cap_type,
+                        "cap_amount": float(cat_limit),
+                        "current_spent": float(current_cat_spent),
+                        "remaining": float(remaining_cat),
+                        "requested": float(amount)
+                    }
+                }
+
+                if cat_cap.cap_type == 'HARD':
+                    raise serializers.ValidationError(error_payload)
+                elif cat_cap.cap_type == 'SOFT':
+                    if not notes or len(notes) < 10:
+                        error_payload['detail'] += " Justification is required."
+                        raise serializers.ValidationError(error_payload)
+
+        except SubCategoryBudgetCap.DoesNotExist:
+            pass
+        
+        # --- ADD THIS METHOD ---
+    def validate(self, data):
+        """
+        Resolve objects and check budget caps before creation.
+        """
+        order_number = data.get('order_number')
+        category_code = data.get('category_code')
+        account_code = data.get('account_code')
+        amount = data.get('amount')
+        notes = data.get('notes', '')
+
+        try:
+            # 1. Resolve Project via Order Number (Proposal ID)
+            project = Project.objects.get(budget_proposal__external_system_id=order_number)
+            
+            # 2. Resolve Category
+            category = ExpenseCategory.objects.get(code=category_code)
+            
+            # 3. Resolve Account (Check existence)
+            account = Account.objects.get(code=account_code)
+
+            # 4. CAP VALIDATION
+            # We pass the department from the project
+            self.validate_caps(project.department, category, amount, notes)
+
+            # 5. Store resolved objects to avoid re-querying in create()
+            data['project_obj'] = project
+            data['category_obj'] = category
+            data['account_obj'] = account
+
+        except Project.DoesNotExist:
+            raise serializers.ValidationError(
+                {'order_number': f'No approved project found for Order Number "{order_number}".'}
+            )
+        except ExpenseCategory.DoesNotExist:
+            raise serializers.ValidationError(
+                {'category_code': f'Category "{category_code}" not found.'}
+            )
+        except Account.DoesNotExist:
+            raise serializers.ValidationError(
+                {'account_code': f'Account "{account_code}" not found.'}
+            )
+
+        return data
+    
 
 
 class ExpenseHistorySerializer(serializers.ModelSerializer):
