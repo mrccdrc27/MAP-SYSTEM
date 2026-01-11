@@ -297,30 +297,33 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             expense.save()
         
         # Outbound Notification Logic (Webhooks)
+        # Outbound Notification Logic (Webhooks)
         if expense.transaction_id:
-            # Determine target based on ID prefix (Agreement with External Teams)
             target_url = None
+            api_key_to_use = None # New Variable
+            
             tid = expense.transaction_id.upper()
             
-            # Example Prefixes: AST/REP (Assets), HD/TRV (HelpDesk)
-            # Adjust these prefixes based on what AMS/HDTS sends
-            # 1. Check for AMS (Assets/Repairs)
+            # 1. AMS (Assets/Repairs)
             if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"): 
                 target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
+                # MODIFICATION: Use specific AMS key if available, fallback to generic
+                api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None) 
             
-            # 2. Check for HDTS (Help Desk/Travel)
+            # 2. HDTS (Help Desk/Travel)
             elif tid.startswith("HD") or tid.startswith("TRV"):
                 target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
+                api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
             
-            # 3. Check for TTS/DTS (General Tickets/Requests)
-            # Adjust these prefixes based on what TTS actually sends you
+            # 3. TTS/DTS (General Tickets)
             elif tid.startswith("TICKET") or tid.startswith("REQ") or tid.startswith("GEN"):
                 target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
+                api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
 
-            # 4. Fallback: If no specific URL found, but DTS URL exists, default to DTS
-            # (Optional: Use this if TTS is the "main" hub for everything)
+            # 4. Fallback
             if not target_url:
                  target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
+                 api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
 
             if target_url:
                 payload = {
@@ -331,8 +334,9 @@ class ExpenseViewSet(viewsets.ModelViewSet):
                     "notes": notes or ""
                 }
                 
+                # MODIFICATION: Use the specific key
                 headers = {
-                    "X-API-Key": getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', ''),
+                    "X-API-Key": api_key_to_use or '', 
                     "Content-Type": "application/json"
                 }
                 

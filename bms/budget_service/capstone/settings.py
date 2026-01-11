@@ -137,6 +137,9 @@ CORS_ALLOWED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin]
 
 # Settings for when THIS BMS service calls OTHER services
 BMS_AUTH_KEY_FOR_DTS = os.getenv('API_KEY_FOR_BMS_TO_CALL_DTS') # Key BMS uses
+API_KEY_FOR_BMS_TO_CALL_AMS = os.getenv('API_KEY_FOR_BMS_TO_CALL_AMS')
+API_KEY_FOR_BMS_TO_CALL_HDTS = os.getenv('API_KEY_FOR_BMS_TO_CALL_HDTS')
+
 # --- OUTBOUND WEBHOOKS (BMS -> Other Services) ---
 # Where to send updates for Budget Proposals
 DTS_STATUS_UPDATE_URL = os.getenv('DTS_STATUS_UPDATE_ENDPOINT_URL') 
@@ -148,6 +151,11 @@ AMS_STATUS_UPDATE_URL = os.getenv('AMS_STATUS_UPDATE_ENDPOINT_URL')
 HDTS_STATUS_UPDATE_URL = os.getenv('HDTS_STATUS_UPDATE_ENDPOINT_URL')
 
 # Keys expected from client services calling THIS (BMS) service
+
+
+
+
+
 
 DTS_CLIENT_API_KEY_EXPECTED = os.getenv('DTS_CLIENT_API_KEY')
 TTS_CLIENT_API_KEY_EXPECTED = os.getenv('TTS_CLIENT_API_KEY')

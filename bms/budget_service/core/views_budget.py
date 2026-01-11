@@ -1,3 +1,4 @@
+from rest_framework import mixins, viewsets, status
 import csv
 import json
 from decimal import Decimal
@@ -702,12 +703,9 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
         review_input_serializer.is_valid(raise_exception=True)
 
         new_status = review_input_serializer.validated_data['status']
-        comment_text = review_input_serializer.validated_data.get(
-            'comment', '')
-        finance_operator = review_input_serializer.validated_data.get(
-            'finance_manager_name', '')
-        signature_file = review_input_serializer.validated_data.get(
-            'signature')
+        comment_text = review_input_serializer.validated_data.get('comment', '')
+        finance_operator = review_input_serializer.validated_data.get('finance_manager_name', '')
+        signature_file = review_input_serializer.validated_data.get('signature')
 
         reviewer_user_id = request.user.id
         reviewer_name = request.user.get_full_name() or request.user.username
@@ -765,34 +763,69 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                 comments=comment_text or f"Status changed to {new_status}."
             )
 
-        # MODIFICATION START: Outbound notification logic updated for Integration
+        # --- MODIFIED: Dynamic Outbound Notification Logic ---
+        # Routes the callback based on the Ticket ID prefix to the correct external system.
+        if proposal.external_system_id:
             try:
-                dts_callback_url = settings.DTS_STATUS_UPDATE_URL
-                if dts_callback_url:
+                target_url = None
+                api_key_to_use = None
+                
+                # Normalize ID for prefix checking
+                tid = proposal.external_system_id.upper()
+                
+                # 1. AMS (Asset Management)
+                # Prefixes: AST (Asset), REP (Repair), REG (Registration)
+                if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"):
+                     target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
+                     api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None)
+                
+                # 2. HDTS (Help Desk/Travel)
+                # Prefixes: HD (Help Desk), TRV (Travel)
+                elif tid.startswith("HD") or tid.startswith("TRV"):
+                     target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
+                     api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
+
+                # 3. TTS/DTS (Ticketing) - Default Fallback
+                # Prefixes: TICKET, REQ, GEN, or anything else
+                else:
+                     target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
+                     api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
+
+                if target_url:
                     payload = {
                         'ticket_id': proposal.external_system_id,
                         'status': new_status,  # 'APPROVED' or 'REJECTED'
                         'comment': comment_text,
                         'reviewed_by': reviewer_name,
                         'reviewed_at': timezone.now().isoformat(),
-
-                        # NEW FIELD: This is the key AMS needs
-                        'order_number': proposal.external_system_id
+                        # CRITICAL: This confirms the ID they must use for future expense calls
+                        'order_number': proposal.external_system_id 
                     }
                     headers = {
                         'Content-Type': 'application/json',
-                        'X-API-Key': settings.BMS_AUTH_KEY_FOR_DTS
+                        'X-API-Key': api_key_to_use or ''
                     }
-                    requests.post(
-                        dts_callback_url, json=payload, headers=headers, timeout=5)
-
-                    proposal.sync_status = 'SYNCED'
+                    
+                    # Send webhook with short timeout
+                    response = requests.post(target_url, json=payload, headers=headers, timeout=5)
+                    
+                    # We log success, but we do NOT rollback the BMS approval if external fails.
+                    if 200 <= response.status_code < 300:
+                        proposal.sync_status = 'SYNCED'
+                    else:
+                        print(f"External system returned {response.status_code}: {response.text}")
+                        proposal.sync_status = 'FAILED'
+                        
                     proposal.last_sync_timestamp = timezone.now()
-                    proposal.save(
-                        update_fields=['sync_status', 'last_sync_timestamp'])
-            except requests.RequestException:
+                    proposal.save(update_fields=['sync_status', 'last_sync_timestamp'])
+                else:
+                    print(f"Warning: No callback URL configured for prefix {tid}. Skipping notification.")
+
+            except requests.RequestException as e:
+                print(f"Error notifying external system for proposal {proposal.id}: {e}")
                 proposal.sync_status = 'FAILED'
                 proposal.save(update_fields=['sync_status'])
+        # -----------------------------------------------------
 
         output_serializer = BudgetProposalDetailSerializer(
             proposal, context={'request': request})
@@ -827,290 +860,300 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
         )
         return Response(ProposalCommentSerializer(comment_obj).data, status=status.HTTP_201_CREATED)
 
-
-class ExternalBudgetProposalViewSet(viewsets.ModelViewSet):
+@extend_schema(tags=['External System Integration (API Key Protected)'])
+class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
+                                   mixins.UpdateModelMixin,
+                                   mixins.RetrieveModelMixin,
+                                   viewsets.GenericViewSet):
     """
-    ViewSet for EXTERNAL service-to-service communication (e.g., from DTS/TTS).
-    Handles creating, updating, and deleting proposals via API Key authentication.
+    ViewSet for external systems (DTS/TTS/AMS/HDTS) to create and manage budget proposals.
+    
+    **Authentication**: Requires valid API Key in `X-API-Key` header.
+    
+    **Endpoints**:
+    - POST /external/budget-proposals/ - Create a new proposal
+    - PUT /external/budget-proposals/{external_system_id}/ - Update existing proposal
+    - PATCH /external/budget-proposals/{external_system_id}/ - Partial update
+    - GET /external/budget-proposals/{external_system_id}/ - Retrieve proposal status
+    - POST /external/budget-proposals/{external_system_id}/cancel/ - Cancel a proposal
     """
     queryset = BudgetProposal.objects.filter(is_deleted=False)
     serializer_class = BudgetProposalMessageSerializer
-    permission_classes = [IsTrustedService]  # Enforces API Key for all actions
+    authentication_classes = [APIKeyAuthentication]
+    permission_classes = [IsTrustedService]
+    lookup_field = 'external_system_id'
+    
+    def get_service_name(self):
+        """Extract service name from the authenticated service principal"""
+        if hasattr(self.request.user, 'service_name'):
+            return self.request.user.service_name
+        return "External System"
 
-    # This ViewSet uses the default create(), update(), partial_update(), and destroy()
-    # methods from ModelViewSet, which are now correctly protected.
-
-
-# 2. Update BudgetProposalUIViewSet.review to save signatureclass BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for the User Interface (UI).
-    Handles listing, retrieving, reviewing, and commenting on proposals.
-    """
-    # Base permission: Any BMS user can read/list (subject to queryset isolation)
-    permission_classes = [IsBMSUser]
-    pagination_class = FiveResultsSetPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    search_fields = [
-        'title',
-        'external_system_id',
-        'submitted_by_name',
-        'items__cost_element',  # Sub-category (cost element)
-        'items__category__name'  # Sub-category (category name)
-    ]
-    filterset_fields = ['status']  # Removed the old complex one
-
-    def get_queryset(self):
-        """
-        Dynamically filters the queryset based on user role for data isolation.
-        """
-        user = self.request.user
-        # Base query
-        base_queryset = BudgetProposal.objects.filter(is_deleted=False).select_related(
-            'department', 'fiscal_year'
-        ).prefetch_related('items__account__account_type', 'comments', 'items__category')
-
-        bms_role = get_user_bms_role(user)
-
-        # 1. Determine Visibility (Data Isolation)
-        if bms_role in ['ADMIN', 'FINANCE_HEAD']:
-            # Admins and Finance Heads see ALL proposals
-            queryset = base_queryset
-        else:
-            # Department Heads see ONLY their own department's proposals
-            department_id = getattr(user, 'department_id', None)
-            if department_id:
-                queryset = base_queryset.filter(department_id=department_id)
-            else:
-                return BudgetProposal.objects.none()
-
-        # 2. Apply UI Filters (Status, Category, etc.)
-        status_filter = self.request.query_params.get('status')
-        department_filter = self.request.query_params.get('department')
-        category_filter = self.request.query_params.get('category')
-
-        if department_filter:
-            queryset = queryset.filter(department__code=department_filter)
-
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-
-        if category_filter:
-            queryset = queryset.filter(
-                items__category__classification__iexact=category_filter).distinct()
-
-        return queryset.order_by('-created_at')
-
-    def get_serializer_class(self):
-        if self.action == 'retrieve':
-            return BudgetProposalDetailSerializer
-        # Use MessageSerializer for creation/submission to handle nested items and logic
-        if self.action == 'submit_proposal':
-            return BudgetProposalMessageSerializer
-        return BudgetProposalListSerializer
-
-    # --- ACTION: SUBMIT PROPOSAL (For Dept Heads) ---
     @extend_schema(
-        summary="Submit a new proposal (Department Head)",
+        summary="Create a new budget proposal",
+        description="""
+        Create a new budget proposal from an external system.
+        
+        **Required Fields**:
+        - `ticket_id`: Unique ID from your system (will be used as `external_system_id`)
+        - `title`: Proposal title
+        - `department_input`: Department ID or Code
+        - `fiscal_year`: Fiscal Year ID
+        - `items`: Array of budget items
+        
+        **Optional Fields**:
+        - `is_draft`: Set to `true` to save as draft (default: false = submitted)
+        - `submitted_by_name`: Name of the requester
+        - `document`: Attached supporting document
+        
+        **Response**: Returns the created proposal with BMS-assigned ID.
+        """,
         request=BudgetProposalMessageSerializer,
-        responses={201: BudgetProposalMessageSerializer},
-        tags=['Budget Proposal Page Actions']
+        responses={
+            201: OpenApiResponse(
+                response=BudgetProposalMessageSerializer,
+                description="Proposal created successfully"
+            ),
+            400: OpenApiResponse(description="Validation error"),
+            403: OpenApiResponse(description="Invalid API Key")
+        },
+        examples=[
+            OpenApiExample(
+                "Create Proposal Example",
+                value={
+                    "ticket_id": "HD-2026-001",
+                    "title": "Server Infrastructure Upgrade",
+                    "project_summary": "Upgrade data center servers",
+                    "project_description": "Replace aging servers with new hardware",
+                    "department_input": "IT",
+                    "fiscal_year": 1,
+                    "submitted_by_name": "John Doe",
+                    "performance_start_date": "2026-02-01",
+                    "performance_end_date": "2026-06-30",
+                    "items": [
+                        {
+                            "cost_element": "Server Hardware",
+                            "description": "Dell PowerEdge R750",
+                            "estimated_cost": "150000.00",
+                            "account": 5,
+                            "notes": "Qty: 3 units"
+                        }
+                    ],
+                    "is_draft": False
+                }
+            )
+        ]
     )
-    @action(detail=False, methods=['post'], permission_classes=[CanSubmitForApproval])
-    def submit_proposal(self, request):
-        """
-        Allows Department Heads (and others) to submit a new budget proposal.
-        The proposal is created with status 'SUBMITTED' (or 'DRAFT').
-        """
-        # Inject the user's name as 'submitted_by_name' if not provided
-        data = request.data.copy()
-        if 'submitted_by_name' not in data:
-            data['submitted_by_name'] = request.user.get_full_name(
-            ) or request.user.username
+    def create(self, request, *args, **kwargs):
+        """Create a new budget proposal"""
+        service_name = self.get_service_name()
+        
+        # Log the incoming request for debugging
+        print(f"📥 Incoming proposal from {service_name}: {request.data.get('ticket_id')}")
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Save the proposal
+        proposal = serializer.save()
+        
+        # Return created proposal
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            {
+                "message": "Budget proposal created successfully",
+                "proposal_id": proposal.id,
+                "external_system_id": proposal.external_system_id,
+                "status": proposal.status,
+                "data": serializer.data
+            },
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
 
-        # If user is a Dept Head, force the department to be their own
-        bms_role = get_user_bms_role(request.user)
-        if bms_role == 'GENERAL_USER':
-            department_id = getattr(request.user, 'department_id', None)
-            if department_id:
-                data['department_input'] = str(department_id)
-
-        serializer = BudgetProposalMessageSerializer(
-            data=data, context={'request': request})
+    @extend_schema(
+        summary="Update an existing budget proposal",
+        description="""
+        Update a proposal that's still in DRAFT or SUBMITTED status.
+        
+        **Note**: Approved or Rejected proposals cannot be updated.
+        Use the `external_system_id` (your ticket ID) to identify the proposal.
+        """,
+        request=BudgetProposalMessageSerializer,
+        responses={
+            200: OpenApiResponse(description="Proposal updated successfully"),
+            400: OpenApiResponse(description="Validation error or proposal is locked"),
+            404: OpenApiResponse(description="Proposal not found")
+        }
+    )
+    def update(self, request, *args, **kwargs):
+        """Update an existing proposal"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Prevent updates to finalized proposals
+        if instance.status in ['APPROVED', 'REJECTED']:
+            return Response(
+                {"error": f"Cannot update proposal with status '{instance.status}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         proposal = serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    # --- ACTION: REVIEW (Finance Head Only) ---
+        
+        return Response({
+            "message": "Budget proposal updated successfully",
+            "proposal_id": proposal.id,
+            "external_system_id": proposal.external_system_id,
+            "status": proposal.status,
+            "data": serializer.data
+        })
 
     @extend_schema(
-        summary="Review a proposal (Finance Head)",
-        request=ProposalReviewSerializer,  # Serializer now has signature fields
-        responses={200: BudgetProposalDetailSerializer},
-        tags=['Budget Proposal Page Actions']
+        summary="Retrieve proposal status",
+        description="""
+        Get the current status and details of a proposal.
+        
+        **Use this endpoint to**:
+        - Check if a proposal has been approved/rejected
+        - Get feedback comments from Finance Manager
+        - Retrieve the BMS-assigned proposal ID
+        """,
+        responses={
+            200: BudgetProposalMessageSerializer,
+            404: OpenApiResponse(description="Proposal not found")
+        }
     )
-    @action(detail=True, methods=['post'], permission_classes=[IsBMSFinanceHead])
-    def review(self, request, pk=None):
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve proposal details"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        
+        # Add useful metadata
+        return Response({
+            "proposal_id": instance.id,
+            "external_system_id": instance.external_system_id,
+            "status": instance.status,
+            "submitted_at": instance.submitted_at,
+            "last_modified": instance.last_modified,
+            "approved_by": instance.approved_by_name,
+            "approval_date": instance.approval_date,
+            "rejected_by": instance.rejected_by_name,
+            "rejection_date": instance.rejection_date,
+            "sync_status": instance.sync_status,
+            "data": serializer.data
+        })
+
+    @extend_schema(
+        summary="Cancel a budget proposal",
+        description="""
+        Mark a proposal as deleted (soft delete).
+        
+        **Only allowed for**:
+        - DRAFT proposals
+        - SUBMITTED proposals (before review)
+        
+        **Not allowed for**:
+        - APPROVED proposals (projects may already be created)
+        - REJECTED proposals (already finalized)
+        """,
+        request=None,
+        responses={
+            200: OpenApiResponse(description="Proposal cancelled successfully"),
+            400: OpenApiResponse(description="Cannot cancel this proposal"),
+            404: OpenApiResponse(description="Proposal not found")
+        }
+    )
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, external_system_id=None):
+        """Cancel a proposal (soft delete)"""
         proposal = self.get_object()
-
-        # MODIFIED: Remove 'files=' argument. Pass everything in 'data'.
-        review_input_serializer = ProposalReviewSerializer(data=request.data)
-        review_input_serializer.is_valid(raise_exception=True)
-
-        new_status = review_input_serializer.validated_data['status']
-        comment_text = review_input_serializer.validated_data.get(
-            'comment', '')
-
-        finance_operator = review_input_serializer.validated_data.get(
-            'finance_manager_name', '')
-        signature_file = review_input_serializer.validated_data.get(
-            'signature')
-
-        reviewer_user_id = request.user.id
-        reviewer_name = request.user.get_full_name() or request.user.username
-
-        previous_status_for_history = proposal.status
-
-        with transaction.atomic():
-            proposal.status = new_status
-
-            if finance_operator:
-                proposal.finance_manager_name = finance_operator
-            if signature_file:
-                proposal.signature = signature_file
-
-            if new_status == 'APPROVED':
-                proposal.approved_by_name = reviewer_name
-                proposal.approval_date = timezone.now()
-
-                # MODIFIED: Clear rejection fields if previously rejected
-                proposal.rejected_by_name = None
-                proposal.rejection_date = None
-
-                if not hasattr(proposal, 'project') or proposal.project is None:
-                    Project.objects.create(
-                        name=f"Project for: {proposal.title}",
-                        description=proposal.project_summary,
-                        start_date=proposal.performance_start_date,
-                        end_date=proposal.performance_end_date,
-                        department=proposal.department,
-                        budget_proposal=proposal,
-                        status='PLANNING'
-                    )
-            elif new_status == 'REJECTED':
-                proposal.rejected_by_name = reviewer_name
-                proposal.rejection_date = timezone.now()
-
-                # MODIFIED: Clear approval fields if previously approved
-                proposal.approved_by_name = None
-                proposal.approval_date = None
-                if hasattr(proposal, 'project') and proposal.project is not None:
-                    proposal.project.status = 'CANCELLED'
-                    proposal.project.save(update_fields=['status'])
-
-            proposal.last_modified = timezone.now()
-            proposal.save()
-
-            if comment_text:
-                ProposalComment.objects.create(
-                    proposal=proposal,
-                    user_id=reviewer_user_id,
-                    user_username=reviewer_name,
-                    comment=comment_text
-                )
-
-            ProposalHistory.objects.create(
-                proposal=proposal, action=new_status,
-                action_by_name=reviewer_name,
-                previous_status=previous_status_for_history,
-                new_status=proposal.status,
-                comments=comment_text or f"Status changed to {new_status}."
+        service_name = self.get_service_name()
+        
+        # Only allow cancellation of pending proposals
+        if proposal.status in ['APPROVED', 'REJECTED']:
+            return Response(
+                {"error": f"Cannot cancel a {proposal.status.lower()} proposal"},
+                status=status.HTTP_400_BAD_REQUEST
             )
-
-        # MODIFICATION START: outbound notification logic
-            try:
-                dts_callback_url = settings.DTS_STATUS_UPDATE_URL
-                if dts_callback_url:
-                    payload = {
-                        'ticket_id': proposal.external_system_id,
-                        'status': new_status,  # 'APPROVED' or 'REJECTED'
-                        'comment': comment_text,
-                        'reviewed_by': reviewer_name,
-                        'reviewed_at': timezone.now().isoformat()
-                    }
-                    headers = {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': settings.BMS_AUTH_KEY_FOR_DTS
-                    }
-                    response = requests.post(
-                        dts_callback_url, json=payload, headers=headers, timeout=5)
-                    response.raise_for_status()
-
-                    proposal.sync_status = 'SYNCED'
-                    proposal.last_sync_timestamp = timezone.now()
-                    proposal.save(
-                        update_fields=['sync_status', 'last_sync_timestamp'])
-                else:
-                    print(
-                        f"Warning: DTS_STATUS_UPDATE_URL not configured. Skipping notification for proposal {proposal.id}.")
-
-            except requests.RequestException as e:
-                print(f"Error notifying DTS for proposal {proposal.id}: {e}")
-                proposal.sync_status = 'FAILED'
-                proposal.save(update_fields=['sync_status'])
-            # MODIFICATION END
-
-        output_serializer = BudgetProposalDetailSerializer(
-            proposal, context={'request': request})
-        return Response(output_serializer.data, status=status.HTTP_200_OK)
-
-    # --- ACTION: ADD COMMENT (All Users) ---
+        
+        with transaction.atomic():
+            proposal.is_deleted = True
+            proposal.save()
+            
+            # Log the cancellation
+            ProposalHistory.objects.create(
+                proposal=proposal,
+                action='UPDATED',
+                action_by_name=f"System ({service_name})",
+                new_status='CANCELLED',
+                previous_status=proposal.status,
+                comments=f"Proposal cancelled by {service_name}"
+            )
+        
+        return Response({
+            "message": "Proposal cancelled successfully",
+            "proposal_id": proposal.id,
+            "external_system_id": proposal.external_system_id
+        })
 
     @extend_schema(
-        summary="Add a comment to a proposal",
-        request=ProposalCommentCreateSerializer,
-        responses={201: ProposalCommentSerializer},
-        tags=['Budget Proposal Page Actions']
+        summary="Check proposal status (quick check)",
+        description="""
+        Lightweight endpoint to quickly check if a proposal is approved.
+        
+        **Returns**:
+        - `exists`: Boolean - Does the proposal exist?
+        - `status`: Current status (DRAFT/SUBMITTED/APPROVED/REJECTED)
+        - `is_approved`: Boolean - Quick check for approval
+        - `order_number`: The external_system_id you can use for expense tracking
+        """,
+        responses={
+            200: OpenApiResponse(
+                description="Status information",
+                examples=[
+                    OpenApiExample(
+                        "Approved Proposal",
+                        value={
+                            "exists": True,
+                            "status": "APPROVED",
+                            "is_approved": True,
+                            "order_number": "HD-2026-001",
+                            "approved_at": "2026-01-15T10:30:00Z"
+                        }
+                    )
+                ]
+            ),
+            404: OpenApiResponse(description="Proposal not found")
+        }
     )
-    @action(detail=True, methods=['post'], url_path='add-comment', permission_classes=[IsBMSUser])
-    def add_comment(self, request, pk=None):
-        proposal = self.get_object()
-        comment_serializer = ProposalCommentCreateSerializer(data=request.data)
-        comment_serializer.is_valid(raise_exception=True)
-        comment_text = comment_serializer.validated_data['comment']
-
-        commenter_name = f"{request.user.first_name} {request.user.last_name}".strip(
-        ) or request.user.username
-
-        comment_obj = ProposalComment.objects.create(
-            proposal=proposal,
-            user_id=request.user.id,
-            user_username=commenter_name,
-            comment=comment_text
-        )
-        ProposalHistory.objects.create(
-            proposal=proposal, action='COMMENTED', action_by_name=commenter_name,
-            comments=f"Comment added: '{comment_text}'"
-        )
-        return Response(ProposalCommentSerializer(comment_obj).data, status=status.HTTP_201_CREATED)
-
-
-'''
-Function that exports the budget proposal to an Excel File
-
-Example:
-const handleExportProposal = async (proposalId) => {
-  try {
-    const response = await fetch(
-      `http://localhost:8000/api/budget-proposals/${proposalId}/export/`,
-      {
-        method: 'GET',
-        headers: {
-          // Add the Authorization header here
-        },
-      }
-    );
-'''
+    @action(detail=True, methods=['get'], url_path='status-check')
+    def status_check(self, request, external_system_id=None):
+        """Quick status check for external systems"""
+        try:
+            proposal = self.get_object()
+            
+            return Response({
+                "exists": True,
+                "status": proposal.status,
+                "is_approved": proposal.status == 'APPROVED',
+                "is_rejected": proposal.status == 'REJECTED',
+                "order_number": proposal.external_system_id,
+                "submitted_at": proposal.submitted_at,
+                "approved_at": proposal.approval_date,
+                "rejected_at": proposal.rejection_date,
+                "approved_by": proposal.approved_by_name,
+                "rejected_by": proposal.rejected_by_name
+            })
+        except BudgetProposal.DoesNotExist:
+            return Response(
+                {
+                    "exists": False,
+                    "message": f"No proposal found with ID: {external_system_id}"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 @extend_schema(
@@ -2010,3 +2053,39 @@ class JournalEntryDetailView(generics.RetrieveAPIView):
     serializer_class = JournalEntryDetailSerializer
     permission_classes = [IsBMSUser]
     lookup_field = 'entry_id'  # We will look up by "JE-2026-XXXX"
+
+class ExternalReferenceViewSet(viewsets.ViewSet):
+    """
+    Read-only endpoints for External Systems to fetch Master Data.
+    Protected by API Key.
+    """
+    authentication_classes = [APIKeyAuthentication]
+    permission_classes = [IsTrustedService]
+
+    @action(detail=False, methods=['get'])
+    def departments(self, request):
+        """Get valid Departments (ID, Name, Code)"""
+        depts = Department.objects.filter(is_active=True).values('id', 'name', 'code')
+        return Response(list(depts))
+
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        """Get valid Expense Categories"""
+        # Optional: Filter by department if provided ?department_code=IT
+        dept_code = request.query_params.get('department_code')
+        qs = ExpenseCategory.objects.filter(is_active=True)
+        
+        # Note: Category-Department mapping logic varies. 
+        # If strict mapping exists in SubCategoryBudgetCap or naming convention, apply here.
+        
+        data = qs.values('id', 'name', 'code', 'classification')
+        return Response(list(data))
+
+    @action(detail=False, methods=['get'])
+    def fiscal_years(self, request):
+        """Get Active Fiscal Year"""
+
+        fy = FiscalYear.objects.filter(is_active=True).values(
+            'id', 'name', 'start_date', 'end_date'
+        ).first()
+        return Response(fy)
