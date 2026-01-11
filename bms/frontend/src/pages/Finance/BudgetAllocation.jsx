@@ -1212,16 +1212,19 @@ function BudgetAllocation() {
     if (user?.is_superuser) return "ADMIN";
     return "User";
   };
-  const userRole = getUserRole();
-  const isFinanceManager = userRole === "FINANCE_HEAD" || userRole === "ADMIN";
+  
+  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
+
   const userProfile = {
+    // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "User"
+      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
       : "User",
     role: userRole,
     avatar:
       user?.profile_picture ||
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
   };
 
   // --- HELPERS ---
