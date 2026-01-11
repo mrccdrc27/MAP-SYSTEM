@@ -18,6 +18,8 @@ RUN mkdir -p /app/media/employee_images /app/media/ticket_attachments
 # Copy and enable start script for migrations and seeding
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
+COPY celery.sh /celery.sh
+RUN chmod +x /celery.sh
 
 # Default command runs the start script
 CMD ["/start.sh"]

@@ -88,11 +88,15 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+import dj_database_url
+
+# Use PostgreSQL from environment or fall back to SQLite for local dev
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
@@ -235,4 +239,6 @@ CELERY_TASK_ROUTES = {
     'hdts.tasks.sync_hdts_user': {'queue': 'hdts.user.sync'},
     # Route ticket workflow task to the workflow_api worker queue
     'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
+    # Route ticket status updates from TTS
+    'send_ticket_status': {'queue': 'ticket_status-default'},
 }

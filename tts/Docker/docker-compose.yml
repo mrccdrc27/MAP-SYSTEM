@@ -133,12 +133,12 @@ services:
       KONG_TRUSTED: "true"
       DJANGO_CORS_ALLOWED_ORIGINS: "http://165.22.247.50:1000,http://127.0.0.1:1000,http://165.22.247.50:8080,http://165.22.247.50:5173,http://127.0.0.1:5173"
       DJANGO_CORS_ALLOW_ALL_ORIGINS: "False"
-      # DATABASE_URL: "postgres://postgres:postgrespass@db:5432/helpdesk"
-      # PGHOST: "db"
-      # PGPORT: "5432"
-      # POSTGRES_DB: "helpdesk"
-      # POSTGRES_USER: "postgres"
-      # POSTGRES_PASSWORD: "postgrespass"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/helpdesk"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "helpdesk"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       CELERY_TASK_DEFAULT_QUEUE: "TICKET_TASKS_PRODUCTION"
       DJANGO_SUPERUSER_EMAIL: "admin@helpdesk.com"
@@ -168,15 +168,21 @@ services:
       DJANGO_SECRET_KEY: "secret-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       KONG_TRUSTED: "true"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/helpdesk"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "helpdesk"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
     depends_on:
       rabbitmq:
         condition: service_healthy
       db:
+        condition: service_healthy
+      helpdesk-service:
         condition: service_started
-    command: >
-      sh -c "sleep 15 && 
-             celery -A backend worker --loglevel=info --queues=hdts.user.sync,hdts.user_system_role.sync,hdts.employee.sync,ticket_tasks2 --pool=solo"
+    command: sh -c "sleep 35 && /celery.sh"
 
   # Workflow API service - 10 seconds sleep
   workflow-api:
