@@ -9,6 +9,8 @@ import {
   Search,
   Printer,
   Upload,
+  AlertCircle, // Added
+  CheckCircle, // Added
   X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -26,6 +28,92 @@ import { getAllDepartments } from "../../API/departments";
 import { getAccountTypes } from "../../API/dropdownAPI";
 import { useAuth } from "../../context/AuthContext";
 import ManageProfile from "./ManageProfile";
+
+const AlertModal = ({ isOpen, onClose, message, type = "info" }) => {
+  if (!isOpen) return null;
+
+  const isError = type === "error";
+  const iconColor = isError ? "#dc3545" : "#28a745";
+  const Icon = isError ? AlertCircle : CheckCircle;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 4000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "8px",
+          width: "400px",
+          maxWidth: "90%",
+          padding: "24px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          textAlign: "center",
+          animation: "fadeIn 0.2s ease-out",
+        }}
+      >
+        <div
+          style={{
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <Icon size={48} color={iconColor} />
+        </div>
+
+        <h3
+          style={{ margin: "0 0 10px 0", color: "#333", fontSize: "1.25rem" }}
+        >
+          {isError ? "Error" : "Success"}
+        </h3>
+
+        <p
+          style={{
+            margin: "0 0 24px 0",
+            color: "#666",
+            fontSize: "1rem",
+            lineHeight: "1.5",
+          }}
+        >
+          {message}
+        </p>
+
+        <button
+          onClick={onClose}
+          style={{
+            padding: "10px 24px",
+            backgroundColor: isError ? "#dc3545" : "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            fontSize: "14px",
+            fontWeight: "500",
+            cursor: "pointer",
+            outline: "none",
+            minWidth: "100px",
+          }}
+        >
+          OK
+        </button>
+      </div>
+      <style>
+        {`@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}
+      </style>
+    </div>
+  );
+};
 
 const financeOperatorNames = [
   "Finance Operator",
@@ -287,7 +375,7 @@ const SignatureUpload = ({ value, onChange }) => {
   // --- MODIFICATION START: Add ref for input ---
   const fileInputRef = React.useRef(null);
   // --- MODIFICATION END ---
-  
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -320,7 +408,7 @@ const SignatureUpload = ({ value, onChange }) => {
     setFile(null);
     setPreview("");
     if (onChange) onChange("");
-    
+
     // --- MODIFICATION START: Reset input value ---
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -387,7 +475,7 @@ const SignatureUpload = ({ value, onChange }) => {
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => fileInputRef.current.click()}  // --- Use Ref ---
+          onClick={() => fileInputRef.current.click()} // --- Use Ref ---
         >
           <Upload size={24} style={{ marginBottom: "8px", color: "#666" }} />
           <div style={{ color: "#666", marginBottom: "4px" }}>
@@ -399,7 +487,7 @@ const SignatureUpload = ({ value, onChange }) => {
         </div>
       )}
       <input
-        ref={fileInputRef} 
+        ref={fileInputRef}
         id="signature-upload" // You can keep ID, but ref is cleaner for react
         type="file"
         accept=".png,.jpg,.jpeg,.svg"
@@ -443,6 +531,21 @@ const BudgetProposal = () => {
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [financeOperatorName, setFinanceOperatorName] = useState("");
   const [financeOperatorSignature, setFinanceOperatorSignature] = useState("");
+
+  // --- Alert State ---
+  const [alertState, setAlertState] = useState({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message, type = "error") => {
+    setAlertState({ isOpen: true, message, type });
+  };
+
+  const closeAlert = () => {
+    setAlertState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const shortenDepartmentName = (name, maxLength = 20) => {
     if (!name || name.length <= maxLength) return name;
@@ -503,7 +606,7 @@ const BudgetProposal = () => {
     }
 
     // 2. Fallback: Check direct role property (Legacy)
-    if (user.role && typeof user.role === 'string') return user.role;
+    if (user.role && typeof user.role === "string") return user.role;
 
     // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
@@ -511,14 +614,17 @@ const BudgetProposal = () => {
 
     return "User";
   };
-  
-  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+
+  const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
   const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
     // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
+      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+        user.full_name ||
+        user.username ||
+        "User"
       : "User",
     role: userRole,
     avatar:
@@ -773,6 +879,18 @@ const BudgetProposal = () => {
   };
 
   const handleStatusChange = (status) => {
+    // MODIFICATION START: Validation before opening confirmation
+    if (status === "APPROVED") {
+      if (!financeOperatorName || !financeOperatorName.trim()) {
+        showAlert("Finance Manager Name is required for approval.", "error");
+        return;
+      }
+      if (!financeOperatorSignature) {
+        showAlert("Signature is required for approval.", "error");
+        return;
+      }
+    }
+    // MODIFICATION END
     setReviewStatus(status);
     setShowConfirmationPopup(true);
   };
@@ -815,13 +933,30 @@ const BudgetProposal = () => {
       setCurrentPage(1);
       setDebouncedSearchTerm((prev) => prev + " ");
       fetchSummary();
+      showAlert("Review submitted successfully.", "success");
     } catch (error) {
       console.error("Failed to submit review:", error);
-      const msg =
-        error.response?.data?.detail ||
-        error.response?.data?.non_field_errors ||
-        "Failed to submit review.";
-      alert(msg);
+      let errorMsg = "Failed to submit review.";
+
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (data.signature) {
+          errorMsg = Array.isArray(data.signature)
+            ? data.signature[0]
+            : data.signature;
+        } else if (data.status) {
+          errorMsg = Array.isArray(data.status) ? data.status[0] : data.status;
+        } else if (data.detail) {
+          errorMsg = data.detail;
+        } else if (data.non_field_errors) {
+          errorMsg = Array.isArray(data.non_field_errors)
+            ? data.non_field_errors[0]
+            : data.non_field_errors;
+        } else if (typeof data === "string") {
+          errorMsg = data;
+        }
+      }
+      showAlert(errorMsg, "error");
     }
   };
 
@@ -1453,7 +1588,12 @@ const BudgetProposal = () => {
       {/* UPDATED: Reduced margin size to match Dashboard */}
       <div
         className="content-container"
-        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
+        style={{
+          padding: "10px 20px",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          width: "95%",
+        }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -2059,7 +2199,9 @@ const BudgetProposal = () => {
                                 minWidth: "60px",
                                 outline: "none",
                               }}
-                              onFocus={(e) => e.currentTarget.style.outline = "none"}
+                              onFocus={(e) =>
+                                (e.currentTarget.style.outline = "none")
+                              }
                               onMouseDown={(e) => e.preventDefault()}
                             >
                               {proposal.status === "SUBMITTED" &&
@@ -2446,7 +2588,8 @@ const BudgetProposal = () => {
                 >
                   {/* Finance Manager Name */}
                   <div className="detail-item" style={{ marginBottom: "15px" }}>
-                    <strong>Finance Manager Name:</strong>
+                    <strong>Finance Manager Name:</strong>{" "}
+                    <span style={{ color: "red" }}>*</span>
                     <div style={{ marginTop: "5px" }}>
                       <input
                         type="text"
@@ -2480,7 +2623,8 @@ const BudgetProposal = () => {
 
                   {/* Signature */}
                   <div className="detail-item" style={{ marginBottom: "15px" }}>
-                    <strong>Signature (Attachment):</strong>
+                    <strong>Signature (Attachment):</strong>{" "}
+                    <span style={{ color: "red" }}>*</span>
                     <div style={{ marginTop: "5px" }}>
                       {/* LOGIC: Show upload ONLY if it's editable AND user is Finance Manager */}
                       {!showReviewPopup.readOnly && isFinanceManager ? (
@@ -3034,6 +3178,13 @@ const BudgetProposal = () => {
           </div>
         </div>
       )}
+      {/* AlertModal */}
+      <AlertModal
+        isOpen={alertState.isOpen}
+        message={alertState.message}
+        type={alertState.type}
+        onClose={closeAlert}
+      />
     </div>
   );
 };

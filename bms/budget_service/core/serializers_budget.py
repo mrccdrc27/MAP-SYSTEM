@@ -686,10 +686,16 @@ class ProposalReviewSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        if data.get('status') == 'APPROVED' and not data.get('signature'):
-            raise serializers.ValidationError(
-                {'signature': "Signature attachment is required for approval."}
-            )
+        if data.get('status') == 'APPROVED':
+            errors = {}
+            if not data.get('signature'):
+                errors['signature'] = "Signature attachment is required for approval."
+            
+            if not data.get('finance_manager_name') or not data.get('finance_manager_name').strip():
+                errors['finance_manager_name'] = "Finance Manager Name is required for approval."
+                
+            if errors:
+                raise serializers.ValidationError(errors)
         return data
 
 
@@ -990,24 +996,48 @@ class JournalEntryLineDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'account_name', 'account_code', 'transaction_type', 'amount', 'description']
 
 class JournalEntryDetailSerializer(serializers.ModelSerializer):
-    lines = JournalEntryLineDetailSerializer(many=True, read_only=True)
+    """
+    Detailed view of a Journal Entry, including lines and resolved category names.
+    """
+    lines = serializers.SerializerMethodField()
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    created_by = serializers.CharField(source='created_by_username', read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
     
-    # MODIFIED: Changed from source='department.name' to SerializerMethodField for safety
-    department_name = serializers.SerializerMethodField()
-    
-    # Audit info
-    created_by = serializers.CharField(source='created_by_username')
-    
-    # Category helpers for display
-    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    # FIX: Add logic to fetch the specific sub-category name
+    sub_category = serializers.SerializerMethodField()
 
     class Meta:
         model = JournalEntry
         fields = [
-            'entry_id', 'date', 'category', 'category_display', 'description', 
-            'total_amount', 'status', 'department_name', 
+            'entry_id', 'date', 'category', 'sub_category', 'description', 
+            'total_amount', 'status', 'department', 'department_name', 
             'created_by', 'created_at', 'lines'
         ]
+
+    def get_lines(self, obj):
+        lines = obj.lines.all().select_related('account')
+        return [{
+            'id': line.id,
+            'account_code': line.account.code,
+            'account_name': line.account.name,
+            'description': line.description,
+            'transaction_type': line.transaction_type,
+            'journal_transaction_type': line.journal_transaction_type,
+            'amount': line.amount,
+            'expense_category': line.expense_category.name if line.expense_category else None
+        } for line in lines]
+
+    def get_sub_category(self, obj):
+        """
+        Find the 'real' sub-category from the DEBIT line.
+        The parent JournalEntry only stores the high-level 'EXPENSES' choice.
+        """
+        # We look for a line that has an expense_category attached
+        line_with_category = obj.lines.filter(expense_category__isnull=False).first()
+        if line_with_category:
+            return line_with_category.expense_category.name
+        return "General" # Fallback if no specific category found
 
     def get_department_name(self, obj):
         if obj.department:

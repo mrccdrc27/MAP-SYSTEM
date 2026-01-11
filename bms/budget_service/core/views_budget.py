@@ -24,6 +24,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from drf_spectacular.utils import (
     extend_schema, OpenApiParameter, OpenApiResponse, OpenApiTypes, OpenApiExample
 )
+from core.authentication import JWTCookieAuthentication
 
 from .service_authentication import APIKeyAuthentication
 
@@ -524,7 +525,10 @@ class AccountDropdownView(generics.ListAPIView):
     queryset = Account.objects.filter(
         is_active=True).select_related('account_type')
     serializer_class = AccountDropdownSerializer
+    # MODIFICATION START: Enable API Key access for external systems
+    authentication_classes = [JWTCookieAuthentication, APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
+    # MODIFICATION END
 
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
@@ -567,7 +571,10 @@ def journal_choices(request):
 class DepartmentDropdownView(generics.ListAPIView):
     queryset = Department.objects.filter(is_active=True)
     serializer_class = DepartmentDropdownSerializer
+    # MODIFICATION Start Enable API Key access for external systems
+    authentication_classes = [JWTCookieAuthentication, APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
+    # MODIFICATION END
 
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
@@ -582,7 +589,10 @@ class DepartmentDropdownView(generics.ListAPIView):
 class AccountTypeDropdownView(generics.ListAPIView):
     queryset = AccountType.objects.all()
     serializer_class = AccountTypeDropdownSerializer
+    # MODIFICATION START: Enable API Key access for external systems
+    authentication_classes = [JWTCookieAuthentication, APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
+    # MODIFICATION END
 
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
@@ -2089,3 +2099,14 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             'id', 'name', 'start_date', 'end_date'
         ).first()
         return Response(fy)
+
+
+    @action(detail=False, methods=['get'])
+    def accounts(self, request):
+        """Get valid General Ledger Accounts for External Systems"""
+        # Return ID, Name, Code, and Type so they can filter assets vs expenses
+        accounts = Account.objects.filter(is_active=True).values(
+            'id', 'name', 'code', 'account_type__name'
+        )
+        return Response(list(accounts))
+  
