@@ -1,4 +1,6 @@
-from django.urls import path, include
+from django.urls import path, include, re_path # MODIFIED: Added re_path
+from django.conf import settings # MODIFIED: Added settings
+from django.views.static import serve # MODIFIED: Added serve view
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 
@@ -147,4 +149,13 @@ urlpatterns = [
     # MODIFICATION START
     path('budget/supplemental/request/', SupplementalBudgetRequestView.as_view(), name='budget-supplemental-request'),
     # MODIFICATION END
+]
+
+# MODIFICATION START Serve Media Files (Fix for Render 404s)
+# Explicitly tells Django to serve files from the MEDIA_ROOT when /media/ URL is accessed
+# Note: On Render's standard file system, these files will disappear if the server redeploys/restarts.
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
 ]
