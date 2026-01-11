@@ -103,11 +103,20 @@ const CoordinatorOwnedTickets = () => {
         }
 
         // Normalize tickets from the helpdesk backend response
+        // Support multiple API shapes/keys (legacy names and serializer outputs)
         const normalized = ticketList.map((t) => {
           // Data comes from Ticket model via /api/tickets/my-tickets/
           const dateCreated = t.submit_date || t.dateCreated || t.created_at || null;
           const lastUpdated = t.update_date || t.lastUpdated || dateCreated;
-          
+
+          // Sub-category may come as `sub_category` or `subCategory` or `subcategory`
+          const subCat = t.sub_category || t.subCategory || t.subcategory || '';
+
+          // Workflow and current step can be provided by different serializers
+          // or stored in dynamic_data. Try common variants before falling back.
+          const workflowFromTicket = t.workflowName || t.workflow_name || t.workflow || (t.dynamic_data && (t.dynamic_data.workflowName || t.dynamic_data.workflow || t.dynamic_data.workflow_name));
+          const currentStepFromTicket = t.currentStepName || t.current_step_name || t.current_step || (t.dynamic_data && (t.dynamic_data.currentStepName || t.dynamic_data.current_step || t.dynamic_data.current_step_name));
+
           return {
             ...t,
             ticketNumber: t.ticket_number || t.ticketNumber || t.id,
@@ -116,7 +125,9 @@ const CoordinatorOwnedTickets = () => {
             status: t.status || 'New',
             priorityLevel: t.priority || t.priorityLevel || 'Medium',
             category: t.category || 'N/A',
-            subCategory: t.sub_category || t.subCategory || '',
+            subCategory: subCat,
+            workflowName: workflowFromTicket,
+            currentStepName: currentStepFromTicket,
             dateCreated,
             lastUpdated,
             assignedAgent: t.employee_name || currentUser?.first_name || '',

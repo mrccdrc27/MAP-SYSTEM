@@ -189,7 +189,7 @@ class EmployeeInfoSerializer(serializers.ModelSerializer):
 class TicketSerializer(serializers.ModelSerializer):
     attachments = TicketAttachmentSerializer(many=True, read_only=True)
     scheduled_date = serializers.DateField(required=False, allow_null=True)
-    assigned_to = serializers.StringRelatedField(read_only=True)
+    current_agent = serializers.StringRelatedField(read_only=True)
     employee = EmployeeInfoSerializer(read_only=True)
     # Allow arbitrary JSON from the frontend
     dynamic_data = serializers.JSONField(required=False, allow_null=True)
@@ -214,12 +214,12 @@ class TicketSerializer(serializers.ModelSerializer):
                 'asset_name', 'serial_number', 'location', 'expected_return_date',
                 'issue_type', 'other_issue', 'performance_start_date', 'performance_end_date',
                 'approved_by', 'cost_items', 'requested_budget', 'fiscal_year', 'department_input',
-                'dynamic_data', 'status', 'submit_date', 'update_date', 'assigned_to', 'attachments',
+                'dynamic_data', 'status', 'submit_date', 'update_date', 'current_agent', 'attachments',
         'employee', 'rejected_by', 'date_completed', 'csat_rating', 'feedback', 'ticket_owner_id'
         ]
         read_only_fields = [
             'id', 'ticket_number', 'submit_date', 'update_date',
-            'response_time', 'resolution_time', 'time_closed', 'date_completed', 'assigned_to',
+            'response_time', 'resolution_time', 'time_closed', 'date_completed', 'current_agent',
             'employee', 'ticket_owner_id'
         ]
 
@@ -341,7 +341,7 @@ def ticket_to_dict(ticket):
         "status": ticket.status,
         "submit_date": ticket.submit_date.isoformat() if ticket.submit_date else None,
         "update_date": ticket.update_date.isoformat() if ticket.update_date else None,
-        "assigned_to": str(ticket.assigned_to) if ticket.assigned_to else None,
+        "current_agent": str(ticket.current_agent) if ticket.current_agent else None,
         "customer": customer,
         "attachments": attachments,
         "response_time": str(ticket.response_time) if hasattr(ticket, "response_time") and ticket.response_time else None,

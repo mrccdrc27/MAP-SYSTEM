@@ -17,6 +17,7 @@ import ViewCard from '../../../shared/components/ViewCard';
 import Tabs from '../../../shared/components/Tabs';
 import WorkflowVisualizer2 from '../../../shared/components/WorkflowVisualizer/WorkflowVisualizer2';
 import { useWorkflowProgress } from '../../../shared/hooks/useWorkflowProgress';
+import { useCurrentAgent } from '../../../shared/hooks/useCurrentAgent';
 import { 
   FaFileImage, 
   FaFilePdf, 
@@ -478,6 +479,9 @@ export default function EmployeeTicketTracker() {
   const workflowTicketId = ticket?.ticket_number || ticket?.ticketNumber || ticketNumber;
   const { tracker: workflowData, loading: workflowLoading, error: workflowError } = useWorkflowProgress(workflowTicketId);
 
+  // Fetch current agent from TTS workflow API
+  const { currentAgent, loading: currentAgentLoading } = useCurrentAgent(workflowTicketId);
+
   // selected ticket ready for render
   // If we don't yet have a ticket, show the loading skeleton until the
   // backend returns the real ticket. This avoids flashing the "No Ticket Found"
@@ -931,8 +935,10 @@ export default function EmployeeTicketTracker() {
                 )}
 
                 <div className={styles.detailItem}>
-                  <div className={styles.detailLabel}>Assigned Agent</div>
-                  <div className={styles.detailValue}>{typeof assignedTo === 'object' ? assignedTo?.name || 'Unassigned' : assignedTo || 'Unassigned'}</div>
+                  <div className={styles.detailLabel}>Current Agent</div>
+                  <div className={styles.detailValue}>
+                    {currentAgentLoading ? 'Loading...' : (currentAgent?.user_full_name || 'Unassigned')}
+                  </div>
                 </div>
 
                 <div className={styles.detailItem}>

@@ -13,6 +13,7 @@ import styles from './EmployeeHome.module.css';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import { toEmployeeStatus } from '../../../utilities/helpers/statusMapper';
 import { useAuth } from '../../../context/AuthContext';
+import CurrentAgentCell from '../../../shared/components/CurrentAgentCell';
 
 const EmployeeHome = () => {
   const navigate = useNavigate();
@@ -195,9 +196,9 @@ const EmployeeHome = () => {
                     </div>
                     <div className={styles.ticketDetailsGrid}>
                       <div>
-                        <div className={styles.ticketLabel}>Assigned Agent</div>
+                        <div className={styles.ticketLabel}>Current Agent</div>
                         <div className={styles.ticketValue}>
-                          {normalized.assignedTo?.name || normalized.assignedTo || 'Unassigned'}
+                          <CurrentAgentCell ticketId={normalized.ticketNumber} fallback={'Unassigned'} />
                         </div>
                       </div>
                       <div>

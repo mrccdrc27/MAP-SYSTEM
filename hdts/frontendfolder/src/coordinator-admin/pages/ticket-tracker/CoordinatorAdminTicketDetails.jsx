@@ -8,6 +8,7 @@ import authService from '../../../utilities/service/authService';
 import { convertToSecureUrl, getAccessToken, isSecureUrl } from '../../../utilities/secureMedia';
 import WorkflowVisualizer2 from '../../../shared/components/WorkflowVisualizer/WorkflowVisualizer2';
 import { useWorkflowProgress } from '../../../shared/hooks/useWorkflowProgress';
+import { useCurrentAgent } from '../../../shared/hooks/useCurrentAgent';
 
 const DEFAULT_AVATAR = '/MapLogo.png';
 
@@ -89,6 +90,9 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
   // Fetch workflow visualization data for this ticket
   const workflowTicketId = ticket?.ticket_number || ticket?.ticketNumber;
   const { tracker: workflowData, loading: workflowLoading, error: workflowError } = useWorkflowProgress(workflowTicketId);
+
+  // Fetch current agent from TTS workflow API
+  const { currentAgent, loading: currentAgentLoading, error: currentAgentError } = useCurrentAgent(workflowTicketId);
 
   // Use embedded employee data from ticket or resolved remoteEmployee state
   const [remoteEmployee, setRemoteEmployee] = useState(null);
@@ -401,30 +405,46 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
           </div>
         )}
 
-        {/* ASSIGNED AGENT SECTION - Visible during In Progress and Completed stages
-            Show a placeholder when there is no assigned agent so the UI can be wired to backend later */}
+        {/* CURRENT AGENT SECTION - Visible during In Progress and Completed stages
+            Shows the TTS agent currently working on the ticket from /tasks/logs/ */}
         {['in-progress', 'completed'].includes(ticketStage) && !hideAssignedAgent && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>Assigned Agent</div>
+            <div className={styles.sectionTitle}>Current Agent</div>
             <div className={styles.userCardWrap}>
-              {ticket?.assignedTo ? (
+              {currentAgentLoading ? (
                 <div className={styles.userCard}>
                   <div className={styles.avatar}>
                     <img
-                      src={agentImage}
-                      alt={agentName}
+                      src={DEFAULT_AVATAR}
+                      alt="Loading"
+                      className={styles.avatarImageInner}
+                    />
+                  </div>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userName}>Loading...</div>
+                    <div className={styles.userMeta}>
+                      -<br />
+                      Date Assigned: -
+                    </div>
+                  </div>
+                </div>
+              ) : currentAgent ? (
+                <div className={styles.userCard}>
+                  <div className={styles.avatar}>
+                    <img
+                      src={DEFAULT_AVATAR}
+                      alt={currentAgent.user_full_name}
                       className={styles.avatarImageInner}
                       onError={(e) => {
-                        console.warn('Agent image failed to load:', e.currentTarget.src, 'ticket:', ticket?.ticketNumber || ticket?.id);
                         e.currentTarget.src = DEFAULT_AVATAR;
                       }}
                     />
                   </div>
                   <div className={styles.userInfo}>
-                    <div className={styles.userName}>{agentName}</div>
+                    <div className={styles.userName}>{currentAgent.user_full_name}</div>
                     <div className={styles.userMeta}>
-                      {ticket?.assignedAgentDepartment || ticket?.assigned_agent_department || 'None'}<br />
-                      Date Assigned: {formatDate ? formatDate(ticket?.dateAssigned) : ticket?.dateAssigned || 'None'}
+                      {currentAgent.role || '-'}<br />
+                      Date Assigned: {currentAgent.assigned_on ? new Date(currentAgent.assigned_on).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'None'}
                     </div>
                   </div>
                 </div>

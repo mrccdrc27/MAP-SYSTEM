@@ -4,6 +4,17 @@ import { API_CONFIG } from '../../../config/environment';
 // Use environment config for messaging API
 const MESSAGING_API_BASE = API_CONFIG.MESSAGING.BASE_URL;
 
+/**
+ * Get auth headers for messaging API requests
+ * Since we use cookie-based auth, this returns empty headers by default
+ * The cookies will be sent automatically via credentials: 'include'
+ */
+const getAuthHeaders = () => {
+  // Cookie-based auth - no localStorage tokens needed
+  // Cookies are sent automatically with credentials: 'include'
+  return {};
+};
+
 export const useMessagingAPI = (ticketId, setMessages) => {
   const [ticket, setTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(false);

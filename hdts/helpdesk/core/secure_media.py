@@ -193,7 +193,7 @@ def secure_attachment_download(request, attachment_id):
             request.user.is_staff or 
             (hasattr(request.user, 'role') and request.user.role in ['System Admin', 'Ticket Coordinator']) or
             request.user == ticket.employee or 
-            request.user == ticket.assigned_to
+            request.user == ticket.current_agent
         ):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         

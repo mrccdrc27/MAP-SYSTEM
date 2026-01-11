@@ -230,7 +230,7 @@ const CoordinatorAMSTickets = () => {
                   <th>Sub Category</th>
                   <th>Priority</th>
                   <th>SLA Status</th>
-                  <th>Assigned Agent</th>
+                  <th>Current Agent</th>
                   <th>Actions</th>
                 </tr>
               </thead>
