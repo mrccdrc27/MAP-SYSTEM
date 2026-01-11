@@ -141,11 +141,8 @@ export default function Ticket() {
       if (activeTab === "Acted") {
         if (ticket.hasacted !== true) return false;
       } else {
-        // Exclude acted tickets from other tabs (0)
-        // if (ticket.hasacted === true) return false;
-        // Exclude acted or resolved tickets from other tabs (1)
-        if (ticket.hasacted === true || ticket.status === "resolved") return false;
-
+        // Exclude acted tickets from other tabs
+        if (ticket.hasacted === true) return false;
         // Filter by priority tab
         if (activeTab !== "All" && ticket.priority !== activeTab) return false;
       }
@@ -213,8 +210,9 @@ export default function Ticket() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`${styles.tpTabLink} ${activeTab === tab ? styles.active : ""
-                    }`}
+                  className={`${styles.tpTabLink} ${
+                    activeTab === tab ? styles.active : ""
+                  }`}
                   type="button"
                 >
                   {tab}

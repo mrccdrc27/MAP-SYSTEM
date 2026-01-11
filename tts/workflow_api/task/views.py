@@ -626,7 +626,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             if task_id_param:
                 task = Task.objects.select_related(
                     'ticket_id',
-                    'workflow_id'
+                    'workflow_id',
+                    'ticket_owner',
+                    'ticket_owner__role_id'
                 ).get(task_id=task_id_param)
             else:
                 # Find task by ticket_id - search in both ticket_number and ticket_data
@@ -640,7 +642,9 @@ class TaskViewSet(viewsets.ModelViewSet):
                 
                 task = Task.objects.select_related(
                     'ticket_id',
-                    'workflow_id'
+                    'workflow_id',
+                    'ticket_owner',
+                    'ticket_owner__role_id'
                 ).get(ticket_id=ticket)
         except (Task.DoesNotExist, WorkflowTicket.DoesNotExist):
             return Response(
@@ -665,10 +669,21 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Serialize all task items with their history into a single logs array
         task_items_serializer = TaskItemSerializer(all_task_items, many=True)
         
+        # Build ticket owner information for the response
+        ticket_owner_data = None
+        if task.ticket_owner:
+            ticket_owner_data = {
+                'user_id': task.ticket_owner.user_id,
+                'user_full_name': task.ticket_owner.user_full_name,
+                'role': task.ticket_owner.role_id.name if task.ticket_owner.role_id else None,
+                'assigned_at': task.created_at.isoformat() if task.created_at else None,
+            }
+        
         response_data = {
             'task_id': task.task_id,
             'ticket_id': task.ticket_id.ticket_id,
             'workflow_id': str(task.workflow_id.workflow_id),
+            'ticket_owner': ticket_owner_data,  # Include ticket owner info
             'logs': task_items_serializer.data
         }
         

@@ -190,11 +190,14 @@ def create_task_for_ticket(ticket_id):
         except Exception as e:
             print(f"⚠️ Failed to backdate task: {e}")
         
-        # 4. Assign ticket owner (Ticket Coordinator) using round-robin
+        # 4. Assign ticket owner (Ticket Coordinator)
+        # Use HDTS-assigned coordinator if provided, otherwise fall back to round-robin
         from task.utils.assignment import assign_ticket_owner
-        ticket_owner = assign_ticket_owner(task)
+        hdts_owner_id = ticket.ticket_data.get('ticket_owner_id')
+        ticket_owner = assign_ticket_owner(task, hdts_owner_id=hdts_owner_id)
         if ticket_owner:
-            print(f"👑 Ticket owner assigned: {ticket_owner.user_full_name} (User ID: {ticket_owner.user_id})")
+            source = "HDTS" if hdts_owner_id else "round-robin"
+            print(f"👑 Ticket owner assigned ({source}): {ticket_owner.user_full_name} (User ID: {ticket_owner.user_id})")
         else:
             print(f"⚠️ No ticket owner assigned (Ticket Coordinator role may not exist or have no users)")
         

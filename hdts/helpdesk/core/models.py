@@ -316,8 +316,10 @@ from .tasks import push_ticket_to_workflow
 
 @receiver(post_save, sender=Ticket)
 def send_ticket_to_workflow(sender, instance, created, **kwargs):
-    # Only trigger when status is set to "Open" (and not just created)
-    if not created and instance.status == "Open":
+    # Trigger when:
+    # 1. A NEW ticket is created with status "Open" (created=True and status=Open)
+    # 2. An EXISTING ticket is updated to status "Open" (created=False and status=Open)
+    if instance.status == "Open":
         # Delay pushing to external workflow; do not allow broker/worker errors
         # to crash the request/DB transaction (e.g., when RabbitMQ is down).
         try:
@@ -332,6 +334,7 @@ def send_ticket_to_workflow(sender, instance, created, **kwargs):
                 'category': instance.category,
                 'sub_category': instance.sub_category,
                 'description': instance.description,
+                'ticket_owner_id': instance.ticket_owner_id,  # HDTS-assigned ticket coordinator
                 'scheduled_date': str(instance.scheduled_date) if instance.scheduled_date else None,
                 'priority': instance.priority,
                 'department': instance.department,
@@ -385,6 +388,21 @@ def send_ticket_to_workflow(sender, instance, created, **kwargs):
                     'file_path': att.file.name if att.file else None,
                 })
             ticket_data['attachments'] = attachments
+            
+            # Flatten dynamic_data fields for AMS asset tickets
+            # TTS expects these at the top level for asset check-in/check-out workflows
+            if instance.dynamic_data and instance.category in ('Asset Check In', 'Asset Check Out'):
+                dd = instance.dynamic_data
+                # AMS critical fields
+                ticket_data['asset_id'] = dd.get('asset_id')
+                ticket_data['asset_id_number'] = dd.get('asset_id_number')
+                ticket_data['location_id'] = dd.get('location_id')
+                # Checkout fields
+                ticket_data['checkout_date'] = dd.get('checkout_date')
+                ticket_data['return_date'] = dd.get('return_date')
+                # Checkin fields
+                ticket_data['checkin_date'] = dd.get('checkin_date')
+                ticket_data['asset_checkout'] = dd.get('asset_checkout')  # Reference to checkout record
             
             try:
                 push_ticket_to_workflow.delay(ticket_data)

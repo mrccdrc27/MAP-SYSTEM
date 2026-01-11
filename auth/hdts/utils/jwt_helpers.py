@@ -52,11 +52,15 @@ def generate_employee_tokens(employee):
     # Build full name
     full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
     
+    # Get JWT issuer for Kong compatibility (must match Kong JWT credential key)
+    jwt_issuer = getattr(settings, 'SIMPLE_JWT', {}).get('ISSUER', 'tts-jwt-issuer')
+    
     access_payload = {
         'token_type': 'access',
         'exp': int(access_exp.timestamp()),
         'iat': int(now.timestamp()),
         'jti': uuid.uuid4().hex,
+        'iss': jwt_issuer,  # Required by Kong JWT plugin
         'user_id': employee.id,
         'employee_id': employee.id,  # Keep for backward compatibility
         'email': employee.email,
@@ -76,6 +80,7 @@ def generate_employee_tokens(employee):
         'exp': int(refresh_exp.timestamp()),
         'iat': int(now.timestamp()),
         'jti': uuid.uuid4().hex,
+        'iss': jwt_issuer,  # Required by Kong JWT plugin
         'user_id': employee.id,
         'employee_id': employee.id,  # Keep for backward compatibility
         'email': employee.email,
@@ -115,8 +120,9 @@ def set_employee_cookies(response, access_token, refresh_token):
     refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
     
     # SameSite=Lax allows cookies on same-site navigations.
-    # Setting domain=localhost makes cookies available to all ports on localhost.
+    # Use COOKIE_DOMAIN from settings for cross-port/subdomain cookie sharing
     cookie_samesite = 'Lax'
+    cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
     
     response.set_cookie(
         'access_token',
@@ -126,7 +132,7 @@ def set_employee_cookies(response, access_token, refresh_token):
         samesite=cookie_samesite,
         max_age=int(access_lifetime.total_seconds()),
         path='/',
-        domain='localhost',  # Share cookie across all localhost ports
+        domain=cookie_domain,
     )
     response.set_cookie(
         'refresh_token',
@@ -136,7 +142,7 @@ def set_employee_cookies(response, access_token, refresh_token):
         samesite=cookie_samesite,
         max_age=int(refresh_lifetime.total_seconds()),
         path='/',
-        domain='localhost',  # Share cookie across all localhost ports
+        domain=cookie_domain,
     )
     return response
 

@@ -31,11 +31,17 @@ logger = logging.getLogger(__name__)
 @extend_schema(
     tags=['Authentication'],
     summary="Get current authenticated user",
-    description="Returns the current authenticated user's basic information. Used by frontends to check authentication status on page load.",
+    description="Returns the current authenticated user's basic information with user type. Used by frontends to check authentication status on page load and determine which API endpoints to use.",
     responses={
         200: OpenApiResponse(
-            response=UserProfileSerializer,
-            description="User is authenticated. Returns user data."
+            response=inline_serializer(
+                name='MeResponse',
+                fields={
+                    'type': drf_serializers.ChoiceField(choices=['staff', 'employee']),
+                    'data': UserProfileSerializer()
+                }
+            ),
+            description="User is authenticated. Returns user type and data."
         ),
         401: OpenApiResponse(
             response=inline_serializer(
@@ -49,9 +55,10 @@ logger = logging.getLogger(__name__)
 class MeView(generics.RetrieveAPIView):
     """
     Simple endpoint to check if user is authenticated.
-    GET /api/v1/users/me/
+    GET /api/me/
     
-    Returns user data if authenticated, 401 if not.
+    Returns user type ('staff' or 'employee') and user data.
+    The user type is extracted from the JWT token's user_type claim.
     This is the primary endpoint for frontend auth checks.
     """
     permission_classes = (IsAuthenticated,)
@@ -59,6 +66,27 @@ class MeView(generics.RetrieveAPIView):
     
     def get_object(self):
         return self.request.user
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to wrap response with user type."""
+        user = self.get_object()
+        serializer = self.get_serializer(user)
+        
+        # Extract user_type from JWT token
+        user_type = 'staff'  # Default to staff
+        token_str = request.COOKIES.get('access_token')
+        if token_str:
+            try:
+                from rest_framework_simplejwt.tokens import AccessToken
+                access_token = AccessToken(token_str)
+                user_type = access_token.payload.get('user_type', 'staff')
+            except Exception:
+                pass
+        
+        return Response({
+            'type': user_type,
+            'data': serializer.data
+        })
 
 
 @extend_schema_view(

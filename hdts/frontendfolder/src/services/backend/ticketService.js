@@ -414,7 +414,8 @@ export const backendTicketService = {
 
   /**
    * Get tickets owned by the current user (Ticket Coordinator).
-   * Calls the workflow_api at port 8002.
+   * Calls the workflow_api's /tasks/owned-tickets/ endpoint which returns
+   * Tasks where the current user is assigned as ticket_owner.
    * @param {Object} options - Query options
    * @param {string} options.tab - 'active' or 'inactive' filter
    * @param {string} options.search - Search term
@@ -424,9 +425,16 @@ export const backendTicketService = {
    */
   async getOwnedTickets({ tab = '', search = '', page = 1, pageSize = 10 } = {}) {
     try {
-      // Use the helpdesk backend's my-tickets endpoint which filters by ticket_owner_id
-      const url = `${BASE_URL}/api/tickets/my-tickets/`;
-      console.log('Fetching owned tickets from:', url);
+      // Build query parameters for the workflow API
+      const params = new URLSearchParams();
+      if (tab) params.append('tab', tab);
+      if (search) params.append('search', search);
+      params.append('page', page.toString());
+      params.append('page_size', pageSize.toString());
+      
+      // Use the workflow API's owned-tickets endpoint
+      const url = `${WORKFLOW_URL}/tasks/owned-tickets/?${params.toString()}`;
+      console.log('Fetching owned tickets from workflow API:', url);
       
       const response = await fetch(url, getFetchOptions('GET'));
       
@@ -439,102 +447,61 @@ export const backendTicketService = {
       
       let data = await response.json();
       
-      // The my-tickets endpoint returns an array, not paginated
-      let results = Array.isArray(data) ? data : (data.results || []);
+      // The workflow API returns paginated response: { results: [...], count: N, next: url, previous: url }
+      let results = data.results || [];
+      const totalCount = data.count || results.length;
       
-      // Apply client-side filtering if tab is specified
-      if (tab === 'active') {
-        results = results.filter(t => !['Closed', 'Withdrawn', 'Rejected'].includes(t.status));
-      } else if (tab === 'inactive') {
-        results = results.filter(t => ['Closed', 'Withdrawn', 'Rejected'].includes(t.status));
-      }
-      
-      // Apply search filter client-side
-      if (search) {
-        const searchLower = search.toLowerCase();
-        results = results.filter(t => 
-          (t.ticket_number && t.ticket_number.toLowerCase().includes(searchLower)) ||
-          (t.subject && t.subject.toLowerCase().includes(searchLower)) ||
-          (t.category && t.category.toLowerCase().includes(searchLower))
-        );
-      }
-      
-      // Client-side pagination
-      const totalCount = results.length;
-      const startIndex = (page - 1) * pageSize;
-      const paginatedResults = results.slice(startIndex, startIndex + pageSize);
-      
-      // For rows missing workflow/current step, attempt best-effort enrichment
-      // by querying the workflow API for the visible page. This avoids N+many
-      // roundtrips across the entire dataset while ensuring visible rows show
-      // accurate Workflow and Current Step information.
-      const enrichPromises = paginatedResults.map(async (row) => {
-        try {
-          const ticketNumber = row.ticket_number || row.ticketNumber || row.id || '';
-          const needsWorkflow = !row.workflowName && !row.workflow_name && !row.workflow;
-          const needsStep = !row.currentStepName && !row.current_step_name && !row.current_step;
-
-          if (!ticketNumber || (!needsWorkflow && !needsStep)) return row;
-
-          const vizUrl = `${WORKFLOW_URL}/tasks/workflow-visualization/?ticket_id=${encodeURIComponent(ticketNumber)}`;
-          const resp = await fetch(vizUrl, getFetchOptions('GET'));
-          if (!resp.ok) return row;
-          const viz = await resp.json().catch(() => null);
-          if (!viz) return row;
-
-          // Extract current step name from nodes if present
-          try {
-            const nodes = Array.isArray(viz.nodes) ? viz.nodes : [];
-            const active = nodes.find(n => (n.status || '').toLowerCase() === 'active');
-            if (active && active.label) {
-              row.currentStepName = active.label;
-            } else {
-              // fallback to the last done or the first pending
-              const doneNodes = nodes.filter(n => (n.status || '').toLowerCase() === 'done');
-              if (doneNodes.length) row.currentStepName = doneNodes[doneNodes.length - 1].label;
-              else if (nodes.length) row.currentStepName = nodes[0].label;
-            }
-          } catch (e) {
-            // ignore
-          }
-
-          // If we have a workflow_id, fetch workflow details to get a friendly name
-          try {
-            const workflowId = viz.metadata && (viz.metadata.workflow_id || viz.metadata.workflow);
-            if (workflowId) {
-              const wfUrl = `${WORKFLOW_URL}/workflows/${workflowId}/`;
-              const wfResp = await fetch(wfUrl, getFetchOptions('GET'));
-              if (wfResp.ok) {
-                const wfData = await wfResp.json().catch(() => null);
-                if (wfData && wfData.workflow) {
-                  row.workflowName = wfData.workflow.name || wfData.workflow.workflow?.name || row.workflowName;
-                } else if (wfData && wfData.name) {
-                  row.workflowName = wfData.name;
-                }
-              }
-            }
-          } catch (e) {
-            // ignore
-          }
-
-          return row;
-        } catch (e) {
-          return row;
-        }
-      });
-
-      // Run enrichments in parallel but don't fail the whole request if they error
-      try {
-        await Promise.all(enrichPromises);
-      } catch (e) {
-        // swallow
-      }
+      // Transform workflow Task data to the format expected by the frontend
+      const transformedResults = results.map(task => ({
+        // Primary identifiers
+        id: task.ticket_id,
+        task_id: task.task_id,
+        ticket_number: task.ticket_number,
+        
+        // Ticket info from serializer
+        subject: task.ticket_subject,
+        description: task.ticket_description,
+        
+        // Status and priority
+        status: task.status,
+        priority: task.ticket_priority || task.priority,
+        
+        // Workflow info
+        workflowName: task.workflow_name,
+        workflow_name: task.workflow_name,
+        workflow_id: task.workflow_id,
+        
+        // Step info
+        currentStepName: task.current_step_name,
+        current_step_name: task.current_step_name,
+        current_step: task.current_step,
+        current_step_role: task.current_step_role,
+        
+        // Ticket owner info
+        ticket_owner_id: task.ticket_owner_id,
+        ticket_owner_name: task.ticket_owner_name,
+        ticket_owner_role: task.ticket_owner_role,
+        
+        // Dates
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        target_resolution: task.target_resolution,
+        resolution_time: task.resolution_time,
+        
+        // Assigned users info
+        assigned_users: task.assigned_users,
+        assigned_users_count: task.assigned_users_count,
+        
+        // Additional fields for compatibility
+        dateCreated: task.created_at,
+        priorityLevel: task.ticket_priority || task.priority,
+      }));
 
       return {
-        results: paginatedResults,
+        results: transformedResults,
         count: totalCount,
-        next: startIndex + pageSize < totalCount ? page + 1 : null,
-        previous: page > 1 ? page - 1 : null
+        next: data.next ? page + 1 : null,
+        previous: data.previous ? page - 1 : null
       };
     } catch (error) {
       console.error('Error fetching owned tickets:', error);

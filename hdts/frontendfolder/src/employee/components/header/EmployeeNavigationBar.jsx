@@ -331,9 +331,10 @@ const EmployeeNavBar = () => {
     setShowProfileMenu(false);
     setIsMobileMenuOpen(false);
 
-    // Redirect directly to auth service employee logout endpoint
-    // This ensures the browser receives Set-Cookie headers directly to clear HttpOnly cookies
-    window.location.href = 'http://localhost:8003/api/v1/users/logout/employee/';
+    // Redirect to the auth frontend so the auth app handles logout and final redirect.
+    // This mirrors the behavior of the auth `/profile` logout flow and avoids hardcoded localhost.
+    const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
+    window.location.href = `${authFrontendUrl}/`;
   };
 
   const getFullName = () => {
@@ -613,7 +614,7 @@ const EmployeeNavBar = () => {
             <div className={styles['mobile-profile-info']}>
               <h3>{getFullName()}</h3>
               <div className={styles['mobile-profile-actions']}>
-                <button className={styles['mobile-settings-btn']} onClick={() => { setIsMobileMenuOpen(false); window.location.href = 'http://localhost:3001/profile'; }}>Settings</button>
+                <button className={styles['mobile-settings-btn']} onClick={() => { setIsMobileMenuOpen(false); const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001'; window.location.href = `${authFrontendUrl}/profile`; }}>Settings</button>
                 <button className={styles['mobile-logout-btn']} onClick={handleLogout}>Log Out</button>
               </div>
             </div>
@@ -715,7 +716,8 @@ const EmployeeNavBar = () => {
                     <button
                       onClick={() => {
                         setShowProfileMenu(false);
-                        window.location.href = 'http://localhost:3001/profile';
+                        const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
+                        window.location.href = `${authFrontendUrl}/profile`;
                       }}
                     >
                       Settings

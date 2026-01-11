@@ -91,8 +91,8 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
   const workflowTicketId = ticket?.ticket_number || ticket?.ticketNumber;
   const { tracker: workflowData, loading: workflowLoading, error: workflowError } = useWorkflowProgress(workflowTicketId);
 
-  // Fetch current agent from TTS workflow API
-  const { currentAgent, loading: currentAgentLoading, error: currentAgentError } = useCurrentAgent(workflowTicketId);
+  // Fetch current agent and ticket owner from TTS workflow API
+  const { currentAgent, ticketOwner, loading: currentAgentLoading, error: currentAgentError } = useCurrentAgent(workflowTicketId);
 
   // Use embedded employee data from ticket or resolved remoteEmployee state
   const [remoteEmployee, setRemoteEmployee] = useState(null);
@@ -402,6 +402,73 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TICKET OWNER SECTION - Shows who is responsible for this ticket
+            Visible during In Progress and Completed stages */}
+        {['in-progress', 'completed'].includes(ticketStage) && (
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Ticket Owner</div>
+            <div className={styles.userCardWrap}>
+              {currentAgentLoading ? (
+                <div className={styles.userCard}>
+                  <div className={styles.avatar}>
+                    <img
+                      src={DEFAULT_AVATAR}
+                      alt="Loading"
+                      className={styles.avatarImageInner}
+                    />
+                  </div>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userName}>Loading...</div>
+                    <div className={styles.userMeta}>
+                      -<br />
+                      Date Appointed: -
+                    </div>
+                  </div>
+                </div>
+              ) : ticketOwner ? (
+                <div className={styles.userCard}>
+                  <div className={styles.avatar}>
+                    <img
+                      src={DEFAULT_AVATAR}
+                      alt={ticketOwner.user_full_name}
+                      className={styles.avatarImageInner}
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_AVATAR;
+                      }}
+                    />
+                  </div>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userName}>{ticketOwner.user_full_name}</div>
+                    <div className={styles.userMeta}>
+                      {ticketOwner.role || 'Ticket Coordinator'}<br />
+                      Date Appointed: {ticketOwner.assigned_at ? new Date(ticketOwner.assigned_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Placeholder card when no owner is assigned yet
+                <div className={styles.userCard}>
+                  <div className={styles.avatar}>
+                    <img
+                      src={DEFAULT_AVATAR}
+                      alt="Unassigned"
+                      className={styles.avatarImageInner}
+                      onError={(e) => { e.currentTarget.src = DEFAULT_AVATAR; }}
+                    />
+                  </div>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userName}>Unassigned</div>
+                    <div className={styles.userMeta}>
+                      -<br />
+                      Date Appointed: None
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

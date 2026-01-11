@@ -160,6 +160,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         
         if obj.profile_picture:
             # Use MEDIA_BASE_URL if configured (for Kong gateway routing)
+            # Kong routes /media to auth-service, so no prefix needed
             if getattr(settings, 'MEDIA_BASE_URL', ''):
                 return f"{settings.MEDIA_BASE_URL.rstrip('/')}{obj.profile_picture.url}"
             

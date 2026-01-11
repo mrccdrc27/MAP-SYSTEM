@@ -190,6 +190,7 @@ SIMPLE_JWT = {
     'SIGNING_KEY': JWT_SIGNING_KEY,
     'USER_ID_FIELD': 'id',  # Use the integer primary key field
     'USER_ID_CLAIM': 'user_id',  # The claim in the token that will contain the user ID
+    'ISSUER': config('JWT_ISSUER', default='tts-jwt-issuer'),  # Required by Kong JWT plugin
 }
 
 SPECTACULAR_SETTINGS = {

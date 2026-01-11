@@ -328,13 +328,18 @@ def assign_users_for_escalation(task, escalate_to_role, reason, from_user_id=Non
 TICKET_COORDINATOR_ROLE = "Ticket Coordinator"
 
 
-def assign_ticket_owner(task):
+def assign_ticket_owner(task, hdts_owner_id=None):
     """
-    Assign a Ticket Coordinator as the ticket owner for a task using round-robin.
+    Assign a Ticket Coordinator as the ticket owner for a task.
+    
+    If hdts_owner_id is provided (from HDTS approval), use that coordinator.
+    Otherwise, fall back to round-robin assignment.
+    
     The ticket owner is assigned to every task and stays with the task throughout its lifecycle.
     
     Args:
         task: Task instance to assign an owner to
+        hdts_owner_id: Optional user ID of coordinator assigned by HDTS during approval
     
     Returns:
         RoleUsers instance if assigned, None otherwise
@@ -356,25 +361,37 @@ def assign_ticket_owner(task):
             logger.warning(f"⚠️ No active users found for role '{TICKET_COORDINATOR_ROLE}'. Ticket owner not assigned.")
             return None
         
-        # Get or create round-robin state for Ticket Coordinator
-        round_robin_state, _ = RoundRobin.objects.get_or_create(
-            role_name=TICKET_COORDINATOR_ROLE,
-            defaults={"current_index": 0}
-        )
+        selected_owner = None
         
-        # Convert queryset to list for round-robin indexing
-        role_users_list = list(role_users_qs)
-        current_index = round_robin_state.current_index
-        user_index = current_index % len(role_users_list)
-        selected_owner = role_users_list[user_index]
+        # PRIORITY 1: Use HDTS-assigned coordinator if provided
+        if hdts_owner_id:
+            selected_owner = role_users_qs.filter(user_id=hdts_owner_id).first()
+            if selected_owner:
+                logger.info(f"👑 Using HDTS-assigned ticket owner: User {hdts_owner_id}")
+            else:
+                logger.warning(f"⚠️ HDTS-assigned owner {hdts_owner_id} not found in TTS, falling back to round-robin")
+        
+        # PRIORITY 2: Fall back to round-robin if no HDTS assignment
+        if not selected_owner:
+            # Get or create round-robin state for Ticket Coordinator
+            round_robin_state, _ = RoundRobin.objects.get_or_create(
+                role_name=TICKET_COORDINATOR_ROLE,
+                defaults={"current_index": 0}
+            )
+            
+            # Convert queryset to list for round-robin indexing
+            role_users_list = list(role_users_qs)
+            current_index = round_robin_state.current_index
+            user_index = current_index % len(role_users_list)
+            selected_owner = role_users_list[user_index]
+            
+            # Update round-robin state for next assignment
+            round_robin_state.current_index = (current_index + 1) % len(role_users_list)
+            round_robin_state.save()
         
         # Assign the ticket owner to the task
         task.ticket_owner = selected_owner
         task.save(update_fields=['ticket_owner'])
-        
-        # Update round-robin state for next assignment
-        round_robin_state.current_index = (current_index + 1) % len(role_users_list)
-        round_robin_state.save()
         
         logger.info(f"👑 Ticket owner assigned: User {selected_owner.user_id} ({selected_owner.user_full_name}) for Task {task.task_id}")
         

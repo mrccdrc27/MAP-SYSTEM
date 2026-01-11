@@ -35,6 +35,7 @@ export const EMPLOYEE_ENDPOINTS = {
   FORGOT_PASSWORD: `${AUTH_PREFIX}/api/v1/hdts/employees/api/password/forgot/`,
   RESET_PASSWORD: `${AUTH_PREFIX}/api/v1/hdts/employees/api/password/reset/`,
   CHANGE_PASSWORD: `${AUTH_PREFIX}/api/v1/hdts/employees/api/profile/change-password/`,
+  VERIFY_PASSWORD: `${AUTH_PREFIX}/api/v1/hdts/employees/api/profile/verify-password/`,
   REQUEST_OTP: `${AUTH_PREFIX}/api/v1/hdts/employees/api/2fa/request-otp/`,
   ENABLE_2FA: `${AUTH_PREFIX}/api/v1/hdts/employees/api/2fa/enable/`,
   DISABLE_2FA: `${AUTH_PREFIX}/api/v1/hdts/employees/api/2fa/disable/`,

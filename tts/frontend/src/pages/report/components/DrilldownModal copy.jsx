@@ -41,11 +41,11 @@ export default function DrilldownModal({
   const sortedItems = [...items].sort((a, b) => {
     const dateA = a.assigned_on || a.assigned_at || a.created_at;
     const dateB = b.assigned_on || b.assigned_at || b.created_at;
-
+    
     if (!dateA && !dateB) return 0;
     if (!dateA) return 1;
     if (!dateB) return -1;
-
+    
     return new Date(dateB) - new Date(dateA); // Descending order (latest first)
   });
 
@@ -81,18 +81,16 @@ export default function DrilldownModal({
 
   const handleRowClick = (item) => {
     if (loading) return;
-
+    
     // Use onRowClick prop if provided
     if (onRowClick) {
       onRowClick(item);
-      onClose(); // Close modal after custom handler
       return;
     }
-
+    
     // Default navigation to archive detail page
     const ticketId = item.ticket_number || item.ticket_id || item.id;
     if (ticketId) {
-      onClose(); // Close modal before navigation
       navigate(`/admin/archive/${ticketId}`);
     }
   };

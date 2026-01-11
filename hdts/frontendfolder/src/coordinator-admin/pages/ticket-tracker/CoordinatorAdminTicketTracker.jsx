@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from '../../../employee/pages/ticket-tracker/EmployeeTicketTracker.module.css';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import authService from '../../../utilities/service/authService';
@@ -299,8 +299,8 @@ export default function CoordinatorAdminTicketTracker() {
   // Move auth hook to top-level so hooks order is stable across renders
   const { user: authUser, isTicketCoordinator, isAdmin } = useAuth();
 
-  // Fetch current agent from TTS workflow API
-  const { currentAgent, loading: currentAgentLoading } = useCurrentAgent(ticketNumber);
+  // Fetch current agent and ticket owner from TTS workflow API
+  const { currentAgent, ticketOwner, loading: currentAgentLoading } = useCurrentAgent(ticketNumber);
 
   // Helper: normalize backend ticket shapes into the UI shape used by this component
   const normalizeTicket = (t) => {
@@ -595,7 +595,36 @@ export default function CoordinatorAdminTicketTracker() {
   const statusSteps = getStatusSteps(status);
   const attachments = ticket.fileAttachments || ticket.attachments || ticket.files || fileUploaded;
   const formCategories = ['IT Support', 'Asset Check In', 'Asset Check Out', 'New Budget Proposal', 'Others', 'General Request'];
-  const ticketLogs = generateLogs(ticket);
+  
+  // Generate logs from ticket data and add ticket owner assignment if available
+  const baseLogs = generateLogs(ticket);
+  const ticketLogs = useMemo(() => {
+    const logs = [...baseLogs];
+    
+    // Add ticket owner assignment as a log entry if available
+    if (ticketOwner && ticketOwner.user_full_name) {
+      const assignedAt = ticketOwner.assigned_at 
+        ? new Date(ticketOwner.assigned_at).toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        : null;
+      
+      logs.push({
+        id: logs.length + 1,
+        user: 'System',
+        action: 'Ticket Owner Assigned',
+        timestamp: assignedAt,
+        text: `${ticketOwner.user_full_name} was appointed as Ticket Owner${assignedAt ? ` on ${assignedAt}` : ''}.`,
+        highlight: true,
+      });
+    }
+    
+    return logs;
+  }, [baseLogs, ticketOwner]);
   
   // Use external auth service to determine role
   // (hook already called earlier near the top to keep hook order stable)

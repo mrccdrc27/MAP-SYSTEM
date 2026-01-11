@@ -224,25 +224,81 @@ export default function EmployeeRegister() {
 
       if (!res.ok) {
         const err = res.data;
+        
+        // Handle server errors (500)
+        if (res.status >= 500) {
+          error('Server Error', 'Something went wrong on our end. Please try again later or contact support if the problem persists.');
+          setSubmitting(false);
+          return;
+        }
 
-        // Field-specific error handling
+        // Field-specific error handling with user-friendly field names
+        const fieldLabels = {
+          email: 'Email Address',
+          username: 'Username',
+          phone_number: 'Phone Number',
+          phoneNumber: 'Phone Number',
+          password: 'Password',
+          first_name: 'First Name',
+          firstName: 'First Name',
+          last_name: 'Last Name',
+          lastName: 'Last Name',
+          department: 'Department',
+          suffix: 'Suffix',
+          middle_name: 'Middle Name'
+        };
+        
         const newErrors = {};
-        if (err.email) {
-          newErrors.email = Array.isArray(err.email) ? err.email[0] : err.email;
+        const errorMessages = [];
+        
+        // Process all field errors
+        const fieldMappings = {
+          email: 'email',
+          username: 'username',
+          phone_number: 'phoneNumber',
+          password: 'password',
+          first_name: 'firstName',
+          last_name: 'lastName',
+          department: 'department',
+          suffix: 'suffix',
+          middle_name: 'middleName'
+        };
+        
+        for (const [backendField, frontendField] of Object.entries(fieldMappings)) {
+          if (err[backendField]) {
+            const errorMsg = Array.isArray(err[backendField]) ? err[backendField][0] : err[backendField];
+            newErrors[frontendField] = errorMsg;
+            errorMessages.push(`${fieldLabels[backendField]}: ${errorMsg}`);
+          }
         }
-        if (err.username) {
-          newErrors.username = Array.isArray(err.username) ? err.username[0] : err.username;
+        
+        // Handle non_field_errors (general validation errors)
+        if (err.non_field_errors) {
+          const nonFieldError = Array.isArray(err.non_field_errors) ? err.non_field_errors[0] : err.non_field_errors;
+          errorMessages.push(nonFieldError);
         }
-        if (err.phone_number) {
-          newErrors.phoneNumber = Array.isArray(err.phone_number) ? err.phone_number[0] : err.phone_number;
+        
+        // Handle detail error (common DRF error format)
+        if (err.detail) {
+          errorMessages.push(err.detail);
         }
         
         setErrors(newErrors);
 
-        // Show a toast for general errors
-        if (Object.keys(newErrors).length === 0) {
-          error('Registration Failed', err.error || err.message || "Failed to create account. Please check your details.");
+        // Show comprehensive error toast
+        if (errorMessages.length > 0) {
+          // Show a summary of all errors
+          if (errorMessages.length === 1) {
+            error('Registration Failed', errorMessages[0]);
+          } else {
+            error('Registration Failed', `Please fix the following issues:\n• ${errorMessages.join('\n• ')}`);
+          }
+        } else if (err.error || err.message) {
+          error('Registration Failed', err.error || err.message);
+        } else {
+          error('Registration Failed', 'Failed to create account. Please check your details and try again.');
         }
+        
         setSubmitting(false);
         return;
       }
@@ -252,7 +308,8 @@ export default function EmployeeRegister() {
       setSubmitting(false);
       setTimeout(() => navigate("/employee"), 3000);
     } catch (err) {
-      error('Network Error', 'Network error. Please try again.');
+      console.error('Registration error:', err);
+      error('Connection Error', 'Unable to connect to the server. Please check your internet connection and try again.');
       setSubmitting(false);
     }
   };

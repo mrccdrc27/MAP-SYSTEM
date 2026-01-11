@@ -236,7 +236,8 @@ export const AuthProvider = ({ children }) => {
     }
     clearAuth();
     // Redirect to auth-frontend login page
-    window.location.href = "http://localhost:3001/employee";
+    const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
+    window.location.href = `${authFrontendUrl}/employee`;
   };
 
   // Check if user has Admin role for HDTS (staff users only)

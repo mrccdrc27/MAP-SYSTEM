@@ -8,6 +8,8 @@ from .views_asset import (
     ResolvedAssetCheckinTicketsView,
     AssetTicketDetailView,
     AssetTicketsByEmployeeView,
+    ApproveResolvedTicketView,
+    BulkApproveResolvedTicketsView,
 )
 
 router = DefaultRouter()
@@ -28,4 +30,8 @@ urlpatterns = [
     path("asset/checkin/", ResolvedAssetCheckinTicketsView.as_view(), name="resolved-asset-checkin"),
     path("asset/<str:ticket_number>/", AssetTicketDetailView.as_view(), name="asset-ticket-detail"),
     path("asset/employee/", AssetTicketsByEmployeeView.as_view(), name="asset-tickets-by-employee"),
+    
+    # AMS approval endpoints - system-to-system (no auth required)
+    path("asset/approve/", ApproveResolvedTicketView.as_view(), name="approve-resolved-ticket"),
+    path("asset/approve/bulk/", BulkApproveResolvedTicketsView.as_view(), name="bulk-approve-resolved-tickets"),
 ]

@@ -35,7 +35,28 @@ class ResolvedAssetTicketsView(APIView):
         - status: Filter by ticket status (default: 'Resolved')
         - limit: Maximum number of results (default: 100)
     
-    Returns tickets with their full ticket_data for AMS consumption.
+    Returns tickets with flattened structure for AMS consumption.
+    Response format:
+    [
+        {
+            "id": 80,
+            "location_details": { "id": 7, "name": "San Juan" },
+            "requestor_details": { "id": 17, "name": "Full Name", "firstname": "First", "lastname": "Last" },
+            "ticket_number": "TKT080",
+            "employee": 17,
+            "asset": 80,
+            "subject": "...",
+            "location": 7,
+            "is_resolved": false,
+            "created_at": "2026-01-10T...",
+            "updated_at": "2026-01-10T...",
+            "checkout_date": null,
+            "return_date": null,
+            "asset_checkout": 40,
+            "checkin_date": "2025-10-26",
+            "asset_checkin": null
+        }
+    ]
     """
     authentication_classes = []  # No authentication required
     permission_classes = [AllowAny]  # Public endpoint
@@ -59,55 +80,86 @@ class ResolvedAssetTicketsView(APIView):
             ticket_data__status=ticket_status
         ).order_by('-created_at')[:limit]
         
-        # Build response data
+        # Build flattened response data
         tickets = []
         for ticket in queryset:
             ticket_data = ticket.ticket_data or {}
+            
+            # Build location_details
+            # From HDTS: location is stored in ticket.location or dynamic_data.location_id
+            location_id = ticket_data.get('location_id') or ticket_data.get('location')
+            location_name = ticket_data.get('location_name') or ticket_data.get('location')
+            location_details = {
+                'id': location_id,
+                'name': location_name
+            } if location_id or location_name else None
+            
+            # Build requestor_details from HDTS Ticket
+            # HDTS sends employee_cookie_id for external auth, or employee object for internal auth
+            employee_obj = ticket_data.get('employee', {}) or {}
+            
+            # Get employee ID - check multiple possible fields
+            employee_id = (
+                ticket_data.get('employee_id') or 
+                ticket_data.get('employee_cookie_id') or
+                employee_obj.get('id')
+            )
+            
+            # Get name from various sources:
+            # 1. employee object (if HDTS sent it)
+            # 2. approved_by field (contains approver name like "FirstName LastName")
+            # 3. Fallback to empty
+            firstname = employee_obj.get('first_name', '')
+            lastname = employee_obj.get('last_name', '')
+            
+            # If no name from employee object, try approved_by (it has the user's name)
+            if not firstname and not lastname:
+                approved_by = ticket_data.get('approved_by', '') or ''
+                if approved_by:
+                    name_parts = approved_by.split(' ', 1)
+                    firstname = name_parts[0] if name_parts else ''
+                    lastname = name_parts[1] if len(name_parts) > 1 else ''
+            
+            employee_name = f"{firstname} {lastname}".strip()
+            
+            requestor_details = {
+                'id': employee_id,
+                'name': employee_name,
+                'firstname': firstname,
+                'lastname': lastname
+            } if employee_id else None
+            
+            # Get related task to check is_resolved status (ams_executed)
+            try:
+                task = Task.objects.filter(ticket_id=ticket).first()
+                is_resolved = task.ams_executed if task and hasattr(task, 'ams_executed') else False
+            except Exception:
+                is_resolved = False
+            
             tickets.append({
                 'id': ticket.id,
+                'location_details': location_details,
+                'requestor_details': requestor_details,
                 'ticket_number': ticket.ticket_number,
-                'ticket_id': ticket_data.get('id') or ticket_data.get('ticket_id'),
-                'category': ticket_data.get('category'),
-                'sub_category': ticket_data.get('sub_category'),
+                'employee': employee_id,
+                # Asset ID from dynamic_data (HDTS flattens this when pushing)
+                'asset': ticket_data.get('asset_id') or ticket_data.get('asset'),
                 'subject': ticket_data.get('subject'),
-                'description': ticket_data.get('description'),
-                'status': ticket_data.get('status'),
-                'priority': ticket_data.get('priority'),
-                'department': ticket_data.get('department'),
-                # Asset specific fields
-                'asset_name': ticket_data.get('asset_name'),
-                'asset_id_number': ticket_data.get('asset_id_number'),
-                'serial_number': ticket_data.get('serial_number'),
-                'location': ticket_data.get('location'),
-                'condition': ticket_data.get('condition'),
-                'expected_return_date': ticket_data.get('expected_return_date'),
-                # Employee information
-                'employee_name': ticket_data.get('employee_name'),
-                'employee_id': ticket_data.get('employee_id'),
-                'employee_company_id': ticket_data.get('employee_company_id'),
-                # Dates
-                'submit_date': ticket_data.get('submit_date'),
-                'request_date': ticket_data.get('submit_date'),  # Alias for AMS
-                'checkout_date': ticket_data.get('checkout_date'),
-                'checkin_date': ticket_data.get('checkin_date'),
-                # Additional data
-                'notes': ticket_data.get('notes') or ticket_data.get('description'),
-                'dynamic_data': ticket_data.get('dynamic_data'),
-                'attachments': ticket_data.get('attachments', []),
-                # Reference for checkin
-                'checkout_ticket_reference': ticket_data.get('checkout_ticket_reference'),
-                # Metadata
-                'fetched_at': ticket.fetched_at.isoformat() if ticket.fetched_at else None,
+                'location': location_id,
+                'is_resolved': is_resolved,
                 'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
-                'is_task_allocated': ticket.is_task_allocated,
+                'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None,
+                # Checkout fields (from HDTS dynamic_data, flattened in signal)
+                'checkout_date': ticket_data.get('checkout_date'),
+                'return_date': ticket_data.get('return_date') or ticket_data.get('expected_return_date'),
+                'asset_checkout': ticket_data.get('asset_checkout'),  # Reference to checkout record for checkin
+                # Checkin fields
+                'checkin_date': ticket_data.get('checkin_date'),
+                'asset_checkin': ticket_data.get('asset_checkin'),
             })
         
-        return Response({
-            'count': len(tickets),
-            'type_filter': ticket_type,
-            'status_filter': ticket_status,
-            'tickets': tickets
-        })
+        # Return flat array (not wrapped in object)
+        return Response(tickets)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -403,4 +455,183 @@ class AssetTicketsByEmployeeView(APIView):
             'count': len(tickets),
             'employee_id': employee_id,
             'tickets': tickets
+        })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ApproveResolvedTicketView(APIView):
+    """
+    Approve a resolved ticket from AMS (Asset Management System).
+    
+    This endpoint is for system-to-system communication only.
+    No authentication or CORS headers required.
+    
+    When AMS executes an action on a resolved ticket, it calls this endpoint
+    to mark the task as 'ams_executed' in TTS database.
+    
+    URL: POST /api/tickets/asset/approve/
+    
+    Request Body:
+        {
+            "ticket_id": 80,           # WorkflowTicket ID
+            "ticket_number": "TKT080", # OR ticket_number (either works)
+            "ams_executed": true       # Set to true to mark as executed
+        }
+    
+    Returns:
+        {
+            "success": true,
+            "message": "Ticket approved successfully",
+            "ticket_id": 80,
+            "ticket_number": "TKT080",
+            "ams_executed": true
+        }
+    """
+    authentication_classes = []  # No authentication required - system-to-system
+    permission_classes = [AllowAny]  # Public endpoint for internal service calls
+    
+    def post(self, request):
+        ticket_id = request.data.get('ticket_id')
+        ticket_number = request.data.get('ticket_number')
+        ams_executed = request.data.get('ams_executed', True)
+        
+        if not ticket_id and not ticket_number:
+            return Response(
+                {'error': 'Either ticket_id or ticket_number is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Find the ticket
+        try:
+            if ticket_id:
+                ticket = WorkflowTicket.objects.get(id=ticket_id)
+            else:
+                ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
+        except WorkflowTicket.DoesNotExist:
+            return Response(
+                {'error': f'Ticket not found: {ticket_id or ticket_number}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Find and update the associated task
+        try:
+            task = Task.objects.filter(ticket_id=ticket).first()
+            if task:
+                task.ams_executed = ams_executed
+                task.save(update_fields=['ams_executed', 'updated_at'])
+                
+                logger.info(f"Task {task.task_id} for ticket {ticket.ticket_number} marked as ams_executed={ams_executed}")
+                
+                return Response({
+                    'success': True,
+                    'message': 'Ticket approved successfully',
+                    'ticket_id': ticket.id,
+                    'ticket_number': ticket.ticket_number,
+                    'task_id': task.task_id,
+                    'ams_executed': ams_executed
+                })
+            else:
+                return Response(
+                    {'error': f'No task found for ticket: {ticket.ticket_number}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
+            logger.error(f"Error approving ticket {ticket.ticket_number}: {str(e)}")
+            return Response(
+                {'error': f'Failed to approve ticket: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class BulkApproveResolvedTicketsView(APIView):
+    """
+    Bulk approve multiple resolved tickets from AMS.
+    
+    This endpoint is for system-to-system communication only.
+    No authentication or CORS headers required.
+    
+    URL: POST /api/tickets/asset/approve/bulk/
+    
+    Request Body:
+        {
+            "ticket_ids": [80, 81, 82],        # List of WorkflowTicket IDs
+            "ams_executed": true               # Set to true to mark as executed
+        }
+    OR
+        {
+            "ticket_numbers": ["TKT080", "TKT081"],  # List of ticket numbers
+            "ams_executed": true
+        }
+    
+    Returns:
+        {
+            "success": true,
+            "message": "3 tickets approved successfully",
+            "approved": [{"ticket_id": 80, "ticket_number": "TKT080", "task_id": 1}],
+            "failed": []
+        }
+    """
+    authentication_classes = []  # No authentication required - system-to-system
+    permission_classes = [AllowAny]  # Public endpoint for internal service calls
+    
+    def post(self, request):
+        ticket_ids = request.data.get('ticket_ids', [])
+        ticket_numbers = request.data.get('ticket_numbers', [])
+        ams_executed = request.data.get('ams_executed', True)
+        
+        if not ticket_ids and not ticket_numbers:
+            return Response(
+                {'error': 'Either ticket_ids or ticket_numbers is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        approved = []
+        failed = []
+        
+        # Process by IDs
+        for tid in ticket_ids:
+            try:
+                ticket = WorkflowTicket.objects.get(id=tid)
+                task = Task.objects.filter(ticket_id=ticket).first()
+                if task:
+                    task.ams_executed = ams_executed
+                    task.save(update_fields=['ams_executed', 'updated_at'])
+                    approved.append({
+                        'ticket_id': ticket.id,
+                        'ticket_number': ticket.ticket_number,
+                        'task_id': task.task_id
+                    })
+                else:
+                    failed.append({'ticket_id': tid, 'error': 'No task found'})
+            except WorkflowTicket.DoesNotExist:
+                failed.append({'ticket_id': tid, 'error': 'Ticket not found'})
+            except Exception as e:
+                failed.append({'ticket_id': tid, 'error': str(e)})
+        
+        # Process by ticket numbers
+        for tnum in ticket_numbers:
+            try:
+                ticket = WorkflowTicket.objects.get(ticket_number=tnum)
+                task = Task.objects.filter(ticket_id=ticket).first()
+                if task:
+                    task.ams_executed = ams_executed
+                    task.save(update_fields=['ams_executed', 'updated_at'])
+                    approved.append({
+                        'ticket_id': ticket.id,
+                        'ticket_number': ticket.ticket_number,
+                        'task_id': task.task_id
+                    })
+                else:
+                    failed.append({'ticket_number': tnum, 'error': 'No task found'})
+            except WorkflowTicket.DoesNotExist:
+                failed.append({'ticket_number': tnum, 'error': 'Ticket not found'})
+            except Exception as e:
+                failed.append({'ticket_number': tnum, 'error': str(e)})
+        
+        return Response({
+            'success': len(approved) > 0,
+            'message': f'{len(approved)} tickets approved successfully',
+            'approved': approved,
+            'failed': failed
         })

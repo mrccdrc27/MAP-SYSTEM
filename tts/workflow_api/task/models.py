@@ -70,6 +70,10 @@ class Task(models.Model):
     fetched_at = models.DateTimeField(null=True, blank=True)
     target_resolution = models.DateTimeField(null=True, blank=True, help_text="Target date and time for task resolution")
     resolution_time = models.DateTimeField(null=True, blank=True, help_text="Actual date and time when the task was resolved")
+    ams_executed = models.BooleanField(
+        default=False,
+        help_text="Indicates if AMS (Asset Management System) has processed/approved this task"
+    )
 
     def get_assigned_user_ids(self):
         """Get list of user IDs assigned to this task"""

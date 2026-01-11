@@ -243,7 +243,8 @@ const CoordinatorAdminNavBar = () => {
     // Redirect to main app landing (clear cookies/localStorage above first)
     try {
       // Use a hard redirect to the frontend auth landing page
-      window.location.href = 'http://localhost:3001/';
+      const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
+      window.location.href = `${authFrontendUrl}/`;
     } catch (e) {
       // Fallback to SPA route if redirect is blocked
       try {
@@ -465,7 +466,7 @@ const CoordinatorAdminNavBar = () => {
               <div className={styles['mobile-profile-actions']}>
                 <button 
                   className={styles['mobile-settings-btn']}
-                  onClick={() => window.location.href = 'http://localhost:3001/profile'}
+                  onClick={() => { const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001'; window.location.href = `${authFrontendUrl}/profile`; }}
                 >
                   Settings
                 </button>
@@ -581,7 +582,7 @@ const CoordinatorAdminNavBar = () => {
                 </div>
               </div>
               <div className={styles['profile-menu']}>
-                <button onClick={() => window.location.href = 'http://localhost:3001/profile'}>Settings</button>
+                <button onClick={() => { const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001'; window.location.href = `${authFrontendUrl}/profile`; }}>Settings</button>
                 <button className={styles['logout-btn']} onClick={handleLogout}>Log Out</button>
               </div>
             </div>
