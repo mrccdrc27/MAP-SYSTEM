@@ -2,10 +2,10 @@
 import axios from 'axios';
 import { getAccessToken } from './TokenUtils';
 
-// BMS Budget Service API URL (not auth service)
 const budgetApi = axios.create({ 
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api', 
-  withCredentials: true, 
+  // Changed: Disable withCredentials to rely solely on Bearer token for cross-domain stability
+  withCredentials: false, 
 });
 
 // Add interceptor to include JWT token in requests

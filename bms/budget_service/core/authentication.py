@@ -180,8 +180,13 @@ class JWTCookieAuthentication(BaseAuthentication):
         
         # If not in cookies, try Authorization header (Bearer token)
         if not token:
-            auth_header = request.headers.get('Authorization', '')
-            if auth_header.startswith('Bearer '):
+            auth_header = request.headers.get('Authorization')
+            
+            # Fallback: Check META for HTTP_AUTHORIZATION (common in some WSGI envs)
+            if not auth_header:
+                auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+                
+            if auth_header and auth_header.startswith('Bearer '):
                 token = auth_header[7:]  # Remove 'Bearer ' prefix
         
         if not token:

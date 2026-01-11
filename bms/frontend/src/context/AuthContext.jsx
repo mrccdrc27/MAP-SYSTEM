@@ -246,7 +246,7 @@ const CentralAuthProvider = ({ children }) => {
 
         // Verify BMS Access using the decoded token data
         if (!hasAnySystemRole(decodedUser, "bms")) {
-          console.error("[Auth] No BMS Access after login");
+          console.error("[Auth] No BMS Access after login. User roles:", decodedUser?.roles);
           return { success: false, error: "No BMS Access." };
         }
 
