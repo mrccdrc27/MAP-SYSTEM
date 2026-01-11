@@ -443,7 +443,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
                   <div className={styles.userInfo}>
                     <div className={styles.userName}>{ticketOwner.user_full_name}</div>
                     <div className={styles.userMeta}>
-                      {ticketOwner.role || 'Ticket Coordinator'}<br />
+                      {ticketOwner.department || 'Ticket Coordinator'}<br />
                       Date Appointed: {ticketOwner.assigned_at ? new Date(ticketOwner.assigned_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                     </div>
                   </div>

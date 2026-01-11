@@ -9,6 +9,13 @@ STATUS_CHOICES = [
     ("initialized", "Initialized"),
 ]
 
+# End logic choices - determines which external system handles final resolution
+END_LOGIC_CHOICES = [
+    ("none", "None"),  # Default - normal workflow resolution
+    ("ams", "AMS"),    # Asset Management System handles final resolution
+    ("bms", "BMS"),    # Budget Management System handles final resolution
+]
+
 
 class Category(models.Model):
     category_id = models.AutoField(primary_key=True, unique=True)
@@ -38,6 +45,14 @@ class Workflows(models.Model):
 
     is_published = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="draft")
+
+    # End logic - determines which external system handles final resolution
+    end_logic = models.CharField(
+        max_length=16,
+        choices=END_LOGIC_CHOICES,
+        default="none",
+        help_text="External system that handles final resolution. 'none' for normal workflow completion."
+    )
 
     # ✅ SLA per priority
     low_sla = models.DurationField(null=True, blank=True, help_text="SLA for low priority")

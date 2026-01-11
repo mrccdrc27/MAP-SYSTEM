@@ -241,4 +241,6 @@ CELERY_TASK_ROUTES = {
     'tickets.tasks.receive_ticket': {'queue': 'TICKET_TASKS_PRODUCTION'},
     # Route ticket status updates from TTS
     'send_ticket_status': {'queue': 'ticket_status-default'},
+    # Route ticket owner updates from TTS
+    'update_ticket_owner': {'queue': 'ticket_status-default'},
 }

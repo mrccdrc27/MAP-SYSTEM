@@ -218,6 +218,77 @@ class TaskTransitionView(CreateAPIView):
             
             logger.info(f"Finalize action detected on end step {current_step.name}")
             
+            # Check if workflow has end_logic set (ams/bms) - if so, don't resolve normally
+            workflow_end_logic = task.workflow_id.end_logic if task.workflow_id else 'none'
+            
+            if workflow_end_logic in ['ams', 'bms']:
+                # End logic is set - mark as 'pending_external' instead of resolved
+                logger.info(f"End logic '{workflow_end_logic}' detected - deferring resolution to external service")
+                
+                from task.models import TaskItemHistory
+                TaskItemHistory.objects.create(
+                    task_item=user_assignment,
+                    status='resolved'  # User's part is done
+                )
+                
+                # Update user assignment fields
+                user_assignment.acted_on = timezone.now()
+                user_assignment.assigned_on_step = current_step
+                user_assignment.notes = notes
+                user_assignment.save()
+                logger.info(f"User {current_user_id} marked as resolved on final step")
+                
+                # Mark task as 'pending_external' - NOT completed yet
+                task.status = 'pending_external'
+                task.save()
+                
+                logger.info(f"Task {task_id} awaiting external resolution from {workflow_end_logic.upper()}")
+                
+                # Update local WorkflowTicket status to 'Pending External'
+                try:
+                    if hasattr(task.ticket_id, 'ticket_data'):
+                        task.ticket_id.ticket_data['status'] = 'Pending External'
+                        task.ticket_id.save()
+                        logger.info(f"Updated local ticket {task.ticket_id.ticket_number} status to 'Pending External'")
+                except Exception as e:
+                    logger.error(f"Failed to update local ticket status: {str(e)}")
+                
+                # Sync 'Pending External' status to HDTS
+                try:
+                    from celery import current_app
+                    ticket_number = task.ticket_id.ticket_number if hasattr(task.ticket_id, 'ticket_number') else None
+                    if ticket_number:
+                        current_app.send_task(
+                            'send_ticket_status',
+                            args=[ticket_number, 'Pending External'],
+                            queue='ticket_status-default'
+                        )
+                        logger.info(f"Sent status update to HDTS for ticket {ticket_number}: Pending External")
+                except Exception as e:
+                    logger.error(f"Failed to sync status to HDTS: {str(e)}")
+                
+                # Return response indicating external resolution is pending
+                serializer = TaskSerializer(task)
+                
+                return Response({
+                    'status': 'success',
+                    'message': f'Task moved to pending external resolution by {workflow_end_logic.upper()}',
+                    'task_id': task_id,
+                    'workflow_status': 'pending_external',
+                    'end_logic': workflow_end_logic,
+                    'current_user_id': current_user_id,
+                    'user_status': 'acted',
+                    'acted_on_step': {
+                        'step_id': current_step.step_id,
+                        'name': current_step.name
+                    },
+                    'transition_id': None,
+                    'is_finalize_action': True,
+                    'awaiting_external_resolution': True,
+                    'task_details': serializer.data,
+                }, status=status.HTTP_200_OK)
+            
+            # Normal finalize (no end_logic or end_logic='none')
             # Create history record for 'resolved' status
             from task.models import TaskItemHistory
             TaskItemHistory.objects.create(
@@ -308,6 +379,77 @@ class TaskTransitionView(CreateAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            # Check if workflow has end_logic set (ams/bms) - if so, don't resolve normally
+            workflow_end_logic = task.workflow_id.end_logic if task.workflow_id else 'none'
+            
+            if workflow_end_logic in ['ams', 'bms']:
+                # End logic is set - mark as 'pending_external' instead of resolved
+                logger.info(f"End logic '{workflow_end_logic}' detected on terminal transition - deferring resolution to external service")
+                
+                from task.models import TaskItemHistory
+                TaskItemHistory.objects.create(
+                    task_item=user_assignment,
+                    status='resolved'  # User's part is done
+                )
+                
+                # Update user assignment fields
+                user_assignment.acted_on = timezone.now()
+                user_assignment.assigned_on_step = task.current_step
+                user_assignment.notes = notes
+                user_assignment.save()
+                logger.info(f"User {current_user_id} marked as resolved")
+                
+                # Mark task as 'pending_external' - NOT completed yet
+                task.status = 'pending_external'
+                task.save()
+                
+                logger.info(f"Task {task_id} awaiting external resolution from {workflow_end_logic.upper()}")
+                
+                # Update local WorkflowTicket status to 'Pending External'
+                try:
+                    if hasattr(task.ticket_id, 'ticket_data'):
+                        task.ticket_id.ticket_data['status'] = 'Pending External'
+                        task.ticket_id.save()
+                        logger.info(f"Updated local ticket {task.ticket_id.ticket_number} status to 'Pending External'")
+                except Exception as e:
+                    logger.error(f"Failed to update local ticket status: {str(e)}")
+                
+                # Sync 'Pending External' status to HDTS
+                try:
+                    from celery import current_app
+                    ticket_number = task.ticket_id.ticket_number if hasattr(task.ticket_id, 'ticket_number') else None
+                    if ticket_number:
+                        current_app.send_task(
+                            'send_ticket_status',
+                            args=[ticket_number, 'Pending External'],
+                            queue='ticket_status-default'
+                        )
+                        logger.info(f"Sent status update to HDTS for ticket {ticket_number}: Pending External")
+                except Exception as e:
+                    logger.error(f"Failed to sync status to HDTS: {str(e)}")
+                
+                # Return response indicating external resolution is pending
+                serializer = TaskSerializer(task)
+                
+                return Response({
+                    'status': 'success',
+                    'message': f'Task moved to pending external resolution by {workflow_end_logic.upper()}',
+                    'task_id': task_id,
+                    'workflow_status': 'pending_external',
+                    'end_logic': workflow_end_logic,
+                    'current_user_id': current_user_id,
+                    'user_status': 'acted',
+                    'acted_on_step': {
+                        'step_id': task.current_step.step_id,
+                        'name': task.current_step.name
+                    },
+                    'transition_id': transition_id,
+                    'is_terminal': True,
+                    'awaiting_external_resolution': True,
+                    'task_details': serializer.data,
+                }, status=status.HTTP_200_OK)
+            
+            # Normal terminal transition (no end_logic or end_logic='none')
             # Create history record for 'resolved' status
             from task.models import TaskItemHistory
             TaskItemHistory.objects.create(

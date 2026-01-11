@@ -21,6 +21,23 @@ def update_ticket_status_from_queue(ticket_number, new_status):
     except Ticket.DoesNotExist:
         print(f"Ticket with ticket_number {ticket_number} does not exist")
 
+
+@shared_task(name='update_ticket_owner')
+def update_ticket_owner_from_queue(ticket_number, owner_id):
+    """
+    Update the ticket_owner_id field for a ticket.
+    Called when TTS assigns a Ticket Coordinator as the owner.
+    """
+    from .models import Ticket
+    try:
+        ticket = Ticket.objects.get(ticket_number=ticket_number)
+        ticket.ticket_owner_id = owner_id
+        ticket.save(update_fields=['ticket_owner_id'])
+        print(f"Ticket {ticket_number} owner updated to user {owner_id}")
+    except Ticket.DoesNotExist:
+        print(f"Ticket with ticket_number {ticket_number} does not exist")
+
+
 @shared_task(name='auto_close_resolved_tickets')
 def auto_close_resolved_tickets():
     """

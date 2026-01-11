@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Q, Count
 from django.utils import timezone
 from .models import WorkflowTicket
@@ -8,6 +9,7 @@ from .serializers import *
 import logging
 
 from rest_framework.views import APIView
+from authentication import JWTCookieAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +180,10 @@ class WorkflowTicketViewSet(viewsets.ModelViewSet):
 
 
 class ManualTaskAssignmentView(APIView):
+    """Manual task assignment view - requires authentication via JWT cookie"""
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, ticket_id, workflow_id):
         try:
             ticket = WorkflowTicket.objects.get(id=ticket_id)
@@ -194,72 +200,10 @@ class ManualTaskAssignmentView(APIView):
 
 
 class TaskAssignmentView(APIView):
-    def post(self, request):
-        serializer = TaskAssignmentSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        ticket_id = serializer.validated_data['ticket_id']
-        workflow_id = serializer.validated_data['workflow_id']
-
-        try:
-            ticket = WorkflowTicket.objects.get(id=ticket_id)
-        except WorkflowTicket.DoesNotExist:
-            return Response({"detail": f"Ticket not found: {ticket_id}"}, status=404)
-
-        try:
-            workflow = Workflows.objects.get(workflow_id=workflow_id)
-        except Workflows.DoesNotExist:
-            return Response({"detail": f"Workflow not found: {workflow_id}"}, status=404)
-
-        success = manually_assign_task(ticket, workflow)
-
-        if success:
-            return Response({"detail": "Task manually assigned."}, status=200)
-        else:
-            return Response({"detail": "Task could not be assigned."}, status=400)
-        if serializer.is_valid():
-            result = serializer.save()
-            return Response({
-                "message": "Task assigned successfully.",
-                "data": result
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    """Task assignment view - requires authentication via JWT cookie"""
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
     
-
-
-# tickets/views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from tickets.models import WorkflowTicket
-from workflow.models import Workflows
-from tickets.utils import manually_assign_task
-import logging
-
-class ManualTaskAssignmentView(APIView):
-    # WorkflowTicket.DoesNotExist
-    def post(self, request, ticket_id, workflow_id,):
-        try:
-            # Try ticket_id as ticket_number first, then search ticket_data
-            try:
-                ticket = WorkflowTicket.objects.get(ticket_number=ticket_id)
-            except WorkflowTicket.DoesNotExist:
-                ticket = WorkflowTicket.objects.get(ticket_data__ticket_id=ticket_id)
-            
-            workflow = Workflows.objects.get(workflow_id=workflow_id)
-            logger.info(f"hello {ticket} {workflow}")
-        except (WorkflowTicket.DoesNotExist):
-            return Response({"detail": "Ticket or workflow not found."}, status=404)
-
-        success = manually_assign_task(ticket, workflow)
-        if success:
-            return Response({"detail": "Task manually assigned."}, status=200)
-        else:
-            return Response({"detail": "Task could not be assigned."}, status=400)
-
-
-class TaskAssignmentView(APIView):
     def post(self, request):
         serializer = TaskAssignmentSerializer(data=request.data)
         if not serializer.is_valid():
@@ -278,7 +222,7 @@ class TaskAssignmentView(APIView):
             return Response({"detail": f"Ticket not found: {ticket_id}"}, status=404)
 
         try:
-            workflow = Workflows.objects.get(workflow_id=workflow_id)  # or `.get(code=workflow_id)`
+            workflow = Workflows.objects.get(workflow_id=workflow_id)
         except Workflows.DoesNotExist:
             return Response({"detail": f"Workflow not found: {workflow_id}"}, status=404)
 
@@ -288,3 +232,4 @@ class TaskAssignmentView(APIView):
             return Response({"detail": "Task manually assigned."}, status=200)
         else:
             return Response({"detail": "Task could not be assigned."}, status=400)
+

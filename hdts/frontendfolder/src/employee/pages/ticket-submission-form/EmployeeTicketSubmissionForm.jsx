@@ -43,6 +43,7 @@ export default function EmployeeTicketSubmissionForm() {
     assetName: '',
     serialNumber: '',
     location: '',
+    checkOutDate: '',
     expectedReturnDate: '',
     issueType: '',
     otherIssue: '',
@@ -269,6 +270,12 @@ export default function EmployeeTicketSubmissionForm() {
         }
         break;
 
+      case 'checkOutDate':
+        if (isAssetCheckOut && !value) {
+          error = 'Check Out Date is required';
+        }
+        break;
+
       case 'expectedReturnDate':
         if (isAssetCheckOut && !value) {
           error = 'Expected Return Date is required';
@@ -346,6 +353,7 @@ export default function EmployeeTicketSubmissionForm() {
         assetName: '',
         serialNumber: '',
         location: '',
+        checkOutDate: '',
         expectedReturnDate: '',
         issueType: '',
         otherIssue: '',
@@ -369,8 +377,17 @@ export default function EmployeeTicketSubmissionForm() {
       }));
     }
 
-    // Auto-populate serial number when asset name is selected
-    if (field === 'assetName' && formData.subCategory) {
+    // Reset expected return date when check out date changes
+    if (field === 'checkOutDate') {
+      setFormData(prev => ({
+        ...prev,
+        checkOutDate: value,
+        expectedReturnDate: ''
+      }));
+    }
+
+    // Auto-populate serial number when asset name is selected (for Asset Check In with mockAssets)
+    if (field === 'assetName' && formData.subCategory && formData.category === 'Asset Check In') {
       const selectedAsset = mockAssets[formData.subCategory]?.find(
         asset => asset.name === value
       );
@@ -450,7 +467,7 @@ export default function EmployeeTicketSubmissionForm() {
     }
 
     if (isAssetCheckOut) {
-      fieldsToValidate.push('expectedReturnDate');
+      fieldsToValidate.push('checkOutDate', 'expectedReturnDate');
     }
 
     if (isBudgetProposal) {
@@ -526,6 +543,7 @@ export default function EmployeeTicketSubmissionForm() {
       }
 
       if (isAssetCheckOut) {
+        dynamicData.checkOutDate = formData.checkOutDate;
         dynamicData.expectedReturnDate = formData.expectedReturnDate;
       }
 
@@ -585,6 +603,7 @@ export default function EmployeeTicketSubmissionForm() {
       assetName: '',
       serialNumber: '',
       location: '',
+      checkOutDate: '',
       expectedReturnDate: '',
       issueType: '',
       otherIssue: '',
@@ -698,6 +717,13 @@ export default function EmployeeTicketSubmissionForm() {
               onBlur={handleBlur}
               errors={errors}
               FormField={FormField}
+              onAssetSelect={(asset) => {
+                // Update serial number when asset is selected from AMS API
+                setFormData(prev => ({
+                  ...prev,
+                  serialNumber: asset.serial_number || ''
+                }));
+              }}
             />
           )}
 

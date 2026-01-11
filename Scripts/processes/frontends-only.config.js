@@ -65,7 +65,8 @@ module.exports = {
         VITE_NOTIFICATION_WS: "ws://165.22.247.50:8080/notification",
         VITE_MESSAGING_API: "http://165.22.247.50:8080/messaging",
         VITE_MESSAGING_WS: "ws://165.22.247.50:8080/messaging/ws",
-        VITE_HELPDESK_SERVICE_URL: "http://165.22.247.50:8080/helpdesk"
+        VITE_HELPDESK_SERVICE_URL: "http://165.22.247.50:8080/helpdesk",
+        VITE_USER_SERVER_API: "http://165.22.247.50:8080/auth"
       }
     },
 

@@ -3,7 +3,7 @@ import Notification from '../../../shared/notification/NotificationContent';
 import { HiOutlineDocumentAdd } from 'react-icons/hi';
 import { MdUpdate } from 'react-icons/md';
 
-const initialNotifications = [
+export const initialNotifications = [
   {
     id: 'c1',
     icon: <HiOutlineDocumentAdd size={20} />,
@@ -26,6 +26,9 @@ const initialNotifications = [
     time: '3 hours ago',
   },
 ];
+
+// Export the initial count for navbar to use
+export const INITIAL_NOTIFICATION_COUNT = initialNotifications.length;
 
 const CoordinatorAdminNotifications = ({ show, onClose, onCountChange }) => {
   const [notifications, setNotifications] = useState(initialNotifications);

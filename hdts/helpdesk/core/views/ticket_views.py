@@ -155,7 +155,7 @@ class TicketViewSet(viewsets.ModelViewSet):
                 plain_data['dynamic_data'] = parsed_dynamic
 
             date_keys = [
-                'expected_return_date', 'performance_start_date',
+                'check_out_date', 'expected_return_date', 'performance_start_date',
                 'performance_end_date', 'scheduled_date'
             ]
             for dk in date_keys:
@@ -511,6 +511,7 @@ def get_ticket_detail(request, ticket_id):
             'asset_name': ticket.asset_name,
             'serial_number': ticket.serial_number,
             'location': ticket.location,
+            'check_out_date': ticket.check_out_date,
             'expected_return_date': ticket.expected_return_date,
             'issue_type': ticket.issue_type,
             'other_issue': ticket.other_issue,
@@ -730,6 +731,7 @@ def get_ticket_by_number(request, ticket_number):
             'asset_name': ticket.asset_name,
             'serial_number': ticket.serial_number,
             'location': ticket.location,
+            'check_out_date': ticket.check_out_date,
             'expected_return_date': ticket.expected_return_date,
             'issue_type': ticket.issue_type,
             'other_issue': ticket.other_issue,

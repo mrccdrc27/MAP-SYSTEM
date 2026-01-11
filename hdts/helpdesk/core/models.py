@@ -273,6 +273,7 @@ class Ticket(models.Model):
     asset_name = models.CharField(max_length=255, blank=True, null=True)
     serial_number = models.CharField(max_length=255, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
+    check_out_date = models.DateField(blank=True, null=True)
     expected_return_date = models.DateField(blank=True, null=True)
     issue_type = models.CharField(max_length=100, blank=True, null=True)
     other_issue = models.TextField(blank=True, null=True)
@@ -375,7 +376,39 @@ def send_ticket_to_workflow(sender, instance, created, **kwargs):
                     'department': instance.employee.department,
                 }
             elif instance.employee_cookie_id:
+                # Fallback to HDTSUser or ExternalEmployee when employee is null but cookie_id exists
                 ticket_data['employee_cookie_id'] = instance.employee_cookie_id
+                try:
+                    # First try HDTSUser (synced user+role data)
+                    hdts_user = HDTSUser.objects.filter(hdts_user_id=instance.employee_cookie_id).first()
+                    if hdts_user:
+                        ticket_data['employee'] = {
+                            'first_name': hdts_user.first_name,
+                            'last_name': hdts_user.last_name,
+                            'email': hdts_user.email,
+                            'company_id': hdts_user.company_id,
+                            'department': hdts_user.department,
+                        }
+                        ticket_data['employee_email'] = hdts_user.email
+                        ticket_data['employee_company_id'] = hdts_user.company_id
+                    else:
+                        # Fallback to ExternalEmployee (try both external_user_id and external_employee_id)
+                        ext_emp = ExternalEmployee.objects.filter(external_user_id=instance.employee_cookie_id).first()
+                        if not ext_emp:
+                            ext_emp = ExternalEmployee.objects.filter(external_employee_id=instance.employee_cookie_id).first()
+                        if ext_emp:
+                            ticket_data['employee'] = {
+                                'first_name': ext_emp.first_name,
+                                'last_name': ext_emp.last_name,
+                                'email': ext_emp.email,
+                                'company_id': ext_emp.company_id,
+                                'department': ext_emp.department,
+                            }
+                            ticket_data['employee_email'] = ext_emp.email
+                            ticket_data['employee_company_id'] = ext_emp.company_id
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Could not fetch HDTSUser/ExternalEmployee for cookie_id {instance.employee_cookie_id}: {e}")
             
             # Add attachment info (just metadata, not file contents)
             attachments = []
@@ -473,6 +506,7 @@ class KnowledgeArticle(models.Model):
     category = models.CharField(max_length=100, choices=ARTICLE_CATEGORY_CHOICES)
     visibility = models.CharField(max_length=50, choices=VISIBILITY_CHOICES)
     description = models.TextField()
+    tags = models.JSONField(default=list, blank=True, help_text='List of tags for the article')
     is_archived = models.BooleanField(default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

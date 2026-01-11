@@ -34,6 +34,7 @@ class APIRootSerializer(serializers.Serializer):
     steps = serializers.URLField()
 
     analytics = serializers.URLField()
+    external = serializers.URLField()
     schema = serializers.URLField()
     docs = serializers.URLField()
     admin = serializers.URLField()
@@ -58,6 +59,7 @@ def api_root(request, format=None):
         'steps': request.build_absolute_uri('steps/'),
 
         'analytics': request.build_absolute_uri('analytics/'),
+        'external': request.build_absolute_uri('external/'),
         'schema': reverse('schema', request=request, format=format),
         'docs': reverse('swagger-ui', request=request, format=format),
         'admin': reverse('admin:index', request=request, format=format),
@@ -80,6 +82,9 @@ urlpatterns = [
 
     path('audit/', include('audit.urls')),
     path('analytics/', include('reporting.urls')),
+    
+    # External service endpoints (AMS/BMS) - public, no auth
+    path('external/', include('workflow.external_urls')),
 
     # Documentation
     path('schema/', SpectacularAPIView.as_view(), name='schema'),

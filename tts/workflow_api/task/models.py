@@ -6,6 +6,7 @@ TASK_STATUS_CHOICES = [
     ('pending', 'Pending'),
     ('in progress', 'In Progress'),
     ('completed', 'Completed'),
+    ('pending_external', 'Pending External'),  # Awaiting external system (AMS/BMS) resolution
     ('on_hold', 'On Hold'),
     ('cancelled', 'Cancelled'),
 ]

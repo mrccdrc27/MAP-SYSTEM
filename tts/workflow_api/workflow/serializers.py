@@ -127,6 +127,7 @@ class WorkflowBasicSerializer(serializers.ModelSerializer):
             'department',
             'is_published',
             'status',
+            'end_logic',
             'low_sla',
             'medium_sla',
             'high_sla',
@@ -146,6 +147,7 @@ class CreateWorkflowSerializer(serializers.ModelSerializer):
             'category',
             'sub_category',
             'department',
+            'end_logic',
             'low_sla',
             'medium_sla',
             'high_sla',
@@ -160,6 +162,7 @@ class UpdateWorkflowDetailsSerializer(serializers.Serializer):
     category = serializers.CharField(max_length=64, required=False)
     sub_category = serializers.CharField(max_length=64, required=False)
     department = serializers.CharField(max_length=64, required=False)
+    end_logic = serializers.ChoiceField(choices=[('none', 'None'), ('ams', 'AMS'), ('bms', 'BMS')], required=False)
     low_sla = serializers.DurationField(required=False)
     medium_sla = serializers.DurationField(required=False)
     high_sla = serializers.DurationField(required=False)
@@ -180,6 +183,7 @@ class WorkflowDetailSerializer(serializers.ModelSerializer):
             'department',
             'is_published',
             'status',
+            'end_logic',
             'low_sla',
             'medium_sla',
             'high_sla',

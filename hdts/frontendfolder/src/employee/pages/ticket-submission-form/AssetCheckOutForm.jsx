@@ -1,11 +1,10 @@
-const assetSubCategories = [
-  'Laptop',
-  'Printer',
-  'Projector',
-  'Mouse',
-  'Keyboard'
-];
+import { useState, useEffect } from 'react';
 
+// AMS API endpoints
+const AMS_CATEGORIES_URL = 'https://ams-contexts.up.railway.app/categories/names/?type=asset';
+const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app/assets/names/';
+
+// Hardcoded locations - will be replaced with API endpoint later
 const locations = [
   'Main Office - 1st Floor',
   'Main Office - 2nd Floor',
@@ -16,32 +15,100 @@ const locations = [
   'Remote/Home Office'
 ];
 
-// Mock assets data - this would come from your AMS in production
-const mockAssets = {
-  'Laptop': [
-    { name: 'Dell Latitude 5420', serialNumber: 'DL-2024-001' },
-    { name: 'HP ProBook 450 G9', serialNumber: 'HP-2024-002' },
-    { name: 'Lenovo ThinkPad X1', serialNumber: 'LN-2024-003' }
-  ],
-  'Printer': [
-    { name: 'HP LaserJet Pro M404dn', serialNumber: 'PR-2024-001' },
-    { name: 'Canon imageCLASS MF445dw', serialNumber: 'PR-2024-002' }
-  ],
-  'Projector': [
-    { name: 'Epson PowerLite 2247U', serialNumber: 'PJ-2024-001' },
-    { name: 'BenQ MH535A', serialNumber: 'PJ-2024-002' }
-  ],
-  'Mouse': [
-    { name: 'Logitech MX Master 3', serialNumber: 'MS-2024-001' },
-    { name: 'Microsoft Surface Mouse', serialNumber: 'MS-2024-002' }
-  ],
-  'Keyboard': [
-    { name: 'Logitech K380', serialNumber: 'KB-2024-001' },
-    { name: 'Microsoft Ergonomic Keyboard', serialNumber: 'KB-2024-002' }
-  ]
-};
+export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField, onAssetSelect }) {
+  const [categories, setCategories] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingAssets, setLoadingAssets] = useState(false);
 
-export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField }) {
+  // Fetch categories from AMS API on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch(AMS_CATEGORIES_URL);
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        } else {
+          console.error('Failed to fetch categories:', response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Fetch assets when subCategory changes
+  useEffect(() => {
+    const fetchAssets = async () => {
+      if (!formData.subCategory) {
+        setAssets([]);
+        return;
+      }
+
+      try {
+        setLoadingAssets(true);
+        // Fetch all assets and filter by status (only deployable assets)
+        const response = await fetch(`${AMS_ASSETS_URL}?status_type=deployable`);
+        if (response.ok) {
+          const data = await response.json();
+          // Filter assets - for now we get all deployable assets
+          // In the future, we could filter by category if the API supports it
+          setAssets(data);
+        } else {
+          console.error('Failed to fetch assets:', response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+      } finally {
+        setLoadingAssets(false);
+      }
+    };
+
+    fetchAssets();
+  }, [formData.subCategory]);
+
+  // Handle asset selection - auto-populate serial number
+  const handleAssetChange = (e) => {
+    const selectedAssetName = e.target.value;
+    const selectedAsset = assets.find(asset => asset.name === selectedAssetName);
+    
+    // Call the parent onChange for assetName
+    onChange('assetName')(e);
+    
+    // Call the callback to update serial number if asset is found
+    if (selectedAsset && onAssetSelect) {
+      onAssetSelect(selectedAsset);
+    }
+  };
+
+  // Calculate minimum date for expected return date based on check out date
+  const getMinExpectedReturnDate = () => {
+    if (formData.checkOutDate) {
+      return formData.checkOutDate;
+    }
+    // Default to today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Get today's date for minimum check out date
+  const getTodayDate = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   return (
     <>
       {/* Sub-Category (Type of Product) */}
@@ -55,10 +122,15 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
             value={formData.subCategory}
             onChange={onChange('subCategory')}
             onBlur={onBlur('subCategory')}
+            disabled={loadingCategories}
           >
-            <option value="">Select Product Type</option>
-            {assetSubCategories.map(type => (
-              <option key={type} value={type}>{type}</option>
+            <option value="">
+              {loadingCategories ? 'Loading categories...' : 'Select Product Type'}
+            </option>
+            {categories.map(category => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
             ))}
           </select>
         )}
@@ -72,18 +144,19 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         error={errors.assetName}
         render={() => (
           <select
-            disabled={!formData.subCategory}
+            disabled={!formData.subCategory || loadingAssets}
             value={formData.assetName}
-            onChange={onChange('assetName')}
+            onChange={handleAssetChange}
             onBlur={onBlur('assetName')}
           >
-            <option value="">Select Asset</option>
-            {formData.subCategory &&
-              mockAssets[formData.subCategory]?.map(asset => (
-                <option key={asset.name} value={asset.name}>
-                  {asset.name}
-                </option>
-              ))}
+            <option value="">
+              {loadingAssets ? 'Loading assets...' : 'Select Asset'}
+            </option>
+            {assets.map(asset => (
+              <option key={asset.id} value={asset.name}>
+                {asset.name}
+              </option>
+            ))}
           </select>
         )}
       />
@@ -123,6 +196,23 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         )}
       />
 
+      {/* Check Out Date */}
+      <FormField
+        id="checkOutDate"
+        label="Check Out Date"
+        required
+        error={errors.checkOutDate}
+        render={() => (
+          <input
+            type="date"
+            value={formData.checkOutDate || ''}
+            onChange={onChange('checkOutDate')}
+            onBlur={onBlur('checkOutDate')}
+            min={getTodayDate()}
+          />
+        )}
+      />
+
       {/* Expected Return Date */}
       <FormField
         id="expectedReturnDate"
@@ -135,13 +225,11 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
             value={formData.expectedReturnDate}
             onChange={onChange('expectedReturnDate')}
             onBlur={onBlur('expectedReturnDate')}
-            min={new Date().toISOString().split('T')[0]}
+            min={getMinExpectedReturnDate()}
+            disabled={!formData.checkOutDate}
           />
         )}
       />
     </>
   );
 }
-
-// Export the mock assets for use in parent component
-export { mockAssets };

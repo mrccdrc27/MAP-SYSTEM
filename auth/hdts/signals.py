@@ -82,6 +82,7 @@ def _prepare_hdts_user_for_workflow(user, hdts_role, hdts_user_system_role, acti
         "user_id": user.id,
         "user_email": user.email,
         "user_full_name": user.get_full_name(),
+        "department": user.department or '',
         "system": "hdts",  # Keep as hdts - workflow_api knows this is an HDTS user
         "role_id": hdts_role.id,
         "role_name": hdts_role.name,

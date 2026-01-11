@@ -196,6 +196,7 @@ class TicketSerializer(serializers.ModelSerializer):
     asset_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     serial_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     location = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    check_out_date = serializers.DateField(required=False, allow_null=True)
     expected_return_date = serializers.DateField(required=False, allow_null=True)
     issue_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     other_issue = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -211,7 +212,7 @@ class TicketSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'ticket_number', 'subject', 'category', 'sub_category',
             'description', 'scheduled_date', 'priority', 'department',
-                'asset_name', 'serial_number', 'location', 'expected_return_date',
+                'asset_name', 'serial_number', 'location', 'check_out_date', 'expected_return_date',
                 'issue_type', 'other_issue', 'performance_start_date', 'performance_end_date',
                 'approved_by', 'cost_items', 'requested_budget', 'fiscal_year', 'department_input',
                 'dynamic_data', 'status', 'submit_date', 'update_date', 'current_agent', 'attachments',
@@ -234,6 +235,7 @@ class TicketSerializer(serializers.ModelSerializer):
                 ('assetName', 'asset_name'),
                 ('serialNumber', 'serial_number'),
                 ('location', 'location'),
+                ('checkOutDate', 'check_out_date'),
                 ('expectedReturnDate', 'expected_return_date'),
                 ('issueType', 'issue_type'),
                 ('otherIssue', 'other_issue'),
@@ -363,7 +365,7 @@ class KnowledgeArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = KnowledgeArticle
         fields = [
-            'id', 'subject', 'category', 'visibility', 'description',
+            'id', 'subject', 'category', 'visibility', 'description', 'tags',
             'is_archived', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'versions'
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']

@@ -676,6 +676,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                 'user_id': task.ticket_owner.user_id,
                 'user_full_name': task.ticket_owner.user_full_name,
                 'role': task.ticket_owner.role_id.name if task.ticket_owner.role_id else None,
+                'department': task.ticket_owner.department,
                 'assigned_at': task.created_at.isoformat() if task.created_at else None,
             }
         

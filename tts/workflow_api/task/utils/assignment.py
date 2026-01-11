@@ -395,6 +395,20 @@ def assign_ticket_owner(task, hdts_owner_id=None):
         
         logger.info(f"👑 Ticket owner assigned: User {selected_owner.user_id} ({selected_owner.user_full_name}) for Task {task.task_id}")
         
+        # Sync ticket owner to HDTS
+        ticket_number = task.ticket_id.ticket_number if hasattr(task, 'ticket_id') and hasattr(task.ticket_id, 'ticket_number') else None
+        if ticket_number:
+            try:
+                from celery import current_app
+                current_app.send_task(
+                    'update_ticket_owner',
+                    args=[ticket_number, selected_owner.user_id],
+                    queue='ticket_status-default'
+                )
+                logger.info(f"📤 Ticket owner sync sent to HDTS: {ticket_number} → User {selected_owner.user_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to sync ticket owner to HDTS: {e}")
+        
         # Send notification to ticket owner
         # Note: Ticket owners don't have a TaskItem, so we use a special format: task_<task_id>_owner
         task_title = str(task.ticket_id.ticket_number) if hasattr(task, 'ticket_id') else f"Task {task.task_id}"

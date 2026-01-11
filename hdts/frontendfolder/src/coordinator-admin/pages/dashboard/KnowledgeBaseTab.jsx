@@ -285,26 +285,15 @@ const KnowledgeBaseTab = ({ chartRange, setChartRange }) => {
     { label: 'Categories', count: (kbDataState.categories || []).length }
   ] : [{ label: 'Articles', count: 0 }, { label: 'Categories', count: 0 }];
 
+  // Initialize with empty data - no mock data
   const kbData = kbDataState || {
     tableData: [],
-    pieData: [
-      { name: 'Helpful', value: 85, fill: '#3B82F6' },
-      { name: 'Neutral', value: 23, fill: '#F59E0B' },
-      { name: 'Not Helpful', value: 12, fill: '#EF4444' }
-    ],
-    lineData: [
-      { month: 'Jun', dataset1: 45, dataset2: 8 },
-      { month: 'Jul', dataset1: 52, dataset2: 12 },
-      { month: 'Aug', dataset1: 38, dataset2: 5 }
-    ]
+    pieData: [],
+    lineData: []
   };
 
-  const activityTimeline = [
-    { time: "09:30 AM", action: "Article 'Password Reset' received feedback", type: "feedback" },
-    { time: "11:15 AM", action: "5 new positive feedbacks on VPN guide", type: "feedback" },
-    { time: "02:45 PM", action: "Article 'Two-Factor Auth' updated", type: "update" },
-    { time: "04:20 PM", action: "3 negative feedbacks on troubleshooting guide", type: "feedback" },
-  ];
+  // Empty activity timeline - no mock data
+  const activityTimeline = [];
 
   useEffect(() => {
     let mounted = true;
@@ -348,7 +337,8 @@ const KnowledgeBaseTab = ({ chartRange, setChartRange }) => {
           dislikes: (a.dislikes != null) ? a.dislikes : 0,
         }));
 
-        setKbDataState({ articles, categories, tableData, pieData: kbData.pieData, lineData: kbData.lineData });
+        // No mock data - pieData and lineData will be empty until real feedback API is integrated
+        setKbDataState({ articles, categories, tableData, pieData: [], lineData: [] });
       })
       .catch((e) => console.warn('[KB] failed to fetch articles/categories', e))
       .finally(() => { if (mounted) setIsLoading(false); });

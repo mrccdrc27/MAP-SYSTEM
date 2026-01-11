@@ -473,6 +473,38 @@ export default function CoordinatorAdminTicketTracker() {
     };
   }, [ticketNumber, ticket, activeTab]);
 
+  // Generate logs from ticket data and add ticket owner assignment if available
+  // This useMemo must be called BEFORE the early return to maintain consistent hook order
+  const ticketLogs = useMemo(() => {
+    if (!ticket) return [];
+    const baseLogs = generateLogs(ticket);
+    const logs = [...baseLogs];
+    
+    // Add ticket owner assignment as a log entry if available
+    if (ticketOwner && ticketOwner.user_full_name) {
+      const assignedAt = ticketOwner.assigned_at 
+        ? new Date(ticketOwner.assigned_at).toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        : null;
+      
+      logs.push({
+        id: logs.length + 1,
+        user: 'System',
+        action: 'Ticket Owner Assigned',
+        timestamp: assignedAt,
+        text: `${ticketOwner.user_full_name} was appointed as Ticket Owner${assignedAt ? ` on ${assignedAt}` : ''}.`,
+        highlight: true,
+      });
+    }
+    
+    return logs;
+  }, [ticket, ticketOwner]);
+
   // If we don't yet have a ticket, always show the loading skeleton.
   // The app should wait for the backend to return the real ticket for the
   // ticket number in the URL. We intentionally do not render a "No Ticket"
@@ -540,6 +572,10 @@ export default function CoordinatorAdminTicketTracker() {
   // Dynamic data helper
   const dyn = ticket.dynamic_data || {};
 
+  // UI-friendly category: backend/storage may use 'General Request' while the form shows 'Others'
+  // Define uiCategory before it's used in additionalDetailsEntries filter
+  const uiCategory = (category === 'General Request') ? 'Others' : category;
+
   // Prepare additionalDetailsEntries similar to Employee view: when category is 'Others'
   // we want to hide schedule-like keys (schedule, scheduleRequest, scheduled_date, etc.)
   const _dynamicEntries = dyn && typeof dyn === 'object' ? Object.entries(dyn) : [];
@@ -586,8 +622,6 @@ export default function CoordinatorAdminTicketTracker() {
   // Budget proposal normalization
   const preparedByField = ticket.preparedBy || ticket.prepared_by || ticket.preparedByName || dyn.preparedBy || dyn.prepared_by || null;
   const totalBudgetField = (ticket.totalBudget ?? ticket.total_budget) ?? (dyn.totalBudget ?? dyn.total_budget ?? null);
-  // UI-friendly category: backend/storage may use 'General Request' while the form shows 'Others'
-  const uiCategory = (category === 'General Request') ? 'Others' : category;
   // Compute effective status: treat New older than 24 hours as Pending for coordinator/admin view
   const status = computeEffectiveStatus(ticket) || originalStatus;
   // Safely build a CSS class key from the status string (guard against undefined)
@@ -595,36 +629,6 @@ export default function CoordinatorAdminTicketTracker() {
   const statusSteps = getStatusSteps(status);
   const attachments = ticket.fileAttachments || ticket.attachments || ticket.files || fileUploaded;
   const formCategories = ['IT Support', 'Asset Check In', 'Asset Check Out', 'New Budget Proposal', 'Others', 'General Request'];
-  
-  // Generate logs from ticket data and add ticket owner assignment if available
-  const baseLogs = generateLogs(ticket);
-  const ticketLogs = useMemo(() => {
-    const logs = [...baseLogs];
-    
-    // Add ticket owner assignment as a log entry if available
-    if (ticketOwner && ticketOwner.user_full_name) {
-      const assignedAt = ticketOwner.assigned_at 
-        ? new Date(ticketOwner.assigned_at).toLocaleString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
-        : null;
-      
-      logs.push({
-        id: logs.length + 1,
-        user: 'System',
-        action: 'Ticket Owner Assigned',
-        timestamp: assignedAt,
-        text: `${ticketOwner.user_full_name} was appointed as Ticket Owner${assignedAt ? ` on ${assignedAt}` : ''}.`,
-        highlight: true,
-      });
-    }
-    
-    return logs;
-  }, [baseLogs, ticketOwner]);
   
   // Use external auth service to determine role
   // (hook already called earlier near the top to keep hook order stable)

@@ -163,6 +163,7 @@ def sync_user_system_role(user_system_role_data):
                 user_id=user_id,
                 defaults={
                     'user_full_name': user_system_role_data.get('user_full_name', ''),
+                    'department': user_system_role_data.get('department', ''),
                     'is_active': is_active,
                     'settings': user_system_role_data.get('settings', {}),
                 }
@@ -191,6 +192,7 @@ def sync_user_system_role(user_system_role_data):
                 user_id=user_id,
                 defaults={
                     'user_full_name': user_system_role_data.get('user_full_name', ''),
+                    'department': user_system_role_data.get('department', ''),
                     'is_active': is_active,
                     'settings': user_system_role_data.get('settings', {}),
                 }

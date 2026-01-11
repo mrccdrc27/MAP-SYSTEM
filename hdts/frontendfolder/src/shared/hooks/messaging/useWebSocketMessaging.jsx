@@ -23,7 +23,9 @@ export const useWebSocketMessaging = (ticketId, userId = 'anonymous', setMessage
     }
 
     try {
-      const wsUrl = `${WEBSOCKET_BASE}/ws/tickets/${ticketId}/`;
+      // WEBSOCKET_BASE already includes /ws suffix (e.g., ws://host:port/messaging/ws)
+      // So we only append /tickets/{ticketId}/ to avoid duplicate /ws/ws/
+      const wsUrl = `${WEBSOCKET_BASE}/tickets/${ticketId}/`;
       console.log('[WebSocket] Connecting to:', wsUrl);
       
       wsRef.current = new WebSocket(wsUrl);

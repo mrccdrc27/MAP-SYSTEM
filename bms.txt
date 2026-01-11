@@ -1,0 +1,363 @@
+
+# budget-pro-backend:
+Service ID:
+srv-d1btasp5pdvs73e7lkvg
+
+mrccdrc27 / MAP-SYSTEM
+bms/defense-brnch
+https://budget-pro.onrender.com
+
+Connection:
+Outbound IP Addresses
+Network requests from your service to the public internet will come from one of the following IP addresses or ranges.
+
+These IPs are not unique to your service or workspace. They are shared by other Render services in the same region.
+
+74.220.52.0/24
+74.220.60.0/24
+
+Repository:https://github.com/mrccdrc27/MAP-SYSTEM
+Branch: bms/defense-brnch
+Root Directory: bms/budget_service
+Build Command: pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py controlled_seeder && python manage.py generate_forecasts && python manage.py collectstatic --noinput
+Start Command: bms/budget_service/ $ gunicorn capstone.wsgi:application
+
+Custom Domains
+You can point custom domains you own to this service. See DNS configuration instructions.
+
+Add Custom Domain
+Render Subdomain = Enabled
+If enabled, your service remains reachable at its onrender.com subdomain in addition to all custom domains. Disable to serve exclusively from custom domains.
+
+
+Your service is reachable at https://budget-pro.onrender.com.
+
+budget-pro-backend env variables:
+AMS_CLIENT_API_KEY=ams-secure-key-12345
+AMS_STATUS_UPDATE_ENDPOINT_URL=http://localhost
+API_KEY_FOR_BMS_TO_CALL_DTS=key_dts_team_gave_us
+AUTH_SERVICE_URL=https://auth-service-cdln.onrender.com
+DATABASE_URL="postgresql://neondb_owner:npg_YdVb5ua8QXTf@ep-flat-rain-a1nd2r8a-pooler.ap-southeast-1.aws.neon.tech/budet-bms-backup?sslmode=require&channel_binding=require"
+DEBUG=False
+DEFAULT_FROM_EMAIL=adibentulan@gmail.com
+DJANGO_SECRET_KEY="g^-i4u72k#@x1xmf4r@$%afoft=xsati0&8o9v5sa(s-#_wz++"
+DJANGO_SUPERUSER_EMAIL=adibentulan@gmail.com
+DJANGO_SUPERUSER_PASSWORD=a4deeznuts
+DJANGO_SUPERUSER_USERNAME=bentulan
+DTS_CLIENT_API_KEY="t@=1%4-ib(ow*i2#87$l4=i%3@ak!vnwyp2l&p52^+a!f$s#^r"
+DTS_STATUS_UPDATE_ENDPOINT_URL=http://localhost
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST_PASSWORD="krlt tibx ulvs iyqy"
+EMAIL_HOST_USER=adibentulan@gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+FRONTEND_URL=https://budget-pro-static-site.onrender.com
+HDS_CLIENT_API_KEY=hds-secure-key-67890
+HDTS_STATUS_UPDATE_ENDPOINT_URL=http://localhost
+JWT_SIGNING_KEY=signing-key-1234
+RENDER_EXTERNAL_HOSTNAME=budget-pro.onrender.com
+TTS_CLIENT_API_KEY="fd8)rl#)0@_$h$6^hj8-&zx%$%$_w=ickkn!e#@nqk3r(&xs1b"
+
+# budget-pro static-site
+Service ID:
+srv-d52udcu3jp1c7388sahg
+
+mrccdrc27 / MAP-SYSTEM
+bms/defense-brnch
+https://budget-pro-static-site.onrender.com
+
+Root Directory: bms/frontend
+Build Command: npm install && npm run build
+Publish Directory: dist
+
+Custom Domains
+You can point custom domains you own to this service. See DNS configuration instructions.
+
+Add Custom Domain
+Render Subdomain = enabled
+If enabled, your service remains reachable at its onrender.com subdomain in addition to all custom domains. Disable to serve exclusively from custom domains.
+Your service is reachable at https://budget-pro-static-site.onrender.com.
+
+VITE_API_URL=https://budget-pro.onrender.com/api
+VITE_AUTH_URL=https://auth-service-cdln.onrender.com
+VITE_USE_CENTRAL_AUTH=true
+
+#auth_service:
+
+Manual Deploy
+Service ID:
+srv-d1c466umcj7s73a666g0
+
+mrccdrc27 / MAP-SYSTEM
+bms/defense-brnch
+https://auth-service-cdln.onrender.com
+
+Connection:
+Outbound
+Outbound IP Addresses
+Network requests from your service to the public internet will come from one of the following IP addresses or ranges.
+
+These IPs are not unique to your service or workspace. They are shared by other Render services in the same region.
+
+74.220.52.0/24
+74.220.60.0/24
+
+Root Directory: auth
+Build Command: pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py create_default_admin && python manage.py seed_systems && python manage.py seed_bms && python manage.py collectstatic --noinput
+Start Command: gunicorn auth.wsgi:application
+
+Custom Domains
+You can point custom domains you own to this service. See DNS configuration instructions.
+
+Add Custom Domain
+Render Subdomain = enabled
+If enabled, your service remains reachable at its onrender.com subdomain in addition to all custom domains. Disable to serve exclusively from custom domains.
+
+Your service is reachable at https://auth-service-cdln.onrender.com.
+
+auth_service variables:
+BMS_SYSTEM_URL=https://budget-pro-static-site.onrender.com
+DATABASE_URL="postgresql://neondb_owner:npg_YdVb5ua8QXTf@ep-flat-rain-a1nd2r8a-pooler.ap-southeast-1.aws.neon.tech/auth_serviceDB?sslmode=require&channel_binding=require"
+DEBUG=False
+DEFAULT_FROM_EMAIL=adibentulan@gmail.com
+DEFAULT_SYSTEM_URL=https://budget-pro-static-site.onrender.com
+DJANGO_CORS_ALLOWED_ORIGINS=https://budget-pro-static-site.onrender.com,https://budget-pro.onrender.com
+DJANGO_ENV=production
+DJANGO_SECRET_KEY="g^-i4u72k#@x1xmf4r@$%afoft=xsati0&8o9v5sa(s-#_wz++"
+DJANGO_SETTINGS_MODULE=auth.settings
+DJANGO_SUPERUSER_EMAIL=adibentulan@gmail.com
+DJANGO_SUPERUSER_PASSWORD=a4deeznuts
+DJANGO_SUPERUSER_USERNAME=bentulan
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST_PASSWORD="krlt tibx ulvs iyqy"
+EMAIL_HOST_USER=adibentulan@gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+FRONTEND_URL=https://budget-pro-static-site.onrender.com
+JWT_SIGNING_KEY=signing-key-1234
+RENDER_EXTERNAL_HOSTNAME=auth-service-cdln.onrender.com
+
+
+bms/budget_service Dockerfile:
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install system dependencies if any
+
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entrypoint script
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Copy the rest of the application's code
+COPY . .
+
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+# Run the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# The command to run when the container starts
+# Note: The wsgi path is capstone.wsgi, not core.wsgi like in auth_service
+CMD ["gunicorn", "capstone.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+bms/budget_service/entrypoint.sh:
+#!/bin/sh
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# Apply database migrations
+echo "Applying budget_service migrations..."
+python manage.py migrate --noinput
+
+# Run the main seeder
+echo "Running budget_service seeder..."
+python manage.py controlled_seeder
+
+# --- MODIFICATION START ---
+# Run the Budget Caps seeder (Depends on controlled_seeder data)
+echo "Seeding Budget Caps (Governance Rules)..."
+python manage.py seed_budget_caps
+# --- MODIFICATION END ---
+
+# Generate the initial forecast data after seeding
+echo "Generating budget_service forecast data..."
+python manage.py generate_forecasts
+
+# Collect static files
+echo "Collecting static files for budget_service..."
+python manage.py collectstatic --no-input --clear
+
+# Then exec the container's main process (what's set as CMD in the Dockerfile).
+exec "$@"
+
+bms/docker-compose.yml:
+version: '3.9'
+
+services:
+  # --- Authentication Service (Using Centralized Root Auth) ---
+  auth_db:
+    image: postgres:15-alpine
+    container_name: auth_db
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=budgetpro_auth
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=a4d
+    ports:
+      - "5433:5432"
+    networks:
+      - my_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth_service:
+    # 1. Point to the ROOT auth folder
+    build: ../auth  
+    container_name: auth_service
+    volumes:
+      - ../auth:/app
+    ports:
+      - "8001:8000"
+    
+    # 2. OVERRIDE the entrypoint script.
+    # This runs the setup logic manually, bypassing Windows file issues.
+    command: >
+      sh -c "python manage.py makemigrations --noinput &&
+             python manage.py migrate --noinput &&
+             python manage.py create_default_admin &&
+             python manage.py seed_systems &&
+             python manage.py seed_tts &&
+             python manage.py seed_hdts &&
+             python manage.py seed_bms && 
+             gunicorn auth.wsgi:application --bind 0.0.0.0:8000"
+             
+    environment:
+      - RECAPTCHA_ENABLED=False
+      - DJANGO_ENV=development
+      - DJANGO_SECRET_KEY=g^-i4u72k#@x1xmf4r@$%afoft=xsati0&8o9v5sa(s-#_wz++
+      - DJANGO_DEBUG=True
+      # Database Config
+      - POSTGRES_DB=budgetpro_auth
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=a4d
+      - PGHOST=auth_db
+      - PGPORT=5432
+      # CORS: Allow your BMS Frontend (5173) to talk to Auth
+      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - FRONTEND_URL=http://localhost:5173
+    depends_on:
+      auth_db:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  budget_db:
+    # Keep existing configuration)
+    image: postgres:15-alpine
+    container_name: budget_db
+    volumes:
+      - postgres_budget_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=budgetpro_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=a4d
+    ports:
+      - "5434:5432"
+    networks:
+      - my_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  budget_service:
+    # (Keep existing configuration)
+    build: ./budget_service
+    container_name: budget_service
+    volumes:
+      - ./budget_service:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    env_file:
+      - ./budget_service/.env.docker
+    depends_on:
+      budget_db:
+        condition: service_healthy
+      auth_service:
+        condition: service_started
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  postgres_auth_data:
+  postgres_budget_data:
+
+bms/frontend/vite.config.js:
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    host: '0.0.0.0'  
+  },
+  preview: {
+    port: 4173,
+    host: '0.0.0.0',
+    allowedHosts: [
+      'frontend-production-906f.up.railway.app',
+      '.railway.app',
+      'localhost',
+      '127.0.0.1'
+    ]
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false
+  }
+})
+
+bms/frontend/.env:
+# bms/frontend/
+# True to use centralized auth
+VITE_USE_CENTRAL_AUTH=true
+
+# Centralized Auth Service Host (Matches docker-compose port 8001)
+VITE_AUTH_URL=http://localhost:8001
+
+# BMS Backend API URL (Matches docker-compose port 8000)
+VITE_API_URL=http://localhost:8000/api
+
+
+

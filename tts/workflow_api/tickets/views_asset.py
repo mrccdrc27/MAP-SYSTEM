@@ -122,11 +122,31 @@ class ResolvedAssetTicketsView(APIView):
             
             employee_name = f"{firstname} {lastname}".strip()
             
+            # Get additional employee details
+            employee_email = (
+                employee_obj.get('email') or 
+                ticket_data.get('employee_email') or 
+                ''
+            )
+            employee_company_id = (
+                employee_obj.get('company_id') or 
+                ticket_data.get('employee_company_id') or 
+                ''
+            )
+            employee_department = (
+                employee_obj.get('department') or 
+                ticket_data.get('department') or 
+                ''
+            )
+            
             requestor_details = {
                 'id': employee_id,
                 'name': employee_name,
                 'firstname': firstname,
-                'lastname': lastname
+                'lastname': lastname,
+                'email': employee_email,
+                'company_id': employee_company_id,
+                'department': employee_department
             } if employee_id else None
             
             # Get related task to check is_resolved status (ams_executed)

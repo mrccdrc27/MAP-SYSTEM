@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaSearch } from 'react-icons/fa';
 import styles from './CoordinatorOwnedTickets.module.css';
@@ -27,7 +27,6 @@ const CoordinatorOwnedTickets = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Helper function to calculate SLA status
   const calculateSLAStatus = (ticket) => {
@@ -82,24 +81,15 @@ const CoordinatorOwnedTickets = () => {
     const loadTickets = async () => {
       try {
         let ticketList = [];
-        let count = 0;
         
         try {
-          // Use the helpdesk backend's my-tickets endpoint which filters by ticket_owner_id
-          const response = await backendTicketService.getOwnedTickets({
-            tab: activeFilters.status?.toLowerCase() === 'open' ? 'active' : 
-                 activeFilters.status?.toLowerCase() === 'closed' ? 'inactive' : '',
-            search: searchTerm,
-            page: currentPage,
-            pageSize: itemsPerPage
-          });
+          // Fetch all owned tickets for client-side filtering and pagination
+          const response = await backendTicketService.getMyTickets(); // This fetches all without pagination
           
-          ticketList = response.results || [];
-          count = response.count || ticketList.length;
+          ticketList = response || [];
         } catch (err) {
           console.warn('Failed to fetch owned tickets:', err);
           ticketList = [];
-          count = 0;
         }
 
         // Normalize tickets from the helpdesk backend response
@@ -147,19 +137,17 @@ const CoordinatorOwnedTickets = () => {
         });
 
         setAllTickets(normalized);
-        setTotalCount(count);
         setIsLoading(false);
       } catch (err) {
         console.error('Failed to fetch tickets:', err);
         setAllTickets([]);
-        setTotalCount(0);
         setIsLoading(false);
       }
     };
 
     const timer = setTimeout(() => loadTickets(), 300);
     return () => clearTimeout(timer);
-  }, [currentUser, searchTerm, currentPage, itemsPerPage, activeFilters.status]);
+  }, [currentUser]); // Removed searchTerm, currentPage, itemsPerPage, activeFilters.status to fetch all once
 
   // Build dynamic filter options
   const categoryOptions = useMemo(() => {
@@ -172,9 +160,22 @@ const CoordinatorOwnedTickets = () => {
     return Array.from(set).map(v => ({ label: v, value: v }));
   }, [allTickets]);
 
-  // Apply client-side filters (priority, category, subCategory, slaStatus, date range)
+  // Apply client-side filters (search, status, priority, category, subCategory, slaStatus, date range)
   const filteredTickets = useMemo(() => {
     return allTickets.filter(ticket => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          ticket.ticketNumber?.toLowerCase().includes(searchLower) ||
+          ticket.subject?.toLowerCase().includes(searchLower) ||
+          ticket.description?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Status filter (from activeFilters)
+      if (activeFilters.status && ticket.status !== activeFilters.status) return false;
+
       // Priority filter
       if (activeFilters.priority && ticket.priorityLevel !== activeFilters.priority) return false;
 
@@ -202,10 +203,22 @@ const CoordinatorOwnedTickets = () => {
 
       return true;
     });
-  }, [allTickets, activeFilters]);
+  }, [allTickets, activeFilters, searchTerm]);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  // Paginate the filtered results client-side
+  const paginatedTickets = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    console.log('PaginatedTickets calculation:', {
+      currentPage,
+      itemsPerPage,
+      startIndex,
+      endIndex,
+      filteredTicketsLength: filteredTickets.length,
+      totalPages: Math.ceil(filteredTickets.length / itemsPerPage)
+    });
+    return filteredTickets.slice(startIndex, endIndex);
+  }, [filteredTickets, currentPage, itemsPerPage]);
 
   const handleViewDetails = (ticketNumber) => {
     navigate(`/admin/owned-tickets/${ticketNumber}`);
@@ -215,6 +228,17 @@ const CoordinatorOwnedTickets = () => {
     setActiveFilters(newFilters);
     setCurrentPage(1);
   };
+
+  const handlePageChange = useCallback((page) => {
+    console.log('Page changed to:', page);
+    setCurrentPage(page);
+  }, []);
+
+  const handleItemsPerPageChange = useCallback((newSize) => {
+    console.log('Items per page changed to:', newSize);
+    setItemsPerPage(newSize);
+    setCurrentPage(1);
+  }, []);
 
   return (
     <div className={styles['owned-tickets-container']}>
@@ -279,8 +303,8 @@ const CoordinatorOwnedTickets = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredTickets.length > 0 ? (
-                  filteredTickets.map((ticket) => (
+                {paginatedTickets.length > 0 ? (
+                  paginatedTickets.map((ticket) => (
                     <tr key={ticket.task_id || ticket.ticketNumber}>
                       <td className={styles['ticket-number']}>
                         {ticket.ticketNumber}
@@ -326,17 +350,14 @@ const CoordinatorOwnedTickets = () => {
             </table>
           </div>
 
-          {totalCount > 0 && (
+          {filteredTickets.length > 0 && (
             <TablePagination
               currentPage={currentPage}
-              totalPages={totalPages}
-              itemsPerPage={itemsPerPage}
-              totalItems={totalCount}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={(newSize) => {
-                setItemsPerPage(newSize);
-                setCurrentPage(1);
-              }}
+              initialItemsPerPage={itemsPerPage}
+              totalItems={filteredTickets.length}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              alwaysShow={true}
             />
           )}
         </>

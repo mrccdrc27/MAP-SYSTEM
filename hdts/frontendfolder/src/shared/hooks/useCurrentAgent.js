@@ -106,6 +106,7 @@ export function useCurrentAgent(ticketId) {
             user_id: data.ticket_owner.user_id,
             user_full_name: data.ticket_owner.user_full_name,
             role: data.ticket_owner.role,
+            department: data.ticket_owner.department,
             assigned_at: data.ticket_owner.assigned_at,
           });
         } else {

@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAccessToken } from '../api/TokenUtils';
 
 // Use environment config for WebSocket
-const WEBSOCKET_BASE = import.meta.env.VITE_MESSAGING_WS || 'ws://localhost:8005';
+// Remove trailing /ws if present to avoid duplication (e.g., /ws/ws/)
+const rawWsBase = import.meta.env.VITE_MESSAGING_WS || 'ws://localhost:8005';
+const WEBSOCKET_BASE = rawWsBase.replace(/\/ws\/?$/, '');
 
 /**
  * Hook for WebSocket messaging

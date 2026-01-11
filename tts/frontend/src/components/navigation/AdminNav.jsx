@@ -103,7 +103,7 @@ export default function AdminNav() {
             </div>
 
             <p>
-              <span>Currently Developing</span>
+              <span>TicketFlow</span>
             </p>
 
             <span className={styles.anAdminLogo}>admin</span>

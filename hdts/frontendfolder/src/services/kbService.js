@@ -24,46 +24,18 @@ const normalizeVisibility = (v) => {
   return v.replace(/\b\w/g, c => c.toUpperCase());
 };
 
-// --- In-memory seeds & mocks (used by the mock kb service) ---
-// These provide a minimal dataset so the service functions can operate
-// without an external dependency during development.
-const categoriesSeed = [
-  { id: 1, name: 'IT Support' },
-  { id: 2, name: 'Asset Check In' },
-  { id: 3, name: 'Asset Check Out' },
-];
+// --- In-memory collections (no mock data - empty by default) ---
+// These are kept for API compatibility but will not pre-populate with fake data
+const categoriesSeed = [];
 
-const articlesSeed = [
-  {
-    id: 1001,
-    title: 'How to reset your password',
-    content: 'Step-by-step instructions to reset your password.',
-    category_id: 1,
-    visibility: 'Employee',
-    date_created: new Date().toISOString(),
-    date_modified: new Date().toISOString(),
-    archived: false,
-  },
-  {
-    id: 1002,
-    title: 'Asset checkout procedure',
-    content: 'How to properly check out company assets.',
-    category_id: 3,
-    visibility: 'Ticket Coordinator',
-    date_created: new Date().toISOString(),
-    date_modified: new Date().toISOString(),
-    archived: false,
-  }
-];
+const articlesSeed = [];
 
-const feedbackSeed = [
-  { id: 1, articleId: 1001, helpful: true, comment: 'Very useful', date: new Date().toISOString() }
-];
+const feedbackSeed = [];
 
-// Live in-memory collections
-let mockCategories = JSON.parse(JSON.stringify(categoriesSeed));
-let mockArticles = JSON.parse(JSON.stringify(articlesSeed)).map(a => ({ ...a, visibility: normalizeVisibility(a.visibility) }));
-let mockFeedback = JSON.parse(JSON.stringify(feedbackSeed));
+// Live in-memory collections (empty - no mock data)
+let mockCategories = [];
+let mockArticles = [];
+let mockFeedback = [];
 
 // Simple history store keyed by article id
 const mockHistory = {}; // { [articleId]: [ { action, timestamp, by, changes } ] }
@@ -285,6 +257,7 @@ export const submitArticle = (article) => {
       date_created: a.created_at || a.date_created || new Date().toISOString(),
       date_modified: a.updated_at || a.date_modified || new Date().toISOString(),
       archived: !!a.is_archived || !!a.archived,
+      tags: Array.isArray(a.tags) ? a.tags : (typeof a.tags === 'string' ? a.tags.split(',').map(s => s.trim()).filter(Boolean) : []),
     }))
     .catch(() => {
       // fallback to in-memory behavior
@@ -331,6 +304,7 @@ export const updateArticle = (id, patch = {}) => {
       date_created: a.created_at || a.date_created || new Date().toISOString(),
       date_modified: a.updated_at || a.date_modified || new Date().toISOString(),
       archived: !!a.is_archived || !!a.archived,
+      tags: Array.isArray(a.tags) ? a.tags : (typeof a.tags === 'string' ? a.tags.split(',').map(s => s.trim()).filter(Boolean) : []),
     }))
     .catch(() => {
       const idx = mockArticles.findIndex(a => a.id === Number(id));

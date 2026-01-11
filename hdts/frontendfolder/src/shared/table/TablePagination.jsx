@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./TablePagination.module.css";
 
 const TablePagination = ({
@@ -11,10 +11,22 @@ const TablePagination = ({
   pageSizeOptions = [5, 10, 20, 50, 100],
 }) => {
   const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
+  const previousItemsPerPage = useRef(initialItemsPerPage);
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
+  // Sync internal state when initialItemsPerPage changes
   useEffect(() => {
-    onItemsPerPageChange?.(itemsPerPage);
+    setItemsPerPage(initialItemsPerPage);
+    previousItemsPerPage.current = initialItemsPerPage;
+  }, [initialItemsPerPage]);
+
+  // Only call onItemsPerPageChange when itemsPerPage actually changes
+  useEffect(() => {
+    if (itemsPerPage !== previousItemsPerPage.current) {
+      console.log('TablePagination: itemsPerPage actually changed from', previousItemsPerPage.current, 'to', itemsPerPage);
+      onItemsPerPageChange?.(itemsPerPage);
+      previousItemsPerPage.current = itemsPerPage;
+    }
   }, [itemsPerPage, onItemsPerPageChange]);
 
   if (!alwaysShow && totalItems <= itemsPerPage) {
@@ -22,6 +34,7 @@ const TablePagination = ({
   }
 
   const handlePageClick = (page) => {
+    console.log('TablePagination: handlePageClick called with page:', page, 'totalPages:', totalPages);
     if (page >= 1 && page <= totalPages) {
       onPageChange?.(page);
     }
@@ -36,18 +49,39 @@ const TablePagination = ({
 
   const renderPageNumbers = () => {
     const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(
+          <button
+            key={i}
+            className={`${styles.pageButton} ${i === currentPage ? styles.active : ""}`}
+            onClick={() => handlePageClick(i)}
+            type="button"
+          >
+            {i}
+          </button>
+        );
+      }
+    } else {
+      // Show first, current page area, and last for larger page counts
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, currentPage + 2);
 
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(
-        <button
-          key={i}
-          className={`${styles.pageButton} ${i === currentPage ? styles.active : ""}`}
-          onClick={() => handlePageClick(i)}
-          type="button"
-        >
-          {i}
-        </button>
-      );
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(
+          <button
+            key={i}
+            className={`${styles.pageButton} ${i === currentPage ? styles.active : ""}`}
+            onClick={() => handlePageClick(i)}
+            type="button"
+          >
+            {i}
+          </button>
+        );
+      }
     }
 
     return pages;

@@ -447,6 +447,28 @@ class Command(BaseCommand):
             self.stdout.write("")
             self.stdout.write(self.style.SUCCESS("  Done!\n"))
 
+    def _backdate_prior_history_entries(self, task_item, resolved_time):
+        """
+        Ensure all prior history entries have timestamps BEFORE the resolved_time.
+        This fixes the issue where backdated 'resolved' entries might have timestamps
+        earlier than existing 'new' or 'in progress' entries, causing incorrect
+        'latest status' detection.
+        
+        Args:
+            task_item: The TaskItem whose history needs fixing
+            resolved_time: The timestamp for the 'resolved' entry
+        """
+        # Get all history entries for this task item that have timestamps >= resolved_time
+        conflicting_entries = TaskItemHistory.objects.filter(
+            task_item=task_item,
+            created_at__gte=resolved_time
+        ).exclude(status='resolved')  # Don't update resolved entries
+        
+        if conflicting_entries.exists():
+            # Set them to 1 minute before resolved_time to maintain order
+            prior_time = resolved_time - timedelta(minutes=1)
+            conflicting_entries.update(created_at=prior_time)
+    
     def _resolve_task_fully(self, task, sla_delay_days=0):
         """
         Progress task through ALL workflow steps until completion.
@@ -530,6 +552,9 @@ class Command(BaseCommand):
 
             if is_final_step or not forward_transitions:
                 # Final step - complete the task
+                # First, ensure prior history entries don't have timestamps >= resolution_time
+                self._backdate_prior_history_entries(active_item, resolution_time)
+                
                 history = TaskItemHistory.objects.create(task_item=active_item, status='resolved')
                 # Backdate the history entry
                 TaskItemHistory.objects.filter(pk=history.pk).update(created_at=resolution_time)
@@ -560,6 +585,9 @@ class Command(BaseCommand):
             next_step = transition.to_step_id
 
             # Mark current item as resolved
+            # First, ensure prior history entries don't have timestamps >= current_step_time
+            self._backdate_prior_history_entries(active_item, current_step_time)
+            
             history = TaskItemHistory.objects.create(task_item=active_item, status='resolved')
             # Backdate the history entry
             TaskItemHistory.objects.filter(pk=history.pk).update(created_at=current_step_time)
@@ -624,6 +652,9 @@ class Command(BaseCommand):
         # Just set it to "in progress" - don't complete the step
         latest_history = active_item.taskitemhistory_set.order_by('-created_at').first()
         if not latest_history or latest_history.status != 'in progress':
+            # Ensure prior history entries don't have timestamps >= progress_time
+            self._backdate_prior_history_entries(active_item, progress_time)
+            
             history = TaskItemHistory.objects.create(task_item=active_item, status='in progress')
             # Backdate the history entry to the calculated progress time
             TaskItemHistory.objects.filter(pk=history.pk).update(created_at=progress_time)

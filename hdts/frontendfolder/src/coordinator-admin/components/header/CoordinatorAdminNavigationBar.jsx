@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import useScrollShrink from '../../../shared/hooks/useScrollShrink.jsx';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
-import CoordinatorAdminNotifications from '../pop-ups/CoordinatorAdminNotifications';
+import CoordinatorAdminNotifications, { INITIAL_NOTIFICATION_COUNT } from '../pop-ups/CoordinatorAdminNotifications';
 import styles from './CoordinatorAdminNavigationBar.module.css';
 import MapLogo from '../../../shared/assets/MapLogo.png';
 import authService from '../../../utilities/service/authService';
@@ -158,7 +158,7 @@ const CoordinatorAdminNavBar = () => {
     return `${first}${middle ? ' ' + middle : ''} ${last}`.trim();
   };
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [notifCount, setNotifCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(INITIAL_NOTIFICATION_COUNT);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // temporarily set threshold to 0; debug disabled in production to avoid noisy logs
   const scrolled = useScrollShrink(0, { debug: false });
