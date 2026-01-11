@@ -291,7 +291,8 @@ class Ticket(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
     submit_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
-    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tickets')
+    # Current TTS agent working on this ticket (synced from workflow service via /tasks/logs/)
+    current_agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='agent_tickets')
     # Ticket Owner: The ticket coordinator assigned as owner when ticket is approved/opened
     # Stores the external user ID from auth service (similar to employee_cookie_id)
     ticket_owner_id = models.IntegerField(

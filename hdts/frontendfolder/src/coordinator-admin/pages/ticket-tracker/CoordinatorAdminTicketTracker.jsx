@@ -16,6 +16,7 @@ import CoordinatorAdminTicketLogs from './CoordinatorAdminTicketLogs';
 import detailStyles from './CoordinatorAdminTicketDetails.module.css';
 import { FaFileImage, FaFilePdf, FaFileWord, FaFileExcel, FaFileCsv, FaFile, FaDownload } from 'react-icons/fa';
 import { convertToSecureUrl, extractFilePathFromUrl, getAccessToken } from '../../../utilities/secureMedia';
+import { useCurrentAgent } from '../../../shared/hooks/useCurrentAgent';
 
 
 // Status progression for coordinator/admin
@@ -297,6 +298,9 @@ export default function CoordinatorAdminTicketTracker() {
 
   // Move auth hook to top-level so hooks order is stable across renders
   const { user: authUser, isTicketCoordinator, isAdmin } = useAuth();
+
+  // Fetch current agent from TTS workflow API
+  const { currentAgent, loading: currentAgentLoading } = useCurrentAgent(ticketNumber);
 
   // Helper: normalize backend ticket shapes into the UI shape used by this component
   const normalizeTicket = (t) => {
@@ -704,8 +708,8 @@ export default function CoordinatorAdminTicketTracker() {
                     </div>
                   )}
                   <div className={styles.detailItem}>
-                    <div className={styles.detailLabel}>Assigned Agent</div>
-                    <div className={styles.detailValue}>{typeof assignedTo === 'object' ? assignedTo?.name || 'Unassigned' : assignedTo || 'Unassigned'}</div>
+                    <div className={styles.detailLabel}>Current Agent</div>
+                    <div className={styles.detailValue}>{currentAgentLoading ? 'Loading...' : (currentAgent?.user_full_name || 'Unassigned')}</div>
                   </div>
                   <div className={styles.detailItem}>
                     <div className={styles.detailLabel}>Department</div>

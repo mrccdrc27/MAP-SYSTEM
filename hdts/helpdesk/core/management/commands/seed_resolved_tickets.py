@@ -226,7 +226,7 @@ Please update the HR records accordingly.''',
                 status='Resolved',
                 submit_date=submit_date,
                 update_date=update_date,
-                assigned_to=coordinator,
+                current_agent=coordinator,
                 date_completed=date_completed,
             )
             

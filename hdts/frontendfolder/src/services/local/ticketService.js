@@ -105,7 +105,7 @@ export const localTicketService = {
         last_name: currentUser.last_name,
         email: currentUser.email
       },
-      assigned_to: null,
+      current_agent: null,
       attachments: ticketData.attachments || [],
       comments: []
     };

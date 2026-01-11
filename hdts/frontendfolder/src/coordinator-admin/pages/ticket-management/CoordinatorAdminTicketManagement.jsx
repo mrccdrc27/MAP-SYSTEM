@@ -11,6 +11,7 @@ import { backendTicketService } from '../../../services/backend/ticketService';
 import authService from "../../../utilities/service/authService";
 import InputField from '../../../shared/components/InputField';
 import Skeleton from '../../../shared/components/Skeleton/Skeleton';
+import CurrentAgentCell from '../../../shared/components/CurrentAgentCell';
 
 import CoordinatorAdminOpenTicketModal from "../../components/modals/CoordinatorOpenTicketModal";
 import CoordinatorAdminRejectTicketModal from "../../components/modals/CoordinatorRejectTicketModal";
@@ -385,7 +386,7 @@ const CoordinatorAdminTicketManagement = () => {
                 <th>Sub Category</th>
                 <th>Priority</th>
                 <th>SLA Status</th>
-                <th>Assigned Agent</th>
+                <th>Current Agent</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -448,7 +449,7 @@ const CoordinatorAdminTicketManagement = () => {
                         {calculateSLAStatus(ticket)}
                       </div>
                     </td>
-                    <td>{ticket.assignedAgent || "Unassigned"}</td>
+                    <td><CurrentAgentCell ticketId={ticket.ticketNumber} /></td>
                     <td>
                       <div className={styles.actionButtonCont}>
                         <button

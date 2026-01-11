@@ -327,13 +327,13 @@ def get_ticket_detail(request, ticket_id):
             'department': ticket.department,
             'submit_date': ticket.submit_date,
             'update_date': ticket.update_date,
-            'assigned_to': (
-                {'id': ticket.assigned_to.id} if short_circuit else {
-                    'id': ticket.assigned_to.id,
-                    'first_name': ticket.assigned_to.first_name,
-                    'last_name': ticket.assigned_to.last_name,
+            'current_agent': (
+                {'id': ticket.current_agent.id} if short_circuit else {
+                    'id': ticket.current_agent.id,
+                    'first_name': ticket.current_agent.first_name,
+                    'last_name': ticket.current_agent.last_name,
                 }
-            ) if ticket.assigned_to else None,
+            ) if ticket.current_agent else None,
         }
 
         # Batch-resolve external profiles to avoid per-comment remote calls.
@@ -589,11 +589,11 @@ def get_ticket_by_number(request, ticket_number):
             'department': ticket.department,
             'submit_date': ticket.submit_date,
             'update_date': ticket.update_date,
-            'assigned_to': {
-                'id': ticket.assigned_to.id,
-                'first_name': ticket.assigned_to.first_name,
-                'last_name': ticket.assigned_to.last_name,
-            } if ticket.assigned_to else None,
+            'current_agent': {
+                'id': ticket.current_agent.id,
+                'first_name': ticket.current_agent.first_name,
+                'last_name': ticket.current_agent.last_name,
+            } if ticket.current_agent else None,
         }
 
         # Batch-resolve external profiles to avoid per-comment remote calls (same as get_ticket_detail)
@@ -1095,7 +1095,7 @@ def reject_ticket(request, ticket_id):
         
         ticket.status = 'Rejected'
         if not isinstance(request.user, ExternalUser):
-            ticket.assigned_to = request.user
+            ticket.current_agent = request.user
         ticket.rejection_reason = rejection_reason
         user_display_name = _actor_display_name(request)
         ticket.rejected_by = user_display_name
@@ -1143,18 +1143,18 @@ def claim_ticket(request, ticket_id):
         if (ticket.status != 'Open'):
             return Response({'error': 'Ticket is not available for claiming.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if ticket.assigned_to and ticket.status != 'Open':
+        if ticket.current_agent and ticket.status != 'Open':
             return Response({'error': 'Ticket is already claimed.'}, status=status.HTTP_400_BAD_REQUEST)
 
         ticket.status = 'In Progress'
-        ticket.assigned_to = request.user
+        ticket.current_agent = request.user
         ticket.save()
 
         return Response({
             'message': 'Ticket successfully claimed.',
             'ticket_id': ticket.id,
             'status': ticket.status,
-            'assigned_to': request.user.email
+            'current_agent': request.user.email
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -1482,7 +1482,7 @@ def get_my_tickets(request):
     """
     Get tickets owned by the current coordinator.
     For external users (auth service), uses ticket_owner_id field.
-    For local users, falls back to assigned_to field.
+    For local users, falls back to current_agent field.
     """
     try:
         if not (request.user.is_staff or request.user.role in ['System Admin', 'Ticket Coordinator']):
@@ -1492,9 +1492,9 @@ def get_my_tickets(request):
         if isinstance(request.user, ExternalUser):
             my_tickets = Ticket.objects.filter(ticket_owner_id=request.user.id).select_related('employee').order_by('-submit_date')
         else:
-            # For local employees, check both assigned_to and ticket_owner_id
+            # For local employees, check both current_agent and ticket_owner_id
             my_tickets = Ticket.objects.filter(
-                Q(assigned_to=request.user) | Q(ticket_owner_id=request.user.id)
+                Q(current_agent=request.user) | Q(ticket_owner_id=request.user.id)
             ).select_related('employee').order_by('-submit_date')
         
         tickets_data = []
@@ -1505,11 +1505,36 @@ def get_my_tickets(request):
                 employee_name = f"{ticket.employee.first_name} {ticket.employee.last_name}"
                 employee_department = ticket.employee.department
             
+            # Try to surface workflow info for frontend lists. The authoritative
+            # workflow/current step lives in the external workflow service (TTS).
+            # We attempt best-effort extraction from ticket attributes or
+            # `dynamic_data` so list views can display a name without extra
+            # per-row network calls. If not present, frontend will fall back
+            # to fetching workflow progress when viewing details.
+            wf_name = None
+            cs_name = None
+            try:
+                # Prefer explicit attributes if present
+                wf_name = getattr(ticket, 'workflow_name', None) or getattr(ticket, 'workflow', None)
+                cs_name = getattr(ticket, 'current_step_name', None) or getattr(ticket, 'current_step', None)
+                # Fall back to dynamic_data payload
+                dd = getattr(ticket, 'dynamic_data', None)
+                if not wf_name and isinstance(dd, dict):
+                    wf_name = dd.get('workflow_name') or dd.get('workflow') or dd.get('workflowName')
+                if not cs_name and isinstance(dd, dict):
+                    cs_name = dd.get('current_step') or dd.get('currentStepName') or dd.get('current_step_name')
+            except Exception:
+                wf_name = wf_name or None
+                cs_name = cs_name or None
+
             tickets_data.append({
                 'id': ticket.id,
                 'ticket_number': ticket.ticket_number,
                 'subject': ticket.subject,
                 'category': ticket.category,
+                'sub_category': ticket.sub_category,
+                'workflowName': wf_name,
+                'currentStepName': cs_name,
                 'priority': ticket.priority,
                 'department': ticket.department,
                 'status': ticket.status,

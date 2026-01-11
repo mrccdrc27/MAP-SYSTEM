@@ -266,7 +266,7 @@ export const backendTicketService = {
 
   async assignTicket(ticketId, assigneeId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, getFetchOptions('PATCH', { assigned_to: assigneeId }));
+      const response = await fetch(`${BASE_URL}/api/tickets/${ticketId}/`, getFetchOptions('PATCH', { current_agent: assigneeId }));
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to assign ticket');
@@ -464,6 +464,72 @@ export const backendTicketService = {
       const startIndex = (page - 1) * pageSize;
       const paginatedResults = results.slice(startIndex, startIndex + pageSize);
       
+      // For rows missing workflow/current step, attempt best-effort enrichment
+      // by querying the workflow API for the visible page. This avoids N+many
+      // roundtrips across the entire dataset while ensuring visible rows show
+      // accurate Workflow and Current Step information.
+      const enrichPromises = paginatedResults.map(async (row) => {
+        try {
+          const ticketNumber = row.ticket_number || row.ticketNumber || row.id || '';
+          const needsWorkflow = !row.workflowName && !row.workflow_name && !row.workflow;
+          const needsStep = !row.currentStepName && !row.current_step_name && !row.current_step;
+
+          if (!ticketNumber || (!needsWorkflow && !needsStep)) return row;
+
+          const vizUrl = `${WORKFLOW_URL}/tasks/workflow-visualization/?ticket_id=${encodeURIComponent(ticketNumber)}`;
+          const resp = await fetch(vizUrl, getFetchOptions('GET'));
+          if (!resp.ok) return row;
+          const viz = await resp.json().catch(() => null);
+          if (!viz) return row;
+
+          // Extract current step name from nodes if present
+          try {
+            const nodes = Array.isArray(viz.nodes) ? viz.nodes : [];
+            const active = nodes.find(n => (n.status || '').toLowerCase() === 'active');
+            if (active && active.label) {
+              row.currentStepName = active.label;
+            } else {
+              // fallback to the last done or the first pending
+              const doneNodes = nodes.filter(n => (n.status || '').toLowerCase() === 'done');
+              if (doneNodes.length) row.currentStepName = doneNodes[doneNodes.length - 1].label;
+              else if (nodes.length) row.currentStepName = nodes[0].label;
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          // If we have a workflow_id, fetch workflow details to get a friendly name
+          try {
+            const workflowId = viz.metadata && (viz.metadata.workflow_id || viz.metadata.workflow);
+            if (workflowId) {
+              const wfUrl = `${WORKFLOW_URL}/workflows/${workflowId}/`;
+              const wfResp = await fetch(wfUrl, getFetchOptions('GET'));
+              if (wfResp.ok) {
+                const wfData = await wfResp.json().catch(() => null);
+                if (wfData && wfData.workflow) {
+                  row.workflowName = wfData.workflow.name || wfData.workflow.workflow?.name || row.workflowName;
+                } else if (wfData && wfData.name) {
+                  row.workflowName = wfData.name;
+                }
+              }
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          return row;
+        } catch (e) {
+          return row;
+        }
+      });
+
+      // Run enrichments in parallel but don't fail the whole request if they error
+      try {
+        await Promise.all(enrichPromises);
+      } catch (e) {
+        // swallow
+      }
+
       return {
         results: paginatedResults,
         count: totalCount,

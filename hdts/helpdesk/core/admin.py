@@ -156,15 +156,15 @@ class TicketAdmin(admin.ModelAdmin):
 
     list_display = (
         'id', 'subject', 'employee', 'department', 'priority',
-        'status', 'scheduled_date', 'submit_date', 'assigned_to', 'csat_rating', 'date_completed'
+        'status', 'scheduled_date', 'submit_date', 'current_agent', 'csat_rating', 'date_completed'
     )
     list_filter = ('department', 'priority', 'status')
     search_fields = (
         'subject',
         'employee__first_name', 'employee__last_name',
-        'assigned_to__first_name', 'assigned_to__last_name'
+        'current_agent__first_name', 'current_agent__last_name'
     )
-    autocomplete_fields = ['employee', 'assigned_to']
+    autocomplete_fields = ['employee', 'current_agent']
     readonly_fields = ('submit_date', 'update_date')
 
     fieldsets = (
@@ -172,7 +172,7 @@ class TicketAdmin(admin.ModelAdmin):
             'fields': (
                 'employee', 'subject', 'category', 'sub_category',
                 'description', 'scheduled_date', 'priority', 'department',
-                'status', 'assigned_to', 'response_time', 'resolution_time', 'time_closed',
+                'status', 'current_agent', 'response_time', 'resolution_time', 'time_closed',
                 'csat_rating', 'feedback', 'date_completed'
             )
         }),
