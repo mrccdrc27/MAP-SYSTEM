@@ -249,3 +249,5 @@ auth/auth/__pycache__/settings.cpython-313.pyc
 .vscode/settings.json
 .vscode/settings.json
 bms/auth_service/.env.docker
+
+.ssh_keys/
