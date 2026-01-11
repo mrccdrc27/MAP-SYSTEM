@@ -7,7 +7,9 @@ const AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:18001").rep
 const authApi = axios.create({
     baseURL: `${AUTH_URL}/api/v1`, // Using V1
     headers: { 'Content-Type': 'application/json' },
-    withCredentials: true,
+    // CHANGED: Set to false to rely on Bearer token (Authorization header) instead of cookies
+    // This fixes the 302 Redirect -> 403 Forbidden loop on Render
+    withCredentials: false,
 });
 
 authApi.interceptors.request.use(
