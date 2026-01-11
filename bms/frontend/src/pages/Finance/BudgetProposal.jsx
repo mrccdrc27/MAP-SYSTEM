@@ -284,7 +284,10 @@ const Pagination = ({
 const SignatureUpload = ({ value, onChange }) => {
   const [preview, setPreview] = useState(value || "");
   const [file, setFile] = useState(null);
-
+  // --- MODIFICATION START: Add ref for input ---
+  const fileInputRef = React.useRef(null);
+  // --- MODIFICATION END ---
+  
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -317,6 +320,12 @@ const SignatureUpload = ({ value, onChange }) => {
     setFile(null);
     setPreview("");
     if (onChange) onChange("");
+    
+    // --- MODIFICATION START: Reset input value ---
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    // --- MODIFICATION END ---
   };
 
   return (
@@ -378,7 +387,7 @@ const SignatureUpload = ({ value, onChange }) => {
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => document.getElementById("signature-upload").click()}
+          onClick={() => fileInputRef.current.click()}  // --- Use Ref ---
         >
           <Upload size={24} style={{ marginBottom: "8px", color: "#666" }} />
           <div style={{ color: "#666", marginBottom: "4px" }}>
@@ -390,7 +399,8 @@ const SignatureUpload = ({ value, onChange }) => {
         </div>
       )}
       <input
-        id="signature-upload"
+        ref={fileInputRef} 
+        id="signature-upload" // You can keep ID, but ref is cleaner for react
         type="file"
         accept=".png,.jpg,.jpeg,.svg"
         onChange={handleFileChange}

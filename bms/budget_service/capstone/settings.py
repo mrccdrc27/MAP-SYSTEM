@@ -161,6 +161,13 @@ if AMS_CLIENT_API_KEY_EXPECTED:
 # Filter out None values if a key isn't set in .env
 SERVICE_API_KEYS = {k: v for k, v in SERVICE_API_KEYS.items() if k}
 
+# --- ADD THIS SECTION ---
+# CSRF Configuration - Required for Django 4.0+ cross-origin POST requests (Logout/Login)
+CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
+# Clean up list (trim spaces and remove empty strings)
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if origin.strip()]
+# ------------------------
+
 CORS_ALLOW_ALL_ORIGINS = True  # For development - restrict in production
 CORS_ALLOW_CREDENTIALS = True
 

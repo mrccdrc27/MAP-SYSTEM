@@ -361,7 +361,7 @@ SYSTEM_TEMPLATE_URLS = {
     'tts': config('TTS_SYSTEM_URL', default='http://localhost:1000'),
     'ams': config('AMS_SYSTEM_URL', default='http://localhost:3000/ams'),
     'hdts': config('HDTS_SYSTEM_URL', default='http://localhost:5173/employee/home'),
-    'bms': config('BMS_SYSTEM_URL', default='http://localhost:3000/bms'),
+    'bms': config('BMS_SYSTEM_URL', default='http://localhost:5173/'),
 }
 
 # Fallback system URL for unknown systems

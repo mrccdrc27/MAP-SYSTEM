@@ -49,13 +49,13 @@ class Command(BaseCommand):
                 {'email': 'admin@example.com', 'username': 'admin_auth', 'password': 'Password123!', 'first_name': 'AuthAdmin', 'last_name': 'User', 'role_code': 'ADMIN', 'dept_id': 1},
                 
                 # Finance Head sees everything
-                {'email': 'finance_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!', 'first_name': 'Finance', 'last_name': 'Head', 'role_code': 'FINANCE_HEAD', 'dept_id': 1},
+                {'email': 'finance_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!', 'first_name': 'Leon', 'last_name': 'Kennedy', 'role_code': 'FINANCE_HEAD', 'dept_id': 1},
                 
                 # IT User 
                 {'email': 'it_user@example.com', 'username': 'it_user_auth', 'password': 'Password123!', 'first_name': 'IT', 'last_name': 'Support', 'role_code': 'GENERAL_USER', 'dept_id': 3},
                 
                 # Ops User (GENERAL_USER = Restricted to Department)
-                {'email': 'ops_user@example.com', 'username': 'ops_user_auth', 'password': 'password123', 'first_name': 'Operations', 'last_name': 'Staff', 'role_code': 'GENERAL_USER', 'dept_id': 4},
+                {'email': 'ops_user@example.com', 'username': 'ops_user_auth', 'password': 'password123', 'first_name': 'Chris', 'last_name': 'Redfield', 'role_code': 'GENERAL_USER', 'dept_id': 4},
                 
                 # Extra Admin
                 {'email': 'adibentulan@gmail.com', 'username': 'adi123', 'password': 'password123', 'first_name': 'Eldrin', 'last_name': 'Adi', 'role_code': 'ADMIN', 'dept_id': 3},

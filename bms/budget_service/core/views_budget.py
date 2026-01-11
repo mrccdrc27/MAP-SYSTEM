@@ -107,19 +107,20 @@ class BudgetProposalSummaryView(generics.GenericAPIView):
     def get(self, request):
         user = request.user
         bms_role = get_user_bms_role(user)
-        
+
         # --- NEW CODE: Filter by Current Fiscal Year ---
         today = timezone.now().date()
         current_fiscal_year = FiscalYear.objects.filter(
-            start_date__lte=today, 
-            end_date__gte=today, 
+            start_date__lte=today,
+            end_date__gte=today,
             is_active=True
         ).first()
 
         active_proposals = BudgetProposal.objects.filter(is_deleted=False)
-        
+
         if current_fiscal_year:
-            active_proposals = active_proposals.filter(fiscal_year=current_fiscal_year)
+            active_proposals = active_proposals.filter(
+                fiscal_year=current_fiscal_year)
         # -----------------------------------------------
 
         # DATA ISOLATION
@@ -187,6 +188,20 @@ class ProposalHistoryView(generics.ListAPIView):
         ).prefetch_related(
             'proposal__items__account__account_type'  # Add prefetch for better performance
         ).all()
+
+        # --- MODIFICATION START: Data Isolation ---
+        user = self.request.user
+        bms_role = get_user_bms_role(user)
+
+        if bms_role == 'GENERAL_USER':
+            department_id = getattr(user, 'department_id', None)
+            if department_id:
+                # Filter history items where the parent proposal belongs to the user's department
+                qs = qs.filter(proposal__department_id=department_id)
+            else:
+                # Fallback: If General User has no department, they see nothing
+                return ProposalHistory.objects.none()
+        # --- MODIFICATION END ---
 
         # Search by ticket ID or proposal title
         search = self.request.query_params.get('search')
@@ -451,8 +466,7 @@ class JournalEntryListView(generics.ListAPIView):
                 qs = qs.filter(department_id=department_id)
             else:
                 return JournalEntry.objects.none()
-            
-            
+
         search = self.request.query_params.get('search')
         category = self.request.query_params.get('category')
         department = self.request.query_params.get('department')
@@ -571,6 +585,7 @@ class AccountTypeDropdownView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
+
 class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for the User Interface (UI).
@@ -686,9 +701,12 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
         review_input_serializer.is_valid(raise_exception=True)
 
         new_status = review_input_serializer.validated_data['status']
-        comment_text = review_input_serializer.validated_data.get('comment', '')
-        finance_operator = review_input_serializer.validated_data.get('finance_manager_name', '')
-        signature_file = review_input_serializer.validated_data.get('signature')
+        comment_text = review_input_serializer.validated_data.get(
+            'comment', '')
+        finance_operator = review_input_serializer.validated_data.get(
+            'finance_manager_name', '')
+        signature_file = review_input_serializer.validated_data.get(
+            'signature')
 
         reviewer_user_id = request.user.id
         reviewer_name = request.user.get_full_name() or request.user.username
@@ -756,9 +774,9 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                         'comment': comment_text,
                         'reviewed_by': reviewer_name,
                         'reviewed_at': timezone.now().isoformat(),
-                        
+
                         # NEW FIELD: This is the key AMS needs
-                        'order_number': proposal.external_system_id 
+                        'order_number': proposal.external_system_id
                     }
                     headers = {
                         'Content-Type': 'application/json',
@@ -766,10 +784,11 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                     }
                     requests.post(
                         dts_callback_url, json=payload, headers=headers, timeout=5)
-                    
+
                     proposal.sync_status = 'SYNCED'
                     proposal.last_sync_timestamp = timezone.now()
-                    proposal.save(update_fields=['sync_status', 'last_sync_timestamp'])
+                    proposal.save(
+                        update_fields=['sync_status', 'last_sync_timestamp'])
             except requests.RequestException:
                 proposal.sync_status = 'FAILED'
                 proposal.save(update_fields=['sync_status'])
@@ -806,7 +825,8 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
             comments=f"Comment added: '{comment_text}'"
         )
         return Response(ProposalCommentSerializer(comment_obj).data, status=status.HTTP_201_CREATED)
-    
+
+
 class ExternalBudgetProposalViewSet(viewsets.ModelViewSet):
     """
     ViewSet for EXTERNAL service-to-service communication (e.g., from DTS/TTS).
@@ -1604,7 +1624,7 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         data = serializer.validated_data
         user = self.request.user
         amount = data['amount']
-        
+
         # --- NEW CODE: Extract Transfer Type ---
         transfer_type = data.get('transfer_type', 'TRANSFER')
         # ---------------------------------------
@@ -1612,22 +1632,24 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         source_alloc = data.get('source_alloc')
         dest_alloc = data.get('dest_alloc')
         dept = data['department']
-        
+
         # --- NEW CODE: Description Update ---
-        description = data.get('description') or f"Budget {transfer_type.title()}"
+        description = data.get(
+            'description') or f"Budget {transfer_type.title()}"
         # ------------------------------------
 
         with transaction.atomic():
             # 1. Update Allocations (Real Impact)
-            
+
             # --- NEW CODE: Handle Transfer vs Supplemental ---
             if transfer_type == 'TRANSFER':
                 if source_alloc:
                     source_alloc.amount -= amount  # Reduce source
                     if source_alloc.amount < 0:
-                        raise serializers.ValidationError("Source allocation cannot go negative")
+                        raise serializers.ValidationError(
+                            "Source allocation cannot go negative")
                     source_alloc.save()
-            
+
             # For Supplemental, we DO NOT deduct from source (it's new money)
             # -------------------------------------------------
 
@@ -1646,22 +1668,23 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 created_by_user_id=user.id,
                 created_by_username=getattr(user, 'username', 'N/A')
             )
-            
+
             # --- NEW CODE: Source Account Logic for JE ---
             source_account = data.get('source_account_obj')
-            
+
             if transfer_type == 'SUPPLEMENTAL':
                 # If Supplemental, we credit a generic "Treasury" or "Equity" account
                 # because the money isn't coming from another allocation.
                 if not source_account:
                     # Fallback lookup for a system account
                     source_account = Account.objects.filter(
-                        Q(name__icontains='Treasury') | Q(account_type__name='Equity')
+                        Q(name__icontains='Treasury') | Q(
+                            account_type__name='Equity')
                     ).first()
-            
+
             if not source_account:
-                 # Safety fallback to prevent crash, though in production this should be configured
-                 source_account = Account.objects.filter(is_active=True).first()
+                # Safety fallback to prevent crash, though in production this should be configured
+                source_account = Account.objects.filter(is_active=True).first()
             # ---------------------------------------------
 
             # For Asset Accounts (Budget Accounts):
@@ -1697,31 +1720,35 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 # MODIFICATION START: Endpoint for Operators to Request Supplemental Budget
+
+
 @extend_schema(
     tags=["Supplemental Budget"],
     summary="Request Supplemental Budget (Operator)",
     description="Creates a pending BudgetTransfer. Automatically creates a 0-balance allocation bucket if one does not exist for the Project+Category.",
     request=SupplementalBudgetRequestSerializer,
-    responses={201: OpenApiResponse(description="Request submitted successfully")}
+    responses={201: OpenApiResponse(
+        description="Request submitted successfully")}
 )
 class SupplementalBudgetRequestView(generics.CreateAPIView):
-    permission_classes = [IsBMSUser] 
+    permission_classes = [IsBMSUser]
     serializer_class = SupplementalBudgetRequestSerializer
 
     def perform_create(self, serializer):
         data = serializer.validated_data
         user = self.request.user
-        
+
         allocation = data.get('allocation_obj')
-        
+
         # If allocation doesn't exist, create a placeholder one ($0)
         if not allocation:
             with transaction.atomic():
                 # Simplified Account selection: Use default Expense account
-                account = Account.objects.filter(account_type__name='Expense').first()
+                account = Account.objects.filter(
+                    account_type__name='Expense').first()
                 if not account:
-                     # Absolute fallback
-                     account = Account.objects.first()
+                    # Absolute fallback
+                    account = Account.objects.first()
 
                 allocation = BudgetAllocation.objects.create(
                     fiscal_year=data['fiscal_year_obj'],
@@ -1732,13 +1759,13 @@ class SupplementalBudgetRequestView(generics.CreateAPIView):
                     amount=Decimal('0.00'),
                     created_by_name='System (Supplemental Request)',
                     is_active=True,
-                    is_locked=False # Unlocked so it can receive funds
+                    is_locked=False  # Unlocked so it can receive funds
                 )
 
         # Create Transfer Record with status PENDING
         BudgetTransfer.objects.create(
             fiscal_year=data['fiscal_year_obj'],
-            source_allocation=None, 
+            source_allocation=None,
             destination_allocation=allocation,
             amount=data['amount'],
             reason=data['reason'],
@@ -1747,7 +1774,7 @@ class SupplementalBudgetRequestView(generics.CreateAPIView):
             transferred_by_user_id=user.id,
             transferred_by_username=getattr(user, 'username', 'N/A')
         )
-        
+
         # Optional: Log activity
         UserActivityLog.objects.create(
             user_id=user.id,
@@ -1755,7 +1782,8 @@ class SupplementalBudgetRequestView(generics.CreateAPIView):
             log_type='CREATE',
             action=f"Requested supplemental budget of {data['amount']} for {data['department_obj'].code}",
             status='SUCCESS',
-            details={'category': data['category_obj'].name, 'project': data['project_obj'].name}
+            details={'category': data['category_obj'].name,
+                     'project': data['project_obj'].name}
         )
 
     def create(self, request, *args, **kwargs):
@@ -1764,7 +1792,8 @@ class SupplementalBudgetRequestView(generics.CreateAPIView):
         self.perform_create(serializer)
         return Response({"message": "Supplemental budget request submitted for approval."}, status=status.HTTP_201_CREATED)
 # MODIFICATION END
-    
+
+
 class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
     """
     ViewSet for EXTERNAL services (e.g., AMS Disposal) to create Journal Entries.
@@ -1773,7 +1802,8 @@ class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
     queryset = JournalEntry.objects.all()
     serializer_class = JournalEntryCreateSerializer
     # TODO: Double check to TTS, regarding API authentication
-    authentication_classes = [APIKeyAuthentication] # Defined in core/service_authentication.py 
+    # Defined in core/service_authentication.py
+    authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsTrustedService]
     http_method_names = ['post']
 
@@ -1783,6 +1813,8 @@ class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 # MODIFICATION START: Manage Budget Transfers (Approval Workflow)
+
+
 @extend_schema(tags=['Supplemental Budget'])
 class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -1790,11 +1822,12 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
     Used for the 'Supplemental Budget Approval' tab in BudgetAllocation.jsx.
     """
     # MODIFIED: Allow all BMS users to view list, but restrict actions
-    permission_classes = [IsBMSUser] 
+    permission_classes = [IsBMSUser]
     serializer_class = BudgetTransferSerializer
     pagination_class = FiveResultsSetPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    search_fields = ['reason', 'destination_allocation__department__name', 'transferred_by_username']
+    search_fields = [
+        'reason', 'destination_allocation__department__name', 'transferred_by_username']
     filterset_fields = ['status', 'transfer_type']
 
     def get_queryset(self):
@@ -1805,7 +1838,7 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = BudgetTransfer.objects.filter(
             transfer_type='SUPPLEMENTAL'
         ).select_related(
-            'destination_allocation__department', 
+            'destination_allocation__department',
             'destination_allocation__category'
         ).order_by('-transferred_at')
 
@@ -1822,47 +1855,51 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
     @extend_schema(
         summary="Approve a Supplemental Budget Request",
         request=None,
-        responses={200: OpenApiResponse(description="Request Approved and Budget Updated")}
+        responses={200: OpenApiResponse(
+            description="Request Approved and Budget Updated")}
     )
     # MODIFIED: Explicit permission check for action
     @extend_schema(
         summary="Approve a Supplemental Budget Request",
         request=None,
-        responses={200: OpenApiResponse(description="Request Approved and Budget Updated")}
+        responses={200: OpenApiResponse(
+            description="Request Approved and Budget Updated")}
     )
     # MODIFIED: Explicit permission check for action
     @action(detail=True, methods=['post'], permission_classes=[IsBMSFinanceHead])
     def approve(self, request, pk=None):
         transfer = self.get_object()
-        
+
         if transfer.status != 'PENDING':
             return Response(
-                {"error": "Only pending requests can be approved."}, 
+                {"error": "Only pending requests can be approved."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         with transaction.atomic():
             # 1. Get the allocation and verify department exists
             allocation = transfer.destination_allocation
-            
+
             # --- FIX: Explicit Department Check ---
             if not allocation.department:
                 return Response(
                     {"error": "Allocation is missing department. Cannot process supplemental budget."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             department = allocation.department
-            
+
             # --- DEBUG LOGGING (Remove in production) ---
             print(f"🔍 Approving Transfer {transfer.id}")
             print(f"   Allocation ID: {allocation.id}")
-            print(f"   Department ID: {department.id if department else 'NONE'}")
-            print(f"   Department Name: {department.name if department else 'NONE'}")
-            
+            print(
+                f"   Department ID: {department.id if department else 'NONE'}")
+            print(
+                f"   Department Name: {department.name if department else 'NONE'}")
+
             # 2. Find Equity/Treasury Account
             equity_account = Account.objects.filter(
-                Q(account_type__name__iexact='Equity') | 
+                Q(account_type__name__iexact='Equity') |
                 Q(name__icontains='Retained Earnings') |
                 Q(name__icontains='Treasury')
             ).first()
@@ -1876,7 +1913,8 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
             # 3. Update Transfer Status
             transfer.status = 'APPROVED'
             transfer.approved_by_user_id = request.user.id
-            transfer.approved_by_username = getattr(request.user, 'username', 'N/A')
+            transfer.approved_by_username = getattr(
+                request.user, 'username', 'N/A')
             transfer.approval_date = timezone.now()
             transfer.save()
 
@@ -1895,9 +1933,10 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
                 created_by_user_id=request.user.id,
                 created_by_username=getattr(request.user, 'username', 'N/A')
             )
-            
+
             # --- VERIFICATION LOG ---
-            print(f"✅ Created JE {je.entry_id} with Department: {je.department.name if je.department else 'STILL NONE!'}")
+            print(
+                f"✅ Created JE {je.entry_id} with Department: {je.department.name if je.department else 'STILL NONE!'}")
 
             # 6. Create Journal Lines
             JournalEntryLine.objects.create(
@@ -1921,9 +1960,10 @@ class BudgetTransferViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         return Response(
-            {"message": "Supplemental budget approved and ledger updated."}, 
+            {"message": "Supplemental budget approved and ledger updated."},
             status=status.HTTP_200_OK
         )
+
 
 class FiscalYearViewSet(viewsets.ModelViewSet):
     """
@@ -1932,7 +1972,7 @@ class FiscalYearViewSet(viewsets.ModelViewSet):
     """
     queryset = FiscalYear.objects.all().order_by('-start_date')
     serializer_class = FiscalYearSerializer
-    permission_classes = [IsBMSFinanceHead] # Restricted to Finance Head/Admin
+    permission_classes = [IsBMSFinanceHead]  # Restricted to Finance Head/Admin
 
     @action(detail=True, methods=['post'])
     def set_status(self, request, pk=None):
@@ -1941,10 +1981,10 @@ class FiscalYearViewSet(viewsets.ModelViewSet):
         Payload: { "status": "Locked" }
         """
         fiscal_year = self.get_object()
-        status_action = request.data.get('status') # Open, Locked, Closed
+        status_action = request.data.get('status')  # Open, Locked, Closed
 
         if status_action == 'Open':
-            # Ensure only one open year exists? 
+            # Ensure only one open year exists?
             # For now, just set flags. Business logic usually implies one active.
             fiscal_year.is_active = True
             fiscal_year.is_locked = False
@@ -1956,10 +1996,11 @@ class FiscalYearViewSet(viewsets.ModelViewSet):
             fiscal_year.is_locked = True
         else:
             return Response({'error': 'Invalid status'}, status=400)
-        
+
         fiscal_year.save()
         return Response(self.get_serializer(fiscal_year).data)
-    
+
+
 @extend_schema(
     tags=['Ledger View'],
     summary="Retrieve Journal Entry Details",
@@ -1970,4 +2011,4 @@ class JournalEntryDetailView(generics.RetrieveAPIView):
     queryset = JournalEntry.objects.all()
     serializer_class = JournalEntryDetailSerializer
     permission_classes = [IsBMSUser]
-    lookup_field = 'entry_id' # We will look up by "JE-2026-XXXX"
+    lookup_field = 'entry_id'  # We will look up by "JE-2026-XXXX"

@@ -904,7 +904,7 @@ class ExpenseAttachment(models.Model):
     def __str__(self):
         return f"Attachment for {self.expense.transaction_id}"
 
-class Document(models.Model):
+class Document(models.Model): # Dead code
     DOCUMENT_TYPES = [
         ('RECEIPT', 'Receipt'),
         ('PROPOSAL', 'Budget Proposal'),

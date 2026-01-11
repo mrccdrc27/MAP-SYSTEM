@@ -735,26 +735,55 @@ const ProposalHistory = () => {
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
-  // Fetch Departments
+// Fetch Departments
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
         const res = await getAllDepartments();
-        const opts = res.data.map((d) => ({
+        let opts = res.data.map((d) => ({
           value: d.id,
           label: d.name,
           code: d.code,
         }));
-        setDepartmentOptions([
-          { value: "", label: "All Departments", code: "All Departments" },
-          ...opts,
-        ]);
+
+        // --- MODIFICATION START: Data Isolation for Operators ---
+        // Determine role locally to enforce isolation
+        let currentRole = "User";
+        if (getBmsRole) {
+            currentRole = getBmsRole();
+        } else if (user?.role) {
+            currentRole = user.role;
+        }
+
+        if (currentRole === 'GENERAL_USER' && user?.department_id) {
+            // Filter options to only the user's department
+            opts = opts.filter(d => d.value === user.department_id);
+            
+            // Auto-select the single department
+            if (opts.length > 0) {
+                setSelectedDepartment(opts[0].value);
+            }
+            
+            // Set options without "All Departments" to restrict selection
+            setDepartmentOptions(opts);
+        } else {
+            // Admin/Finance Head: Show all options
+            setDepartmentOptions([
+              { value: "", label: "All Departments", code: "All Departments" },
+              ...opts,
+            ]);
+        }
+        // --- MODIFICATION END ---
+
       } catch (err) {
         console.error("Failed to fetch departments", err);
       }
     };
-    fetchDepartments();
-  }, []);
+    
+    if (user) {
+        fetchDepartments();
+    }
+  }, [user, getBmsRole]); // Updated dependencies
 
   // Fetch History Data
   useEffect(() => {

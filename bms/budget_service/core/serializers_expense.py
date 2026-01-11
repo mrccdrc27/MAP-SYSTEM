@@ -10,6 +10,7 @@ from .views_utils import get_user_bms_role
 class ExpenseMessageSerializer(serializers.ModelSerializer):
     """
     Serializer for incoming expense creation requests from other services (AMS, HDS).
+    Updated to support file attachments (Receipts).
     """
     ticket_id = serializers.CharField(
         write_only=True, source='transaction_id', required=True)
@@ -23,15 +24,24 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
     category_code = serializers.CharField(write_only=True, required=True)
     submitted_by_name = serializers.CharField(write_only=True, required=True)
 
+    # --- ADDED: Support for Attachments ---
+    attachments = serializers.ListField(
+        child=serializers.FileField(allow_empty_file=False),
+        write_only=True,
+        required=False,
+        help_text="List of file attachments (Receipts, Invoices)"
+    )
+
     class Meta:
         model = Expense
         fields = [
             'ticket_id', 'order_number', 'account_code', 'category_code', 'submitted_by_name',
-            'amount', 'date', 'description', 'vendor', 'notes'
+            'amount', 'date', 'description', 'vendor', 'notes', 'attachments' # Added attachments
         ]
 
     def create(self, validated_data):
         order_number = validated_data.pop('order_number')
+        attachments_data = validated_data.pop('attachments', []) # Extract attachments
 
         try:
             project = Project.objects.get(
@@ -55,21 +65,30 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f'No active budget allocation found for project "{project.name}".')
 
-        expense = Expense.objects.create(
-            transaction_id=validated_data['transaction_id'],
-            project=project,
-            account=account,
-            category=category,
-            department=project.department,
-            budget_allocation=allocation,
-            amount=validated_data['amount'],
-            date=validated_data['date'],
-            description=validated_data['description'],
-            vendor=validated_data['vendor'],
-            notes=validated_data.get('notes', ''),
-            submitted_by_username=validated_data['submitted_by_name'],
-            status='SUBMITTED'
-        )
+        # Atomic transaction to ensure expense and files are saved together
+        with transaction.atomic():
+            expense = Expense.objects.create(
+                transaction_id=validated_data['transaction_id'],
+                project=project,
+                account=account,
+                category=category,
+                department=project.department,
+                budget_allocation=allocation,
+                amount=validated_data['amount'],
+                date=validated_data['date'],
+                description=validated_data['description'],
+                vendor=validated_data['vendor'],
+                notes=validated_data.get('notes', ''),
+                submitted_by_username=validated_data['submitted_by_name'],
+                status='SUBMITTED' # Enforce manual approval
+            )
+
+            # --- ADDED: Save Attachments ---
+            if attachments_data:
+                for file in attachments_data:
+                    ExpenseAttachment.objects.create(
+                        expense=expense, file=file)
+
         return expense
 
 

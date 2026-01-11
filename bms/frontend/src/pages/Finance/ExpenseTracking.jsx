@@ -406,6 +406,7 @@ const Status = ({ type, name }) => {
   );
 };
 
+
 // --- PAGINATION COMPONENT (From Original) ---
 const Pagination = ({
   currentPage,
@@ -754,6 +755,7 @@ const ExpenseTracking = () => {
   };
   const [newExpense, setNewExpense] = useState(initialExpenseState);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const fileInputRef = React.useRef(null);
 
   // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
   const getUserRole = () => {
@@ -996,7 +998,7 @@ const ExpenseTracking = () => {
 
     // Date Validation to prevent overflow
     if (name === "date") {
-      if (value.length > 10) return; 
+      if (value.length > 10) return;
     }
 
     // Amount Validation: Allow only numbers and up to 2 decimal places
@@ -1023,6 +1025,13 @@ const ExpenseTracking = () => {
     setNewExpense((prev) => ({ ...prev, attachments: validFiles }));
   };
 
+  const handleClearFiles = () => {
+  setNewExpense((prev) => ({ ...prev, attachments: [] }));
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
+};
+
   // --- UPDATED: Handle Submit with Custom Alert ---
   const handleSubmitExpense = async (e) => {
     e.preventDefault();
@@ -1046,12 +1055,13 @@ const ExpenseTracking = () => {
 
     try {
       await createExpense(formData);
-      
+
       // Success flow
       setShowAddExpenseModal(false);
       setNewExpense(initialExpenseState);
       setCategories([]);
-      
+      handleClearFiles();
+
       // Refresh data
       const summaryRes = await getExpenseSummary();
       setSummaryData(summaryRes.data);
@@ -1067,7 +1077,6 @@ const ExpenseTracking = () => {
       setTotalItems(expensesRes.data.count);
 
       showAlert("Expense submitted successfully!", "success"); // UPDATED
-
     } catch (error) {
       console.error("Failed to submit expense:", error);
 
@@ -1083,7 +1092,7 @@ const ExpenseTracking = () => {
         error.response?.data?.non_field_errors?.[0] ||
         error.response?.data?.detail ||
         "An unexpected error occurred.";
-      
+
       showAlert(`Error: ${errorMsg}`, "error"); // UPDATED
     }
   };
@@ -1112,6 +1121,7 @@ const ExpenseTracking = () => {
       setSoftCapInfo(null);
       setNewExpense(initialExpenseState);
       setCategories([]);
+      handleClearFiles();
 
       // Refresh data logic...
       const summaryRes = await getExpenseSummary();
@@ -1128,10 +1138,10 @@ const ExpenseTracking = () => {
       setTotalItems(expensesRes.data.count);
 
       showAlert("Expense submitted with exception justification.", "success"); // UPDATED
-
     } catch (error) {
       console.error("Failed to submit soft cap exception:", error);
-      const errorMsg = error.response?.data?.detail || "Failed to submit exception.";
+      const errorMsg =
+        error.response?.data?.detail || "Failed to submit exception.";
       showAlert(`Error: ${errorMsg}`, "error"); // UPDATED
     }
   };
@@ -1672,8 +1682,6 @@ const ExpenseTracking = () => {
           </div>
         </div>
       </nav>
-      
-
 
       <div
         className="content-container"
@@ -2945,13 +2953,14 @@ const ExpenseTracking = () => {
                         position: "relative",
                         backgroundColor: "#fafafa",
                       }}
-                      onClick={() =>
-                        document.getElementById("file-input").click()
-                      }
+                      onClick={() => fileInputRef.current.click()}
                     >
                       <input
                         type="file"
-                        id="file-input"
+                        // --- MODIFICATION START: Add Ref ---
+                        ref={fileInputRef}
+                        // --- MODIFICATION END ---
+                        id="file-input" // Keep ID if needed for other CSS, but ref handles logic
                         multiple
                         accept=".jpg,.jpeg,.png,.pdf"
                         onChange={handleFileChange}
@@ -3053,6 +3062,7 @@ const ExpenseTracking = () => {
                           setShowAddExpenseModal(false);
                           setNewExpense(initialExpenseState);
                           setCategories([]);
+                          handleClearFiles();
                         }}
                         onMouseDown={(e) => e.preventDefault()}
                         style={{
@@ -3482,7 +3492,7 @@ const ExpenseTracking = () => {
         type={alertState.type}
         onClose={closeAlert}
       />
-      
+
       {/* Soft Cap Modal */}
       <SoftCapModal
         isOpen={showSoftCapModal}
