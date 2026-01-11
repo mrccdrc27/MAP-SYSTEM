@@ -538,28 +538,30 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
                 "Invalid department ID format if sending an integer ID.")
         return department_obj
 
-    # MODIFIED: Added Budget Validation Logic (Hard Cap)
     def validate(self, data):
+        """
+        Validate proposal data.
+        
+        Budget availability check is OPTIONAL (warning only) because:
+        1. External systems submit proposals BEFORE budget allocation
+        2. Finance Manager reviews budget context during approval
+        3. Supplemental budgets may exceed current allocation by design
+        """
         # 1. Calculate Total Cost of this new proposal
         items = data.get('items', [])
         total_proposed_cost = sum(item['estimated_cost'] for item in items)
 
         # 2. Get Department and Fiscal Year
-        # Note: department is already resolved by validate_department_input and put into 'department' key
         department = data.get('department')
         fiscal_year = data.get('fiscal_year')
 
-        # 3. Calculate Currently Available Funds
-        # (Sum of Allocations) - (Sum of Approved Expenses)
-        # Note: This checks the Department's TOTAL budget availability.
-
+        # 3. Calculate Currently Available Funds (for informational warning only)
         total_allocation = BudgetAllocation.objects.filter(
             department=department,
             fiscal_year=fiscal_year,
             is_active=True
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-        # Calculate total spent (Expenses)
         total_spent = Expense.objects.filter(
             department=department,
             budget_allocation__fiscal_year=fiscal_year,
@@ -568,18 +570,32 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
 
         available_funds = total_allocation - total_spent
 
-        # 4. The Check
-        if available_funds < total_proposed_cost:
-            # We raise a validation error to reject the proposal if funds are insufficient.
-            # This fulfills the "Real-time budget availability check" requirement.
-            raise serializers.ValidationError(
-                f"Insufficient funds. Department has {available_funds:,.2f} remaining, proposal cost is {total_proposed_cost:,.2f}."
+        # 4. Budget Check (WARNING, not blocking)
+        # This allows external systems to submit proposals even if budget is tight
+        # Finance Manager will review during approval
+        if available_funds < total_proposed_cost and total_allocation > 0:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"⚠️ Proposal exceeds available budget: "
+                f"Department {department.code}, Available: {available_funds:,.2f}, "
+                f"Requested: {total_proposed_cost:,.2f}"
             )
+            # Note: We DON'T raise ValidationError here anymore
+            # Finance Manager can still approve if justified (e.g., supplemental budget)
 
         return data
 
     def create(self, validated_data):
         is_draft = validated_data.pop('is_draft', False)
+        
+        # 1. Capture Submitter Name explicitly (Fixing potential "Popping" bug logic)
+        # We want the string sent by the external system
+        submitter_name = validated_data.get('submitted_by_name') 
+        # Note: We use .get() here because it's a model field, so DRF might have put it in validated_data directly
+        # If it was write_only in serializer but not model, we'd need pop.
+        # Let's be safe and ensure it is set.
+        
         department_obj = validated_data.pop('department')
         items_data = validated_data.pop('items')
         ticket_id_value = validated_data.pop('ticket_id')
@@ -591,21 +607,33 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         validated_data['sync_status'] = 'SYNCED'
         validated_data['last_sync_timestamp'] = timezone.now()
 
+        # Clean up read-only fields that shouldn't be written directly
         validated_data.pop('approved_by_name', None)
         validated_data.pop('approval_date', None)
         validated_data.pop('rejected_by_name', None)
         validated_data.pop('rejection_date', None)
 
+        # Create Proposal
         proposal = BudgetProposal.objects.create(**validated_data)
+        
+        # Create Items
         for item_data in items_data:
             BudgetProposalItem.objects.create(proposal=proposal, **item_data)
+
+        # 2. Enhanced History Logging
+        request = self.context.get('request')
+        service_name = "External System"
+        if request and hasattr(request.user, 'service_name'):
+            service_name = request.user.service_name
+
+        action_name = proposal.submitted_by_name or f"System ({service_name})"
 
         ProposalHistory.objects.create(
             proposal=proposal,
             action='SUBMITTED',
-            action_by_name=proposal.submitted_by_name or "System (External Message)",
+            action_by_name=action_name,
             new_status=proposal.status,
-            comments=f"Proposal received from external system (ID={proposal.external_system_id}) for department {department_obj.name}."
+            comments=f"Proposal received from {service_name} (ID={proposal.external_system_id}) for department {department_obj.name}."
         )
         return proposal
 

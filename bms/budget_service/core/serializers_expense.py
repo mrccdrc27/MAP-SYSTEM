@@ -40,25 +40,27 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        # Extract pre-resolved objects (if validate was called)
-        # Fallback to lookup if not present (safety)
+        # 1. Extract Pre-resolved Objects
         if 'project_obj' in validated_data:
             project = validated_data.pop('project_obj')
             account = validated_data.pop('account_obj')
             category = validated_data.pop('category_obj')
             
-            # Remove string fields that are no longer needed
+            # Remove helper fields
             validated_data.pop('order_number', None)
             validated_data.pop('account_code', None)
             validated_data.pop('category_code', None)
         else:
-            # ORIGINAL LOOKUP LOGIC (Keep this as fallback or remove if confident)
+            # Fallback lookup (should rarely happen if validate() passes)
             order_number = validated_data.pop('order_number')
             project = Project.objects.get(budget_proposal__external_system_id=order_number)
             account = Account.objects.get(code=validated_data.pop('account_code'))
             category = ExpenseCategory.objects.get(code=validated_data.pop('category_code'))
 
-        validated_data.pop('submitted_by_name', None) # Cleanup if needed
+        # 2. CAPTURE THE NAME BEFORE POPPING (Fixing the "Popping" Bug)
+        # We capture the string sent by the external system (e.g., "John Doe")
+        submitter_name_str = validated_data.pop('submitted_by_name', 'External System')
+        
         attachments_data = validated_data.pop('attachments', [])
 
         allocation = BudgetAllocation.objects.filter(
@@ -66,6 +68,16 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
         
         if not allocation:
              raise serializers.ValidationError(f'No active budget allocation found for project "{project.name}".')
+
+        # 3. DETERMINE USER ID (Fixing the "User ID" Bug)
+        request = self.context.get('request')
+        
+        # Default to 0 for External Services (ServicePrincipal has no DB ID)
+        user_id_to_save = 0 
+        
+        # If this serializer is ever used by a real internal user, use their ID
+        if request and hasattr(request.user, 'id') and isinstance(request.user.id, int):
+            user_id_to_save = request.user.id
 
         with transaction.atomic():
             expense = Expense.objects.create(
@@ -80,12 +92,16 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
                 description=validated_data['description'],
                 vendor=validated_data['vendor'],
                 notes=validated_data.get('notes', ''),
-                submitted_by_username=validated_data.get('submitted_by_name', 'System'),
+                
+                # --- APPLIED FIXES ---
+                submitted_by_user_id=user_id_to_save,      # 0 for External
+                submitted_by_username=submitter_name_str,  # "John Doe" (String)
+                # ---------------------
+                
                 status='SUBMITTED',
                 **validated_data
             )
 
-            # --- ADDED: Save Attachments ---
             if attachments_data:
                 for file in attachments_data:
                     ExpenseAttachment.objects.create(

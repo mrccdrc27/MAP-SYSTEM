@@ -30,6 +30,7 @@ user_management_router.register(
     r'monthly-budget-actual', MonthlyBudgetActualViewSet, basename='monthly-budget-actual')
 
 router = DefaultRouter()
+router.register(r'external-references', views_budget.ExternalReferenceViewSet, basename='external-references') # NEW
 router.register(r'external-budget-proposals',
                 views_budget.ExternalBudgetProposalViewSet, basename='external-budget-proposals')
 router.register(r'external-expenses', ExternalExpenseViewSet, basename='external-expenses')
