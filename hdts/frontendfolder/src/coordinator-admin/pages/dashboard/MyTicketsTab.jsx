@@ -215,7 +215,7 @@ const TrendLineChart = ({ data, title }) => {
     labels: data.map(item => item.month),
     datasets: [
       {
-        label: 'Submitted Tickets',
+        label: 'Assigned Tickets',
         data: data.map(item => item.dataset1),
         fill: false,
         borderColor: '#3e506cff',
@@ -226,7 +226,7 @@ const TrendLineChart = ({ data, title }) => {
         pointHoverRadius: 6,
       },
       {
-        label: 'Closed Tickets',
+        label: 'Resolved Tickets',
         data: data.map(item => item.dataset2),
         fill: false,
         borderColor: '#22C55E',
@@ -310,6 +310,108 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
   const [ticketDataState, setTicketDataState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activityTimeline, setActivityTimeline] = useState([]);
+  const [rawTickets, setRawTickets] = useState([]);
+
+  // Helper to get ticket date
+  const getTicketDate = (ticket, field) => {
+    const dateRaw = ticket[field] || ticket.submit_date || ticket.submitDate || ticket.createdAt || ticket.created_at;
+    if (!dateRaw) return null;
+    const d = new Date(dateRaw);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // Helper to get resolved date (time_closed or updated when status is resolved/closed)
+  const getResolvedDate = (ticket) => {
+    const resolvedRaw = ticket.time_closed || ticket.timeClosed || ticket.closedAt || ticket.closed_at || ticket.resolvedAt || ticket.resolved_at;
+    if (resolvedRaw) {
+      const d = new Date(resolvedRaw);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  };
+
+  // Aggregate line data: Assigned Tickets (tickets assigned within period) and Resolved Tickets (tickets resolved where user is owner)
+  const aggregateLine = (tickets, range = 'month') => {
+    const now = new Date();
+    
+    if (range === 'days') {
+      const days = Array.from({ length: 7 }).map((_, i) => {
+        const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
+        day.setHours(0, 0, 0, 0);
+        return day;
+      });
+      return days.map(d => {
+        const next = new Date(d);
+        next.setDate(d.getDate() + 1);
+        // Count tickets assigned within this day (based on submit_date or assigned_date)
+        const assigned = tickets.filter(t => {
+          const c = getTicketDate(t, 'submit_date') || getTicketDate(t, 'assigned_date');
+          return c && c >= d && c < next;
+        }).length;
+        // Count resolved tickets where user is ticket owner and resolved within this day
+        const resolved = tickets.filter(t => {
+          const status = (t.status || '').toLowerCase();
+          const isResolved = status === 'resolved' || status === 'closed';
+          if (!isResolved) return false;
+          const c = getResolvedDate(t);
+          return c && c >= d && c < next;
+        }).length;
+        const label = `${String(d.getDate()).padStart(2, '0')} ${d.toLocaleString(undefined, { month: 'short' })}`;
+        return { month: label, dataset1: assigned, dataset2: resolved };
+      });
+    }
+    
+    if (range === 'week') {
+      const weeks = [];
+      const curr = new Date(now);
+      const dayOfWeek = (curr.getDay() + 6) % 7;
+      const startOfThisWeek = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate() - dayOfWeek);
+      for (let i = 3; i >= 0; i--) {
+        const start = new Date(startOfThisWeek);
+        start.setDate(start.getDate() - (i * 7));
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        weeks.push({ start, end });
+      }
+      return weeks.map((w, idx) => {
+        const assigned = tickets.filter(t => {
+          const c = getTicketDate(t, 'submit_date') || getTicketDate(t, 'assigned_date');
+          return c && c >= w.start && c < w.end;
+        }).length;
+        const resolved = tickets.filter(t => {
+          const status = (t.status || '').toLowerCase();
+          const isResolved = status === 'resolved' || status === 'closed';
+          if (!isResolved) return false;
+          const c = getResolvedDate(t);
+          return c && c >= w.start && c < w.end;
+        }).length;
+        return { month: `W${idx + 1}`, dataset1: assigned, dataset2: resolved };
+      });
+    }
+    
+    // Default: month view (last 6 months)
+    const months = Array.from({ length: 6 }).map((_, i) => {
+      const m = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return m;
+    });
+    return months.map(m => {
+      const start = new Date(m.getFullYear(), m.getMonth(), 1);
+      const end = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+      const assigned = tickets.filter(t => {
+        const c = getTicketDate(t, 'submit_date') || getTicketDate(t, 'assigned_date');
+        return c && c >= start && c < end;
+      }).length;
+      const resolved = tickets.filter(t => {
+        const status = (t.status || '').toLowerCase();
+        const isResolved = status === 'resolved' || status === 'closed';
+        if (!isResolved) return false;
+        const c = getResolvedDate(t);
+        return c && c >= start && c < end;
+      }).length;
+      return { month: m.toLocaleString(undefined, { month: 'short' }), dataset1: assigned, dataset2: resolved };
+    });
+  };
 
   // Default empty data
   const defaultData = {
@@ -347,6 +449,9 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
         
         // Process the response data
         const tickets = Array.isArray(response) ? response : [];
+        
+        // Store raw tickets for line chart recomputation
+        setRawTickets(tickets);
         
         // Calculate priority stats
         const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
@@ -398,6 +503,9 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
           { name: 'Low', value: priorityCounts.Low, fill: '#2563EB' }
         ];
         
+        // Generate line data for Assigned Tickets and Resolved Tickets
+        const lineData = aggregateLine(tickets, chartRange);
+        
         // Generate activity timeline from recent tickets
         const recentTickets = tickets.slice(0, 5);
         const timeline = recentTickets.map(ticket => ({
@@ -409,7 +517,7 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
           stats,
           tableData,
           pieData,
-          lineData: [] // TODO: Generate line data from ticket history if needed
+          lineData
         });
         setActivityTimeline(timeline);
         setIsLoading(false);
@@ -428,6 +536,13 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
       mounted = false;
     };
   }, []);
+
+  // Recompute line data when chartRange changes
+  useEffect(() => {
+    if (rawTickets.length === 0) return;
+    const lineData = aggregateLine(rawTickets, chartRange);
+    setTicketDataState(prev => prev ? { ...prev, lineData } : prev);
+  }, [chartRange, rawTickets]);
 
   // Handle row click to navigate to ticket detail
   const handleRowClick = (row) => {

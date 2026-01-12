@@ -140,7 +140,12 @@ const CoordinatorAdminDashboard = () => {
                 />
               )}
               {activeTab === 'my-tickets' && (
-                <MyTicketsTab />
+                <MyTicketsTab
+                  chartRange={chartRange}
+                  setChartRange={setChartRange}
+                  pieRange={pieRange}
+                  setPieRange={setPieRange}
+                />
               )}
               {activeTab === 'users' && (
                 <UsersTab

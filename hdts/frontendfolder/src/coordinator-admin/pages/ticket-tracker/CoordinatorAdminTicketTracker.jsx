@@ -279,6 +279,10 @@ const renderDynamicValue = (val) => {
 const computeEffectiveStatus = (ticket) => {
   const rawStatus = (ticket.status || '').toString();
   const lower = rawStatus.toLowerCase();
+  
+  // Mask "Pending External" as "In Progress"
+  if (lower === 'pending external') return 'In Progress';
+  
   const baseIsNew = lower === 'new' || lower === 'submitted' || lower === 'pending';
   try {
     const created = new Date(ticket.createdAt || ticket.dateCreated || ticket.created_at || ticket.submit_date || ticket.submitDate);
@@ -352,7 +356,8 @@ export default function CoordinatorAdminTicketTracker() {
       performanceEndDate: t.performance_end_date || t.performanceEndDate || t.dynamic_data?.performanceEndDate || t.dynamicData?.performanceEndDate || null,
       performance_end_date: t.performance_end_date || t.performanceEndDate || t.dynamic_data?.performanceEndDate || t.dynamicData?.performanceEndDate || null,
       preparedBy: t.approved_by || t.preparedBy || t.dynamic_data?.preparedBy || t.dynamicData?.preparedBy || null,
-      status: t.status || '',
+      // Mask "Pending External" as "In Progress" for display
+      status: ((t.status || '').toLowerCase() === 'pending external') ? 'In Progress' : (t.status || ''),
       // Normalize priority across different backend shapes so admin UI can read it
       priorityLevel: t.priority || t.priorityLevel || t.priority_level || (t.coordinatorReview && (t.coordinatorReview.priority || t.coordinatorReview.priorityLevel)) || null,
       // Completion and CSAT fields (support multiple backend naming conventions)
@@ -654,7 +659,9 @@ export default function CoordinatorAdminTicketTracker() {
   const preparedByField = ticket.preparedBy || ticket.prepared_by || ticket.preparedByName || dyn.preparedBy || dyn.prepared_by || null;
   const totalBudgetField = (ticket.totalBudget ?? ticket.total_budget) ?? (dyn.totalBudget ?? dyn.total_budget ?? null);
   // Compute effective status: treat New older than 24 hours as Pending for coordinator/admin view
-  const status = computeEffectiveStatus(ticket) || originalStatus;
+  const rawStatus = computeEffectiveStatus(ticket) || originalStatus;
+  // Mask "Pending External" as "In Progress" for display
+  const status = (rawStatus || '').toLowerCase() === 'pending external' ? 'In Progress' : rawStatus;
   // Safely build a CSS class key from the status string (guard against undefined)
   const safeStatusClass = `status${String(status || '').replace(/\s+/g, '')}`;
   const statusSteps = getStatusSteps(status);

@@ -58,6 +58,10 @@ const computeEffectiveStatus = (ticket) => {
   // Normalize input status - treat Submitted/Pending as New for aging purposes
   const rawStatus = (ticket.status || '').toString();
   const lower = rawStatus.toLowerCase();
+  
+  // Mask "Pending External" as "In Progress"
+  if (lower === 'pending external') return 'In Progress';
+  
   const baseIsNew = lower === 'new' || lower === 'submitted' || lower === 'pending';
   try {
     const created = new Date(ticket.createdAt || ticket.dateCreated || ticket.created_at || ticket.submit_date || ticket.submitDate);
@@ -415,7 +419,8 @@ const CoordinatorAdminTicketManagement = () => {
                 paginatedTickets.map((ticket, idx) => {
                   // Use the computed effective status (e.g., New older than 24h -> Pending)
                   const effective = ticket.__effectiveStatus || ticket.status || '';
-                  const displayStatus = effective;
+                  // Mask "Pending External" as "In Progress" for display
+                  const displayStatus = effective.toLowerCase() === 'pending external' ? 'In Progress' : effective;
                   const statusClass = displayStatus.replace(/\s+/g, '-').toLowerCase();
                   
                   return (

@@ -111,6 +111,17 @@ const formatMoney = (value) => {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 };
 
+// Build full name from a user object (first, middle, last)
+const buildFullName = (user) => {
+  if (!user) return null;
+  if (typeof user === 'string') return user.replace(/\s+/g, ' ').trim() || null;
+  const first = user.first_name || user.firstName || user.name || user.full_name || '';
+  const middle = user.middle_name || user.middleName || '';
+  const last = user.last_name || user.lastName || '';
+  const combined = `${first} ${middle} ${last}`.replace(/\s+/g, ' ').trim();
+  return combined || null;
+};
+
 // Generate logs based on ticket data and return polished sentence text for each entry
 const generateLogs = (ticket) => {
 
@@ -120,12 +131,21 @@ const generateLogs = (ticket) => {
   // should leave it null so the UI does not display "now" incorrectly.
   const createdAt = ticket.dateCreated || ticket.date_created || ticket.submit_date || ticket.createdAt || ticket.created_at || null;
 
+  // Get the requester/employee name (the person who created the ticket)
+  const requester = ticket.employee || ticket.requester || {};
+  const requesterName = buildFullName(requester) 
+    || requester.full_name 
+    || requester.employee_name 
+    || ticket.employee_name
+    || ticket.requester_name
+    || 'Ticket Owner';
+
   // 1. Ticket Created — prefer actual creation timestamp and avoid
   // defaulting to "now" when the field is missing.
-  // Always use 'Employee' for privacy - don't show actual employee name
+  // Show actual requester name instead of generic 'Employee'
   logs.push({
     id: logs.length + 1,
-    user: 'Employee',
+    user: requesterName,
     action: 'Ticket Created',
     timestamp: createdAt ? formatDate(createdAt) : null,
     source: 'Web Form',
@@ -642,18 +662,9 @@ export default function EmployeeTicketTracker() {
     return true;
   });
 
-  // Build messages from ticket.comments (persisted) and include a system "received" message.
+  // Build messages from ticket.comments (persisted) - no auto-generated messages.
   const buildMessagesFromTicket = (tkt) => {
     const msgs = [];
-
-    // System message about receipt
-    const sysTsRaw = tkt.submit_date || tkt.dateCreated || tkt.created_at || tkt.createdAt || null;
-    msgs.push({
-      id: 'system-received',
-      sender: 'Support Team',
-      message: `Your ticket regarding "${tkt.subject}" has been received and is being reviewed.`,
-      timestamp: sysTsRaw ? formatDate(sysTsRaw) : '',
-    });
 
     // Comments may be at ticket.comments or ticket.comment; normalize
     const comments = Array.isArray(tkt.comments) ? [...tkt.comments] : (Array.isArray(tkt.comment) ? [...tkt.comment] : []);
@@ -675,8 +686,16 @@ export default function EmployeeTicketTracker() {
       // ignore local merge errors
     }
 
-    // Filter out internal comments (employees shouldn't see internal notes)
-    const visibleComments = comments.filter((c) => !c.is_internal && !c.isInternal);
+    // Filter out internal comments and system-generated messages (employees shouldn't see these)
+    const visibleComments = comments.filter((c) => {
+      if (c.is_internal || c.isInternal) return false;
+      const text = (c.comment || c.message || c.body || '').toLowerCase();
+      // Filter out status change messages
+      if (text.includes('status changed to')) return false;
+      // Filter out auto-response messages
+      if (text.includes('thank you for your message')) return false;
+      return true;
+    });
 
     // Sort ascending by created time
     visibleComments.sort((a, b) => new Date(a.created_at || a.createdAt || a.timestamp || a.date || a.created) - new Date(b.created_at || b.createdAt || b.timestamp || b.date || b.created));
@@ -688,18 +707,22 @@ export default function EmployeeTicketTracker() {
       try {
         const commentUser = c.user || c.author || null;
         if (commentUser) {
-          // If roles indicate staff, label Support Team
-          const role = (commentUser.role || commentUser.user_role || '').toString().toLowerCase();
-          if (role.includes('ticket') || role.includes('coordinator') || role.includes('admin') || role.includes('system')) {
-            sender = 'Support Team';
+          // If user's id/email matches currentUser, label as You
+          if ((currentUser && ((commentUser.id && currentUser.id && String(commentUser.id) === String(currentUser.id)) || (commentUser.email && currentUser.email && commentUser.email.toLowerCase() === currentUser.email.toLowerCase())))) {
+            sender = 'You';
           } else {
-            // If user's id/email matches currentUser, label as You
-            if ((currentUser && ((commentUser.id && currentUser.id && String(commentUser.id) === String(currentUser.id)) || (commentUser.email && currentUser.email && commentUser.email.toLowerCase() === currentUser.email.toLowerCase())))) {
-              sender = 'You';
+            // For all other users (staff or otherwise), show their actual name if available
+            const name = buildFullName(commentUser) || commentUser.full_name || commentUser.fullName || commentUser.name;
+            if (name) {
+              sender = name;
             } else {
-              // Otherwise use display name if available
-              const name = commentUser.first_name || commentUser.firstName || commentUser.name || commentUser.full_name || commentUser.fullName;
-              sender = name ? name : 'Support Team';
+              // If no name available but role indicates staff, use 'Support Team'
+              const role = (commentUser.role || commentUser.user_role || '').toString().toLowerCase();
+              if (role.includes('ticket') || role.includes('coordinator') || role.includes('admin') || role.includes('system')) {
+                sender = 'Support Team';
+              } else {
+                sender = 'Unknown';
+              }
             }
           }
         }

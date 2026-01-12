@@ -13,6 +13,9 @@ export default function CoordinatorTicketFilter({
   slaStatusOptions,
   // control whether FilterPanel shows the status dropdown
   showStatus = true,
+  // control whether to hide category and sub-category filters
+  hideCategory = false,
+  hideSubCategory = false,
 }) {
   // Default status options (all statuses for coordinator/admin)
   const defaultStatusOptions = [
@@ -133,11 +136,12 @@ export default function CoordinatorTicketFilter({
   ];
 
   // Build fields array dynamically - only include 'status' if showStatus is true
+  // Exclude category and subCategory if hideCategory/hideSubCategory are true
   const fields = [
     ...(showStatus ? ['status'] : []),
     'priority',
-    'category',
-    'subCategory',
+    ...(hideCategory ? [] : ['category']),
+    ...(hideSubCategory ? [] : ['subCategory']),
     'slaStatus',
     'startDate',
     'endDate',

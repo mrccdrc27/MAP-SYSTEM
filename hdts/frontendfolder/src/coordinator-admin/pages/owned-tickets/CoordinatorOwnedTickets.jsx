@@ -14,12 +14,10 @@ const CoordinatorOwnedTickets = () => {
   const { user: currentUser } = useAuth();
   const [allTickets, setAllTickets] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
     status: null,
     priority: null,
-    category: null,
-    subCategory: null,
     slaStatus: null,
     startDate: '',
     endDate: '',
@@ -64,6 +62,19 @@ const CoordinatorOwnedTickets = () => {
     return 'On Time';
   };
 
+  // Helper to mask certain statuses for display
+  const maskStatus = (status) => {
+    if (!status) return 'Unknown';
+    const lower = status.toLowerCase();
+    if (lower === 'pending' || lower === 'pending external' || lower === 'pending_external') {
+      return 'In Progress';
+    }
+    if (lower === 'completed') {
+      return 'Resolved';
+    }
+    return status;
+  };
+
   const formatDate = (date) => {
     if (!date) return 'None';
     try {
@@ -83,10 +94,10 @@ const CoordinatorOwnedTickets = () => {
         let ticketList = [];
         
         try {
-          // Fetch all owned tickets for client-side filtering and pagination
-          const response = await backendTicketService.getMyTickets(); // This fetches all without pagination
+          // Fetch all owned tickets from workflow API to get workflow and step info
+          const response = await backendTicketService.getOwnedTickets({ pageSize: 1000 });
           
-          ticketList = response || [];
+          ticketList = response?.results || response || [];
         } catch (err) {
           console.warn('Failed to fetch owned tickets:', err);
           ticketList = [];
@@ -149,18 +160,7 @@ const CoordinatorOwnedTickets = () => {
     return () => clearTimeout(timer);
   }, [currentUser]); // Removed searchTerm, currentPage, itemsPerPage, activeFilters.status to fetch all once
 
-  // Build dynamic filter options
-  const categoryOptions = useMemo(() => {
-    const set = new Set(allTickets.map(t => t.category).filter(Boolean));
-    return Array.from(set).map(v => ({ label: v, value: v }));
-  }, [allTickets]);
-
-  const subCategoryOptions = useMemo(() => {
-    const set = new Set(allTickets.map(t => t.subCategory).filter(Boolean));
-    return Array.from(set).map(v => ({ label: v, value: v }));
-  }, [allTickets]);
-
-  // Apply client-side filters (search, status, priority, category, subCategory, slaStatus, date range)
+  // Apply client-side filters (search, status, priority, slaStatus, date range)
   const filteredTickets = useMemo(() => {
     return allTickets.filter(ticket => {
       // Search filter
@@ -173,20 +173,25 @@ const CoordinatorOwnedTickets = () => {
         if (!matchesSearch) return false;
       }
 
-      // Status filter (from activeFilters)
-      if (activeFilters.status && ticket.status !== activeFilters.status) return false;
+      // Status filter (from activeFilters) - handle both object and string values
+      // Compare against masked status so 'In Progress' filter catches 'pending', 'pending_external', etc.
+      if (activeFilters.status) {
+        const statusValue = typeof activeFilters.status === 'object' ? activeFilters.status.label : activeFilters.status;
+        const maskedTicketStatus = maskStatus(ticket.status);
+        if (maskedTicketStatus !== statusValue) return false;
+      }
 
-      // Priority filter
-      if (activeFilters.priority && ticket.priorityLevel !== activeFilters.priority) return false;
+      // Priority filter - handle both object and string values
+      if (activeFilters.priority) {
+        const priorityValue = typeof activeFilters.priority === 'object' ? activeFilters.priority.label : activeFilters.priority;
+        if (ticket.priorityLevel !== priorityValue) return false;
+      }
 
-      // Category filter
-      if (activeFilters.category && ticket.category !== activeFilters.category) return false;
-
-      // Sub-category filter
-      if (activeFilters.subCategory && ticket.subCategory !== activeFilters.subCategory) return false;
-
-      // SLA Status filter
-      if (activeFilters.slaStatus && ticket.slaStatus !== activeFilters.slaStatus) return false;
+      // SLA Status filter - handle both object and string values
+      if (activeFilters.slaStatus) {
+        const slaValue = typeof activeFilters.slaStatus === 'object' ? activeFilters.slaStatus.label : activeFilters.slaStatus;
+        if (ticket.slaStatus !== slaValue) return false;
+      }
 
       // Date range filters
       if (activeFilters.startDate) {
@@ -266,16 +271,34 @@ const CoordinatorOwnedTickets = () => {
           className={styles['filter-btn']}
           onClick={() => setShowFilter(!showFilter)}
         >
-          Filters
+          {showFilter ? 'Hide Filters' : 'Show Filters'}
         </button>
       </div>
 
       {showFilter && (
         <CoordinatorTicketFilter
-          onFilterChange={handleFilterChange}
-          categoryOptions={categoryOptions}
-          subCategoryOptions={subCategoryOptions}
-          currentFilters={activeFilters}
+          onApply={handleFilterChange}
+          onReset={() => {
+            setActiveFilters({
+              status: null,
+              priority: null,
+              slaStatus: null,
+              startDate: '',
+              endDate: '',
+            });
+            setCurrentPage(1);
+          }}
+          initialFilters={activeFilters}
+          statusOptions={[
+            { label: 'In Progress', category: 'Active' },
+            { label: 'On Hold', category: 'Active' },
+            { label: 'Resolved', category: 'Completed' },
+            { label: 'Closed', category: 'Completed' },
+            { label: 'Rejected', category: 'Completed' },
+            { label: 'Withdrawn', category: 'Completed' },
+          ]}
+          hideCategory={true}
+          hideSubCategory={true}
         />
       )}
 
@@ -304,15 +327,18 @@ const CoordinatorOwnedTickets = () => {
               </thead>
               <tbody>
                 {paginatedTickets.length > 0 ? (
-                  paginatedTickets.map((ticket) => (
+                  paginatedTickets.map((ticket) => {
+                    const displayStatus = maskStatus(ticket.status);
+                    const statusClass = displayStatus.toLowerCase().replace(/\s+/g, '-');
+                    return (
                     <tr key={ticket.task_id || ticket.ticketNumber}>
                       <td className={styles['ticket-number']}>
                         {ticket.ticketNumber}
                       </td>
                       <td>{ticket.subject || 'N/A'}</td>
                       <td>
-                        <span className={`${styles['status-badge']} ${styles[`status-${(ticket.status || 'unknown').toLowerCase().replace(/\s+/g, '-')}`]}`}>
-                          {ticket.status || 'Unknown'}
+                        <span className={`${styles['status-badge']} ${styles[`status-${statusClass}`]}`}>
+                          {displayStatus}
                         </span>
                       </td>
                       <td>
@@ -338,7 +364,8 @@ const CoordinatorOwnedTickets = () => {
                         </button>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan="9" className={styles['no-data']}>

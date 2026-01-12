@@ -44,8 +44,9 @@ const buildFullName = (user) => {
   if (!user) return null;
   if (typeof user === 'string') return normalizeText(user);
   const first = user.first_name || user.firstName || user.name || user.full_name || '';
+  const middle = user.middle_name || user.middleName || '';
   const last = user.last_name || user.lastName || '';
-  const combined = `${first} ${last}`;
+  const combined = `${first} ${middle} ${last}`;
   const cleaned = normalizeText(combined);
   return cleaned || null;
 };
@@ -147,8 +148,16 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
             ticketOwnerName = buildFullName(response.requester) || response.requester?.full_name || response.requester?.requester_name || null;
           }
           ticketOwnerName = ticketOwnerName || response.requester_name || response.requesterName || null;
-          // Filter out internal comments
-          const visibleComments = response.comments.filter(c => !c.is_internal && !c.isInternal);
+          // Filter out internal comments and system-generated messages
+          const visibleComments = response.comments.filter(c => {
+            if (c.is_internal || c.isInternal) return false;
+            const text = (c.comment || c.message || '').toLowerCase();
+            // Filter out status change messages
+            if (text.includes('status changed to')) return false;
+            // Filter out auto-response messages
+            if (text.includes('thank you for your message')) return false;
+            return true;
+          });
           
           // Format comments
           const formattedMessages = visibleComments.map(comment => {
@@ -187,10 +196,12 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
             }
 
             // Otherwise, classify as Support Team if role indicates an admin/coordinator/system account
+            // But still try to show their actual name if available
             if (role.includes('ticket') || role.includes('coordinator') || role.includes('admin') || role.includes('system') || role.includes('support') ) {
+              const staffName = buildFullName(commentUser) || commentUser?.full_name || commentUser?.username || 'Support Team';
               return {
                 id: comment.id,
-                sender: 'Support Team',
+                sender: staffName,
                 message: normalizeText(comment.comment || comment.message || ''),
                 timestamp: comment.created_at ? formatTimestampFromISO(comment.created_at) : formatTimestamp(),
                 attachment: attachmentUrl,
@@ -201,7 +212,7 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
 
             // Fallback: show provided user name or default label
             const userNameFromComment = buildFullName(commentUser) || commentUser?.full_name || commentUser?.username || null;
-            const finalName = userNameFromComment || ticketOwnerName || 'Employee';
+            const finalName = userNameFromComment || ticketOwnerName || 'Unknown User';
             return {
               id: comment.id,
               sender: finalName,
@@ -214,8 +225,23 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
           });
           
           // Only update if we have new messages (compare by count to avoid flicker)
+          // Also deduplicate 'Thank you for your message' auto-responses by content
           const existingIds = new Set(messages.map(m => String(m.id)));
-          const newMsgs = formattedMessages.filter(m => !existingIds.has(String(m.id)));
+          const existingAutoResponse = messages.some(m => 
+            m.sender === 'Support Team' && 
+            (m.message || '').includes('Thank you for your message')
+          );
+          const newMsgs = formattedMessages.filter(m => {
+            // Skip if already exists by ID
+            if (existingIds.has(String(m.id))) return false;
+            // Skip duplicate auto-response messages
+            if (existingAutoResponse && 
+                m.sender === 'Support Team' && 
+                (m.message || '').includes('Thank you for your message')) {
+              return false;
+            }
+            return true;
+          });
           
           if (newMsgs.length > 0) {
             // Merge new messages with existing ones, avoiding duplicates
@@ -364,60 +390,7 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
       console.warn('Failed to send comment to backend:', err);
     }
 
-    // Simulate typing response — only add the automated Support Team reply once per ticket
-    const autoResponseText = 'Thank you for your message. Our team is reviewing your ticket and will respond shortly.';
-
-    // Check current state (including newly added message)
-    const currentMessages = [...messages, newMsg];
-    const alreadyInState = currentMessages.some(m => m.sender === 'Support Team' && (m.message || '').includes('Thank you for your message'));
-
-    // Also check initialMessages prop (backend-loaded messages)
-    const alreadyInInitial = initialMessages.some(m => m.sender === 'Support Team' && (m.message || '').includes('Thank you for your message'));
-
-    let alreadyPersisted = false;
-    try {
-      if (ticketNumber) {
-        const stored = getTicketByNumber(ticketNumber);
-        const comments = stored?.comments || [];
-        alreadyPersisted = comments.some(c => ((c.user && (c.user.name === 'Support Team' || c.user === 'Support Team')) || c.user === 'support') && (c.comment || c.message || '').includes('Thank you for your message'));
-      }
-    } catch (e) {
-      // ignore storage lookup errors
-    }
-
-    const shouldAddAuto = !alreadyInState && !alreadyInInitial && !alreadyPersisted;
-        if (shouldAddAuto) {
-      setIsTyping(true);
-      setTimeout(async () => {
-        const response = {
-          id: Date.now() + 1,
-          sender: 'Support Team',
-          message: autoResponseText,
-              timestamp: formatTimestamp(),
-        };
-        setMessages(prev => [...prev, response]);
-        setIsTyping(false);
-
-        // Persist the auto-response to backend so it survives refresh
-        if (ticketId) {
-          try {
-            await backendTicketService.createAutoResponse(ticketId, autoResponseText);
-          } catch (e) {
-            console.warn('Failed to persist auto-response to backend:', e);
-          }
-        }
-
-        // Also persist locally as backup
-        try {
-          const tgt = ticketNumber || ticketId || null;
-          if (tgt) {
-            addComment(tgt, { id: response.id, message: response.message, created_at: new Date().toISOString(), timestamp: response.timestamp, user: { id: 'support', name: 'Support Team' }, is_internal: false });
-          }
-        } catch (e) {
-          console.warn('Failed to persist auto-response locally:', e);
-        }
-      }, 1500);
-    }
+    // No auto-response - messages are handled by actual staff
   };
 
   const handleKeyDown = (e) => {

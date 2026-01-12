@@ -12,6 +12,12 @@ import { useCurrentAgent } from '../../../shared/hooks/useCurrentAgent';
 
 const DEFAULT_AVATAR = '/MapLogo.png';
 
+// Helper to mask "Pending External" as "In Progress" for display
+function maskStatus(status) {
+  if (!status) return status;
+  return (status.toLowerCase() === 'pending external') ? 'In Progress' : status;
+}
+
 function PersonCard({ name, metaLines = [], image }) {
   return (
     <div className={styles.personCard}>
@@ -32,7 +38,7 @@ function PersonCard({ name, metaLines = [], image }) {
 function getTicketStage(status) {
   const s = (status || '').toLowerCase();
   if (['new', 'pending'].includes(s)) return 'new';
-  if (['in progress', 'on hold', 'open'].includes(s)) return 'in-progress';
+  if (['in progress', 'on hold', 'open', 'pending external'].includes(s)) return 'in-progress';
   if (['resolved', 'closed', 'rejected', 'withdrawn'].includes(s)) return 'completed';
   return 'new';
 }
@@ -49,7 +55,7 @@ const TIMELINE_STEPS = [
     id: 2, 
     label: 'In Progress', 
     icon: FiClock,
-    statuses: ['in progress', 'on hold', 'resolved', 'closed']
+    statuses: ['in progress', 'on hold', 'pending external', 'resolved', 'closed']
   },
   { 
     id: 3, 
@@ -75,7 +81,7 @@ function getActiveStep(status) {
   
   if (['closed'].includes(s)) return 4;
   if (['resolved'].includes(s)) return 3;
-  if (['in progress', 'on hold'].includes(s)) return 2;
+  if (['in progress', 'on hold', 'pending external'].includes(s)) return 2;
   if (['open', 'pending', 'new'].includes(s)) return 1;
   
   return 0;
@@ -298,7 +304,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
         {workflowData && !workflowError && (
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Workflow Progress</div>
-            <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={ticket?.status} />
+            <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={maskStatus(ticket?.status)} />
           </div>
         )}
 
@@ -552,7 +558,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
               </div>
               <div className={styles.infoField}>
                 <div className={styles.fieldLabel}>Current Status</div>
-                <div className={styles.fieldValue}>{ticket?.status || 'None'}</div>
+                <div className={styles.fieldValue}>{maskStatus(ticket?.status) || 'None'}</div>
               </div>
               {ticket?.targetResolutionDate && (
                 <div className={styles.infoField}>
@@ -571,7 +577,7 @@ export default function CoordinatorAdminTicketDetails({ ticket, ticketLogs = [],
             <div className={styles.resolutionCard}>
               <div className={styles.infoField}>
                 <div className={styles.fieldLabel}>Status</div>
-                <div className={styles.fieldValue}>{ticket?.status || 'None'}</div>
+                <div className={styles.fieldValue}>{maskStatus(ticket?.status) || 'None'}</div>
               </div>
               <div className={styles.infoField}>
                 <div className={styles.fieldLabel}>Date Completed</div>

@@ -103,6 +103,19 @@ const CoordinatorOwnedTicketDetail = () => {
       return String(d);
     }
   };
+
+  // Helper to mask certain statuses for display
+  const maskStatus = (status) => {
+    if (!status) return 'Unknown';
+    const lower = status.toLowerCase();
+    if (lower === 'pending' || lower === 'pending external' || lower === 'pending_external') {
+      return 'In Progress';
+    }
+    if (lower === 'completed') {
+      return 'Resolved';
+    }
+    return status;
+  };
   
   const {
     messages: agentMessages,
@@ -315,9 +328,18 @@ const CoordinatorOwnedTicketDetail = () => {
               if (isSystem) {
                 roleLabel = 'System';
               } else if (isTicketRequester) {
-                roleLabel = 'Ticket Owner';
+                // The person who submitted the ticket is the Requester
+                roleLabel = 'Requester';
               } else {
-                roleLabel = 'Employee';
+                // Staff member handling the ticket - show their role
+                const userRole = (user.role || '').toLowerCase();
+                if (userRole.includes('coordinator') || userRole.includes('owner')) {
+                  roleLabel = 'Ticket Owner';
+                } else if (userRole.includes('admin')) {
+                  roleLabel = 'Admin';
+                } else {
+                  roleLabel = 'Ticket Owner';
+                }
               }
               
               // Internal messages should not be seen by ticket owner
@@ -339,7 +361,7 @@ const CoordinatorOwnedTicketDetail = () => {
             setRequesterMessages(formattedComments.length > 0 ? formattedComments : [{
               id: '1',
               sender: requesterFullName,
-              role: 'Ticket Owner',
+              role: 'Requester',
               datetime: formatDateTime(mergedData.createdDate),
               content: normalizeText(mergedData.description || 'No description provided'),
               isOwn: false
@@ -589,6 +611,17 @@ const CoordinatorOwnedTicketDetail = () => {
       const helpdeskData = await backendTicketService.getHelpdeskTicketByNumber(tktNum);
       
       if (helpdeskData?.comments && helpdeskData.comments.length > 0) {
+        // Get the ticket requester info (person who created the ticket)
+        const requesterId = helpdeskData?.employee?.id;
+        const requester = helpdeskData?.employee || {};
+        const requesterFullName = buildFullName(requester)
+          || requester.full_name
+          || requester.fullName
+          || requester.name
+          || `${requester.first_name || ''} ${requester.middle_name || ''} ${requester.last_name || ''}`.replace(/\s+/g, ' ').trim()
+          || requester.username
+          || 'Unknown';
+
         const formattedComments = helpdeskData.comments.map(comment => {
           // Backend returns singular attachment/attachment_name fields, not an array
           const attachments = [];
@@ -628,21 +661,66 @@ const CoordinatorOwnedTicketDetail = () => {
             });
           }
           
+          const user = comment.user || {};
+          const userId = user?.id || comment.user_id;
+          const isSystem = !!comment.system || comment.is_system || (comment.comment || '').includes('Thank you for your message');
+          
+          // Check if this comment is from the ticket requester
+          const isTicketRequester = userId && requesterId && String(userId) === String(requesterId);
+          
+          // Build full name from the comment's user object
+          const commentUserFullName = buildFullName(user)
+            || user.full_name
+            || user.fullName
+            || user.name
+            || `${user.first_name || ''} ${user.middle_name || ''} ${user.last_name || ''}`.replace(/\s+/g, ' ').trim()
+            || user.username;
+          
+          // Determine display name
+          let senderName;
+          if (isSystem) {
+            senderName = 'Support Team';
+          } else if (isTicketRequester) {
+            senderName = requesterFullName;
+          } else {
+            senderName = commentUserFullName || 'Staff Member';
+          }
+          
+          // Determine role label
+          let roleLabel;
+          if (isSystem) {
+            roleLabel = 'System';
+          } else if (isTicketRequester) {
+            // The person who submitted the ticket is the Requester
+            roleLabel = 'Requester';
+          } else {
+            // Staff member handling the ticket - show their role
+            const userRole = (user.role || '').toLowerCase();
+            if (userRole.includes('coordinator') || userRole.includes('owner')) {
+              roleLabel = 'Ticket Owner';
+            } else if (userRole.includes('admin')) {
+              roleLabel = 'Admin';
+            } else {
+              roleLabel = 'Ticket Owner';
+            }
+          }
+          
           return {
             id: comment.id,
-            sender: comment.user 
-              ? `${comment.user.first_name || ''} ${comment.user.last_name || ''}`.trim() || 'Unknown'
-              : 'Unknown',
-            role: comment.user?.role || 'Employee',
+            sender: senderName,
+            role: roleLabel,
+            datetime: formatDateTime(comment.created_at || comment.createdAt || new Date()),
             timestamp: new Date(comment.created_at).toLocaleDateString(),
             time: new Date(comment.created_at).toLocaleTimeString(),
             content: comment.comment,
-            isInternal: comment.is_internal,
-            isOwn: comment.user?.id === currentUser?.id || comment.user_cookie_id === currentUser?.id,
+            isInternal: comment.is_internal || isSystem,
+            isOwn: user?.id === currentUser?.id || comment.user_cookie_id === currentUser?.id,
+            system: isSystem,
             attachments
           };
         });
         
+        // Filter out internal/system messages for display
         const publicComments = formattedComments.filter(c => !c.isInternal);
         setRequesterMessages(publicComments);
 
@@ -704,8 +782,35 @@ const CoordinatorOwnedTicketDetail = () => {
     ]);
   };
 
-  // Render all messages in the DOM; CSS controls the visible area.
-  const displayedRequesterMessages = requesterMessages;
+  // Render only non-system messages in Requester Communication.
+  // The ticket owner should only see messages FROM the employee (requester),
+  // not the system-generated acknowledgment messages TO the employee.
+  // Also filter out status change messages.
+  const displayedRequesterMessages = requesterMessages
+    .filter(msg => {
+      if (msg.system) return false;
+      const text = (msg.content || '').toLowerCase();
+      // Filter out status change messages
+      if (text.includes('status changed to')) return false;
+      return true;
+    })
+    // Sort chronologically: oldest first, newest at bottom
+    .sort((a, b) => {
+      const dateA = new Date(a.datetime || a.timestamp || 0);
+      const dateB = new Date(b.datetime || b.timestamp || 0);
+      return dateA - dateB;
+    });
+
+  // Auto-scroll to bottom when messages load or change
+  useEffect(() => {
+    if (requesterThreadRef.current && displayedRequesterMessages.length > 0) {
+      try {
+        requesterThreadRef.current.scrollTop = requesterThreadRef.current.scrollHeight;
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [displayedRequesterMessages.length, mainTab]);
 
   // Auto-scroll the limited requester thread to bottom on initial load
   // or when collapsing from expanded -> limited so latest messages are visible.
@@ -867,7 +972,7 @@ const CoordinatorOwnedTicketDetail = () => {
           {/* Workflow Visualizer - shows the ticket's progress through the TTS workflow */}
           {workflowData && !workflowError && (
             <div className={styles['workflow-section']}>
-              <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={ticket?.status} />
+              <WorkflowVisualizer2 workflowData={workflowData} ticketStatus={maskStatus(ticket?.status)} />
             </div>
           )}
 
@@ -1199,9 +1304,12 @@ const CoordinatorOwnedTicketDetail = () => {
                 </div>
                 <div className={styles['info-item']}>
                   <label>Status:</label>
-                  <p>{ticket.status}</p>
+                  <p>{maskStatus(ticket.status)}</p>
                 </div>
-                {/* Priority info removed (displayed in Ticket Details) */}
+                <div className={styles['info-item']}>
+                  <label>Priority:</label>
+                  <p>{ticket.priorityLevel || ticket.priority || 'N/A'}</p>
+                </div>
                 <div className={styles['info-item']}>
                   <label>Workflow:</label>
                   <p>{ticket.workflowName || 'N/A'}</p>
