@@ -45,62 +45,89 @@ class Command(BaseCommand):
         }
 
         # Sub-Category Caps: { DEPT_CODE: [ (CATEGORY_CODE, % of Dept Budget, Type), ... ] }
+        # UPDATED: Added all missing categories with logical percentages
         SUB_CAT_CAPS = {
             'MERCH': [
-                ('MERCH-PLAN',  15.0, 'HARD'), # Product Range Planning
-                ('MERCH-BUY',   30.0, 'SOFT'), # Buying Costs
-                ('MERCH-RES',   10.0, 'SOFT'), # Market Research
-                ('MERCH-INV',   10.0, 'HARD'), # Inventory Handling
-                ('MERCH-TOOLS', 10.0, 'SOFT'), # Seasonal Planning Tools
+                ('MERCH-PLAN',  15.0, 'HARD'),  # Product Range Planning
+                ('MERCH-BUY',   30.0, 'SOFT'),  # Buying Costs (largest expense)
+                ('MERCH-RES',   10.0, 'SOFT'),  # Market Research
+                ('MERCH-INV',   10.0, 'HARD'),  # Inventory Handling
+                ('MERCH-TOOLS', 10.0, 'SOFT'),  # Seasonal Planning Tools
+                ('MERCH-SUP',    8.0, 'SOFT'),  # Supplier Coordination
+                ('MERCH-TRN',    5.0, 'SOFT'),  # Training
+                ('MERCH-TRV',    7.0, 'SOFT'),  # Travel
+                ('MERCH-SW',     5.0, 'SOFT'),  # Software Subscription
             ],
             'SALES': [
-                ('SALES-CONS', 10.0, 'HARD'), # Store Consumables
-                ('SALES-POS',  10.0, 'HARD'), # POS Maintenance
-                ('SALES-REP',  15.0, 'SOFT'), # Store Repairs
-                ('SALES-OPEN', 20.0, 'SOFT'), # Store Opening
+                ('SALES-CONS', 10.0, 'HARD'),  # Store Consumables
+                ('SALES-POS',  10.0, 'HARD'),  # POS Maintenance
+                ('SALES-REP',  15.0, 'SOFT'),  # Store Repairs
+                ('SALES-OPEN', 20.0, 'SOFT'),  # Store Opening
+                ('SALES-INC',  15.0, 'SOFT'),  # Sales Incentives
+                ('SALES-UNI',   8.0, 'SOFT'),  # Uniforms
+                ('SALES-SUP',  10.0, 'SOFT'),  # Store Supplies
+                ('SALES-UTIL', 12.0, 'HARD'),  # Utilities (fixed cost)
             ],
             'MKT': [
-                ('MKT-CAMP',   30.0, 'SOFT'), # Campaign Budget
-                ('MKT-ADS',    20.0, 'SOFT'), # Digital Ads
-                ('MKT-SOCIAL', 10.0, 'HARD'), # Social Media
-                ('MKT-EVENT',  10.0, 'SOFT'), # Events
+                ('MKT-CAMP',   30.0, 'SOFT'),  # Campaign Budget (largest)
+                ('MKT-ADS',    20.0, 'SOFT'),  # Digital Ads
+                ('MKT-SOCIAL', 10.0, 'HARD'),  # Social Media
+                ('MKT-EVENT',  10.0, 'SOFT'),  # Events
+                ('MKT-BRAND',  12.0, 'SOFT'),  # Branding Materials
+                ('MKT-INFL',    8.0, 'SOFT'),  # Influencer Fees
+                ('MKT-PHOTO',  10.0, 'SOFT'),  # Photography/Videography
             ],
             'OPS': [
-                ('OPS-MAINT',  20.0, 'HARD'), # Equipment Maintenance
-                ('OPS-FLEET',  20.0, 'SOFT'), # Fleet
-                ('OPS-SUP',    15.0, 'HARD'), # Operational Supplies
-                ('OPS-PERMIT',  5.0, 'HARD'), # Business Permits
+                ('OPS-MAINT',  20.0, 'HARD'),  # Equipment Maintenance
+                ('OPS-FLEET',  20.0, 'SOFT'),  # Fleet (large variable cost)
+                ('OPS-SUP',    15.0, 'HARD'),  # Operational Supplies
+                ('OPS-PERMIT',  5.0, 'HARD'),  # Business Permits (fixed)
+                ('OPS-UTIL',   25.0, 'HARD'),  # Facility Utilities (major fixed cost)
+                ('OPS-COMP',   15.0, 'HARD'),  # Compliance Costs (regulatory)
             ],
             'IT': [
-                ('IT-HOST',    20.0, 'HARD'), # Server Hosting
-                ('IT-SW',      20.0, 'SOFT'), # Software Licenses
-                ('IT-CLOUD',   15.0, 'SOFT'), # Cloud Subscriptions
-                ('CAP-IT-HW',  20.0, 'SOFT'), # Hardware Purchases (CAPEX)
-                ('IT-SEC',     10.0, 'HARD'), # Cybersecurity
+                ('IT-HOST',    20.0, 'HARD'),  # Server Hosting
+                ('IT-SW',      20.0, 'SOFT'),  # Software Licenses
+                ('IT-CLOUD',   15.0, 'SOFT'),  # Cloud Subscriptions
+                ('CAP-IT-HW',  20.0, 'SOFT'),  # Hardware Purchases (CAPEX)
+                ('IT-SEC',     10.0, 'HARD'),  # Cybersecurity (critical)
+                ('IT-DATA',     5.0, 'SOFT'),  # Data Tools
+                ('IT-API',      5.0, 'SOFT'),  # API Subscription Fees
+                ('IT-DOMAIN',   5.0, 'SOFT'),  # Domain Renewals
             ],
             'LOG': [
-                ('LOG-SHIP',   25.0, 'SOFT'), # Shipping Costs
-                ('LOG-EQUIP',  20.0, 'SOFT'), # Warehouse Equipment
-                ('LOG-FUEL',   20.0, 'HARD'), # Transport & Fuel
+                ('LOG-SHIP',   25.0, 'SOFT'),  # Shipping Costs (largest variable)
+                ('LOG-EQUIP',  20.0, 'SOFT'),  # Warehouse Equipment
+                ('LOG-FUEL',   20.0, 'HARD'),  # Transport & Fuel (volatile)
+                ('LOG-FREIGHT', 10.0, 'SOFT'), # Freight Fees
+                ('LOG-DELIV',   8.0, 'SOFT'),  # Vendor Delivery Charges
+                ('LOG-STOR',   10.0, 'SOFT'),  # Storage Fees
+                ('LOG-PACK',    5.0, 'SOFT'),  # Packaging Materials
+                ('LOG-SAFE',    2.0, 'SOFT'),  # Safety Gear
             ],
             'HR': [
-                ('HR-RECRUIT', 25.0, 'HARD'), # Recruitment
-                ('HRM-TRN',    20.0, 'HARD'), # Training
-                ('HR-ENGAGE',  15.0, 'HARD'), # Engagement
+                ('HR-RECRUIT', 25.0, 'HARD'),  # Recruitment
+                ('HRM-TRN',    20.0, 'HARD'),  # Training (compliance critical)
+                ('HR-ENGAGE',  15.0, 'HARD'),  # Engagement
+                ('HR-POST',     5.0, 'SOFT'),  # Job Posting Fees
+                ('HR-MED',     20.0, 'HARD'),  # Medical & Wellness (employee benefit)
+                ('HR-CHECK',    5.0, 'HARD'),  # Background Checks (compliance)
+                ('HR-SYS',     10.0, 'SOFT'),  # HR Systems/Payroll Software
             ],
             'FIN': [
-                ('FIN-PROF',   60.0, 'HARD'), # Professional Services
-                ('FIN-AUDIT',  40.0, 'HARD'), # Audit Fees
+                ('FIN-PROF',   60.0, 'HARD'),  # Professional Services (largest)
+                ('FIN-AUDIT',  40.0, 'HARD'),  # Audit Fees (mandatory)
             ]
         }
 
         # --- EXECUTION ---
 
         # 1. Create Department Caps
+        dept_count = 0
         for code, (pct, cap_type) in DEPT_CAPS.items():
             try:
                 dept = Department.objects.get(code=code)
-                DepartmentBudgetCap.objects.update_or_create(
+                obj, created = DepartmentBudgetCap.objects.update_or_create(
                     department=dept,
                     fiscal_year=fiscal_year,
                     defaults={
@@ -109,11 +136,16 @@ class Command(BaseCommand):
                         'is_active': True
                     }
                 )
-                self.stdout.write(f"  Set Dept Cap for {code}: {pct}% ({cap_type})")
+                action = "Created" if created else "Updated"
+                self.stdout.write(f"  {action} Dept Cap for {code}: {pct}% ({cap_type})")
+                dept_count += 1
             except Department.DoesNotExist:
                 self.stdout.write(self.style.ERROR(f"  Dept {code} not found!"))
 
         # 2. Create Sub-Category Caps
+        subcat_count = 0
+        missing_categories = []
+        
         for dept_code, caps in SUB_CAT_CAPS.items():
             try:
                 dept = Department.objects.get(code=dept_code)
@@ -122,7 +154,7 @@ class Command(BaseCommand):
                     try:
                         category = ExpenseCategory.objects.get(code=cat_code)
                         
-                        SubCategoryBudgetCap.objects.update_or_create(
+                        obj, created = SubCategoryBudgetCap.objects.update_or_create(
                             expense_category=category,
                             department=dept,
                             fiscal_year=fiscal_year,
@@ -132,11 +164,24 @@ class Command(BaseCommand):
                                 'is_active': True
                             }
                         )
-                        # self.stdout.write(f"    Set Sub-Cap for {cat_code}: {pct}% ({cap_type})")
+                        action = "Created" if created else "Updated"
+                        self.stdout.write(f"    {action} Sub-Cap for {cat_code}: {pct}% ({cap_type})")
+                        subcat_count += 1
+                        
                     except ExpenseCategory.DoesNotExist:
-                        self.stdout.write(self.style.ERROR(f"    Category {cat_code} not found!"))
+                        missing_categories.append(f"{dept_code}:{cat_code}")
+                        self.stdout.write(self.style.WARNING(f"    Category {cat_code} not found (will be skipped)"))
                         
             except Department.DoesNotExist:
                 self.stdout.write(self.style.ERROR(f"  Dept {dept_code} not found during sub-cap seeding!"))
 
-        self.stdout.write(self.style.SUCCESS('Successfully seeded Budget Caps.'))
+        # Summary
+        self.stdout.write(self.style.SUCCESS(f'\n=== Seeding Complete ==='))
+        self.stdout.write(self.style.SUCCESS(f'Department Caps: {dept_count}'))
+        self.stdout.write(self.style.SUCCESS(f'Sub-Category Caps: {subcat_count}'))
+        
+        if missing_categories:
+            self.stdout.write(self.style.WARNING(f'\nMissing Categories (not in database):'))
+            for cat in missing_categories:
+                self.stdout.write(f'  - {cat}')
+            self.stdout.write(self.style.WARNING(f'Run controlled_seeder.py first to create all categories.'))
