@@ -614,44 +614,57 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        """
+        Create a new BudgetProposal from external system data.
+        Handles nested items, department resolution, and history logging.
+        """
+        # 1. Extract write_only fields that shouldn't go into the model
         is_draft = validated_data.pop('is_draft', False)
-        
-        # 1. Capture Submitter Name explicitly (Fixing potential "Popping" bug logic)
-        # We want the string sent by the external system
-        submitter_name = validated_data.get('submitted_by_name') 
-        
-        department_obj = validated_data.pop('department')
-        items_data = validated_data.pop('items')
         ticket_id_value = validated_data.pop('ticket_id')
-        validated_data['external_system_id'] = ticket_id_value
-
-        validated_data['department'] = department_obj
-        validated_data['status'] = 'DRAFT' if is_draft else 'SUBMITTED'
-        validated_data.setdefault('submitted_at', timezone.now())
-        validated_data['sync_status'] = 'SYNCED'
-        validated_data['last_sync_timestamp'] = timezone.now()
-
-        # Clean up read-only fields that shouldn't be written directly
+        
+        # 2. Extract and resolve department
+        department_obj = validated_data.pop('department')
+        
+        # 3. Extract nested items (will be created separately)
+        items_data = validated_data.pop('items')
+        
+        # 4. Clean up any read_only fields that might have slipped through
+        # These fields are set by the system, not by the external request
         validated_data.pop('approved_by_name', None)
         validated_data.pop('approval_date', None)
         validated_data.pop('rejected_by_name', None)
         validated_data.pop('rejection_date', None)
-
-        # Create Proposal
+        validated_data.pop('department_details', None)  # This is read_only
+        
+        # 5. Set the external system ID from ticket_id
+        validated_data['external_system_id'] = ticket_id_value
+        
+        # 6. Set the department (already resolved in validation)
+        validated_data['department'] = department_obj
+        
+        # 7. Set the status based on is_draft flag
+        validated_data['status'] = 'DRAFT' if is_draft else 'SUBMITTED'
+        
+        # 8. Set timestamps and sync status
+        validated_data.setdefault('submitted_at', timezone.now())
+        validated_data['sync_status'] = 'SYNCED'
+        validated_data['last_sync_timestamp'] = timezone.now()
+        
+        # 9. Create the proposal
         proposal = BudgetProposal.objects.create(**validated_data)
         
-        # Create Items
+        # 10. Create the budget items
         for item_data in items_data:
             BudgetProposalItem.objects.create(proposal=proposal, **item_data)
-
-        # 2. Enhanced History Logging
+        
+        # 11. Log history
         request = self.context.get('request')
         service_name = "External System"
         if request and hasattr(request.user, 'service_name'):
             service_name = request.user.service_name
-
+        
         action_name = proposal.submitted_by_name or f"System ({service_name})"
-
+        
         ProposalHistory.objects.create(
             proposal=proposal,
             action='SUBMITTED',
@@ -659,7 +672,9 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
             new_status=proposal.status,
             comments=f"Proposal received from {service_name} (ID={proposal.external_system_id}) for department {department_obj.name}."
         )
+        
         return proposal
+
 
     def update(self, instance, validated_data):
         department_obj = validated_data.pop('department', None)
