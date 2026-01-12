@@ -1,3 +1,4 @@
+
 const path = require('path');
 
 /**
@@ -29,8 +30,9 @@ module.exports = {
       watch: false,
       windowsHide: true,
       env: {
-        VITE_API_BASE_URL: "http://165.22.247.50:8080",
-        VITE_TTS_SYSTEM_URL: "http://165.22.247.50:1000",
+        VITE_API_BASE_URL: "https://api.ticketing.mapactive.tech",
+        VITE_TTS_SYSTEM_URL: "https://ticketflow.ticketing.mapactive.tech",
+        VITE_HDTS_SYSTEM_URL: "https://hdts.ticketing.mapactive.tech",
         VITE_ENV: "development",
         VITE_DEBUG: "true",
         VITE_AUTH_LOGIN_ENDPOINT: "/auth/api/v1/users/login/api",
@@ -56,17 +58,17 @@ module.exports = {
       watch: false,
       windowsHide: true,
       env: {
-        VITE_AUTH_URL: "http://165.22.247.50:8003",
-        VITE_AUTH_NEW_URL: "http://165.22.247.50:3001",
-        VITE_AUTH_LOGIN: "http://165.22.247.50:3001/staff/login",
-        VITE_WORKFLOW_API: "http://165.22.247.50:8080/workflow",
-        VITE_BACKEND_API: "http://165.22.247.50:8080/workflow",
-        VITE_NOTIFICATION_API: "http://165.22.247.50:8080/notification",
-        VITE_NOTIFICATION_WS: "ws://165.22.247.50:8080/notification",
-        VITE_MESSAGING_API: "http://165.22.247.50:8080/messaging",
-        VITE_MESSAGING_WS: "ws://165.22.247.50:8080/messaging/ws",
-        VITE_HELPDESK_SERVICE_URL: "http://165.22.247.50:8080/helpdesk",
-        VITE_USER_SERVER_API: "http://165.22.247.50:8080/auth"
+        VITE_AUTH_URL: "https://api.ticketing.mapactive.tech/auth",
+        VITE_AUTH_NEW_URL: "https://login.ticketing.mapactive.tech",
+        VITE_AUTH_LOGIN: "https://login.ticketing.mapactive.tech/staff/login",
+        VITE_WORKFLOW_API: "https://api.ticketing.mapactive.tech/workflow",
+        VITE_BACKEND_API: "https://api.ticketing.mapactive.tech/workflow",
+        VITE_NOTIFICATION_API: "https://api.ticketing.mapactive.tech/notification",
+        VITE_NOTIFICATION_WS: "wss://api.ticketing.mapactive.tech/notification",
+        VITE_MESSAGING_API: "https://api.ticketing.mapactive.tech/messaging",
+        VITE_MESSAGING_WS: "wss://api.ticketing.mapactive.tech/messaging/ws",
+        VITE_HELPDESK_SERVICE_URL: "https://api.ticketing.mapactive.tech/helpdesk",
+        VITE_USER_SERVER_API: "https://api.ticketing.mapactive.tech/auth"
       }
     },
 
@@ -80,7 +82,20 @@ module.exports = {
       args: '--host',
       interpreter: 'node',
       watch: false,
-      windowsHide: true
+      windowsHide: true,
+      env: {
+        VITE_AUTH_URL: "https://api.ticketing.mapactive.tech/auth",
+        VITE_AUTH_FRONTEND_URL: "https://login.ticketing.mapactive.tech",
+        VITE_HDTS_BACKEND_URL: "https://api.ticketing.mapactive.tech/helpdesk",
+        VITE_WORKFLOW_API_URL: "https://api.ticketing.mapactive.tech/workflow",
+        VITE_MESSAGING_API_URL: "https://api.ticketing.mapactive.tech/messaging",
+        VITE_MESSAGING_WS_URL: "wss://api.ticketing.mapactive.tech/messaging/ws",
+        VITE_NOTIFICATION_API_URL: "https://api.ticketing.mapactive.tech/notification",
+        VITE_NOTIFICATION_WS_URL: "wss://api.ticketing.mapactive.tech/notification",
+        VITE_MEDIA_URL: "https://api.ticketing.mapactive.tech",
+        VITE_TTS_SYSTEM_URL: "https://ticketflow.ticketing.mapactive.tech",
+        VITE_HDTS_SYSTEM_URL: "https://hdts.ticketing.mapactive.tech"
+      }
     }
   ]
 };

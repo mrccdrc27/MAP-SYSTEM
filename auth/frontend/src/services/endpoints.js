@@ -1,7 +1,9 @@
 import { USER_TYPES } from '../utils/constants';
 
 // Detect if we're going through Kong (has /auth prefix) or direct to auth service
-const USE_KONG = import.meta.env.VITE_API_BASE_URL?.includes('8080') || false;
+// Kong is used when accessing via the API gateway (port 8080 or api.ticketing domain)
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+const USE_KONG = API_URL.includes('8080') || API_URL.includes('api.ticketing') || API_URL.includes('api.') || false;
 const AUTH_PREFIX = USE_KONG ? '/auth' : '';
 
 // API Endpoints - Staff (Admin/Staff users)
@@ -45,3 +47,7 @@ export const EMPLOYEE_ENDPOINTS = {
 export const getEndpoints = (userType = USER_TYPES.STAFF) => {
   return userType === USER_TYPES.EMPLOYEE ? EMPLOYEE_ENDPOINTS : STAFF_ENDPOINTS;
 };
+
+// Unified ME endpoint for checking authentication status
+// Note: /api/me/ is a special unified endpoint that works without /api/v1/users prefix
+export const UNIFIED_ME = USE_KONG ? `${AUTH_PREFIX}/api/v1/users/me/` : '/api/me/';

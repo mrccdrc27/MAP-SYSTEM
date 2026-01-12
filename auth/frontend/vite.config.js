@@ -7,6 +7,15 @@ export default defineConfig({
   server: {
     port: 3001,
     host: '0.0.0.0',  // Listen on all interfaces for remote access
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '165.22.247.50',
+      'ticketing.mapactive.tech',
+      'login.ticketing.mapactive.tech',
+      'app.ticketing.mapactive.tech',
+      '*.ticketing.mapactive.tech',
+    ],
     proxy: {
       // Route /api requests directly to auth backend (when not using Kong prefix)
       '/api': {

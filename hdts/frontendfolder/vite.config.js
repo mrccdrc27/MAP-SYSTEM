@@ -7,6 +7,15 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false, // Allow fallback to other ports
+    host: '0.0.0.0',
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '165.22.247.50',
+      'hdts.ticketing.mapactive.tech',
+      'ticketing.mapactive.tech',
+      '*.ticketing.mapactive.tech',
+    ],
     // Proxy API requests - makes cookies same-origin
     proxy: {
       // Auth service endpoints

@@ -41,11 +41,13 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication status by calling the unified /api/me/ endpoint
   const checkAuth = useCallback(async () => {
+    // Import here to avoid circular dependency issues
+    const { UNIFIED_ME } = await import('../services/endpoints');
     setLoading(true);
     
     try {
       // Use unified /api/me/ endpoint that detects user type from cookie
-      const response = await apiRequest('/api/me/', { method: 'GET' });
+      const response = await apiRequest(UNIFIED_ME, { method: 'GET' });
       
       // Must have ok response AND valid user data
       if (response.ok && response.data) {
