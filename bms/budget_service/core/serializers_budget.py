@@ -462,12 +462,39 @@ class AccountTypeDropdownSerializer(serializers.ModelSerializer):
 class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=Account.objects.filter(is_active=True))
+    
+    # NEW FIELD: Allows to send "IT-HOST" or "CAP-IT-HW"
+    category_code = serializers.CharField(
+        write_only=True,
+        required=True,
+        help_text="The budget category code (e.g., 'IT-HOST', 'CAP-IT-HW')"
+    )
 
     class Meta:
         model = BudgetProposalItem
         fields = ['id', 'cost_element', 'description',
-                  'estimated_cost', 'account', 'notes']
+                  'estimated_cost', 'account', 'notes', 'category_code']  
         read_only_fields = ['id']
+    
+    
+    def validate_category_code(self, value):
+        try:
+            category = ExpenseCategory.objects.get(code=value, is_active=True)
+            return value
+        except ExpenseCategory.DoesNotExist:
+            raise serializers.ValidationError(
+                f"Invalid category code '{value}'. Use /api/external-references/categories/ to get valid codes."
+            )
+    
+    # Resolve category
+    def create(self, validated_data):
+        category_code = validated_data.pop('category_code')
+        category = ExpenseCategory.objects.get(code=category_code, is_active=True)
+        
+        return BudgetProposalItem.objects.create(
+            category=category,  
+            **validated_data
+        )
 
 
 class BudgetProposalMessageSerializer(serializers.ModelSerializer):
@@ -592,9 +619,6 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         # 1. Capture Submitter Name explicitly (Fixing potential "Popping" bug logic)
         # We want the string sent by the external system
         submitter_name = validated_data.get('submitted_by_name') 
-        # Note: We use .get() here because it's a model field, so DRF might have put it in validated_data directly
-        # If it was write_only in serializer but not model, we'd need pop.
-        # Let's be safe and ensure it is set.
         
         department_obj = validated_data.pop('department')
         items_data = validated_data.pop('items')
