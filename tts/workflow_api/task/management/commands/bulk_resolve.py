@@ -526,6 +526,18 @@ class Command(BaseCommand):
         
         current_step_time = base_resolution_time + timedelta(hours=random.randint(1, 4))  # Start after ticket creation
 
+        # IMPORTANT: Backdate the initial task item's assigned_on to match task creation time
+        # This ensures acted_on will always be >= assigned_on when using historical dates
+        if self.use_historical_dates and active_item:
+            initial_assigned_time = base_resolution_time + timedelta(minutes=random.randint(1, 30))
+            TaskItem.objects.filter(pk=active_item.pk).update(assigned_on=initial_assigned_time)
+            # Also backdate its history entries
+            TaskItemHistory.objects.filter(
+                task_item=active_item,
+                created_at__gt=initial_assigned_time
+            ).update(created_at=initial_assigned_time)
+            active_item.refresh_from_db()
+
         while iteration < max_iterations:
             iteration += 1
             current_step = task.current_step
