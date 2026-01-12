@@ -283,7 +283,7 @@ CSRF_COOKIE_SAMESITE = config('DJANGO_CSRF_COOKIE_SAMESITE', default='Lax')
 # Add your Railway domain and frontend domain here
 CSRF_TRUSTED_ORIGINS = config(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001' if not IS_PRODUCTION else 'https://yourdomain.com',
+    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://localhost:1000,http://127.0.0.1:1000,http://165.22.247.50:5173,http://165.22.247.50:1000' if not IS_PRODUCTION else 'https://yourdomain.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -291,7 +291,7 @@ CSRF_TRUSTED_ORIGINS = config(
 # Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://165.22.247.50:5173,http://165.22.247.50:1000',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 

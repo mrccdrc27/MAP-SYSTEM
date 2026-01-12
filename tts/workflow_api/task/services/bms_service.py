@@ -125,6 +125,13 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
     # Fallback description from ticket
     fallback_description = ticket_data.get('description', 'Budget item')[:200] or 'Budget item'
     
+    # Get category_code from ticket's sub_category (e.g., "CAPEX", "OPEX")
+    category_code = (
+        ticket_data.get('sub_category') or 
+        ticket_data.get('subcategory') or 
+        'OPEX'  # Default fallback
+    )
+    
     for idx, item in enumerate(raw_items, start=1):
         item_desc = item.get('description', '') or ''
         # Get cost element - fallback to "Budget Item #N" if empty
@@ -144,6 +151,7 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
             'description': item_desc,
             'estimated_cost': parse_float_with_commas(raw_cost),
             'account': int(item.get('account', FALLBACK_ACCOUNTS['default'])),
+            'category_code': category_code,
         }
         transformed_items.append(transformed_item)
     
@@ -154,6 +162,7 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
             'description': fallback_description,
             'estimated_cost': parse_float_with_commas(ticket_data.get('requested_budget', 0)),
             'account': FALLBACK_ACCOUNTS['default'],
+            'category_code': category_code,
         }]
     
     # Build the payload

@@ -8,6 +8,7 @@ python manage.py seed_systems
 python manage.py seed_tts
 python manage.py seed_hdts
 python manage.py seed_bms
+python manage.py seed_ams
 python manage.py seed_employees
 # Use Railway's PORT environment variable (defaults to 8000 for local dev)
 exec gunicorn auth.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120

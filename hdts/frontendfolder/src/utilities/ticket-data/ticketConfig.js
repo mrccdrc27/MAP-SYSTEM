@@ -12,10 +12,10 @@ const ticketConfig = {
           "IT Support",
           "Asset Check In (Asset Return)",
           "Asset Check-Out (Employee Request)",
-          "Capital Expenses (CapEx)",
-          "Operational Expenses (OpeEx)",
-          "Reimbursement Claim (Liabilities)",
-          "Charging Department (Cost Center)"
+          "CAPEX",
+          "OPEX",
+          "MERCH-SUP",
+          "MERCH-SW"
         ]
       },
       { name: "scheduleRequest", type: "date", label: "Schedule Request" },

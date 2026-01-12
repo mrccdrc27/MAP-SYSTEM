@@ -371,12 +371,17 @@
 }
 
 .tableRow {
+  cursor: pointer;
   border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s ease;
 }
 
 .tableRow:hover {
-  background-color: var(--hover-bg);
+  /* background-color: var(--hover-bg); */
+
+  background-color: var(--row-hover-color);
+  transform: translateY(-1px);
+  box-shadow: var(--box-shadow-as);
 }
 
 .tableRow td {
@@ -643,6 +648,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

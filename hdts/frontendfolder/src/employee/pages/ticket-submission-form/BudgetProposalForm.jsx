@@ -10,10 +10,10 @@ const BudgetProposalMetadata = {
   icon: FaDollarSign,
   description: 'Submit budget proposals and financial requests',
   subCategories: [
-    'Capital Expenses (CapEx)',
-    'Operational Expenses (OpEx)',
-    'Reimbursement Claim (Liabilities)',
-    'Charging Department (Cost Center)'
+    'CAPEX',
+    'OPEX',
+    'MERCH-SUP',
+    'MERCH-SW'
   ]
 };
 
@@ -21,22 +21,22 @@ const budgetSubCategories = BudgetProposalMetadata.subCategories;
 
 // Cost elements based on sub-category
 const costElements = {
-  'Capital Expenses (CapEx)': [
+  'CAPEX': [
     'Equipment',
     'Software (long-term value like MS Office, Adobe Suite, Antivirus)',
     'Furniture'
   ],
-  'Operational Expenses (OpEx)': [
+  'OPEX': [
     'Utilities',
     'Supplies',
     'IT Services',
     'Software Subscriptions'
   ],
-  'Reimbursement Claim (Liabilities)': [
+  'MERCH-SUP': [
     'Payable',
     'Loans (if applicable)'
   ],
-  'Charging Department (Cost Center)': [
+  'MERCH-SW': [
     'IT Operations (day-to-day support)',
     'System Development (in-house software projects)',
     'Infrastructure & Equipment (hardware, network, servers)',

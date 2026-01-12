@@ -53,6 +53,7 @@ plugins:
         - "http://host.docker.internal:5173"
         - "http://127.0.0.1:5173"
         - "http://165.22.247.50:5173"
+        - "https://map-ams.up.railway.app"
       methods:
         - GET
         - POST

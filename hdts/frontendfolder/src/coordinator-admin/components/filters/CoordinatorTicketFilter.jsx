@@ -88,10 +88,10 @@ export default function CoordinatorTicketFilter({
     { label: "Mouse", category: "Asset Check In" },
     { label: "Keyboard", category: "Asset Check In" },
     // New Budget Proposal sub-categories
-    { label: "Capital Expenses (CapEx)", category: "New Budget Proposal" },
-    { label: "Operational Expenses (OpEx)", category: "New Budget Proposal" },
-    { label: "Reimbursement Claim (Liabilities)", category: "New Budget Proposal" },
-    { label: "Charging Department (Cost Center)", category: "New Budget Proposal" },
+    { label: "CAPEX", category: "New Budget Proposal" },
+    { label: "OPEX", category: "New Budget Proposal" },
+    { label: "MERCH-SUP", category: "New Budget Proposal" },
+    { label: "MERCH-SW", category: "New Budget Proposal" },
   ];
 
   // Sub-category mapping for normalization (for dynamic options only)
@@ -114,10 +114,10 @@ export default function CoordinatorTicketFilter({
     "Mouse": "Asset Check In",
     "Keyboard": "Asset Check In",
     // Budget Proposal
-    "Capital Expenses (CapEx)": "New Budget Proposal",
-    "Operational Expenses (OpEx)": "New Budget Proposal",
-    "Reimbursement Claim (Liabilities)": "New Budget Proposal",
-    "Charging Department (Cost Center)": "New Budget Proposal",
+    "CAPEX": "New Budget Proposal",
+    "OPEX": "New Budget Proposal",
+    "MERCH-SUP": "New Budget Proposal",
+    "MERCH-SW": "New Budget Proposal",
   };
 
   // Use defaults always for sub-categories to ensure proper category mapping

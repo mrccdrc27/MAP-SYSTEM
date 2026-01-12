@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 // API URL for fetching locations from HDTS backend
 const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
 
+// AMS API URL for fetching asset checkouts
+const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app';
+
 const assetSubCategories = [
   'Laptop',
   'Printer',
@@ -46,10 +49,43 @@ const mockAssets = {
   ]
 };
 
-export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField }) {
+export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField, employeeId }) {
   // Locations state - fetched from API
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Asset checkouts state - fetched from AMS API based on employee ID
+  const [assetCheckouts, setAssetCheckouts] = useState([]);
+  const [loadingAssetCheckouts, setLoadingAssetCheckouts] = useState(false);
+
+  // Fetch asset checkouts from AMS API when employeeId is available
+  useEffect(() => {
+    const fetchAssetCheckouts = async () => {
+      if (!employeeId) {
+        setAssetCheckouts([]);
+        return;
+      }
+      
+      setLoadingAssetCheckouts(true);
+      try {
+        const response = await fetch(`${AMS_ASSETS_URL}/asset-checkout/by-employee/${employeeId}/`);
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setAssetCheckouts(data);
+        } else {
+          console.error('Invalid asset checkouts response:', data);
+          setAssetCheckouts([]);
+        }
+      } catch (error) {
+        console.error('Error fetching asset checkouts:', error);
+        setAssetCheckouts([]);
+      } finally {
+        setLoadingAssetCheckouts(false);
+      }
+    };
+
+    fetchAssetCheckouts();
+  }, [employeeId]);
 
   // Fetch locations from HDTS API on component mount
   useEffect(() => {
@@ -92,6 +128,31 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
             <option value="">Select Product Type</option>
             {assetSubCategories.map(type => (
               <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        )}
+      />
+
+      {/* Asset Checkout - Dropdown to select from employee's checked out assets */}
+      <FormField
+        id="assetCheckout"
+        label="Asset Checkout"
+        error={errors.assetCheckout}
+        render={() => (
+          <select
+            value={formData.assetCheckout || ''}
+            onChange={onChange('assetCheckout')}
+            onBlur={onBlur('assetCheckout')}
+            disabled={loadingAssetCheckouts}
+          >
+            <option value="">
+              {loadingAssetCheckouts ? 'Loading checkouts...' : 'Select Asset Checkout'}
+            </option>
+            {assetCheckouts.map(checkout => (
+              <option key={checkout.id} value={checkout.id}>
+                {checkout.asset_details?.name || `Asset ID: ${checkout.asset_details?.asset_id}`}
+                {checkout.asset_details?.asset_id ? ` (${checkout.asset_details.asset_id})` : ''}
+              </option>
             ))}
           </select>
         )}

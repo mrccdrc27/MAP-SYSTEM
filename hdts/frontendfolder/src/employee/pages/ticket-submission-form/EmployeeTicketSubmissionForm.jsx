@@ -55,7 +55,8 @@ export default function EmployeeTicketSubmissionForm() {
     softwareAffected: '',
     performanceStartDate: '',
     performanceEndDate: '',
-    preparedBy: ''
+    preparedBy: '',
+    assetCheckout: ''
   });
 
   // Track if we loaded from chatbot prefill (to show notification)
@@ -378,7 +379,8 @@ export default function EmployeeTicketSubmissionForm() {
         softwareAffected: '',
         performanceStartDate: '',
         performanceEndDate: '',
-        preparedBy: ''
+        preparedBy: '',
+        assetCheckout: ''
       }));
       setBudgetItems([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
     }
@@ -595,6 +597,9 @@ export default function EmployeeTicketSubmissionForm() {
         if (formData.issueType === 'Other') {
           dynamicData.otherIssue = formData.otherIssue;
         }
+        if (formData.assetCheckout) {
+          dynamicData.assetCheckout = formData.assetCheckout;
+        }
       }
 
       // Add Budget Proposal specific data
@@ -662,7 +667,8 @@ export default function EmployeeTicketSubmissionForm() {
       softwareAffected: '',
       performanceStartDate: '',
       performanceEndDate: '',
-      preparedBy: ''
+      preparedBy: '',
+      assetCheckout: ''
     });
     setErrors({});
     setTouched({});
@@ -755,6 +761,7 @@ export default function EmployeeTicketSubmissionForm() {
               onBlur={handleBlur}
               errors={errors}
               FormField={FormField}
+              employeeId={currentUser?.id}
             />
           )}
 

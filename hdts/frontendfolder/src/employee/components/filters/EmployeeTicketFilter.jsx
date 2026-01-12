@@ -98,10 +98,10 @@ export default function EmployeeTicketFilter({
     { label: "Mouse", category: "Asset Check In" },
     { label: "Keyboard", category: "Asset Check In" },
     // New Budget Proposal sub-categories
-    { label: "Capital Expenses (CapEx)", category: "New Budget Proposal" },
-    { label: "Operational Expenses (OpEx)", category: "New Budget Proposal" },
-    { label: "Reimbursement Claim (Liabilities)", category: "New Budget Proposal" },
-    { label: "Charging Department (Cost Center)", category: "New Budget Proposal" },
+    { label: "CAPEX", category: "New Budget Proposal" },
+    { label: "OPEX", category: "New Budget Proposal" },
+    { label: "MERCH-SUP", category: "New Budget Proposal" },
+    { label: "MERCH-SW", category: "New Budget Proposal" },
   ];
 
   // Use defaults always for sub-categories to ensure proper category mapping

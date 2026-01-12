@@ -137,6 +137,31 @@ def get_ams_ticket_data_normalized(task):
         dynamic_data.get('expectedReturnDate')
     )
     
+    # Get checkin_date - check multiple sources including dynamic_data
+    checkin_date = ticket_data.get('checkin_date') or dynamic_data.get('checkinDate')
+    
+    # Get subject for logging/response
+    subject = ticket_data.get('subject') or ''
+    
+    # Fallback: if checkin_date is null, set it to SLA deadline + 1 day
+    if not checkin_date and task.target_resolution:
+        from datetime import timedelta
+        # Calculate checkin_date as SLA deadline + 1 day
+        checkin_deadline = task.target_resolution + timedelta(days=1)
+        checkin_date = checkin_deadline.isoformat()
+    
+    # Get asset_checkout - check ticket_data first, then dynamic_data.assetCheckout
+    asset_checkout = (
+        ticket_data.get('asset_checkout') or 
+        dynamic_data.get('assetCheckout')
+    )
+    
+    # Get asset_checkin - check ticket_data first, then dynamic_data.assetCheckin
+    asset_checkin = (
+        ticket_data.get('asset_checkin') or 
+        dynamic_data.get('assetCheckin')
+    )
+    
     return {
         'id': ticket.id,
         'location_details': location_details,
@@ -144,16 +169,16 @@ def get_ams_ticket_data_normalized(task):
         'ticket_number': ticket.ticket_number,
         'employee': employee_id,
         'asset': asset,
-        'subject': ticket_data.get('subject'),
+        'subject': subject,
         'location': location_id,
         'is_resolved': is_resolved,
         'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
         'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None,
         'checkout_date': checkout_date,
         'return_date': return_date,
-        'asset_checkout': ticket_data.get('asset_checkout'),
-        'checkin_date': ticket_data.get('checkin_date') or dynamic_data.get('checkinDate'),
-        'asset_checkin': ticket_data.get('asset_checkin'),
+        'asset_checkout': asset_checkout,
+        'checkin_date': checkin_date,
+        'asset_checkin': asset_checkin,
     }
 
 
@@ -175,11 +200,11 @@ def ams_pending_tickets(request):
     Returns flat array of ticket objects.
     """
     try:
-        # Get all tasks pending AMS resolution
+        # Get all tasks pending AMS resolution, ordered by most recent first
         pending_tasks = Task.objects.filter(
             workflow_id__end_logic='ams',
             status='pending_external'
-        ).select_related('ticket_id', 'workflow_id')
+        ).select_related('ticket_id', 'workflow_id').order_by('-ticket_id__created_at')
         
         # Build normalized response data (flat array matching /tickets/asset/resolved/)
         tickets_data = []

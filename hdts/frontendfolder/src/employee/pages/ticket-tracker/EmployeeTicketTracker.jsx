@@ -461,7 +461,6 @@ export default function EmployeeTicketTracker() {
   // Support both direct links (/ticket-tracker/:ticketNumber) and normal flow (latest ticket)
   const [ticket, setTicket] = useState(null);
   const [loadingTicket, setLoadingTicket] = useState(false);
-  const [showRawData, setShowRawData] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -1044,10 +1043,13 @@ export default function EmployeeTicketTracker() {
                           <div className={styles.detailLabel}>Asset Name</div>
                           <div className={styles.detailValue}>{ticket.asset_name || ticket.assetName || 'N/A'}</div>
                         </div>
-                        <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Asset ID</div>
-                          <div className={styles.detailValue}>{ticket.asset_id || ticket.assetId || 'N/A'}</div>
-                        </div>
+                        {/* Hide Asset ID for Asset Check In category */}
+                        {category !== 'Asset Check In' && (
+                          <div className={styles.detailItem}>
+                            <div className={styles.detailLabel}>Asset ID</div>
+                            <div className={styles.detailValue}>{ticket.asset_id || ticket.assetId || 'N/A'}</div>
+                          </div>
+                        )}
                         <div className={styles.detailItem}>
                           <div className={styles.detailLabel}>Serial Number</div>
                           <div className={styles.detailValue}>{ticket.serial_number || ticket.serialNumber || 'N/A'}</div>
@@ -1172,22 +1174,6 @@ export default function EmployeeTicketTracker() {
                   />
                 )}
               </Tabs>
-              {/* Raw payload toggle for debugging */}
-              <div style={{ marginTop: 12 }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => setShowRawData((s) => !s)}
-                  className={styles.ticketActionButton}
-                >
-                  {showRawData ? 'Hide Raw Data' : 'Show Raw Data'}
-                </Button>
-              </div>
-
-              {showRawData && (
-                <div style={{ marginTop: 12 }}>
-                  <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 360, overflow: 'auto', background: '#f6f6f6', padding: 12, borderRadius: 6 }}>{JSON.stringify(ticket, null, 2)}</pre>
-                </div>
-              )}
             </div>
           </div>
         </div>

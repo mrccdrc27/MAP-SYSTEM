@@ -88,26 +88,26 @@ class Command(BaseCommand):
     def create_users(self):
         """Create predefined users for the AMS system."""
         predefined_users = [
-            # Production-style users with secure passwords
+            # Production-style users with secure passwords (mapactive domain)
             {
-                'first_name': 'Asset',
+                'first_name': 'AMS',
                 'last_name': 'Administrator',
-                'email': 'ams.admin@example.com',
-                'username': 'amsadmin',
-                'phone_number': '+10000002001',
+                'email': 'assetmanagement.mapactive+admin@dev.mapactive.tech',
+                'username': 'ams_admin_prod',
+                'phone_number': '+639170000001',
                 'role': 'Admin',
                 'is_staff': True,
-                'password': 'AmsAdmin@2025!Secure',
+                'password': 'Ass3t.M@nag3m3nt!2026.Adm1n',
             },
             {
-                'first_name': 'Asset',
+                'first_name': 'AMS',
                 'last_name': 'Operator',
-                'email': 'ams.operator@example.com',
-                'username': 'amsoperator',
-                'phone_number': '+10000002002',
+                'email': 'assetmanagement.mapactive+operator@dev.mapactive.tech',
+                'username': 'ams_operator_prod',
+                'phone_number': '+639170000002',
                 'role': 'Operator',
                 'is_staff': False,
-                'password': 'AmsOperator@2025!Secure',
+                'password': 'Ass3t.M@nag3m3nt!2026.0per@tor',
             },
             # Simple test users with easy-to-remember credentials for API testing
             {
@@ -180,15 +180,17 @@ class Command(BaseCommand):
     def print_credentials(self):
         """Print test credentials for easy reference."""
         self.stdout.write('')
-        self.stdout.write(self.style.SUCCESS('=' * 50))
-        self.stdout.write(self.style.SUCCESS(' AMS Test Credentials'))
-        self.stdout.write(self.style.SUCCESS('=' * 50))
+        self.stdout.write(self.style.SUCCESS('=' * 60))
+        self.stdout.write(self.style.SUCCESS(' AMS Seeded Credentials'))
+        self.stdout.write(self.style.SUCCESS('=' * 60))
+        self.stdout.write('')
+        self.stdout.write(' Production (mapactive):')
+        self.stdout.write('   Admin:    assetmanagement.mapactive+admin@dev.mapactive.tech')
+        self.stdout.write('             Password: Ass3t.M@nag3m3nt!2026.Adm1n')
+        self.stdout.write('   Operator: assetmanagement.mapactive+operator@dev.mapactive.tech')
+        self.stdout.write('             Password: Ass3t.M@nag3m3nt!2026.0per@tor')
         self.stdout.write('')
         self.stdout.write(' For API Testing:')
         self.stdout.write('   Admin:    amsadmin@test.local / amsadmin123')
         self.stdout.write('   Operator: amsoperator@test.local / amsoperator123')
-        self.stdout.write('')
-        self.stdout.write(' Production-style:')
-        self.stdout.write('   Admin:    ams.admin@example.com / AmsAdmin@2025!Secure')
-        self.stdout.write('   Operator: ams.operator@example.com / AmsOperator@2025!Secure')
         self.stdout.write('')

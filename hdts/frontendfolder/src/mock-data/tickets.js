@@ -138,7 +138,7 @@ export const mockTickets = [
     employeeDepartment: 'Finance Department',
     subject: 'Q3 Budget Proposal - Software Upgrade',
     category: 'New Budget Proposal',
-    subCategory: 'Capital Expenses (CapEx)',
+    subCategory: 'CAPEX',
     priority: 'High',
     description: 'Requesting budget approval for finance software upgrade.',
     fileAttachments: [],
@@ -267,29 +267,29 @@ export const mockAssets = {
 
 // Budget proposal sub-categories, cost elements and ranges (from BudgetProposalForm.jsx)
 export const budgetSubCategories = [
-  'Capital Expenses (CapEx)',
-  'Operational Expenses (OpEx)',
-  'Reimbursement Claim (Liabilities)',
-  'Charging Department (Cost Center)'
+  'CAPEX',
+  'OPEX',
+  'MERCH-SUP',
+  'MERCH-SW'
 ];
 
 export const costElements = {
-  'Capital Expenses (CapEx)': [
+  'CAPEX': [
     'Equipment',
     'Software (long-term value like MS Office, Adobe Suite, Antivirus)',
     'Furniture'
   ],
-  'Operational Expenses (OpEx)': [
+  'OPEX': [
     'Utilities',
     'Supplies',
     'IT Services',
     'Software Subscriptions'
   ],
-  'Reimbursement Claim (Liabilities)': [
+  'MERCH-SUP': [
     'Payable',
     'Loans (if applicable)'
   ],
-  'Charging Department (Cost Center)': [
+  'MERCH-SW': [
     'IT Operations (day-to-day support)',
     'System Development (in-house software projects)',
     'Infrastructure & Equipment (hardware, network, servers)',

@@ -391,7 +391,7 @@ const TICKETS = [
     employeeDepartment: "Finance Department",
     subject: "Q3 Budget Proposal - Finance Software Upgrade",
     category: "New Budget Proposal",
-    subCategory: "Capital Expenses (CapEx)",
+    subCategory: "CAPEX",
     priority: "High",
     description: "Requesting budget approval for upgrading our financial reporting software to the enterprise version. This will improve efficiency and provide better compliance reporting features.",
     fileAttachments: [

@@ -46,7 +46,7 @@ export default function AdminArchive() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+
   // Modal state for assigning workflow to unassigned tickets
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedTicketForAssign, setSelectedTicketForAssign] = useState(null);
@@ -235,7 +235,7 @@ export default function AdminArchive() {
   // Get summary stats based on active tab
   const getSummaryStats = () => {
     const filtered = getFilteredData();
-    
+
     if (activeTab === "Unassigned") {
       // For unassigned tickets, show different stats
       return {
@@ -249,7 +249,7 @@ export default function AdminArchive() {
         ).length,
       };
     }
-    
+
     return {
       total: pagination.count || filtered.length,
       active: filtered.filter(
@@ -346,9 +346,8 @@ export default function AdminArchive() {
                   setExpandedGroups({});
                   setExpandedRows({});
                 }}
-                className={`${styles.tpTabLink} ${
-                  activeTab === tab ? styles.active : ""
-                }`}
+                className={`${styles.tpTabLink} ${activeTab === tab ? styles.active : ""
+                  }`}
               >
                 {tab}
               </button>
@@ -613,7 +612,11 @@ export default function AdminArchive() {
                                   }
                                 >
                                   {/* Main Task Row (Most Recent) */}
-                                  <tr className={styles.tableRow}>
+                                  <tr className={styles.tableRow} onClick={() =>
+                                    navigate(
+                                      `/admin/archive/${mainTask.ticket_number}`
+                                    )
+                                  }>
                                     <td className={styles.expandCell}>
                                       {allTasksForTicket.length > 1 && (
                                         <button
@@ -685,32 +688,28 @@ export default function AdminArchive() {
                                     </td> */}
                                     <td className={styles.priority}>
                                       <span
-                                        className={`${
-                                          general.priorityBadge ||
+                                        className={`${general.priorityBadge ||
                                           styles.priorityBadge
-                                        } ${
-                                          general[
-                                            getPriorityColor(
-                                              mainTask.ticket_priority
-                                            )
+                                          } ${general[
+                                          getPriorityColor(
+                                            mainTask.ticket_priority
+                                          )
                                           ]
-                                        }`}
+                                          }`}
                                       >
                                         {mainTask.ticket_priority || "Medium"}
                                       </span>
                                     </td>
                                     <td className={styles.targetDate}>
                                       <span
-                                        className={`${
-                                          general.statusBadge ||
+                                        className={`${general.statusBadge ||
                                           styles.statusBadge
-                                        } ${
-                                          general[
-                                            getDateColor(
-                                              mainTask.target_resolution
-                                            )
+                                          } ${general[
+                                          getDateColor(
+                                            mainTask.target_resolution
+                                          )
                                           ]
-                                        }`}
+                                          }`}
                                       >
                                         {formatDate(mainTask.target_resolution)}
                                       </span>
@@ -839,16 +838,14 @@ export default function AdminArchive() {
                                                           }
                                                         >
                                                           <span
-                                                            className={`${
-                                                              general.statusBadge ||
+                                                            className={`${general.statusBadge ||
                                                               styles.statusBadge
-                                                            } ${
-                                                              general[
-                                                                getDateColor(
-                                                                  task.assigned_on
-                                                                )
+                                                              } ${general[
+                                                              getDateColor(
+                                                                task.assigned_on
+                                                              )
                                                               ]
-                                                            }`}
+                                                              }`}
                                                           >
                                                             {formatDateTime(
                                                               task.assigned_on

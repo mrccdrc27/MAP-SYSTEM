@@ -52,6 +52,7 @@ class TaskItemSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     ticket_number = serializers.CharField(source='ticket_id.ticket_number', read_only=True)
+    ticket_priority = serializers.CharField(source='ticket_id.priority', read_only=True, allow_null=True)
     ticket_subject = serializers.SerializerMethodField()
     ticket_description = serializers.SerializerMethodField()
     workflow_name = serializers.CharField(source='workflow_id.name', read_only=True)
@@ -67,6 +68,7 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = [
             'task_id', 'ticket_id', 'ticket_number', 'workflow_id', 'current_step',
+            'ticket_priority',
             'status', 'created_at', 'updated_at', 'fetched_at',
             'target_resolution', 'resolution_time',
             'ticket_owner', 'ticket_owner_id', 'ticket_owner_name', 'ticket_owner_role',
@@ -74,7 +76,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'ticket_subject', 'ticket_description', 'workflow_name', 'current_step_name', 
             'current_step_role', 'assigned_users', 'assigned_users_count'
         ]
-        read_only_fields = ['task_id', 'created_at', 'updated_at', 'target_resolution', 'resolution_time', 'ticket_owner_id', 'ticket_owner_name', 'ticket_owner_role', 'ticket_number']
+        read_only_fields = ['task_id', 'created_at', 'updated_at', 'target_resolution', 'resolution_time', 'ticket_owner_id', 'ticket_owner_name', 'ticket_owner_role', 'ticket_number', 'ticket_priority']
     
     def get_ticket_subject(self, obj):
         """Extract subject from ticket_data"""
