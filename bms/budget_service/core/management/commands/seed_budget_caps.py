@@ -10,6 +10,26 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING('Seeding Budget Caps...'))
+        
+        self.stdout.write(self.style.WARNING('\n=== Creating Fallback Category ==='))
+        fallback, created = ExpenseCategory.objects.get_or_create(
+            code='GEN-MISC',
+            defaults={
+                'name': 'General/Miscellaneous',
+                'description': 'Fallback category for uncategorized expenses from external systems',
+                'level': 2,
+                'classification': 'OPEX',
+                'is_active': True,
+                'parent_category': ExpenseCategory.objects.filter(
+                    code='OPEX', level=1
+                ).first()  # Link to top-level OPEX if it exists
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f'✓ Created fallback category: {fallback.code} - {fallback.name}'))
+        else:
+            self.stdout.write(self.style.SUCCESS(f'✓ Fallback category already exists: {fallback.code}'))
+
 
         # 1. Get Active Fiscal Year (Assuming 2026)
         today = timezone.now().date()

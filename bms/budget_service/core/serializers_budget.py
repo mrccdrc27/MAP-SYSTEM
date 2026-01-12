@@ -4,7 +4,7 @@ from .models import (
     FiscalYear, JournalEntry, JournalEntryLine, Project, ProposalComment, ProposalHistory, BudgetTransfer
 )
 from rest_framework import serializers
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 
@@ -466,8 +466,9 @@ class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
     # NEW FIELD: Allows to send "IT-HOST" or "CAP-IT-HW"
     category_code = serializers.CharField(
         write_only=True,
-        required=True,
-        help_text="The budget category code (e.g., 'IT-HOST', 'CAP-IT-HW')"
+        required=False,
+        allow_blank=True,
+        help_text="The budget category code (e.g., 'IT-HOST', 'CAP-IT-HW'). If not provided, will use a default 'General' category."
     )
 
     class Meta:
@@ -476,24 +477,70 @@ class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
                   'estimated_cost', 'account', 'notes', 'category_code']  
         read_only_fields = ['id']
     
-    
     def validate_category_code(self, value):
+        """Validate category code if provided"""
+        if not value:
+            return None  # ✅ Allow empty/None
+        
         try:
-            category = ExpenseCategory.objects.get(code=value, is_active=True)
+            ExpenseCategory.objects.get(code=value, is_active=True)
             return value
         except ExpenseCategory.DoesNotExist:
             raise serializers.ValidationError(
                 f"Invalid category code '{value}'. Use /api/external-references/categories/ to get valid codes."
             )
     
+    def validate(self, data):
+        """Resolve category_code to actual category object"""
+        category_code = data.pop('category_code', None)
+        
+        if category_code:
+            # User provided a code - use it
+            try:
+                category = ExpenseCategory.objects.get(code=category_code, is_active=True)
+                data['category'] = category
+            except ExpenseCategory.DoesNotExist:
+                raise serializers.ValidationError({
+                    'category_code': f"Category '{category_code}' not found."
+                })
+        else:
+            # ✅ FALLBACK: Use a default "General" category
+            # Try to find a generic category
+            default_category = ExpenseCategory.objects.filter(
+                Q(code__iexact='GEN') | 
+                Q(name__icontains='General') |
+                Q(name__icontains='Miscellaneous')
+            ).first()
+            
+            if not default_category:
+                # If no "General" category exists, use the first active OpEx category
+                default_category = ExpenseCategory.objects.filter(
+                    classification='OPEX',
+                    is_active=True
+                ).first()
+            
+            if default_category:
+                data['category'] = default_category
+            else:
+                # Last resort: any active category
+                data['category'] = ExpenseCategory.objects.filter(is_active=True).first()
+                
+            if not data.get('category'):
+                raise serializers.ValidationError(
+                    "No expense categories configured in the system. Contact your administrator."
+                )
+        
+        return data
+    
 
 
 class BudgetProposalMessageSerializer(serializers.ModelSerializer):
     department_input = serializers.CharField(
         write_only=True,
-        required=True,
+        required=False,  # ✅ NOW OPTIONAL
+        allow_blank=True,
         source='department',
-        help_text="Department ID (integer) or Department Code (string, e.g., 'FIN'). Required."
+        help_text="Department ID (integer) or Department Code (string, e.g., 'FIN'). If not provided, will use a default department."
     )
     department_details = DepartmentDropdownSerializer(
         source='department', read_only=True)
@@ -538,42 +585,104 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         ]
 
     def validate_department_input(self, value):
+        """
+        Resolve department from ID, Code, or Name.
+        Returns None if not provided (fallback handled in validate())
+        """
+        if not value:
+            return None  # ✅ Allow empty - fallback in validate()
+        
         try:
+            # Try as integer ID
             if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
                 department_obj = Department.objects.get(
                     pk=int(value), is_active=True)
-            elif isinstance(value, str):
-                department_obj = Department.objects.get(
-                    code__iexact=value, is_active=True)
-            else:
-                raise serializers.ValidationError(
-                    "Department input must be an integer ID or a string code.")
+                return department_obj
+            
+            # Try as Department Code (most common)
+            if isinstance(value, str):
+                department_obj = Department.objects.filter(
+                    code__iexact=value, is_active=True
+                ).first()
+                
+                if department_obj:
+                    return department_obj
+                
+                # Fallback: Try as Department Name
+                department_obj = Department.objects.filter(
+                    name__icontains=value, is_active=True
+                ).first()
+                
+                if department_obj:
+                    return department_obj
+            
+            # If we get here, the provided value is invalid
+            raise serializers.ValidationError(
+                f"Active department with identifier '{value}' not found."
+            )
+            
         except Department.DoesNotExist:
             raise serializers.ValidationError(
-                f"Active department with identifier '{value}' not found.")
+                f"Active department with identifier '{value}' not found."
+            )
         except ValueError:
             raise serializers.ValidationError(
-                "Invalid department ID format if sending an integer ID.")
-        return department_obj
+                "Invalid department ID format."
+            )
 
     def validate(self, data):
         """
-        Validate proposal data.
-        
-        Budget availability check is OPTIONAL (warning only) because:
-        1. External systems submit proposals BEFORE budget allocation
-        2. Finance Manager reviews budget context during approval
-        3. Supplemental budgets may exceed current allocation by design
+        Validate proposal data with intelligent fallbacks for department.
         """
-        # 1. Calculate Total Cost of this new proposal
+        # 1. ✅ DEPARTMENT FALLBACK LOGIC
+        department = data.get('department')
+        
+        if not department:
+            # Strategy 1: Infer from Ticket ID Prefix
+            ticket_id = data.get('ticket_id', '')
+            department = self._infer_department_from_ticket(ticket_id)
+            
+            if not department:
+                # Strategy 2: Infer from Category in Items
+                items = data.get('items', [])
+                department = self._infer_department_from_items(items)
+            
+            if not department:
+                # Strategy 3: Use a "General" or default department
+                department = Department.objects.filter(
+                    Q(code__iexact='GEN') | 
+                    Q(name__icontains='General') |
+                    Q(name__icontains='Admin')
+                ).first()
+            
+            if not department:
+                # Strategy 4: Use the first active department (absolute fallback)
+                department = Department.objects.filter(is_active=True).first()
+            
+            if not department:
+                raise serializers.ValidationError(
+                    "No departments configured in the system. Contact your administrator."
+                )
+            
+            # Store resolved department
+            data['department'] = department
+            
+            # Log the fallback for auditing
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"⚠️ Department fallback triggered for ticket {ticket_id}. "
+                f"Using: {department.code} ({department.name})"
+            )
+        
+        # 2. Calculate Total Cost of this new proposal
         items = data.get('items', [])
         total_proposed_cost = sum(item['estimated_cost'] for item in items)
 
-        # 2. Get Department and Fiscal Year
-        department = data.get('department')
+        # 3. Get Fiscal Year
         fiscal_year = data.get('fiscal_year')
 
-        # 3. Calculate Currently Available Funds (for informational warning only)
+        # 4. Calculate Currently Available Funds (for informational warning only)
         total_allocation = BudgetAllocation.objects.filter(
             department=department,
             fiscal_year=fiscal_year,
@@ -588,9 +697,7 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
 
         available_funds = total_allocation - total_spent
 
-        # 4. Budget Check (WARNING, not blocking)
-        # This allows external systems to submit proposals even if budget is tight
-        # Finance Manager will review during approval
+        # 5. Budget Check (WARNING, not blocking)
         if available_funds < total_proposed_cost and total_allocation > 0:
             import logging
             logger = logging.getLogger(__name__)
@@ -599,69 +706,125 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
                 f"Department {department.code}, Available: {available_funds:,.2f}, "
                 f"Requested: {total_proposed_cost:,.2f}"
             )
-            # Note: We DON'T raise ValidationError here anymore
-            # Finance Manager can still approve if justified (e.g., supplemental budget)
 
         return data
+    
+    def _infer_department_from_ticket(self, ticket_id):
+        """
+        Strategy 1: Infer department from ticket ID prefix.
+        Examples: 
+        - AST-REQ-xxx → Asset Management → Operations
+        - HD-xxx → Help Desk → IT
+        - TRV-xxx → Travel → HR
+        """
+        if not ticket_id:
+            return None
+        
+        ticket_upper = ticket_id.upper()
+        
+        # Mapping of ticket prefixes to department codes
+        PREFIX_TO_DEPT = {
+            'AST': 'OPS',     # Asset Management → Operations
+            'REP': 'OPS',     # Repairs → Operations
+            'REG': 'OPS',     # Registration → Operations
+            'HD': 'IT',       # Help Desk → IT
+            'TRV': 'HR',      # Travel → HR
+            'TICKET': 'IT',   # Generic Ticket → IT
+            'REQ': 'OPS',     # General Request → Operations
+        }
+        
+        for prefix, dept_code in PREFIX_TO_DEPT.items():
+            if ticket_upper.startswith(prefix):
+                dept = Department.objects.filter(
+                    code__iexact=dept_code, is_active=True
+                ).first()
+                if dept:
+                    return dept
+        
+        return None
+    
+    def _infer_department_from_items(self, items):
+        """
+        Strategy 2: Infer department from category codes in items.
+        Example: IT-HOST, CAP-IT-HW → IT Department
+        """
+        if not items:
+            return None
+        
+        # Look at the first item's category
+        first_item = items[0]
+        category = first_item.get('category')
+        
+        if not category:
+            return None
+        
+        # If category has a code like "IT-HOST" or "CAP-IT-HW"
+        category_code = getattr(category, 'code', '')
+        
+        # Extract department prefix from category code
+        if '-' in category_code:
+            parts = category_code.split('-')
+            
+            # Handle patterns like "IT-HOST" or "CAP-IT-HW"
+            if parts[0] in ['CAP', 'OPEX']:
+                # CapEx/OpEx prefix, real dept is second part
+                dept_prefix = parts[1] if len(parts) > 1 else None
+            else:
+                # First part is the department
+                dept_prefix = parts[0]
+            
+            if dept_prefix:
+                dept = Department.objects.filter(
+                    code__iexact=dept_prefix, is_active=True
+                ).first()
+                if dept:
+                    return dept
+        
+        return None
 
     def create(self, validated_data):
         """
         Create a new BudgetProposal from external system data.
         Handles nested items, department resolution, and history logging.
         """
-        # 1. Extract write_only fields that shouldn't go into the model
+        # 1. Extract write_only fields
         is_draft = validated_data.pop('is_draft', False)
         ticket_id_value = validated_data.pop('ticket_id')
-        
-        # 2. Extract and resolve department
         department_obj = validated_data.pop('department')
-        
-        # 3. Extract nested items (will be created separately)
         items_data = validated_data.pop('items')
         
-        # 4. Clean up any read_only fields that might have slipped through
-        validated_data.pop('approved_by_name', None)
-        validated_data.pop('approval_date', None)
-        validated_data.pop('rejected_by_name', None)
-        validated_data.pop('rejection_date', None)
-        validated_data.pop('department_details', None)
+        # 2. Clean up read_only fields
+        for field in ['approved_by_name', 'approval_date', 'rejected_by_name', 
+                      'rejection_date', 'department_details']:
+            validated_data.pop(field, None)
         
-        # 5. Set the external system ID from ticket_id
+        # 3. Set proposal metadata
         validated_data['external_system_id'] = ticket_id_value
-        
-        # 6. Set the department (already resolved in validation)
         validated_data['department'] = department_obj
-        
-        # 7. Set the status based on is_draft flag
         validated_data['status'] = 'DRAFT' if is_draft else 'SUBMITTED'
-        
-        # 8. Set timestamps and sync status
         validated_data.setdefault('submitted_at', timezone.now())
         validated_data['sync_status'] = 'SYNCED'
         validated_data['last_sync_timestamp'] = timezone.now()
         
-        # 9. Create the proposal
+        # 4. Create the proposal
         proposal = BudgetProposal.objects.create(**validated_data)
         
-        # 10. ✅ FIXED: Create the budget items with proper category resolution
+        # 5. ✅ Create items (category is already resolved in validate())
         for item_data in items_data:
-            # Extract and resolve the category_code
-            category_code = item_data.pop('category_code')
-            category = ExpenseCategory.objects.get(code=category_code, is_active=True)
-            
-            # Create the item with the resolved category
-            BudgetProposalItem.objects.create(
-                proposal=proposal,
-                category=category,
-                **item_data
-            )
+            try:
+                BudgetProposalItem.objects.create(
+                    proposal=proposal,
+                    **item_data  # category is already included as a model instance
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to create item for proposal {proposal.id}: {e}")
+                continue
         
-        # 11. Log history
+        # 6. Log history
         request = self.context.get('request')
-        service_name = "External System"
-        if request and hasattr(request.user, 'service_name'):
-            service_name = request.user.service_name
-        
+        service_name = getattr(request.user, 'service_name', 'External System') if request else 'System'
         action_name = proposal.submitted_by_name or f"System ({service_name})"
         
         ProposalHistory.objects.create(
@@ -674,15 +837,15 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         
         return proposal
 
-
     def update(self, instance, validated_data):
+        """Update existing proposal"""
         department_obj = validated_data.pop('department', None)
         if department_obj:
             instance.department = department_obj
 
         items_data = validated_data.pop('items', None)
-
         ticket_id_value = validated_data.pop('ticket_id', None)
+        
         if ticket_id_value:
             instance.external_system_id = ticket_id_value
 
