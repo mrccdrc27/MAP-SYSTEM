@@ -205,6 +205,30 @@ export const backendArticleService = {
   },
 
   /**
+   * Restore an article to a specific version
+   */
+  async restoreArticleVersion(articleId, versionId) {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/api/articles/${articleId}/restore-version/`,
+        getFetchOptions('POST', { version_id: versionId })
+      );
+
+      handleAuthError(response);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to restore article version');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error restoring article version:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Delete an article permanently
    */
   async deleteArticle(articleId) {

@@ -74,6 +74,11 @@ export default function BudgetProposalForm({
   };
 
   const tomorrow = addDays(today, 1);
+  // Minimum end date depends on selected performanceStartDate (must be after start)
+  const getMinPerformanceEnd = () => {
+    if (formData.performanceStartDate) return addDays(formData.performanceStartDate, 1);
+    return tomorrow;
+  };
   const addBudgetItem = () => {
     setBudgetItems([...budgetItems, { costElement: '', description: '', estimatedCost: '' }]);
   };
@@ -94,7 +99,8 @@ export default function BudgetProposalForm({
   // Calculate total budget from numeric input values
   const calculateTotalBudget = () => {
     return budgetItems.reduce((total, item) => {
-      const amount = parseFloat(item.estimatedCost) || 0;
+      const cleaned = String(item.estimatedCost || '').replace(/[₱, ,\.\s]+/g, '').replace(/[^0-9]/g, '');
+      const amount = parseInt(cleaned || '0', 10) || 0;
       return total + amount;
     }, 0);
   };
@@ -136,6 +142,8 @@ export default function BudgetProposalForm({
               onChange={(e) => updateBudgetItem(index, 'costElement', e.target.value)}
               disabled={!formData.subCategory}
               options={formData.subCategory ? (costElements[formData.subCategory]?.map(element => ({ value: element, label: element })) || []) : []}
+              required={index === 0}
+              error={errors ? errors[`budgetItems_0_costElement`] : ''}
             />
 
             {/* Description */}
@@ -144,15 +152,33 @@ export default function BudgetProposalForm({
               placeholder="Enter item description"
               value={item.description || ''}
               onChange={(e) => updateBudgetItem(index, 'description', e.target.value)}
+              required={index === 0}
+              error={errors ? errors[`budgetItems_0_description`] : ''}
             />
 
-            {/* Estimated Cost */}
+            {/* Estimated Cost - allow digits only with up to two decimal places */}
             <InputField
               variant="currency"
               label="Estimated Cost"
-              placeholder="0.00"
+              placeholder="0"
               value={item.estimatedCost}
-              onChange={(e) => updateBudgetItem(index, 'estimatedCost', e.target.value)}
+              onChange={(e) => {
+                const raw = String(e.target.value || '');
+                // Allow only digits (no decimal point). Remove other characters.
+                const digitsOnly = raw.replace(/[^0-9]/g, '');
+
+                // Format integer part with commas for display
+                const formatWithCommas = (numStr) => {
+                  if (!numStr) return '';
+                  const intFormatted = numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                  return intFormatted;
+                };
+
+                const display = formatWithCommas(digitsOnly);
+                updateBudgetItem(index, 'estimatedCost', display);
+              }}
+              required={index === 0}
+              error={errors ? errors[`budgetItems_0_estimatedCost`] : ''}
             />
 
             {/* Remove Button */}
@@ -209,7 +235,7 @@ export default function BudgetProposalForm({
         onBlur={onBlur('performanceEndDate')}
         required
         error={errors.performanceEndDate}
-        min={tomorrow}
+        min={getMinPerformanceEnd()}
       />
 
       {/* Prepared By */}

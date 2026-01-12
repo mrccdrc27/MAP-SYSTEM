@@ -38,7 +38,16 @@ const formatDate = (date) => {
   try {
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return String(date);
-    return d.toLocaleString();
+    // Format: Jan 12, 2026, 08:07:53
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
   } catch (e) {
     return String(date);
   }
@@ -316,7 +325,14 @@ export default function CoordinatorAdminTicketTracker() {
       asset_name: t.asset_name || t.assetName || t.dynamic_data?.assetName || t.dynamicData?.assetName || null,
       asset_id: t.asset_id || t.assetId || t.dynamic_data?.assetId || t.dynamicData?.assetId || null,
       serial_number: t.serial_number || t.serialNumber || t.dynamic_data?.serialNumber || t.dynamicData?.serialNumber || null,
-      location: t.location || t.dynamic_data?.location || t.dynamicData?.location || null,
+      // Location: support location_details.name (city), location object, or plain string
+      location: (() => {
+        const locDetails = t.location_details || t.dynamic_data?.location_details || t.dynamicData?.location_details;
+        if (locDetails?.name) return locDetails.name;
+        const loc = t.location || t.dynamic_data?.location || t.dynamicData?.location;
+        if (loc && typeof loc === 'object') return loc.name || null;
+        return loc || null;
+      })(),
       issue_type: t.issue_type || t.issueType || t.dynamic_data?.issueType || t.dynamicData?.issueType || null,
       // Check out date for Asset Check Out
       check_out_date: t.check_out_date || t.checkOutDate || t.dynamic_data?.checkOutDate || t.dynamicData?.checkOutDate || null,

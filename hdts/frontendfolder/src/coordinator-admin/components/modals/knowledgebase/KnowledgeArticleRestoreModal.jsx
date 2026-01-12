@@ -31,15 +31,23 @@ const KnowledgeArticleRestoreModal = ({ version, article, onClose, onRestoreSucc
     setError(null);
 
     try {
-      const newContent = version?.content || version?.body || version?.text || version?.html || version?.raw || '';
-      if (!kbService.updateArticle) throw new Error('kbService.updateArticle is not available');
-
-      // Update article content with restore metadata and target version number
-      await kbService.updateArticle(article.id, { 
-        content: newContent,
-        summary: `Restored from version ${versionNumber}`,
-        restore_version_number: versionNumber
-      });
+      // Check if the version has content to restore
+      const hasContent = version?.content || version?.body || version?.text || version?.html || version?.raw || version?.description_snapshot;
+      
+      // Use the dedicated restore-version endpoint if available
+      if (kbService.restoreArticleVersion && version?.id) {
+        await kbService.restoreArticleVersion(article.id, version.id);
+      } else if (hasContent && kbService.updateArticle) {
+        // Fallback to updating article with version content
+        const newContent = version?.content || version?.body || version?.text || version?.html || version?.raw || '';
+        await kbService.updateArticle(article.id, { 
+          content: newContent,
+          summary: `Restored from version ${versionNumber}`,
+          restore_version_number: versionNumber
+        });
+      } else {
+        throw new Error('This version does not have content to restore. Only versions created after the recent update can be restored.');
+      }
 
       if (onRestoreSuccess) {
         onRestoreSuccess();

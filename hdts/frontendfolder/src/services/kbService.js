@@ -359,6 +359,41 @@ export const restoreArticle = (articleId) => {
     });
 };
 
+/**
+ * Restore an article to a specific version.
+ * @param {string|number} articleId - The article ID
+ * @param {string|number} versionId - The version ID to restore to
+ * @returns {Promise<object>} - The updated article
+ */
+export const restoreArticleVersion = async (articleId, versionId) => {
+  // Use the backend restore-version endpoint
+  return backendArticleService.restoreArticleVersion(articleId, versionId)
+    .then(response => {
+      if (response && response.article) {
+        const a = response.article;
+        return {
+          id: a.id,
+          title: a.title || a.name || a.subject,
+          content: a.content || a.body || a.description,
+          category_id: a.category_id || (a.category && a.category.id) || a.category,
+          visibility: normalizeVisibility(a.visibility || a.access || 'Employee'),
+          date_created: a.date_created || a.created_at,
+          date_modified: a.date_modified || a.updated_at,
+          archived: !!a.archived || !!a.is_archived,
+          tags: Array.isArray(a.tags) ? a.tags : [],
+          versions: Array.isArray(a.versions) ? a.versions : [],
+          success: true,
+          message: response.detail || 'Article restored successfully',
+        };
+      }
+      return { success: true, message: response.detail || 'Article restored successfully' };
+    })
+    .catch((err) => {
+      console.error('Failed to restore article version:', err);
+      throw err;
+    });
+};
+
 export const listPublishedArticles = (filters = {}) => {
   // Use backend when available, fallback to mock. Published = not archived.
   return backendArticleService.getAllArticles()
@@ -452,6 +487,7 @@ export default {
   updateArticle,
   archiveArticle,
   restoreArticle,
+  restoreArticleVersion,
   getHistory,
   listFeedback,
   submitFeedback,

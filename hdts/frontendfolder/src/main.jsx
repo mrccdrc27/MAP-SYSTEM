@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { AmsProvider } from './context/AmsContext.jsx';
 import AuthExpiredModal from './shared/components/AuthExpiredModal';
 import createSessionTimeout from './utils/sessionTimeout';
 
@@ -129,8 +130,10 @@ const Root = () => {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-      <AuthProvider>
-        <Root />    
-      </AuthProvider>
+    <AuthProvider>
+      <AmsProvider>
+        <Root />
+      </AmsProvider>
+    </AuthProvider>
   </StrictMode>
 );

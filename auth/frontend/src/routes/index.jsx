@@ -16,6 +16,7 @@ import AgentManagement from '../features/admin/AgentManagement';
 import InviteAgent from '../features/admin/InviteAgent';
 import ManageRoles from '../features/admin/ManageRoles';
 import ManageAssignments from '../features/admin/ManageAssignments';
+import ManageLocations from '../features/admin/ManageLocations';
 import SuperAdminLogin from '../features/superadmin/SuperAdminLogin';
 import SuperAdminDashboard from '../features/superadmin/SuperAdminDashboard';
 import UserMasterlist from '../features/superadmin/UserMasterlist';
@@ -182,6 +183,10 @@ const router = createBrowserRouter([
               {
                 path: '/manage-assignments',
                 element: <ManageAssignments />,
+              },
+              {
+                path: '/manage-locations',
+                element: <ManageLocations />,
               },
             ],
           },

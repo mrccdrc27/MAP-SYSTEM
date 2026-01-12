@@ -31,6 +31,33 @@ STATUS_CHOICES = [
     ('Denied', 'Denied'),
 ]
 
+
+class Location(models.Model):
+    """
+    Location model for Asset Check-Out form locations.
+    Managed by System Admin/Admin through TTS profile page.
+    """
+    city = models.CharField(max_length=255)
+    zip_code = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['city', 'zip_code']
+        unique_together = ['city', 'zip_code']
+        verbose_name = 'Location'
+        verbose_name_plural = 'Locations'
+
+    def __str__(self):
+        return f"{self.city} - {self.zip_code}"
+
+    @property
+    def display_name(self):
+        """Returns formatted display name for dropdown selection."""
+        return f"{self.city} - {self.zip_code}"
+
+
 class EmployeeManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -450,6 +477,68 @@ def send_ticket_to_workflow(sender, instance, created, **kwargs):
             # If importing or serializing fails, log and continue
             import logging
             logging.getLogger(__name__).exception("Error preparing push_ticket_to_workflow task")
+
+
+# Global variable to track if we're in a sync operation (to avoid infinite loops)
+_syncing_status = set()
+
+@receiver(post_save, sender=Ticket)
+def sync_ticket_status_to_tts(sender, instance, created, **kwargs):
+    """
+    Signal handler to sync ticket status changes to TTS (workflow_api).
+    
+    This is important for statuses that only change in HDTS, such as:
+    - 'Closed': When a ticket is closed by the user with CSAT rating
+    - 'Withdrawn': When a ticket is withdrawn by the user
+    
+    The sync is bidirectional:
+    - TTS -> HDTS: via send_ticket_status task (existing)
+    - HDTS -> TTS: via sync_ticket_status_to_tts task (this handler)
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Skip if this is a new ticket (Open tickets are sent via push_ticket_to_workflow)
+    if created:
+        return
+    
+    # Skip if we're already syncing this ticket (prevent loops)
+    if instance.pk in _syncing_status:
+        return
+    
+    # Only sync for certain status values that originate from HDTS
+    # These are statuses that HDTS sets and TTS needs to know about
+    hdts_originated_statuses = ['Closed', 'Withdrawn']
+    
+    # Check if this is a status we should sync
+    if instance.status not in hdts_originated_statuses:
+        return
+    
+    try:
+        _syncing_status.add(instance.pk)
+        
+        from .tasks import sync_ticket_status_to_tts as sync_task
+        
+        # Build additional data for Closed tickets (CSAT info)
+        additional_data = {}
+        if instance.status == 'Closed':
+            if instance.csat_rating:
+                additional_data['csat_rating'] = instance.csat_rating
+            if instance.feedback:
+                additional_data['feedback'] = instance.feedback
+            if instance.date_completed:
+                additional_data['date_completed'] = instance.date_completed.isoformat()
+            if instance.time_closed:
+                additional_data['time_closed'] = instance.time_closed.isoformat()
+        
+        # Enqueue the sync task
+        sync_task.delay(instance.ticket_number, instance.status, additional_data)
+        logger.info(f"[sync_ticket_status_to_tts] Enqueued sync for ticket {instance.ticket_number} -> {instance.status}")
+        
+    except Exception as e:
+        logger.exception(f"Failed to enqueue sync_ticket_status_to_tts: {e}")
+    finally:
+        _syncing_status.discard(instance.pk)
         
 class TicketAttachment(models.Model):
     ticket = models.ForeignKey('Ticket', on_delete=models.CASCADE, related_name='attachments')
@@ -526,11 +615,11 @@ class KnowledgeArticle(models.Model):
 
 
 class KnowledgeArticleVersion(models.Model):
-    """Stores a simple edit/version history for KnowledgeArticle.
+    """Stores a full snapshot of the KnowledgeArticle for version history.
 
-    This is intentionally lightweight: each time an article is created or
-    updated we create a new KnowledgeArticleVersion entry. The frontend
-    renders the `versions` related_name to present a version history.
+    Each time an article is created or updated, we create a new
+    KnowledgeArticleVersion entry that includes the complete content snapshot.
+    This allows the frontend to view, compare, and restore any version.
     """
     article = models.ForeignKey(KnowledgeArticle, on_delete=models.CASCADE, related_name='versions')
     version_number = models.CharField(max_length=64, blank=True, null=True)
@@ -538,6 +627,13 @@ class KnowledgeArticleVersion(models.Model):
     changes = models.TextField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
     modified_at = models.DateTimeField(auto_now_add=True)
+    
+    # Content snapshot fields - store the complete article state at this version
+    subject_snapshot = models.CharField(max_length=255, blank=True, null=True)
+    description_snapshot = models.TextField(blank=True, null=True)
+    category_snapshot = models.CharField(max_length=100, blank=True, null=True)
+    visibility_snapshot = models.CharField(max_length=50, blank=True, null=True)
+    tags_snapshot = models.JSONField(default=list, blank=True, null=True)
 
     class Meta:
         ordering = ['-modified_at']

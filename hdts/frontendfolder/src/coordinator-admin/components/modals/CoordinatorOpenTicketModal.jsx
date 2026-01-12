@@ -8,11 +8,19 @@ import { backendTicketService } from "../../../services/backend/ticketService";
 import styles from "./CoordinatorOpenTicketModal.module.css";
 import 'react-toastify/dist/ReactToastify.css';
 
+// AMS registration endpoint (same as submission form)
+const AMS_REGISTRATION_URL = 'https://ams-contexts.up.railway.app/categories/hd/registration/';
+
 const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [assetType, setAssetType] = useState("");
-  const [selectedAsset, setSelectedAsset] = useState(null);
+
+  // Watch department field to conditionally show asset panel
+  const selectedDepartment = watch('department', '');
+
+  // AMS registration data for asset details panel
+  const [amsCategories, setAmsCategories] = useState([]);
+  const [amsLoading, setAmsLoading] = useState(true);
 
   useEffect(() => {
     reset({
@@ -20,12 +28,25 @@ const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
       department: ticket.department || ticket.assignedDepartment || ticket.employeeDepartment || "",
       comment: "",
     });
-    // clear asset selections when modal opens or ticket changes
-    setAssetType("");
-    setSelectedAsset(null);
-    setValue('assetType', "");
-    setValue('selectedAssetId', null);
   }, [ticket, reset]);
+
+  // Fetch AMS registration data on mount
+  useEffect(() => {
+    const fetchAms = async () => {
+      try {
+        const res = await fetch(AMS_REGISTRATION_URL);
+        if (res.ok) {
+          const data = await res.json();
+          setAmsCategories(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error('Error fetching AMS registration:', e);
+      } finally {
+        setAmsLoading(false);
+      }
+    };
+    fetchAms();
+  }, []);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -77,40 +98,46 @@ const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
     }
   };
 
-  // Asset types limited to the AMS preset
-  const assetTypeOptions = useMemo(() => [
-    'Laptop',
-    'Printer',
-    'Projector',
-    'Mouse',
-    'Keyboard'
-  ], []);
+  // Derive ticket sub-category name for asset lookup
+  const ticketSubCategory = ticket.sub_category || ticket.subCategory || ticket.subcategory || '';
 
-  // Sample asset inventory (local within modal). This can be replaced with real data later.
-  const assets = useMemo(() => ([
-    { id: 'AST-001', name: 'Dell Latitude 5420', productType: 'Laptop', quantity: 15, location: 'Warehouse A', status: 'Available' },
-    { id: 'AST-002', name: 'HP EliteBook 840', productType: 'Laptop', quantity: 0, location: 'Warehouse A', status: 'Out of Stock' },
-    { id: 'AST-003', name: 'Epson PowerLite 1795F', productType: 'Projector', quantity: 3, location: 'Main Office - Room 301', status: 'Available' },
-    { id: 'AST-004', name: 'Canon LBP Printer', productType: 'Printer', quantity: 6, location: 'Warehouse B', status: 'Available' },
-    { id: 'AST-005', name: 'Logitech M510', productType: 'Mouse', quantity: 25, location: 'Warehouse B', status: 'Available' },
-    { id: 'AST-006', name: 'Dell KB216', productType: 'Keyboard', quantity: 20, location: 'Warehouse B', status: 'Available' }
-  ]), []);
+  // Get all assets in the same sub-category from AMS registration data
+  const categoryAssets = useMemo(() => {
+    if (!ticketSubCategory || amsCategories.length === 0) return [];
+    const cat = amsCategories.find(c => (c.name === ticketSubCategory || c.title === ticketSubCategory || String(c.id) === String(ticketSubCategory)));
+    if (!cat) return [];
+    const items = cat.assets || cat.items || cat.children || cat.assets_list || cat.asset_list || cat.assetNames || cat.assetsNames || [];
+    return Array.isArray(items) ? items : [];
+  }, [ticketSubCategory, amsCategories]);
 
-  const filteredAssets = useMemo(() => {
-    if (!assetType) return [];
-    return assets.filter((a) => {
-      const matchesType = String(a.productType).toLowerCase() === String(assetType).toLowerCase();
-      if (!matchesType) return false;
-      // If this modal is approving an Asset Check Out, only show assets that are Available
-      if (ticket && ticket.category === 'Asset Check Out') {
-        return String(a.status).toLowerCase() === 'available';
-      }
+  // Exclude the chosen asset (by asset_id or name) from the list shown below
+  const filteredCategoryAssets = useMemo(() => {
+    if (!categoryAssets || categoryAssets.length === 0) return [];
+    const chosenIds = new Set([
+      ticket.asset_id || ticket.assetId || ticket.assetId || '',
+      String(ticket.id || ''),
+    ].filter(Boolean));
+    const chosenNames = new Set([
+      (ticket.asset_name || ticket.assetName || '').toString(),
+    ].filter(Boolean));
+
+    return categoryAssets.filter(a => {
+      const aid = a.asset_id || a.assetId || a.id || '';
+      const name = (a.name || a.asset_name || a.title || '').toString();
+      if (chosenIds.has(String(aid))) return false;
+      if (chosenNames.has(name)) return false;
       return true;
     });
-  }, [assetType, assets, ticket]);
+  }, [categoryAssets, ticket]);
+
+  // Helper to normalize asset field names
+  const getAssetField = (a, ...keys) => {
+    for (const k of keys) if (a[k] !== undefined && a[k] !== null && a[k] !== '') return a[k];
+    return '';
+  };
 
   return (
-    <ModalWrapper onClose={onClose}>
+    <ModalWrapper onClose={onClose} hideCloseButton={true}>
       <ToastContainer />
       <h2 className={styles.heading}>
         {(() => {
@@ -159,120 +186,93 @@ const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
         })()}
       </h2>
 
-      <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-        <div className={styles.field}>
-          <label>
-            Priority Level <span className={styles.required}>*</span>
-          </label>
-          <select {...register("priorityLevel", { required: "Priority Level is required" })} className={styles.input}>
-            <option value="">Select Priority Level</option>
-            {priorityLevelOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {errors.priorityLevel && <p className={styles.error}>{errors.priorityLevel.message}</p>}
-        </div>
+      {/* Two-column layout: form left, asset panel right (when Asset Department selected) */}
+      <div className={styles.modalColumns}>
+        {/* Left column: form */}
+        <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
+          <div className={styles.field}>
+            <label>
+              Priority Level <span className={styles.required}>*</span>
+            </label>
+            <select {...register("priorityLevel", { required: "Priority Level is required" })} className={styles.input}>
+              <option value="">Select Priority Level</option>
+              {priorityLevelOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {errors.priorityLevel && <p className={styles.error}>{errors.priorityLevel.message}</p>}
+          </div>
 
-        <div className={styles.field}>
-          <label>
-            Department <span className={styles.required}>*</span>
-          </label>
-          <select {...register("department", { required: "Department is required" })} className={styles.input}>
-            <option value="">Select Department</option>
-            {departmentOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {errors.department && <p className={styles.error}>{errors.department.message}</p>}
-        </div>
+          <div className={styles.field}>
+            <label>
+              Department <span className={styles.required}>*</span>
+            </label>
+            <select {...register("department", { required: "Department is required" })} className={styles.input}>
+              <option value="">Select Department</option>
+              {departmentOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {errors.department && <p className={styles.error}>{errors.department.message}</p>}
+          </div>
 
-        {/* Asset type selector only for Asset Check In/Out categories */}
-        {(ticket.category === 'Asset Check In' || ticket.category === 'Asset Check Out') && (
-          <>
-            <div className={styles.field}>
-              <label>Asset Type</label>
-              <select
-                {...register('assetType')}
-                className={styles.input}
-                value={assetType}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setAssetType(v);
-                  setValue('assetType', v);
-                  // clear previously selected asset
-                  setSelectedAsset(null);
-                  setValue('selectedAssetId', null);
-                }}
-              >
-                <option value="">Select Asset Type</option>
-                {assetTypeOptions.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
+          <div className={styles.field}>
+            <label>Comment (Optional)</label>
+            <textarea {...register("comment")} rows={3} className={styles.textarea} placeholder="Add a note..." />
+          </div>
 
-            {/* Asset list table shown after selecting an asset type */}
-            {assetType && (
-              <div className={styles.assetTableWrap}>
-                <div className={styles.assetTableHeader}>Available {assetType}s</div>
-                <table className={styles.assetTable}>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Location</th>
-                      <th>Quantity</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAssets.length === 0 && (
-                      <tr><td colSpan={6} style={{ textAlign: 'center', padding: '12px' }}>No assets found for this type.</td></tr>
-                    )}
-                    {filteredAssets.map((a) => (
-                      <tr key={a.id} className={selectedAsset && selectedAsset.id === a.id ? styles.selectedRow : ''}>
-                        <td>{a.id}</td>
-                        <td>{a.name}</td>
-                        <td>{a.location}</td>
-                        <td>{a.quantity}</td>
-                        <td>{a.status}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className={styles.selectAssetBtn}
-                            onClick={() => {
-                              setSelectedAsset(a);
-                              setValue('selectedAssetId', a.id);
-                            }}
-                          >
-                            {selectedAsset && selectedAsset.id === a.id ? 'Selected' : 'Select'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {selectedAsset && (
-                  <div className={styles.selectedAssetSummary}>Selected: {selectedAsset.name} ({selectedAsset.id})</div>
-                )}
-              </div>
-            )}
-          </>
+          <div className={styles.actions}>
+            <button type="button" onClick={onClose} disabled={isSubmitting} className={styles.cancel}>Cancel</button>
+            <button type="submit" disabled={isSubmitting} className={styles.submit}>
+              {isSubmitting ? "Approving..." : "Open Ticket"}
+            </button>
+          </div>
+        </form>
+
+        {/* Right column: Asset Details Panel (only when Asset Department selected AND Asset Check In/Out) */}
+        {(ticket.category === 'Asset Check In' || ticket.category === 'Asset Check Out') && selectedDepartment === 'Asset Department' && (
+          <div className={styles.assetPanel}>
+              {amsLoading ? (
+                <p style={{ padding: 8 }}>Loading...</p>
+              ) : (
+                <>
+                  <div className={styles.assetNameChosenLabel}>ASSET NAME CHOSEN</div>
+                  <div className={styles.assetNameValue}>{ticket.asset_name || ticket.assetName || 'N/A'}</div>
+
+                  {ticketSubCategory && filteredCategoryAssets.length > 0 && (
+                    <>
+                      <div className={styles.assetListHeader}>List of all {ticketSubCategory}</div>
+                      <div className={styles.assetListScroll}>
+                        <table className={styles.assetListTable}>
+                          <tbody>
+                            {filteredCategoryAssets.map((a, idx) => {
+                            const name = getAssetField(a, 'name', 'asset_name', 'title', 'label');
+                            const serial = getAssetField(a, 'serial_number', 'serialNumber', 'serial');
+                            // Extract status type from status_details object
+                            const statusDetails = a.status_details || {};
+                            const statusType = statusDetails.type || getAssetField(a, 'status_type', 'statusType', 'type') || '';
+                            return (
+                              <tr key={a.id || a.asset_id || idx}>
+                                <td style={{ fontWeight: 500 }}>{name}</td>
+                                <td style={{ color: '#6b7280' }}>#{serial || 'N/A'}</td>
+                                <td>
+                                  <span className={`${styles.statusBadge} ${styles[`status_${statusType.toLowerCase().replace(/\s+/g,'_')}`]}`}>
+                                    {statusType || 'N/A'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+          </div>
         )}
-
-        <div className={styles.field}>
-          <label>Comment (Optional)</label>
-          <textarea {...register("comment")} rows={3} className={styles.textarea} placeholder="Add a note..." />
-        </div>
-
-        <div className={styles.actions}>
-          <button type="button" onClick={onClose} disabled={isSubmitting} className={styles.cancel}>Cancel</button>
-          <button type="submit" disabled={isSubmitting} className={styles.submit}>
-            {isSubmitting ? "Approving..." : "Open Ticket"}
-          </button>
-        </div>
-      </form>
+      </div>
     </ModalWrapper>
   );
 };

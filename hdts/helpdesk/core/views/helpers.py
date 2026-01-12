@@ -186,22 +186,24 @@ def get_user_display_name(user):
 def _actor_display_name(request):
     """
     Resolve a human-friendly actor display name for Messages text.
-    For ExternalUser, prefer First Last from the auth profile; never use email handle.
-    Falls back to 'External User' when names are unavailable.
+    For ExternalUser, prefer First Middle Last from the auth profile; never use email handle.
+    Falls back to 'Ticket Coordinator' when names are unavailable.
     For local Employee, reuse get_user_display_name behavior.
     """
     user = getattr(request, 'user', None)
     if isinstance(user, ExternalUser):
         first = getattr(user, 'first_name', '') or ''
+        middle = getattr(user, 'middle_name', '') or ''
         last = getattr(user, 'last_name', '') or ''
-        full = f"{first} {last}".strip()
+        full = ' '.join(p for p in [first, middle, last] if p)
         if not full:
             # Attempt to fetch profile from ExternalEmployee model or auth service
             try:
                 profile = get_external_employee_data(user.id)
                 first = (profile or {}).get('first_name') or ''
+                middle = (profile or {}).get('middle_name') or ''
                 last = (profile or {}).get('last_name') or ''
-                full = f"{first} {last}".strip()
+                full = ' '.join(p for p in [first, middle, last] if p)
             except Exception:
                 pass
         
@@ -218,8 +220,9 @@ def _actor_display_name(request):
                     if response.status_code == 200:
                         data = response.json()
                         first = data.get('first_name') or ''
+                        middle = data.get('middle_name') or ''
                         last = data.get('last_name') or ''
-                        full = f"{first} {last}".strip()
+                        full = ' '.join(p for p in [first, middle, last] if p)
                     
                     # If not found, try users internal endpoint (coordinators/admins)
                     if not full:
@@ -228,15 +231,19 @@ def _actor_display_name(request):
                         if response.status_code == 200:
                             data = response.json()
                             first = data.get('first_name') or ''
+                            middle = data.get('middle_name') or ''
                             last = data.get('last_name') or ''
-                            full = f"{first} {last}".strip()
+                            full = ' '.join(p for p in [first, middle, last] if p)
             except Exception:
                 pass
-                pass
         
-        # If still no name, return a fallback that includes user ID for debugging
+        # If still no name, show a friendly role name instead of External User (ID: X)
         if not full:
-            return f'External User (ID: {user.id})'
+            # For coordinators/admins, show a friendly role name
+            role = getattr(user, 'role', None) or ''
+            if role in ['Ticket Coordinator', 'System Admin', 'Admin', 'Coordinator']:
+                return role
+            return 'Ticket Coordinator'
         return full
     # Local employee path
     return get_user_display_name(user)

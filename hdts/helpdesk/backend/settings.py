@@ -148,6 +148,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://165.22.247.50:5173",
+    "https://map-ams.up.railway.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -243,4 +244,6 @@ CELERY_TASK_ROUTES = {
     'send_ticket_status': {'queue': 'ticket_status-default'},
     # Route ticket owner updates from TTS
     'update_ticket_owner': {'queue': 'ticket_status-default'},
+    # Route ticket status sync TO TTS (runs locally, sends to TTS queue)
+    'hdts.tasks.sync_ticket_status_to_tts': {'queue': 'ticket_status-default'},
 }

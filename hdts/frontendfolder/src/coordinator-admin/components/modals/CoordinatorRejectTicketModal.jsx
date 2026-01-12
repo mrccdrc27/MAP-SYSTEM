@@ -50,7 +50,7 @@ const CoordinatorAdminRejectTicketModal = ({ ticket, onClose, onSuccess }) => {
   };
 
   return (
-    <ModalWrapper onClose={onClose}>
+    <ModalWrapper onClose={onClose} hideCloseButton={true}>
       <ToastContainer />
       <h2 className={styles.heading}>
         {(() => {

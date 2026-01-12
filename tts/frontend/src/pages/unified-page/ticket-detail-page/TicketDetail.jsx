@@ -29,6 +29,9 @@ import TicketAction from "./modals/TicketAction";
 import EscalateTicket from "./modals/EscalateTicket";
 import TransferTask from "../../../components/modal/TransferTask";
 
+// api hooks
+import useToggleHold from "../../../api/useToggleHold";
+
 export default function TicketDetail() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +91,10 @@ export default function TicketDetail() {
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [showTicketInfo, setShowTicketInfo] = useState(true);
   const [toast, setToast] = useState(null);
+  const [holdLoading, setHoldLoading] = useState(false);
+
+  // Toggle Hold hook
+  const { toggleHold } = useToggleHold();
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -267,6 +274,50 @@ export default function TicketDetail() {
     }
 
     return "";
+  };
+
+  // Check if ticket is currently on hold
+  const isOnHold = () => {
+    const status = state.ticket?.status?.toLowerCase().replace(/\s+/g, '_');
+    return status === 'on_hold' || status === 'on hold';
+  };
+
+  // Check if hold button should be disabled
+  // Only disable when actual actions have been taken (escalated, transferred, or resolved)
+  // This allows On Hold/Resume to work independently before any action is taken
+  const isHoldButtonDisabled = () => {
+    const ticket = state.ticket;
+    return ticket?.is_escalated || ticket?.is_transferred || ticket?.has_acted;
+  };
+
+  // Handler for toggling hold status
+  const handleToggleHold = async () => {
+    if (!state.taskid) {
+      showToast("error", "Task ID not found");
+      return;
+    }
+
+    setHoldLoading(true);
+    try {
+      const result = await toggleHold(state.taskid);
+      showToast("success", result.message || `Status changed to ${result.new_status}`);
+
+      // Update the local state with the new status
+      dispatch({
+        type: "SET_TICKET",
+        payload: {
+          ...state,
+          ticket: {
+            ...state.ticket,
+            status: result.new_status,
+          },
+        },
+      });
+    } catch (err) {
+      showToast("error", err.message || "Failed to toggle hold status");
+    } finally {
+      setHoldLoading(false);
+    }
   };
 
   if (loading) {
@@ -685,6 +736,31 @@ export default function TicketDetail() {
                     </span>
                   </button>
                 )}
+
+                {/* On Hold Toggle - available for both staff and admin */}
+                <button
+                  className={
+                    isHoldButtonDisabled() || holdLoading
+                      ? styles.holdButtonDisabled
+                      : isOnHold()
+                        ? styles.resumeButton
+                        : styles.holdButton
+                  }
+                  onClick={handleToggleHold}
+                  disabled={isHoldButtonDisabled() || holdLoading}
+                  title={
+                    isHoldButtonDisabled()
+                      ? "Cannot hold/resume after action is taken"
+                      : isOnHold()
+                        ? "Resume ticket from On Hold"
+                        : "Put ticket On Hold"
+                  }
+                >
+                  <span className={styles.iconTextWrapper}>
+                    <i className={`fa ${isOnHold() ? 'fa-play' : 'fa-pause'}`}></i>
+                    {holdLoading ? "Processing..." : isOnHold() ? "Resume" : "On Hold"}
+                  </span>
+                </button>
               </div>
 
               <div className={styles.layoutSection}>

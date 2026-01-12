@@ -45,6 +45,15 @@ from .views.notification_views import (
     delete_notification,
     clear_all_notifications,
 )
+from .views.location_views import (
+    list_locations,
+    list_all_locations,
+    create_location,
+    get_location,
+    update_location,
+    delete_location,
+    toggle_location_status,
+)
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from .serializers import TicketSerializer
@@ -99,6 +108,15 @@ urlpatterns = [
     path('notifications/read-all/', mark_all_as_read, name='mark_all_notifications_read'),
     path('notifications/<int:notification_id>/', delete_notification, name='delete_notification'),
     path('notifications/clear/', clear_all_notifications, name='clear_all_notifications'),
+
+    # Location management (for Asset Check-Out form)
+    path('locations/', list_locations, name='list_locations'),  # Public: active locations for dropdown
+    path('locations/all/', list_all_locations, name='list_all_locations'),  # Admin: all locations
+    path('locations/create/', create_location, name='create_location'),  # Admin: create
+    path('locations/<int:location_id>/', get_location, name='get_location'),  # Get single
+    path('locations/<int:location_id>/update/', update_location, name='update_location'),  # Admin: update
+    path('locations/<int:location_id>/delete/', delete_location, name='delete_location'),  # Admin: delete
+    path('locations/<int:location_id>/toggle/', toggle_location_status, name='toggle_location_status'),  # Admin: toggle active
 
     # Protected media files - require authentication
     path('media/<path:file_path>', serve_protected_media, name='serve_protected_media'),

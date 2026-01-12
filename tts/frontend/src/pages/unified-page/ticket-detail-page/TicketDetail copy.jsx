@@ -29,6 +29,9 @@ import TicketAction from "./modals/TicketAction";
 import EscalateTicket from "./modals/EscalateTicket";
 import TransferTask from "../../../components/modal/TransferTask";
 
+// api hooks
+import useToggleHold from "../../../api/useToggleHold";
+
 export default function TicketDetail() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +91,10 @@ export default function TicketDetail() {
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [showTicketInfo, setShowTicketInfo] = useState(true);
   const [toast, setToast] = useState(null);
+  const [holdLoading, setHoldLoading] = useState(false);
+
+  // Toggle Hold hook
+  const { toggleHold } = useToggleHold();
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -267,6 +274,42 @@ export default function TicketDetail() {
     }
 
     return "";
+  };
+
+  // Check if ticket is currently on hold
+  const isOnHold = () => {
+    const status = state.ticket?.status?.toLowerCase().replace(/\s+/g, '_');
+    return status === 'on_hold' || status === 'on hold';
+  };
+
+  // Handler for toggling hold status
+  const handleToggleHold = async () => {
+    if (!state.taskid) {
+      showToast("error", "Task ID not found");
+      return;
+    }
+    
+    setHoldLoading(true);
+    try {
+      const result = await toggleHold(state.taskid);
+      showToast("success", result.message || `Status changed to ${result.new_status}`);
+      
+      // Update the local state with the new status
+      dispatch({
+        type: "SET_TICKET",
+        payload: {
+          ...state,
+          ticket: {
+            ...state.ticket,
+            status: result.new_status,
+          },
+        },
+      });
+    } catch (err) {
+      showToast("error", err.message || "Failed to toggle hold status");
+    } finally {
+      setHoldLoading(false);
+    }
   };
 
   if (loading) {
@@ -466,8 +509,52 @@ export default function TicketDetail() {
 
               {/* SLA Status Component */}
 
-              {/* Ticket Owner */}
               {/* Ticket Owner section removed per request */}
+              <div className={styles.tdpSection}>
+                <div className={styles.tdpTitle}>
+                  <strong>Employee Description:</strong>
+                </div>
+                <div className={styles.tdpOwnerDescWrapper}>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Name:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.first_name
+                        ? `${state.ticket.user_assignment.first_name} ${state.ticket.user_assignment.last_name}`
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Email:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.email || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Company ID:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.company_id || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Department:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.department || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Role:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.ticket?.user_assignment?.role || "N/A"}
+                    </div>
+                  </div>
+                  <div className={styles.tdpODWItem}>
+                    <div className={styles.tdpODWLabel}>Assigned Agent:</div>
+                    <div className={styles.tdpODWValue}>
+                      {state.currentOwner?.user_full_name || "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </div>
               {/* Description Section */}
               <div className={styles.tdpSection}>
                 <div className={styles.tdpTitle}>
@@ -492,7 +579,7 @@ export default function TicketDetail() {
               <div className={styles.tdAttachment}>
                 <h3>Attachments</h3>
                 {state.ticket?.attachments &&
-                state.ticket.attachments.length > 0 ? (
+                  state.ticket.attachments.length > 0 ? (
                   <div className={styles.attachmentList}>
                     {state.ticket.attachments.map((file) => {
                       // Construct full URL for the attachment using helpdesk service URL
@@ -606,6 +693,25 @@ export default function TicketDetail() {
                   </span>
                 </button>
 
+                {/* On Hold Toggle - available for both staff and admin */}
+                <button
+                  className={
+                    holdLoading
+                      ? styles.holdButtonDisabled
+                      : isOnHold()
+                        ? styles.resumeButton
+                        : styles.holdButton
+                  }
+                  onClick={handleToggleHold}
+                  disabled={holdLoading}
+                  title={isOnHold() ? "Resume ticket from On Hold" : "Put ticket On Hold"}
+                >
+                  <span className={styles.iconTextWrapper}>
+                    <i className={`fa ${isOnHold() ? 'fa-play' : 'fa-pause'}`}></i>
+                    {holdLoading ? "Processing..." : isOnHold() ? "Resume" : "On Hold"}
+                  </span>
+                </button>
+
                 {/* Escalate - disabled when canAct is false, hidden for admins */}
                 {!isAdmin() && (
                   <button
@@ -650,9 +756,8 @@ export default function TicketDetail() {
                       style={{ flex: 1 }}
                       key={tab}
                       onClick={() => handleTabClick(tab)}
-                      className={`${styles.tdpTabLink} ${
-                        activeTab === tab ? styles.active : ""
-                      }`}
+                      className={`${styles.tdpTabLink} ${activeTab === tab ? styles.active : ""
+                        }`}
                       type="button"
                     >
                       {tab}
@@ -672,9 +777,9 @@ export default function TicketDetail() {
                       <div
                         className={
                           general[
-                            `status-${state.ticket?.status
-                              ?.replace(/\s+/g, "-")
-                              .toLowerCase()}`
+                          `status-${state.ticket?.status
+                            ?.replace(/\s+/g, "-")
+                            .toLowerCase()}`
                           ]
                         }
                       >

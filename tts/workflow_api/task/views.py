@@ -550,6 +550,100 @@ class TaskViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
     
+    @action(detail=True, methods=['post'], url_path='toggle-hold')
+    def toggle_hold(self, request, pk=None):
+        """
+        Toggle the On Hold status for a task/ticket.
+        
+        This endpoint toggles between 'In Progress' and 'On Hold' status.
+        The status change is synced to HDTS automatically via the existing
+        status sync mechanism.
+        
+        Request Body (optional):
+        {
+            "notes": "Reason for putting on hold"  # Optional notes
+        }
+        
+        Returns:
+        {
+            "success": true,
+            "new_status": "On Hold",  # or "In Progress"
+            "ticket_number": "TX20260111123456",
+            "message": "Ticket status changed to On Hold"
+        }
+        """
+        task = self.get_object()
+        user_id = request.user.user_id
+        notes = request.data.get('notes', '').strip()
+        
+        # Get the ticket
+        ticket = task.ticket_id
+        if not ticket:
+            return Response(
+                {'error': 'No ticket associated with this task'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Determine current status and toggle
+        current_status = ticket.status or ticket.ticket_data.get('status', '')
+        
+        # Normalize status for comparison
+        current_status_lower = current_status.lower().replace(' ', '_').replace('-', '_')
+        
+        if current_status_lower in ['on_hold', 'on hold']:
+            new_status = 'In Progress'
+        elif current_status_lower in ['in_progress', 'in progress']:
+            new_status = 'On Hold'
+        else:
+            # If not in progress or on hold, we can still toggle to on hold
+            # but only from certain active statuses
+            active_statuses = ['open', 'new', 'pending']
+            if current_status_lower not in active_statuses:
+                return Response(
+                    {'error': f'Cannot toggle hold status from "{current_status}". Status must be In Progress, On Hold, Open, New, or Pending.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            new_status = 'On Hold'
+        
+        # Update the WorkflowTicket status
+        old_status = ticket.status
+        ticket.status = new_status
+        if ticket.ticket_data:
+            ticket.ticket_data['status'] = new_status
+        
+        # Save the ticket - this will trigger the status sync to HDTS
+        # via the WorkflowTicket.save() method
+        ticket.save()
+        
+        # Update task status as well
+        if new_status == 'On Hold':
+            task.status = 'on_hold'
+        else:
+            task.status = 'in progress'
+        task.save()
+        
+        # Log audit event
+        try:
+            log_action(
+                request.user, 
+                'toggle_hold', 
+                target=task, 
+                changes={'status': {'old': old_status, 'new': new_status}},
+                request=request
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit for toggle_hold: {e}")
+        
+        logger.info(f"User {user_id} toggled hold status for ticket {ticket.ticket_number}: {old_status} -> {new_status}")
+        
+        return Response({
+            'success': True,
+            'new_status': new_status,
+            'previous_status': old_status,
+            'ticket_number': ticket.ticket_number,
+            'message': f'Ticket status changed to {new_status}'
+        })
+
     @action(detail=False, methods=['get'], url_path='logs')
     def logs(self, request):
         """

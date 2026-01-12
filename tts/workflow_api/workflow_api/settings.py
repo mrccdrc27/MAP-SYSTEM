@@ -252,6 +252,8 @@ CELERY_TASK_ROUTES = {
     # by notification_service's settings.py
     # Ticket status queue
     'send_ticket_status': {'queue': DJANGO_TICKET_STATUS_QUEUE},
+    # Receive ticket status from HDTS (bidirectional sync)
+    'tts.tasks.receive_hdts_ticket_status': {'queue': 'TICKET_TASKS_PRODUCTION'},
     # Role sync queues from TTS auth service
     'role.tasks.sync_role': {'queue': 'tts.role.sync'},
     'role.tasks.sync_user_system_role': {'queue': 'tts.user_system_role.sync'},

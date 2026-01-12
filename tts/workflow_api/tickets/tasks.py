@@ -397,3 +397,102 @@ def send_ticket_status(ticket_id, status):
     """
     return send_ticket_status_to_hdts(ticket_id, status)
 
+
+@shared_task(name="tts.tasks.receive_hdts_ticket_status")
+def receive_hdts_ticket_status(payload):
+    """
+    Receive ticket status updates from HDTS (helpdesk).
+    
+    This is especially important for 'Closed' status which only happens
+    in HDTS (when user closes ticket with CSAT rating).
+    
+    Updates the WorkflowTicket status and ticket_data to reflect the new status.
+    
+    Args:
+        payload (dict): Contains:
+            - ticket_number (str): The ticket number (e.g., TX20260111123456)
+            - status (str): The new status (e.g., 'Closed', 'Resolved', etc.)
+            - csat_rating (int, optional): Customer satisfaction rating (1-5)
+            - feedback (str, optional): Customer feedback text
+            - date_completed (str, optional): ISO format datetime
+    """
+    import traceback
+    
+    try:
+        ticket_number = payload.get('ticket_number')
+        new_status = payload.get('status')
+        
+        if not ticket_number or not new_status:
+            print(f"❌ Missing required fields: ticket_number={ticket_number}, status={new_status}")
+            return {
+                'status': 'error',
+                'error': 'Missing ticket_number or status'
+            }
+        
+        print(f"📥 Received HDTS ticket status update: {ticket_number} → {new_status}")
+        
+        # Find the WorkflowTicket
+        try:
+            ticket = WorkflowTicket.objects.get(ticket_number=ticket_number)
+        except WorkflowTicket.DoesNotExist:
+            print(f"⚠️ WorkflowTicket not found for {ticket_number}")
+            return {
+                'status': 'not_found',
+                'ticket_number': ticket_number
+            }
+        
+        # Update the ticket status
+        old_status = ticket.status
+        ticket.status = new_status
+        
+        # Update ticket_data as well (for consistency)
+        if ticket.ticket_data:
+            ticket.ticket_data['status'] = new_status
+            
+            # Add additional HDTS data if provided
+            if payload.get('csat_rating'):
+                ticket.ticket_data['csat_rating'] = payload['csat_rating']
+            if payload.get('feedback'):
+                ticket.ticket_data['feedback'] = payload['feedback']
+            if payload.get('date_completed'):
+                ticket.ticket_data['date_completed'] = payload['date_completed']
+            if payload.get('time_closed'):
+                ticket.ticket_data['time_closed'] = payload['time_closed']
+        
+        # Save without triggering the outbound status sync (to avoid loops)
+        # Use update() to bypass the model save() method
+        WorkflowTicket.objects.filter(pk=ticket.pk).update(
+            status=new_status,
+            ticket_data=ticket.ticket_data
+        )
+        
+        print(f"✅ WorkflowTicket {ticket_number} status updated: {old_status} → {new_status}")
+        
+        # If status is Closed, also update the related Task status
+        if new_status == 'Closed':
+            try:
+                from task.models import Task
+                tasks = Task.objects.filter(ticket_id=ticket)
+                for task in tasks:
+                    if task.status != 'completed':
+                        task.status = 'completed'
+                        task.save(update_fields=['status'])
+                        print(f"✅ Task {task.task_id} marked as completed")
+            except Exception as e:
+                print(f"⚠️ Failed to update task status: {e}")
+        
+        return {
+            'status': 'success',
+            'ticket_number': ticket_number,
+            'old_status': old_status,
+            'new_status': new_status
+        }
+        
+    except Exception as e:
+        print(f"❌ Error processing HDTS ticket status: {e}")
+        traceback.print_exc()
+        return {
+            'status': 'error',
+            'error': str(e),
+            'trace': traceback.format_exc()
+        }

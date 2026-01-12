@@ -44,14 +44,20 @@ class KnowledgeArticleViewSet(viewsets.ModelViewSet):
             article = serializer.save(created_by=None)
         else:
             article = serializer.save(created_by=user)
-        # Create initial version entry
+        # Create initial version entry with full content snapshot
         try:
             KnowledgeArticleVersion.objects.create(
                 article=article,
                 version_number='1',
                 editor=None if isinstance(user, ExternalUser) else user,
                 changes='Created article',
-                metadata={'subject': article.subject}
+                metadata={'subject': article.subject},
+                # Save content snapshot
+                subject_snapshot=article.subject,
+                description_snapshot=article.description,
+                category_snapshot=article.category,
+                visibility_snapshot=article.visibility,
+                tags_snapshot=article.tags or [],
             )
         except Exception:
             pass
@@ -66,7 +72,7 @@ class KnowledgeArticleViewSet(viewsets.ModelViewSet):
         return Response({'detail': 'Article archived successfully.'}, status=status.HTTP_200_OK)
 
     def perform_update(self, serializer):
-        """Override update to record a simple version entry for each edit."""
+        """Override update to record a version entry with full content snapshot for each edit."""
         request = getattr(self, 'request', None)
         user = request.user if request is not None else None
         # Capture previous state for metadata if needed
@@ -85,7 +91,13 @@ class KnowledgeArticleViewSet(viewsets.ModelViewSet):
                 version_number=version_number,
                 editor=None if isinstance(user, ExternalUser) else user,
                 changes=request.data.get('summary') or 'Updated article',
-                metadata={'before': None, 'after': None}
+                metadata={'before': None, 'after': None},
+                # Save content snapshot
+                subject_snapshot=article.subject,
+                description_snapshot=article.description,
+                category_snapshot=article.category,
+                visibility_snapshot=article.visibility,
+                tags_snapshot=article.tags or [],
             )
         except Exception:
             pass
@@ -97,6 +109,63 @@ class KnowledgeArticleViewSet(viewsets.ModelViewSet):
         article.is_archived = False
         article.save()
         return Response({'detail': 'Article restored successfully.'}, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='restore-version')
+    def restore_version(self, request, pk=None):
+        """Restore an article to a specific version.
+        
+        Expected payload: { "version_id": <int> }
+        This will update the article content to match the specified version's snapshot,
+        and create a new version entry documenting the restore action.
+        """
+        article = self.get_object()
+        version_id = request.data.get('version_id')
+        
+        if not version_id:
+            return Response({'detail': 'version_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            version = KnowledgeArticleVersion.objects.get(id=version_id, article=article)
+        except KnowledgeArticleVersion.DoesNotExist:
+            return Response({'detail': 'Version not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if the version has content to restore
+        if not version.description_snapshot:
+            return Response({'detail': 'This version does not have content to restore.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Restore article content from the version snapshot
+        article.subject = version.subject_snapshot or article.subject
+        article.description = version.description_snapshot
+        article.category = version.category_snapshot or article.category
+        article.visibility = version.visibility_snapshot or article.visibility
+        article.tags = version.tags_snapshot or article.tags
+        article.save()
+        
+        # Create a new version entry documenting the restore
+        user = request.user
+        count = article.versions.count() if hasattr(article, 'versions') else 0
+        new_version_number = str(count + 1)
+        
+        try:
+            KnowledgeArticleVersion.objects.create(
+                article=article,
+                version_number=new_version_number,
+                editor=None if isinstance(user, ExternalUser) else user,
+                changes=f'Restored to version {version.version_number}',
+                metadata={'restored_from_version_id': version.id},
+                subject_snapshot=article.subject,
+                description_snapshot=article.description,
+                category_snapshot=article.category,
+                visibility_snapshot=article.visibility,
+                tags_snapshot=article.tags or [],
+            )
+        except Exception:
+            pass
+        
+        return Response({
+            'detail': f'Article restored to version {version.version_number} successfully.',
+            'article': KnowledgeArticleSerializer(article, context={'request': request}).data
+        }, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'], url_path='choices')
     def choices(self, request):

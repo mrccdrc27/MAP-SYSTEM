@@ -1,0 +1,99 @@
+.filterBar {
+  margin-bottom: 20px;
+}
+
+.filterBar input {
+  max-width: 400px;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.emptyState i {
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.emptyState h3 {
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.emptyState p {
+  margin: 0;
+  max-width: 400px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.deleteWarning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--danger-color);
+  font-size: 16px;
+}
+
+.deleteWarning i {
+  font-size: 24px;
+}
+
+.deleteDetail {
+  text-align: center;
+  color: var(--text-primary);
+  margin: 16px 0;
+}
+
+.deleteNote {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}

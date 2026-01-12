@@ -9,6 +9,7 @@ import requests
 import logging
 from typing import Dict, Any, Optional, Tuple
 from datetime import timedelta
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,28 @@ class BMSSubmissionError(Exception):
         super().__init__(message)
         self.error_type = error_type
         self.response_data = response_data or {}
+
+
+def parse_float_with_commas(value) -> float:
+    """
+    Parse a number that may contain comma separators (e.g., '90,000' -> 90000.0).
+    Handles strings, integers, floats, and None values safely.
+    """
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        # Remove commas and any whitespace
+        cleaned = value.replace(',', '').strip()
+        if not cleaned:
+            return 0.0
+        try:
+            return float(cleaned)
+        except ValueError:
+            logger.warning(f"Could not parse value as float: '{value}', returning 0.0")
+            return 0.0
+    return 0.0
 
 
 def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: str) -> Dict[str, Any]:
@@ -102,16 +125,24 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
     # Fallback description from ticket
     fallback_description = ticket_data.get('description', 'Budget item')[:200] or 'Budget item'
     
-    for item in raw_items:
+    for idx, item in enumerate(raw_items, start=1):
         item_desc = item.get('description', '') or ''
+        # Get cost element - fallback to "Budget Item #N" if empty
+        cost_element = item.get('costElement', item.get('cost_element', '')) or ''
+        if not cost_element.strip():
+            cost_element = f"Budget Item #{idx}"
+        
         # If description is empty, use costElement or fallback
         if not item_desc.strip():
-            item_desc = item.get('costElement', item.get('cost_element', '')) or fallback_description
+            item_desc = cost_element or fallback_description
+        
+        # Get estimated cost with comma handling (e.g., '90,000' -> 90000.0)
+        raw_cost = item.get('estimatedCost', item.get('estimated_cost', 0))
         
         transformed_item = {
-            'cost_element': item.get('costElement', item.get('cost_element', 'Unknown')),
+            'cost_element': cost_element,
             'description': item_desc,
-            'estimated_cost': float(item.get('estimatedCost', item.get('estimated_cost', 0))),
+            'estimated_cost': parse_float_with_commas(raw_cost),
             'account': int(item.get('account', FALLBACK_ACCOUNTS['default'])),
         }
         transformed_items.append(transformed_item)
@@ -121,7 +152,7 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
         transformed_items = [{
             'cost_element': 'General Budget Item',
             'description': fallback_description,
-            'estimated_cost': float(ticket_data.get('requested_budget', 0) or 0),
+            'estimated_cost': parse_float_with_commas(ticket_data.get('requested_budget', 0)),
             'account': FALLBACK_ACCOUNTS['default'],
         }]
     

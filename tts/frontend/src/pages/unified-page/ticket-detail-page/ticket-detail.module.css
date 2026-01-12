@@ -347,6 +347,59 @@
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
+/* ON HOLD / RESUME BUTTON */
+.holdButton,
+.resumeButton {
+  border: none;
+  border-radius: 20px;
+  padding: 12px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-size: 13px;
+  border: 1px solid var(--border-color);
+  transition: all 0.25s ease;
+}
+
+.holdButton {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.holdButton:hover:not(:disabled) {
+  background-color: #fcd34d;
+  color: #78350f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(252, 211, 77, 0.3);
+}
+
+.resumeButton {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.resumeButton:hover:not(:disabled) {
+  background-color: #6ee7b7;
+  color: #064e3b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(110, 231, 183, 0.3);
+}
+
+.holdButtonDisabled {
+  background-color: var(--border-color) !important;
+  color: var(--muted-text-color) !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none !important;
+  border: none;
+  border-radius: 20px;
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
 .iconTextWrapper {
   display: flex;
   /* align-items: center; */

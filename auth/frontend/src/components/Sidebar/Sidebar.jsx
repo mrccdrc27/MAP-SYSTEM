@@ -33,6 +33,12 @@ const Sidebar = ({ isOpen, onClose }) => {
     sr.system_slug === 'tts' && sr.role_name === 'Admin'
   );
 
+  // Check if user is HDTS Admin (must have HDTS system AND Admin role)
+  const isHDTSAdmin = user?.is_superuser || user?.system_roles?.some(sr => 
+    (sr.system_slug === 'hdts' || sr.system_slug === 'HDTS') && 
+    (sr.role_name === 'Admin' || sr.role_name === 'System Admin')
+  );
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -113,6 +119,20 @@ const Sidebar = ({ isOpen, onClose }) => {
                 onClick={handleLinkClick}
               >
                 <i className="fa fa-users-cog"></i> Manage Assignments
+              </NavLink>
+            </div>
+          )}
+
+          {/* HDTS Admin Section - Only show for HDTS Admins */}
+          {isHDTSAdmin && (
+            <div className={styles.menuSection}>
+              <div className={styles.menuLabel}>HDTS Management</div>
+              <NavLink 
+                to="/manage-locations" 
+                className={({ isActive }) => `${styles.menuLink} ${isActive ? styles.active : ''}`}
+                onClick={handleLinkClick}
+              >
+                <i className="fa fa-map-marker-alt"></i> Manage Locations
               </NavLink>
             </div>
           )}

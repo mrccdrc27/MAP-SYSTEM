@@ -69,13 +69,16 @@ const formatDate = (date) => {
   if (!date) return 'None';
   const d = new Date(date);
   if (isNaN(d)) return 'None';
-  const monthName = d.toLocaleString('en-US', { month: 'long' }); // October
-  const day = d.getDate();
-  const yearFull = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(day).padStart(2, '0');
-  const yy = String(yearFull).slice(-2);
-  return `${monthName} ${day}, ${yearFull}`;
+  // Format: Jan 12, 2026, 08:07:53
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
 };
 
 const formatTime = (date) => {
@@ -562,7 +565,14 @@ export default function EmployeeTicketTracker() {
   const deviceType = ticket.device_type || ticket.deviceType || getDyn(['deviceType', 'device_type', 'customDeviceType', 'custom_device_type']) || null;
   const assetName = ticket.asset_name || ticket.assetName || getDyn(['assetName', 'asset_name']) || null;
   const serialNumber = ticket.serial_number || ticket.serialNumber || getDyn(['serialNumber', 'serial_number']) || null;
-  const locationField = ticket.location || getDyn(['location']) || null;
+  
+  // Location: support location_details.name (city), location object, or plain string
+  const locationDetails = ticket.location_details || getDyn(['location_details']) || null;
+  const locationObj = ticket.location || getDyn(['location']) || null;
+  const locationField = locationDetails?.name 
+    || (typeof locationObj === 'object' ? locationObj?.name : locationObj) 
+    || null;
+  
   const issueTypeField = ticket.issue_type || ticket.issueType || getDyn(['issueType', 'issue_type']) || null;
   const softwareAffectedField = ticket.softwareAffected || getDyn(['softwareAffected', 'software_affected']) || null;
   const notesField = ticket.notes || getDyn(['notes', 'note']) || null;
@@ -1021,7 +1031,7 @@ export default function EmployeeTicketTracker() {
                         </div>
                         <div className={styles.detailItem}>
                           <div className={styles.detailLabel}>Location</div>
-                          <div className={styles.detailValue}>{ticket.location || 'N/A'}</div>
+                          <div className={styles.detailValue}>{locationField || 'N/A'}</div>
                         </div>
                           {issueTypeField ? (
                             <div className={styles.detailItem}>

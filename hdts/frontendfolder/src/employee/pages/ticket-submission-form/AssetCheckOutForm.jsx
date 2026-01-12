@@ -1,99 +1,112 @@
 import { useState, useEffect } from 'react';
 
-// AMS API endpoints
-const AMS_CATEGORIES_URL = 'https://ams-contexts.up.railway.app/categories/names/?type=asset';
-const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app/assets/names/';
+// API URL for fetching locations from HDTS backend
+const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
 
-// Hardcoded locations - will be replaced with API endpoint later
-const locations = [
-  'Main Office - 1st Floor',
-  'Main Office - 2nd Floor',
-  'Main Office - 3rd Floor',
-  'Branch Office - North',
-  'Branch Office - South',
-  'Warehouse',
-  'Remote/Home Office'
-];
-
-export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField, onAssetSelect }) {
-  const [categories, setCategories] = useState([]);
+export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField, onAssetSelect, prefetchedCategories = [], prefetchLoading = false }) {
+  // Use categories passed from parent (prefetched on page load)
+  const categories = prefetchedCategories;
+  const loadingCategories = prefetchLoading;
   const [assets, setAssets] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingAssets, setLoadingAssets] = useState(false);
+  
+  // Locations state - fetched from API
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
-  // Fetch categories from AMS API on component mount
+  // Fetch locations from HDTS API on component mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchLocations = async () => {
+      setLoadingLocations(true);
       try {
-        setLoadingCategories(true);
-        const response = await fetch(AMS_CATEGORIES_URL);
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data);
+        const response = await fetch(`${HDTS_API_URL}/api/locations/`);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.locations)) {
+          setLocations(data.locations);
         } else {
-          console.error('Failed to fetch categories:', response.status);
+          console.error('Invalid locations response:', data);
+          setLocations([]);
         }
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error('Error fetching locations:', error);
+        // Fallback to empty - no hardcoded locations
+        setLocations([]);
       } finally {
-        setLoadingCategories(false);
+        setLoadingLocations(false);
       }
     };
 
-    fetchCategories();
+    fetchLocations();
   }, []);
 
-  // Find the selected category ID based on the subCategory name
-  const getSelectedCategoryId = () => {
-    const selectedCategory = categories.find(cat => cat.name === formData.subCategory);
-    return selectedCategory ? selectedCategory.id : null;
-  };
-
-  // Fetch assets when subCategory changes - filter by category ID
+  // Derive assets from the fetched registration/categories payload when subCategory changes
   useEffect(() => {
-    const fetchAssets = async () => {
+    const deriveAssets = async () => {
       if (!formData.subCategory) {
-        setAssets([]);
-        return;
-      }
-
-      const categoryId = getSelectedCategoryId();
-      if (!categoryId) {
         setAssets([]);
         return;
       }
 
       try {
         setLoadingAssets(true);
-        // Fetch assets filtered by category ID and status (only deployable assets)
-        const response = await fetch(`${AMS_ASSETS_URL}?category=${categoryId}&status_type=deployable`);
-        if (response.ok) {
-          const data = await response.json();
-          setAssets(data);
-        } else {
-          console.error('Failed to fetch assets:', response.status);
+
+        // Find matching category object by several possible keys
+        let selected = null;
+        if (Array.isArray(categories)) {
+          selected = categories.find(c => (
+            (c.name && c.name === formData.subCategory) ||
+            (c.title && c.title === formData.subCategory) ||
+            (String(c.id) === String(formData.subCategory))
+          ));
         }
+
+        // Support cases where categories is an object mapping names to arrays
+        let items = [];
+        if (selected) {
+          items = selected.assets || selected.items || selected.children || selected.assets_list || selected.asset_list || selected.assetNames || selected.assetsNames || [];
+        } else if (categories && !Array.isArray(categories) && (categories[formData.subCategory] || categories[formData.subCategory.toLowerCase()])) {
+          items = categories[formData.subCategory] || categories[formData.subCategory.toLowerCase()];
+        }
+
+        // Normalize to empty array if not found
+        if (!Array.isArray(items)) items = [];
+
+        setAssets(items);
       } catch (error) {
-        console.error('Error fetching assets:', error);
+        console.error('Error deriving assets from registration payload:', error);
+        setAssets([]);
       } finally {
         setLoadingAssets(false);
       }
     };
 
-    fetchAssets();
+    deriveAssets();
   }, [formData.subCategory, categories]);
 
   // Handle asset selection - auto-populate serial number
   const handleAssetChange = (e) => {
     const selectedAssetName = e.target.value;
-    const selectedAsset = assets.find(asset => asset.name === selectedAssetName);
-    
+
     // Call the parent onChange for assetName
     onChange('assetName')(e);
-    
-    // Call the callback to update serial number if asset is found
+
+    // Find selected asset by a variety of name keys
+    const selectedAsset = assets.find(asset => (
+      (asset.name && asset.name === selectedAssetName) ||
+      (asset.asset_name && asset.asset_name === selectedAssetName) ||
+      (asset.title && asset.title === selectedAssetName) ||
+      (asset.label && asset.label === selectedAssetName)
+    ));
+
     if (selectedAsset && onAssetSelect) {
-      onAssetSelect(selectedAsset);
+      // Normalize returned asset object so parent gets consistent keys
+      const normalized = {
+        id: selectedAsset.id || selectedAsset.asset_id || selectedAsset.assetId || null,
+        name: selectedAsset.name || selectedAsset.asset_name || selectedAsset.title || selectedAsset.label || '',
+        asset_id: selectedAsset.asset_id || selectedAsset.assetId || selectedAsset.id || '',
+        serial_number: selectedAsset.serial_number || selectedAsset.serialNumber || selectedAsset.serial || ''
+      };
+      onAssetSelect(normalized);
     }
   };
 
@@ -111,19 +124,26 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
   // Calculate minimum date for expected return date based on check out date
   const getMinExpectedReturnDate = () => {
     if (formData.checkOutDate) {
-      return formData.checkOutDate;
+      const d = new Date(formData.checkOutDate);
+      d.setDate(d.getDate() + 1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
     }
-    // Default to today
+    // Default to today + 1 day
     const today = new Date();
+    today.setDate(today.getDate() + 1);
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Get today's date for minimum check out date
-  const getTodayDate = () => {
+  // Get minimum check out date: today + 2 days
+  const getMinCheckOutDate = () => {
     const today = new Date();
+    today.setDate(today.getDate() + 2);
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
@@ -205,13 +225,27 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         error={errors.location}
         render={() => (
           <select
-            value={formData.location}
-            onChange={onChange('location')}
+            value={formData.location?.id || formData.location || ''}
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              const selectedLocation = locations.find(loc => String(loc.id) === String(selectedId));
+              // Store location object with id and city (as name)
+              if (selectedLocation) {
+                onChange('location')({ target: { value: { id: selectedLocation.id, name: selectedLocation.city } } });
+              } else {
+                onChange('location')({ target: { value: '' } });
+              }
+            }}
             onBlur={onBlur('location')}
+            disabled={loadingLocations}
           >
-            <option value="">Select Location</option>
+            <option value="">
+              {loadingLocations ? 'Loading locations...' : 'Select Location'}
+            </option>
             {locations.map(location => (
-              <option key={location} value={location}>{location}</option>
+              <option key={location.id} value={location.id}>
+                {location.city}
+              </option>
             ))}
           </select>
         )}
@@ -224,13 +258,13 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         required
         error={errors.checkOutDate}
         render={() => (
-          <input
-            type="date"
-            value={formData.checkOutDate || ''}
-            onChange={onChange('checkOutDate')}
-            onBlur={onBlur('checkOutDate')}
-            min={getTodayDate()}
-          />
+            <input
+              type="date"
+              value={formData.checkOutDate || ''}
+              onChange={onChange('checkOutDate')}
+              onBlur={onBlur('checkOutDate')}
+              min={getMinCheckOutDate()}
+            />
         )}
       />
 

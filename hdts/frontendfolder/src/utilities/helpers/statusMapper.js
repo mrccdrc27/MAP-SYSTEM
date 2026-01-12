@@ -47,6 +47,12 @@ export const toEmployeeStatus = (adminStatus) => {
     return 'Pending';
   }
   
+  // Map "Pending External" to "In Progress" for employees
+  // (TTS sets this when waiting for external system resolution)
+  if (normalized === 'pending external' || normalized === 'pending_external') {
+    return 'In Progress';
+  }
+  
   // All other statuses remain the same
   return adminStatus;
 };
@@ -98,6 +104,7 @@ export const getDisplayStatus = (status, userRole) => {
 export const isActiveStatus = (status) => {
   const normalized = status?.toLowerCase().trim();
   const finalStatuses = ['closed', 'rejected', 'withdrawn'];
+  // "pending external" is still active (awaiting external resolution)
   return !finalStatuses.includes(normalized);
 };
 

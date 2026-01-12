@@ -1,3 +1,8 @@
+import { useState, useEffect } from 'react';
+
+// API URL for fetching locations from HDTS backend
+const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
+
 const assetSubCategories = [
   'Laptop',
   'Printer',
@@ -14,16 +19,6 @@ const assetIssueTypes = [
   'Software Issue (e.g., system crash, unable to boot)',
   'Screen/Display Issue (e.g., flickering, dead pixels)',
   'Other'
-];
-
-const locations = [
-  'Main Office - 1st Floor',
-  'Main Office - 2nd Floor',
-  'Main Office - 3rd Floor',
-  'Branch Office - North',
-  'Branch Office - South',
-  'Warehouse',
-  'Remote/Home Office'
 ];
 
 // Mock assets data - this would come from your AMS in production
@@ -52,6 +47,34 @@ const mockAssets = {
 };
 
 export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField }) {
+  // Locations state - fetched from API
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Fetch locations from HDTS API on component mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoadingLocations(true);
+      try {
+        const response = await fetch(`${HDTS_API_URL}/api/locations/`);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.locations)) {
+          setLocations(data.locations);
+        } else {
+          console.error('Invalid locations response:', data);
+          setLocations([]);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        setLocations([]);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
   return (
     <>
       {/* Sub-Category (Type of Product) */}
@@ -121,13 +144,27 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
         error={errors.location}
         render={() => (
           <select
-            value={formData.location}
-            onChange={onChange('location')}
+            value={formData.location?.id || formData.location || ''}
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              const selectedLocation = locations.find(loc => String(loc.id) === String(selectedId));
+              // Store location object with id and city (as name)
+              if (selectedLocation) {
+                onChange('location')({ target: { value: { id: selectedLocation.id, name: selectedLocation.city } } });
+              } else {
+                onChange('location')({ target: { value: '' } });
+              }
+            }}
             onBlur={onBlur('location')}
+            disabled={loadingLocations}
           >
-            <option value="">Select Location</option>
+            <option value="">
+              {loadingLocations ? 'Loading locations...' : 'Select Location'}
+            </option>
             {locations.map(location => (
-              <option key={location} value={location}>{location}</option>
+              <option key={location.id} value={location.id}>
+                {location.city}
+              </option>
             ))}
           </select>
         )}

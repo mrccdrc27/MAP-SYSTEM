@@ -13,6 +13,7 @@ import styles from './EmployeeHome.module.css';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import { toEmployeeStatus } from '../../../utilities/helpers/statusMapper';
 import { useAuth } from '../../../context/AuthContext';
+import { useAms } from '../../../context/AmsContext';
 import CurrentAgentCell from '../../../shared/components/CurrentAgentCell';
 
 const EmployeeHome = () => {
@@ -21,6 +22,12 @@ const EmployeeHome = () => {
   const [isLoading, setIsLoading] = useState(true);
   // Prefer AuthContext user as source-of-truth
   const { user: currentUser } = useAuth();
+  // Prefetch AMS categories so submit-ticket loads instantly
+  const { prefetch: prefetchAms } = useAms();
+
+  useEffect(() => {
+    prefetchAms();
+  }, [prefetchAms]);
 
   useEffect(() => {
     if (!currentUser) return;

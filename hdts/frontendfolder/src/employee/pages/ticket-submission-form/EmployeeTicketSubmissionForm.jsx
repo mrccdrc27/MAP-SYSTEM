@@ -13,6 +13,7 @@ import FormCard from '../../../shared/components/FormCard';
 import { backendTicketService } from '../../../services/backend/ticketService';
 import authService from '../../../utilities/service/authService';
 import { useAuth } from '../../../context/AuthContext';
+import { useAms } from '../../../context/AmsContext';
 import ITSupportForm from './ITSupportForm';
 import AssetCheckInForm, { mockAssets } from './AssetCheckInForm';
 import AssetCheckOutForm from './AssetCheckOutForm';
@@ -195,6 +196,14 @@ export default function EmployeeTicketSubmissionForm() {
   const [budgetItems, setBudgetItems] = useState([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
   const [showCustomDeviceType, setShowCustomDeviceType] = useState(false);
 
+  // Consume AMS categories from context (prefetched on EmployeeHome)
+  const { categories: amsCategories, loading: amsLoading, prefetch: prefetchAms } = useAms();
+
+  // If user lands directly on this page, ensure categories are loaded
+  useEffect(() => {
+    prefetchAms();
+  }, [prefetchAms]);
+
   // Local date string in YYYY-MM-DD to use for date input min (avoid UTC offset issues)
   const localToday = (() => {
     const d = new Date();
@@ -227,71 +236,77 @@ export default function EmployeeTicketSubmissionForm() {
     switch (field) {
       case 'subject':
         if (!value.trim()) {
-          error = 'Subject is required';
+          error = 'Subject is required.';
         } else if (value.trim().length < 5) {
-          error = 'Subject must be at least 5 characters long';
+          error = 'Subject must be at least 5 characters long.';
         }
         break;
       
       case 'category':
         if (!value) {
-          error = 'Category is required';
+          error = 'Category is required.';
         }
         break;
       
       case 'subCategory':
         if ((isITSupport || isAnyAssetCategory || isBudgetProposal) && !value) {
-          error = 'Sub-Category is required';
+          error = 'Sub-Category is required.';
         }
         break;
       
       case 'description':
         if (!value.trim()) {
-          error = 'Description is required';
+          error = 'Description is required.';
         } else if (value.trim().length < 10) {
-          error = 'Description must be at least 10 characters long';
+          error = 'Description must be at least 10 characters long.';
         }
         break;
       
       case 'assetName':
         if (isAnyAssetCategory && !value) {
-          error = 'Asset Name is required';
+          error = 'Asset Name is required.';
         }
         break;
       
       case 'location':
-        if (isAnyAssetCategory && !value) {
-          error = 'Location is required';
+        // Location can be an object { id, name } or empty string
+        if (isAnyAssetCategory) {
+          const hasLocation = value && (typeof value === 'object' ? value.id : value);
+          if (!hasLocation) {
+            error = 'Location is required.';
+          }
         }
         break;
       
       case 'issueType':
         if (isAssetCheckIn && !value) {
-          error = 'Issue Type is required';
+          error = 'Issue Type is required.';
         }
         break;
 
+      
+
       case 'checkOutDate':
         if (isAssetCheckOut && !value) {
-          error = 'Check Out Date is required';
+          error = 'Check Out Date is required.';
         }
         break;
 
       case 'expectedReturnDate':
         if (isAssetCheckOut && !value) {
-          error = 'Expected Return Date is required';
+          error = 'Expected Return Date is required.';
         }
         break;
       
       case 'deviceType':
         if (isITSupport && !value && !formData.customDeviceType) {
-          error = 'Device Type is required';
+          error = 'Device Type is required.';
         }
         break;
       
       case 'customDeviceType':
         if (isITSupport && showCustomDeviceType && !value.trim()) {
-          error = 'Custom Device Type is required';
+          error = 'Custom Device Type is required.';
         }
         break;
       
@@ -301,24 +316,24 @@ export default function EmployeeTicketSubmissionForm() {
       
       case 'performanceStartDate':
         if (isBudgetProposal && !value) {
-          error = 'Performance Start Date is required';
+          error = 'Performance Start Date is required.';
         }
         break;
       
       case 'performanceEndDate':
         if (isBudgetProposal && !value) {
-          error = 'Performance End Date is required';
+          error = 'Performance End Date is required.';
         } else if (isBudgetProposal && formData.performanceStartDate) {
-          // Ensure end is >= start (no upper limit)
-          if (value < formData.performanceStartDate) {
-            error = 'End Date must be after or equal to Start Date';
-          }
+            // Ensure end is strictly after start (no upper limit)
+            if (value <= formData.performanceStartDate) {
+              error = 'End Date must be after Start Date.';
+            }
         }
         break;
       
       case 'preparedBy':
         if (isBudgetProposal && !value.trim()) {
-          error = 'Prepared By is required';
+          error = 'Prepared By is required.';
         }
         break;
       
@@ -479,6 +494,23 @@ export default function EmployeeTicketSubmissionForm() {
       newTouched[field] = true;
       newErrors[field] = validateField(field, formData[field]);
     });
+
+    // Additional validation: for Budget Proposal require the FIRST budget item fields
+    if (isBudgetProposal) {
+      const first = (budgetItems && budgetItems.length > 0) ? budgetItems[0] : { costElement: '', description: '', estimatedCost: '' };
+      const ce = (first.costElement || first.cost_element || '').toString().trim();
+      const desc = (first.description || '').toString().trim();
+      const cost = (first.estimatedCost || '').toString().replace(/[^0-9]/g, '').trim();
+
+      // Mark touched so UI can show field-level errors
+      newTouched['budgetItems_0_costElement'] = true;
+      newTouched['budgetItems_0_description'] = true;
+      newTouched['budgetItems_0_estimatedCost'] = true;
+
+      if (!ce) newErrors['budgetItems_0_costElement'] = 'Cost Element is required.';
+      if (!desc) newErrors['budgetItems_0_description'] = 'Description is required.';
+      if (!cost) newErrors['budgetItems_0_estimatedCost'] = 'Estimated Cost is required.';
+    }
     
     setTouched(newTouched);
     setErrors(newErrors);
@@ -541,7 +573,16 @@ export default function EmployeeTicketSubmissionForm() {
         dynamicData.assetName = formData.assetName;
         dynamicData.assetId = formData.assetId;
         dynamicData.serialNumber = formData.serialNumber;
-        dynamicData.location = formData.location;
+        // Build location_details object with id and name (city)
+        if (formData.location && typeof formData.location === 'object') {
+          dynamicData.location_details = {
+            id: formData.location.id,
+            name: formData.location.name
+          };
+        } else if (formData.location) {
+          // Fallback for legacy string format
+          dynamicData.location = formData.location;
+        }
       }
 
       if (isAssetCheckOut) {
@@ -558,7 +599,12 @@ export default function EmployeeTicketSubmissionForm() {
 
       // Add Budget Proposal specific data
       if (isBudgetProposal) {
-        dynamicData.items = budgetItems;
+        // Strip formatting (commas, currency symbols, dots) from estimatedCost before submitting
+        const cleanedItems = (budgetItems || []).map(it => {
+          const cleanedCost = String(it.estimatedCost || '').replace(/[^0-9]/g, '');
+          return { ...it, estimatedCost: cleanedCost };
+        });
+        dynamicData.items = cleanedItems;
         dynamicData.totalBudget = calculateTotalBudget();
         dynamicData.performanceStartDate = formData.performanceStartDate;
         dynamicData.performanceEndDate = formData.performanceEndDate;
@@ -720,6 +766,8 @@ export default function EmployeeTicketSubmissionForm() {
               onBlur={handleBlur}
               errors={errors}
               FormField={FormField}
+              prefetchedCategories={amsCategories}
+              prefetchLoading={amsLoading}
               onAssetSelect={(asset) => {
                 // Update serial number, assetId, and assetName when asset is selected from AMS API
                 // Clear fields when asset is null (category changed)

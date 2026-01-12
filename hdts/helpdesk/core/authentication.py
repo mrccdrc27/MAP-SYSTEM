@@ -10,11 +10,12 @@ class ExternalUser:
     Represents an external user from cookie authentication.
     Mimics basic user attributes for DRF compatibility.
     """
-    def __init__(self, user_id, email, role, first_name=None, last_name=None, department=None, company_id=None, user_type='user'):
+    def __init__(self, user_id, email, role, first_name=None, middle_name=None, last_name=None, department=None, company_id=None, user_type='user'):
         self.id = user_id
         self.email = email
         self.role = role
         self.first_name = first_name
+        self.middle_name = middle_name
         self.last_name = last_name
         self.department = department
         self.company_id = company_id
@@ -25,8 +26,9 @@ class ExternalUser:
         self.pk = user_id  # For DRF compatibility
 
     def __str__(self):
-        if self.first_name and self.last_name:
-            return f"{self.first_name} {self.last_name}"
+        parts = [p for p in [self.first_name, self.middle_name, self.last_name] if p]
+        if parts:
+            return ' '.join(parts)
         return self.email
 
 
@@ -94,6 +96,7 @@ class CookieJWTAuthentication(JWTAuthentication):
                     email=validated_token['email'],
                     role=hdts_role,
                     first_name=validated_token.get('first_name'),
+                    middle_name=validated_token.get('middle_name'),
                     last_name=validated_token.get('last_name'),
                     # department=validated_token.get('department'),
                     # company_id=validated_token.get('company_id'),
@@ -175,7 +178,20 @@ class CookieJWTAuthentication(JWTAuthentication):
                 except Exception:
                     email = None
 
-                return ExternalUser(user_id=user_id, email=email, role=hdts_role, user_type='user')
+                # Extract names from token if available
+                first_name = validated_token.get('first_name') if hasattr(validated_token, 'get') else None
+                middle_name = validated_token.get('middle_name') if hasattr(validated_token, 'get') else None
+                last_name = validated_token.get('last_name') if hasattr(validated_token, 'get') else None
+
+                return ExternalUser(
+                    user_id=user_id,
+                    email=email,
+                    role=hdts_role,
+                    first_name=first_name,
+                    middle_name=middle_name,
+                    last_name=last_name,
+                    user_type='user'
+                )
 
         # Fallback: token corresponds to local DB user — perform normal lookup
         try:

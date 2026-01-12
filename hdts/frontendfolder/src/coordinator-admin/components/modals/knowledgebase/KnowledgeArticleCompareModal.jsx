@@ -68,6 +68,13 @@ const KnowledgeArticleCompareModal = ({ leftVersion = {}, rightVersion = {}, lef
   const leftContent = leftVersion.content || leftVersion.body || leftVersion.text || leftVersion.html || leftVersion.raw || '';
   const rightContent = rightVersion.content || rightVersion.body || rightVersion.text || rightVersion.html || rightVersion.raw || '';
   
+  // Check if content is available for meaningful comparison
+  const hasLeftContent = Boolean(leftContent);
+  const hasRightContent = Boolean(rightContent);
+  const canCompare = hasLeftContent || hasRightContent;
+  
+  const noContentMessage = 'Content not available for this version (created before content snapshots were enabled).';
+  
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
@@ -94,13 +101,17 @@ const KnowledgeArticleCompareModal = ({ leftVersion = {}, rightVersion = {}, lef
           <div className={styles.column}>
             <div className={styles.colHeader}>Version 1.1.{leftLabel}</div>
             <div className={styles.colMeta}>{authorName} • {formatDate(leftVersion.date || leftVersion.updated_at || leftVersion.dateModified || leftVersion.modified)}</div>
-            <div className={styles.colBody}>{renderDiffSide(leftContent, rightContent, 'left')}</div>
+            <div className={styles.colBody} style={!hasLeftContent ? { fontStyle: 'italic', color: '#6b7280' } : undefined}>
+              {hasLeftContent ? renderDiffSide(leftContent, rightContent, 'left') : noContentMessage}
+            </div>
           </div>
 
           <div className={styles.column}>
             <div className={styles.colHeader}>Version 1.1.{rightLabel}</div>
             <div className={styles.colMeta}>{authorName} • {formatDate(rightVersion.date || rightVersion.updated_at || rightVersion.dateModified || rightVersion.modified)}</div>
-            <div className={styles.colBody}>{renderDiffSide(leftContent, rightContent, 'right')}</div>
+            <div className={styles.colBody} style={!hasRightContent ? { fontStyle: 'italic', color: '#6b7280' } : undefined}>
+              {hasRightContent ? renderDiffSide(leftContent, rightContent, 'right') : noContentMessage}
+            </div>
           </div>
         </div>
     </ModalWrapper>

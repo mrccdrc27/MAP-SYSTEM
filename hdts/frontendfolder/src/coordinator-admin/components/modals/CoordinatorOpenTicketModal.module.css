@@ -4,10 +4,19 @@
   font-weight: 600;
 }
 
+/* Two-column layout for modal content */
+.modalColumns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-width: 280px;
 }
 
 .field {
@@ -111,4 +120,133 @@
   margin-top: 8px;
   font-size: 13px;
   color: #111827;
+}
+
+/* Asset Details Panel for two-column layout */
+.assetPanel {
+  flex: 1;
+  min-width: 320px;
+  max-width: 420px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fafafa;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.assetPanelHeading {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.assetDetailsTable {
+  width: 100%;
+  margin-bottom: 16px;
+  border-collapse: collapse;
+}
+
+.assetDetailsTable th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6b7280;
+  padding: 6px 0;
+  width: 140px;
+  text-transform: uppercase;
+}
+
+.assetDetailsTable td {
+  font-size: 14px;
+  color: #111827;
+  padding: 6px 0;
+}
+
+.assetListHeader {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+  margin-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.assetNameChosenLabel {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.assetNameValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.assetListTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assetListTable tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.assetListTable td {
+  padding: 10px 8px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.assetListScroll {
+  max-height: 220px; /* shows approx 4 items then scrolls */
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.status_deployable {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.status_archived {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.status_pending {
+  background: #e0e7ff;
+  color: #3730a3;
+  border-color: #a5b4fc;
+}
+
+.status_undeployable {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.status_deployed {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
 }

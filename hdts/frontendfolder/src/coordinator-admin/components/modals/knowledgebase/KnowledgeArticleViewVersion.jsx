@@ -35,8 +35,20 @@ const KnowledgeArticleViewVersion = ({
   // overlay click handled by ModalWrapper
 
   const versionLabel = `1.1.${total - index}`;
-  const content = version?.content || article?.content || article?.description || version?.body || version?.text || version?.html || version?.raw || 'No content available for this version.';
+  
+  // Get version-specific content - don't fall back to current article content as that's misleading
+  const versionContent = version?.content || version?.body || version?.text || version?.html || version?.raw || '';
+  const hasVersionContent = Boolean(versionContent);
+  
+  // For display: show version content if available, otherwise show a helpful message
+  const displayContent = hasVersionContent 
+    ? versionContent 
+    : 'This version was created before content snapshots were enabled. Version content is not available for viewing or restoration.';
+  
   const authorName = article?.created_by_external_name || article?.created_by_name || 'Unknown';
+
+  // Determine if restore should be disabled (no content to restore)
+  const canActuallyRestore = canRestore && hasVersionContent;
 
   return (
     <ModalWrapper onClose={null} className={styles.modalContent} contentProps={{ role: 'dialog', 'aria-modal': true }}>
@@ -55,7 +67,7 @@ const KnowledgeArticleViewVersion = ({
         <div className={styles.contentArea}>
           <div className={styles.previewSection}>
             <div className={styles.previewLabel}>Full Preview</div>
-            <div className={styles.previewContent}>{content}</div>
+            <div className={styles.previewContent} style={!hasVersionContent ? { fontStyle: 'italic', color: '#6b7280' } : undefined}>{displayContent}</div>
           </div>
 
           {/* Change summary removed per design */}
@@ -64,7 +76,7 @@ const KnowledgeArticleViewVersion = ({
         <div className={styles.footer}>
           <div className={styles.footerActions}>
             {canRestore && (
-              <Button type="button" variant="primary" onClick={() => onRestore?.(version)} className={`${styles.actionButton} ${styles.primaryAction}`} title="Restore this version" disabled={!canRestore}>Restore</Button>
+              <Button type="button" variant="primary" onClick={() => onRestore?.(version)} className={`${styles.actionButton} ${styles.primaryAction}`} title={canActuallyRestore ? "Restore this version" : "No content available to restore"} disabled={!canActuallyRestore}>Restore</Button>
             )}
           </div>
         </div>

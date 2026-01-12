@@ -22,6 +22,57 @@ def update_ticket_status_from_queue(ticket_number, new_status):
         print(f"Ticket with ticket_number {ticket_number} does not exist")
 
 
+@shared_task(name='hdts.tasks.sync_ticket_status_to_tts')
+def sync_ticket_status_to_tts(ticket_number, new_status, additional_data=None):
+    """
+    Sync ticket status changes from HDTS to TTS (workflow_api).
+    This is especially important for 'Closed' status which only happens in HDTS.
+    
+    The task sends a message to TTS via Celery so that TTS can update
+    its WorkflowTicket.status field accordingly.
+    
+    Args:
+        ticket_number (str): The ticket number (e.g., TX20260111123456)
+        new_status (str): The new status (e.g., 'Closed', 'Resolved', etc.)
+        additional_data (dict, optional): Extra data like csat_rating, feedback, date_completed
+    """
+    from celery import current_app
+    
+    logger.info(f"📤 Syncing ticket status to TTS: {ticket_number} → {new_status}")
+    
+    try:
+        # Build the payload for TTS
+        payload = {
+            'ticket_number': ticket_number,
+            'status': new_status,
+        }
+        
+        # Include additional data if provided (e.g., for Closed tickets)
+        if additional_data:
+            payload.update(additional_data)
+        
+        # Send task to TTS workflow_api worker via explicit queue routing
+        result = current_app.send_task(
+            'tts.tasks.receive_hdts_ticket_status',
+            args=[payload],
+            queue='TICKET_TASKS_PRODUCTION'  # TTS worker listens to this queue
+        )
+        logger.info(f"✅ Ticket status sync sent to TTS queue. Task ID: {result.id}")
+        return {
+            'status': 'success',
+            'ticket_number': ticket_number,
+            'new_status': new_status,
+            'task_id': str(result.id)
+        }
+    except Exception as e:
+        logger.error(f"❌ Failed to sync ticket status to TTS: {e}")
+        return {
+            'status': 'error',
+            'ticket_number': ticket_number,
+            'error': str(e)
+        }
+
+
 @shared_task(name='update_ticket_owner')
 def update_ticket_owner_from_queue(ticket_number, owner_id):
     """

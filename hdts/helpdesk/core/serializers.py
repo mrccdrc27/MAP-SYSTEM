@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Employee, Ticket, TicketAttachment, KnowledgeArticle, KnowledgeArticleVersion
+from .models import Employee, Ticket, TicketAttachment, KnowledgeArticle, KnowledgeArticleVersion, Location
 from .models import ActivityLog
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -401,11 +401,11 @@ class KnowledgeArticleSerializer(serializers.ModelSerializer):
         return None
 
     def get_versions(self, obj):
-        # Return a simple serialized list of versions for the frontend.
+        # Return a serialized list of versions with full content snapshots for the frontend.
         vers = getattr(obj, 'versions', None)
         if vers is None:
             return []
-        # Provide a compact representation
+        # Include content snapshot fields for viewing, comparing, and restoring versions
         return [
             {
                 'id': v.id,
@@ -414,6 +414,39 @@ class KnowledgeArticleSerializer(serializers.ModelSerializer):
                 'date': v.modified_at.isoformat() if v.modified_at else None,
                 'changes': v.changes,
                 'metadata': v.metadata,
+                # Content snapshot fields
+                'subject': v.subject_snapshot,
+                'content': v.description_snapshot,
+                'category': v.category_snapshot,
+                'visibility': v.visibility_snapshot,
+                'tags': v.tags_snapshot or [],
             }
             for v in vers.all()
         ]
+
+
+class LocationSerializer(serializers.ModelSerializer):
+    """Serializer for Location model used in Asset Check-Out form."""
+    display_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Location
+        fields = ['id', 'city', 'zip_code', 'display_name', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'display_name', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """Ensure unique combination of city and zip_code."""
+        city = data.get('city', getattr(self.instance, 'city', None))
+        zip_code = data.get('zip_code', getattr(self.instance, 'zip_code', None))
+        
+        # Check uniqueness excluding current instance for updates
+        queryset = Location.objects.filter(city__iexact=city, zip_code=zip_code)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise serializers.ValidationError(
+                {"non_field_errors": ["A location with this city and zip code already exists."]}
+            )
+        
+        return data

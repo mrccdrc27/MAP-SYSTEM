@@ -47,8 +47,13 @@ const EmployeeFAQs = () => {
 
         if (!isMounted) return;
 
-        // kbService or backend maps archived -> archived and visibility normalized to 'Employee', etc.
-        const visible = (all || []).filter(a => !a.archived && (a.visibility || '').toLowerCase() === 'employee');
+        // Filter out archived articles and only show employee-visible ones.
+        // Backend returns `is_archived` while kbService maps it to `archived` - handle both.
+        const visible = (all || []).filter(a => {
+          const isArchived = a.is_archived || a.archived || false;
+          const visibility = (a.visibility || '').toLowerCase();
+          return !isArchived && visibility === 'employee';
+        });
 
         // normalize shape to provide `question` and `answer` fields that the UI expects.
         // NOTE: backend / adapter sometimes returns `subject`/`description` or `title`/`content`.

@@ -359,6 +359,31 @@ services:
   # HELPDESK SERVICE (Internal port 8000, exposed as 5001)
   # Prefix: /helpdesk/* → strips prefix → forwards to backend
   # ---------------------------------------------------------------------------
+  # Public helpdesk endpoints (no auth required) - must come before protected
+  - name: helpdesk-public
+    url: http://helpdesk-service:8000
+    tags:
+      - hdts
+      - helpdesk
+      - public
+    routes:
+      - name: helpdesk-public-routes
+        paths:
+          - /helpdesk/api/locations
+        strip_path: false
+        methods:
+          - GET
+          - OPTIONS
+    plugins:
+      - name: pre-function
+        config:
+          access:
+            - |
+              local path = kong.request.get_path()
+              local new_path = path:gsub("^/helpdesk", "")
+              kong.service.request.set_path(new_path)
+
+  # Protected helpdesk endpoints
   - name: helpdesk-service
     url: http://helpdesk-service:8000
     tags:
