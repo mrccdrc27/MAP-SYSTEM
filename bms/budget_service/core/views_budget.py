@@ -29,9 +29,9 @@ from core.authentication import JWTCookieAuthentication
 from .service_authentication import APIKeyAuthentication
 
 from .models import (
-    Account, AccountType, BudgetProposal, BudgetTransfer, Department, ExpenseCategory,
+    Account, AccountType, BudgetProposal, BudgetTransfer, Department, DepartmentBudgetCap, ExpenseCategory,
     FiscalYear, BudgetAllocation, Expense, JournalEntry, JournalEntryLine,
-    ProposalComment, ProposalHistory, UserActivityLog, Project
+    ProposalComment, ProposalHistory, SubCategoryBudgetCap, UserActivityLog, Project
 )
 from .permissions import CanSubmitForApproval, IsTrustedService, IsBMSFinanceHead, IsBMSUser, IsBMSAdmin
 from .pagination import FiveResultsSetPagination, SixResultsSetPagination, StandardResultsSetPagination
@@ -2080,14 +2080,31 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def categories(self, request):
-        """Get valid Expense Categories"""
-        # Optional: Filter by department if provided ?department_code=IT
+        """
+        Get valid Expense Categories.
+        Optional filter: ?department_code=IT
+        """
         dept_code = request.query_params.get('department_code')
         qs = ExpenseCategory.objects.filter(is_active=True)
-        
-        # Note: Category-Department mapping logic varies. 
-        # If strict mapping exists in SubCategoryBudgetCap or naming convention, apply here.
-        
+
+        # INTELLIGENT FILTERING
+        if dept_code:
+            # 1. Try to filter by SubCategoryBudgetCap )(Strongest Link)
+            # This confirms the department actually has a policy/cap for this category
+            
+            # Find categories linked to this dept via Caps
+            cap_linked_ids = SubCategoryBudgetCap.objects.filter(
+                department__code__iexact=dept_code,
+                is_active=True
+            ).values_list('expense_category_id', flat=True)
+            
+            if cap_linked_ids.exists():
+                qs = qs.filter(id__in=cap_linked_ids)
+            else:
+                # 2. Fallback: Prefix Matching (e.g. IT-HOST matches IT)
+                # If no caps are seeded yet, fallback to naming convention
+                qs = qs.filter(code__istartswith=dept_code)
+
         data = qs.values('id', 'name', 'code', 'classification')
         return Response(list(data))
 
@@ -2109,4 +2126,143 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             'id', 'name', 'code', 'account_type__name'
         )
         return Response(list(accounts))
-  
+    
+    #URL: GET /api/external-references/budget_caps/?department_code=IT
+    #Header: X-API-Key: <valid-key>
+    
+    @action(detail=False, methods=['get'])
+    def budget_caps(self, request):
+        """
+        Get Budget Caps and Remaining Balances for a Department.
+        Required param: ?department_code=IT
+        
+        Returns:
+        {
+            "fiscal_year": "FY 2026",
+            "department": "IT",
+            "department_cap": {
+                "limit_amount": 3000000.00,
+                "spent_amount": 1200000.00,
+                "remaining_amount": 1800000.00,
+                "cap_type": "SOFT",
+                "cap_percentage": 15.0,
+                "current_usage_percentage": 40.0
+            },
+            "category_caps": [
+                {
+                    "category_code": "IT-HOST",
+                    "category_name": "Server Hosting",
+                    "limit_amount": 600000.00,
+                    "spent_amount": 550000.00,
+                    "remaining_amount": 50000.00,
+                    "cap_type": "HARD",
+                    "cap_percentage": 20.0,
+                    "current_usage_percentage": 91.7
+                }
+            ]
+        }
+        """
+        dept_code = request.query_params.get('department_code')
+        if not dept_code:
+            return Response({"error": "department_code is required"}, status=400)
+
+        # 1. Get Active Fiscal Year
+        today = timezone.now().date()
+        fiscal_year = FiscalYear.objects.filter(
+            start_date__lte=today, end_date__gte=today, is_active=True
+        ).first()
+        
+        if not fiscal_year:
+            return Response({"error": "No active fiscal year"}, status=404)
+
+        try:
+            dept = Department.objects.get(code__iexact=dept_code)
+        except Department.DoesNotExist:
+            return Response({"error": "Invalid Department Code"}, status=404)
+
+        # 2. Get Department Cap Info
+        dept_cap_info = None
+        try:
+            d_cap = DepartmentBudgetCap.objects.get(
+                department=dept, fiscal_year=fiscal_year, is_active=True
+            )
+            
+            # Calculate total org budget for context
+            total_org_allocations = BudgetAllocation.objects.filter(
+                fiscal_year=fiscal_year, is_active=True
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            # Department's limit based on percentage of total
+            dept_limit = total_org_allocations * (d_cap.percentage_of_total / 100)
+            
+            # Current spending for this department
+            current_dept_spent = Expense.objects.filter(
+                department=dept, 
+                budget_allocation__fiscal_year=fiscal_year,
+                status__in=['APPROVED', 'SUBMITTED']
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            # Calculate Usage Percentage
+            dept_usage_pct = 0.0
+            if dept_limit > 0:
+                dept_usage_pct = (current_dept_spent / dept_limit) * 100
+            
+            dept_cap_info = {
+                "limit_amount": round(dept_limit, 2),
+                "spent_amount": round(current_dept_spent, 2),
+                "remaining_amount": round(max(dept_limit - current_dept_spent, 0), 2),
+                "cap_type": d_cap.cap_type,
+                # NEW FIELDS
+                "cap_percentage": float(d_cap.percentage_of_total),  # The policy limit (e.g., 15%)
+                "current_usage_percentage": round(float(dept_usage_pct), 1)  # How much of that limit is used (e.g., 40%)
+            }
+        except DepartmentBudgetCap.DoesNotExist:
+            pass
+
+        # 3. Get Sub-Category Caps
+        sub_caps = []
+        cat_caps_qs = SubCategoryBudgetCap.objects.filter(
+            department=dept, fiscal_year=fiscal_year, is_active=True
+        ).select_related('expense_category')
+
+        # We need total dept allocation for calculation
+        dept_total_alloc = BudgetAllocation.objects.filter(
+            department=dept, fiscal_year=fiscal_year, is_active=True
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        for c_cap in cat_caps_qs:
+            # Category limit as percentage of department budget
+            cat_limit = dept_total_alloc * (c_cap.percentage_of_department / 100)
+            
+            # Current spending for this category in this department
+            current_cat_spent = Expense.objects.filter(
+                department=dept,
+                category=c_cap.expense_category,
+                budget_allocation__fiscal_year=fiscal_year,
+                status__in=['APPROVED', 'SUBMITTED']
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+            # Calculate Usage Percentage
+            cat_usage_pct = 0.0
+            if cat_limit > 0:
+                cat_usage_pct = (current_cat_spent / cat_limit) * 100
+
+            sub_caps.append({
+                "category_code": c_cap.expense_category.code,
+                "category_name": c_cap.expense_category.name,
+                "limit_amount": round(cat_limit, 2),
+                "spent_amount": round(current_cat_spent, 2),
+                "remaining_amount": round(max(cat_limit - current_cat_spent, 0), 2),
+                "cap_type": c_cap.cap_type,
+                # NEW FIELDS
+                "cap_percentage": float(c_cap.percentage_of_department),  # Policy percentage (e.g., 20%)
+                "current_usage_percentage": round(float(cat_usage_pct), 1)  # Actual usage (e.g., 91.7%)
+            })
+
+        return Response({
+            "fiscal_year": fiscal_year.name,
+            "department": dept.code,
+            "department_cap": dept_cap_info,
+            "category_caps": sub_caps
+        })
+    
