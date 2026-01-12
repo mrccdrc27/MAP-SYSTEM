@@ -486,15 +486,6 @@ class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
                 f"Invalid category code '{value}'. Use /api/external-references/categories/ to get valid codes."
             )
     
-    # Resolve category
-    def create(self, validated_data):
-        category_code = validated_data.pop('category_code')
-        category = ExpenseCategory.objects.get(code=category_code, is_active=True)
-        
-        return BudgetProposalItem.objects.create(
-            category=category,  
-            **validated_data
-        )
 
 
 class BudgetProposalMessageSerializer(serializers.ModelSerializer):
@@ -629,12 +620,11 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         items_data = validated_data.pop('items')
         
         # 4. Clean up any read_only fields that might have slipped through
-        # These fields are set by the system, not by the external request
         validated_data.pop('approved_by_name', None)
         validated_data.pop('approval_date', None)
         validated_data.pop('rejected_by_name', None)
         validated_data.pop('rejection_date', None)
-        validated_data.pop('department_details', None)  # This is read_only
+        validated_data.pop('department_details', None)
         
         # 5. Set the external system ID from ticket_id
         validated_data['external_system_id'] = ticket_id_value
@@ -653,9 +643,18 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         # 9. Create the proposal
         proposal = BudgetProposal.objects.create(**validated_data)
         
-        # 10. Create the budget items
+        # 10. ✅ FIXED: Create the budget items with proper category resolution
         for item_data in items_data:
-            BudgetProposalItem.objects.create(proposal=proposal, **item_data)
+            # Extract and resolve the category_code
+            category_code = item_data.pop('category_code')
+            category = ExpenseCategory.objects.get(code=category_code, is_active=True)
+            
+            # Create the item with the resolved category
+            BudgetProposalItem.objects.create(
+                proposal=proposal,
+                category=category,
+                **item_data
+            )
         
         # 11. Log history
         request = self.context.get('request')
