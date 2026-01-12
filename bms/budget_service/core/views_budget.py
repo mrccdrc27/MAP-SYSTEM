@@ -735,8 +735,9 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                 proposal.rejected_by_name = None
                 proposal.rejection_date = None
 
+                # ✅ FIX 1: Get or Create Project (prevents duplicates)
                 if not hasattr(proposal, 'project') or proposal.project is None:
-                    Project.objects.create(
+                    project = Project.objects.create(
                         name=f"Project for: {proposal.title}",
                         description=proposal.project_summary,
                         start_date=proposal.performance_start_date,
@@ -745,11 +746,52 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                         budget_proposal=proposal,
                         status='PLANNING'
                     )
+                else:
+                    project = proposal.project
+
+                # ✅ FIX 2: Create BudgetAllocations from Proposal Items
+                # This is the CRITICAL missing piece - without allocations, projects have $0 budget
+                for item in proposal.items.all():
+                    # Validate that category exists (should be caught by serializer, but double-check)
+                    if not item.category:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Item {item.id} has no category. Skipping allocation creation.")
+                        continue
+
+                    # Check if allocation already exists (prevents duplicates on re-approval)
+                    existing_allocation = BudgetAllocation.objects.filter(
+                        project=project,
+                        category=item.category,
+                        account=item.account,
+                        is_active=True
+                    ).first()
+
+                    if not existing_allocation:
+                        BudgetAllocation.objects.create(
+                            fiscal_year=proposal.fiscal_year,
+                            department=proposal.department,
+                            category=item.category,
+                            account=item.account,
+                            project=project,
+                            proposal=proposal,
+                            amount=item.estimated_cost,
+                            created_by_name=reviewer_name,
+                            is_active=True,
+                            is_locked=False  # ✅ Unlocked = Ready for expenses
+                        )
+                    else:
+                        # If re-approving, update amount and unlock
+                        existing_allocation.amount = item.estimated_cost
+                        existing_allocation.is_locked = False
+                        existing_allocation.save(update_fields=['amount', 'is_locked'])
+
             elif new_status == 'REJECTED':
                 proposal.rejected_by_name = reviewer_name
                 proposal.rejection_date = timezone.now()
                 proposal.approved_by_name = None
                 proposal.approval_date = None
+                
                 if hasattr(proposal, 'project') and proposal.project is not None:
                     proposal.project.status = 'CANCELLED'
                     proposal.project.save(update_fields=['status'])
@@ -773,30 +815,22 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                 comments=comment_text or f"Status changed to {new_status}."
             )
 
-        # --- MODIFIED: Dynamic Outbound Notification Logic ---
-        # Routes the callback based on the Ticket ID prefix to the correct external system.
+        # --- External System Notification (Existing Code) ---
         if proposal.external_system_id:
             try:
                 target_url = None
                 api_key_to_use = None
                 
-                # Normalize ID for prefix checking
                 tid = proposal.external_system_id.upper()
                 
-                # 1. AMS (Asset Management)
-                # Prefixes: AST (Asset), REP (Repair), REG (Registration)
                 if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"):
                      target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
                      api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None)
                 
-                # 2. HDTS (Help Desk/Travel)
-                # Prefixes: HD (Help Desk), TRV (Travel)
                 elif tid.startswith("HD") or tid.startswith("TRV"):
                      target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
                      api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
 
-                # 3. TTS/DTS (Ticketing) - Default Fallback
-                # Prefixes: TICKET, REQ, GEN, or anything else
                 else:
                      target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
                      api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
@@ -804,11 +838,10 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                 if target_url:
                     payload = {
                         'ticket_id': proposal.external_system_id,
-                        'status': new_status,  # 'APPROVED' or 'REJECTED'
+                        'status': new_status,
                         'comment': comment_text,
                         'reviewed_by': reviewer_name,
                         'reviewed_at': timezone.now().isoformat(),
-                        # CRITICAL: This confirms the ID they must use for future expense calls
                         'order_number': proposal.external_system_id 
                     }
                     headers = {
@@ -816,10 +849,8 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                         'X-API-Key': api_key_to_use or ''
                     }
                     
-                    # Send webhook with short timeout
                     response = requests.post(target_url, json=payload, headers=headers, timeout=5)
                     
-                    # We log success, but we do NOT rollback the BMS approval if external fails.
                     if 200 <= response.status_code < 300:
                         proposal.sync_status = 'SYNCED'
                     else:
@@ -835,7 +866,6 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                 print(f"Error notifying external system for proposal {proposal.id}: {e}")
                 proposal.sync_status = 'FAILED'
                 proposal.save(update_fields=['sync_status'])
-        # -----------------------------------------------------
 
         output_serializer = BudgetProposalDetailSerializer(
             proposal, context={'request': request})
