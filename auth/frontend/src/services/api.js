@@ -53,8 +53,13 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Handle 401 Unauthorized - Attempt Refresh
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('refresh')) {
+    // Skip token refresh for login-related endpoints (login, refresh, me during login flow)
+    const isLoginRelated = originalRequest.url.includes('login') || 
+                           originalRequest.url.includes('refresh') ||
+                           originalRequest.url.includes('register');
+    
+    // Handle 401 Unauthorized - Attempt Refresh (only for authenticated requests, not login flow)
+    if (error.response?.status === 401 && !originalRequest._retry && !isLoginRelated) {
       originalRequest._retry = true;
       
       try {

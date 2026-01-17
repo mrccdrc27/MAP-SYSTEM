@@ -11,12 +11,19 @@ import { getCSRFToken } from '../utils/csrf';
 
 // Login with email and password
 export const login = async (email, password, userType = USER_TYPES.STAFF, recaptchaResponse = '') => {
+  // Set user type early so that any interceptors use the correct endpoints
+  setUserType(userType);
+  
   const endpoints = getEndpoints(userType);
   // Ensure CSRF cookie is present for views requiring it (Django session auth)
   try {
     if (!getCSRFToken()) {
       // Attempt a harmless GET to the ME endpoint to set CSRF cookie via Set-Cookie
-      await api.get(endpoints.ME);
+      // Use a direct fetch to avoid triggering the axios interceptor's token refresh
+      await fetch(`${api.defaults.baseURL || ''}${endpoints.ME}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
     }
   } catch (err) {
     // Ignore errors - this is just to obtain CSRF cookie if backend sets it on GET

@@ -238,29 +238,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         response = Response(response_data, status=status.HTTP_200_OK)
 
-        # Set access token cookie
-        response.set_cookie(
-            'access_token',
-            access_token,
-            max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
-            httponly=False,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite='Lax',
-            path='/',
-            domain=None
-        )
-
-        # Set refresh token cookie
-        response.set_cookie(
-            'refresh_token',
-            refresh_token,
-            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-            httponly=False,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite='Lax',
-            path='/',
-            domain=None
-        )
+        # Use utility for consistent cookie settings across environments
+        from ..utils import set_auth_cookies
+        response = set_auth_cookies(response, access_token, refresh_token)
 
         return response
 
@@ -329,17 +309,9 @@ class CookieTokenRefreshView(generics.GenericAPIView):
                 status=status.HTTP_200_OK
             )
             
-            # Set new access token cookie
-            response.set_cookie(
-                'access_token',
-                access_token,
-                max_age=expires_in,
-                httponly=False,
-                secure=settings.SESSION_COOKIE_SECURE,
-                samesite='Lax',
-                path='/',
-                domain=None
-            )
+            # Use utility for consistent cookie settings across environments
+            from ..utils import set_auth_cookies
+            response = set_auth_cookies(response, access_token)
             
             return response
             

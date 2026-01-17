@@ -6,8 +6,11 @@ Template-serving views have been removed - frontend now handles all UI.
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
+from django.views.generic import FormView, TemplateView
+from django.urls import reverse_lazy
 import logging
 
 from django.conf import settings
@@ -240,39 +243,9 @@ class LoginView(FormView):
         else:
             response = redirect('system-welcome')
 
-        # Set cookie durations based on remember_me selection
-        if remember_me:
-            access_max_age = 30 * 24 * 60 * 60  # 30 days
-            refresh_max_age = 30 * 24 * 60 * 60
-        else:
-            access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
-            refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
-
-        # Determine cookie settings based on environment
-        cookie_domain = '.onrender.com' if settings.IS_PRODUCTION else None
-        cookie_secure = settings.IS_PRODUCTION
-        cookie_samesite = 'None' if settings.IS_PRODUCTION else 'Lax'
-        response.set_cookie(
-            'access_token',
-            access_token,
-            max_age=access_max_age,
-            httponly=True,
-            secure=cookie_secure,
-            samesite=cookie_samesite,
-            path='/',
-            domain=cookie_domain
-        )
-
-        response.set_cookie(
-            'refresh_token',
-            refresh_token,
-            max_age=refresh_max_age,
-            httponly=True,
-            secure=cookie_secure,
-            samesite=cookie_samesite,
-            path='/',
-            domain=cookie_domain
-        )
+        # Use utility for consistent cookie settings across environments
+        from ..utils import set_auth_cookies
+        response = set_auth_cookies(response, access_token, refresh_token, remember_me=remember_me)
 
         if selected_system:
             messages.success(
@@ -538,31 +511,9 @@ class LoginAPIView(APIView):
                 access_token = response_data.get('access_token')
                 refresh_token = response_data.get('refresh_token')
                 
-                access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
-                refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
-
-                response.set_cookie(
-                    'access_token',
-                    access_token,
-                    max_age=access_max_age,
-                    httponly=False,
-                    secure=settings.SESSION_COOKIE_SECURE,
-                    samesite='Lax',
-                    path='/',
-                    domain=None
-                )
-
-                if refresh_token:
-                    response.set_cookie(
-                        'refresh_token',
-                        refresh_token,
-                        max_age=refresh_max_age,
-                        httponly=False,
-                        secure=settings.SESSION_COOKIE_SECURE,
-                        samesite='Lax',
-                        path='/',
-                        domain=None
-                    )
+                # Use utility for consistent cookie settings across environments
+                from ..utils import set_auth_cookies
+                response = set_auth_cookies(response, access_token, refresh_token)
 
             return response
         else:
@@ -620,31 +571,9 @@ class VerifyOTPLoginView(APIView):
                 access_token = response_data.get('access_token')
                 refresh_token = response_data.get('refresh_token')
                 
-                access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
-                refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
-
-                response.set_cookie(
-                    'access_token',
-                    access_token,
-                    max_age=access_max_age,
-                    httponly=False,
-                    secure=settings.SESSION_COOKIE_SECURE,
-                    samesite='Lax',
-                    path='/',
-                    domain=None
-                )
-
-                if refresh_token:
-                    response.set_cookie(
-                        'refresh_token',
-                        refresh_token,
-                        max_age=refresh_max_age,
-                        httponly=False,
-                        secure=settings.SESSION_COOKIE_SECURE,
-                        samesite='Lax',
-                        path='/',
-                        domain=None
-                    )
+                # Use utility for consistent cookie settings across environments
+                from ..utils import set_auth_cookies
+                response = set_auth_cookies(response, access_token, refresh_token)
 
             return response
         

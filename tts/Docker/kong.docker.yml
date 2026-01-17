@@ -54,12 +54,6 @@ plugins:
         - "http://127.0.0.1:5173"
         - "http://165.22.247.50:5173"
         - "https://map-ams.up.railway.app"
-        - "https://login.ticketing.mapactive.tech"
-        - "https://app.ticketing.mapactive.tech"
-        - "https://ticketing.mapactive.tech"
-        - "https://api.ticketing.mapactive.tech"
-        - "https://ticketflow.ticketing.mapactive.tech"
-        - "https://hdts.ticketing.mapactive.tech"
       methods:
         - GET
         - POST
@@ -103,7 +97,6 @@ services:
       - name: auth-frontend-routes
         paths:
           - /auth/api/v1
-          - /auth/api/me
         strip_path: false
     plugins:
       - name: pre-function

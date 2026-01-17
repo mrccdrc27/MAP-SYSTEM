@@ -496,7 +496,17 @@ class Command(BaseCommand):
             
             # Don't let resolution time be in the future
             if resolution_time > timezone.now():
-                resolution_time = timezone.now() - timedelta(hours=random.randint(1, 48))
+                # Ensure resolution_time is after created_at (at least 1 hour after)
+                min_resolution = base_resolution_time + timedelta(hours=1)
+                max_resolution = timezone.now() - timedelta(hours=1)
+                if max_resolution > min_resolution:
+                    # Pick a random time between creation and now
+                    time_range = (max_resolution - min_resolution).total_seconds()
+                    random_seconds = random.randint(0, int(time_range))
+                    resolution_time = min_resolution + timedelta(seconds=random_seconds)
+                else:
+                    # If created_at is recent, just use current time
+                    resolution_time = timezone.now()
         else:
             # Current mode: resolve with today's date (old behavior)
             if sla_delay_days > 0:

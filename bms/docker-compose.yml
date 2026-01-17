@@ -28,7 +28,7 @@ services:
     volumes:
       - ../auth:/app
     ports:
-      - "8001:8000"
+      - "6002:8000"
     env_file:
       - ../auth/.env
     
@@ -47,7 +47,7 @@ services:
     environment:
       - RECAPTCHA_ENABLED=False
       - DJANGO_ENV=development
-      - DJANGO_SECRET_KEY=g^-i4u72k#@x1xmf4r@$%afoft=xsati0&8o9v5sa(s-#_wz++
+      - DJANGO_SECRET_KEY=g-i4u72k#x1xmf4rAfoftxsati0o8o9v5sa-s-wz
       - DJANGO_DEBUG=True
       # Database Config
       - POSTGRES_DB=budgetpro_auth
@@ -55,10 +55,10 @@ services:
       - POSTGRES_PASSWORD=a4d
       - PGHOST=auth_db
       - PGPORT=5432
-      # CORS: Allow your BMS Frontend (5173) to talk to Auth
-      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      - FRONTEND_URL=http://localhost:5173
+      # CORS: Allow your BMS Frontend to talk to Auth
+      - DJANGO_CORS_ALLOWED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CSRF_TRUSTED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
+      - FRONTEND_URL=http://165.22.247.50:5175
     depends_on:
       auth_db:
         condition: service_healthy
@@ -92,10 +92,10 @@ services:
     volumes:
       - ./budget_service:/app
     ports:
-      - "8000:8000"
+      - "6001:8000"
     environment:
-      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - DJANGO_CORS_ALLOWED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CSRF_TRUSTED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
     env_file:
       - ./budget_service/.env.docker
     depends_on:

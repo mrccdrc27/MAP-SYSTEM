@@ -1,4 +1,3 @@
-#auth/auth/settings.py
 from pathlib import Path
 from decouple import config
 import os
@@ -26,76 +25,6 @@ ALLOWED_HOSTS = config(
     default='localhost,127.0.0.1,auth_service' if not IS_PRODUCTION else 'localhost',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
-
-# CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = config(
-    'DJANGO_CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
-
-# CORS Configuration
-CORS_ALLOWED_ORIGINS = config(
-    'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
-
-# --- ADD THIS BLOCK ---
-# Explicitly allow the Render Frontend URL
-RENDER_FRONTEND_URL = "https://budget-pro-static-site.onrender.com"
-
-if RENDER_FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
-    CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
-
-if RENDER_FRONTEND_URL not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append(RENDER_FRONTEND_URL)
-# ---------------------
-
-# Always allow the Render domain, regardless of DEBUG setting
-ALLOWED_HOSTS.extend([
-    'auth-service-cdln.onrender.com',
-    '.onrender.com'
-])
-
-RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    
-# Share cookies across *.onrender.com subdomains
-if IS_PRODUCTION:
-    SESSION_COOKIE_DOMAIN = '.onrender.com'
-    CSRF_COOKIE_DOMAIN = '.onrender.com'
-    SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-domain
-    CSRF_COOKIE_SAMESITE = 'None'
-    # Must be True when SameSite=None (HTTPS required)
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-else:
-    # Local development
-    SESSION_COOKIE_DOMAIN = None
-    CSRF_COOKIE_DOMAIN = None
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_SAMESITE = 'Lax'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DJANGO_DEBUG', default='False' if IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-
-ALLOWED_HOSTS = config(
-    'DJANGO_ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,auth_service' if not IS_PRODUCTION else 'localhost',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
-
-# Always allow the Render domain, regardless of DEBUG setting
-ALLOWED_HOSTS.extend([
-    'auth-service-cdln.onrender.com',
-    '.onrender.com'
-])
-
-RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 # testapp
@@ -253,7 +182,7 @@ JWT_SIGNING_KEY = config(
 )
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Short-lived for security, refresh via polling
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Short-lived for security, refresh via polling
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -396,7 +325,7 @@ SYSTEM_TEMPLATE_URLS = {
     'tts': config('TTS_SYSTEM_URL', default='http://localhost:1000'),
     'ams': config('AMS_SYSTEM_URL', default='http://localhost:3000/ams'),
     'hdts': config('HDTS_SYSTEM_URL', default='http://localhost:5173/employee/home'),
-    'bms': config('BMS_SYSTEM_URL', default='http://localhost:5173/'),
+    'bms': config('BMS_SYSTEM_URL', default='http://localhost:3000/bms'),
 }
 
 # Fallback system URL for unknown systems

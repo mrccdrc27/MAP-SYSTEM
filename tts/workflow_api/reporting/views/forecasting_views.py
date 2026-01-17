@@ -446,6 +446,10 @@ class ResolutionTimeForecastView(BaseReportingView):
                 if task.resolution_time and task.created_at:
                     resolution_hours = (task.resolution_time - task.created_at).total_seconds() / 3600
                     
+                    # Skip negative values (invalid data where resolution_time < created_at)
+                    if resolution_hours < 0:
+                        continue
+                    
                     if group_by == 'priority':
                         key = task.ticket_id.priority or 'Unknown'
                     elif group_by == 'category':
@@ -893,7 +897,9 @@ class ComprehensiveForecastView(BaseReportingView):
             for task in resolved_tasks:
                 if task.resolution_time and task.created_at:
                     hours = (task.resolution_time - task.created_at).total_seconds() / 3600
-                    resolution_times.append(hours)
+                    # Skip negative values (invalid data where resolution_time < created_at)
+                    if hours >= 0:
+                        resolution_times.append(hours)
             
             resolution_stats = {}
             if resolution_times:
