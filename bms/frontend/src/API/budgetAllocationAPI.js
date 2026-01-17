@@ -26,3 +26,39 @@ export const createBudgetAdjustment = (data) => {
   // This points to the BudgetAdjustmentView (CreateAPIView)
   return budgetApi.post('/budget-adjustments/', data);
 };
+
+// --- MODIFICATION START: New Methods for Supplemental Budget ---
+
+/**
+ * Requests a supplemental budget (Operator action).
+ * @param {object} data - { department_input, category_id, amount, reason, fiscal_year_id? }
+ */
+export const requestSupplementalBudget = (data) => {
+  return budgetApi.post('/budget/supplemental/request/', data);
+};
+
+/**
+ * Fetches pending supplemental budget requests (Finance Manager view).
+ * @param {object} params - { page, page_size, search, status, etc. }
+ */
+export const getSupplementalBudgetRequests = (params) => {
+  // Maps to BudgetTransferViewSet in backend
+  return budgetApi.get('/budget-transfers/', { params });
+};
+
+/**
+ * Approves a supplemental budget request.
+ * @param {number} requestId - ID of the BudgetTransfer
+ */
+export const approveSupplementalRequest = (requestId) => {
+  return budgetApi.post(`/budget-transfers/${requestId}/approve/`);
+};
+
+/**
+ * Rejects a supplemental budget request.
+ * @param {number} requestId - ID of the BudgetTransfer
+ */
+export const rejectSupplementalRequest = (requestId) => {
+  return budgetApi.post(`/budget-transfers/${requestId}/reject/`);
+};
+// --- MODIFICATION END ---

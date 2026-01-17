@@ -11,3 +11,11 @@ import budgetApi from './budgetAPI';
 export const getLedgerEntries = (params) => {
   return budgetApi.get('/ledger/', { params });
 };
+
+/**
+ * Fetches full details for a specific Journal Entry by its Ticket ID (e.g., JE-2026-001)
+ * @param {string} entryId - The reference ID
+ */
+export const getJournalEntryDetails = (entryId) => {
+  return budgetApi.get(`/ledger/details/${entryId}/`);
+};

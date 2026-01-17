@@ -1,8 +1,9 @@
+# bms/auth_service/users/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.utils import timezone
 
-# Copied CustomUserManager from core/models.py
+# Deprecated
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -45,7 +46,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    last_login = models.DateTimeField(null=True, blank=True)
+    last_login = models.DateTimeField(null=True, blank=True) # Moved. The Central Auth service tracks when a user logs in. BMS doesn't need to update this on every request
 
     objects = CustomUserManager()
 
@@ -59,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f"{self.first_name} {self.last_name}".strip()
 
 
-# Copied LoginAttempt model from core/models.py
+# Moved.  Security logs for login failures belong in the Central Auth service. BMS only receives successful requests (valid tokens), so it never sees a failed login attempt.
 class LoginAttempt(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     # Storing username string for cases where user does not exist or login is by username
@@ -75,7 +76,7 @@ class LoginAttempt(models.Model):
         return f"{status} login attempt by {user_str} at {self.timestamp}"
 
 
-# Copied UserActivityLog model from core/models.py
+# "BMS Specific Audit". While Auth Service tracks "Login/Logout", BMS must track "Budget Approved", "Expense Rejected", etc.
 class UserActivityLog(models.Model):
     LOG_TYPE_CHOICES = [
         ('LOGIN', 'Login'),

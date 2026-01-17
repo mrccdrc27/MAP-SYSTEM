@@ -5,12 +5,16 @@ from datetime import datetime
 import random
 import calendar
 from decimal import Decimal
+from django.contrib.auth import get_user_model # Standard Django way
 
 # Import models
 from core.models import (
     Department, AccountType, Account, FiscalYear, BudgetProposal, BudgetProposalItem,
     BudgetAllocation, ExpenseCategory, Expense, Project, ProjectFiscalYear, ProposalHistory
 )
+
+# Get the active User model (whether it's custom or default)
+User = get_user_model()
 
 # ... (SIMULATED_USERS, DEPARTMENTS_CONFIG, CATEGORY_TREE - KEEP SAME) ...
 SIMULATED_USERS = [
@@ -49,75 +53,75 @@ DEPARTMENTS_CONFIG = [
 
 CATEGORY_TREE = {
     'MERCH': [
-        ('Product Range Planning', 'OPEX'),
-        ('Buying Costs', 'MIXED'),
-        ('Market Research', 'OPEX'),
-        ('Inventory Handling Fees', 'OPEX'),
-        ('Supplier Coordination', 'OPEX'),
-        ('Seasonal Planning Tools', 'CAPEX'),
-        ('Training', 'OPEX'),
-        ('Travel', 'OPEX'),
-        ('Software Subscription', 'OPEX'),
+        ('Product Range Planning', 'OPEX', 'MERCH-PLAN'),
+        ('Buying Costs', 'MIXED', 'MERCH-BUY'),
+        ('Market Research', 'OPEX', 'MERCH-RES'),
+        ('Inventory Handling Fees', 'OPEX', 'MERCH-INV'),
+        ('Supplier Coordination', 'OPEX', 'MERCH-SUP'),
+        ('Seasonal Planning Tools', 'CAPEX', 'MERCH-TOOLS'),
+        ('Training', 'OPEX', 'MERCH-TRN'),
+        ('Travel', 'OPEX', 'MERCH-TRV'),
+        ('Software Subscription', 'OPEX', 'MERCH-SW'),
     ],
     'SALES': [
-        ('Store Consumables', 'OPEX'),
-        ('POS Maintenance', 'OPEX'),
-        ('Store Repairs', 'MIXED'),
-        ('Sales Incentives', 'OPEX'),
-        ('Uniforms', 'MIXED'),
-        ('Store Opening Expenses', 'CAPEX'),
-        ('Store Supplies', 'OPEX'),
-        ('Utilities', 'OPEX'),
+        ('Store Consumables', 'OPEX', 'SALES-CONS'),
+        ('POS Maintenance', 'OPEX', 'SALES-POS'),
+        ('Store Repairs', 'MIXED', 'SALES-REP'),
+        ('Sales Incentives', 'OPEX', 'SALES-INC'),
+        ('Uniforms', 'MIXED', 'SALES-UNI'),
+        ('Store Opening Expenses', 'CAPEX', 'SALES-OPEN'),
+        ('Store Supplies', 'OPEX', 'SALES-SUP'),
+        ('Utilities', 'OPEX', 'SALES-UTIL'),
     ],
     'MKT': [
-        ('Campaign Budget', 'OPEX'),
-        ('Branding Materials', 'MIXED'),
-        ('Digital Ads', 'OPEX'),
-        ('Social Media Management', 'OPEX'),
-        ('Events Budget', 'OPEX'),
-        ('Influencer Fees', 'OPEX'),
-        ('Photography/Videography', 'MIXED'),
+        ('Campaign Budget', 'OPEX', 'MKT-CAMP'),
+        ('Branding Materials', 'MIXED', 'MKT-BRAND'),
+        ('Digital Ads', 'OPEX', 'MKT-ADS'),
+        ('Social Media Management', 'OPEX', 'MKT-SOCIAL'),
+        ('Events Budget', 'OPEX', 'MKT-EVENT'),
+        ('Influencer Fees', 'OPEX', 'MKT-INFL'),
+        ('Photography/Videography', 'MIXED', 'MKT-PHOTO'),
     ],
     'OPS': [
-        ('Equipment Maintenance', 'OPEX'),
-        ('Fleet/Vehicle Expenses', 'MIXED'),
-        ('Operational Supplies', 'OPEX'),
-        ('Business Permits', 'OPEX'),
-        ('Facility Utilities', 'OPEX'),
-        ('Compliance Costs', 'OPEX'),
+        ('Equipment Maintenance', 'OPEX', 'OPS-MAINT'),
+        ('Fleet/Vehicle Expenses', 'MIXED', 'OPS-FLEET'),
+        ('Operational Supplies', 'OPEX', 'OPS-SUP'),
+        ('Business Permits', 'OPEX', 'OPS-PERMIT'),
+        ('Facility Utilities', 'OPEX', 'OPS-UTIL'),
+        ('Compliance Costs', 'OPEX', 'OPS-COMP'),
     ],
     'IT': [
-        ('Server Hosting', 'OPEX'),
-        ('Software Licenses', 'MIXED'),
-        ('Cloud Subscriptions', 'OPEX'),
-        ('Hardware Purchases', 'CAPEX'),
-        ('Data Tools', 'MIXED'),
-        ('Cybersecurity Costs', 'OPEX'),
-        ('API Subscription Fees', 'OPEX'),
-        ('Domain Renewals', 'OPEX'),
+        ('Server Hosting', 'OPEX', 'IT-HOST'),
+        ('Software Licenses', 'MIXED', 'IT-SW'),
+        ('Cloud Subscriptions', 'OPEX', 'IT-CLOUD'),
+        ('Hardware Purchases', 'CAPEX', 'CAP-IT-HW'),
+        ('Data Tools', 'MIXED', 'IT-DATA'),
+        ('Cybersecurity Costs', 'OPEX', 'IT-SEC'),
+        ('API Subscription Fees', 'OPEX', 'IT-API'),
+        ('Domain Renewals', 'OPEX', 'IT-DOMAIN'),
     ],
     'LOG': [
-        ('Shipping Costs', 'OPEX'),
-        ('Warehouse Equipment', 'CAPEX'),
-        ('Transport & Fuel', 'OPEX'),
-        ('Freight Fees', 'OPEX'),
-        ('Vendor Delivery Charges', 'OPEX'),
-        ('Storage Fees', 'OPEX'),
-        ('Packaging Materials', 'OPEX'),
-        ('Safety Gear', 'MIXED'),
+        ('Shipping Costs', 'OPEX', 'LOG-SHIP'),
+        ('Warehouse Equipment', 'CAPEX', 'LOG-EQUIP'),
+        ('Transport & Fuel', 'OPEX', 'LOG-FUEL'),
+        ('Freight Fees', 'OPEX', 'LOG-FREIGHT'),
+        ('Vendor Delivery Charges', 'OPEX', 'LOG-DELIV'),
+        ('Storage Fees', 'OPEX', 'LOG-STOR'),
+        ('Packaging Materials', 'OPEX', 'LOG-PACK'),
+        ('Safety Gear', 'MIXED', 'LOG-SAFE'),
     ],
     'HR': [
-        ('Recruitment Expenses', 'OPEX'),
-        ('Job Posting Fees', 'OPEX'),
-        ('Employee Engagement Activities', 'OPEX'),
-        ('Training & Workshops', 'OPEX'),
-        ('Medical & Wellness Programs', 'OPEX'),
-        ('Background Checks', 'OPEX'),
-        ('HR Systems/Payroll Software', 'MIXED'),
+        ('Recruitment Expenses', 'OPEX', 'HR-RECRUIT'),
+        ('Job Posting Fees', 'OPEX', 'HR-POST'),
+        ('Employee Engagement Activities', 'OPEX', 'HR-ENGAGE'),
+        ('Training & Workshops', 'OPEX', 'HRM-TRN'),
+        ('Medical & Wellness Programs', 'OPEX', 'HR-MED'),
+        ('Background Checks', 'OPEX', 'HR-CHECK'),
+        ('HR Systems/Payroll Software', 'MIXED', 'HR-SYS'),
     ],
     'FIN': [
-        ('Professional Services', 'OPEX'),
-        ('Audit Fees', 'OPEX'),
+        ('Professional Services', 'OPEX', 'FIN-PROF'),
+        ('Audit Fees', 'OPEX', 'FIN-AUDIT'),
     ]
 }
 
@@ -146,6 +150,10 @@ class Command(BaseCommand):
 
                 fiscal_years = self.seed_fiscal_years()
                 departments = self.seed_departments()
+                
+                # NEW: Seed Users
+                self.seed_users(departments) 
+                
                 accounts = self.seed_accounts()
 
                 categories = self.seed_categories(departments)
@@ -169,6 +177,49 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'Seeding Failed: {str(e)}'))
             import traceback
             traceback.print_exc()
+
+    # --- MODIFIED METHOD ---
+    def seed_users(self, departments):
+        self.stdout.write("Seeding Local BMS Users...")
+        
+        dept_name_map = {d['code']: d['name'] for d in DEPARTMENTS_CONFIG}
+
+        # Introspect the User model to see which fields are valid
+        valid_fields = {f.name for f in User._meta.get_fields()}
+
+        for u_data in SIMULATED_USERS:
+            dept_code = u_data['dept']
+            dept_name = dept_name_map.get(dept_code)
+            username = u_data['username']
+            
+            # GENERATE A DUMMY EMAIL if not provided
+            # This prevents the Unique Constraint error on empty emails
+            email = f"{username}@example.com" 
+
+            defaults = {
+                'first_name': u_data['full_name'].split(' ')[0],
+                'last_name': ' '.join(u_data['full_name'].split(' ')[1:]),
+                'is_active': True,
+                'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD'],
+                'email': email  # Explicitly set the email
+            }
+            
+            if 'role' in valid_fields:
+                defaults['role'] = u_data['role']
+            
+            if 'department_name' in valid_fields:
+                defaults['department_name'] = dept_name
+            
+            # Use update_or_create on USERNAME, but update email too
+            user, created = User.objects.update_or_create(
+                username=username,
+                defaults=defaults
+            )
+            
+            if created:
+                self.stdout.write(f"  Created local user: {username}")
+            else:
+                self.stdout.write(f"  Updated local user: {username}")
 
     def seed_fiscal_years(self):
         self.stdout.write("Seeding Fiscal Years (2023-2026)...")
@@ -209,8 +260,9 @@ class Command(BaseCommand):
         self.stdout.write("Seeding Accounts...")
         asset_type, _ = AccountType.objects.get_or_create(name='Asset')
         expense_type, _ = AccountType.objects.get_or_create(name='Expense')
-        liability_type, _ = AccountType.objects.get_or_create(
-            name='Liability')  # NEW
+        liability_type, _ = AccountType.objects.get_or_create(name='Liability')
+        # --- NEW: Add Equity Type ---
+        equity_type, _ = AccountType.objects.get_or_create(name='Equity')
 
         creator_id = 1
         creator_name = 'admin_auth'
@@ -249,6 +301,15 @@ class Command(BaseCommand):
         )
         acc_map['EXPENSE'] = acc_expense
 
+        # --- NEW: Equity Account (Required for Supplemental Budgets) ---
+        acc_equity, _ = Account.objects.update_or_create(
+            code='3000',
+            defaults={'name': 'Retained Earnings', 'account_type': equity_type,
+                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
+        )
+        acc_map['EQUITY'] = acc_equity
+        # -------------------------------------------------------------
+
         return acc_map
 
     def seed_categories(self, departments):
@@ -263,16 +324,13 @@ class Command(BaseCommand):
             code='OPEX', defaults={'name': 'Operational Expenditure', 'level': 1, 'classification': 'OPEX'}
         )
 
-        # 2. Sub-Categories
+        # 2. Sub-Categories (MODIFIED: Now unpacks 3 values including code)
         for dept_code, items in CATEGORY_TREE.items():
-            for item_name, classification in items:
-                slug = item_name.upper().replace(
-                    ' ', '-').replace('/', '-')[:15]
-                code = f"{dept_code}-{slug}"
+            for item_name, classification, code in items:  # ← CHANGED: Added 'code'
                 parent = root_capex if classification == 'CAPEX' else root_opex
 
                 cat, created = ExpenseCategory.objects.update_or_create(
-                    code=code,
+                    code=code,  # ← CHANGED: Use hardcoded code instead of generated slug
                     defaults={
                         'name': item_name,
                         'level': 2,
@@ -281,11 +339,12 @@ class Command(BaseCommand):
                     }
                 )
                 if created:
-                    print(f"  Created Category: {code}")
+                    print(f"  Created Category: {code}")  # ← CHANGED: Log the clean code
 
                 if dept_code not in cat_map:
                     cat_map[dept_code] = []
                 cat_map[dept_code].append(cat)
+        
         return cat_map
 
     def seed_proposals_and_projects(self, departments, fiscal_years, accounts, categories):
@@ -343,7 +402,7 @@ class Command(BaseCommand):
                             'performance_start_date': datetime(year, 1, 15).date(),
                             'performance_end_date': datetime(year, 12, 15).date(),
                             'sync_status': 'SYNCED',
-                            'finance_operator_name': finance_head['full_name'] if status != 'SUBMITTED' else '',
+                            'finance_manager_name': finance_head['full_name'] if status != 'SUBMITTED' else '',
                             'submitted_at': submission_dt,
                         }
                     )
@@ -473,6 +532,7 @@ class Command(BaseCommand):
 
         current_month = datetime.now().month
         current_year = datetime.now().year
+        current_day = datetime.now().day  # NEW: Get current day
 
         # Seasonal multipliers to create realistic curves
         SEASONAL_MULTIPLIERS = {
@@ -487,19 +547,38 @@ class Command(BaseCommand):
             year = alloc.fiscal_year.start_date.year
             project_end = alloc.project.end_date
 
-            # Only create expenses within project timeline
-            end_month = min(12, project_end.month) if year <= project_end.year else 12
+            # --- MODIFIED: Determine end month based on year ---
+            if year < current_year:
+                # Historical years: Create all 12 months
+                end_month = min(12, project_end.month) if year <= project_end.year else 12
+            elif year == current_year:
+                # Current year: Only create up to current month
+                end_month = current_month
+            else:
+                # Future years: Skip entirely
+                continue
+            # --------------------------------------------------
             
             for month in range(1, end_month + 1):
                 # 70% chance of expense in any given month
                 if random.random() < 0.3:
                     continue
                 
-                # If it's the project end month, limit the day
-                if month == project_end.month and year == project_end.year:
+                # --- MODIFIED: Determine max_day based on month and year ---
+                if year == current_year and month == current_month:
+                    # Current month: Only create expenses up to current day
+                    max_day = min(28, current_day - 1)  # -1 to avoid today
+                elif month == project_end.month and year == project_end.year:
+                    # Project end month: Limit to project end day
                     max_day = min(28, project_end.day)
                 else:
+                    # Other months: Full month (safe value of 28)
                     max_day = 28
+                # ----------------------------------------------------------
+                
+                # Skip if max_day is invalid (e.g., current month just started)
+                if max_day < 1:
+                    continue
                 
                 # Calculate day ONCE and use it
                 day = random.randint(1, max_day)
@@ -516,17 +595,11 @@ class Command(BaseCommand):
                 )
                 finance_head = SIMULATED_USERS[1]
 
-                # --- NEW CALCULATION LOGIC ---
-                # 1. Base burn rate: 1.5% to 3.5% of total budget per expense
+                # --- Calculation Logic (unchanged) ---
                 burn_rate = Decimal(random.uniform(0.015, 0.035))
-
-                # 2. Apply Seasonal Multiplier
                 seasonal_factor = Decimal(str(SEASONAL_MULTIPLIERS.get(month, 1.0)))
-
-                # 3. Apply Yearly Growth (Inflation)
                 year_diff = year - 2023
                 growth_factor = Decimal(1.0 + (year_diff * 0.05))
-
                 amount = alloc.amount * burn_rate * seasonal_factor * growth_factor
                 amount = round(amount, 2)
 
@@ -534,14 +607,21 @@ class Command(BaseCommand):
                 if alloc.get_remaining_budget() < amount:
                     continue
 
-                # Current year data might be mixed status
+                # --- MODIFIED: Status logic for current year ---
                 if year == current_year:
                     if month < current_month:
+                        # Past months in current year: Approved
                         status = 'APPROVED'
+                    elif month == current_month:
+                        # Current month: Mix of statuses
+                        status = random.choice(['APPROVED', 'APPROVED', 'SUBMITTED'])
                     else:
-                        status = random.choice(['APPROVED', 'SUBMITTED', 'SUBMITTED'])
+                        # Future months: Should not occur with new logic
+                        continue
                 else:
+                    # Historical years: All approved
                     status = 'APPROVED'
+                # -------------------------------------------------
 
                 global_txn_counter += 1
                 txn_id = f"TXN-{year}{month:02d}-{global_txn_counter:05d}"

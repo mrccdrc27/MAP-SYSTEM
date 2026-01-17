@@ -6,8 +6,7 @@ import { updateProfile } from "../../API/authAPI";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ManageProfile({ onClose }) {
-  const { user, updateUserContext } = useAuth(); // Get user and the function to update the context
-
+  const { user, logout, getBmsRole, updateUserContext } = useAuth(); // Get user and the function to update the context
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -27,16 +26,27 @@ export default function ManageProfile({ onClose }) {
   // Pre-fill the form with user data when the component loads
   useEffect(() => {
     if (user) {
+      // Helper to parse full_name if first/last are missing (fallback for Token-only state)
+      let fName = user.first_name || "";
+      let lName = user.last_name || "";
+      
+      if (!fName && !lName && user.full_name) {
+        const parts = user.full_name.split(" ");
+        fName = parts[0];
+        lName = parts.slice(1).join(" ");
+      }
+
       setFormData({
-        first_name: user.first_name || "",
-        last_name: user.last_name || "",
+        first_name: fName,
+        last_name: lName,
         phone_number: user.phone_number || "",
         email: user.email || "",
-        department_name: user.department_name || "",
-        role: user.role_display || user.role || "User", // Prefer role_display
+        department_name: user.department_name || user.department || "",
+        // CHANGED: Use getBmsRole() to correctly extract the BMS specific role from the roles array
+        role: getBmsRole() || user.role || "User", 
       });
     }
-  }, [user]);
+  }, [user, getBmsRole]); // Added getBmsRole to dependencies
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

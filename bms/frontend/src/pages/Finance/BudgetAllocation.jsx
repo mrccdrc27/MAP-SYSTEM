@@ -6,6 +6,8 @@ NEW Journal Entry (Adjustment) for the specified amount on the current date.
 The original entry remains as a historical record of the state at that time.
 The cumulative effect of these entries determines the current budget balance.
 */
+
+// TODO: Make Department Code dropdown/automatic based on operators department. Fix negative can be inputed in the supplemental budget amount.
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -29,16 +31,158 @@ import { useAuth } from "../../context/AuthContext";
 import {
   getBudgetAdjustments,
   createBudgetAdjustment,
+  requestSupplementalBudget,
+  getSupplementalBudgetRequests,
+  approveSupplementalRequest,
+  rejectSupplementalRequest,
 } from "../../API/budgetAllocationAPI";
+import { getExpenseCategories, getProjects } from "../../API/expenseAPI";
 import { getAllDepartments } from "../../API/departments";
 import { getAccounts } from "../../API/dropdownAPI";
 import ManageProfile from "./ManageProfile";
 
-// Helper to get compact department display names
+// --- SUPPLEMENTAL BUDGET COMPONENTS ---
+
+// 1. Searchable Select (For Projects)
+const SearchableSelect = ({
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const wrapperRef = React.useRef(null); // Ensure React is imported or use useRef directly
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedItem = options.find((opt) => opt.value === value);
+  const filteredOptions = options.filter((opt) =>
+    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative", width: "100%" }}>
+      <div
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        style={{
+          padding: "8px 12px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          backgroundColor: disabled ? "#f5f5f5" : "white",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          minHeight: "38px",
+        }}
+      >
+        <span
+          style={{
+            color: selectedItem ? "#000" : "#666",
+            fontSize: "14px",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {selectedItem ? selectedItem.label : placeholder}
+        </span>
+        <ChevronDown size={16} color="#666" />
+      </div>
+
+      {isOpen && !disabled && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            zIndex: 2000,
+            backgroundColor: "white",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            marginTop: "4px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            maxHeight: "200px",
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{
+              padding: "8px",
+              position: "sticky",
+              top: 0,
+              background: "white",
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Type to filter..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "6px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "13px",
+                outline: "none",
+                background: "white",
+              }}
+            />
+          </div>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt) => (
+              <div
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                  setSearchTerm("");
+                }}
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  borderBottom: "1px solid #f0f0f0",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#f0f8ff")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "white")
+                }
+              >
+                {opt.label}
+              </div>
+            ))
+          ) : (
+            <div
+              style={{ padding: "8px 12px", color: "#999", fontSize: "14px" }}
+            >
+              No results found
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 2. Helper to get compact names
 function getCompactDepartmentName(name) {
   if (!name) return "";
-
-  // Map full names to compact but recognizable versions
   const compactMap = {
     "Merchandising / Merchandise Planning": "Merchandising",
     "Sales / Store Operations": "Sales",
@@ -49,23 +193,9 @@ function getCompactDepartmentName(name) {
     "Human Resources": "HR",
     "Finance Department": "Finance",
   };
-
-  // Return compact version if exists
   if (compactMap[name]) return compactMap[name];
-
-  // For case-insensitive matching
-  const lowerName = name.toLowerCase();
-  for (const [key, value] of Object.entries(compactMap)) {
-    if (key.toLowerCase() === lowerName) {
-      return value;
-    }
-  }
-
-  // For other names, just return as-is (or truncate if too long)
   return name.length > 15 ? name.substring(0, 15) + "..." : name;
 }
-
-// --- SUPPLEMENTAL BUDGET COMPONENTS ---
 
 // Date Filter Component with Calendar UI
 const DateFilter = ({ dateFilter, setDateFilter }) => {
@@ -74,8 +204,18 @@ const DateFilter = ({ dateFilter, setDateFilter }) => {
   const [selectedDate, setSelectedDate] = useState(dateFilter);
 
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const getDaysInMonth = (year, month) => {
@@ -87,24 +227,32 @@ const DateFilter = ({ dateFilter, setDateFilter }) => {
   };
 
   const handlePrevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+    );
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+    );
   };
 
   const handleDateSelect = (day) => {
-    const selected = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const formattedDate = selected.toISOString().split('T')[0];
+    const selected = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      day
+    );
+    const formattedDate = selected.toISOString().split("T")[0];
     setSelectedDate(formattedDate);
     setDateFilter(formattedDate);
     setIsOpen(false);
   };
 
   const handleClear = () => {
-    setSelectedDate('');
-    setDateFilter('');
+    setSelectedDate("");
+    setDateFilter("");
     setIsOpen(false);
   };
 
@@ -113,162 +261,196 @@ const DateFilter = ({ dateFilter, setDateFilter }) => {
     const month = currentMonth.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
-    
+
     const days = [];
-    
+
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
     }
-    
+
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+      const dateStr = new Date(year, month, day).toISOString().split("T")[0];
       const isSelected = selectedDate === dateStr;
-      const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
-      
+      const isToday =
+        new Date().toDateString() === new Date(year, month, day).toDateString();
+
       days.push(
         <div
           key={`day-${day}`}
-          className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+          className={`calendar-day ${isSelected ? "selected" : ""} ${
+            isToday ? "today" : ""
+          }`}
           onClick={() => handleDateSelect(day)}
           style={{
-            padding: '6px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            borderRadius: '4px',
-            backgroundColor: isSelected ? '#007bff' : isToday ? '#e3f2fd' : 'transparent',
-            color: isSelected ? 'white' : isToday ? '#007bff' : 'inherit',
-            fontWeight: isSelected || isToday ? '600' : '400',
-            fontSize: '13px',
+            padding: "6px",
+            textAlign: "center",
+            cursor: "pointer",
+            borderRadius: "4px",
+            backgroundColor: isSelected
+              ? "#007bff"
+              : isToday
+              ? "#e3f2fd"
+              : "transparent",
+            color: isSelected ? "white" : isToday ? "#007bff" : "inherit",
+            fontWeight: isSelected || isToday ? "600" : "400",
+            fontSize: "13px",
           }}
         >
           {day}
         </div>
       );
     }
-    
+
     return days;
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div style={{ position: "relative", display: "inline-block" }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '8px 12px',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          backgroundColor: 'white',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: selectedDate ? '#007bff' : '#666',
-          height: '40px',
-          minWidth: '140px',
-          outline: 'none',
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "8px 12px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          backgroundColor: "white",
+          cursor: "pointer",
+          fontSize: "14px",
+          color: selectedDate ? "#007bff" : "#666",
+          height: "40px",
+          minWidth: "140px",
+          outline: "none",
         }}
       >
         <Calendar size={16} />
-        <span style={{ 
-          flex: 1, 
-          textAlign: 'left',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
-          {selectedDate || 'Date'}
+        <span
+          style={{
+            flex: 1,
+            textAlign: "left",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {selectedDate || "Date"}
         </span>
         <ChevronDown size={16} />
       </button>
-      
+
       {isOpen && (
         <div
           style={{
-            position: 'absolute',
-            top: '100%',
+            position: "absolute",
+            top: "100%",
             right: 0,
-            backgroundColor: 'white',
-            border: '1px solid #ccc',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            backgroundColor: "white",
+            border: "1px solid #ccc",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             zIndex: 1000,
-            width: '280px',
-            padding: '12px',
-            marginTop: '4px',
+            width: "280px",
+            padding: "12px",
+            marginTop: "4px",
           }}
         >
           {/* Calendar Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "12px",
+            }}
+          >
             <button
               onClick={handlePrevMonth}
               style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                fontSize: '16px',
-                outline: 'none',
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                fontSize: "16px",
+                outline: "none",
               }}
             >
               ‹
             </button>
-            <div style={{ fontSize: '14px', fontWeight: '600' }}>
+            <div style={{ fontSize: "14px", fontWeight: "600" }}>
               {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </div>
             <button
               onClick={handleNextMonth}
               style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                fontSize: '16px',
-                outline: 'none',
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                fontSize: "16px",
+                outline: "none",
               }}
             >
               ›
             </button>
           </div>
-          
+
           {/* Day Headers */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(7, 1fr)', 
-            gap: '3px',
-            marginBottom: '6px'
-          }}>
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-              <div key={day} style={{ textAlign: 'center', fontSize: '11px', color: '#666', fontWeight: '500' }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: "3px",
+              marginBottom: "6px",
+            }}
+          >
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+              <div
+                key={day}
+                style={{
+                  textAlign: "center",
+                  fontSize: "11px",
+                  color: "#666",
+                  fontWeight: "500",
+                }}
+              >
                 {day}
               </div>
             ))}
           </div>
-          
+
           {/* Calendar Grid */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(7, 1fr)', 
-            gap: '3px'
-          }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: "3px",
+            }}
+          >
             {renderCalendar()}
           </div>
-          
+
           {/* Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: "12px",
+            }}
+          >
             <button
               onClick={handleClear}
               style={{
-                padding: '6px 12px',
-                border: '1px solid #dc3545',
-                borderRadius: '4px',
-                backgroundColor: 'white',
-                color: '#dc3545',
-                cursor: 'pointer',
-                fontSize: '13px',
-                outline: 'none',
+                padding: "6px 12px",
+                border: "1px solid #dc3545",
+                borderRadius: "4px",
+                backgroundColor: "white",
+                color: "#dc3545",
+                cursor: "pointer",
+                fontSize: "13px",
+                outline: "none",
               }}
             >
               Clear
@@ -276,14 +458,14 @@ const DateFilter = ({ dateFilter, setDateFilter }) => {
             <button
               onClick={() => setIsOpen(false)}
               style={{
-                padding: '6px 12px',
-                border: '1px solid #007bff',
-                borderRadius: '4px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '13px',
-                outline: 'none',
+                padding: "6px 12px",
+                border: "1px solid #007bff",
+                borderRadius: "4px",
+                backgroundColor: "#007bff",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "13px",
+                outline: "none",
               }}
             >
               Close
@@ -298,12 +480,13 @@ const DateFilter = ({ dateFilter, setDateFilter }) => {
 // Supplemental Request Status Badge
 const StatusBadge = ({ status }) => {
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Pending":
+    // MODIFIED: Switch to Uppercase matching to align with Backend constants
+    switch (status ? status.toUpperCase() : "") {
+      case "PENDING":
         return { bg: "#fff3cd", text: "#856404", border: "#ffeaa7" };
-      case "Approved":
+      case "APPROVED":
         return { bg: "#d4edda", text: "#155724", border: "#c3e6cb" };
-      case "Rejected":
+      case "REJECTED":
         return { bg: "#f8d7da", text: "#721c24", border: "#f5c6cb" };
       default:
         return { bg: "#e2e3e5", text: "#383d41", border: "#d6d8db" };
@@ -311,6 +494,12 @@ const StatusBadge = ({ status }) => {
   };
 
   const colors = getStatusColor(status);
+
+  // Helper to display Title Case text even if status is UPPERCASE
+  const formatStatus = (s) => {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  };
 
   return (
     <span
@@ -327,67 +516,251 @@ const StatusBadge = ({ status }) => {
         gap: "4px",
       }}
     >
-      {status === "Approved" && <CheckCircle size={12} />}
-      {status === "Rejected" && <XCircle size={12} />}
-      {status}
+      {/* Update Check to Uppercase */}
+      {status === "APPROVED" && <CheckCircle size={12} />}
+      {status === "REJECTED" && <XCircle size={12} />}
+      {formatStatus(status)} 
     </span>
   );
 };
 
+const ConfirmationModal = ({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmText = "Confirm",
+  confirmColor = "#007bff",
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div
+      className="modal-overlay"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 3000,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "24px",
+          borderRadius: "8px",
+          width: "400px",
+          textAlign: "center",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+        }}
+      >
+        <h3 style={{ marginTop: 0, fontSize: "18px" }}>{title}</h3>
+        <p style={{ color: "#666", marginBottom: "24px" }}>{message}</p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #ccc",
+              background: "white",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "8px 16px",
+              border: "none",
+              background: confirmColor,
+              color: "white",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 // View Details Modal for Supplemental Requests
-const ViewDetailsModal = ({ request, onClose, onApprove, onReject }) => {
-  const [rejectionRemarks, setRejectionRemarks] = useState("");
-  const [showRejectForm, setShowRejectForm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const formatCurrency = (amount) => {
-    return `₱${parseFloat(amount).toLocaleString("en-US", {
+const ViewDetailsModal = ({ request, onClose }) => {
+  const formatCurrency = (amount) =>
+    `₱${parseFloat(amount).toLocaleString("en-US", {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     })}`;
-  };
-
-  const handleApprove = async () => {
-    if (!window.confirm("Are you sure you want to approve this request?")) return;
-    
-    setIsSubmitting(true);
-    try {
-      await onApprove(request.id);
-      onClose();
-    } catch (error) {
-      console.error("Approval failed:", error);
-      alert("Failed to approve request. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!rejectionRemarks.trim()) {
-      alert("Please provide rejection remarks.");
-      return;
-    }
-
-    if (!window.confirm("Are you sure you want to reject this request?")) return;
-    
-    setIsSubmitting(true);
-    try {
-      await onReject(request.id, rejectionRemarks);
-      onClose();
-    } catch (error) {
-      console.error("Rejection failed:", error);
-      alert("Failed to reject request. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
+    <div
+      className="modal-overlay"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 2000,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "8px",
+          width: "600px",
+          maxHeight: "90vh",
+          overflow: "auto",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 24px",
+            borderBottom: "1px solid #e9ecef",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: "18px" }}>
+            Supplemental Request Details
+          </h3>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div style={{ padding: "24px" }}>
+          <div
+            style={{
+              marginBottom: "24px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h4 style={{ margin: 0, fontSize: "16px" }}>
+              ID: {request.request_id}
+            </h4>
+            <StatusBadge status={request.status} />
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "16px",
+              marginBottom: "24px",
+            }}
+          >
+            <div>
+              <label
+                style={{ display: "block", fontSize: "12px", color: "#666" }}
+              >
+                Department
+              </label>
+              <strong>{request.department_name}</strong>
+            </div>
+            <div>
+              <label
+                style={{ display: "block", fontSize: "12px", color: "#666" }}
+              >
+                Date Submitted
+              </label>
+              <strong>{request.date_submitted}</strong>
+            </div>
+            <div>
+              <label
+                style={{ display: "block", fontSize: "12px", color: "#666" }}
+              >
+                Category
+              </label>
+              <strong>{request.category_name}</strong>
+            </div>
+            <div>
+              <label
+                style={{ display: "block", fontSize: "12px", color: "#666" }}
+              >
+                Requested Amount
+              </label>
+              <strong style={{ color: "#007bff" }}>
+                {formatCurrency(request.amount)}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
+            <label
+              style={{ display: "block", fontSize: "12px", color: "#666" }}
+            >
+              Reason
+            </label>
+            <div
+              style={{
+                padding: "12px",
+                background: "#f8f9fa",
+                borderRadius: "6px",
+              }}
+            >
+              {request.reason}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
+            <label
+              style={{ display: "block", fontSize: "12px", color: "#666" }}
+            >
+              Requester
+            </label>
+            <div>{request.requester_name}</div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: "8px 16px",
+                background: "#f8f9fa",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Audit Log Modal
+const AuditLogModal = ({ logs, onClose }) => {
+  return (
     <div className="modal-overlay" style={modalOverlayStyle}>
-      <div className="modal-container" style={modalContainerStyle}>
+      <div
+        className="modal-container"
+        style={{ ...modalContainerStyle, width: "900px", maxHeight: "80vh" }}
+      >
         <div className="modal-header" style={modalHeaderStyle}>
           <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>
-            Supplemental Request Details
+            Supplemental Budget Audit Logs
           </h3>
           <button
             onClick={onClose}
@@ -404,253 +777,77 @@ const ViewDetailsModal = ({ request, onClose, onApprove, onReject }) => {
         </div>
 
         <div className="modal-body" style={{ padding: "24px" }}>
-          {/* Request Info Section */}
-          <div style={{ marginBottom: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600" }}>{request.request_id}</h4>
-              <StatusBadge status={request.status} />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
-              <div>
-                <label style={detailLabelStyle}>Department</label>
-                <p style={detailValueStyle}>{request.department}</p>
-              </div>
-              <div>
-                <label style={detailLabelStyle}>Budget Period</label>
-                <p style={detailValueStyle}>{request.budget_period}</p>
-              </div>
-              <div>
-                <label style={detailLabelStyle}>Date Submitted</label>
-                <p style={detailValueStyle}>{request.date_submitted}</p>
-              </div>
-              <div>
-                <label style={detailLabelStyle}>Category</label>
-                <p style={detailValueStyle}>{request.category}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Financial Information */}
-          <div style={{ marginBottom: "24px", padding: "16px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
-            <h5 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "600", color: "#495057" }}>
-              Financial Information
-            </h5>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              <div>
-                <label style={detailLabelStyle}>Original Approved Budget</label>
-                <p style={{ ...detailValueStyle, color: "#28a745", fontWeight: "600" }}>
-                  {formatCurrency(request.original_budget)}
-                </p>
-              </div>
-              <div>
-                <label style={detailLabelStyle}>Requested Supplemental Amount</label>
-                <p style={{ ...detailValueStyle, color: "#007bff", fontWeight: "600" }}>
-                  {formatCurrency(request.requested_amount)}
-                </p>
-              </div>
-            </div>
-            <div style={{ marginTop: "12px" }}>
-              <label style={detailLabelStyle}>New Total Budget</label>
-              <p style={{ ...detailValueStyle, color: "#17a2b8", fontWeight: "600" }}>
-                {formatCurrency(request.original_budget + request.requested_amount)}
-              </p>
-            </div>
-          </div>
-
-          {/* Reason and Funding Source */}
-          <div style={{ marginBottom: "24px" }}>
-            <h5 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600" }}>Reason for Request</h5>
-            <div style={{ padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "6px", minHeight: "60px" }}>
-              <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>{request.reason}</p>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: "24px" }}>
-            <h5 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600" }}>Proposed Funding Source</h5>
-            <p style={{ fontSize: "14px", margin: 0 }}>{request.funding_source}</p>
-          </div>
-
-          {/* Request History */}
-          {request.history && request.history.length > 0 && (
-            <div>
-              <h5 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600" }}>Request History</h5>
-              <div style={{ maxHeight: "200px", overflowY: "auto" }}>
-                {request.history.map((item, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      padding: "12px",
-                      borderBottom: "1px solid #e9ecef",
-                      backgroundColor: index % 2 === 0 ? "#fff" : "#f8f9fa",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{item.action}</span>
-                      <span style={{ fontSize: "12px", color: "#6c757d" }}>{item.timestamp}</span>
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#495057" }}>
-                      {item.user} {item.remarks && `- ${item.remarks}`}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Rejection Remarks Input - UPDATED with white background */}
-          {showRejectForm && (
-            <div style={{ marginTop: "20px", padding: "16px", backgroundColor: "#ffffff", borderRadius: "6px", border: "1px solid #ddd" }}>
-              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", color: "#721c24" }}>
-                Rejection Remarks <span style={{ color: "red" }}>*</span>
-              </label>
-              <textarea
-                value={rejectionRemarks}
-                onChange={(e) => setRejectionRemarks(e.target.value)}
-                placeholder="Please provide detailed reason for rejection..."
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  backgroundColor: "#ffffff",
-                  minHeight: "80px",
-                  resize: "vertical",
-                  fontSize: "14px",
-                  outline: "none",
-                }}
-                required
-              />
-            </div>
-          )}
-
-          {/* Action Buttons (only for pending requests) */}
-          {request.status === "Pending" && (
-            <div style={{ marginTop: "24px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-              {!showRejectForm ? (
-                <>
-                  <button
-                    onClick={() => setShowRejectForm(true)}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: "8px 20px",
-                      border: "1px solid #dc3545",
-                      borderRadius: "4px",
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                      outline: "none",
-                    }}
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={handleApprove}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: "8px 20px",
-                      border: "none",
-                      borderRadius: "4px",
-                      backgroundColor: "#28a745",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                      outline: "none",
-                    }}
-                  >
-                    {isSubmitting ? "Processing..." : "Approve"}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setShowRejectForm(false)}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: "8px 20px",
-                      border: "1px solid #6c757d",
-                      borderRadius: "4px",
-                      backgroundColor: "white",
-                      color: "#6c757d",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                      outline: "none",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleReject}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: "8px 20px",
-                      border: "none",
-                      borderRadius: "4px",
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                      outline: "none",
-                    }}
-                  >
-                    {isSubmitting ? "Processing..." : "Confirm Rejection"}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Audit Log Modal
-const AuditLogModal = ({ logs, onClose }) => {
-  return (
-    <div className="modal-overlay" style={modalOverlayStyle}>
-      <div className="modal-container" style={{ ...modalContainerStyle, width: "800px", maxHeight: "80vh" }}>
-        <div className="modal-header" style={modalHeaderStyle}>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>Supplemental Budget Audit Logs</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", outline: "none" }}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="modal-body" style={{ padding: "24px" }}>
           <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ backgroundColor: "#f8f9fa", position: "sticky", top: 0 }}>
-                  <th style={tableHeaderStyle}>Timestamp</th>
-                  <th style={tableHeaderStyle}>Request ID</th>
-                  <th style={tableHeaderStyle}>Action</th>
-                  <th style={tableHeaderStyle}>Approver</th>
-                  <th style={tableHeaderStyle}>Remarks</th>
+                <tr
+                  style={{
+                    backgroundColor: "#f8f9fa",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                  }}
+                >
+                  <th style={tableHeaderStyle}>TIMESTAMP</th>
+                  <th style={tableHeaderStyle}>REQUEST ID</th>
+                  <th style={tableHeaderStyle}>ACTION</th>
+                  <th style={tableHeaderStyle}>ACTOR</th>
+                  <th style={tableHeaderStyle}>DEPARTMENT</th>
+                  <th style={tableHeaderStyle}>AMOUNT</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, index) => (
-                  <tr key={index} style={{ borderBottom: "1px solid #e9ecef" }}>
-                    <td style={tableCellStyle}>{log.timestamp}</td>
-                    <td style={tableCellStyle}>{log.request_id}</td>
-                    <td style={tableCellStyle}>
-                      <span style={{
-                        padding: "2px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        fontWeight: "500",
-                        backgroundColor: log.action === "Approved" ? "#d4edda" : "#f8d7da",
-                        color: log.action === "Approved" ? "#155724" : "#721c24",
-                      }}>
-                        {log.action}
-                      </span>
+                {logs.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{ textAlign: "center", padding: "20px" }}
+                    >
+                      No logs available.
                     </td>
-                    <td style={tableCellStyle}>{log.approver}</td>
-                    <td style={tableCellStyle}>{log.remarks || "-"}</td>
                   </tr>
-                ))}
+                ) : (
+                  logs.map((log, index) => (
+                    <tr
+                      key={index}
+                      style={{ borderBottom: "1px solid #e9ecef" }}
+                    >
+                      <td style={tableCellStyle}>{log.timestamp}</td>
+                      <td style={tableCellStyle}>{log.request_id}</td>
+                      <td style={tableCellStyle}>
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            backgroundColor:
+                              log.action === "Approved"
+                                ? "#d4edda"
+                                : log.action === "Rejected"
+                                ? "#f8d7da"
+                                : "#e2e3e5",
+                            color:
+                              log.action === "Approved"
+                                ? "#155724"
+                                : log.action === "Rejected"
+                                ? "#721c24"
+                                : "#383d41",
+                          }}
+                        >
+                          {log.action}
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>{log.actor}</td>
+                      <td style={tableCellStyle}>
+                        {log.original.department_name}
+                      </td>
+                      <td style={tableCellStyle}>
+                        ₱{parseFloat(log.original.amount).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -941,7 +1138,7 @@ const Pagination = ({
 // --- MAIN COMPONENT ---
 function BudgetAllocation() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, getBmsRole } = useAuth();
 
   // --- STATE ---
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
@@ -955,51 +1152,74 @@ function BudgetAllocation() {
   // Supplemental Budget State
   const [activeTab, setActiveTab] = useState("budgetAdjustment"); // 'budgetAdjustment' or 'supplementalBudget'
   const [showSupplementalFilters, setShowSupplementalFilters] = useState(false);
-  const [showSupplementalDeptDropdown, setShowSupplementalDeptDropdown] = useState(false);
-  
+  const [showSupplementalDeptDropdown, setShowSupplementalDeptDropdown] =
+    useState(false);
+
   // NEW: Action dropdown state for Modify/Add Budget
   const [showActionDropdown, setShowActionDropdown] = useState(false);
   const [selectedAction, setSelectedAction] = useState("modify"); // 'modify' or 'add'
-  
+
   // Supplemental Request Data
   const [supplementalRequests, setSupplementalRequests] = useState([]);
-  const [supplementalPagination, setSupplementalPagination] = useState({ count: 0 });
+  const [supplementalPagination, setSupplementalPagination] = useState({
+    count: 0,
+  });
   const [supplementalLoading, setSupplementalLoading] = useState(false);
-  
+
   // Supplemental Filters
   const [supplementalSearch, setSupplementalSearch] = useState("");
   const [supplementalDeptFilter, setSupplementalDeptFilter] = useState("");
   const [supplementalDateFilter, setSupplementalDateFilter] = useState("");
   const [supplementalCurrentPage, setSupplementalCurrentPage] = useState(1);
   const [supplementalPageSize, setSupplementalPageSize] = useState(5);
-  
+
   // Supplemental Modals
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
 
+  // Request Modal State
+  const [showRequestModal, setShowRequestModal] = useState(false);
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    confirmColor: "#007bff",
+  });
+
+  // --- ADD THIS STATE for Display Name ---
+  const [requestData, setRequestData] = useState({
+    department_input: "", // ID for API
+    department_display: "", // Name for UI (NEW)
+    project_id: "",
+    category_id: "",
+    amount: "",
+    reason: "",
+  });
+
+  // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
+  // Auth Helpers
   const getUserRole = () => {
-    if (!user) return "User";
-
-    // Check deeply nested roles first (from JWT decoding)
-    if (user.roles && user.roles.bms) return user.roles.bms;
-
-    // Check direct role property (from Login API response user object)
-    if (user.role) return user.role;
-
-    // Default role names based on user type
-    if (user.is_superuser) return "ADMIN";
-    if (user.is_staff) return "STAFF";
-
+    if (getBmsRole) {
+      const role = getBmsRole();
+      if (role) return role;
+    }
+    if (user?.role) return user.role;
+    if (user?.is_superuser) return "ADMIN";
     return "User";
   };
-
-  const userRole = getUserRole();
+  
+  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
+    // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "User"
+      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
       : "User",
     role: userRole,
     avatar:
@@ -1007,16 +1227,15 @@ function BudgetAllocation() {
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
   };
 
-  const isFinanceManager = userRole === "FINANCE_HEAD" || userRole === "ADMIN";
+  // --- HELPERS ---
+  const handleManageProfile = () => setShowManageProfile(true);
+  const handleCloseManageProfile = () => setShowManageProfile(false);
+  const handleLogout = async () => await logout();
+  const handleNavigate = (path) => navigate(path);
 
-  const handleManageProfile = () => {
-    setShowManageProfile(true);
-    setShowProfileDropdown(false);
-  };
-
-  const handleCloseManageProfile = () => {
-    setShowManageProfile(false);
-  };
+  const getSupplementalDeptDisplay = () =>
+    departmentOptions.find((o) => o.value === supplementalDeptFilter)?.label ||
+    "All Departments";
 
   // Data
   const [adjustments, setAdjustments] = useState([]);
@@ -1034,18 +1253,18 @@ function BudgetAllocation() {
   // Options
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
-
-  // FIX: Define modalDropdowns state correctly here
+  const [projects, setProjects] = useState([]); // Projects list
   const [modalDropdowns, setModalDropdowns] = useState({
-    categories: ["CapEx", "OpEx"], // Hardcoded categories for modal if backend doesn't provide filtering logic yet
+    categories: ["CapEx", "OpEx"],
     departments: [],
     debitAccounts: [],
     creditAccounts: [],
+    expenseCategories: [],
   });
+  const [projectCategories, setProjectCategories] = useState([]);
 
-  // Modal State
   const [showModifyModal, setShowModifyModal] = useState(false);
-  const [modalType, setModalType] = useState("modify"); // 'modify' or 'add'
+  const [modalType, setModalType] = useState("modify");
   const [selectedRowId, setSelectedRowId] = useState(null);
 
   // ... (Modal Data, Validation, Date states) ...
@@ -1073,170 +1292,127 @@ function BudgetAllocation() {
 
   // --- SUPPLEMENTAL BUDGET FUNCTIONS ---
 
-  // Fetch supplemental requests
+  // --- SUPPLEMENTAL LOGIC ---
   const fetchSupplementalRequests = useCallback(async () => {
     setSupplementalLoading(true);
     try {
-      // Mock data - Replace with actual API call
-      const mockData = {
-        results: [
-          {
-            id: 1,
-            request_id: "SUP-2024-001",
-            department: "Marketing",
-            category: "OpEx",
-            requested_amount: 50000,
-            date_submitted: "2024-01-15",
-            status: "Pending",
-            original_budget: 100000,
-            budget_period: "Q1 2024",
-            reason: "Unexpected marketing campaign for new product launch",
-            funding_source: "Contingency Fund",
-            history: [
-              { action: "Submitted", user: "John Doe", timestamp: "2024-01-15 10:30 AM", remarks: null },
-              { action: "Under Review", user: "Finance Team", timestamp: "2024-01-16 02:15 PM", remarks: null },
-            ]
-          },
-          {
-            id: 2,
-            request_id: "SUP-2024-002",
-            department: "IT",
-            category: "CapEx",
-            requested_amount: 150000,
-            date_submitted: "2024-01-10",
-            status: "Approved",
-            original_budget: 300000,
-            budget_period: "Q1 2024",
-            reason: "Additional server hardware for increased user load",
-            funding_source: "IT Infrastructure Budget",
-            history: [
-              { action: "Submitted", user: "Jane Smith", timestamp: "2024-01-10 09:00 AM", remarks: null },
-              { action: "Approved", user: "Finance Head", timestamp: "2024-01-12 03:45 PM", remarks: "Hardware upgrade justified" },
-            ]
-          },
-          {
-            id: 3,
-            request_id: "SUP-2024-003",
-            department: "Operations",
-            category: "OpEx",
-            requested_amount: 25000,
-            date_submitted: "2024-01-05",
-            status: "Rejected",
-            original_budget: 75000,
-            budget_period: "Q1 2024",
-            reason: "Temporary staff hiring for peak season",
-            funding_source: "Operations Reserve",
-            history: [
-              { action: "Submitted", user: "Bob Wilson", timestamp: "2024-01-05 11:20 AM", remarks: null },
-              { action: "Rejected", user: "Finance Head", timestamp: "2024-01-08 10:15 AM", remarks: "Use existing staff resources" },
-            ]
-          },
-          {
-            id: 4,
-            request_id: "SUP-2024-004",
-            department: "Finance",
-            category: "OpEx",
-            requested_amount: 75000,
-            date_submitted: "2024-01-20",
-            status: "Pending",
-            original_budget: 150000,
-            budget_period: "Q1 2024",
-            reason: "Software license renewal and training",
-            funding_source: "IT Budget Reserve",
-            history: [
-              { action: "Submitted", user: "Alice Johnson", timestamp: "2024-01-20 09:15 AM", remarks: null },
-            ]
-          },
-          {
-            id: 5,
-            request_id: "SUP-2024-005",
-            department: "Sales",
-            category: "CapEx",
-            requested_amount: 120000,
-            date_submitted: "2024-01-18",
-            status: "Pending",
-            original_budget: 200000,
-            budget_period: "Q1 2024",
-            reason: "New CRM system implementation",
-            funding_source: "Technology Upgrade Fund",
-            history: [
-              { action: "Submitted", user: "Mike Wilson", timestamp: "2024-01-18 02:30 PM", remarks: null },
-            ]
-          },
-        ],
-        count: 5
+      const params = {
+        page: supplementalCurrentPage,
+        page_size: supplementalPageSize,
+        search: supplementalSearch,
       };
+      if (supplementalDeptFilter) params.search = supplementalDeptFilter;
 
-      // Apply filters
-      let filtered = mockData.results;
-      
-      // Status filter - only show pending for main view
-      filtered = filtered.filter(req => req.status === "Pending");
-      
-      // Department filter
-      if (supplementalDeptFilter) {
-        filtered = filtered.filter(req => 
-          req.department.toLowerCase().includes(supplementalDeptFilter.toLowerCase())
-        );
-      }
-      
-      // Date filter
-      if (supplementalDateFilter) {
-        filtered = filtered.filter(req => req.date_submitted === supplementalDateFilter);
-      }
-      
-      // Search filter
-      if (supplementalSearch) {
-        filtered = filtered.filter(req => 
-          req.request_id.toLowerCase().includes(supplementalSearch.toLowerCase()) ||
-          req.department.toLowerCase().includes(supplementalSearch.toLowerCase()) ||
-          req.reason.toLowerCase().includes(supplementalSearch.toLowerCase())
-        );
-      }
-
-      // Pagination
-      const startIndex = (supplementalCurrentPage - 1) * supplementalPageSize;
-      const paginated = filtered.slice(startIndex, startIndex + supplementalPageSize);
-
-      setSupplementalRequests(paginated);
-      setSupplementalPagination({ count: filtered.length });
+      const response = await getSupplementalBudgetRequests(params);
+      setSupplementalRequests(response.data.results);
+      setSupplementalPagination({ count: response.data.count });
     } catch (error) {
-      console.error("Failed to fetch supplemental requests:", error);
+      console.error("Failed to fetch requests:", error);
     } finally {
       setSupplementalLoading(false);
     }
-  }, [supplementalCurrentPage, supplementalPageSize, supplementalDeptFilter, supplementalDateFilter, supplementalSearch]);
+  }, [
+    supplementalCurrentPage,
+    supplementalPageSize,
+    supplementalDeptFilter,
+    supplementalSearch,
+  ]);
 
-  // Handle approve request
-  const handleApproveRequest = async (requestId) => {
-    // Call API to approve - this would be implemented when backend is ready
-    // For now, just simulate success
-    console.log("Approving request:", requestId);
-    
-    // Refresh data
-    fetchSupplementalRequests();
-    
-    // Show success message
-    alert("Request approved successfully!");
-    
-    // Trigger notification (simulated)
-    console.log("Notification sent to Finance Operator");
+  useEffect(() => {
+    if (activeTab === "supplementalBudget") fetchSupplementalRequests();
+  }, [activeTab, fetchSupplementalRequests]);
+
+  // Confirmation Wrappers
+  const initiateApprove = (requestId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Approve Request",
+      message:
+        "Are you sure you want to approve this supplemental budget request? This will update the ledger.",
+      confirmColor: "#28a745",
+      onConfirm: () => handleApproveRequest(requestId),
+    });
   };
 
-  // Handle reject request
-  const handleRejectRequest = async (requestId, remarks) => {
-    // Call API to reject - this would be implemented when backend is ready
-    // For now, just simulate success
-    console.log("Rejecting request:", requestId, "with remarks:", remarks);
-    
-    // Refresh data
-    fetchSupplementalRequests();
-    
-    // Show success message
-    alert("Request rejected successfully!");
-    
-    // Trigger notification (simulated)
-    console.log("Notification sent to Finance Operator");
+  const initiateReject = (requestId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Reject Request",
+      message: "Are you sure you want to reject this request?",
+      confirmColor: "#dc3545",
+      onConfirm: () => handleRejectRequest(requestId),
+    });
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false })); // Close modal
+    try {
+      await approveSupplementalRequest(requestId);
+      setShowSuccess(true); // Show success modal instead of alert
+      fetchSupplementalRequests();
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      alert("Failed to approve request.");
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false })); // Close modal
+    try {
+      await rejectSupplementalRequest(requestId);
+      alert("Request rejected."); // Or use success modal with different text
+      fetchSupplementalRequests();
+    } catch (error) {
+      alert("Failed to reject request.");
+    }
+  };
+
+  const handleSupplementalSubmit = async (e) => {
+    e.preventDefault();
+
+    // Debug Log
+    console.log("Submitting Request Data:", requestData);
+
+    const amountVal = parseFloat(requestData.amount);
+    if (isNaN(amountVal) || amountVal <= 0) {
+      alert("Invalid amount");
+      return;
+    }
+    if (!requestData.project_id) {
+      alert("Project is required");
+      return;
+    }
+    if (!requestData.department_input) {
+      alert("Department is missing. Please refresh.");
+      return;
+    }
+
+    try {
+      const payload = {
+        department_input: requestData.department_input,
+        project_id: parseInt(requestData.project_id),
+        category_id: parseInt(requestData.category_id),
+        amount: amountVal,
+        reason: requestData.reason,
+      };
+
+      await requestSupplementalBudget(payload);
+
+      setShowRequestModal(false);
+      setRequestData((prev) => ({
+        ...prev,
+        amount: "",
+        reason: "",
+        project_id: "",
+        category_id: "",
+      })); // Keep dept/project
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      if (activeTab === "supplementalBudget") fetchSupplementalRequests();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit request.");
+    }
   };
 
   // View request details
@@ -1248,39 +1424,37 @@ function BudgetAllocation() {
   // View audit logs
   const handleViewAuditLogs = async () => {
     try {
-      // Fetch audit logs - mock data for now
-      const mockAuditLogs = [
-        {
-          timestamp: "2024-01-12 15:45:00",
-          request_id: "SUP-2024-002",
-          action: "Approved",
-          approver: "Finance Head",
-          remarks: "Hardware upgrade justified"
-        },
-        {
-          timestamp: "2024-01-08 10:15:00",
-          request_id: "SUP-2024-003",
-          action: "Rejected",
-          approver: "Finance Head",
-          remarks: "Use existing staff resources"
-        },
-        {
-          timestamp: "2024-01-05 14:30:00",
-          request_id: "SUP-2024-001",
-          action: "Submitted",
-          approver: "System",
-          remarks: null
-        },
-        {
-          timestamp: "2024-01-22 11:20:00",
-          request_id: "SUP-2024-006",
-          action: "Approved",
-          approver: "Finance Head",
-          remarks: "Emergency budget allocation approved"
+      // Fetch historical requests
+      const response = await getSupplementalBudgetRequests({
+        page_size: 100,
+      });
+
+      const logs = response.data.results.map((req) => {
+        let timestamp = req.date_submitted;
+        let actor = req.requester_name;
+        let actionLabel = "Submitted";
+
+        if (req.status === "APPROVED") {
+          timestamp = req.approval_date || timestamp;
+          actor = req.approver_name || "Finance Manager";
+          actionLabel = "Approved";
+        } else if (req.status === "REJECTED") {
+          timestamp = req.rejection_date || timestamp;
+          actor = req.rejector_name || "Finance Manager";
+          actionLabel = "Rejected";
         }
-      ];
-      
-      setAuditLogs(mockAuditLogs);
+
+        return {
+          original: req, // Keep original data
+          timestamp: timestamp,
+          request_id: req.request_id,
+          action: actionLabel,
+          actor: actor,
+          remarks: req.reason,
+        };
+      });
+
+      setAuditLogs(logs);
       setShowAuditModal(true);
     } catch (error) {
       console.error("Failed to fetch audit logs:", error);
@@ -1289,32 +1463,36 @@ function BudgetAllocation() {
 
   // --- API CALLS ---
 
-  // Update modalDropdowns when departments are fetched
+  // MODIFIED: Fetch dropdowns including projects
   useEffect(() => {
     const fetchDropdowns = async () => {
       try {
-        const [deptRes, accRes] = await Promise.all([
+        const [deptRes, accRes, projRes] = await Promise.all([
           getAllDepartments(),
           getAccounts(),
+          getProjects(),
         ]);
 
         const depts = deptRes.data.map((d) => ({
           value: d.name,
           label: d.name,
+          id: d.id,
+          code: d.code,
         }));
         setDepartmentOptions([
           { value: "", label: "All Departments" },
           ...depts,
         ]);
-
         setAccountOptions(accRes.data);
+        setProjects(projRes.data);
 
-        // Initialize modal dropdowns
+        // Initial Modal Dropdowns
         setModalDropdowns((prev) => ({
           ...prev,
-          departments: depts, // Use for modal department select
-          debitAccounts: accRes.data, // Initially all accounts
-          creditAccounts: accRes.data, // Initially all accounts
+          departments: depts,
+          debitAccounts: accRes.data,
+          creditAccounts: accRes.data,
+          // expenseCategories will be loaded dynamically based on project
         }));
       } catch (error) {
         console.error("Failed to fetch dropdowns:", error);
@@ -1322,6 +1500,116 @@ function BudgetAllocation() {
     };
     fetchDropdowns();
   }, []);
+
+  // --- AUTO-FILL LOGIC (FIXED) ---
+  useEffect(() => {
+    // 1. Wait for everything to be ready
+    if (!user || isFinanceManager || departmentOptions.length === 0) return;
+
+    let targetDeptId = "";
+    let targetDeptName = "";
+
+    console.log("🔍 Auto-fill Attempt. User:", user);
+
+    // 2. Try ID directly (if available)
+    if (user.department_id) {
+      targetDeptId = String(user.department_id);
+      // Find name for display
+      const match = departmentOptions.find(
+        (d) => String(d.id) === targetDeptId
+      );
+      if (match) targetDeptName = match.label;
+    }
+    // 3. Fallback: Match by Name (The likely scenario based on your logs)
+    else if (user.department) {
+      const userDeptName = user.department; // "Operations Department"
+      console.log("👉 Trying to match name:", userDeptName);
+
+      // Find option where label matches user.department
+      const match = departmentOptions.find((d) => d.label === userDeptName);
+
+      if (match) {
+        console.log("✅ Match Found:", match);
+        targetDeptId = String(match.id); // Use the ID from the dropdown option
+        targetDeptName = match.label;
+      } else {
+        console.warn("❌ No match found in options:", departmentOptions);
+      }
+    }
+
+    // 4. Update State if found
+    if (targetDeptId) {
+      console.log("🚀 Setting State:", targetDeptId, targetDeptName);
+      setRequestData((prev) => ({
+        ...prev,
+        department_input: targetDeptId,
+        department_display: targetDeptName,
+      }));
+    }
+  }, [user, isFinanceManager, departmentOptions]);
+
+  // Filtered Projects (Derived State)
+  const availableProjects = projects.filter((p) => {
+    // If Operator, filter by their department ID
+    if (!isFinanceManager && user.department_id) {
+      // If project API returns department_id, compare.
+      // If it only returns department_name, we compare that.
+      // Assuming p.department_id exists (standard practice)
+      if (p.department_id)
+        return String(p.department_id) === String(user.department_id);
+      // Fallback to name
+      if (p.department_name) return p.department_name === user.department_name;
+    }
+    return true;
+  });
+
+  // 4. Handle Project Selection -> Fetch Categories
+  const handleRequestProjectChange = async (projectId) => {
+    // Update state
+    setRequestData((prev) => ({
+      ...prev,
+      project_id: projectId,
+      category_id: "", // Reset category when project changes
+    }));
+
+    if (!projectId) {
+      setProjectCategories([]);
+      return;
+    }
+
+    try {
+      const res = await getExpenseCategories(projectId);
+      setProjectCategories(res.data);
+    } catch (error) {
+      console.error("Failed to fetch categories for project", error);
+    }
+  };
+
+  // --- PROJECT FILTERING (FIXED) ---
+  const filteredProjects = projects
+    .filter((p) => {
+      // Strict Filter: Only show projects belonging to the selected department
+      // We use requestData.department_input which is now reliably "4" (String)
+      if (requestData.department_input) {
+        // Check if project has a department field.
+        // Based on simpleProjectSerializer, it usually has 'department' (ID) or 'department_name'
+        // Let's check both to be safe.
+
+        // If project.department is ID (e.g. 4)
+        if (p.department == requestData.department_input) return true;
+
+        // If project has department_id
+        if (p.department_id == requestData.department_input) return true;
+
+        // If we only have name, we can't strict match ID, but we should have ID.
+        return false;
+      }
+      return true; // Show all if no department selected (e.g. Finance Manager view)
+    })
+    .map((p) => ({
+      value: p.id,
+      label: p.name,
+    }));
 
   // Update modal accounts when department changes (Client-side filtering logic)
   useEffect(() => {
@@ -1358,7 +1646,13 @@ function BudgetAllocation() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, debouncedSearchTerm, selectedCategory, selectedDepartment]);
+  }, [
+    currentPage,
+    pageSize,
+    debouncedSearchTerm,
+    selectedCategory,
+    selectedDepartment,
+  ]);
 
   useEffect(() => {
     fetchAdjustments();
@@ -1384,7 +1678,7 @@ function BudgetAllocation() {
     supplementalDeptFilter,
     supplementalDateFilter,
     supplementalSearch,
-    fetchSupplementalRequests
+    fetchSupplementalRequests,
   ]);
 
   // --- HANDLERS ---
@@ -1440,12 +1734,6 @@ function BudgetAllocation() {
     setShowActionDropdown(s);
   };
 
-  const handleLogout = async () => await logout();
-  const handleNavigate = (path) => {
-    navigate(path);
-    closeAllDropdowns();
-  };
-
   const handleCategorySelect = (val) => {
     setSelectedCategory(val);
     closeAllDropdowns();
@@ -1461,19 +1749,22 @@ function BudgetAllocation() {
     closeAllDropdowns();
     setSupplementalCurrentPage(1);
   };
+  // MODIFIED: Pass the action string explicitly to openModalWithAction
   const handleActionSelect = (action) => {
     setSelectedAction(action);
     closeAllDropdowns();
-    // REMOVED: Alert "Please select a budget entry to modify"
-    // Immediately open the modal if action is "add" OR if action is "modify" and a row is selected
+
     if (action === "add") {
-      openModalWithAction();
+      if (isFinanceManager) {
+        // Finance Manager adds via direct adjustment (existing modal)
+        openModalWithAction("add"); // Pass "add" explicitly
+      } else {
+        // Operator requests supplemental budget (new modal)
+        setShowRequestModal(true);
+      }
     } else if (action === "modify") {
       if (selectedRowId) {
-        openModalWithAction();
-      } else {
-        // Simply set the action without showing alert
-        setSelectedAction("modify");
+        openModalWithAction("modify"); // Pass "modify" explicitly
       }
     }
   };
@@ -1483,9 +1774,6 @@ function BudgetAllocation() {
     "All Categories";
   const getDepartmentDisplay = () =>
     departmentOptions.find((o) => o.value === selectedDepartment)?.label ||
-    "All Departments";
-  const getSupplementalDeptDisplay = () =>
-    departmentOptions.find((o) => o.value === supplementalDeptFilter)?.label ||
     "All Departments";
   const getActionDisplay = () => {
     return selectedAction === "modify" ? "Modify Budget" : "Add Budget";
@@ -1506,13 +1794,16 @@ function BudgetAllocation() {
     else setSelectedRowId(entry.id);
   };
 
-  const openModalWithAction = () => {
-    setModalType(selectedAction);
+  // MODIFIED: Accepts an explicit action to bypass async state update issues
+  const openModalWithAction = (explicitAction = null) => {
+    // Determine which action to use: the one passed directly, or fall back to state
+    const actionToUse = explicitAction || selectedAction;
     
-    if (selectedAction === "modify") {
+    setModalType(actionToUse);
+
+    if (actionToUse === "modify") {
       // For Modify Budget, we need a selected row
       if (!selectedRowId) {
-        // Don't show alert, just return
         return;
       }
       const selectedEntry = adjustments.find((e) => e.id === selectedRowId);
@@ -1532,7 +1823,7 @@ function BudgetAllocation() {
       // For Add Budget, start with empty form
       setModalData({
         id: null,
-        ticket_id: "", // REMOVED: "N/A" placeholder
+        ticket_id: "", 
         date: getISODate(),
         department: "",
         category: "",
@@ -1541,7 +1832,7 @@ function BudgetAllocation() {
         amount: "",
       });
     }
-    
+
     setFieldErrors({});
     setFormErrors([]);
     setShowModifyModal(true);
@@ -1669,7 +1960,17 @@ function BudgetAllocation() {
       className="app-container"
       style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
     >
-      {/* Success Confirmation Modal - Updated message based on modal type */}
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        confirmColor={confirmModal.confirmColor}
+      />
+
+      {/* Success Modal */}
       {showSuccess && (
         <div
           className="success-modal-overlay"
@@ -1679,59 +1980,23 @@ function BudgetAllocation() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
             zIndex: 3000,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
           <div
-            className="success-modal-container"
             style={{
               backgroundColor: "white",
-              borderRadius: "8px",
               padding: "24px",
-              maxWidth: "400px",
+              borderRadius: "8px",
               textAlign: "center",
             }}
           >
-            <h3
-              style={{
-                color: "#28a745",
-                marginBottom: "16px",
-                fontSize: "18px",
-                fontWeight: "600",
-              }}
-            >
-              ✓ Success!
-            </h3>
-            <p
-              style={{
-                marginBottom: "20px",
-                fontSize: "14px",
-                color: "#333",
-              }}
-            >
-              {modalType === "modify"
-                ? "Budget allocation has been successfully updated."
-                : "Budget allocation has been successfully forwarded to the finance manager."}
-            </p>
-            <button
-              onClick={() => setShowSuccess(false)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "14px",
-                outline: "none",
-              }}
-            >
-              OK
-            </button>
+            <h3 style={{ color: "#28a745" }}>Success!</h3>
+            <p>Action completed successfully.</p>
           </div>
         </div>
       )}
@@ -1754,11 +2019,12 @@ function BudgetAllocation() {
         />
       )}
 
-      {/* Navigation Bar - Preserved as is */}
+      {/* Navigation Bar */}
       <nav
         className="navbar"
         style={{ position: "static", marginBottom: "20px" }}
       >
+        {/* ... [Keep your existing navbar content exactly as it is] ... */}
         <div
           className="navbar-content"
           style={{
@@ -2059,49 +2325,6 @@ function BudgetAllocation() {
                         &times;
                       </button>
                     </div>
-                    <div
-                      className="notification-item"
-                      style={{
-                        display: "flex",
-                        padding: "8px 0",
-                        borderBottom: "1px solid #eee",
-                      }}
-                    >
-                      <div
-                        className="notification-icon-wrapper"
-                        style={{ marginRight: "10px" }}
-                      >
-                        <Bell size={16} />
-                      </div>
-                      <div className="notification-content" style={{ flex: 1 }}>
-                        <div
-                          className="notification-title"
-                          style={{ fontWeight: "bold" }}
-                        >
-                          Expense Report
-                        </div>
-                        <div className="notification-message">
-                          New expense report needs review
-                        </div>
-                        <div
-                          className="notification-time"
-                          style={{ fontSize: "12px", color: "#666" }}
-                        >
-                          5 hours ago
-                        </div>
-                      </div>
-                      <button
-                        className="notification-delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          outline: "none",
-                        }}
-                      >
-                        &times;
-                      </button>
-                    </div>
                   </div>
                 </div>
               )}
@@ -2251,7 +2474,12 @@ function BudgetAllocation() {
       {/* Main Content */}
       <div
         className="content-container"
-        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
+        style={{
+          padding: "10px 20px",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          width: "95%",
+        }}
       >
         {/* Conditionally render either BudgetAllocation content or ManageProfile */}
         {showManageProfile ? (
@@ -2272,12 +2500,14 @@ function BudgetAllocation() {
             }}
           >
             {/* Tab Navigation with Date Filter on the right side */}
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "20px",
+              }}
+            >
               <div
                 className="tab-navigation"
                 style={{
@@ -2287,7 +2517,9 @@ function BudgetAllocation() {
                 }}
               >
                 <button
-                  className={`tab-button ${activeTab === "budgetAdjustment" ? "active" : ""}`}
+                  className={`tab-button ${
+                    activeTab === "budgetAdjustment" ? "active" : ""
+                  }`}
                   onClick={() => setActiveTab("budgetAdjustment")}
                   style={{
                     padding: "10px 20px",
@@ -2295,16 +2527,23 @@ function BudgetAllocation() {
                     backgroundColor: "transparent",
                     cursor: "pointer",
                     fontSize: "16px",
-                    fontWeight: activeTab === "budgetAdjustment" ? "600" : "400",
-                    color: activeTab === "budgetAdjustment" ? "#007bff" : "#666",
-                    borderBottom: activeTab === "budgetAdjustment" ? "2px solid #007bff" : "none",
+                    fontWeight:
+                      activeTab === "budgetAdjustment" ? "600" : "400",
+                    color:
+                      activeTab === "budgetAdjustment" ? "#007bff" : "#666",
+                    borderBottom:
+                      activeTab === "budgetAdjustment"
+                        ? "2px solid #007bff"
+                        : "none",
                     outline: "none",
                   }}
                 >
                   Budget Adjustment
                 </button>
                 <button
-                  className={`tab-button ${activeTab === "supplementalBudget" ? "active" : ""}`}
+                  className={`tab-button ${
+                    activeTab === "supplementalBudget" ? "active" : ""
+                  }`}
                   onClick={() => setActiveTab("supplementalBudget")}
                   style={{
                     padding: "10px 20px",
@@ -2312,19 +2551,24 @@ function BudgetAllocation() {
                     backgroundColor: "transparent",
                     cursor: "pointer",
                     fontSize: "16px",
-                    fontWeight: activeTab === "supplementalBudget" ? "600" : "400",
-                    color: activeTab === "supplementalBudget" ? "#007bff" : "#666",
-                    borderBottom: activeTab === "supplementalBudget" ? "2px solid #007bff" : "none",
+                    fontWeight:
+                      activeTab === "supplementalBudget" ? "600" : "400",
+                    color:
+                      activeTab === "supplementalBudget" ? "#007bff" : "#666",
+                    borderBottom:
+                      activeTab === "supplementalBudget"
+                        ? "2px solid #007bff"
+                        : "none",
                     outline: "none",
                   }}
                 >
                   Supplemental Budget Approval
                 </button>
               </div>
-              
+
               {/* Date Filter placed on the right side of tab navigation */}
               <div style={{ marginLeft: "20px" }}>
-                <DateFilter 
+                <DateFilter
                   dateFilter={supplementalDateFilter}
                   setDateFilter={setSupplementalDateFilter}
                 />
@@ -2444,7 +2688,9 @@ function BudgetAllocation() {
                             <div
                               key={dept.value}
                               className={`category-dropdown-item ${
-                                selectedDepartment === dept.value ? "active" : ""
+                                selectedDepartment === dept.value
+                                  ? "active"
+                                  : ""
                               }`}
                               onClick={() => handleDepartmentSelect(dept.value)}
                               style={{
@@ -2513,9 +2759,13 @@ function BudgetAllocation() {
                             <div
                               key={category.value}
                               className={`category-dropdown-item ${
-                                selectedCategory === category.value ? "active" : ""
+                                selectedCategory === category.value
+                                  ? "active"
+                                  : ""
                               }`}
-                              onClick={() => handleCategorySelect(category.value)}
+                              onClick={() =>
+                                handleCategorySelect(category.value)
+                              }
                               style={{
                                 padding: "8px 12px",
                                 cursor: "pointer",
@@ -2766,11 +3016,12 @@ function BudgetAllocation() {
                             style={{
                               height: "50px",
                               cursor: "pointer",
-                              backgroundColor: selectedRowId === entry.id
-                                ? "#e3f2fd"
-                                : index % 2 === 1
-                                ? "#F8F8F8"
-                                : "#FFFFFF",
+                              backgroundColor:
+                                selectedRowId === entry.id
+                                  ? "#e3f2fd"
+                                  : index % 2 === 1
+                                  ? "#F8F8F8"
+                                  : "#FFFFFF",
                             }}
                             onClick={() => handleRowSelect(entry)}
                           >
@@ -2804,8 +3055,9 @@ function BudgetAllocation() {
                                 paddingLeft: "1.00rem",
                               }}
                             >
-                              {getCompactDepartmentName(entry.department_name) ||
-                                "N/A"}
+                              {getCompactDepartmentName(
+                                entry.department_name
+                              ) || "N/A"}
                             </td>
                             <td
                               style={{
@@ -2897,9 +3149,9 @@ function BudgetAllocation() {
                   <h2 className="page-title">Supplemental Budget Approval</h2>
                   <div
                     className="controls-container"
-                    style={{ 
-                      display: "flex", 
-                      gap: "10px", 
+                    style={{
+                      display: "flex",
+                      gap: "10px",
                       alignItems: "center",
                     }}
                   >
@@ -2998,9 +3250,13 @@ function BudgetAllocation() {
                             <div
                               key={dept.value}
                               className={`category-dropdown-item ${
-                                supplementalDeptFilter === dept.value ? "active" : ""
+                                supplementalDeptFilter === dept.value
+                                  ? "active"
+                                  : ""
                               }`}
-                              onClick={() => handleSupplementalDeptSelect(dept.value)}
+                              onClick={() =>
+                                handleSupplementalDeptSelect(dept.value)
+                              }
                               style={{
                                 padding: "8px 12px", // Same padding
                                 cursor: "pointer",
@@ -3021,6 +3277,26 @@ function BudgetAllocation() {
                         </div>
                       )}
                     </div>
+
+                    {/* Operator Request Button - Visible if NOT Finance Manager */}
+                    {!isFinanceManager && (
+                      <button
+                        onClick={() => setShowRequestModal(true)}
+                        style={{
+                          padding: "8px 16px",
+                          background: "#28a745",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontWeight: "500",
+                          fontSize: "14px",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        + Request Supplemental
+                      </button>
+                    )}
 
                     {/* Audit Log Button - Updated to match styling and remove black outline */}
                     {isFinanceManager && (
@@ -3120,7 +3396,7 @@ function BudgetAllocation() {
                         </th>
                         <th
                           style={{
-                            width: "20%",
+                            width: "10%",
                             padding: "0.75rem",
                             textAlign: "left",
                             borderBottom: "2px solid #dee2e6",
@@ -3159,7 +3435,7 @@ function BudgetAllocation() {
                         </th>
                         <th
                           style={{
-                            width: "10%",
+                            width: "15%",
                             padding: "0.75rem",
                             textAlign: "left",
                             borderBottom: "2px solid #dee2e6",
@@ -3188,7 +3464,8 @@ function BudgetAllocation() {
                             key={request.id}
                             style={{
                               height: "50px",
-                              backgroundColor: index % 2 === 1 ? "#F8F8F8" : "#FFFFFF",
+                              backgroundColor:
+                                index % 2 === 1 ? "#F8F8F8" : "#FFFFFF",
                               borderBottom: "1px solid #dee2e6",
                             }}
                           >
@@ -3212,7 +3489,9 @@ function BudgetAllocation() {
                                 paddingLeft: "1.00rem",
                               }}
                             >
-                              {getCompactDepartmentName(request.department) || "N/A"}
+                              {getCompactDepartmentName(
+                                request.department_name
+                              ) || "N/A"}
                             </td>
                             <td
                               style={{
@@ -3224,7 +3503,7 @@ function BudgetAllocation() {
                                 textAlign: "left",
                               }}
                             >
-                              {request.category}
+                              {request.category_name}
                             </td>
                             <td
                               style={{
@@ -3235,10 +3514,14 @@ function BudgetAllocation() {
                                 color: "#000000",
                               }}
                             >
-                              ₱{parseFloat(request.requested_amount).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
+                              ₱
+                              {parseFloat(request.amount).toLocaleString(
+                                "en-US",
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )}
                             </td>
                             <td
                               style={{
@@ -3266,23 +3549,70 @@ function BudgetAllocation() {
                                 borderBottom: "1px solid #dee2e6",
                                 fontSize: "14px",
                                 color: "#000000",
+                                // FIX: Prevent overflow of action buttons
+                                maxWidth: "110px",
+                                minWidth: "90px",
+                                width: "10%",
+                                textAlign: "left",
+                                verticalAlign: "middle",
+                                overflow: "visible",
                               }}
                             >
-                              <button
-                                onClick={() => handleViewDetails(request)}
-                                style={{
-                                  padding: "6px 12px",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  backgroundColor: "#007bff",
-                                  color: "white",
-                                  cursor: "pointer",
-                                  fontSize: "13px",
-                                  outline: "none",
-                                }}
-                              >
-                                View
-                              </button>
+                              {/* Only FM can see action buttons */}
+                              {isFinanceManager &&
+                              request.status === "PENDING" ? (
+                                <div style={{ display: "flex", gap: "5px" }}>
+                                  <button
+                                    onClick={() =>
+                                      handleApproveRequest(request.id)
+                                    }
+                                    style={{
+                                      background: "#28a745",
+                                      color: "white",
+                                      border: "none",
+                                      padding: "4px 8px",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      fontSize: "12px",
+                                    }}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleRejectRequest(request.id)
+                                    }
+                                    style={{
+                                      background: "#dc3545",
+                                      color: "white",
+                                      border: "none",
+                                      padding: "4px 8px",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      fontSize: "12px",
+                                    }}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                // Optional: View button for everyone (if details modal supports it)
+                                <button
+                                  onClick={() => handleViewDetails(request)}
+                                  style={{
+                                    padding: "6px 12px",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    backgroundColor: "#007bff",
+                                    color: "white",
+                                    cursor: "pointer",
+                                    fontSize: "13px",
+                                    outline: "none",
+                                  }}
+                                >
+                                  View
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))
@@ -3646,7 +3976,9 @@ function BudgetAllocation() {
                         appearance: "none",
                         outline: "none",
                         fontSize: "14px",
-                        cursor: modalData.department ? "pointer" : "not-allowed",
+                        cursor: modalData.department
+                          ? "pointer"
+                          : "not-allowed",
                       }}
                     >
                       <option value="">
@@ -3723,7 +4055,9 @@ function BudgetAllocation() {
                         appearance: "none",
                         outline: "none",
                         fontSize: "14px",
-                        cursor: modalData.department ? "pointer" : "not-allowed",
+                        cursor: modalData.department
+                          ? "pointer"
+                          : "not-allowed",
                       }}
                     >
                       <option value="">
@@ -3884,8 +4218,214 @@ function BudgetAllocation() {
           </div>
         </div>
       )}
+
+      {/* --- MODIFICATION START: Updated Request Modal --- */}
+      {/* REQUEST MODAL (OPERATOR) */}
+      {showRequestModal && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "24px",
+              borderRadius: "8px",
+              width: "500px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h3 style={{ marginBottom: "20px" }}>
+              Request Supplemental Budget
+            </h3>
+            <form onSubmit={handleSupplementalSubmit}>
+              {/* Department (Read-Only Display) */}
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={requestData.department_display || "All Departments"}
+                  disabled
+                  className="form-control"
+                  style={{
+                    backgroundColor: "#f5f5f5",
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                  }}
+                />
+                {!isFinanceManager && (
+                  <small style={{ color: "#666" }}>
+                    Auto-selected based on your profile.
+                  </small>
+                )}
+              </div>
+              {/* Project (Searchable) */}
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Project
+                </label>
+                <SearchableSelect
+                  options={filteredProjects} // Use the filtered list
+                  value={parseInt(requestData.project_id)}
+                  onChange={handleRequestProjectChange} // Use the new handler
+                  placeholder="Select Project..."
+                />
+              </div>
+              {/* Category (Filtered by Project) */}
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Category
+                </label>
+                <select
+                  value={requestData.category_id}
+                  onChange={(e) =>
+                    setRequestData({
+                      ...requestData,
+                      category_id: e.target.value,
+                    })
+                  }
+                  className="form-control"
+                  required
+                  disabled={!requestData.project_id} // Disable if no project
+                >
+                  <option value="">Select Category</option>
+                  {/* Use projectCategories instead of modalDropdowns.expenseCategories */}
+                  {projectCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.classification})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Amount */}
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  value={requestData.amount}
+                  onChange={(e) =>
+                    setRequestData({ ...requestData, amount: e.target.value })
+                  }
+                  className="form-control"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                  }}
+                  required
+                  step="0.01"
+                  min="0.01"
+                />
+              </div>
+              {/* Reason */}
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Justification
+                </label>
+                <textarea
+                  value={requestData.reason}
+                  onChange={(e) =>
+                    setRequestData({ ...requestData, reason: e.target.value })
+                  }
+                  className="form-control"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    minHeight: "80px",
+                  }}
+                  required
+                ></textarea>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(false)}
+                  style={{
+                    padding: "8px 16px",
+                    border: "1px solid #ccc",
+                    background: "white",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "8px 16px",
+                    border: "none",
+                    background: "#007bff",
+                    color: "white",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* --- MODIFICATION END --- */}
     </div>
   );
 }
-
 export default BudgetAllocation;

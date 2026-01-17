@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema
+
+from users.views.login_views import debug_user_check
 from .token_refresh_view import UnifiedTokenRefreshView
 
 class APIV1RootSerializer(serializers.Serializer):
@@ -42,4 +44,5 @@ urlpatterns = [
     path('token/refresh/cookie/', UnifiedTokenRefreshView.as_view(), name='unified-token-refresh'),
     path('tts/', include('tts.urls')),
     path('hdts/', include('hdts.urls')),
+    path('debug/user/', debug_user_check, name='debug-user'),
 ]

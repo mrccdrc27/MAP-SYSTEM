@@ -1,8 +1,12 @@
-from django.urls import path, include
+from django.urls import path, include, re_path # MODIFIED: Added re_path
+from django.conf import settings # MODIFIED: Added settings
+from django.views.static import serve # MODIFIED: Added serve view
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
+
+from core.views_analytics import SpendingHeatmapView, SpendingTrendsView, TopCategoriesView
 from .views_utils import get_server_time
-from .views_budget import AccountDropdownView, AccountSetupListView, BudgetAdjustmentView, BudgetProposalSummaryView, BudgetVarianceReportView, FiscalYearDropdownView, JournalEntryCreateView, JournalEntryListView, LedgerExportView, ProposalHistoryView, LedgerViewList, ProposalReviewBudgetOverview, export_budget_proposal_excel, export_budget_variance_excel, journal_choices, DepartmentDropdownView, AccountTypeDropdownView
+from .views_budget import AccountDropdownView, AccountSetupListView, BudgetAdjustmentView, BudgetProposalSummaryView, BudgetTransferViewSet, BudgetVarianceReportView, FiscalYearDropdownView, JournalEntryCreateView, JournalEntryDetailView, JournalEntryListView, LedgerExportView, ProposalHistoryView, LedgerViewList, ProposalReviewBudgetOverview, SupplementalBudgetRequestView, export_budget_proposal_excel, export_budget_variance_excel, journal_choices, DepartmentDropdownView, AccountTypeDropdownView
 from . import views_expense, views_dashboard
 from .views_dashboard import (
     DepartmentBudgetView, MonthlyBudgetActualViewSet, TopCategoryBudgetAllocationView,
@@ -18,6 +22,7 @@ from .views_expense import (
     ExpenseCategoryDropdownView,
     BudgetAllocationCreateView, ExpenseTrackingSummaryView, ExternalExpenseViewSet, ExpenseViewSet
 )
+from .views_closing import YearEndClosingPreviewView, ProcessYearEndClosingView 
 from core import views_budget
 
 user_management_router = DefaultRouter()
@@ -27,16 +32,20 @@ user_management_router.register(
     r'monthly-budget-actual', MonthlyBudgetActualViewSet, basename='monthly-budget-actual')
 
 router = DefaultRouter()
+router.register(r'external-references', views_budget.ExternalReferenceViewSet, basename='external-references') # NEW
 router.register(r'external-budget-proposals',
                 views_budget.ExternalBudgetProposalViewSet, basename='external-budget-proposals')
 router.register(r'external-expenses', ExternalExpenseViewSet, basename='external-expenses')
 # NEW: Add Journal Entry endpoint for external services
 router.register(r'external-journal-entries', views_budget.ExternalJournalEntryViewSet, basename='external-journal-entries')
-# Router for UI calls from authenticated users (JWT protected)
+router.register(r'fiscal-years', views_budget.FiscalYearViewSet, basename='fiscal-years')
+
+ # Router for UI calls from authenticated users (JWT protected)
 ui_router = DefaultRouter()
 ui_router.register(r'budget-proposals', views_budget.BudgetProposalUIViewSet, basename='budget-proposals')
 # MODIFICATION START: The router now handles all primary expense endpoints
 ui_router.register(r'expenses', ExpenseViewSet, basename='expense')
+ui_router.register(r'budget-transfers', BudgetTransferViewSet, basename='budget-transfers')
 
 urlpatterns = [
     path('', include(router.urls)), 
@@ -56,6 +65,11 @@ urlpatterns = [
          name='dashboard-overall-monthly-flow'),
     path('dashboard/category-budget-status/', get_category_budget_status,
          name='dashboard-category-budget-status'),
+    
+    # --- Analytics Endpoints ---
+    path('dashboard/analytics/spending-trends/', SpendingTrendsView.as_view(), name='analytics-trends'),
+    path('dashboard/analytics/top-categories/', TopCategoriesView.as_view(), name='analytics-categories'),
+    path('dashboard/analytics/heatmap/', SpendingHeatmapView.as_view(), name='analytics-heatmap'),
 
     # --- Budget Proposal Endpoints (BEFORE router inclusion) ---
     path('budget-proposals/summary/', BudgetProposalSummaryView.as_view(),
@@ -76,7 +90,7 @@ urlpatterns = [
     # --- Ledger Endpoints ---
     path('ledger/', LedgerViewList.as_view(), name='ledger-view'),
     path('ledger/export/', LedgerExportView.as_view(), name='ledger-export'),
-
+    path('ledger/details/<str:entry_id>/', JournalEntryDetailView.as_view(), name='ledger-entry-detail'),
     # --- Report Endpoints ---
     path('reports/budget-variance/', BudgetVarianceReportView.as_view(),
          name='budget-variance-report'),
@@ -126,4 +140,22 @@ urlpatterns = [
     # --- Forecasting Endpoints ---
     path('dashboard/forecast/', get_budget_forecast, name='dashboard-forecast'),
     path('dashboard/forecast-accuracy/', get_forecast_accuracy, name='dashboard-forecast-accuracy'),
+
+     # --- Fiscal Year Management (New) ---
+    path('finance/closing-preview/', YearEndClosingPreviewView.as_view(), name='year-end-closing-preview'),
+    path('finance/process-carryover/', ProcessYearEndClosingView.as_view(), name='year-end-process-carryover'),
+     
+    # --- Supplemental Budget Endpoints ---
+    # MODIFICATION START
+    path('budget/supplemental/request/', SupplementalBudgetRequestView.as_view(), name='budget-supplemental-request'),
+    # MODIFICATION END
+]
+
+# MODIFICATION START Serve Media Files (Fix for Render 404s)
+# Explicitly tells Django to serve files from the MEDIA_ROOT when /media/ URL is accessed
+# Note: On Render's standard file system, these files will disappear if the server redeploys/restarts.
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
 ]

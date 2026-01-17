@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',
     'django.contrib.staticfiles',
 
     # Third-party apps
@@ -105,10 +106,11 @@ INSTALLED_APPS = [
     # 'finance',
     # 'budgeting',
     # 'expenses',
+    'cloudinary',
     'core',
 ]
 
-# AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'core.User'
 
 AUTHENTICATION_BACKENDS = [
     #'core.authentication.EmailOrPhoneNumberBackend',
@@ -121,6 +123,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://frontend-r2az.onrender.com",  # Old Render frontend (keep for safety or remove)
     "https://budget-pro-static-site.onrender.com",  # <--- ADD THIS NEW URL
     "https://auth-service-cdln.onrender.com",
+    
     os.getenv('FRONTEND_URL'),
     os.getenv('AUTH_SERVICE_URL'),
 ]
@@ -136,9 +139,25 @@ CORS_ALLOWED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin]
 
 # Settings for when THIS BMS service calls OTHER services
 BMS_AUTH_KEY_FOR_DTS = os.getenv('API_KEY_FOR_BMS_TO_CALL_DTS') # Key BMS uses
-DTS_STATUS_UPDATE_URL = os.getenv('DTS_STATUS_UPDATE_ENDPOINT_URL') # Target URL
+API_KEY_FOR_BMS_TO_CALL_AMS = os.getenv('API_KEY_FOR_BMS_TO_CALL_AMS')
+API_KEY_FOR_BMS_TO_CALL_HDTS = os.getenv('API_KEY_FOR_BMS_TO_CALL_HDTS')
+
+# --- OUTBOUND WEBHOOKS (BMS -> Other Services) ---
+# Where to send updates for Budget Proposals
+DTS_STATUS_UPDATE_URL = os.getenv('DTS_STATUS_UPDATE_ENDPOINT_URL') 
+
+# NEW: Where to send updates for Asset Expenses (AMS)
+AMS_STATUS_UPDATE_URL = os.getenv('AMS_STATUS_UPDATE_ENDPOINT_URL')
+
+# NEW: Where to send updates for HelpDesk Expenses (HDTS)
+HDTS_STATUS_UPDATE_URL = os.getenv('HDTS_STATUS_UPDATE_ENDPOINT_URL')
 
 # Keys expected from client services calling THIS (BMS) service
+
+
+
+
+
 
 DTS_CLIENT_API_KEY_EXPECTED = os.getenv('DTS_CLIENT_API_KEY')
 TTS_CLIENT_API_KEY_EXPECTED = os.getenv('TTS_CLIENT_API_KEY')
@@ -161,6 +180,13 @@ if AMS_CLIENT_API_KEY_EXPECTED:
 # Filter out None values if a key isn't set in .env
 SERVICE_API_KEYS = {k: v for k, v in SERVICE_API_KEYS.items() if k}
 
+# --- ADD THIS SECTION ---
+# CSRF Configuration - Required for Django 4.0+ cross-origin POST requests (Logout/Login)
+CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
+# Clean up list (trim spaces and remove empty strings)
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if origin.strip()]
+# ------------------------
+
 CORS_ALLOW_ALL_ORIGINS = True  # For development - restrict in production
 CORS_ALLOW_CREDENTIALS = True
 
@@ -174,8 +200,27 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
+
+# Cloudinary Configuration
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+# Configure Cloudinary using CLOUDINARY_URL (reads from environment automatically)
+cloudinary.config(
+    cloudinary_url=os.getenv('CLOUDINARY_URL')
+)
+
+# Media File Storage Configuration
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Use Cloudinary in production (Render), local filesystem in development
+if DEBUG:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 
 # Debug toolbar settings
 INTERNAL_IPS = [

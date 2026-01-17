@@ -1,4 +1,4 @@
-# File: CapstoneBP/auth_service/users/urls.py
+# File: bms/auth_service/users/urls.py
 from django.urls import path, include
 from .views import (
     LoginView, LogoutView, UserManagementViewSet, UserProfileView, CustomTokenRefreshView, LoginAttemptsView,

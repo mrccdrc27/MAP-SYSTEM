@@ -1,4 +1,4 @@
-# File: CapstoneBP/auth_service/users/management/commands/auth_seeder.py
+# File: bms/auth_service/users/management/commands/auth_seeder.py
 from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model
@@ -17,9 +17,9 @@ class Command(BaseCommand):
     help = 'Seed auth_service database with initial users and related auth data.'
 
     TEMP_DEPARTMENTS = [
-        {'id': 1, 'name': 'Finance Department', 'code': 'FIN'},
-        {'id': 2, 'name': 'Human Resources', 'code': 'HR'},
-        {'id': 3, 'name': 'Information Technology', 'code': 'IT'},
+        {'id': 1, 'name': 'Finance Departmenst', 'code': 'FIN'},
+        {'id': 2, 'name': 'Human Resoursces', 'code': 'HR'},
+        {'id': 3, 'name': 'Informatiosn Technology', 'code': 'IsT'},
         {'id': 4, 'name': 'Operations', 'code': 'OPS'},
         {'id': 5, 'name': 'Marketing', 'code': 'MKT'},
     ]
@@ -50,10 +50,10 @@ class Command(BaseCommand):
 
         users_data = [
             {'email': 'admin@example.com', 'username': 'admin_auth', 'password': 'Password123!', 'first_name': 'AuthAdmin', 'last_name': 'User', 'role': 'ADMIN', 'department_info': finance_dept, 'is_staff': True, 'is_superuser': True, 'phone_number': '+639000000000'},
-            {'email': 'finance_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!', 'first_name': 'Finance', 'last_name': 'Head', 'role': 'FINANCE_HEAD', 'department_info': finance_dept, 'is_staff': True, 'phone_number': '+639171234567'},
+            {'email': 'finances_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!', 'first_name': 'Finance', 'last_name': 'Head', 'role': 'FINANCE_HEAD', 'department_info': finance_dept, 'is_staff': True, 'phone_number': '+639171234567'},
             {'email': 'it_user@example.com', 'username': 'it_user_auth', 'password': 'Password123!', 'first_name': 'IT', 'last_name': 'Support', 'role': 'ADMIN', 'department_info': it_dept, 'phone_number': '+639171234568'},
             {'email': 'ops_user@example.com', 'username': 'ops_user_auth', 'password': 'password123', 'first_name': 'Operations', 'last_name': 'Staff', 'role': 'GENERAL_USER', 'department_info': ops_dept, 'phone_number': '+639171111111'}, # MODIFIED: Role changed to a valid choice
-            {'email': 'adibentulan@gmail.com', 'username': 'adi123', 'password': 'password123', 'first_name': 'Eldrin', 'last_name': 'Adi', 'role': 'ADMIN', 'department_info': it_dept, 'phone_number': '+639179876542'},
+            {'email': 'adisbentulan@gmail.com', 'username': 'adi123', 'password': 'password123', 'first_name': 'Eldrin', 'last_name': 'Adi', 'role': 'ADMIN', 'department_info': it_dept, 'phone_number': '+639179876542'},
             {'email': 'mkt_user@example.com', 'username': 'mkt_user_auth', 'password': 'Password123!', 'first_name': 'Marketing', 'last_name': 'Specialist', 'role': 'GENERAL_USER', 'department_info': mkt_dept, 'phone_number': '+639172222222'}, # MODIFIED: Role changed to a valid choice
             {'email': 'hr_user@example.com', 'username': 'hr_user_auth', 'password': 'Password123!', 'first_name': 'HR', 'last_name': 'Manager', 'role': 'GENERAL_USER', 'department_info': hr_dept, 'phone_number': '+639173333333'}, # MODIFIED: Role changed to a valid choice
         ]

@@ -38,7 +38,7 @@ import {
   getExpenseDetailsForModal,
   getProposalDetails,
 } from "../../API/expenseAPI";
-
+import * as XLSX from "xlsx";
 // Import ManageProfile component
 import ManageProfile from "./ManageProfile";
 
@@ -276,7 +276,7 @@ const Pagination = ({
 };
 
 const ExpenseHistory = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, getBmsRole } = useAuth();
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showExpenseDropdown, setShowExpenseDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -354,111 +354,124 @@ const ExpenseHistory = () => {
 
   // Export Report Handler for Excel (.xlsx) - Fixed Version
   const handleExportReport = () => {
-    if (!selectedExpense) return;
-    
-    try {
-      // Create CSV content that Excel can open as .xlsx
-      const csvRows = [];
-      
-      // Add UTF-8 BOM for Excel compatibility
-      const BOM = "\uFEFF";
-      
-      // Header with metadata
-      csvRows.push("EXPENSE REPORT");
-      csvRows.push(`"Generated on:", "${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}"`);
-      csvRows.push(""); // Empty row
-      
-      // Transaction Details section
-      csvRows.push("TRANSACTION DETAILS");
-      csvRows.push(`"Date:","${selectedExpense.date}"`);
-      csvRows.push(`"Description:","${selectedExpense.description.replace(/"/g, '""')}"`);
-      csvRows.push(`"Amount:","₱${parseFloat(selectedExpense.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
-      csvRows.push(`"Vendor:","${(selectedExpense.vendor || "N/A").replace(/"/g, '""')}"`);
-      csvRows.push(`"Department:","${(selectedExpense.department_name || "N/A").replace(/"/g, '""')}"`);
-      csvRows.push(`"Category:","${(selectedExpense.category_name || "N/A").replace(/"/g, '""')}"`);
-      csvRows.push(`"Sub-Category:","${(selectedExpense.sub_category_name || "N/A").replace(/"/g, '""')}"`);
-      csvRows.push(""); // Empty row
-      
-      if (selectedProposalDetails) {
-        // Project Details section
-        csvRows.push("PROJECT DETAILS");
-        csvRows.push(`"Project Title:","${selectedProposalDetails.title.replace(/"/g, '""')}"`);
-        csvRows.push(`"Performance End Date:","${selectedProposalDetails.performance_end_date}"`);
-        csvRows.push(""); // Empty row
-        csvRows.push(`"Project Summary:","${(selectedProposalDetails.project_summary || "").replace(/"/g, '""')}"`);
-        csvRows.push(""); // Empty row
-        csvRows.push(`"Project Description:","${(selectedProposalDetails.project_description || "").replace(/"/g, '""')}"`);
-        csvRows.push(""); // Empty row
-        
-        // Cost Elements section
-        csvRows.push("COST ELEMENTS");
-        csvRows.push(`"Type","Description","Estimated Cost"`);
-        
-        if (selectedProposalDetails.items && selectedProposalDetails.items.length > 0) {
-          selectedProposalDetails.items.forEach(item => {
-            csvRows.push(`"${item.cost_element.replace(/"/g, '""')}","${(item.description || "").replace(/"/g, '""')}","₱${parseFloat(item.estimated_cost).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
-          });
-        }
-        
-        csvRows.push(""); // Empty row
-        csvRows.push(`"TOTAL","","₱${parseFloat(selectedProposalDetails.total_cost || selectedProposalDetails.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
-      } else {
-        csvRows.push("PROJECT LINK");
-        csvRows.push(`"Status:","Not linked to a project proposal"`);
+  if (!selectedExpense) return;
+
+  try {
+    // Helper to format currency
+    const formatCurrency = (amount) =>
+      `₱${parseFloat(amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+
+    // 1. Prepare Metadata Rows (Header)
+    const data = [
+      ["EXPENSE REPORT"],
+      ["Generated On", new Date().toLocaleString()],
+      [], // Spacer
+      ["TRANSACTION DETAILS"],
+      ["Date", selectedExpense.date],
+      ["Description", selectedExpense.description],
+      ["Amount", formatCurrency(selectedExpense.amount)],
+      ["Vendor", selectedExpense.vendor || "N/A"],
+      ["Department", selectedExpense.department_name || "N/A"],
+      ["Category", selectedExpense.category_name || "N/A"],
+      ["Sub-Category", selectedExpense.sub_category_name || "N/A"],
+      [], // Spacer
+    ];
+
+    // 2. Prepare Project Details (if linked)
+    if (selectedProposalDetails) {
+      data.push(["PROJECT DETAILS"]);
+      data.push(["Project Title", selectedProposalDetails.title]);
+      data.push(["End Date", selectedProposalDetails.performance_end_date]);
+      data.push(["Summary", selectedProposalDetails.project_summary || ""]);
+      data.push([
+        "Description",
+        selectedProposalDetails.project_description || "",
+      ]);
+      data.push([]); // Spacer
+
+      // Cost Elements Table Header
+      data.push(["COST ELEMENTS"]);
+      data.push(["Type", "Description", "Estimated Cost"]);
+
+      // Cost Elements Rows
+      if (
+        selectedProposalDetails.items &&
+        selectedProposalDetails.items.length > 0
+      ) {
+        selectedProposalDetails.items.forEach((item) => {
+          data.push([
+            item.cost_element,
+            item.description || "",
+            formatCurrency(item.estimated_cost),
+          ]);
+        });
       }
-      
-      // Convert to CSV string
-      const csvContent = BOM + csvRows.join('\n');
-      
-      // Create blob with proper Excel MIME type
-      const blob = new Blob([csvContent], { 
-        type: 'text/csv;charset=utf-8;' 
-      });
-      
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Generate filename with .csv extension (Excel can open this and save as .xlsx)
-      const fileName = `Expense_Report_${selectedExpense.id}_${new Date().toISOString().split('T')[0]}.csv`;
-      link.download = fileName;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      // Silent export - no alert message
-      
-    } catch (error) {
-      console.error("Error exporting report:", error);
-      alert("Failed to export report. Please try again.");
+
+      // Total Row
+      const total =
+        selectedProposalDetails.total_cost || selectedProposalDetails.amount;
+      data.push(["TOTAL", "", formatCurrency(total)]);
+    } else {
+      data.push(["PROJECT LINK"]);
+      data.push(["Status", "Not linked to a project proposal"]);
     }
-  };
+
+    // 3. Create Worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+    // 4. Formatting: Set Column Widths
+    const wscols = [{ wch: 20 }, { wch: 60 }, { wch: 20 }];
+    worksheet["!cols"] = wscols;
+
+    // 5. Create Workbook and Download
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Expense Details");
+
+    // Generate filename
+    const safeId =
+      selectedExpense.transaction_id || selectedExpense.id || "Report";
+    const filename = `Expense_Report_${safeId}.xlsx`;
+
+    XLSX.writeFile(workbook, filename);
+  } catch (error) {
+    console.error("Error exporting report:", error);
+    alert("Failed to export report. Please try again.");
+  }
+};
 
   // Current Date State
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
   const getUserRole = () => {
+    // Debug logs removed for production
     if (!user) return "User";
-    // Check nested roles first
-    if (user.roles?.bms) return user.roles.bms;
-    // Check direct properties
-    if (user.role_display) return user.role_display;
-    if (user.role) return user.role;
-    // Fallback
+
+    // 1. Try to get the BMS specific role using the Context helper
+    if (getBmsRole) {
+      const bmsRole = getBmsRole();
+      if (bmsRole) return bmsRole;
+    }
+
+    // 2. Fallback: Check direct role property (Legacy)
+    if (user.role && typeof user.role === "string") return user.role;
+
+    // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
     if (user.is_staff) return "STAFF";
+
     return "User";
   };
 
+  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
+
   const userProfile = {
+    // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "User"
+      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
       : "User",
-    role: getUserRole(),
+    role: userRole,
     avatar:
       user?.profile_picture ||
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
@@ -914,7 +927,12 @@ const ExpenseHistory = () => {
 
       <div
         className="content-container"
-        style={{ padding: "10px 20px", maxWidth: "1400px", margin: "0 auto", width: "95%" }}
+        style={{
+          padding: "10px 20px",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          width: "95%",
+        }}
       >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
@@ -1065,7 +1083,9 @@ const ExpenseHistory = () => {
                               padding: "8px 12px",
                               cursor: "pointer",
                               backgroundColor:
-                                selectedCategory === "OPEX" ? "#f0f0f0" : "white",
+                                selectedCategory === "OPEX"
+                                  ? "#f0f0f0"
+                                  : "white",
                               outline: "none",
                             }}
                           >
@@ -1528,6 +1548,50 @@ const ExpenseHistory = () => {
                             </div>
                           </div>
                         </div>
+                        {/* Attachments Display */}
+                        {selectedExpense.attachments && selectedExpense.attachments.length > 0 && (
+                          <div style={{ marginTop: "20px", paddingTop: "15px", borderTop: "1px solid #dee2e6" }}>
+                            <strong style={{ color: "#6c757d", display: "block", marginBottom: "10px" }}>
+                              Attachments ({selectedExpense.attachments.length}):
+                            </strong>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                              {selectedExpense.attachments.map((attachment, idx) => (
+                                <a
+                                  key={idx}
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    padding: "10px 12px",
+                                    backgroundColor: "white",
+                                    borderRadius: "4px",
+                                    border: "1px solid #dee2e6",
+                                    textDecoration: "none",
+                                    color: "#007bff",
+                                    fontSize: "14px",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#f0f8ff";
+                                    e.currentTarget.style.borderColor = "#007bff";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "white";
+                                    e.currentTarget.style.borderColor = "#dee2e6";
+                                  }}
+                                >
+                                  <Download size={16} />
+                                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {attachment.name}
+                                  </span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div

@@ -1,3 +1,4 @@
+#bms/budget_service/core/models.py
 from datetime import timezone
 from decimal import Decimal
 from django.db import models
@@ -143,17 +144,18 @@ class BudgetProposal(models.Model):
     rejected_by_name = models.CharField(max_length=255, null=True, blank=True)
     rejection_date = models.DateTimeField(null=True, blank=True)
 
-    # --- UPDATED: New fields for Finance Operator Review ---
-    finance_operator_name = models.CharField(
+    # --- MODIFIED: Renamed finance_manager_name to finance_manager_name ---
+    finance_manager_name = models.CharField(
         max_length=255, null=True, blank=True,
-        help_text="Name of the finance operator who reviewed this proposal."
+        help_text="Name of the finance manager who reviewed this proposal."
     )
+    # -----------------------------------------------------
+    
     signature = models.FileField(
         upload_to='budget_proposals/signatures/',
         null=True, blank=True,
         help_text="Digital signature or attached approval document."
     )
-    # -----------------------------------------------------
     
     external_system_id = models.CharField(
         max_length=100, unique=True, help_text="ID reference from the external help desk system")
@@ -582,7 +584,12 @@ class SubCategoryBudgetCap(models.Model):
 # ------------------------------------------------------
 
 class BudgetTransfer(models.Model):
+    TRANSFER_TYPE_CHOICES = [
+        ('TRANSFER', 'Transfer'),
+        ('SUPPLEMENTAL', 'Supplemental'),
+    ]
     fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.PROTECT)
+    
     # MODIFIED: source_allocation is now nullable to support Supplemental Budgets (Additions)
     source_allocation = models.ForeignKey(
         BudgetAllocation, 
@@ -610,6 +617,14 @@ class BudgetTransfer(models.Model):
     status = models.CharField(max_length=20, choices=[('PENDING', 'Pending'), (
         'APPROVED', 'Approved'), ('REJECTED', 'Rejected')], default='PENDING')
 
+    # --- NEW FIELD: Transfer Type ---
+    transfer_type = models.CharField(
+        max_length=20, 
+        choices=TRANSFER_TYPE_CHOICES, 
+        default='TRANSFER',
+        help_text="Distinguishes between internal transfers and supplemental budget injections."
+    )
+
     # approved_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='approved_transfers') # OLD
     approved_by_user_id = models.IntegerField(
         null=True, blank=True, help_text="ID of user from Auth Service")  
@@ -623,11 +638,11 @@ class BudgetTransfer(models.Model):
     rejected_by_username = models.CharField(
         max_length=150, null=True, blank=True)  
     rejection_date = models.DateTimeField(null=True, blank=True)
-    # ... (__str__, validate_sufficient_funds methods need Expense model to be updated) ...
+
     def __str__(
         self): 
         source = self.source_allocation.department.name if self.source_allocation else "Treasury/External"
-        return f"Transfer of {self.amount} from {source} to {self.destination_allocation.department.name}"
+        return f"{self.get_transfer_type_display()} of {self.amount} from {source} to {self.destination_allocation.department.name}"
 
 class JournalEntry(models.Model):
     STATUS_CHOICES = [
@@ -889,7 +904,7 @@ class ExpenseAttachment(models.Model):
     def __str__(self):
         return f"Attachment for {self.expense.transaction_id}"
 
-class Document(models.Model):
+class Document(models.Model): # Dead code
     DOCUMENT_TYPES = [
         ('RECEIPT', 'Receipt'),
         ('PROPOSAL', 'Budget Proposal'),
@@ -1072,8 +1087,13 @@ class ForecastDataPoint(models.Model):
         return f"{self.month_name}: {self.forecasted_value}"
 
 
-"""
+# --- AUTHENTICATION MODELS (Mirror/Reference Only) ---
+
 class CustomUserManager(BaseUserManager):
+    """
+    Simplified manager. BMS does not handle password hashing or login.
+    This model exists purely to satisfy Django's ORM requirements for the User model.
+    """
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
             raise ValueError('Email is required')
@@ -1082,7 +1102,8 @@ class CustomUserManager(BaseUserManager):
 
         email = self.normalize_email(email)
         user = self.model(email=email, username=username, **extra_fields)
-        user.set_password(password)
+        # Password is not used in BMS, but we set an unusable one to be safe
+        user.set_unusable_password() 
         user.save(using=self._db)
         return user
 
@@ -1093,27 +1114,35 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    """
+    BMS Local User Mirror.
+    This model strictly references users defined in the Central Auth Service.
+    It is used for Foreign Keys (e.g., who approved a budget).
+    Authentication logic is handled by JWTCookieAuthentication, not this model.
+    """
     ROLE_CHOICES = [
-        ('ADMIN',        'Administrator'),
+        ('ADMIN', 'Administrator'),
         ('FINANCE_HEAD', 'Finance Head'),
+        ('GENERAL_USER', 'General User'),
     ]
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    department = models.ForeignKey(
-        Department, on_delete=models.SET_NULL, null=True, blank=True)
-    phone_number = models.CharField(
-        max_length=20, unique=True, null=True, blank=True)
 
+    department_id = models.IntegerField(null=True, blank=True)
+    department_name = models.CharField(max_length=100, null=True, blank=True)
+
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    last_login = models.DateTimeField(null=True, blank=True)
+    
+    # Managed by Central Auth, not BMS
+    last_login = models.DateTimeField(null=True, blank=True) 
 
     objects = CustomUserManager()
 
@@ -1124,19 +1153,28 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
     def get_full_name(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name}".strip()
 
 
-class LoginAttempt(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, null=True, blank=True)
-    ip_address = models.GenericIPAddressField()
-    user_agent = models.CharField(max_length=255)
-    success = models.BooleanField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+
+# --- NEW MODEL: Notification (For In-App Alerts) ---
+class Notification(models.Model):
+    """
+    Stores in-app notifications for users.
+    Generated by BMS events (e.g. Budget Approved) or external webhooks.
+    """
+    recipient_user_id = models.IntegerField(help_text="ID of the user who receives this notification")
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Optional: Link to related objects
+    related_object_type = models.CharField(max_length=50, null=True, blank=True) # e.g., 'BudgetProposal'
+    related_object_id = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
-        status = "Successful" if self.success else "Failed"
-        user_str = self.user.username if self.user else "Unknown"
-        return f"{status} login attempt by {user_str} at {self.timestamp}"
-"""
+        return f"Notification for User {self.recipient_user_id}: {self.title}"
