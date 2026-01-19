@@ -4,7 +4,7 @@ services:
   # --- Authentication Service (Using Centralized Root Auth) ---
   auth_db:
     image: postgres:15-alpine
-    container_name: auth_db
+    container_name: bms_auth_db
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data/
     environment:
@@ -12,7 +12,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
     ports:
-      - "5433:5432"
+      - "5435:5432"
     networks:
       - my_network
     healthcheck:
@@ -24,7 +24,7 @@ services:
   auth_service:
     # 1. Point to the ROOT auth folder
     build: ../auth  
-    container_name: auth_service
+    container_name: bms_auth_service
     volumes:
       - ../auth:/app
     ports:
@@ -53,12 +53,14 @@ services:
       - POSTGRES_DB=budgetpro_auth
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
-      - PGHOST=auth_db
+      - PGHOST=bms_auth_db
       - PGPORT=5432
-      # CORS: Allow your BMS Frontend to talk to Auth
-      - DJANGO_CORS_ALLOWED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
-      - DJANGO_CSRF_TRUSTED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
-      - FRONTEND_URL=http://165.22.247.50:5175
+      # CORS: Allow federated login across mapative.tech domain
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://mapative.tech,https://auth.mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://mapative.tech,https://auth.mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
+      - FRONTEND_URL=https://mapative.tech
+      - COOKIE_DOMAIN=.mapative.tech
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,bms_auth_service,host.docker.internal,165.22.247.50,mapative.tech,auth.mapative.tech,bms.mapative.tech
     depends_on:
       auth_db:
         condition: service_healthy
@@ -68,7 +70,7 @@ services:
   budget_db:
     # Keep existing configuration)
     image: postgres:15-alpine
-    container_name: budget_db
+    container_name: bms_budget_db
     volumes:
       - postgres_budget_data:/var/lib/postgresql/data/
     environment:
@@ -76,7 +78,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
     ports:
-      - "5434:5432"
+      - "5436:5432"
     networks:
       - my_network
     healthcheck:
@@ -88,14 +90,14 @@ services:
   budget_service:
     # (Keep existing configuration)
     build: ./budget_service
-    container_name: budget_service
+    container_name: bms_budget_service
     volumes:
       - ./budget_service:/app
     ports:
       - "6001:8000"
     environment:
-      - DJANGO_CORS_ALLOWED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
-      - DJANGO_CSRF_TRUSTED_ORIGINS=http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
     env_file:
       - ./budget_service/.env.docker
     depends_on:

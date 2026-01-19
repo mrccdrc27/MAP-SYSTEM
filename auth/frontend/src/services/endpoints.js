@@ -14,6 +14,7 @@ export const STAFF_ENDPOINTS = {
   LOGOUT: `${AUTH_PREFIX}/api/v1/users/logout/`,
   TOKEN_REFRESH: `${AUTH_PREFIX}/api/v1/users/token/refresh/`,
   TOKEN_VALIDATE: `${AUTH_PREFIX}/api/v1/users/token/validate/`,
+  TOKEN_ISSUE_SSO: `${AUTH_PREFIX}/api/v1/users/token/issue-sso/`,
   ME: `${AUTH_PREFIX}/api/v1/users/me/`,
   PROFILE: `${AUTH_PREFIX}/api/v1/users/profile/`,
   FORGOT_PASSWORD: `${AUTH_PREFIX}/api/v1/users/password/forgot/`,

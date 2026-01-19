@@ -35,7 +35,7 @@ module.exports = {
         VITE_HDTS_SYSTEM_URL: "https://hdts.ticketing.mapactive.tech",
         VITE_ENV: "development",
         VITE_DEBUG: "true",
-        VITE_AUTH_LOGIN_ENDPOINT: "/auth/api/v1/users/login/api",
+        VITE_AUTH_LOGIN_ENDPOINT: "/auth/api/v1/users/login/api/",
         VITE_AUTH_REGISTER_ENDPOINT: "/auth/api/v1/users/register",
         VITE_AUTH_LOGOUT_ENDPOINT: "/auth/api/v1/users/logout",
         VITE_AUTH_REFRESH_ENDPOINT: "/auth/api/v1/users/token/refresh",

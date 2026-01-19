@@ -203,13 +203,11 @@ const Login = ({ userType = 'staff' }) => {
                 </Link>
               </div>
 
-              {isEmployee && (
-                <div className={styles.forgotLink}>
-                  <Link to="/" className={styles.backToPortalLink}>
-                    <i className="fa-solid fa-arrow-left"></i> Back to Portal
-                  </Link>
-                </div>
-              )}
+              <div className={styles.forgotLink}>
+                <Link to="/" className={styles.backToPortalLink}>
+                  <i className="fa-solid fa-arrow-left"></i> Back to Portal
+                </Link>
+              </div>
             </div>
           </>
         ) : (

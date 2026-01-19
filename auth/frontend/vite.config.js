@@ -11,6 +11,11 @@ export default defineConfig({
       'localhost',
       '127.0.0.1',
       '165.22.247.50',
+      'mapactive.tech',
+      'login.mapactive.tech',
+      'app.mapactive.tech',
+      '*.mapactive.tech',
+      // Legacy domains (keep during transition)
       'ticketing.mapactive.tech',
       'login.ticketing.mapactive.tech',
       'app.ticketing.mapactive.tech',

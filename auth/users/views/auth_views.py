@@ -382,6 +382,66 @@ class CookieLogoutView(generics.GenericAPIView):
 
 @extend_schema(
     tags=['Tokens'],
+    summary="Issue SSO tokens for external system",
+    description="Issue fresh JWT access and refresh tokens for authenticated user to be used in SSO flow with external systems. Returns raw tokens in response body.",
+    responses={
+        200: OpenApiResponse(
+            response=inline_serializer(
+                name='SSOTokensResponse',
+                fields={
+                    'access_token': drf_serializers.CharField(),
+                    'refresh_token': drf_serializers.CharField(),
+                    'expires_in': drf_serializers.IntegerField(),
+                }
+            ),
+            description="Fresh tokens issued successfully"
+        ),
+        401: OpenApiResponse(
+            description="User not authenticated"
+        )
+    }
+)
+class IssueSSOTokensView(generics.GenericAPIView):
+    """Issue fresh JWT tokens for SSO with external systems like AMS."""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        
+        # Generate fresh tokens using the custom serializer to include claims
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+        
+        # Calculate expires_in
+        access_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
+        expires_in = int(access_lifetime.total_seconds()) if access_lifetime else 300
+        
+        # Get role from system_roles (use first role or 'User' as default)
+        role = 'User'
+        user_system_roles = user.system_roles.all()
+        if user_system_roles.exists():
+            first_role = user_system_roles.first()
+            if first_role and first_role.role:
+                role = first_role.role.name
+        
+        return Response({
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'expires_in': expires_in,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name or '',
+                'last_name': user.last_name or '',
+                'role': role,
+                'contact_number': user.phone_number or '',
+            }
+        }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['Tokens'],
     summary="Validate JWT token",
     description="Validate a JWT token and return user information. Used by external systems for SSO validation.",
     responses={

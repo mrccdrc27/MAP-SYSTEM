@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast, Button } from '../../../components/common';
 import { SYSTEM_INFO, getSystemUrl } from '../../../utils/constants';
+import { getSSOTokens } from '../../../services/authService';
 import styles from './Welcome.module.css';
 
 const logoUrl = '/map-logo.png';
@@ -24,13 +25,42 @@ const Welcome = () => {
   // Extract systems from user's system_roles
   const systems = user?.system_roles?.filter(role => role.is_active) || [];
 
-  const handleSystemSelect = (systemRole) => {
+  const handleSystemSelect = async (systemRole) => {
     const slug = systemRole.system_slug?.toUpperCase();
     const systemUrl = getSystemUrl(slug);
     
     if (systemUrl) {
       setRedirecting(slug);
-      // Add slight delay for visual feedback
+      
+      // For AMS, get SSO tokens and append to redirect URL
+      if (slug === 'AMS') {
+        try {
+          const response = await getSSOTokens();
+          if (response.ok && response.data) {
+            const { access_token, refresh_token, user: ssoUser } = response.data;
+            const params = new URLSearchParams({
+              accesstoken: access_token,
+              refreshtoken: refresh_token,
+              id: ssoUser?.id || user?.id || '',
+              email: ssoUser?.email || user?.email || '',
+              firstName: ssoUser?.first_name || user?.first_name || '',
+              lastName: ssoUser?.last_name || user?.last_name || '',
+              role: ssoUser?.role || systemRole.role_name || 'User',
+              contactNumber: ssoUser?.contact_number || user?.phone_number || '',
+            });
+            const redirectUrl = `${systemUrl}/token-login?${params.toString()}`;
+            window.location.href = redirectUrl;
+            return;
+          }
+        } catch (err) {
+          console.error('Failed to get SSO tokens for AMS:', err);
+          error('Error', 'Failed to authenticate with AMS. Please try again.');
+          setRedirecting(null);
+          return;
+        }
+      }
+      
+      // For other systems, just redirect normally
       setTimeout(() => {
         window.location.href = systemUrl;
       }, 300);

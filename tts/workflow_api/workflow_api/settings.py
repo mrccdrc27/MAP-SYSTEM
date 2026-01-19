@@ -187,7 +187,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://127.0.0.1:5173,https://mapams.up.railway.app',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 # Allow Authorization header for JWT authentication

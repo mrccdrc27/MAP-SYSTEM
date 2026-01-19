@@ -148,6 +148,15 @@ export const disable2FA = async (otpCode) => {
   });
 };
 
+// Get SSO tokens for external systems (like AMS)
+export const getSSOTokens = async () => {
+  const endpoints = getEndpoints(getUserType());
+  return await apiRequest(endpoints.TOKEN_ISSUE_SSO, {
+    method: 'POST',
+    includeAuth: true,
+  });
+};
+
 export default {
   login,
   verifyOtpLogin,
@@ -159,4 +168,5 @@ export default {
   requestOtp,
   enable2FA,
   disable2FA,
+  getSSOTokens,
 };

@@ -518,6 +518,11 @@ class LoginAPIView(APIView):
             return response
         else:
             email = request.data.get('email', '')
+            # Log serializer errors to aid debugging of 400 responses
+            try:
+                logger.warning(f"Login serializer errors: {serializer.errors}")
+            except Exception:
+                logger.exception("Failed to log serializer errors for login API")
             if email:
                 record_failed_login_attempt(request, user_email=email)
             

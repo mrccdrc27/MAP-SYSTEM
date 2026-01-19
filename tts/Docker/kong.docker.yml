@@ -54,6 +54,15 @@ plugins:
         - "http://127.0.0.1:5173"
         - "http://165.22.247.50:5173"
         - "https://map-ams.up.railway.app"
+        - "https://mapactive.tech"
+        - "https://login.mapactive.tech"
+        - "https://api.mapactive.tech"
+        - "https://ams.mapactive.tech"
+        - "https://ticketing.mapactive.tech"
+        - "https://login.ticketing.mapactive.tech"
+        - "https://api.ticketing.mapactive.tech"
+        - "https://ticketflow.ticketing.mapactive.tech"
+        - "https://hdts.ticketing.mapactive.tech"
       methods:
         - GET
         - POST
@@ -97,6 +106,7 @@ services:
       - name: auth-frontend-routes
         paths:
           - /auth/api/v1
+          - /auth/api
         strip_path: false
     plugins:
       - name: pre-function
@@ -105,6 +115,10 @@ services:
             - |
               local path = kong.request.get_path()
               local new_path = path:gsub("^/auth", "")
+              -- normalize legacy frontend call /auth/api/me -> /api/v1/users/me
+              if new_path:match("^/api/me") then
+                new_path = new_path:gsub("^/api/me", "/api/v1/users/me")
+              end
               kong.service.request.set_path(new_path)
 
   # Direct API routes (no prefix stripping) - Login, Register, etc.

@@ -26,11 +26,11 @@ const AuthContext = createContext();
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8000";
 
 // API endpoints
-const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
-const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/token/obtain/`;
-const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/verify/`;
-const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/`;
-const LOGOUT_URL = `${AUTH_URL}/logout/`;
+const PROFILE_URL = `/api/v1/users/profile/`;
+const TOKEN_OBTAIN_URL = `/api/v1/token/obtain/`;
+const TOKEN_VERIFY_URL = `/api/v1/token/verify/`;
+const TOKEN_REFRESH_URL = `/api/v1/token/refresh/`;
+const LOGOUT_URL = `/api/v1/users/logout/`;
 
 // Create auth API instance for auth service requests
 const createAuthRequest = () => {

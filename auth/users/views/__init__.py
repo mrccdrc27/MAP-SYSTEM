@@ -20,6 +20,7 @@ from .auth_views import (
     CookieTokenRefreshView,
     CookieLogoutView,
     ValidateTokenView,
+    IssueSSOTokensView,
     UILogoutView,
 )
 
@@ -93,6 +94,7 @@ __all__ = [
     'CookieTokenRefreshView',
     'CookieLogoutView',
     'ValidateTokenView',
+    'IssueSSOTokensView',
     'UILogoutView',
     # Profile
     'MeView',
