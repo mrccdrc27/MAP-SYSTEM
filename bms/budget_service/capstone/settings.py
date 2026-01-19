@@ -1,3 +1,4 @@
+#bms/budget_service/capstone/settings.py
 """
 Django settings for capstone project.
 
@@ -185,6 +186,18 @@ SERVICE_API_KEYS = {k: v for k, v in SERVICE_API_KEYS.items() if k}
 CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
 # Clean up list (trim spaces and remove empty strings)
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if origin.strip()]
+# ------------------------
+# MODIFICATION START: Shared Domain Cookie Settings
+# This enables cookies to be shared across subdomains (e.g., auth.mapactive.tech and bms.mapactive.tech)
+COOKIE_DOMAIN = os.getenv('COOKIE_DOMAIN', '.mapactive.tech') # Default to custom domain
+if not DEBUG:
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+    CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
+    SESSION_COOKIE_SAMESITE = 'Lax' # or 'None' if using different subdomains for API/Frontend
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+# MODIFICATION END
 # ------------------------
 
 CORS_ALLOW_ALL_ORIGINS = True  # For development - restrict in production

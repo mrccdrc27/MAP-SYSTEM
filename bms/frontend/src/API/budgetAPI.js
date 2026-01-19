@@ -4,8 +4,9 @@ import { getAccessToken } from './TokenUtils';
 
 const budgetApi = axios.create({ 
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api', 
-  // Changed: Disable withCredentials to rely solely on Bearer token for cross-domain stability
-  withCredentials: false, 
+  // MODIFICATION START: Enable credentials to allow shared domain cookies
+  withCredentials: true, 
+  // MODIFICATION END
 });
 
 // Add interceptor to include JWT token in requests

@@ -132,19 +132,19 @@ const CentralAuthProvider = ({ children }) => {
         console.log("[Auth] Tokens found in URL, will fetch profile");
       }
 
-      // Check if we have a token at all
+      // MODIFICATION START: Attempt SSO/Cookie check even if no local token exists
       const token = getAccessToken();
-      if (!token) {
-        console.log("[Auth] No token found in localStorage or cookies");
-        setUser(null);
-        setLoading(false);
-        setInitialized(true);
-        return false;
+      
+      // If no token and not found in URL, we normally bail. 
+      // BUT with shared cookies on .mapactive.tech, we might have an HttpOnly cookie.
+      // We attempt to fetch the profile to see if the cookie is valid.
+      if (!token && !foundInUrl) {
+         console.log("[Auth] No local token. Attempting Cookie/SSO validation...");
+      } else {
+         console.log("[Auth] Token found or in URL, attempting to fetch profile");
       }
 
-      console.log("[Auth] Token found, attempting to fetch profile");
-
-      // Try fetching full profile
+      // Always try fetching profile. If cookie exists (SSO) or token exists, it will succeed.
       const userData = await fetchUserProfile();
 
       if (!hasAnySystemRole(userData, "bms")) {
@@ -160,6 +160,8 @@ const CentralAuthProvider = ({ children }) => {
       setLoading(false);
       setInitialized(true);
       return true;
+      // MODIFICATION END
+
     } catch (error) {
       console.warn("[Auth] Profile fetch failed:", error);
 
