@@ -7,9 +7,12 @@ const pythonInterpreter = path.join(venvPath, 'pythonw.exe');
 const celeryScript = path.join(projectRoot, 'venv', 'Lib', 'site-packages', 'celery', '__main__.py');
 
 /**
- * TTS Ecosystem Configuration with Kong API Gateway
+ * MAP-SYSTEM Overall Orchestration Configuration with Kong API Gateway
  * 
- * This configuration runs all services with Kong as the API gateway.
+ * This configuration runs all services in the MAP-SYSTEM with Kong as the API gateway.
+ * Includes TTS (Ticket Tracking System), AMS (Asset Management System), 
+ * HDTS (Helpdesk Ticketing System), BMS (Budget Management System), and Auth.
+ * 
  * All traffic flows through Kong (port 8000) which handles:
  *   - JWT validation at the edge (reads JWT from cookies, not HTTP headers)
  *   - Rate limiting
@@ -22,9 +25,17 @@ const celeryScript = path.join(projectRoot, 'venv', 'Lib', 'site-packages', 'cel
  *   - JWT is read from 'access_token' cookie by Kong
  * 
  * Architecture:
- *   Frontend (1000) -> Kong (8000) -> Backend Services
+ *   Frontends -> Kong (8000) -> Backend Services
  *   
- * To run without Kong, use tts-ecosystem.config.js instead.
+ * Services:
+ *   - Auth: 8003
+ *   - TTS Workflow: 1001, Notification: 1003, Messaging: 1002
+ *   - HDTS Helpdesk: 5001
+ *   - AMS Backend: 3001
+ *   - BMS Auth: 6001, Budget: 6002
+ *   - Frontends: TTS 1000, Auth 3001, HDTS 5173, AMS 3000, BMS 6000
+ * 
+ * To run without Kong, use individual service configs instead.
  */
 
 module.exports = {
@@ -48,6 +59,7 @@ module.exports = {
       args: 'runserver 0.0.0.0:8003',
       interpreter: pythonInterpreter,
       windowsHide: true,
+      // env_file: path.join(projectRoot, 'auth', '.env'),
       env: {
         DJANGO_ENV: "development",
         DJANGO_DEBUG: "True",
@@ -65,8 +77,8 @@ module.exports = {
         TTS_SYSTEM_URL: "http://localhost:1000/",
         AMS_SYSTEM_URL: "http://localhost:3000/ams",
         HDTS_SYSTEM_URL: "http://localhost:5173/hdts",
-        BMS_SYSTEM_URL: "http://localhost:3000/bms",
-        DEFAULT_SYSTEM_URL: "http://localhost:3000/dashboard",
+        BMS_SYSTEM_URL: "http://localhost:6000/bms",
+        DEFAULT_SYSTEM_URL: "http://localhost:1000/dashboard",
         DJANGO_EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend",
         DJANGO_EMAIL_HOST: "localhost",
         DJANGO_EMAIL_PORT: "1025",
@@ -280,6 +292,7 @@ module.exports = {
       interpreter: 'node',
       watch: false,
       windowsHide: true,
+      // env_file: path.join(projectRoot, 'hdts/frontendfolder', '.env'),
       env: {
         // Kong Gateway Mode - All API calls routed through Kong (port 8080)
         VITE_AUTH_URL: "http://localhost:8003",
@@ -333,6 +346,7 @@ module.exports = {
       interpreter: 'node',
       watch: false,
       windowsHide: true,
+      // env_file: path.join(projectRoot, 'tts/frontend', '.env'),
       env: {
         // Kong Gateway Mode - All API calls routed through Kong (port 8080)
         // Kong uses prefix-based routing: /helpdesk/*, /workflow/*, /notification/*, /messaging/*
@@ -346,6 +360,100 @@ module.exports = {
         VITE_MESSAGING_WS: "ws://localhost:8080/messaging/ws",  // WebSocket through Kong
         VITE_HELPDESK_SERVICE_URL: "http://localhost:8080/helpdesk"  // Through Kong
       }
-    }
+    },
+
+    // -------------------
+    // AMS Backend
+    // -------------------
+    // {
+    //   name: 'ams-backend',
+    //   cwd: path.join(projectRoot, 'ams/backend/contexts'),
+    //   script: 'manage.py',
+    //   args: 'runserver 0.0.0.0:3001',
+    //   interpreter: pythonInterpreter,
+    //   windowsHide: true,
+    //   env: {
+    //     DJANGO_ENV: "development",
+    //     DJANGO_DEBUG: "True",
+    //     DJANGO_SECRET_KEY: "signing-key-1234",
+    //     DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
+    //     DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,ams-backend,host.docker.internal",
+    //     KONG_TRUSTED: "true",
+    //     CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
+    //   }
+    // },
+
+    // // -------------------
+    // // AMS Frontend
+    // // -------------------
+    // {
+    //   name: 'ams-frontend',
+    //   cwd: path.join(projectRoot, 'ams/frontend'),
+    //   script: './node_modules/vite/bin/vite.js',
+    //   interpreter: 'node',
+    //   watch: false,
+    //   windowsHide: true,
+    //   env: {
+    //     // AMS frontend configuration
+    //   }
+    // },
+
+    // // -------------------
+    // // BMS Auth Service
+    // // -------------------
+    // {
+    //   name: 'bms-auth-service',
+    //   cwd: path.join(projectRoot, 'bms/auth_service'),
+    //   script: 'manage.py',
+    //   args: 'runserver 0.0.0.0:6001',
+    //   interpreter: pythonInterpreter,
+    //   windowsHide: true,
+    //   env: {
+    //     DJANGO_ENV: "development",
+    //     DJANGO_DEBUG: "True",
+    //     DJANGO_SECRET_KEY: "signing-key-1234",
+    //     DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
+    //     DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,bms-auth-service,host.docker.internal",
+    //     KONG_TRUSTED: "true",
+    //     CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
+    //   }
+    // },
+
+    // // -------------------
+    // // BMS Budget Service
+    // // -------------------
+    // {
+    //   name: 'bms-budget-service',
+    //   cwd: path.join(projectRoot, 'bms/budget_service'),
+    //   script: 'manage.py',
+    //   args: 'runserver 0.0.0.0:6002',
+    //   interpreter: pythonInterpreter,
+    //   windowsHide: true,
+    //   env: {
+    //     DJANGO_ENV: "development",
+    //     DJANGO_DEBUG: "True",
+    //     DJANGO_SECRET_KEY: "signing-key-1234",
+    //     DJANGO_JWT_SIGNING_KEY: "signing-key-1234",
+    //     DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,bms-budget-service,host.docker.internal",
+    //     KONG_TRUSTED: "true",
+    //     CELERY_BROKER_URL: "amqp://admin:admin@localhost:5672/"
+    //   }
+    // },
+
+    // // -------------------
+    // // BMS Frontend
+    // // -------------------
+    // {
+    //   name: 'bms-frontend',
+    //   cwd: path.join(projectRoot, 'bms/frontend'),
+    //   script: './node_modules/vite/bin/vite.js',
+    //   interpreter: 'node',
+    //   watch: false,
+    //   windowsHide: true,
+    //   // env_file: path.join(projectRoot, 'bms/frontend', '.env'),
+    //   env: {
+    //     // BMS frontend configuration
+    //   }
+    // }
   ]
 };
