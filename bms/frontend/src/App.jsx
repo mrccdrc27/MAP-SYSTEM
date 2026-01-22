@@ -52,8 +52,8 @@ function App() {
 
   return (
     <Routes>
-      {/* Default route - redirect to dashboard */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      {/* Default route - redirect to finance dashboard */}
+      <Route path="/" element={<Navigate to="/finance/dashboard" replace />} />
 
       {/* Unauthorized page */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
@@ -86,7 +86,8 @@ function App() {
 
       {/* Protected Routes - All BMS users */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* MODIFIED: Changed path from "/dashboard" to "/finance/dashboard" */}
+        <Route path="/finance/dashboard" element={<Dashboard />} />
         <Route path="/finance/ledger-view" element={<LedgerView />} />
         <Route path="/finance/proposal-history" element={<ProposalHistory />} />
         <Route path="/finance/expense-history" element={<ExpenseHistory />} />
@@ -105,8 +106,8 @@ function App() {
              If you add "System Settings" or "User Management" pages later, put them here. */}
       </Route>
 
-      {/* Catch-all route for 404 */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* Catch-all route - redirect to finance dashboard */}
+      <Route path="*" element={<Navigate to="/finance/dashboard" replace />} />
     </Routes>
   );
 }

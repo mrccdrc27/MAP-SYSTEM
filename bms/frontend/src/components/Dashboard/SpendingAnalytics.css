@@ -1,0 +1,213 @@
+/* Container Card */
+.analytics-card {
+  margin-bottom: 30px;
+}
+
+.analytics-header-text {
+  margin-bottom: 25px;
+}
+
+.analytics-title {
+  color: #007bff;
+  margin-bottom: 8px;
+  font-size: 22px;
+}
+
+.analytics-subtitle {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Tab Navigation */
+.analytics-tabs {
+  margin-bottom: 25px;
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.analytics-tab-btn {
+  padding: 10px 20px;
+  background-color: white;
+  color: #007bff;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  height: 40px;
+  min-width: 220px;
+  transition: all 0.2s ease;
+}
+
+.analytics-tab-btn:hover {
+  background-color: #f0f8ff;
+}
+
+.analytics-tab-btn.active {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Sub-View Header (Title + Export) */
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.view-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Default 4 columns */
+  gap: 15px;
+  margin-bottom: 25px;
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  align-items: end;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 13px;
+}
+
+.filter-select-wrapper {
+  position: relative;
+}
+
+.filter-input, .filter-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  background-color: white;
+  font-size: 14px;
+  outline: none;
+  height: 40px;
+}
+
+.filter-select {
+  padding-right: 35px;
+  appearance: none;
+}
+
+.filter-static {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+  font-size: 14px;
+  color: #495057;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.date-range-group {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.date-separator {
+  color: #6c757d;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* Trends Summary Cards */
+.trends-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.summary-stat-card {
+  padding: 16px;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 8px; /* Assuming global card radius */
+  border: 1px solid #e0e0e0;
+}
+
+.summary-stat-title {
+  margin-bottom: 8px;
+  color: #495057;
+  font-size: 13px;
+  margin-top: 0;
+}
+
+.summary-stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #007bff;
+  margin: 0;
+}
+
+/* Heatmap Specifics */
+.heatmap-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.heatmap-cell {
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.05);
+}
+
+.heatmap-legend {
+  display: flex;
+  gap: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+}
+
+/* Table Styles (Reusing existing table styles or defining here if unique) */
+.category-table-container {
+  overflow-x: auto;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+}

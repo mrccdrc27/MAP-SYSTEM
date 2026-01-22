@@ -1,0 +1,108 @@
+/* --- Time Filters --- */
+.time-filter {
+  margin-bottom: 25px;
+  display: flex;
+  gap: 10px; /* Adds space between buttons if needed */
+}
+
+.filter-button {
+  background-color: white;
+  color: #007bff;
+  border: 1px solid #007bff;
+  outline: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.filter-button:focus {
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* --- Summary Cards Grid --- */
+.stats-grid {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+/* --- Individual Card Styling --- */
+.compact-budget-card {
+  flex: 1 1 30%; /* Approx 1/3 width */
+  min-width: 250px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: white;
+  border: 1px solid #e0e0e0; /* Default border */
+  border-radius: 8px; /* Assuming global card radius */
+  padding: 20px; /* Assuming global card padding */
+}
+
+/* Replaces JS onMouseEnter/Leave */
+.compact-budget-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+  border: 1px solid #007bff;
+}
+
+.compact-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.compact-stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 10px 0;
+  color: #333;
+}
+
+.compact-card-subtext {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.compact-date-context {
+  font-size: 12px;
+  color: #007bff;
+  margin-bottom: 8px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* --- Progress Bar --- */
+.compact-progress-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.compact-progress-bar {
+  height: 100%;
+  background-color: #007bff;
+  transition: width 0.5s ease-in-out;
+}
+
+/* --- Badges --- */
+.compact-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border-radius: 12px;
+}
