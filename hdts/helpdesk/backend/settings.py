@@ -146,6 +146,9 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     "http://127.0.0.1:3000",
+    # Allow auth frontend running on port 3001 (local development)
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
     "http://localhost:5173",
     "http://localhost:5173",
     "https://map-ams.up.railway.app",
@@ -228,6 +231,9 @@ USERNAME_FIELD = 'email'
 # Celery
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    # Allow auth frontend origin for cookie-based auth during local dev
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
 ]
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'amqp://admin:admin@localhost:5672/')
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'rpc://')

@@ -49,6 +49,13 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/messaging/, ''), 
         websocket: true,
       },
+      // AMS contexts (external) - proxied during local dev to avoid CORS
+      '/ams-contexts': {
+        target: 'https://ams-contexts.up.railway.app',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/ams-contexts/, ''),
+      },
     },
   },
 })

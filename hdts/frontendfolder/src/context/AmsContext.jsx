@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
-const AMS_REGISTRATION_URL = 'https://ams-contexts.up.railway.app/categories/hd/registration/';
+const AMS_REGISTRATION_URL = '/ams-contexts/categories/hd/registration/';
 
 const AmsContext = createContext({
   categories: [],

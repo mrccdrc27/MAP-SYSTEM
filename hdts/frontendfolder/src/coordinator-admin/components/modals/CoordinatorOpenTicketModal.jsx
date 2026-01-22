@@ -8,8 +8,8 @@ import { backendTicketService } from "../../../services/backend/ticketService";
 import styles from "./CoordinatorOpenTicketModal.module.css";
 import 'react-toastify/dist/ReactToastify.css';
 
-// AMS registration endpoint (same as submission form)
-const AMS_REGISTRATION_URL = 'https://ams-contexts.up.railway.app/categories/hd/registration/';
+// AMS registration endpoint (proxied in dev via /ams-contexts)
+const AMS_REGISTRATION_URL = '/ams-contexts/categories/hd/registration/';
 
 const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
