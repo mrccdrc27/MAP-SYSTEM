@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from roles.models import Role
 from systems.models import System
 from system_roles.models import UserSystemRole
-from auth.hdts.models import Employees
+from ...models import Employees
 import random
 
 User = get_user_model()

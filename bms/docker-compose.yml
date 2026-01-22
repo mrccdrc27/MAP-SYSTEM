@@ -56,11 +56,11 @@ services:
       - PGHOST=bms_auth_db
       - PGPORT=5432
       # CORS: Allow federated login across mapative.tech domain
-      - DJANGO_CORS_ALLOWED_ORIGINS=https://mapative.tech,https://auth.mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
-      - DJANGO_CSRF_TRUSTED_ORIGINS=https://mapative.tech,https://auth.mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://mapative.tech,https://auth.mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://localhost:5175,http://127.0.0.1:5175
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://mapative.tech,https://auth.mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://localhost:5175,http://127.0.0.1:5175
       - FRONTEND_URL=https://mapative.tech
       - COOKIE_DOMAIN=.mapative.tech
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,bms_auth_service,host.docker.internal,165.22.247.50,mapative.tech,auth.mapative.tech,bms.mapative.tech
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,bms_auth_service,host.docker.internal,localhost,mapative.tech,auth.mapative.tech,bms.mapative.tech
     depends_on:
       auth_db:
         condition: service_healthy
@@ -96,8 +96,8 @@ services:
     ports:
       - "6001:8000"
     environment:
-      - DJANGO_CORS_ALLOWED_ORIGINS=https://mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
-      - DJANGO_CSRF_TRUSTED_ORIGINS=https://mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://165.22.247.50:5175,http://127.0.0.1:5175
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://localhost:5175,http://127.0.0.1:5175
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://mapative.tech,https://bms.mapative.tech,https://ticketing.mapactive.tech,http://localhost:5175,http://127.0.0.1:5175
     env_file:
       - ./budget_service/.env.docker
     depends_on:

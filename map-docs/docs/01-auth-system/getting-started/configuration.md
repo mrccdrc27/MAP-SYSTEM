@@ -244,7 +244,7 @@ Configure URLs for downstream systems (used for redirects after login):
 TTS_SYSTEM_URL=http://localhost:1000
 AMS_SYSTEM_URL=http://localhost:3001
 HDTS_SYSTEM_URL=http://localhost:5173/employee/home
-BMS_SYSTEM_URL=http://localhost:3002
+BMS_SYSTEM_URL=http://localhost:3001
 
 # Fallback URL if system is unknown
 DEFAULT_SYSTEM_URL=http://localhost:3000/dashboard

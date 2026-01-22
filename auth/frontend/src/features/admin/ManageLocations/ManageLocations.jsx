@@ -4,7 +4,7 @@ import { useToast, Button, Modal, Table, Badge, Card, Input } from '../../../com
 import styles from './ManageLocations.module.css';
 
 // HDTS API URL for locations
-const HDTS_API_URL = import.meta.env.VITE_HDTS_API_URL || 'http://165.22.247.50:8080/helpdesk';
+const HDTS_API_URL = import.meta.env.VITE_HDTS_API_URL || 'http://localhost:8080/helpdesk';
 
 const ManageLocations = () => {
   const { user } = useAuth();

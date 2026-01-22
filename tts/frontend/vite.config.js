@@ -11,7 +11,7 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       '127.0.0.1',
-      '165.22.247.50',
+      'localhost',
       'ticketflow.ticketing.mapactive.tech',
       'ticketing.mapactive.tech',
       '*.ticketing.mapactive.tech',

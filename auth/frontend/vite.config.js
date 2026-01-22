@@ -10,7 +10,7 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       '127.0.0.1',
-      '165.22.247.50',
+      'localhost',
       'mapactive.tech',
       'login.mapactive.tech',
       'app.mapactive.tech',
@@ -49,7 +49,7 @@ export default defineConfig({
         cookieDomainRewrite: 'localhost',
         cookiePathRewrite: '/',
         headers: {
-          'X-Forwarded-Host': '165.22.247.50',
+          'X-Forwarded-Host': 'localhost',
           'X-Forwarded-Proto': 'http',
         },
       },

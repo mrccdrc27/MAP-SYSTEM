@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // API URL for fetching locations from HDTS backend
-const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
+const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://localhost:5001';
 
 export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField, onAssetSelect, prefetchedCategories = [], prefetchLoading = false }) {
   // Use categories passed from parent (prefetched on page load)

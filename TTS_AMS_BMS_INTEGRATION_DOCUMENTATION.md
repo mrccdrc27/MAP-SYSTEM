@@ -29,7 +29,7 @@ To provide AMS with a list of resolved asset checkout tickets from TTS workflow 
 
 ### 3. API Endpoint
 ```
-GET http://165.22.247.50:8002/api/tickets/asset/checkout/resolved/
+GET http://localhost:8002/api/tickets/asset/checkout/resolved/
 ```
 
 ### 4. Method
@@ -49,7 +49,7 @@ GET http://165.22.247.50:8002/api/tickets/asset/checkout/resolved/
 
 **Example Request:**
 ```bash
-curl -X GET "http://165.22.247.50:8002/api/tickets/asset/checkout/resolved/?status=Resolved&limit=50"
+curl -X GET "http://localhost:8002/api/tickets/asset/checkout/resolved/?status=Resolved&limit=50"
 ```
 
 ### 6. Response Format
@@ -141,7 +141,7 @@ To provide AMS with a list of resolved asset check-in tickets from TTS workflow 
 
 ### 3. API Endpoint
 ```
-GET http://165.22.247.50:8002/api/tickets/asset/checkin/resolved/
+GET http://localhost:8002/api/tickets/asset/checkin/resolved/
 ```
 
 ### 4. Method
@@ -161,7 +161,7 @@ GET http://165.22.247.50:8002/api/tickets/asset/checkin/resolved/
 
 **Example Request:**
 ```bash
-curl -X GET "http://165.22.247.50:8002/api/tickets/asset/checkin/resolved/?status=Resolved&limit=50"
+curl -X GET "http://localhost:8002/api/tickets/asset/checkin/resolved/?status=Resolved&limit=50"
 ```
 
 ### 6. Response Format
@@ -241,7 +241,7 @@ To provide AMS with a unified endpoint for fetching all resolved asset-related t
 
 ### 3. API Endpoint
 ```
-GET http://165.22.247.50:8002/api/tickets/asset/resolved/
+GET http://localhost:8002/api/tickets/asset/resolved/
 ```
 
 ### 4. Method
@@ -261,7 +261,7 @@ GET http://165.22.247.50:8002/api/tickets/asset/resolved/
 
 **Example Request:**
 ```bash
-curl -X GET "http://165.22.247.50:8002/api/tickets/asset/resolved/?type=checkout&limit=20"
+curl -X GET "http://localhost:8002/api/tickets/asset/resolved/?type=checkout&limit=20"
 ```
 
 ### 6. Response Format
@@ -341,7 +341,7 @@ To notify TTS when AMS has successfully processed an asset checkout or check-in 
 
 ### 3. API Endpoint
 ```
-POST http://165.22.247.50:8002/api/tickets/asset/approve/
+POST http://localhost:8002/api/tickets/asset/approve/
 ```
 
 ### 4. Method
@@ -445,7 +445,7 @@ To notify TTS when AMS has processed multiple asset tickets in bulk, improving e
 
 ### 3. API Endpoint
 ```
-POST http://165.22.247.50:8002/api/tickets/asset/approve/bulk/
+POST http://localhost:8002/api/tickets/asset/approve/bulk/
 ```
 
 ### 4. Method
@@ -775,7 +775,7 @@ To notify TTS (and consequently HDTS) when a budget proposal's status changes in
 
 ### 3. API Endpoint
 ```
-POST http://165.22.247.50:8002/api/budget-status-update/
+POST http://localhost:8002/api/budget-status-update/
 ```
 
 **Note:** This endpoint is planned but not yet implemented. When implemented, it will receive status updates from BMS.
@@ -928,7 +928,7 @@ CELERY_TASK_ROUTES = {
 #### AMS Configuration
 ```python
 # TTS Ticket Tracking Integration
-TICKET_TRACKING_API_URL = 'http://165.22.247.50:8002/'
+TICKET_TRACKING_API_URL = 'http://localhost:8002/'
 # or for docker: 'http://workflow-api:8002/'
 ```
 
@@ -959,16 +959,16 @@ TRUSTED_SERVICE_KEYS = {
 #### Test TTS to AMS
 ```bash
 # Fetch resolved checkout tickets
-curl -X GET "http://165.22.247.50:8002/api/tickets/asset/checkout/resolved/?limit=10"
+curl -X GET "http://localhost:8002/api/tickets/asset/checkout/resolved/?limit=10"
 
 # Fetch resolved check-in tickets
-curl -X GET "http://165.22.247.50:8002/api/tickets/asset/checkin/resolved/?limit=10"
+curl -X GET "http://localhost:8002/api/tickets/asset/checkin/resolved/?limit=10"
 ```
 
 #### Test AMS to TTS
 ```bash
 # Mark single ticket as executed
-curl -X POST "http://165.22.247.50:8002/api/tickets/asset/approve/" \
+curl -X POST "http://localhost:8002/api/tickets/asset/approve/" \
   -H "Content-Type: application/json" \
   -d '{
     "ticket_number": "TKT080",
@@ -976,7 +976,7 @@ curl -X POST "http://165.22.247.50:8002/api/tickets/asset/approve/" \
   }'
 
 # Bulk approve tickets
-curl -X POST "http://165.22.247.50:8002/api/tickets/asset/approve/bulk/" \
+curl -X POST "http://localhost:8002/api/tickets/asset/approve/bulk/" \
   -H "Content-Type: application/json" \
   -d '{
     "ticket_numbers": ["TKT080", "TKT081"],
@@ -1052,7 +1052,7 @@ For questions or integration support:
 - **Technical Support:** tech-support@company.com
 - **Integration Team:** #system-integration (Slack)
 - **API Documentation:** 
-  - TTS: http://165.22.247.50:8002/api/docs/
+  - TTS: http://localhost:8002/api/docs/
   - BMS: https://budget-pro.onrender.com/api/docs/
 
 Last reviewed: January 12, 2026

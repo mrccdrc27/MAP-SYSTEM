@@ -158,7 +158,7 @@ SESSION_COOKIE_SECURE = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:1000",    # TTS Frontend
     "http://localhost:3001",    # AMS Frontend
-    "http://localhost:3002",    # BMS Frontend
+    "http://localhost:3001",    # BMS Frontend
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # Allow cookies

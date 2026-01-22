@@ -8,7 +8,7 @@ export const USER_TYPES = {
 export const SYSTEM_URLS = {
   TTS: import.meta.env.VITE_TTS_SYSTEM_URL || 'http://localhost:1000',
   AMS: import.meta.env.VITE_AMS_SYSTEM_URL || 'http://localhost:3000/ams',
-  HDTS: import.meta.env.VITE_HDTS_SYSTEM_URL || 'http://localhost:5173/hdts',
+  HDTS: import.meta.env.VITE_HDTS_SYSTEM_URL || 'http://localhost:5173',
   BMS: import.meta.env.VITE_BMS_SYSTEM_URL || 'http://localhost:3000/bms',
 };
 

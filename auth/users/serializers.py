@@ -1180,13 +1180,29 @@ class LoginProcessSerializer(LoginWithRecaptchaSerializer):
                 'assigned_at': role_assignment.assigned_at,
             })
             
-        # Determine redirect
+        # Determine redirect (support role-specific landing pages for systems)
         primary_system = None
         redirect_url = settings.DEFAULT_SYSTEM_URL
         if system_roles_data:
             primary_system = system_roles_data[0]['system_slug']
+            # Default per-system URL
             redirect_url = settings.SYSTEM_TEMPLATE_URLS.get(primary_system, settings.DEFAULT_SYSTEM_URL)
-            
+
+            # Role-specific overrides (example: HDTS has different home for Employee vs Admin)
+            try:
+                if primary_system == 'hdts':
+                    # Inspect actual role assignments to decide landing page
+                    hdts_roles = [r for r in user_system_roles if getattr(r.system, 'slug', None) == 'hdts']
+                    role_names = [getattr(r.role, 'name', '').lower() for r in hdts_roles]
+                    # Prefer admin dashboard when user has an Admin role
+                    if any('admin' in rn for rn in role_names):
+                        redirect_url = getattr(settings, 'HDTS_ADMIN_URL', redirect_url)
+                    else:
+                        redirect_url = getattr(settings, 'HDTS_EMPLOYEE_URL', redirect_url)
+            except Exception:
+                # Fall back to the per-system URL on any unexpected error
+                redirect_url = settings.SYSTEM_TEMPLATE_URLS.get(primary_system, settings.DEFAULT_SYSTEM_URL)
+
         available_systems = {
             role_data['system_slug']: settings.SYSTEM_TEMPLATE_URLS.get(role_data['system_slug'], settings.DEFAULT_SYSTEM_URL)
             for role_data in system_roles_data

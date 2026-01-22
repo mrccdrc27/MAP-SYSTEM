@@ -125,7 +125,7 @@ export default function MainRoute() {
 }
 
 function ExternalLoginRedirect() {
-  const { hasAuth, loading, initialized } = useAuth();
+  const { user, hasAuth, loading, initialized, isAdmin } = useAuth();
 
   useEffect(() => {
     // Wait for auth context to initialize
@@ -134,8 +134,28 @@ function ExternalLoginRedirect() {
     }
 
     if (hasAuth) {
-      // User is authenticated - redirect to frontend dashboard
-      window.location.replace("/dashboard");
+      // Decide target based on role
+      const toAdmin = () => {
+        try {
+          return isAdmin && isAdmin();
+        } catch (e) {
+          return false;
+        }
+      };
+
+      const isTicketCoordinator = () => {
+        if (!user || !user.system_roles) return false;
+        return user.system_roles.some(
+          (r) => r.system_slug === "tts" && /ticket coordinator/i.test(r.role_name)
+        );
+      };
+
+      if (toAdmin() || isTicketCoordinator()) {
+        window.location.replace("/admin/dashboard");
+      } else {
+        // Default for non-admin employees
+        window.location.replace("/employee/home");
+      }
     } else {
       // User is not authenticated - redirect to auth service
       const authBase = import.meta.env.VITE_AUTH_LOGIN || "http://localhost:3001";
@@ -143,7 +163,7 @@ function ExternalLoginRedirect() {
       const target = `${base}/staff`;
       window.location.replace(target);
     }
-  }, [hasAuth, loading, initialized]);
+  }, [user, hasAuth, loading, initialized, isAdmin]);
 
   // Show loading while auth context initializes
   if (!initialized || loading) {

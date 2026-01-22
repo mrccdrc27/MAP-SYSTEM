@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import SmartSupportLogIn from '../authentication/pages/log-in/SmartSupportLogIn';
 import SmartSupportEmployeeCreateAccount from '../authentication/pages/employee-create-account/SmartSupportEmployeeCreateAccount';
 import SmartSupportForgotPassword from '../authentication/pages/forgot-password/SmartSupportForgotPassword';
@@ -9,6 +9,17 @@ import { useAuth } from '../context/AuthContext';
 // Root route handler - redirects authenticated users to their home page
 const RootRedirect = () => {
   const { user, loading, initialized, isAdmin, isTicketCoordinator } = useAuth();
+  const location = useLocation();
+
+  // Prevent rapid redirect loops: if we redirected within the last 3s, do nothing
+  try {
+    const last = sessionStorage.getItem('root_redirect_ts');
+    if (last && Date.now() - Number(last) < 3000) {
+      return null;
+    }
+  } catch (e) {
+    // ignore sessionStorage errors
+  }
   
   // Show loading while checking auth
   if (loading || !initialized) {
@@ -28,12 +39,14 @@ const RootRedirect = () => {
   // Not authenticated - redirect to auth-frontend
   if (!user) {
     const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
+    try { sessionStorage.setItem('root_redirect_ts', String(Date.now())); } catch(e) {}
     window.location.href = `${authFrontendUrl}/employee`;
     return null;
   }
   
   // Authenticated admin/coordinator - go to admin dashboard
   if (isAdmin || isTicketCoordinator) {
+    try { sessionStorage.setItem('root_redirect_ts', String(Date.now())); } catch(e) {}
     return <Navigate to="/admin/dashboard" replace />;
   }
   

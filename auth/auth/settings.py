@@ -286,7 +286,7 @@ CSRF_COOKIE_HTTPONLY = config('DJANGO_CSRF_COOKIE_HTTPONLY', default='False', ca
 # Add your Railway domain and frontend domain here
 CSRF_TRUSTED_ORIGINS = config(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://localhost:1000,http://127.0.0.1:1000,http://165.22.247.50:5173,http://165.22.247.50:1000' if not IS_PRODUCTION else 'https://yourdomain.com',
+    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://localhost:1000,http://127.0.0.1:1000,http://localhost:5173,http://localhost:1000' if not IS_PRODUCTION else 'https://yourdomain.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -294,7 +294,7 @@ CSRF_TRUSTED_ORIGINS = config(
 # Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://165.22.247.50:5173,http://165.22.247.50:1000',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5173,http://localhost:1000',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -333,6 +333,10 @@ SYSTEM_TEMPLATE_URLS = {
 
 # Fallback system URL for unknown systems
 DEFAULT_SYSTEM_URL = config('DEFAULT_SYSTEM_URL', default='http://localhost:3000/dashboard')
+
+# Role-specific HDTS URLs (optional overrides)
+HDTS_ADMIN_URL = config('HDTS_ADMIN_URL', default='http://localhost:5173/admin/dashboard')
+HDTS_EMPLOYEE_URL = config('HDTS_EMPLOYEE_URL', default='http://localhost:5173/employee/home')
 
 # Celery Configuration
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://admin:admin@localhost:5672/')

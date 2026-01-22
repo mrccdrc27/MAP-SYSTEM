@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 
-const HDTS_API_URL = import.meta.env.VITE_HELPDESK_SERVICE_URL || "http://165.22.247.50:8080/helpdesk";
+const HDTS_API_URL = import.meta.env.VITE_HELPDESK_SERVICE_URL || "http://localhost:8080/helpdesk";
 
 // Helper to check if user is admin
 const isAdminRole = (user) => {

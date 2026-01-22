@@ -123,7 +123,7 @@ HDTS Ticket Coordinators retrieve tickets assigned to them from TTS workflow sys
 
 #### API Endpoint
 ```
-GET http://165.22.247.50:8002/tasks/owned-tickets/
+GET http://localhost:8002/tasks/owned-tickets/
 ```
 
 #### Method
@@ -149,7 +149,7 @@ Cookie: access_token={jwt_token}
 **Example Request:**
 ```http
 GET /tasks/owned-tickets/?status=active&page=1&page_size=20 HTTP/1.1
-Host: 165.22.247.50:8002
+Host: localhost:8002
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Cookie: access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -159,7 +159,7 @@ Cookie: access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```json
 {
   "count": 45,
-  "next": "http://165.22.247.50:8002/tasks/owned-tickets/?page=2",
+  "next": "http://localhost:8002/tasks/owned-tickets/?page=2",
   "previous": null,
   "results": [
     {
@@ -224,7 +224,7 @@ Retrieve complete ticket information from HDTS by ticket number.
 
 #### API Endpoint
 ```
-GET http://165.22.247.50:8000/api/tickets/number/{ticket_number}/
+GET http://localhost:8000/api/tickets/number/{ticket_number}/
 ```
 
 #### Method
@@ -245,7 +245,7 @@ Cookie: access_token={jwt_token}
 **Example Request:**
 ```http
 GET /api/tickets/number/TX20260112123456/ HTTP/1.1
-Host: 165.22.247.50:8000
+Host: localhost:8000
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -320,7 +320,7 @@ Retrieve complete workflow action history for a ticket, including all task assig
 
 #### API Endpoint
 ```
-GET http://165.22.247.50:8002/tasks/logs/?ticket_number={ticket_number}
+GET http://localhost:8002/tasks/logs/?ticket_number={ticket_number}
 ```
 
 #### Method
@@ -340,7 +340,7 @@ Authorization: Bearer {jwt_token}
 **Example Request:**
 ```http
 GET /tasks/logs/?ticket_number=TX20260112123456 HTTP/1.1
-Host: 165.22.247.50:8002
+Host: localhost:8002
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -521,7 +521,7 @@ Execute workflow transitions (approve, reject, escalate) on tasks.
 
 #### API Endpoint
 ```
-POST http://165.22.247.50:8002/transitions/
+POST http://localhost:8002/transitions/
 ```
 
 #### Method
@@ -607,7 +607,7 @@ Escalate ticket ownership from a Ticket Coordinator to an Admin.
 
 #### API Endpoint
 ```
-POST http://165.22.247.50:8002/tasks/ticket-owner/escalate/
+POST http://localhost:8002/tasks/ticket-owner/escalate/
 ```
 
 #### Method
@@ -667,7 +667,7 @@ Transfer ticket ownership from one coordinator to another (Admin only).
 
 #### API Endpoint
 ```
-POST http://165.22.247.50:8002/tasks/ticket-owner/transfer/
+POST http://localhost:8002/tasks/ticket-owner/transfer/
 ```
 
 #### Method
@@ -1018,7 +1018,7 @@ No changes currently planned.
 - **On-Call:** +1-555-0100
 
 ### Documentation
-- **API Docs:** http://165.22.247.50:8002/api/docs/
+- **API Docs:** http://localhost:8002/api/docs/
 - **Developer Portal:** https://docs.company.com/integration
 - **GitHub:** https://github.com/mrccdrc27/MAP-SYSTEM
 
@@ -1046,7 +1046,7 @@ CELERY_TASK_ROUTES = {
 }
 
 # TTS Integration
-TTS_WORKFLOW_URL = 'http://165.22.247.50:8002'
+TTS_WORKFLOW_URL = 'http://localhost:8002'
 ```
 
 #### TTS Workflow API (Django Settings)
@@ -1062,8 +1062,8 @@ CELERY_TASK_ROUTES = {
 }
 
 # HDTS Integration
-HDTS_BACKEND_URL = 'http://165.22.247.50:8000'
-AUTH_SERVICE_URL = 'http://165.22.247.50:8003'
+HDTS_BACKEND_URL = 'http://localhost:8000'
+AUTH_SERVICE_URL = 'http://localhost:8003'
 ```
 
 #### Frontend Environment Variables
@@ -1071,13 +1071,13 @@ AUTH_SERVICE_URL = 'http://165.22.247.50:8003'
 // HDTS Frontend (environment.js)
 export const API_CONFIG = {
   BACKEND: {
-    BASE_URL: 'http://165.22.247.50:8000',
+    BASE_URL: 'http://localhost:8000',
   },
   AUTH: {
-    BASE_URL: 'http://165.22.247.50:8003',
+    BASE_URL: 'http://localhost:8003',
   },
   TTS_WORKFLOW: {
-    BASE_URL: 'http://165.22.247.50:8002',
+    BASE_URL: 'http://localhost:8002',
   }
 };
 ```
@@ -1087,19 +1087,19 @@ export const API_CONFIG = {
 #### Health Check
 ```bash
 # HDTS Backend
-curl http://165.22.247.50:8000/health
+curl http://localhost:8000/health
 
 # TTS Workflow API
-curl http://165.22.247.50:8002/health
+curl http://localhost:8002/health
 
 # Auth Service
-curl http://165.22.247.50:8003/health
+curl http://localhost:8003/health
 ```
 
 #### Authentication Test
 ```bash
 # Get JWT Token
-curl -X POST http://165.22.247.50:8003/token/ \
+curl -X POST http://localhost:8003/token/ \
   -H "Content-Type: application/json" \
   -d '{"email": "user@company.com", "password": "password"}'
 

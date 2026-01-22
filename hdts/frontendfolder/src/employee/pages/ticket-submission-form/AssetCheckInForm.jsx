@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // API URL for fetching locations from HDTS backend
-const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
+const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://localhost:5001';
 
 // AMS API URL for fetching asset checkouts
 const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app';

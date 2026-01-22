@@ -12,13 +12,14 @@ import React, {
 import axios from "axios";
 
 const AuthContext = createContext(undefined);
-// Use relative URLs to go through Vite proxy (makes cookies same-origin)
-// In production, set VITE_AUTH_URL to the actual backend URL
+// Use Vite proxy (relative URLs) during development so cookies are same-origin.
+// In production, set VITE_AUTH_URL to the actual backend URL.
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "";
-const ME_URL = `${AUTH_URL}/api/me/`; // Unified endpoint for both User and Employee
-const LOGIN_URL = `${AUTH_URL}/api/v1/token/obtain/`;
-const LOGOUT_URL = `${AUTH_URL}/api/v1/token/logout/`;
-const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/cookie/`; // New unified refresh endpoint
+const BASE_URL = import.meta.env.DEV ? "" : AUTH_URL;
+const ME_URL = `${BASE_URL}/api/me/`; // Unified endpoint for both User and Employee
+const LOGIN_URL = `${BASE_URL}/api/v1/token/obtain/`;
+const LOGOUT_URL = `${BASE_URL}/api/v1/token/logout/`;
+const TOKEN_REFRESH_URL = `${BASE_URL}/api/v1/token/refresh/cookie/`; // New unified refresh endpoint
 
 // Default refresh interval (fallback if server doesn't provide expires_in)
 const DEFAULT_TOKEN_LIFETIME_SECONDS = 300; // 5 minutes
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
   // Stable axios instance with credentials (cookies)
   const api = useMemo(() => {
     return axios.create({
-      baseURL: AUTH_URL,
+      baseURL: BASE_URL,
       headers: { "Content-Type": "application/json" },
       withCredentials: true, // crucial for cookie-based auth
     });
@@ -183,13 +184,28 @@ export const AuthProvider = ({ children }) => {
       
       return false;
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.debug('AuthContext: Failed to fetch user profile:', {
+      // Verbose logging to help diagnose why /api/me fails in dev
+      try {
+        // eslint-disable-next-line no-console
+        console.error('AuthContext: Failed to fetch user profile', {
           status: error.response?.status,
           data: error.response?.data,
-          message: error.message
+          headers: error.response?.config?.headers,
+          message: error.message,
         });
+      } catch (e) {
+        // ignore logging errors
       }
+
+      try {
+        window.dispatchEvent(new CustomEvent('auth:fetch_failed', {
+          detail: {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+          }
+        }));
+      } catch (e) {}
       clearAuth();
       return false;
     } finally {

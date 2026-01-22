@@ -60,6 +60,19 @@ const Welcome = () => {
         }
       }
       
+      // Special handling for HDTS: route into app by role
+      if (slug === 'HDTS') {
+        const base = systemUrl.replace(/\/+$/g, '');
+        const roleName = (systemRole.role_name || '').toLowerCase();
+        const isAdminRole = /admin/i.test(roleName) || /ticket coordinator/i.test(roleName);
+        const targetPath = isAdminRole ? '/admin/dashboard' : '/employee/home';
+        const redirectUrl = `${base}${targetPath}`;
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 300);
+        return;
+      }
+
       // For other systems, just redirect normally
       setTimeout(() => {
         window.location.href = systemUrl;

@@ -164,7 +164,7 @@ docker exec docker_rabbitmq_1 rabbitmq-diagnostics -q ping
 docker exec docker_rabbitmq_1 rabbitmqctl list_queues
 
 # Access management UI
-# Navigate to http://165.22.247.50:15672 (admin/admin)
+# Navigate to http://localhost:15672 (admin/admin)
 ```
 
 ### 4. Authentication Failures
@@ -174,7 +174,7 @@ docker exec docker_rabbitmq_1 rabbitmqctl list_queues
 **Solutions:**
 ```bash
 # Check auth service health
-curl -s http://165.22.247.50:8003/api/health/
+curl -s http://localhost:8003/api/health/
 
 # Verify JWT signing key consistency
 docker exec docker_auth-service_1 env | grep JWT
@@ -196,8 +196,8 @@ docker exec docker_kong_1 kong config parse /kong/kong.docker.yml
 docker logs docker_kong_1
 
 # Test upstream services directly (bypass Kong)
-curl http://165.22.247.50:8003/api/health/  # Auth
-curl http://165.22.247.50:1001/api/health/  # Workflow
+curl http://localhost:8003/api/health/  # Auth
+curl http://localhost:1001/api/health/  # Workflow
 ```
 
 ---
@@ -297,7 +297,7 @@ print('Tasks:', Task.objects.count())
 docker logs docker_workflow-worker_1 --tail 100
 
 # Check queue status
-curl http://165.22.247.50:15672/api/queues -u admin:admin
+curl http://localhost:15672/api/queues -u admin:admin
 ```
 
 ### Helpdesk Service (HDTS)
@@ -593,10 +593,10 @@ docker exec docker_db_1 pg_isready -U postgres
 docker exec docker_rabbitmq_1 rabbitmq-diagnostics -q ping
 
 # Individual services
-curl -s http://165.22.247.50:8003/api/health/   # Auth
-curl -s http://165.22.247.50:1001/api/health/   # Workflow
-curl -s http://165.22.247.50:5001/api/health/   # Helpdesk
-curl -s http://165.22.247.50:1003/api/health/   # Notification
+curl -s http://localhost:8003/api/health/   # Auth
+curl -s http://localhost:1001/api/health/   # Workflow
+curl -s http://localhost:5001/api/health/   # Helpdesk
+curl -s http://localhost:1003/api/health/   # Notification
 ```
 
 ### Quick Fixes

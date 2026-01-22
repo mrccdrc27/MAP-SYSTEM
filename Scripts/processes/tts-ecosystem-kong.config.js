@@ -322,7 +322,7 @@ module.exports = {
         VITE_ENV: "development",
         VITE_DEBUG: "true",
         // HDTS frontend URL for employee redirect after login
-        VITE_HDTS_FRONTEND_URL: "http://165.22.247.50:5173",
+        VITE_HDTS_FRONTEND_URL: "http://localhost:5173",
         // Feature flags
         VITE_ENABLE_REGISTRATION: "true",
         VITE_ENABLE_PASSWORD_RESET: "true",
