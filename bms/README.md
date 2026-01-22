@@ -17,8 +17,8 @@ It is built with:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/BudgetProPUP/budget-pro.git
-cd budget-pro/bms
+git clone https://github.com/mrccdrc27/MAP-SYSTEM
+cd bms
 ```
 
 ### 2. Configure Environment Variables
