@@ -84,24 +84,6 @@ def ratelimit_handler(request, exception):  # Not yet hooked up
     }, status=429)
 
 
-@csrf_exempt  # ADD THIS DECORATOR
-def budget_health_check_view(request):  # Renamed for clarity
-    app_status = {"status": "healthy", "service": "budget_service"}
-    try:
-        connection.ensure_connection()  # Check budget_service's DB
-        db_connected = True
-    except OperationalError:
-        db_connected = False
-        app_status["database_status"] = "unhealthy"
-        app_status["status"] = "degraded"
-    else:
-        app_status["database_status"] = "healthy"
-
-    if db_connected:
-        return JsonResponse(app_status, status=200)
-    else:
-        return JsonResponse(app_status, status=503)
-
 
 class ValidProjectAccountView(APIView):
     """
