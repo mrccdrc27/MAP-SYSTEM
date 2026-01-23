@@ -57,19 +57,22 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 10px;
-  color: #333;
+  color: #6b7280; /* Explicitly set to Gray-500 equivalent */
+  text-transform: uppercase; /* Match original style */
+  letter-spacing: 0.5px;
 }
 
 .compact-stat-value {
   font-size: 1.8rem;
   font-weight: 700;
   margin: 10px 0;
-  color: #333;
+  color: #007bff; /* Explicitly Blue */
+  line-height: 1.2;
 }
 
 .compact-card-subtext {
   font-size: 0.85rem;
-  color: #666;
+  color: #6c757d; /* Muted Gray */
   margin-bottom: 10px;
 }
 

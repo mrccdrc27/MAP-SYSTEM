@@ -12,7 +12,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
     ports:
-      - "5433:5432"
+      - "15432:5432"  # Using port 15432 (outside reserved range)
     networks:
       - my_network
     healthcheck:
@@ -55,10 +55,9 @@ services:
       - POSTGRES_PASSWORD=a4d
       - PGHOST=auth_db
       - PGPORT=5432
-      # CORS: Allow your BMS Frontend (5173) to talk to Auth
-      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      - FRONTEND_URL=http://localhost:5173
+      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - FRONTEND_URL=http://localhost:3000
     depends_on:
       auth_db:
         condition: service_healthy
@@ -66,7 +65,6 @@ services:
       - my_network
 
   budget_db:
-    # Keep existing configuration)
     image: postgres:15-alpine
     container_name: budget_db
     volumes:
@@ -76,7 +74,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
     ports:
-      - "5434:5432"
+      - "15433:5432"  # Using port 15433 (outside reserved range)
     networks:
       - my_network
     healthcheck:
@@ -94,8 +92,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     env_file:
       - ./budget_service/.env.docker
     depends_on:
