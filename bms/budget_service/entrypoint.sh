@@ -7,17 +7,27 @@ set -e
 echo "Applying budget_service migrations..."
 python manage.py migrate --noinput
 
-# Run the main seeder
+# --- MODIFICATION START: Data Cleanup ---
+# Ensure legacy categories don't break new seeders
+echo "Cleaning up legacy categories..."
+python manage.py cleanup_categories
+# --- MODIFICATION END ---
+
+# Run the main seeder (Creates Fiscal Years, Users, Departments, Base Categories, Proposals)
 echo "Running budget_service seeder..."
 python manage.py controlled_seeder
 
-# --- MODIFICATION START ---
-# Run the Budget Caps seeder (Depends on controlled_seeder data)
+# --- MODIFICATION START: Data Integrity & Rules ---
+# 1. Ensure allocations exist for all approved proposals (Critical for Expenses)
+echo "Fixing missing allocations..."
+python manage.py fix_missing_allocations
+
+# 2. Seed Budget Caps (Governance Rules)
 echo "Seeding Budget Caps (Governance Rules)..."
 python manage.py seed_budget_caps
 # --- MODIFICATION END ---
 
-# Generate the initial forecast data after seeding
+# Generate the initial forecast data (Depends on Expenses existing)
 echo "Generating budget_service forecast data..."
 python manage.py generate_forecasts
 
