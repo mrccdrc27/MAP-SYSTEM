@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.db import connection 
 from django.db.utils import OperationalError  
 
-# Define health check HERE (not in core/views.py)
+
 @csrf_exempt
 def budget_health_check_view(request):
     """Health check endpoint for Render deployment"""
