@@ -1,33 +1,55 @@
-# Ignore Python virtual environments and env files
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python virtual environments
 venv/
 env/
+authenv/
+myenv/
+venv_auth/
 
-# Ignore all .env files
+# Environment files - ALL of them
 *.env
+*.env.*
+.env
+.env.*
+.env.local
+.env.docker
+.env.production
 
-
-# Ignore test directory
+# Test directories
 # test/
 
-# Ignore all db.sqlite3 files anywhere
+# Database files
 **/db.sqlite3
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3-journal
 
-# Ignore all __pycache__ directories anywhere
-__pycache__/
-
-__media__/
-
-__uploads__/
-
-uploads/
-
-bin/
-
-generated_docs/
-
-# Django .gitignore file for auth module
-
-# Byte-compiled / optimized / DLL files
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
@@ -78,23 +100,20 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 */test
-# tests/
 
 # Translations
 *.mo
 *.pot
 
-# Django stuff:
-*.log
+# Django stuff
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
+settings_local.py
 
-# Flask stuff:
+# Flask stuff
 instance/
 .webassets-cache
 
-# Scrapy stuff:
+# Scrapy stuff
 .scrapy
 
 # Sphinx documentation
@@ -126,19 +145,6 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-# Custom environment names
-/authenv
-/myenv
-/venv_auth
-
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -157,42 +163,29 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Django specific additions
-# Database
-*.db
-*.sqlite3
-
 # Static files
 /static/
 /staticfiles/
+staticfiles/
 
 # Media files
 /media/
+__media__/
+__uploads__/
+uploads/
+*media
 
-# Local settings
-local_settings.py
-settings_local.py
-
-# Django migrations (optional - uncomment if you want to ignore migrations)
-# */migrations/*.py
-# */migrations/*.pyc
-# !*/migrations/__init__.py
-
-# Django collected static files
-staticfiles/
+# Generated files
+bin/
+generated_docs/
 
 # Django secret key file
 .secret_key
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
 
 # Redis dump file
 dump.rdb
 
 # Editor and IDE files
-# .vscode/
 .idea/
 *.swp
 *.swo
@@ -208,46 +201,20 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Linux
-*~
-
 # Logs
-*.log
 logs/
 
 # Temporary files
 *.tmp
 *.temp
 
-# Node modules (if using npm/yarn for frontend assets)
+# Node modules
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+
+# Vite
+*vite
 
 # Coverage reports
 htmlcov/
 .coverage
 coverage.xml
-
-# Pytest
-.pytest_cache/
-
-# Documentation builds
-docs/_build/
-auth/auth/__pycache__/__init__.cpython-313.pyc
-auth/auth/__pycache__/settings.cpython-313.pyc
-auth/auth/__pycache__/__init__.cpython-313.pyc
-auth/auth/__pycache__/settings.cpython-313.pyc
-
-.sqlite3
-*.sqlite
-*.sqlite3
-*media
-
-*vite
-.vscode/settings.json
-.vscode/settings.json
-bms/auth_service/.env.docker
-bms/budget_service/.env.docker
-bms/budget_service/.env.docker
