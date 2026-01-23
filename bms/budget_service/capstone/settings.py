@@ -62,6 +62,8 @@ else:
     ALLOWED_HOSTS.extend([
         'budget-pro.onrender.com',  # Your budget service domain
         '.onrender.com',  # All Render subdomains
+        'api.bms.mapactive.tech',  # Your custom domain
+        '.mapactive.tech',  # All subdomains of your custom domain
     ])
     
     # Railway fallback configuration (keep for potential return)
@@ -72,16 +74,15 @@ else:
     # Railway domains as fallback
     ALLOWED_HOSTS.extend(['.railway.app', '.up.railway.app'])
 
+# CRITICAL FIX: Always include localhost for internal health checks
+# Render performs internal health checks from 127.0.0.1
+ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
+
 # Remove duplicates and None values
 ALLOWED_HOSTS = list(set(filter(None, ALLOWED_HOSTS)))
 
 if not ALLOWED_HOSTS and not DEBUG:
-    # Fallback if no hosts are configured for production to prevent Django from refusing all connections
-    print("WARNING: ALLOWED_HOSTS is empty in a non-DEBUG environment. This is insecure. Add your service's domain.")
-    # ALLOWED_HOSTS = ['*'] # Highly insecure, for temporary debugging only if absolutely stuck
-
-
-
+    print("WARNING: ALLOWED_HOSTS is empty in a non-DEBUG environment.")
 # Application definition
 
 INSTALLED_APPS = [

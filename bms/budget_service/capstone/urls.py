@@ -7,20 +7,39 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.db import connection 
 from django.db.utils import OperationalError
+import logging
+
+logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def budget_health_check_view(request):
     """Health check endpoint for Render deployment"""
-    app_status = {"status": "healthy", "service": "budget_service"}
+    
+    # Log the request for debugging
+    logger.info(f"Health check from {request.get_host()}, Method: {request.method}")
+    
+    app_status = {
+        "status": "healthy", 
+        "service": "budget_service",
+        "host": request.get_host(),
+        "method": request.method
+    }
+    
     try:
         connection.ensure_connection()
         app_status["database_status"] = "healthy"
         return JsonResponse(app_status, status=200)
     except OperationalError as e:
+        logger.error(f"Database connection failed: {str(e)}")
         app_status["database_status"] = "unhealthy"
         app_status["status"] = "degraded"
         app_status["error"] = str(e)
         return JsonResponse(app_status, status=503)
+    except Exception as e:
+        logger.error(f"Unexpected health check error: {str(e)}")
+        app_status["status"] = "error"
+        app_status["error"] = str(e)
+        return JsonResponse(app_status, status=500)
 
 urlpatterns = [
     path('health/', budget_health_check_view, name='budget_health_check'),  # KEEP ONLY THIS ONE
