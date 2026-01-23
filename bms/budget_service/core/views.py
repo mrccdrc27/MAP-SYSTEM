@@ -21,7 +21,7 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from django.db import connection
 from django.db.utils import OperationalError
-
+from django.views.decorators.csrf import csrf_exempt
 from core.permissions import IsBMSUser
 from .serializers import DepartmentSerializer, ValidProjectAccountSerializer
 from .models import BudgetAllocation, Department, JournalEntryLine, UserActivityLog
@@ -84,6 +84,7 @@ def ratelimit_handler(request, exception):  # Not yet hooked up
     }, status=429)
 
 
+@csrf_exempt  # ADD THIS DECORATOR
 def budget_health_check_view(request):  # Renamed for clarity
     app_status = {"status": "healthy", "service": "budget_service"}
     try:
