@@ -1,20 +1,21 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
 import { ChevronDown, Bell, User, LogOut } from "lucide-react";
 import LOGOMAP from "../../assets/MAP.jpg";
 import "./Navigation.css";
 
-const Navigation = ({ 
-  userProfile, 
-  currentDate, 
-  onLogout, 
+const Navigation = ({
+  userProfile,
+  currentDate,
+  onLogout,
   onManageProfile,
   activeView = "dashboard",
   onViewChange,
-  isFinanceManager = false 
+  isFinanceManager = false,
 }) => {
   const navigate = useNavigate();
-  
+  const location = useLocation(); // Get current route
+
   // Dropdown states
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showExpenseDropdown, setShowExpenseDropdown] = useState(false);
@@ -36,6 +37,26 @@ const Navigation = ({
   const toggleDropdown = (setter, currentState) => {
     closeAllDropdowns();
     setter(!currentState);
+  };
+
+  // --- NEW HANDLERS FOR VIEW SWITCHING ---
+  const handleFiscalYearClick = () => {
+    // Check if we are already on the dashboard route
+    if (location.pathname.includes("/finance/dashboard")) {
+      // If already on dashboard, just switch the view using the prop callback
+      onViewChange?.("fiscal-year");
+    } else {
+      // If on another page, navigate to dashboard with state
+      navigate("/finance/dashboard", { state: { view: "fiscal-year" } });
+    }
+  };
+
+  const handleDashboardClick = () => {
+    if (location.pathname.includes("/finance/dashboard")) {
+      onViewChange?.("dashboard");
+    } else {
+      navigate("/finance/dashboard", { state: { view: "dashboard" } });
+    }
   };
 
   // Date formatting
@@ -68,9 +89,9 @@ const Navigation = ({
 
         {/* Main Navigation Links */}
         <div className="navbar-links">
-          {/* Dashboard/Fiscal Year Toggle */}
+          {/* Dashboard Toggle */}
           <button
-            onClick={() => onViewChange?.("dashboard")}
+            onClick={handleDashboardClick}
             className={`nav-link ${activeView === "dashboard" ? "active" : ""}`}
           >
             Dashboard
@@ -79,7 +100,7 @@ const Navigation = ({
           {/* Only Finance Head sees this tab */}
           {isFinanceManager && (
             <button
-              onClick={() => onViewChange?.("fiscal-year")}
+              onClick={handleFiscalYearClick}
               className={`nav-link ${activeView === "fiscal-year" ? "active" : ""}`}
             >
               FY Management
@@ -90,7 +111,9 @@ const Navigation = ({
           <div className="nav-dropdown">
             <div
               className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
-              onClick={() => toggleDropdown(setShowBudgetDropdown, showBudgetDropdown)}
+              onClick={() =>
+                toggleDropdown(setShowBudgetDropdown, showBudgetDropdown)
+              }
               onMouseDown={(e) => e.preventDefault()}
             >
               Budget{" "}
@@ -127,7 +150,9 @@ const Navigation = ({
                 </div>
                 <div
                   className="dropdown-item"
-                  onClick={() => handleNavigate("/finance/budget-variance-report")}
+                  onClick={() =>
+                    handleNavigate("/finance/budget-variance-report")
+                  }
                 >
                   Budget Variance Report
                 </div>
@@ -139,7 +164,9 @@ const Navigation = ({
           <div className="nav-dropdown">
             <div
               className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
-              onClick={() => toggleDropdown(setShowExpenseDropdown, showExpenseDropdown)}
+              onClick={() =>
+                toggleDropdown(setShowExpenseDropdown, showExpenseDropdown)
+              }
               onMouseDown={(e) => e.preventDefault()}
             >
               Expense{" "}
@@ -177,7 +204,9 @@ const Navigation = ({
           <div className="notification-container">
             <div
               className="notification-icon"
-              onClick={() => toggleDropdown(setShowNotifications, showNotifications)}
+              onClick={() =>
+                toggleDropdown(setShowNotifications, showNotifications)
+              }
               onMouseDown={(e) => e.preventDefault()}
             >
               <Bell size={20} />
@@ -223,7 +252,9 @@ const Navigation = ({
           <div className="profile-container">
             <div
               className="profile-trigger"
-              onClick={() => toggleDropdown(setShowProfileDropdown, showProfileDropdown)}
+              onClick={() =>
+                toggleDropdown(setShowProfileDropdown, showProfileDropdown)
+              }
               onMouseDown={(e) => e.preventDefault()}
             >
               <img

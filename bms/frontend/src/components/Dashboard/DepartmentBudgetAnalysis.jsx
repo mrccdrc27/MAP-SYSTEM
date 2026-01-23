@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Pie } from "react-chartjs-2";
-import { Eye } from "lucide-react";
+import { Eye, Download } from "lucide-react"; // Added Download icon
 import { formatPeso } from "../../utils/dashboardUtils";
 import "./DashboardCharts.css";
 
@@ -8,6 +8,7 @@ const DepartmentBudgetAnalysis = ({
   pieChartData,
   pieChartOptions,
   departmentDetailsData,
+  onExport, // New prop
 }) => {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -22,13 +23,28 @@ const DepartmentBudgetAnalysis = ({
       {/* Header */}
       <div className="chart-header">
         <h3 className="card-title">Budget per Department</h3>
-        <button
-          className="view-button"
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          {showDetails ? "Hide Details" : "View Details"}
-          <Eye size={16} style={{ color: "white", marginLeft: "6px" }} />
-        </button>
+        
+        <div style={{ display: "flex", gap: "10px" }}>
+          {/* Export Button */}
+          <button
+            className="view-button"
+            onClick={onExport}
+            style={{ backgroundColor: "#28a745" }} // Green for Export
+            title="Export Dashboard Summary"
+          >
+            Export
+            <Download size={16} style={{ color: "white", marginLeft: "6px" }} />
+          </button>
+
+          {/* View Details Button */}
+          <button
+            className="view-button"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? "Hide Details" : "View Details"}
+            <Eye size={16} style={{ color: "white", marginLeft: "6px" }} />
+          </button>
+        </div>
       </div>
 
       {/* Main Content: Pie + Legend */}
