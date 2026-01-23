@@ -62,6 +62,8 @@ else:
     ALLOWED_HOSTS.extend([
         'budget-pro.onrender.com',  # Your budget service domain
         '.onrender.com',  # All Render subdomains
+        'api.bms.mapactive.tech',  # Your custom domain
+        '.mapactive.tech',  # All subdomains of your custom domain
     ])
     
     # Railway fallback configuration (keep for potential return)
@@ -72,16 +74,15 @@ else:
     # Railway domains as fallback
     ALLOWED_HOSTS.extend(['.railway.app', '.up.railway.app'])
 
+# CRITICAL FIX: Always include localhost for internal health checks
+# Render performs internal health checks from 127.0.0.1
+ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
+
 # Remove duplicates and None values
 ALLOWED_HOSTS = list(set(filter(None, ALLOWED_HOSTS)))
 
 if not ALLOWED_HOSTS and not DEBUG:
-    # Fallback if no hosts are configured for production to prevent Django from refusing all connections
-    print("WARNING: ALLOWED_HOSTS is empty in a non-DEBUG environment. This is insecure. Add your service's domain.")
-    # ALLOWED_HOSTS = ['*'] # Highly insecure, for temporary debugging only if absolutely stuck
-
-
-
+    print("WARNING: ALLOWED_HOSTS is empty in a non-DEBUG environment.")
 # Application definition
 
 INSTALLED_APPS = [
@@ -191,6 +192,7 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if ori
 # This enables cookies to be shared across subdomains (e.g., auth.mapactive.tech and bms.mapactive.tech)
 COOKIE_DOMAIN = os.getenv('COOKIE_DOMAIN', '.mapactive.tech') # Default to custom domain
 if not DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
     CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_SAMESITE = 'Lax' # or 'None' if using different subdomains for API/Frontend
@@ -268,17 +270,19 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Add for static files in production
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # Add before CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'core.middleware.HealthCheckCSRFExemptMiddleware', 
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',  # For development
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
+CSRF_EXEMPT_URLS = ['/health/']
 
 # REST Framework settings
 REST_FRAMEWORK = {

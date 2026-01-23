@@ -21,7 +21,7 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from django.db import connection
 from django.db.utils import OperationalError
-
+from django.views.decorators.csrf import csrf_exempt
 from core.permissions import IsBMSUser
 from .serializers import DepartmentSerializer, ValidProjectAccountSerializer
 from .models import BudgetAllocation, Department, JournalEntryLine, UserActivityLog
@@ -83,23 +83,6 @@ def ratelimit_handler(request, exception):  # Not yet hooked up
         'detail': 'Too many requests from your IP address.'
     }, status=429)
 
-
-def budget_health_check_view(request):  # Renamed for clarity
-    app_status = {"status": "healthy", "service": "budget_service"}
-    try:
-        connection.ensure_connection()  # Check budget_service's DB
-        db_connected = True
-    except OperationalError:
-        db_connected = False
-        app_status["database_status"] = "unhealthy"
-        app_status["status"] = "degraded"
-    else:
-        app_status["database_status"] = "healthy"
-
-    if db_connected:
-        return JsonResponse(app_status, status=200)
-    else:
-        return JsonResponse(app_status, status=503)
 
 
 class ValidProjectAccountView(APIView):
