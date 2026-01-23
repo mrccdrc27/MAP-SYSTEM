@@ -191,6 +191,7 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if ori
 # This enables cookies to be shared across subdomains (e.g., auth.mapactive.tech and bms.mapactive.tech)
 COOKIE_DOMAIN = os.getenv('COOKIE_DOMAIN', '.mapactive.tech') # Default to custom domain
 if not DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
     SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
     CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
     SESSION_COOKIE_SAMESITE = 'Lax' # or 'None' if using different subdomains for API/Frontend
