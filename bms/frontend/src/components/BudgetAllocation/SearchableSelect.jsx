@@ -81,6 +81,7 @@ const SearchableSelect = ({
               position: "sticky",
               top: 0,
               background: "white",
+              
             }}
           >
             <input
@@ -96,6 +97,7 @@ const SearchableSelect = ({
                 borderRadius: "4px",
                 fontSize: "13px",
                 outline: "none",
+                backgroundColor: "white",
               }}
             />
           </div>
