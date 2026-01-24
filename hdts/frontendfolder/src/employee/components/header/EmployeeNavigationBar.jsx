@@ -504,8 +504,19 @@ const EmployeeNavBar = () => {
       try {
         const base = API_CONFIG.BACKEND.BASE_URL.replace(/\/$/, '');
         const probeUrl = `${base}/api/`;
-        const res = await fetch(probeUrl, { method: 'GET', signal: controller.signal });
-        if (!cancelled) setBackendAvailable(res.ok);
+
+        // Include credentials so HttpOnly cookies are sent (some deployments
+        // gate the API behind session cookies). Treat 401/403 as reachable
+        // (the server responded but requires authentication), otherwise mark
+        // unreachable only on network/timeout errors.
+        const res = await fetch(probeUrl, {
+          method: 'GET',
+          signal: controller.signal,
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!cancelled) setBackendAvailable(res.ok || res.status === 401 || res.status === 403);
       } catch (e) {
         if (!cancelled) setBackendAvailable(false);
       } finally {

@@ -140,10 +140,9 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Get minimum check out date: today + 2 days
+  // Get minimum check out date: today
   const getMinCheckOutDate = () => {
     const today = new Date();
-    today.setDate(today.getDate() + 2);
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');

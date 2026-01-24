@@ -87,6 +87,12 @@ const EmployeeHome = () => {
     navigate(`/employee/ticket-tracker/${ticketNumber}`, { state: { from: 'Home' } });
   };
 
+  // Compute a display name: prefer first + last name, then username/email local-part, else 'User'
+  const firstName = currentUser?.first_name || currentUser?.firstName || '';
+  const lastName = currentUser?.last_name || currentUser?.lastName || '';
+  const username = currentUser?.username || currentUser?.user_name || (currentUser?.email ? String(currentUser.email).split('@')[0] : '');
+  const displayName = (firstName || lastName) ? `${firstName}${lastName ? ' ' + lastName : ''}` : (username || 'User');
+
   // Normalize ticket data to handle both backend field names (snake_case) and frontend (camelCase)
   const normalizeTicket = (ticket) => {
     return {
@@ -105,7 +111,7 @@ const EmployeeHome = () => {
   return (
     <div className={styles.pageContainer}>
       <h1 className={styles.welcomeHeader}>
-        Welcome, <span className={styles.welcomeName}>{currentUser?.first_name || currentUser?.firstName}<span className={styles.welcomeName}>!</span></span>
+        Welcome, <span className={styles.welcomeName}>{displayName}<span className={styles.welcomeName}>!</span></span>
       </h1>
 
       <div className={styles.topSection}>

@@ -239,6 +239,12 @@ services:
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,api.mapactive.tech,login.mapactive.tech,mapactive.tech,ams.mapactive.tech,api.ticketing.mapactive.tech,login.ticketing.mapactive.tech,ticketing.mapactive.tech,165.22.247.50:3001,165.22.247.50:8003,127.0.0.1,localhost,auth-service,host.docker.internal"
       KONG_TRUSTED: "true"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/authservice"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "authservice"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
       RECAPTCHA_ENABLED: "False"
       FRONTEND_URL: "https://login.ticketing.mapactive.tech"
       PUBLIC_BASE_URL: "https://api.ticketing.mapactive.tech"
@@ -270,6 +276,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      db:
+        condition: service_healthy
     command: sh -c "sleep 10 && ./entrypoint.sh"
 
   # Auth Worker - Added to handle async sync tasks
@@ -285,6 +293,12 @@ services:
       DJANGO_SECRET_KEY: "signing-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       KONG_TRUSTED: "true"
+      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/authservice"
+      PGHOST: "db"
+      PGPORT: "5432"
+      POSTGRES_DB: "authservice"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "notification@noreply.mapactive.tech"
@@ -294,7 +308,7 @@ services:
       rabbitmq:
         condition: service_healthy
       db:
-        condition: service_started
+        condition: service_healthy
     command: >
       sh -c "sleep 15 && 
              celery -A auth worker --pool=solo --loglevel=info -Q auth-sync-queue"

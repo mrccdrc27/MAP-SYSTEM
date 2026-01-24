@@ -110,25 +110,11 @@ const CoordinatorAdminOpenTicketModal = ({ ticket, onClose, onSuccess }) => {
     return Array.isArray(items) ? items : [];
   }, [ticketSubCategory, amsCategories]);
 
-  // Exclude the chosen asset (by asset_id or name) from the list shown below
+  // Show ALL assets in the category (including the chosen one) so coordinator can verify availability
   const filteredCategoryAssets = useMemo(() => {
     if (!categoryAssets || categoryAssets.length === 0) return [];
-    const chosenIds = new Set([
-      ticket.asset_id || ticket.assetId || ticket.assetId || '',
-      String(ticket.id || ''),
-    ].filter(Boolean));
-    const chosenNames = new Set([
-      (ticket.asset_name || ticket.assetName || '').toString(),
-    ].filter(Boolean));
-
-    return categoryAssets.filter(a => {
-      const aid = a.asset_id || a.assetId || a.id || '';
-      const name = (a.name || a.asset_name || a.title || '').toString();
-      if (chosenIds.has(String(aid))) return false;
-      if (chosenNames.has(name)) return false;
-      return true;
-    });
-  }, [categoryAssets, ticket]);
+    return categoryAssets;
+  }, [categoryAssets]);
 
   // Helper to normalize asset field names
   const getAssetField = (a, ...keys) => {

@@ -36,7 +36,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         # Remove any non-digit characters for validation
         phone_digits = re.sub(r'\D', '', value)
         if len(phone_digits) != 11 or not phone_digits.startswith('09'):
-            raise serializers.ValidationError("Phone number must be 11 digits starting with 09 (e.g., 09123456789).")
+            raise serializers.ValidationError("Phone number must be 11 digits starting with 09.")
         return value
 
     def create(self, validated_data):

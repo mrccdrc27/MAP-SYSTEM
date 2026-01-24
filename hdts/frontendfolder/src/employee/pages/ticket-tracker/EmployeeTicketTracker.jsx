@@ -593,6 +593,7 @@ export default function EmployeeTicketTracker() {
     || null;
   
   const issueTypeField = ticket.issue_type || ticket.issueType || getDyn(['issueType', 'issue_type']) || null;
+  const checkInDateField = ticket.check_in_date || ticket.checkInDate || getDyn(['checkInDate', 'check_in_date']) || null;
   const softwareAffectedField = ticket.softwareAffected || getDyn(['softwareAffected', 'software_affected']) || null;
   const notesField = ticket.notes || getDyn(['notes', 'note']) || null;
 
@@ -954,7 +955,7 @@ export default function EmployeeTicketTracker() {
                   </div>
                 )}
 
-                {formCategories.includes(uiCategory) && (
+                {formCategories.includes(uiCategory) && category !== 'Asset Check In' && (
                   <div className={styles.detailItem}>
                     <div className={styles.detailLabel}>Sub-Category</div>
                     <div className={styles.detailValue}>
@@ -1058,6 +1059,12 @@ export default function EmployeeTicketTracker() {
                           <div className={styles.detailLabel}>Location</div>
                           <div className={styles.detailValue}>{locationField || 'N/A'}</div>
                         </div>
+                        {category === 'Asset Check In' && checkInDateField && (
+                          <div className={styles.detailItem}>
+                            <div className={styles.detailLabel}>Check In Date</div>
+                            <div className={styles.detailValue}>{checkInDateField}</div>
+                          </div>
+                        )}
                           {issueTypeField ? (
                             <div className={styles.detailItem}>
                               <div className={styles.detailLabel}>Specify Issue</div>

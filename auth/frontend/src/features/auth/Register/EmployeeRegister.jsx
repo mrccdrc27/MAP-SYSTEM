@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from '../../../components/common';
 import PrivacyPolicyModal from '../../../components/common/PrivacyPolicyModal';
@@ -8,6 +8,7 @@ import styles from "./EmployeeRegister.module.css";
 
 const namePattern = /^[a-zA-Z.\-'\s]+$/;
 const letterPresencePattern = /[a-zA-Z]/;
+const emojiRegex = /([\p{Emoji_Presentation}\p{Extended_Pictographic}])/u;
 
 const getPasswordErrorMessage = (password) => {
   if (!password || password.trim() === "") {
@@ -62,8 +63,19 @@ const getPasswordErrorMessage = (password) => {
   }
 };
 
-// Suffix options (same as HDTS)
-const suffixOptions = ["Jr.", "Sr.", "II", "III", "IV"];
+// Suffix options (extended up to 10 / X)
+const suffixOptions = [
+  "Jr.",
+  "Sr.",
+  "III",
+  "IV",
+  "V",
+  "VI",
+  "VII",
+  "VIII",
+  "IX",
+  "X",
+];
 
 // Department options: restrict to allowed departments
 const departmentOptions = [
@@ -95,6 +107,14 @@ export default function EmployeeRegister() {
   });
 
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Username suggestion + availability
+  const [suggestions, setSuggestions] = useState([]);
+  const [usernameAvailability, setUsernameAvailability] = useState({});
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const suggestionTimer = useRef(null);
+  const checkTimer = useRef(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -110,13 +130,90 @@ export default function EmployeeRegister() {
       processedValue = value.replace(/\D/g, "").slice(0, 11);
     }
 
+    // Strip emojis from all inputs
+    if (emojiRegex.test(processedValue)) {
+      processedValue = processedValue.replace(emojiRegex, "");
+    }
+
     setFormData(prev => ({ ...prev, [name]: processedValue }));
     
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+    // Validate the field live and show error (or clear)
+    const fieldError = validateField(name, processedValue);
+    setErrors(prev => ({ ...prev, [name]: fieldError }));
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const fieldError = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: fieldError }));
+  };
+
+  const normalizeForUsername = (s = "") =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-z0-9\s._-]/g, "")
+      .trim()
+      .replace(/\s+/g, ".");
+
+  const generateSuggestions = (first, middle, last) => {
+    const f = (first || "").toLowerCase();
+    const m = (middle || "").toLowerCase();
+    const l = (last || "").toLowerCase();
+    const out = new Set();
+    if (f && l) out.add(`${normalizeForUsername(f)}.${normalizeForUsername(l)}`);
+    if (f && l) out.add(`${normalizeForUsername(f)}${normalizeForUsername(l)}`);
+    if (f && l) out.add(`${normalizeForUsername(f.charAt(0))}${normalizeForUsername(l)}`);
+    if (f && m && l) out.add(`${normalizeForUsername(f)}.${normalizeForUsername(m)}.${normalizeForUsername(l)}`);
+    return Array.from(out)
+      .map((s) => s.replace(/\.+/g, "."))
+      .filter((s) => s && s.length >= 3 && s.length <= 30)
+      .slice(0, 3);
+  };
+
+  const checkUsernameAvailability = async (username) => {
+    if (!username) return;
+    setCheckingUsername(true);
+    try {
+      const res = await fetch(`/api/check-username?username=${encodeURIComponent(username)}`);
+      if (!res.ok) {
+        setUsernameAvailability((p) => ({ ...p, [username]: null }));
+      } else {
+        const json = await res.json();
+        setUsernameAvailability((p) => ({ ...p, [username]: !!json.available }));
+      }
+    } catch (e) {
+      setUsernameAvailability((p) => ({ ...p, [username]: null }));
+    } finally {
+      setCheckingUsername(false);
     }
   };
+
+  useEffect(() => {
+    if (suggestionTimer.current) clearTimeout(suggestionTimer.current);
+    suggestionTimer.current = setTimeout(() => {
+      const s = generateSuggestions(formData.firstName, formData.middleName, formData.lastName);
+      setSuggestions(s);
+      s.forEach((u) => {
+        if (!usernameAvailability.hasOwnProperty(u)) checkUsernameAvailability(u);
+      });
+    }, 250);
+    return () => clearTimeout(suggestionTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.firstName, formData.middleName, formData.lastName]);
+
+  useEffect(() => {
+    if (checkTimer.current) clearTimeout(checkTimer.current);
+    const v = formData.username;
+    if (!v) return;
+    checkTimer.current = setTimeout(() => {
+      if (!usernameAvailability.hasOwnProperty(v)) checkUsernameAvailability(v);
+    }, 500);
+    return () => clearTimeout(checkTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.username]);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -140,7 +237,7 @@ export default function EmployeeRegister() {
       
       case "phoneNumber":
         if (!value) return "Please fill in the required field.";
-        if (!/^09\d{9}$/.test(value)) return "Phone number must be 11 digits starting with 09 (e.g., 09123456789).";
+        if (!/^09\d{9}$/.test(value)) return "Phone number must be 11 digits starting with 09.";
         return "";
       
       case "department":
@@ -346,6 +443,7 @@ export default function EmployeeRegister() {
                 className={styles.input}
                 value={formData.lastName}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 autoComplete="off"
               />
               {errors.lastName && <span className={styles.errorMsg}>{errors.lastName}</span>}
@@ -361,6 +459,7 @@ export default function EmployeeRegister() {
                 className={styles.input}
                 value={formData.firstName}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 autoComplete="off"
               />
               {errors.firstName && <span className={styles.errorMsg}>{errors.firstName}</span>}
@@ -374,6 +473,7 @@ export default function EmployeeRegister() {
                 className={styles.input}
                 value={formData.middleName}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 autoComplete="off"
               />
               {errors.middleName && <span className={styles.errorMsg}>{errors.middleName}</span>}
@@ -386,6 +486,7 @@ export default function EmployeeRegister() {
                 className={styles.select}
                 value={formData.suffix}
                 onChange={handleChange}
+                onBlur={handleBlur}
               >
                 <option value="">Select Suffix</option>
                 {suffixOptions.map((suffix) => (
@@ -406,9 +507,37 @@ export default function EmployeeRegister() {
                 className={styles.input}
                 value={formData.username}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 autoComplete="off"
               />
-              {errors.username && <span className={styles.errorMsg}>{errors.username}</span>}
+                {errors.username && <span className={styles.errorMsg}>{errors.username}</span>}
+                {/* Username suggestions (optional) */}
+                {suggestions && suggestions.length > 0 && (
+                  <div className={styles.usernameSuggestions}>
+                    {suggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={styles.suggestionButton}
+                        onClick={() => setFormData((p) => ({ ...p, username: s }))}
+                      >
+                        <span>{s}</span>
+                        <span className={styles.suggestionMeta}>
+                          {usernameAvailability[s] == null ? (
+                            <small>...</small>
+                          ) : usernameAvailability[s] ? (
+                            <>
+                              <small style={{ color: "green" }}>available</small>
+                              <span className={styles.suggestionCheck}>✓</span>
+                            </>
+                          ) : (
+                            <small style={{ color: "red" }}>taken</small>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
             </fieldset>
 
             <fieldset className={styles.fieldset}>
@@ -424,6 +553,7 @@ export default function EmployeeRegister() {
                 className={styles.input}
                 value={formData.phoneNumber}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 autoComplete="off"
               />
               {errors.phoneNumber && <span className={styles.errorMsg}>{errors.phoneNumber}</span>}
@@ -438,6 +568,7 @@ export default function EmployeeRegister() {
                 className={styles.select}
                 value={formData.department}
                 onChange={handleChange}
+                onBlur={handleBlur}
               >
                 <option value="">Select Department</option>
                 {departmentOptions.map(({ value, label }) => (
@@ -459,6 +590,8 @@ export default function EmployeeRegister() {
                 className={styles.input}
                 value={formData.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="@gmail.com"
                 autoComplete="off"
               />
               {errors.email && <span className={styles.errorMsg}>{errors.email}</span>}
@@ -475,6 +608,7 @@ export default function EmployeeRegister() {
                   className={styles.input}
                   value={formData.password}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   autoComplete="new-password"
                 />
                 {formData.password && (
@@ -500,9 +634,16 @@ export default function EmployeeRegister() {
                   className={styles.input}
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   autoComplete="new-password"
                   autoCorrect="off"
                   spellCheck="false"
+                  onPaste={e => e.preventDefault()}
+                  onInput={e => {
+                    if (emojiRegex.test(e.target.value)) {
+                      e.target.value = e.target.value.replace(emojiRegex, '');
+                    }
+                  }}
                 />
                 {formData.confirmPassword && (
                   <span
@@ -528,14 +669,26 @@ export default function EmployeeRegister() {
               />
               <label htmlFor="privacypolicy_termsandconditions" className={styles.checkboxLabel}>
                 Read and agree to the{" "}
-                <span
-                  className={styles.link}
-                  onClick={handlePolicyClick}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handlePolicyClick(e); }}
-                >
-                  Privacy Policy and Terms and Conditions
+                <span className={styles.underlineLinks}>
+                  <span
+                    className={styles.link}
+                    role="button"
+                    tabIndex={0}
+                    onClick={handlePolicyClick}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handlePolicyClick(e); }}
+                  >
+                    Privacy Policy
+                  </span>
+                  <span className={styles.andText}> and </span>
+                  <span
+                    className={styles.link}
+                    role="button"
+                    tabIndex={0}
+                    onClick={handlePolicyClick}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handlePolicyClick(e); }}
+                  >
+                    Terms and Conditions
+                  </span>
                 </span>
                 <span className={styles.required}> *</span>
               </label>

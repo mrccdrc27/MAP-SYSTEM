@@ -1,210 +1,178 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './PrivacyPolicyModal.module.css';
 
 const PrivacyPolicyModal = ({ onAgree, onClose, showModal }) => {
-  const [currentTab, setCurrentTab] = useState('privacy');
-  const [privacyAgreed, setPrivacyAgreed] = useState(false);
-  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [step, setStep] = useState('privacy');
+  const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    setStep('privacy');
+  }, [onClose]);
+
+  useEffect(() => {
+    setScrolledToBottom(false);
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [step]);
 
   if (!showModal) return null;
 
-  const handleAgree = () => {
-    if (privacyAgreed && termsAgreed) {
-      onAgree();
-    } else {
-      if (!privacyAgreed && !termsAgreed) {
-        alert('Please read and agree to both the Privacy Policy and Terms and Conditions.');
-      } else if (!privacyAgreed) {
-        alert('Please read and agree to the Privacy Policy.');
-      } else {
-        alert('Please read and agree to the Terms and Conditions.');
-      }
+  const handleScroll = () => {
+    const el = contentRef.current;
+    if (el) {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 5;
+      setScrolledToBottom(atBottom);
     }
   };
 
-  const handleTabChange = (tab) => {
-    setCurrentTab(tab);
+  const handleNext = () => setStep('terms');
+  const handleBack = () => {
+    setStep('privacy');
+    setTimeout(() => {
+      if (contentRef.current) {
+        contentRef.current.scrollTop = contentRef.current.scrollHeight;
+        setScrolledToBottom(true);
+      }
+    }, 0);
   };
+
+  const handleAgree = () => {
+    if (step === 'privacy') {
+      setStep('terms');
+    } else {
+      onAgree?.();
+    }
+  };
+
+  const handleCancel = () => onClose?.();
+
+  const getButtonClass = (enabled) =>
+    `${styles.button || styles.agreeButton} ${enabled ? '' : styles.buttonDisabled}`;
 
   return (
     <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
-          <h2>Privacy Policy & Terms and Conditions</h2>
-          <button className={styles.closeButton} onClick={onClose}>
-            ×
-          </button>
+          <h2>{step === 'privacy' ? 'Privacy Policy' : 'Terms and Conditions'}</h2>
+          <button className={styles.closeButton} onClick={handleCancel} aria-label="Close">×</button>
         </div>
 
-        <div className={styles.tabContainer}>
-          <div className={styles.tabButtons}>
-            <button 
-              className={`${styles.tabButton} ${currentTab === 'privacy' ? styles.active : ''}`}
-              onClick={() => handleTabChange('privacy')}
-            >
-              Privacy Policy
-            </button>
-            <button 
-              className={`${styles.tabButton} ${currentTab === 'terms' ? styles.active : ''}`}
-              onClick={() => handleTabChange('terms')}
-            >
-              Terms and Conditions
-            </button>
-          </div>
-
-          <div className={styles.tabContent}>
-            {currentTab === 'privacy' && (
-              <div className={styles.contentSection}>
-                <h3>Privacy Policy</h3>
-                <div className={styles.scrollableContent}>
-                  <h4>Information Collection and Use</h4>
-                  <p>
-                    We collect information you provide directly to us, such as when you create an account, 
-                    use our services, or contact us for support. This information may include your name, 
-                    email address, phone number, department, and other contact details.
-                  </p>
-
-                  <h4>How We Use Your Information</h4>
-                  <p>
-                    We use the information we collect to provide, maintain, and improve our ticketing system 
-                    services, process transactions, send you technical notices and support messages, and 
-                    respond to your comments and questions.
-                  </p>
-
-                  <h4>Information Sharing</h4>
-                  <p>
-                    We do not sell, rent, or share your personal information with third parties except as 
-                    described in this policy. We may share your information with service providers who 
-                    perform services on our behalf, or when required by law.
-                  </p>
-
-                  <h4>Data Security</h4>
-                  <p>
-                    We implement appropriate security measures to protect your personal information against 
-                    unauthorized access, alteration, disclosure, or destruction. However, no method of 
-                    transmission over the internet is completely secure.
-                  </p>
-
-                  <h4>Your Rights</h4>
-                  <p>
-                    You have the right to access, update, or delete your personal information. You can 
-                    do this by contacting us directly or through your account settings.
-                  </p>
-
-                  <h4>Changes to This Policy</h4>
-                  <p>
-                    We may update this privacy policy from time to time. We will notify you of any changes 
-                    by posting the new policy on this page and updating the effective date.
-                  </p>
-
-                  <p className={styles.effectiveDate}>
-                    <strong>Effective Date:</strong> January 5, 2026
-                  </p>
-                </div>
-
-                <div className={styles.agreementSection}>
-                  <label className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={privacyAgreed}
-                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                    />
-                    <span>I have read and agree to the Privacy Policy</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {currentTab === 'terms' && (
-              <div className={styles.contentSection}>
-                <h3>Terms and Conditions</h3>
-                <div className={styles.scrollableContent}>
-                  <h4>Acceptance of Terms</h4>
-                  <p>
-                    By creating an account and using our ticketing system, you agree to be bound by these 
-                    Terms and Conditions. If you do not agree to these terms, you may not use our services.
-                  </p>
-
-                  <h4>User Accounts</h4>
-                  <p>
-                    You are responsible for maintaining the confidentiality of your account credentials and 
-                    for all activities that occur under your account. You must notify us immediately of any 
-                    unauthorized use of your account.
-                  </p>
-
-                  <h4>Acceptable Use</h4>
-                  <p>
-                    You agree to use our services only for lawful purposes and in accordance with these terms. 
-                    You may not use our services to transmit harmful, offensive, or inappropriate content, 
-                    or to violate any laws or regulations.
-                  </p>
-
-                  <h4>Service Availability</h4>
-                  <p>
-                    We strive to provide reliable service, but we do not guarantee that our services will be 
-                    available at all times. We may suspend or terminate services for maintenance, updates, 
-                    or other operational reasons.
-                  </p>
-
-                  <h4>Intellectual Property</h4>
-                  <p>
-                    All content, features, and functionality of our ticketing system are owned by us and are 
-                    protected by intellectual property laws. You may not copy, modify, or distribute our 
-                    content without permission.
-                  </p>
-
-                  <h4>Limitation of Liability</h4>
-                  <p>
-                    To the fullest extent permitted by law, we shall not be liable for any indirect, 
-                    incidental, special, or consequential damages arising from your use of our services.
-                  </p>
-
-                  <h4>Termination</h4>
-                  <p>
-                    We may terminate or suspend your account at any time for violation of these terms or 
-                    for any other reason. You may also terminate your account at any time by contacting us.
-                  </p>
-
-                  <h4>Changes to Terms</h4>
-                  <p>
-                    We reserve the right to modify these terms at any time. We will notify users of 
-                    significant changes via email or through our system.
-                  </p>
-
-                  <p className={styles.effectiveDate}>
-                    <strong>Effective Date:</strong> January 5, 2026
-                  </p>
-                </div>
-
-                <div className={styles.agreementSection}>
-                  <label className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={termsAgreed}
-                      onChange={(e) => setTermsAgreed(e.target.checked)}
-                    />
-                    <span>I have read and agree to the Terms and Conditions</span>
-                  </label>
-                </div>
-              </div>
+        <div className={styles.contentSection}>
+          <div
+            className={styles.scrollableContent}
+            ref={contentRef}
+            onScroll={handleScroll}
+            style={{ maxHeight: 350, overflowY: 'auto' }}
+          >
+            {step === 'privacy' ? (
+              <>
+                <h4>Ticketing System</h4>
+                <p>
+                  This Privacy Policy outlines how the Ticketing System collects, uses, stores, and protects the personal data of users who access and use the System.
+                </p>
+                <h4>1. Information We Collect</h4>
+                <p>When you use the System, we may collect the following types of information:</p>
+                <ul>
+                  <li><strong>Personal Information:</strong> Name, employee ID, email address, department, or other identifiers.</li>
+                  <li><strong>Ticket Information:</strong> The content of your submitted tickets, including descriptions of issues, attachments, and time of submission.</li>
+                  <li><strong>Usage Data:</strong> Logs such as login timestamps, device or browser information, and activity within the System.</li>
+                </ul>
+                <h4>2. How We Use Your Information</h4>
+                <p>We use your data for the following purposes:</p>
+                <ul>
+                  <li>To process and respond to your support requests.</li>
+                  <li>To track and manage the status of tickets.</li>
+                  <li>To generate internal reports for service improvement.</li>
+                  <li>To notify you about the progress or resolution of your submitted tickets.</li>
+                  <li>To improve user experience and system functionality.</li>
+                </ul>
+                <h4>3. Data Sharing and Disclosure</h4>
+                <p>We do not sell or share your personal data with external third parties. However, your data may be accessed by:</p>
+                <ul>
+                  <li>Authorized support personnel (such as ticket agents and system administrators) for the purpose of resolving your tickets.</li>
+                  <li>Internal management for service reporting or audits.</li>
+                </ul>
+                <p>We may disclose your data when legally required, such as in response to a court order or legal investigation.</p>
+                <h4>4. Data Retention</h4>
+                <p>We retain your personal and ticket data only for as long as necessary to fulfill the purposes described in this policy, or as required by organizational policies.</p>
+                <h4>5. Your Rights</h4>
+                <p>You have the right to:</p>
+                <ul>
+                  <li>Access your personal data stored in the System.</li>
+                  <li>Request correction of inaccurate or outdated information.</li>
+                  <li>Request deletion of your data, subject to retention policies.</li>
+                  <li>Withdraw consent where applicable, which may affect your ability to use the System.</li>
+                </ul>
+                <p>To exercise any of these rights, please contact the system administrator at Ticketing System operators.</p>
+                <h4>6. Data Security</h4>
+                <p>We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, or disclosure, and to secure user accounts through authentication and access control. We regularly monitor system activity for suspicious behavior. However, no system is 100% secure, and you are also responsible for protecting your login credentials.</p>
+                <h4>7. Cookies and Tracking Technologies</h4>
+                <p>The System may use cookies or session-based tracking for authentication and performance analytics. You can manage cookie settings through your browser.</p>
+                <h4>8. Updates to This Privacy Policy</h4>
+                <p>We may update this policy from time to time. You will be notified of any significant changes, and continued use of the System after updates constitutes acceptance of the revised policy.</p>
+                <h4>9. Contact Us</h4>
+                <p>If you have any questions or concerns regarding this Privacy Policy, please contact Ticketing System operators.</p>
+              </>
+            ) : (
+              <>
+                <p>By accessing and using the Ticketing System, you agree to comply with the following Terms and Conditions. Please read them carefully before submitting any support tickets.</p>
+                <h4>1. Acceptance of Terms</h4>
+                <p>By using this System, you acknowledge that you have read, understood, and agree to these Terms. If you do not accept any part of these terms, you must refrain from using the System.</p>
+                <h4>2. Purpose of the System</h4>
+                <p>This System is provided to help users (such as employees or authorized personnel) submit, track, and receive support for technical or administrative issues within the organization.</p>
+                <h4>3. User Responsibilities</h4>
+                <ul>
+                  <li>Provide accurate and complete information when submitting tickets.</li>
+                  <li>Use the System only for legitimate support requests.</li>
+                  <li>Avoid submitting duplicate, irrelevant, or fraudulent tickets.</li>
+                  <li>Respond to follow-up questions from support agents in a timely manner.</li>
+                  <li>Submit only appropriate and professional content.</li>
+                </ul>
+                <h4>4. Ticket Closure</h4>
+                <p>Once a ticket is marked as resolved by the support team, you will no longer be able to send additional messages regarding that issue.</p>
+                <p>If no action is taken by the user within the specified SLA timeline, the System will automatically close the ticket to maintain workflow efficiency and compliance with internal SLAs.</p>
+                <p>Uncooperative behavior or lack of feedback may delay the closure of your ticket.</p>
+                <h4>5. Account and Security</h4>
+                <p>You are responsible for keeping your login credentials secure and confidential.</p>
+                <p>Do not share your account with others or impersonate another user.</p>
+                <p>Report any unauthorized access or suspicious activity to the system administrator immediately.</p>
+                <h4>6. Prohibited Actions</h4>
+                <ul>
+                  <li>Misuse the System or disrupt its normal operation.</li>
+                  <li>Upload or transmit harmful, offensive, or malicious content.</li>
+                  <li>Attempt to access restricted or administrative areas of the System.</li>
+                </ul>
+                <h4>7. System Availability and Maintenance</h4>
+                <p>The System is provided on an “as-is” and “as-available” basis. While we strive to maintain accessible and functional systems, we do not guarantee that the System will be uninterrupted, secure, or free of errors.</p>
+                <p>Scheduled maintenance or unexpected issues may temporarily affect system availability. Reasonable efforts will be made to notify users in advance of planned outages.</p>
+                <h4>8. Limitation of Liability</h4>
+                <p>To the fullest extent permitted by law, the organization and its affiliates are not liable for any indirect, incidental, special, or consequential damages arising out of or in connection with your use of the System.</p>
+                <h4>9. Changes to Terms and Conditions</h4>
+                <p>We may update these Terms and Conditions from time to time. You will be notified of any significant changes, and continued use of the System after updates constitutes acceptance of the revised terms.</p>
+                <h4>10. Governing Law</h4>
+                <p>These Terms and Conditions are governed by and construed in accordance with the laws of the jurisdiction in which the organization is located, without regard to its conflict of law principles.</p>
+                <h4>11. Contact Information</h4>
+                <p>For any questions or concerns regarding these Terms and Conditions, please contact Ticketing System operators.</p>
+              </>
             )}
           </div>
         </div>
 
         <div className={styles.modalActions}>
-          <button 
-            className={styles.cancelButton} 
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button 
-            className={styles.agreeButton}
-            onClick={handleAgree}
-            disabled={!privacyAgreed || !termsAgreed}
-          >
-            Agree to Both
-          </button>
+          {step === 'privacy' ? (
+            <button onClick={handleNext} className={getButtonClass(scrolledToBottom)} disabled={!scrolledToBottom}>
+              Next
+            </button>
+          ) : (
+            <>
+              <button className={`${styles.cancelButton || styles.button} ${styles.buttonOutline || ''}`} onClick={handleBack}>
+                Back
+              </button>
+              <button onClick={handleAgree} className={getButtonClass(scrolledToBottom)} disabled={!scrolledToBottom}>
+                I Agree
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

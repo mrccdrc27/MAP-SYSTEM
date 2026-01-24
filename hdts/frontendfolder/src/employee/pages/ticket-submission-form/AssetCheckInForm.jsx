@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import styles from './EmployeeTicketSubmissionForm.module.css';
 
 // API URL for fetching locations from HDTS backend
 const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
@@ -6,50 +7,7 @@ const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247
 // AMS API URL for fetching asset checkouts
 const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app';
 
-const assetSubCategories = [
-  'Laptop',
-  'Printer',
-  'Projector',
-  'Mouse',
-  'Keyboard'
-];
-
-const assetIssueTypes = [
-  'Not Functioning',
-  'Missing Accessories (e.g., charger, case)',
-  'Physical Damage (e.g., cracked screen, broken keys)',
-  'Battery Issue (e.g., not charging, quick drain)',
-  'Software Issue (e.g., system crash, unable to boot)',
-  'Screen/Display Issue (e.g., flickering, dead pixels)',
-  'Other'
-];
-
-// Mock assets data - this would come from your AMS in production
-const mockAssets = {
-  'Laptop': [
-    { name: 'Dell Latitude 5420', serialNumber: 'DL-2024-001' },
-    { name: 'HP ProBook 450 G9', serialNumber: 'HP-2024-002' },
-    { name: 'Lenovo ThinkPad X1', serialNumber: 'LN-2024-003' }
-  ],
-  'Printer': [
-    { name: 'HP LaserJet Pro M404dn', serialNumber: 'PR-2024-001' },
-    { name: 'Canon imageCLASS MF445dw', serialNumber: 'PR-2024-002' }
-  ],
-  'Projector': [
-    { name: 'Epson PowerLite 2247U', serialNumber: 'PJ-2024-001' },
-    { name: 'BenQ MH535A', serialNumber: 'PJ-2024-002' }
-  ],
-  'Mouse': [
-    { name: 'Logitech MX Master 3', serialNumber: 'MS-2024-001' },
-    { name: 'Microsoft Surface Mouse', serialNumber: 'MS-2024-002' }
-  ],
-  'Keyboard': [
-    { name: 'Logitech K380', serialNumber: 'KB-2024-001' },
-    { name: 'Microsoft Ergonomic Keyboard', serialNumber: 'KB-2024-002' }
-  ]
-};
-
-export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField, employeeId }) {
+export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField, employeeId, onAssetCheckoutSelect }) {
   // Locations state - fetched from API
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
@@ -58,7 +16,14 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
   const [assetCheckouts, setAssetCheckouts] = useState([]);
   const [loadingAssetCheckouts, setLoadingAssetCheckouts] = useState(false);
 
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Selected checkout date for min date calculation
+  const [selectedCheckoutDate, setSelectedCheckoutDate] = useState(null);
+
   // Fetch asset checkouts from AMS API when employeeId is available
+  // Then enrich each checkout with full details (checkout_date, ticket_id)
   useEffect(() => {
     const fetchAssetCheckouts = async () => {
       if (!employeeId) {
@@ -71,7 +36,20 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
         const response = await fetch(`${AMS_ASSETS_URL}/asset-checkout/by-employee/${employeeId}/`);
         const data = await response.json();
         if (Array.isArray(data)) {
-          setAssetCheckouts(data);
+          // The by-employee endpoint now includes checkout_date and ticket_id
+          // Use those fields directly and only fetch ticket details from HDTS for ticket_number
+          const enrichedCheckouts = data.map((checkout) => {
+            // The by-employee payload already includes checkout_date and ticket_number
+            return {
+              ...checkout,
+              checkout_date: checkout.checkout_date || null,
+              ticket_id: checkout.ticket_id || null,
+              // prefer `ticket_number` if provided by AMS; fall back to null
+              ticket_number: checkout.ticket_number || checkout.ticketNumber || null,
+              return_date: checkout.return_date || null
+            };
+          });
+          setAssetCheckouts(enrichedCheckouts);
         } else {
           console.error('Invalid asset checkouts response:', data);
           setAssetCheckouts([]);
@@ -111,88 +89,166 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
     fetchLocations();
   }, []);
 
+  // Handle asset checkout selection from table
+  const handleSelectAssetCheckout = (checkout) => {
+    // Update the form data with selected checkout
+    onChange('assetCheckout')({ target: { value: checkout.id } });
+    
+    // Store the checkout date for min date calculation
+    setSelectedCheckoutDate(checkout.checkout_date || null);
+    
+    // Clear the check in date when a new asset is selected (since min date changes)
+    onChange('checkInDate')({ target: { value: '' } });
+    
+    // Also populate asset-related fields from the checkout
+    if (onAssetCheckoutSelect) {
+      onAssetCheckoutSelect({
+        checkoutId: checkout.id,
+        assetId: checkout.asset_details?.id || checkout.asset,
+        assetName: checkout.asset_details?.name || '',
+        serialNumber: checkout.asset_details?.serial_number || '',
+        assetDisplayId: checkout.asset_details?.asset_id || '',
+        checkoutDate: checkout.checkout_date || '',
+        ticketNumber: checkout.ticket_number || ''
+      });
+    }
+  };
+
+  // Get minimum check in date: checkout_date + 1 day, or today if no checkout selected
+  const getMinCheckInDate = () => {
+    if (selectedCheckoutDate) {
+      const checkoutDate = new Date(selectedCheckoutDate);
+      checkoutDate.setDate(checkoutDate.getDate() + 1);
+      const yyyy = checkoutDate.getFullYear();
+      const mm = String(checkoutDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(checkoutDate.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    // Default to today if no checkout selected
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  // Filter checkouts based on search term
+  const filteredCheckouts = assetCheckouts.filter(checkout => {
+    if (!searchTerm.trim()) return true;
+    const searchLower = searchTerm.toLowerCase();
+    const assetName = (checkout.asset_details?.name || '').toLowerCase();
+    const serialNumber = (checkout.asset_details?.serial_number || '').toLowerCase();
+    const ticketNumber = (checkout.ticket_number || checkout.ticket_id || '').toString().toLowerCase();
+    return assetName.includes(searchLower) || serialNumber.includes(searchLower) || ticketNumber.includes(searchLower);
+  });
+
+  // Clear search
+  const handleClearSearch = () => {
+    setSearchTerm('');
+  };
+
   return (
     <>
-      {/* Sub-Category (Type of Product) */}
-      <FormField
-        id="subCategory"
-        label="Sub-Category (Type of Product)"
-        required
-        error={errors.subCategory}
-        render={() => (
-          <select
-            value={formData.subCategory}
-            onChange={onChange('subCategory')}
-            onBlur={onBlur('subCategory')}
-          >
-            <option value="">Select Product Type</option>
-            {assetSubCategories.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        )}
-      />
-
-      {/* Asset Checkout - Dropdown to select from employee's checked out assets */}
+      {/* Asset to Checkout - Table view of employee's checked out assets */}
       <FormField
         id="assetCheckout"
-        label="Asset Checkout"
+        label="Asset to Check In"
+        required
         error={errors.assetCheckout}
         render={() => (
-          <select
-            value={formData.assetCheckout || ''}
-            onChange={onChange('assetCheckout')}
-            onBlur={onBlur('assetCheckout')}
-            disabled={loadingAssetCheckouts}
-          >
-            <option value="">
-              {loadingAssetCheckouts ? 'Loading checkouts...' : 'Select Asset Checkout'}
-            </option>
-            {assetCheckouts.map(checkout => (
-              <option key={checkout.id} value={checkout.id}>
-                {checkout.asset_details?.name || `Asset ID: ${checkout.asset_details?.asset_id}`}
-                {checkout.asset_details?.asset_id ? ` (${checkout.asset_details.asset_id})` : ''}
-              </option>
-            ))}
-          </select>
+          <div className={styles.assetCheckoutTableWrapper}>
+            {/* Search Bar */}
+            <div className={styles.assetCheckoutSearchBar}>
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={styles.assetCheckoutSearchInput}
+              />
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className={styles.assetCheckoutClearBtn}
+              >
+                Clear
+              </button>
+            </div>
+
+            {loadingAssetCheckouts ? (
+              <div className={styles.assetCheckoutLoading}>Loading your checked out assets...</div>
+            ) : filteredCheckouts.length === 0 ? (
+              <div className={styles.assetCheckoutEmpty}>
+                {assetCheckouts.length === 0 
+                  ? 'No assets currently checked out to you.'
+                  : 'No assets match your search.'}
+              </div>
+            ) : (
+              <div className={styles.assetCheckoutTableScroll}>
+                <table className={styles.assetCheckoutTable}>
+                  <thead>
+                    <tr>
+                      <th>Ticket No.</th>
+                      <th>Asset Name</th>
+                      <th>Serial No.</th>
+                      <th>Date of Check Out</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCheckouts.map(checkout => {
+                      const isSelected = String(formData.assetCheckout) === String(checkout.id);
+                      return (
+                        <tr 
+                          key={checkout.id} 
+                          className={isSelected ? styles.assetCheckoutRowSelected : ''}
+                        >
+                          <td>{checkout.ticket_number || checkout.ticket_id || 'N/A'}</td>
+                          <td>{checkout.asset_details?.name || 'N/A'}</td>
+                          <td>{checkout.asset_details?.serial_number || 'N/A'}</td>
+                          <td>{formatDate(checkout.checkout_date)}</td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectAssetCheckout(checkout)}
+                              className={`${styles.assetCheckoutSelectBtn} ${isSelected ? styles.assetCheckoutSelectBtnSelected : ''}`}
+                            >
+                              {isSelected ? 'Selected' : 'Select'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       />
 
-      {/* Asset Name */}
+      {/* Check In Date */}
       <FormField
-        id="assetName"
-        label="Asset Name"
+        id="checkInDate"
+        label="Check In Date"
         required
-        error={errors.assetName}
-        render={() => (
-          <select
-            disabled={!formData.subCategory}
-            value={formData.assetName}
-            onChange={onChange('assetName')}
-            onBlur={onBlur('assetName')}
-          >
-            <option value="">Select Asset</option>
-            {formData.subCategory &&
-              mockAssets[formData.subCategory]?.map(asset => (
-                <option key={asset.name} value={asset.name}>
-                  {asset.name}
-                </option>
-              ))}
-          </select>
-        )}
-      />
-
-      {/* Serial Number (Auto-filled) */}
-      <FormField
-        id="serialNumber"
-        label="Serial Number"
+        error={errors.checkInDate}
         render={() => (
           <input
-            type="text"
-            placeholder="Auto-filled when asset is selected"
-            readOnly
-            value={formData.serialNumber}
-            style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+            type="date"
+            value={formData.checkInDate || ''}
+            onChange={onChange('checkInDate')}
+            onBlur={onBlur('checkInDate')}
+            min={getMinCheckInDate()}
+            disabled={!formData.assetCheckout}
+            title={!formData.assetCheckout ? 'Please select an asset from the table first' : ''}
           />
         )}
       />
@@ -231,44 +287,26 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
         )}
       />
 
-      {/* Specify Issue */}
+      {/* Specify Issue - Free text input with 150 char limit */}
       <FormField
         id="issueType"
         label="Specify Issue"
         required
         error={errors.issueType}
         render={() => (
-          <select
-            value={formData.issueType}
-            onChange={onChange('issueType')}
-            onBlur={onBlur('issueType')}
-          >
-            <option value="">Select Issue Type</option>
-            {assetIssueTypes.map(issue => (
-              <option key={issue} value={issue}>{issue}</option>
-            ))}
-          </select>
-        )}
-      />
-
-      {/* Other Issue - Shown when "Other" is selected */}
-      {formData.issueType === 'Other' && (
-        <FormField
-          id="otherIssue"
-          label="Please Specify Other Issue"
-          render={() => (
+          <div className={styles.inputWithCounter}>
             <textarea
               rows={3}
-              placeholder="Please describe the issue..."
-              value={formData.otherIssue || ''}
-              onChange={onChange('otherIssue')}
+              placeholder="Describe the issue with the asset..."
+              value={formData.issueType || ''}
+              maxLength={150}
+              onChange={onChange('issueType')}
+              onBlur={onBlur('issueType')}
             />
-          )}
-        />
-      )}
+            <span className={styles.charCounter}>{String(formData.issueType?.length || 0)}/150</span>
+          </div>
+        )}
+      />
     </>
   );
 }
-
-// Export the mock assets for use in parent component
-export { mockAssets };

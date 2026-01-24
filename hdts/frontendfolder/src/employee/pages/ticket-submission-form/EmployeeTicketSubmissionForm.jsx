@@ -15,7 +15,7 @@ import authService from '../../../utilities/service/authService';
 import { useAuth } from '../../../context/AuthContext';
 import { useAms } from '../../../context/AmsContext';
 import ITSupportForm from './ITSupportForm';
-import AssetCheckInForm, { mockAssets } from './AssetCheckInForm';
+import AssetCheckInForm from './AssetCheckInForm';
 import AssetCheckOutForm from './AssetCheckOutForm';
 import BudgetProposalForm from './BudgetProposalForm';
 import { TICKET_CATEGORIES } from '../../../shared/constants/ticketCategories';
@@ -47,6 +47,7 @@ export default function EmployeeTicketSubmissionForm() {
     location: '',
     checkOutDate: '',
     expectedReturnDate: '',
+    checkInDate: '',
     issueType: '',
     otherIssue: '',
     schedule: '',
@@ -250,7 +251,7 @@ export default function EmployeeTicketSubmissionForm() {
         break;
       
       case 'subCategory':
-        if ((isITSupport || isAnyAssetCategory || isBudgetProposal) && !value) {
+        if ((isITSupport || isAssetCheckOut || isBudgetProposal) && !value) {
           error = 'Sub-Category is required.';
         }
         break;
@@ -264,8 +265,14 @@ export default function EmployeeTicketSubmissionForm() {
         break;
       
       case 'assetName':
-        if (isAnyAssetCategory && !value) {
+        if (isAssetCheckOut && !value) {
           error = 'Asset Name is required.';
+        }
+        break;
+      
+      case 'assetCheckout':
+        if (isAssetCheckIn && !value) {
+          error = 'Asset to Checkout is required.';
         }
         break;
       
@@ -281,11 +288,15 @@ export default function EmployeeTicketSubmissionForm() {
       
       case 'issueType':
         if (isAssetCheckIn && !value) {
-          error = 'Issue Type is required.';
+          error = 'Specify Issue is required.';
         }
         break;
 
-      
+      case 'checkInDate':
+        if (isAssetCheckIn && !value) {
+          error = 'Check In Date is required.';
+        }
+        break;
 
       case 'checkOutDate':
         if (isAssetCheckOut && !value) {
@@ -404,20 +415,6 @@ export default function EmployeeTicketSubmissionForm() {
       }));
     }
 
-    // Auto-populate serial number when asset name is selected (for Asset Check In with mockAssets)
-    if (field === 'assetName' && formData.subCategory && formData.category === 'Asset Check In') {
-      const selectedAsset = mockAssets[formData.subCategory]?.find(
-        asset => asset.name === value
-      );
-      if (selectedAsset) {
-        setFormData(prev => ({
-          ...prev,
-          assetName: value,
-          serialNumber: selectedAsset.serialNumber
-        }));
-      }
-    }
-
     if (touched[field]) {
       const fieldError = validateField(field, value);
       setErrors({ ...errors, [field]: fieldError });
@@ -464,7 +461,7 @@ export default function EmployeeTicketSubmissionForm() {
     const fieldsToValidate = ['subject', 'category', 'description'];
     
     // Add category-specific required fields
-    if (isITSupport || isAnyAssetCategory || isBudgetProposal) {
+    if (isITSupport || isAssetCheckOut || isBudgetProposal) {
       fieldsToValidate.push('subCategory');
     }
 
@@ -476,16 +473,12 @@ export default function EmployeeTicketSubmissionForm() {
       }
     }
     
-    if (isAnyAssetCategory) {
-      fieldsToValidate.push('assetName', 'location');
+    if (isAssetCheckOut) {
+      fieldsToValidate.push('assetName', 'location', 'checkOutDate', 'expectedReturnDate');
     }
 
     if (isAssetCheckIn) {
-      fieldsToValidate.push('issueType');
-    }
-
-    if (isAssetCheckOut) {
-      fieldsToValidate.push('checkOutDate', 'expectedReturnDate');
+      fieldsToValidate.push('assetCheckout', 'checkInDate', 'location', 'issueType');
     }
 
     if (isBudgetProposal) {
@@ -544,6 +537,12 @@ export default function EmployeeTicketSubmissionForm() {
       formDataToSend.append('description', formData.description || '');
       // Don't set priority initially - it will be assigned by coordinator/admin
       
+      // Add employee contact info (email and phone)
+      if (currentUser) {
+        formDataToSend.append('employee_email', currentUser.email || '');
+        formDataToSend.append('employee_phone', currentUser.phone || currentUser.phone_number || '');
+      }
+      
       // Add file attachments using the key expected by backend (files[])
       selectedFiles.forEach((file) => {
         formDataToSend.append('files[]', file);
@@ -551,6 +550,12 @@ export default function EmployeeTicketSubmissionForm() {
 
       // Add dynamic data as JSON string for category-specific fields
       const dynamicData = {};
+
+      // Add employee contact info to dynamic data as well
+      if (currentUser) {
+        dynamicData.employeeEmail = currentUser.email || '';
+        dynamicData.employeePhone = currentUser.phone || currentUser.phone_number || '';
+      }
 
       // Add IT Support specific data
       if (isITSupport) {
@@ -570,11 +575,13 @@ export default function EmployeeTicketSubmissionForm() {
         dynamicData.scheduleRequest = { date: formData.schedule, time: '', notes: '' };
       }
 
-      // Add Asset category-specific data
-      if (isAnyAssetCategory) {
+      // Add Asset Check Out specific data
+      if (isAssetCheckOut) {
         dynamicData.assetName = formData.assetName;
         dynamicData.assetId = formData.assetId;
         dynamicData.serialNumber = formData.serialNumber;
+        dynamicData.checkOutDate = formData.checkOutDate;
+        dynamicData.expectedReturnDate = formData.expectedReturnDate;
         // Build location_details object with id and name (city)
         if (formData.location && typeof formData.location === 'object') {
           dynamicData.location_details = {
@@ -582,23 +589,26 @@ export default function EmployeeTicketSubmissionForm() {
             name: formData.location.name
           };
         } else if (formData.location) {
-          // Fallback for legacy string format
           dynamicData.location = formData.location;
         }
       }
 
-      if (isAssetCheckOut) {
-        dynamicData.checkOutDate = formData.checkOutDate;
-        dynamicData.expectedReturnDate = formData.expectedReturnDate;
-      }
-
+      // Add Asset Check In specific data
       if (isAssetCheckIn) {
+        dynamicData.assetCheckout = formData.assetCheckout;
+        dynamicData.assetName = formData.assetName;
+        dynamicData.assetId = formData.assetId;
+        dynamicData.serialNumber = formData.serialNumber;
+        dynamicData.checkInDate = formData.checkInDate;
         dynamicData.issueType = formData.issueType;
-        if (formData.issueType === 'Other') {
-          dynamicData.otherIssue = formData.otherIssue;
-        }
-        if (formData.assetCheckout) {
-          dynamicData.assetCheckout = formData.assetCheckout;
+        // Build location_details object with id and name (city)
+        if (formData.location && typeof formData.location === 'object') {
+          dynamicData.location_details = {
+            id: formData.location.id,
+            name: formData.location.name
+          };
+        } else if (formData.location) {
+          dynamicData.location = formData.location;
         }
       }
 
@@ -659,6 +669,7 @@ export default function EmployeeTicketSubmissionForm() {
       location: '',
       checkOutDate: '',
       expectedReturnDate: '',
+      checkInDate: '',
       issueType: '',
       otherIssue: '',
       schedule: '',
@@ -762,6 +773,18 @@ export default function EmployeeTicketSubmissionForm() {
               errors={errors}
               FormField={FormField}
               employeeId={currentUser?.id}
+              onAssetCheckoutSelect={(checkoutData) => {
+                // Populate asset-related fields from the selected checkout
+                if (checkoutData) {
+                  setFormData(prev => ({
+                    ...prev,
+                    assetCheckout: checkoutData.checkoutId,
+                    assetId: checkoutData.assetId || '',
+                    assetName: checkoutData.assetName || '',
+                    serialNumber: checkoutData.serialNumber || ''
+                  }));
+                }
+              }}
             />
           )}
 

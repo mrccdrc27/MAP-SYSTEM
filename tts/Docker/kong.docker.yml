@@ -63,6 +63,7 @@ plugins:
         - "https://api.ticketing.mapactive.tech"
         - "https://ticketflow.ticketing.mapactive.tech"
         - "https://hdts.ticketing.mapactive.tech"
+        - "https://bms.mapactive.tech"
       methods:
         - GET
         - POST

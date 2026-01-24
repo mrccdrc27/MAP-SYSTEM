@@ -87,6 +87,11 @@ export function useCurrentAgent(ticketId) {
     })
       .then((res) => {
         if (!res.ok) {
+          // 404 is expected for tickets that were rejected/withdrawn before
+          // entering the workflow – silently return null instead of logging errors
+          if (res.status === 404) {
+            return { logs: [], _notFound: true };
+          }
           // Try to parse JSON error body for more details
           return res.text().then((text) => {
             throw new Error(text || res.statusText || `HTTP ${res.status}`);
@@ -95,6 +100,13 @@ export function useCurrentAgent(ticketId) {
         return res.json();
       })
       .then((data) => {
+        // If the ticket was not found in workflow (rejected/withdrawn), silently finish
+        if (data._notFound) {
+          setCurrentAgent(null);
+          setTicketOwner(null);
+          setLoading(false);
+          return;
+        }
         // The API returns { task_id, ticket_id, workflow_id, ticket_owner: {...}, logs: [...] }
         // Find the current agent - the most recent log entry that is still active
         // (status is 'new' or 'in progress', not 'resolved', 'transferred', etc.)

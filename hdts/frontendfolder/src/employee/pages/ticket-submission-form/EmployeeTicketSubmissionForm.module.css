@@ -1010,3 +1010,135 @@ select:focus {
   opacity: 1;
 }
 
+/* Asset Checkout Table Styles for Check-In Form */
+.assetCheckoutTableWrapper {
+  border: 2px solid #1f2937;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* Search Bar */
+.assetCheckoutSearchBar {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 2px solid #1f2937;
+  gap: 8px;
+}
+
+.assetCheckoutSearchInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #1f2937;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+}
+
+.assetCheckoutSearchInput:focus {
+  border-color: var(--primary-color, #2563EB);
+}
+
+.assetCheckoutClearBtn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.assetCheckoutClearBtn:hover {
+  color: #1f2937;
+}
+
+.assetCheckoutLoading,
+.assetCheckoutEmpty {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.assetCheckoutTableScroll {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.assetCheckoutTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.assetCheckoutTable thead {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  z-index: 1;
+}
+
+.assetCheckoutTable th {
+  padding: 12px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #1f2937;
+  white-space: nowrap;
+}
+
+.assetCheckoutTable td {
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+  border-right: 1px solid #e5e7eb;
+}
+
+.assetCheckoutTable td:last-child {
+  border-right: none;
+  text-align: center;
+}
+
+.assetCheckoutTable tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.assetCheckoutTable tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.assetCheckoutRowSelected {
+  background-color: #eff6ff !important;
+}
+
+/* Select Button */
+.assetCheckoutSelectBtn {
+  padding: 6px 16px;
+  border: 2px solid var(--primary-color, #2563EB);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--primary-color, #2563EB);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.assetCheckoutSelectBtn:hover {
+  background: var(--primary-color, #2563EB);
+  color: white;
+}
+
+.assetCheckoutSelectBtnSelected {
+  background: var(--primary-color, #2563EB);
+  color: white;
+}
+
+.assetCheckoutTable input[type="radio"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color, #2563EB);
+}
