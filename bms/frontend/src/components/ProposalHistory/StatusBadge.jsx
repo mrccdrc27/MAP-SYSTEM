@@ -33,6 +33,13 @@ const StatusBadge = ({ type, name }) => {
           color: "#0369a1",
           borderColor: "#bae6fd",
         };
+        // MODIFICATION START: Added Posted status for Ledger
+      case "posted":
+        return {
+          backgroundColor: "#e6f4ea",
+          color: "#0d6832",
+          borderColor: "#a3d9b1",
+        };
       default:
         return {
           backgroundColor: "#f3f4f6",
