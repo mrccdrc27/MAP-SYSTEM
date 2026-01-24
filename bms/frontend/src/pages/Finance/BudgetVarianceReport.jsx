@@ -71,19 +71,18 @@ const BudgetVarianceReport = () => {
   ];
 
   const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
+  const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
     name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-        user.full_name ||
-        user.username ||
-        "User"
+      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
       : "User",
     role: userRole,
     avatar:
       user?.profile_picture ||
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
   };
+
 
   // --- API LOGIC ---
   useEffect(() => {
@@ -179,26 +178,29 @@ const BudgetVarianceReport = () => {
   };
 
   return (
-    <div
-      className="app-container"
-      style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
-    >
-      <Navigation
-        userProfile={userProfile}
-        currentDate={currentDate}
-        onLogout={handleLogout}
-        onManageProfile={handleManageProfile}
-      />
+  <div
+    className="app-container"
+    style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
+  >
+    <Navigation
+      userProfile={userProfile}
+      currentDate={currentDate}
+      onLogout={handleLogout}
+      onManageProfile={handleManageProfile}
+      isFinanceManager={isFinanceManager}
+      activeView="expense-history"
+    />
 
-      <div
-        className="content-container"
-        style={{
-          padding: "10px 20px",
-          maxWidth: "1400px",
-          margin: "0 auto",
-          width: "95%",
-        }}
-      >
+    <div
+      className="content-container"
+      style={{
+        padding: "10px 20px",
+        paddingTop: "70px", 
+        maxWidth: "1400px",
+        margin: "0 auto",
+        width: "95%",
+      }}
+    >
         {showManageProfile ? (
           <ManageProfile onClose={handleCloseManageProfile} />
         ) : (
@@ -221,7 +223,8 @@ const BudgetVarianceReport = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "20px",
+                marginBottom: "10px",
+                paddingTop: "2rem",
               }}
             >
               <h2 className="page-title">Budget Variance Report</h2>

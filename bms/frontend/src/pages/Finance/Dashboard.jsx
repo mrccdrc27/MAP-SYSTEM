@@ -33,10 +33,10 @@ import {
 } from "chart.js";
 import {
   // Kept only icons used in Dashboard view or Nav (if passed)
-  Calendar, 
+  Calendar,
   ChevronDown,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./Dashboard.css";
 import {
   getBudgetSummary,
@@ -89,7 +89,7 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 // --- HELPER FUNCTIONS ---
@@ -99,7 +99,7 @@ const exportToExcel = (
   moneyFlowData,
   pieChartData,
   departmentData,
-  timeFilter
+  timeFilter,
 ) => {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
@@ -168,8 +168,8 @@ const exportToExcel = (
           variance > 0
             ? `Under Budget by ${variancePercentage}%`
             : variance < 0
-            ? `Over Budget by ${Math.abs(variancePercentage)}%`
-            : "On Budget";
+              ? `Over Budget by ${Math.abs(variancePercentage)}%`
+              : "On Budget";
 
         moneyFlowSheetData.push([
           item.month_name,
@@ -207,10 +207,10 @@ const exportToExcel = (
           percentageUsed >= 90
             ? "Critical"
             : percentageUsed >= 75
-            ? "High Usage"
-            : percentageUsed >= 50
-            ? "Moderate Usage"
-            : "Low Usage";
+              ? "High Usage"
+              : percentageUsed >= 50
+                ? "Moderate Usage"
+                : "Low Usage";
 
         departmentSheetData.push([
           dept.department_name,
@@ -253,7 +253,7 @@ const exportToExcel = (
 const exportAccuracyReport = (
   forecastAccuracyData,
   moneyFlowData,
-  forecastData
+  forecastData,
 ) => {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
@@ -282,7 +282,7 @@ const exportAccuracyReport = (
       moneyFlowData.forEach((month, index) => {
         const actualValue = Number(month.actual) || 0;
         let forecastPoint = monthlyForecasts.find(
-          (f) => f.month_name === month.month_name
+          (f) => f.month_name === month.month_name,
         );
         let forecastValue = forecastPoint ? Number(forecastPoint.forecast) : 0;
         const variance = actualValue - forecastValue;
@@ -363,7 +363,7 @@ const exportSpendingReport = (type, data, filters) => {
   const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "");
   const fileName = `${type.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_report_${dateStr}_${timeStr}.xlsx`;
 
   try {
@@ -467,7 +467,7 @@ function BudgetDashboard() {
     endDate: new Date().toISOString().split("T")[0],
   });
   const [highestSpendingCategories, setHighestSpendingCategories] = useState(
-    []
+    [],
   );
 
   // Heatmap State
@@ -487,10 +487,11 @@ function BudgetDashboard() {
 
   // --- FISCAL YEAR STATE (Only what is needed for Navigation or Routing) ---
   const [activeView, setActiveView] = useState("dashboard"); // "dashboard" or "fiscal-year"
-  
+
   // Note: Detailed FY state (modals, list, active year object) moved to <FiscalYearManagement />
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, getBmsRole } = useAuth();
 
   const getUserRole = () => {
@@ -505,12 +506,15 @@ function BudgetDashboard() {
     return "User";
   };
 
-  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
   const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
     name: user
-      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
+      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+        user.full_name ||
+        user.username ||
+        "User"
       : "User",
     role: userRole,
     avatar:
@@ -571,7 +575,7 @@ function BudgetDashboard() {
       ) {
         try {
           const [forecastRes, accuracyRes] = await Promise.all([
-            getForecastData(null), 
+            getForecastData(null),
             getForecastAccuracy(),
           ]);
 
@@ -600,6 +604,15 @@ function BudgetDashboard() {
     selectedHeatmapDepartment,
     timeAggregation,
   ]);
+
+  // Handle incoming navigation state from other pages
+  useEffect(() => {
+    if (location.state?.view) {
+      setActiveView(location.state.view);
+      // Clear the state so browser back button works correctly
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   const fetchSpendingAnalyticsData = async () => {
     try {
@@ -658,8 +671,8 @@ function BudgetDashboard() {
       // Auto-set department for General Users
       const mappedDept = Object.keys(DEPARTMENTS_MAPPING).find((key) =>
         DEPARTMENTS_MAPPING[key].some((keyword) =>
-          user.department.includes(keyword)
-        )
+          user.department.includes(keyword),
+        ),
       );
 
       if (mappedDept) {
@@ -688,24 +701,24 @@ function BudgetDashboard() {
     moneyFlowData,
     showForecasting,
     monthlyForecastData,
-    lastActualExpenseIndex
+    lastActualExpenseIndex,
   );
 
   // 2. COMPARE VIEW: Actual vs Forecast (Baseline)
   const forecastComparisonData = buildForecastComparisonData(
     moneyFlowData,
-    monthlyForecastData
+    monthlyForecastData,
   );
 
   // Department Pie Chart Logic
   const pieChartData = buildDepartmentPieData(
     departmentDetailsData,
-    DEPARTMENTS_MAPPING
+    DEPARTMENTS_MAPPING,
   );
 
   const totalPieValue = pieChartData.datasets[0].data.reduce(
     (sum, value) => sum + value,
-    0
+    0,
   );
 
   const pieChartOptions = createPieChartOptions(totalPieValue);
@@ -781,7 +794,7 @@ function BudgetDashboard() {
   const handleDateRangeChange = (setter, field, value) => {
     setter((prev) => ({ ...prev, [field]: value }));
   };
-  
+
   return (
     <div
       className="app-container"
@@ -836,14 +849,24 @@ function BudgetDashboard() {
                 */}
 
                 <div style={{ marginBottom: "30px" }}>
-                  <MoneyFlowChart 
-                    data={showForecastComparison ? forecastComparisonData : monthlyData}
+                  <MoneyFlowChart
+                    data={
+                      showForecastComparison
+                        ? forecastComparisonData
+                        : monthlyData
+                    }
                     options={lineChartOptions}
                     showForecasting={showForecasting}
                     toggleForecasting={toggleForecasting}
                     showForecastComparison={showForecastComparison}
                     toggleForecastComparison={toggleForecastComparison}
-                    onExport={() => exportAccuracyReport(forecastAccuracyData, moneyFlowData, forecastData)}
+                    onExport={() =>
+                      exportAccuracyReport(
+                        forecastAccuracyData,
+                        moneyFlowData,
+                        forecastData,
+                      )
+                    }
                   />
                 </div>
 
@@ -860,41 +883,40 @@ function BudgetDashboard() {
                         exportAccuracyReport(
                           forecastAccuracyData,
                           moneyFlowData,
-                          forecastData
+                          forecastData,
                         )
                       }
                     />
-                )}
+                  )}
 
                 {/* Budget per Department (Complex View) */}
                 {/* Budget per Department (Complex View) */}
-                <DepartmentBudgetAnalysis 
+                <DepartmentBudgetAnalysis
                   pieChartData={pieChartData}
                   pieChartOptions={pieChartOptions}
                   departmentDetailsData={departmentDetailsData}
-                  onExport={() => exportToExcel(
-                    summaryData,
-                    moneyFlowData,
-                    pieChartApiData, // Ensure this exists in state (it does in your Dashboard.jsx)
-                    departmentDetailsData,
-                    timeFilter
-                  )}
+                  onExport={() =>
+                    exportToExcel(
+                      summaryData,
+                      moneyFlowData,
+                      pieChartApiData, // Ensure this exists in state (it does in your Dashboard.jsx)
+                      departmentDetailsData,
+                      timeFilter,
+                    )
+                  }
                 />
 
-               {/* --- REFACTORED SPENDING ANALYTICS --- */}
+                {/* --- REFACTORED SPENDING ANALYTICS --- */}
                 <SpendingAnalytics
                   activeTab={activeSpendingTab}
                   onTabChange={setActiveSpendingTab}
-                  
                   // Data
                   trendsData={spendingTrendsData}
                   categoriesData={highestSpendingCategories}
                   heatmapData={heatmapData}
-
                   // Context
                   isFinanceManager={isFinanceManager}
                   userDepartment={user?.department}
-
                   // Trends Config
                   trendsFilters={{
                     department: selectedDepartment,
@@ -903,11 +925,12 @@ function BudgetDashboard() {
                   }}
                   trendsHandlers={{
                     setDepartment: setSelectedDepartment,
-                    setDateRange: (field, val) => handleDateRangeChange(setDateRange, field, val),
+                    setDateRange: (field, val) =>
+                      handleDateRangeChange(setDateRange, field, val),
                     setGranularity: setTimeGranularity,
-                    onExport: () => handleExportSpendingReport("Department Spending Trends"),
+                    onExport: () =>
+                      handleExportSpendingReport("Department Spending Trends"),
                   }}
-
                   // Categories Config
                   categoriesFilters={{
                     department: selectedCategoryDepartment,
@@ -915,10 +938,11 @@ function BudgetDashboard() {
                   }}
                   categoriesHandlers={{
                     setDepartment: setSelectedCategoryDepartment,
-                    setDateRange: (field, val) => handleDateRangeChange(setCategoryDateRange, field, val),
-                    onExport: () => handleExportSpendingReport("Highest Spending Categories"),
+                    setDateRange: (field, val) =>
+                      handleDateRangeChange(setCategoryDateRange, field, val),
+                    onExport: () =>
+                      handleExportSpendingReport("Highest Spending Categories"),
                   }}
-
                   // Heatmap Config
                   heatmapFilters={{
                     department: selectedHeatmapDepartment,
@@ -927,12 +951,13 @@ function BudgetDashboard() {
                   }}
                   heatmapHandlers={{
                     setDepartment: setSelectedHeatmapDepartment,
-                    setDateRange: (field, val) => handleDateRangeChange(setCategoryDateRange, field, val),
+                    setDateRange: (field, val) =>
+                      handleDateRangeChange(setCategoryDateRange, field, val),
                     setAggregation: setTimeAggregation,
-                    onExport: () => handleExportSpendingReport("Spending Heatmap"),
+                    onExport: () =>
+                      handleExportSpendingReport("Spending Heatmap"),
                   }}
                 />
-
               </>
             ) : (
               // FISCAL YEAR MANAGEMENT VIEW (Refactored)
@@ -941,7 +966,7 @@ function BudgetDashboard() {
           </>
         )}
       </div>
-      
+
       {/* REMOVED: Inline Modals from bottom of file */}
     </div>
   );

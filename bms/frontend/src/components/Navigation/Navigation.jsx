@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, Bell, User, LogOut } from "lucide-react";
 import LOGOMAP from "../../assets/MAP.jpg";
 import "./Navigation.css";
@@ -14,7 +14,7 @@ const Navigation = ({
   isFinanceManager = false,
 }) => {
   const navigate = useNavigate();
-  const location = useLocation(); // Get current route
+  const location = useLocation();
 
   // Dropdown states
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
@@ -39,25 +39,37 @@ const Navigation = ({
     setter(!currentState);
   };
 
-  // --- NEW HANDLERS FOR VIEW SWITCHING ---
+  // --- VIEW SWITCHING HANDLERS ---
   const handleFiscalYearClick = () => {
-    // Check if we are already on the dashboard route
-    if (location.pathname.includes("/finance/dashboard")) {
-      // If already on dashboard, just switch the view using the prop callback
-      onViewChange?.("fiscal-year");
-    } else {
-      // If on another page, navigate to dashboard with state
-      navigate("/finance/dashboard", { state: { view: "fiscal-year" } });
-    }
+    // Always navigate to dashboard with fiscal-year state
+    navigate("/finance/dashboard", { state: { view: "fiscal-year" } });
+    closeAllDropdowns();
   };
 
   const handleDashboardClick = () => {
-    if (location.pathname.includes("/finance/dashboard")) {
-      onViewChange?.("dashboard");
-    } else {
-      navigate("/finance/dashboard", { state: { view: "dashboard" } });
-    }
+    // Always navigate to dashboard with dashboard state
+    navigate("/finance/dashboard", { state: { view: "dashboard" } });
+    closeAllDropdowns();
   };
+
+  // --- ACTIVE STATE LOGIC ---
+  const isDashboardActive = location.pathname === "/finance/dashboard" && activeView === "dashboard";
+  const isFiscalYearActive = location.pathname === "/finance/dashboard" && activeView === "fiscal-year";
+  
+  // Check if any budget dropdown item is active
+  const isBudgetDropdownActive = [
+    "/finance/budget-proposal",
+    "/finance/proposal-history",
+    "/finance/ledger-view",
+    "/finance/budget-allocation",
+    "/finance/budget-variance-report"
+  ].some(path => location.pathname === path);
+
+  // Check if any expense dropdown item is active
+  const isExpenseDropdownActive = [
+    "/finance/expense-tracking",
+    "/finance/expense-history"
+  ].some(path => location.pathname === path);
 
   // Date formatting
   const formattedTime = currentDate.toLocaleTimeString("en-US", {
@@ -92,7 +104,7 @@ const Navigation = ({
           {/* Dashboard Toggle */}
           <button
             onClick={handleDashboardClick}
-            className={`nav-link ${activeView === "dashboard" ? "active" : ""}`}
+            className={`nav-link ${isDashboardActive ? "active" : ""}`}
           >
             Dashboard
           </button>
@@ -101,7 +113,7 @@ const Navigation = ({
           {isFinanceManager && (
             <button
               onClick={handleFiscalYearClick}
-              className={`nav-link ${activeView === "fiscal-year" ? "active" : ""}`}
+              className={`nav-link ${isFiscalYearActive ? "active" : ""}`}
             >
               FY Management
             </button>
@@ -110,7 +122,7 @@ const Navigation = ({
           {/* Budget Dropdown */}
           <div className="nav-dropdown">
             <div
-              className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
+              className={`nav-link ${showBudgetDropdown || isBudgetDropdownActive ? "active" : ""}`}
               onClick={() =>
                 toggleDropdown(setShowBudgetDropdown, showBudgetDropdown)
               }
@@ -163,7 +175,7 @@ const Navigation = ({
           {/* Expense Dropdown */}
           <div className="nav-dropdown">
             <div
-              className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
+              className={`nav-link ${showExpenseDropdown || isExpenseDropdownActive ? "active" : ""}`}
               onClick={() =>
                 toggleDropdown(setShowExpenseDropdown, showExpenseDropdown)
               }

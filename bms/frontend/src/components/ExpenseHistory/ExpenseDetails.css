@@ -1,0 +1,261 @@
+.budget-proposal-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.details-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  font-size: 13px;
+  color: #333;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  outline: none;
+  flex-direction: row-reverse;
+}
+
+.details-content {
+  flex: 1;
+  overflow: auto;
+  padding-right: 10px;
+}
+
+/* Proposal Header */
+.proposal-header {
+  margin-bottom: 20px;
+}
+
+.proposal-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.proposal-label {
+  margin: 0 0 5px 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.proposal-title {
+  margin: 0 0 5px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.proposal-date {
+  color: #6c757d;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Expense Summary Section */
+.expense-summary-section {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #e9ecef;
+}
+
+.section-title {
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.amount-highlight {
+  color: #28a745;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.description-text {
+  margin-top: 4px;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Attachments */
+.attachments-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.attachment-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  text-decoration: none;
+  color: #007bff;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.attachment-link:hover {
+  background-color: #f0f8ff;
+  border-color: #007bff;
+}
+
+/* Proposal Sections */
+.proposal-section {
+  margin-bottom: 25px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.section-label {
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  color: #495057;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-content {
+  margin: 0;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Cost Table */
+.cost-table {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.cost-header {
+  display: flex;
+  background-color: #f8f9fa;
+  padding: 15px 20px;
+  font-weight: 600;
+  border-bottom: 1px solid #dee2e6;
+  color: #495057;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.cost-row {
+  display: flex;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e9ecef;
+  align-items: center;
+}
+
+.cost-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #007bff;
+  border-radius: 50%;
+  margin-right: 12px;
+  display: inline-block;
+}
+
+.cost-type-col {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.cost-desc-col {
+  flex: 2;
+  color: #666;
+}
+
+.cost-amount-col {
+  flex: 1;
+  text-align: right;
+  font-weight: 500;
+  color: #333;
+}
+
+.cost-row.total {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border-top: 2px solid #dee2e6;
+}
+
+.cost-total-label {
+  flex: 2;
+  font-weight: bold;
+  color: #495057;
+}
+
+.cost-total-amount {
+  flex: 1;
+  text-align: right;
+  font-weight: bold;
+  color: #28a745;
+}
+
+/* Fallback View */
+.fallback-details {
+  padding: 20px;
+}
+
+.fallback-note {
+  color: #666;
+  margin-top: 20px;
+}
