@@ -74,16 +74,6 @@ const ProposalHistory = () => {
   ];
   // MODIFICATION END
 
-  const getDisplayComment = () => {
-    if (!proposalHistory || proposalHistory.length === 0)
-      return "No comments recorded.";
-    const entryWithComment = proposalHistory.find(
-      (h) => h.comments && h.comments.trim().length > 0,
-    );
-    return entryWithComment
-      ? entryWithComment.comments
-      : "No comments recorded.";
-  };
 
   const shortenDepartmentName = (name, maxLength = 30) => {
     if (!name) return "N/A";
