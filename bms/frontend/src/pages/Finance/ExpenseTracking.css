@@ -643,13 +643,6 @@ body {
   overflow-y: auto;
 }
 
-.transactions-table td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--gray-300);
-  font-size: 0.875rem;
-  color: var(--base-text-color);
-  vertical-align: top;
-}
 
 .transactions-table tr:last-child td {
   border-bottom: none;

@@ -31,14 +31,13 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
         required=True,
         help_text="List of file attachments (Receipts, Invoices)"
     )
-    
+
     def validate_attachments(self, value):
         if not value or len(value) == 0:
             raise serializers.ValidationError(
                 "At least one attachment (receipt or invoice) is required to process this expense."
             )
         return value
-    
 
     class Meta:
         model = Expense
@@ -316,6 +315,46 @@ class ExpenseMessageSerializer(serializers.ModelSerializer):
 
         return data
 
+# --- HELPER MIXIN FOR ATTACHMENTS ---
+
+
+class AttachmentSerializerMixin:
+    """
+    Shared logic to unify the legacy 'receipt' field and the new 'attachments' model
+    into a single list for the frontend.
+    """
+
+    def get_unified_attachments(self, obj):
+        request = self.context.get('request')
+        result = []
+
+        # 1. Add Legacy Receipt (if exists)
+        if obj.receipt:
+            url = obj.receipt.url
+            if request:
+                url = request.build_absolute_uri(url)
+            filename = obj.receipt.name.split('/')[-1]
+            result.append({
+                'url': url,
+                'name': filename,
+                'source': 'legacy'  # Optional debug flag
+            })
+
+        # 2. Add New Attachments
+        attachments = obj.attachments.all()
+        for att in attachments:
+            url = att.file.url
+            if request:
+                url = request.build_absolute_uri(url)
+            filename = att.file.name.split('/')[-1]
+            result.append({
+                'url': url,
+                'name': filename,
+                'source': 'attachment'
+            })
+
+        return result
+
 
 class ExpenseHistorySerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(
@@ -326,7 +365,8 @@ class ExpenseHistorySerializer(serializers.ModelSerializer):
         fields = ['id', 'date', 'description', 'category_name', 'amount']
 
 
-class ExpenseTrackingSerializer(serializers.ModelSerializer):
+# Inherit Mixin
+class ExpenseTrackingSerializer(serializers.ModelSerializer, AttachmentSerializerMixin):
     reference_no = serializers.CharField(
         source='transaction_id', read_only=True)
     department_name = serializers.CharField(
@@ -345,30 +385,19 @@ class ExpenseTrackingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'reference_no', 'date', 'department_name', 'category_name',
             'sub_category_name', 'description', 'vendor', 'amount', 'status', 'accomplished',
-            'has_attachments', 'attachments'  # ✅ Added attachments field
+            'has_attachments', 'attachments'
         ]
 
     def get_accomplished(self, obj):
         return "Yes" if obj.is_accomplished else "No"
-    
+
     def get_has_attachments(self, obj):
-        return obj.attachments.exists()
-    
+        # Check both new relation and legacy field
+        return obj.attachments.exists() or bool(obj.receipt)
+
     def get_attachments(self, obj):
-        """Returns list of attachment objects with name and url"""
-        request = self.context.get('request')
-        attachments = obj.attachments.all()
-        if not attachments:
-            return []
-        
-        result = []
-        for att in attachments:
-            url = att.file.url
-            if request:
-                url = request.build_absolute_uri(url)
-            filename = att.file.name.split('/')[-1]
-            result.append({'url': url, 'name': filename})
-        return result
+        # Use the Mixin to get combined list
+        return self.get_unified_attachments(obj)
 
 # MODIFICATION START: New serializer for the expense review action
 
@@ -385,7 +414,8 @@ class ExpenseReviewSerializer(serializers.Serializer):
         return value
 
 
-class ExpenseDetailForModalSerializer(serializers.ModelSerializer):
+# Inherit Mixin
+class ExpenseDetailForModalSerializer(serializers.ModelSerializer, AttachmentSerializerMixin):
     proposal_id = serializers.IntegerField(
         source='project.budget_proposal.id', read_only=True)
     vendor = serializers.CharField(read_only=True)
@@ -414,30 +444,17 @@ class ExpenseDetailForModalSerializer(serializers.ModelSerializer):
         ]
 
     def get_attachments(self, obj):
-        request = self.context.get('request')
-        attachments = obj.attachments.all()
-        if not attachments:
-            return []
-        
-        result = []
-        for att in attachments:
-            url = att.file.url
-            if request:
-                url = request.build_absolute_uri(url)
-            filename = att.file.name.split('/')[-1]
-            result.append({'url': url, 'name': filename})
-        return result
+        return self.get_unified_attachments(obj)
 
 
 class ExpenseCreateSerializer(serializers.ModelSerializer):
     project_id = serializers.IntegerField(write_only=True)
     category_code = serializers.CharField(write_only=True)
 
-    
     attachments = serializers.ListField(
         child=serializers.FileField(allow_empty_file=False),
         write_only=True,
-        required=True  #
+        required=True 
     )
 
     class Meta:
@@ -450,12 +467,11 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'amount': {'required': True},
             'date': {'required': True},
-            'description': {'required': True, 'allow_blank': False},  # ✅ FIXED: Now truly required
+            'description': {'required': True, 'allow_blank': False},
             'vendor': {'required': True},
             'notes': {'required': False, 'allow_blank': True},
         }
 
-    # IMPROVED: Better error message for future dates
     def validate_date(self, value):
         if value > timezone.now().date():
             raise serializers.ValidationError(
@@ -463,204 +479,13 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
-    # IMPROVED: Clearer error message for attachments
     def validate_attachments(self, value):
         if not value or len(value) == 0:
             raise serializers.ValidationError(
                 "At least one attachment (receipt or invoice) is required to process this expense."
             )
         return value
-
-    # MODIFICATION: Validation for future dates
-    def validate_date(self, value):
-        if value > timezone.now().date():
-            raise serializers.ValidationError(
-                "Expenses cannot be recorded for future dates.")
-        return value
-
-    # --- MODIFICATION START: New Cap Validation Logic and return JSON structured ERRORS ---
-    def validate_caps(self, department, category, amount, notes):
-        """
-        Validates Department-Level and SubCategory-Level Budget Caps.
-        Raises ValidationError with specific JSON structure for external integrations.
-        """
-        today = timezone.now().date()
-        fiscal_year = FiscalYear.objects.filter(
-            start_date__lte=today, end_date__gte=today, is_active=True
-        ).first()
-
-        if not fiscal_year:
-            return  # Cannot validate caps without FY context
-
-        # 1. Calculate Organization Totals (Expensive query, simplistic for MVP)
-        # In a real system, these totals would be cached or pre-calculated fields on FiscalYear
-        total_org_allocations = BudgetAllocation.objects.filter(
-            fiscal_year=fiscal_year, is_active=True
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-        # 2. Check Department Cap
-        try:
-            dept_cap = DepartmentBudgetCap.objects.get(
-                department=department, fiscal_year=fiscal_year, is_active=True
-            )
-
-            dept_limit = total_org_allocations * \
-                (dept_cap.percentage_of_total / 100)
-
-            current_dept_spent = Expense.objects.filter(
-                department=department,
-                budget_allocation__fiscal_year=fiscal_year,
-                status__in=['APPROVED', 'SUBMITTED']
-            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-            projected_dept_total = current_dept_spent + amount
-            remaining_dept = max(
-                dept_limit - current_dept_spent, Decimal('0.00'))
-
-            if projected_dept_total > dept_limit:
-                # Structure matches "Department-Level Cap Errors" in IntegrationV2.1
-                error_payload = {
-                    "error": "DEPARTMENT_BUDGET_CAP_EXCEEDED",
-                    "detail": f"{department.code} Department has exceeded its annual budget cap of {dept_cap.percentage_of_total}%",
-                    "cap_info": {
-                        "department": department.code,
-                        "cap_percentage": float(dept_cap.percentage_of_total),
-                        "cap_amount": float(dept_limit),
-                        "current_spent": float(current_dept_spent),
-                        "remaining": float(remaining_dept)
-                    }
-                }
-
-                if dept_cap.cap_type == 'HARD':
-                    raise serializers.ValidationError(error_payload)
-                elif dept_cap.cap_type == 'SOFT':
-                    if not notes or len(notes) < 10:
-                        error_payload['error'] = "DEPARTMENT_SOFT_CAP_EXCEEDED"
-                        error_payload['detail'] += " Justification is required."
-                        raise serializers.ValidationError(error_payload)
-
-        except DepartmentBudgetCap.DoesNotExist:
-            pass
-
-        # 3. Check Sub-Category Cap
-        try:
-            cat_cap = SubCategoryBudgetCap.objects.get(
-                expense_category=category, department=department, fiscal_year=fiscal_year, is_active=True
-            )
-
-            dept_total_alloc = BudgetAllocation.objects.filter(
-                department=department, fiscal_year=fiscal_year, is_active=True
-            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-            cat_limit = dept_total_alloc * \
-                (cat_cap.percentage_of_department / 100)
-
-            current_cat_spent = Expense.objects.filter(
-                department=department,
-                category=category,
-                budget_allocation__fiscal_year=fiscal_year,
-                status__in=['APPROVED', 'SUBMITTED']
-            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-            projected_cat_total = current_cat_spent + amount
-            remaining_cat = max(cat_limit - current_cat_spent, Decimal('0.00'))
-
-            if projected_cat_total > cat_limit:
-                # Structure matches "Hard/Soft Cap Violation" in IntegrationV2.1
-                error_code = "BUDGET_HARD_CAP_EXCEEDED" if cat_cap.cap_type == 'HARD' else "BUDGET_SOFT_CAP_EXCEEDED"
-
-                error_payload = {
-                    "error": error_code,
-                    "detail": f"This expense exceeds the {cat_cap.cap_type.lower()} cap for {category.name}.",
-                    "cap_info": {
-                        "category": category.code,
-                        "cap_type": cat_cap.cap_type,
-                        "cap_amount": float(cat_limit),
-                        "current_spent": float(current_cat_spent),
-                        "remaining": float(remaining_cat),
-                        "requested": float(amount)
-                    }
-                }
-
-                if cat_cap.cap_type == 'HARD':
-                    raise serializers.ValidationError(error_payload)
-                elif cat_cap.cap_type == 'SOFT':
-                    if not notes or len(notes) < 10:
-                        error_payload['detail'] += " Justification is required."
-                        raise serializers.ValidationError(error_payload)
-
-        except SubCategoryBudgetCap.DoesNotExist:
-            pass
-    # --- MODIFICATION END ---
-
-    def validate(self, data):
-        project_id = data.get('project_id')
-        category_code = data.get('category_code')
-        expense_amount = data.get('amount')
-        notes = data.get('notes', '')
-
-        try:
-            project = Project.objects.get(id=project_id)
-            department = project.department
-
-            # --- Strict Department Check ---
-            request = self.context.get('request')
-            if request and hasattr(request.user, 'roles'):
-                bms_role = get_user_bms_role(request.user)
-                if bms_role == 'GENERAL_USER':
-                    user_dept_id = getattr(request.user, 'department_id', None)
-                    if user_dept_id and user_dept_id != project.department_id:
-                        raise serializers.ValidationError(
-                            {'project_id': "You cannot submit expenses for other departments."}
-                        )
-
-            sub_category = ExpenseCategory.objects.get(
-                code=category_code, is_active=True)
-        except Project.DoesNotExist:
-            raise serializers.ValidationError(
-                {'project_id': "Project not found."})
-        except ExpenseCategory.DoesNotExist:
-            raise serializers.ValidationError(
-                {'category_code': 'Active expense sub-category not found.'})
-
-        # --- Trigger Cap Validation ---
-        self.validate_caps(department, sub_category, expense_amount, notes)
-
-        # --- INTELLIGENT ALLOCATION FINDING ---
-        allocations = BudgetAllocation.objects.filter(
-            project=project,
-            category=sub_category,
-            is_active=True,
-            is_locked=False  # Ensure we only use unlocked allocations
-        )
-
-        if not allocations.exists():
-            raise serializers.ValidationError(
-                f'No active, unlocked budget found for Project "{project.name}" and Category "{sub_category.name}". Finance Manager approval required.'
-            )
-
-        allocation_to_charge = allocations.first()
-        total_budget = allocation_to_charge.amount
-        total_spent = Expense.objects.filter(
-            budget_allocation=allocation_to_charge,
-            status__in=['APPROVED', 'SUBMITTED']
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-        remaining_budget = total_budget - total_spent
-
-        if expense_amount > remaining_budget:
-            raise serializers.ValidationError(
-                {'amount': f'Insufficient funds. Remaining budget for this item is ₱{remaining_budget:,.2f}'}
-            )
-
-        data['department_obj'] = department
-        data['category_obj'] = sub_category
-        data['allocation_obj'] = allocation_to_charge
-        data['account_obj'] = allocation_to_charge.account
-        data['project_obj'] = project
-
-        return data
-
+    
     def create(self, validated_data):
         # Extract objects
         department = validated_data.pop('department_obj')
@@ -690,15 +515,13 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
                 **validated_data
             )
 
+            # Create Attachment objects
             if attachments_data:
                 for file in attachments_data:
                     ExpenseAttachment.objects.create(
                         expense=expense, file=file)
 
         return expense
-
-    
-
 
 class BudgetAllocationCreateSerializer(serializers.ModelSerializer):
     """
@@ -761,7 +584,7 @@ class ExpenseTrackingSummarySerializer(serializers.Serializer):
         max_digits=15, decimal_places=2)
 
 
-class ExpenseDetailSerializer(serializers.ModelSerializer):
+class ExpenseDetailSerializer(serializers.ModelSerializer, AttachmentSerializerMixin): # Inherit Mixin
     project_name = serializers.CharField(
         source='project.name', read_only=True, default=None)
     account_details = serializers.CharField(
@@ -799,29 +622,15 @@ class ExpenseDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_receipt_url(self, obj):
+        # Keep this for strict legacy API consumers, but frontend should prefer 'attachments'
         if obj.receipt:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.receipt.url)
         return None
 
-    # MODIFICATION START: Add method to get attachment URLs
     def get_attachments(self, obj):
-        request = self.context.get('request')
-        attachments = obj.attachments.all()
-        if not attachments:
-            return []
-        
-        # Return object with name and url
-        result = []
-        for att in attachments:
-            url = att.file.url
-            if request:
-                url = request.build_absolute_uri(url)
-            # Extract filename from path
-            filename = att.file.name.split('/')[-1]
-            result.append({'url': url, 'name': filename})
-        return result
+        return self.get_unified_attachments(obj)
 
 
 # ← New name
