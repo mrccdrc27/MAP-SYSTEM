@@ -2093,21 +2093,99 @@ class JournalEntryDetailView(generics.RetrieveAPIView):
     serializer_class = JournalEntryDetailSerializer
     permission_classes = [IsBMSUser]
     lookup_field = 'entry_id'  # We will look up by "JE-2026-XXXX"
-
 class ExternalReferenceViewSet(viewsets.ViewSet):
     """
     Read-only endpoints for External Systems to fetch Master Data.
     Protected by API Key.
+    
+    **Authentication Required**: X-API-Key header
+    **Allowed Services**: DTS, TTS, HDS, AMS (configured in settings.SERVICE_API_KEYS)
+    
+    **Available Endpoints**:
+    - GET /api/external-references/departments/ - List active departments
+    - GET /api/external-references/categories/ - List expense categories (optionally filtered by department)
+    - GET /api/external-references/accounts/ - List active GL accounts
+    - GET /api/external-references/fiscal_years/ - Get active fiscal year
+    - GET /api/external-references/budget_caps/ - Get budget caps for a department
     """
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsTrustedService]
 
+    @extend_schema(
+        tags=['External System Integration (API Key Protected)'],
+        summary="Get list of active departments",
+        description="Returns all active departments with ID, Name, and Code for use in proposal/expense creation.",
+        responses={
+            200: OpenApiResponse(
+                description="List of departments",
+                examples=[
+                    OpenApiExample(
+                        "Department List",
+                        value=[
+                            {"id": 1, "name": "Information Technology", "code": "IT"},
+                            {"id": 2, "name": "Human Resources", "code": "HR"},
+                            {"id": 3, "name": "Finance", "code": "FIN"}
+                        ]
+                    )
+                ]
+            ),
+            403: OpenApiResponse(description="Invalid API Key")
+        }
+    )
     @action(detail=False, methods=['get'])
     def departments(self, request):
         """Get valid Departments (ID, Name, Code)"""
         depts = Department.objects.filter(is_active=True).values('id', 'name', 'code')
         return Response(list(depts))
 
+    @extend_schema(
+        tags=['External System Integration (API Key Protected)'],
+        summary="Get list of expense categories",
+        description="""
+        Returns valid expense categories for budget proposals and expenses.
+        
+        **Optional Filtering**:
+        - `?department_code=IT` - Filter categories relevant to a specific department
+        
+        **Returns**:
+        - `id`: Category ID for use in API requests
+        - `name`: Display name (e.g., "Server Hosting")
+        - `code`: Unique code (e.g., "IT-HOST")
+        - `classification`: CAPEX or OPEX
+        """,
+        parameters=[
+            OpenApiParameter(
+                name="department_code",
+                type=str,
+                required=False,
+                description="Filter categories by department code (e.g., 'IT', 'HR')"
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="List of expense categories",
+                examples=[
+                    OpenApiExample(
+                        "Category List",
+                        value=[
+                            {
+                                "id": 5,
+                                "name": "Server Hosting",
+                                "code": "IT-HOST",
+                                "classification": "OPEX"
+                            },
+                            {
+                                "id": 8,
+                                "name": "Hardware Purchases",
+                                "code": "IT-HW",
+                                "classification": "CAPEX"
+                            }
+                        ]
+                    )
+                ]
+            )
+        }
+    )
     @action(detail=False, methods=['get'])
     def categories(self, request):
         """
@@ -2119,7 +2197,7 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
 
         # INTELLIGENT FILTERING
         if dept_code:
-            # 1. Try to filter by SubCategoryBudgetCap )(Strongest Link)
+            # 1. Try to filter by SubCategoryBudgetCap (Strongest Link)
             # This confirms the department actually has a policy/cap for this category
             
             # Find categories linked to this dept via Caps
@@ -2138,16 +2216,54 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
         data = qs.values('id', 'name', 'code', 'classification')
         return Response(list(data))
 
-    @action(detail=False, methods=['get'])
-    def fiscal_years(self, request):
-        """Get Active Fiscal Year"""
-
-        fy = FiscalYear.objects.filter(is_active=True).values(
-            'id', 'name', 'start_date', 'end_date'
-        ).first()
-        return Response(fy)
-
-
+    @extend_schema(
+        tags=['External System Integration (API Key Protected)'],
+        summary="Get list of active GL accounts",
+        description="""
+        Returns all active General Ledger accounts for use in budget proposals and expenses.
+        
+        **Use Cases**:
+        - Creating budget proposal items (requires `account` field)
+        - Submitting expenses
+        - Journal entry creation
+        
+        **Returns**:
+        - `id`: Account ID for API requests
+        - `code`: GL Account Code (e.g., "5000", "1010")
+        - `name`: Account name (e.g., "Cash", "Equipment")
+        - `account_type__name`: Account type (Asset, Liability, Expense, etc.)
+        """,
+        responses={
+            200: OpenApiResponse(
+                description="List of active accounts",
+                examples=[
+                    OpenApiExample(
+                        "Account List",
+                        value=[
+                            {
+                                "id": 1,
+                                "code": "1010",
+                                "name": "Cash",
+                                "account_type__name": "Asset"
+                            },
+                            {
+                                "id": 5,
+                                "code": "5000",
+                                "name": "Operating Expenses",
+                                "account_type__name": "Expense"
+                            },
+                            {
+                                "id": 12,
+                                "code": "1500",
+                                "name": "Equipment",
+                                "account_type__name": "Asset"
+                            }
+                        ]
+                    )
+                ]
+            )
+        }
+    )
     @action(detail=False, methods=['get'])
     def accounts(self, request):
         """Get valid General Ledger Accounts for External Systems"""
@@ -2156,41 +2272,126 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             'id', 'name', 'code', 'account_type__name'
         )
         return Response(list(accounts))
-    
-    #URL: GET /api/external-references/budget_caps/?department_code=IT
-    #Header: X-API-Key: <valid-key>
-    
+
+    @extend_schema(
+        tags=['External System Integration (API Key Protected)'],
+        summary="Get active fiscal year",
+        description="""
+        Returns the currently active fiscal year for use in proposals and expenses.
+        
+        **Use Case**: 
+        External systems need to know which fiscal year to use when creating proposals.
+        
+        **Returns**:
+        - `id`: Fiscal Year ID (required for proposal creation)
+        - `name`: Display name (e.g., "FY 2026")
+        - `start_date`: Beginning of fiscal year
+        - `end_date`: End of fiscal year
+        
+        **Note**: Returns `null` if no fiscal year is currently active.
+        """,
+        responses={
+            200: OpenApiResponse(
+                description="Active fiscal year details",
+                examples=[
+                    OpenApiExample(
+                        "Active Fiscal Year",
+                        value={
+                            "id": 1,
+                            "name": "FY 2026",
+                            "start_date": "2026-01-01",
+                            "end_date": "2026-12-31"
+                        }
+                    ),
+                    OpenApiExample(
+                        "No Active Fiscal Year",
+                        value=None
+                    )
+                ]
+            )
+        }
+    )
+    @action(detail=False, methods=['get'])
+    def fiscal_years(self, request):
+        """Get Active Fiscal Year"""
+        fy = FiscalYear.objects.filter(is_active=True).values(
+            'id', 'name', 'start_date', 'end_date'
+        ).first()
+        return Response(fy)
+
+    @extend_schema(
+        tags=['External System Integration (API Key Protected)'],
+        summary="Get budget caps and spending status for a department",
+        description="""
+        Returns budget cap information and current spending status for a department.
+        
+        **Required Parameter**: `?department_code=IT`
+        
+        **Use Cases**:
+        - Check if a department has exceeded their budget cap
+        - Validate expense amounts before submission
+        - Display budget warnings to users
+        
+        **Cap Types**:
+        - `HARD`: Expenses cannot exceed the cap (will be rejected)
+        - `SOFT`: Expenses can exceed with justification (notes required)
+        
+        **Returns**:
+        - Department-level cap (percentage of total org budget)
+        - Category-level caps (percentage of department budget)
+        - Current spending vs. limits
+        - Remaining budget for each category
+        """,
+        parameters=[
+            OpenApiParameter(
+                name="department_code",
+                type=str,
+                required=True,
+                description="Department code (e.g., 'IT', 'HR', 'FIN')"
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Budget cap information",
+                examples=[
+                    OpenApiExample(
+                        "Budget Cap Response",
+                        value={
+                            "fiscal_year": "FY 2026",
+                            "department": "IT",
+                            "department_cap": {
+                                "limit_amount": 3000000.00,
+                                "spent_amount": 1200000.00,
+                                "remaining_amount": 1800000.00,
+                                "cap_type": "SOFT",
+                                "cap_percentage": 15.0,
+                                "current_usage_percentage": 40.0
+                            },
+                            "category_caps": [
+                                {
+                                    "category_code": "IT-HOST",
+                                    "category_name": "Server Hosting",
+                                    "limit_amount": 600000.00,
+                                    "spent_amount": 550000.00,
+                                    "remaining_amount": 50000.00,
+                                    "cap_type": "HARD",
+                                    "cap_percentage": 20.0,
+                                    "current_usage_percentage": 91.7
+                                }
+                            ]
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(description="department_code parameter is required"),
+            404: OpenApiResponse(description="Department not found or no active fiscal year")
+        }
+    )
     @action(detail=False, methods=['get'])
     def budget_caps(self, request):
         """
         Get Budget Caps and Remaining Balances for a Department.
         Required param: ?department_code=IT
-        
-        Returns:
-        {
-            "fiscal_year": "FY 2026",
-            "department": "IT",
-            "department_cap": {
-                "limit_amount": 3000000.00,
-                "spent_amount": 1200000.00,
-                "remaining_amount": 1800000.00,
-                "cap_type": "SOFT",
-                "cap_percentage": 15.0,
-                "current_usage_percentage": 40.0
-            },
-            "category_caps": [
-                {
-                    "category_code": "IT-HOST",
-                    "category_name": "Server Hosting",
-                    "limit_amount": 600000.00,
-                    "spent_amount": 550000.00,
-                    "remaining_amount": 50000.00,
-                    "cap_type": "HARD",
-                    "cap_percentage": 20.0,
-                    "current_usage_percentage": 91.7
-                }
-            ]
-        }
         """
         dept_code = request.query_params.get('department_code')
         if not dept_code:
@@ -2242,9 +2443,8 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
                 "spent_amount": round(current_dept_spent, 2),
                 "remaining_amount": round(max(dept_limit - current_dept_spent, 0), 2),
                 "cap_type": d_cap.cap_type,
-                # NEW FIELDS
-                "cap_percentage": float(d_cap.percentage_of_total),  # The policy limit (e.g., 15%)
-                "current_usage_percentage": round(float(dept_usage_pct), 1)  # How much of that limit is used (e.g., 40%)
+                "cap_percentage": float(d_cap.percentage_of_total),
+                "current_usage_percentage": round(float(dept_usage_pct), 1)
             }
         except DepartmentBudgetCap.DoesNotExist:
             pass
@@ -2255,16 +2455,13 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             department=dept, fiscal_year=fiscal_year, is_active=True
         ).select_related('expense_category')
 
-        # We need total dept allocation for calculation
         dept_total_alloc = BudgetAllocation.objects.filter(
             department=dept, fiscal_year=fiscal_year, is_active=True
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
         for c_cap in cat_caps_qs:
-            # Category limit as percentage of department budget
             cat_limit = dept_total_alloc * (c_cap.percentage_of_department / 100)
             
-            # Current spending for this category in this department
             current_cat_spent = Expense.objects.filter(
                 department=dept,
                 category=c_cap.expense_category,
@@ -2272,7 +2469,6 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
                 status__in=['APPROVED', 'SUBMITTED']
             ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-            # Calculate Usage Percentage
             cat_usage_pct = 0.0
             if cat_limit > 0:
                 cat_usage_pct = (current_cat_spent / cat_limit) * 100
@@ -2284,9 +2480,8 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
                 "spent_amount": round(current_cat_spent, 2),
                 "remaining_amount": round(max(cat_limit - current_cat_spent, 0), 2),
                 "cap_type": c_cap.cap_type,
-                # NEW FIELDS
-                "cap_percentage": float(c_cap.percentage_of_department),  # Policy percentage (e.g., 20%)
-                "current_usage_percentage": round(float(cat_usage_pct), 1)  # Actual usage (e.g., 91.7%)
+                "cap_percentage": float(c_cap.percentage_of_department),
+                "current_usage_percentage": round(float(cat_usage_pct), 1)
             })
 
         return Response({
@@ -2295,4 +2490,3 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             "department_cap": dept_cap_info,
             "category_caps": sub_caps
         })
-    
