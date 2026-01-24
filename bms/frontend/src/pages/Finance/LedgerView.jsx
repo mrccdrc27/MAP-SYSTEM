@@ -359,22 +359,21 @@ const LedgerView = () => {
                     <ChevronDown size={14} />
                   </button>
                   {showDepartmentDropdown && (
-                    <div
-                      className="dropdown-menu"
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        backgroundColor: "white",
-                        border: "1px solid #ccc",
-                        borderRadius: "4px",
-                        width: "250px",
-                        zIndex: 1000,
-                        maxHeight: "300px",
-                        overflowY: "auto",
-                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                      }}
-                    >
+                      <div
+                        className="dropdown-menu"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          backgroundColor: "white",
+                          border: "1px solid #ccc",
+                          borderRadius: "4px",
+                          width: "100%",
+                          zIndex: 10,
+                          maxHeight: "none", 
+                          overflowY: "visible", 
+                        }}
+                      >
                       {departmentOptions.map((dept) => (
                         <div
                           key={dept.value}
