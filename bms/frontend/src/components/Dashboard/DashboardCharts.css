@@ -1,0 +1,301 @@
+/* Container for the two charts side-by-side */
+.charts-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  min-height: 400px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-title-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.chart-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+/* Forecasting Toggle Buttons */
+.toggle-group {
+  display: flex;
+  gap: 10px;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.toggle-btn:hover {
+  background: #f8f9fa;
+  border-color: #ccc;
+}
+
+.toggle-btn.active {
+  background: #e7f1ff;
+  color: #007bff;
+  border-color: #007bff;
+}
+
+/* Action Buttons (Export, etc) */
+.chart-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.icon-btn:hover {
+  color: #007bff;
+  background: #f0f7ff;
+}
+
+/* Chart Canvas Container */
+.chart-container {
+  flex: 1;
+  position: relative;
+  min-height: 300px;
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-export-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  height: 32px;
+  transition: background-color 0.2s;
+}
+
+.btn-export-success:hover {
+  background-color: #218838;
+}
+
+/* Accuracy Stats Grid (4 cards) */
+.accuracy-stats-grid {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.accuracy-card-center {
+  flex: 1 1 25%;
+  text-align: center;
+}
+
+.accuracy-card {
+  flex: 1 1 25%;
+}
+
+.accuracy-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 12px;
+  color: white;
+  margin-top: 5px;
+}
+
+/* Detailed Metrics Table */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.analysis-table-title {
+  margin-bottom: 15px;
+  color: #374151;
+  font-size: 16px;
+}
+
+.analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.analysis-table th {
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-bottom: 2px solid #e9ecef;
+  font-weight: 600;
+  color: #333;
+}
+
+.analysis-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e9ecef;
+  color: #555;
+}
+
+/* Table Alignment Helpers */
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+/* Text Colors */
+.text-success { color: #28a745; }
+.text-danger { color: #dc3545; }
+.text-warning { color: #ffc107; }
+.text-primary { color: #007bff; }
+.text-orange { color: #ff6b35; }
+
+/* --- Department Budget Analysis --- */
+
+.view-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  height: 32px;
+  transition: background-color 0.2s;
+}
+
+.view-button:hover {
+  background-color: #0056b3;
+}
+
+/* Custom Legend Styles */
+.legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+  padding: 6px 0;
+  gap: 8px;
+}
+
+.legend-color-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+/* Detailed List Styles */
+.dept-budget-list {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.dept-budget-item {
+  padding: 15px 0;
+}
+
+.dept-budget-item.with-border {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dept-budget-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dept-budget-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.dept-budget-percentage {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.progress-container {
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.dept-budget-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #555;
+}
+
+.dept-budget-details p {
+  margin: 0;
+}

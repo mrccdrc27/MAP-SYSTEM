@@ -121,7 +121,8 @@ export function PublicRoute({ children }) {
 
   // If user is already logged in, redirect them to the dashboard
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    // MODIFIED: Changed redirect path
+    return <Navigate to="/finance/dashboard" replace />;
   }
 
   return children;

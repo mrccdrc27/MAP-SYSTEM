@@ -19,7 +19,6 @@ TODO: Filter out fiscal years in Old Dropdown to only show years where end_date 
 TODO: Make Export on spendingTrendsData better and not just the two cards
 */
 import React, { useState, useEffect } from "react";
-import { Line, Pie, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -33,25 +32,11 @@ import {
   Filler,
 } from "chart.js";
 import {
-  ChevronDown,
-  Bell,
-  Settings,
-  Eye,
-  TrendingUp,
-  BarChart3,
-  Target,
-  Download,
-  User,
-  LogOut,
-  TrendingDown,
-  Flame,
-  PieChart,
+  // Kept only icons used in Dashboard view or Nav (if passed)
   Calendar,
-  ChevronRight,
-  CheckCircle,
+  ChevronDown,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import LOGOMAP from "../../assets/MAP.jpg";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./Dashboard.css";
 import {
   getBudgetSummary,
@@ -65,22 +50,35 @@ import {
   getSpendingHeatmap,
 } from "../../API/dashboardAPI";
 import { useAuth } from "../../context/AuthContext";
-import ManageProfile from "./ManageProfile";
+import ManageProfile from "../../pages/Finance/ManageProfile";
 import * as XLSX from "xlsx";
+
+// --- NEW IMPORTS (Refactoring) ---
+import Navigation from "../../components/Navigation/Navigation";
 import {
-  getFiscalYears,
-  createFiscalYear,
-  updateFiscalYearStatus,
-  getClosingPreview,
-  processYearEnd as apiProcessYearEnd,
-} from "../../API/fiscalYearAPI";
+  formatPeso,
+  convertCumulativeToMonthly,
+  getFormattedDateParts,
+} from "../../utils/dashboardUtils";
+import { DEPARTMENTS_MAPPING } from "../../utils/dashboardConstants";
 import {
-  Lock,
-  Unlock,
-  XCircle,
-  Calendar as CalendarIcon,
-  Plus,
-} from "lucide-react";
+  createLineChartOptions,
+  createPieChartOptions,
+  createSpendingTrendsOptions,
+  buildMoneyFlowChartData,
+  buildForecastComparisonData,
+  buildDepartmentPieData,
+} from "../../utils/chartConfigs";
+
+// Components
+import TimeFilter from "../../components/Dashboard/TimeFilter";
+import DashboardStats from "../../components/Dashboard/DashboardStats";
+import MoneyFlowChart from "../../components/Dashboard/MoneyFlowChart";
+import DepartmentBudgetAnalysis from "../../components/Dashboard/DepartmentBudgetAnalysis";
+import ForecastAccuracyAnalysis from "../../components/Dashboard/ForecastAccuracyAnalysis";
+import SpendingAnalytics from "../../components/Dashboard/SpendingAnalytics";
+import FiscalYearManagement from "../../components/FiscalYear/FiscalYearManagement";
+
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,
@@ -91,77 +89,17 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 // --- HELPER FUNCTIONS ---
-
-const formatPeso = (amount) => {
-  return `₱${Number(amount).toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-};
-
-/**
- * Converts Cumulative Forecast Data (from Backend) to Monthly Data (for Charts).
- * Formula: Monthly[i] = Cumulative[i] - Cumulative[i-1]
- */
-const convertCumulativeToMonthly = (cumulativeData) => {
-  if (
-    !cumulativeData ||
-    !Array.isArray(cumulativeData) ||
-    cumulativeData.length === 0
-  ) {
-    return [];
-  }
-
-  const monthlyData = [];
-  let lastCumulative = 0;
-
-  // Sort by month to ensure correct subtraction order
-  const sortedData = [...cumulativeData].sort((a, b) => a.month - b.month);
-
-  sortedData.forEach((point) => {
-    const monthlyValue = Number(point.forecast) - lastCumulative;
-    // Prevent negative forecast if cumulative dips (unlikely but safe)
-    const safeValue = monthlyValue < 0 ? 0 : monthlyValue;
-
-    monthlyData.push({ ...point, forecast: safeValue });
-    lastCumulative = Number(point.forecast);
-  });
-
-  return monthlyData;
-};
-
-const DEPARTMENTS = [
-  "Merchandise Planning",
-  "Store Operations",
-  "Marketing",
-  "Operations",
-  "IT",
-  "Logistics",
-  "Human Resources",
-  "Finance",
-];
-
-const DEPARTMENTS_MAPPING = {
-  "Merchandise Planning": ["Merchandising", "Merchandise"],
-  "Store Operations": ["Sales", "Store"],
-  Marketing: ["Marketing"],
-  Operations: ["Operations Department"],
-  IT: ["IT", "Data", "IT Application"],
-  Logistics: ["Logistics"],
-  "Human Resources": ["HR", "Human Resources"],
-  Finance: ["Finance"],
-};
-
+// Export functions kept in Dashboard as they rely on multiple data sources gathered here
 const exportToExcel = (
   summaryData,
   moneyFlowData,
   pieChartData,
   departmentData,
-  timeFilter
+  timeFilter,
 ) => {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
@@ -230,8 +168,8 @@ const exportToExcel = (
           variance > 0
             ? `Under Budget by ${variancePercentage}%`
             : variance < 0
-            ? `Over Budget by ${Math.abs(variancePercentage)}%`
-            : "On Budget";
+              ? `Over Budget by ${Math.abs(variancePercentage)}%`
+              : "On Budget";
 
         moneyFlowSheetData.push([
           item.month_name,
@@ -269,10 +207,10 @@ const exportToExcel = (
           percentageUsed >= 90
             ? "Critical"
             : percentageUsed >= 75
-            ? "High Usage"
-            : percentageUsed >= 50
-            ? "Moderate Usage"
-            : "Low Usage";
+              ? "High Usage"
+              : percentageUsed >= 50
+                ? "Moderate Usage"
+                : "Low Usage";
 
         departmentSheetData.push([
           dept.department_name,
@@ -312,11 +250,10 @@ const exportToExcel = (
   }
 };
 
-// Export Forecast Accuracy Report
 const exportAccuracyReport = (
   forecastAccuracyData,
   moneyFlowData,
-  forecastData
+  forecastData,
 ) => {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
@@ -330,13 +267,8 @@ const exportAccuracyReport = (
 
   try {
     const wb = XLSX.utils.book_new();
-
-    // --- 1. PREPARE DATA ---
     const monthlyForecasts = convertCumulativeToMonthly(forecastData);
-
     const reportRows = [];
-
-    // Header for Detail Section
     const tableHeader = [
       "Month",
       "Actual",
@@ -349,19 +281,13 @@ const exportAccuracyReport = (
     if (moneyFlowData && Array.isArray(moneyFlowData) && monthlyForecasts) {
       moneyFlowData.forEach((month, index) => {
         const actualValue = Number(month.actual) || 0;
-
-        // Logic: Find raw forecast
         let forecastPoint = monthlyForecasts.find(
-          (f) => f.month_name === month.month_name
+          (f) => f.month_name === month.month_name,
         );
         let forecastValue = forecastPoint ? Number(forecastPoint.forecast) : 0;
-
         const variance = actualValue - forecastValue;
-
-        // Floating point precision check (Epsilon)
         const isExact = Math.abs(variance) < 0.01;
 
-        // Calculate Accuracy
         let accuracyPct = 0;
         if (actualValue > 0) {
           accuracyPct = 100 * (1 - Math.abs(variance) / actualValue);
@@ -369,11 +295,9 @@ const exportAccuracyReport = (
           accuracyPct = 100;
         }
 
-        // Clamp accuracy between 0 and 100 to avoid negative percentages or > 100%
         const displayAccuracy =
           Math.max(0, Math.min(100, accuracyPct)).toFixed(1) + "%";
 
-        // Status Text
         let statusText = "Exact Match";
         if (!isExact) {
           statusText = variance > 0 ? "Actual > Forecast" : "Actual < Forecast";
@@ -390,13 +314,10 @@ const exportAccuracyReport = (
       });
     }
 
-    // --- 2. BUILD SHEETS ---
-
-    // Sheet 1: Executive Summary & Details Combined (Professional Look)
     const combinedData = [
       ["FORECAST ACCURACY REPORT"],
       ["Generated on:", now.toLocaleString()],
-      [""], // Spacer
+      [""],
       ["EXECUTIVE SUMMARY"],
       [
         "Analyzed Month",
@@ -410,23 +331,21 @@ const exportAccuracyReport = (
           Number(forecastAccuracyData.variance) >= 0 ? "Over" : "Under"
         } Forecast)`,
       ],
-      [""], // Spacer
-      [""], // Spacer
+      [""],
+      [""],
       ["DETAILED MONTHLY BREAKDOWN"],
       tableHeader,
       ...reportRows,
     ];
 
     const ws1 = XLSX.utils.aoa_to_sheet(combinedData);
-
-    // --- 3. BEAUTIFICATION (Column Widths) ---
     const wscols = [
-      { wch: 15 }, // Month
-      { wch: 20 }, // Actual
-      { wch: 20 }, // Forecast
-      { wch: 20 }, // Variance
-      { wch: 20 }, // Status
-      { wch: 15 }, // Accuracy
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 15 },
     ];
     ws1["!cols"] = wscols;
 
@@ -438,14 +357,13 @@ const exportAccuracyReport = (
   }
 };
 
-// Export Spending Behavior Report
 const exportSpendingReport = (type, data, filters) => {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
   const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "");
   const fileName = `${type.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_report_${dateStr}_${timeStr}.xlsx`;
 
   try {
@@ -461,10 +379,8 @@ const exportSpendingReport = (type, data, filters) => {
         ["Time Granularity:", filters.granularity],
         [""],
         ["Period", "Total Spent", "Percentage Change", "Status"],
-        // FIX: Access data.labels directly, not data.chartData.labels
         ...(data.labels?.map((label, index) => [
           label,
-          // FIX: Access data.datasets[0] directly
           formatPeso(data.datasets[0].data[index] || 0),
           data.datasets[0].percentageChange?.[index]
             ? `${data.datasets[0].percentageChange[index]}%`
@@ -517,130 +433,11 @@ const exportSpendingReport = (type, data, filters) => {
   }
 };
 
-// Mock data for demonstration (replace with actual API calls)
-const getMockDepartmentSpendingTrends = (
-  department,
-  startDate,
-  endDate,
-  granularity
-) => {
-  const periods =
-    granularity === "Monthly"
-      ? [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ]
-      : ["Q1", "Q2", "Q3", "Q4"];
-
-  const data = periods.map(() => Math.random() * 50000 + 10000);
-  const percentageChange = periods.map((_, i) =>
-    i > 0 ? (((data[i] - data[i - 1]) / data[i - 1]) * 100).toFixed(1) : 0
-  );
-
-  return {
-    labels: periods,
-    datasets: [
-      {
-        label: `Spending - ${department || "All Departments"}`,
-        data,
-        percentageChange,
-        borderColor: "#007bff",
-        backgroundColor: "rgba(0, 123, 255, 0.1)",
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-    totalAmount: data.reduce((a, b) => a + b, 0),
-    avgPercentageChange: (
-      ((data[data.length - 1] - data[0]) / data[0]) *
-      100
-    ).toFixed(1),
-  };
-};
-
-const getMockHighestSpendingCategories = (department, startDate, endDate) => {
-  const categories = [
-    "Office Supplies",
-    "Travel & Entertainment",
-    "Software Licenses",
-    "Hardware Equipment",
-    "Marketing Campaigns",
-    "Training & Development",
-    "Maintenance",
-    "Utilities",
-    "Consulting Fees",
-    "Contract Services",
-  ];
-
-  const randomCategories = categories
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 6)
-    .map((category) => ({
-      category,
-      amount: Math.random() * 100000 + 50000,
-      percentage: (Math.random() * 30 + 10).toFixed(1),
-    }))
-    .sort((a, b) => b.amount - a.amount);
-
-  const total = randomCategories.reduce((sum, cat) => sum + cat.amount, 0);
-
-  return randomCategories.map((cat) => ({
-    ...cat,
-    percentage: ((cat.amount / total) * 100).toFixed(1),
-  }));
-};
-
-const getMockHeatmapData = (department, aggregation) => {
-  const periods =
-    aggregation === "Monthly"
-      ? [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ]
-      : ["Q1", "Q2", "Q3", "Q4"];
-
-  return periods.map((period) => {
-    const value = Math.random() * 100000 + 20000;
-    let intensity;
-    if (value > 80000) intensity = "High";
-    else if (value > 50000) intensity = "Medium";
-    else intensity = "Low";
-
-    return { period, value, intensity };
-  });
-};
-
 function BudgetDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
   // UI State
-  const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
-  const [showExpenseDropdown, setShowExpenseDropdown] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showBudgetDetails, setShowBudgetDetails] = useState(false);
   const [showForecasting, setShowForecasting] = useState(false);
   const [showForecastComparison, setShowForecastComparison] = useState(false);
   const [showManageProfile, setShowManageProfile] = useState(false);
@@ -670,7 +467,7 @@ function BudgetDashboard() {
     endDate: new Date().toISOString().split("T")[0],
   });
   const [highestSpendingCategories, setHighestSpendingCategories] = useState(
-    []
+    [],
   );
 
   // Heatmap State
@@ -688,90 +485,43 @@ function BudgetDashboard() {
   const [departmentDetailsData, setDepartmentDetailsData] = useState(null);
   const [forecastAccuracyData, setForecastAccuracyData] = useState(null);
 
-  // --- ADD FISCAL YEAR STATE ---
+  // --- FISCAL YEAR STATE (Only what is needed for Navigation or Routing) ---
   const [activeView, setActiveView] = useState("dashboard"); // "dashboard" or "fiscal-year"
-  const [fiscalYears, setFiscalYears] = useState([]);
-  const [selectedFiscalYear, setSelectedFiscalYear] = useState(null); // For actions like lock/close
-  const [showCreateFiscalYear, setShowCreateFiscalYear] = useState(false);
-  const [showYearEndProcessing, setShowYearEndProcessing] = useState(false);
 
-  const [newFiscalYear, setNewFiscalYear] = useState({
-    name: "",
-    start_date: "",
-    end_date: "",
-  });
-
-  const calculateProgress = (start, end) => {
-    const total = new Date(end) - new Date(start);
-    const elapsed = new Date() - new Date(start);
-    return Math.min(100, Math.max(0, (elapsed / total) * 100)).toFixed(1);
-  };
-  const currentActiveYear = fiscalYears.find((fy) => fy.is_active);
-
-  // Fiscal Year Management State
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState("");
-  const [yearEndData, setYearEndData] = useState({
-    remainingBudgets: [],
-    carryoverDecisions: {},
-    processingStatus: "pending",
-  });
-
-  // Year End Logic State
-  const [closingYearId, setClosingYearId] = useState("");
-  const [openingYearId, setOpeningYearId] = useState("");
-  const [previewAllocations, setPreviewAllocations] = useState([]); // List from backend
-  const [selectedCarryoverIds, setSelectedCarryoverIds] = useState([]); // IDs selected for carryover
-  const [yearEndStep, setYearEndStep] = useState(1); // 1=Select Years, 2=Review Allocations
+  // Note: Detailed FY state (modals, list, active year object) moved to <FiscalYearManagement />
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, getBmsRole } = useAuth();
 
-  // MODIFIED: Updated getUserRole logic to correctly handle the role array from Central Auth
   const getUserRole = () => {
-    if (user) {
-      console.groupCollapsed("BMS Auth Debugger");
-      console.log("Full User Object:", user);
-      console.log("User Roles Array:", user.roles);
-      console.log(
-        "Detected BMS Role:",
-        getBmsRole ? getBmsRole() : "getBmsRole function missing"
-      );
-      console.groupEnd();
-    }
-
     if (!user) return "User";
-
-    // 1. Try to get the BMS specific role using the Context helper
-    // This handles the array structure: [{ system: 'bms', role: 'FINANCE_HEAD' }]
     if (getBmsRole) {
       const bmsRole = getBmsRole();
       if (bmsRole) return bmsRole;
     }
-
-    // 2. Fallback: Check direct role property (Legacy)
     if (user.role && typeof user.role === "string") return user.role;
-
-    // 3. Fallback: Check boolean flags
     if (user.is_superuser) return "ADMIN";
     if (user.is_staff) return "STAFF";
-
     return "User";
   };
 
-  const userRole = getBmsRole ? getBmsRole() : (user?.role || "User");
+  const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
   const isFinanceManager = ["ADMIN", "FINANCE_HEAD"].includes(userRole);
 
   const userProfile = {
-    // CHANGED: Added fallback to full_name or username if first/last names are empty (common with JWT auth)
     name: user
-      ? (`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.full_name || user.username || "User")
+      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+        user.full_name ||
+        user.username ||
+        "User"
       : "User",
     role: userRole,
     avatar:
       user?.profile_picture ||
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
   };
+
   // --- API CALLS ---
 
   // 1. Initial Data Load
@@ -786,12 +536,6 @@ function BudgetDashboard() {
         ]);
         setMoneyFlowData(moneyFlowRes.data);
         setPieChartApiData(pieChartRes.data);
-
-        // Fiscal Year Data (Pre-fetch)
-        if (isFinanceManager) {
-          const fyRes = await getFiscalYears();
-          setFiscalYears(fyRes.data);
-        }
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -802,16 +546,15 @@ function BudgetDashboard() {
     fetchStaticData();
     const interval = setInterval(() => setCurrentDate(new Date()), 1000);
     return () => clearInterval(interval);
-  }, [isFinanceManager]);
+  }, []);
 
   // 2. Summary & Department Data (Refreshes on Filter Change)
   useEffect(() => {
     const fetchDataBasedOnPeriod = async () => {
       try {
-        // Fetch both Summary and Department data with the time filter
         const [summaryRes, deptRes] = await Promise.all([
           getBudgetSummary(timeFilter),
-          getDepartmentBudgetData(timeFilter), // Update API function to accept arg
+          getDepartmentBudgetData(timeFilter),
         ]);
 
         setSummaryData(summaryRes.data);
@@ -832,7 +575,7 @@ function BudgetDashboard() {
       ) {
         try {
           const [forecastRes, accuracyRes] = await Promise.all([
-            getForecastData(null), // Changed from 2 to null to auto-detect active year
+            getForecastData(null),
             getForecastAccuracy(),
           ]);
 
@@ -862,9 +605,16 @@ function BudgetDashboard() {
     timeAggregation,
   ]);
 
-  const fetchSpendingAnalyticsData = async () => {
-    // console.log("Fetching Analytics for:", activeSpendingTab);
+  // Handle incoming navigation state from other pages
+  useEffect(() => {
+    if (location.state?.view) {
+      setActiveView(location.state.view);
+      // Clear the state so browser back button works correctly
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
+  const fetchSpendingAnalyticsData = async () => {
     try {
       if (activeSpendingTab === "trends") {
         const params = {
@@ -903,10 +653,9 @@ function BudgetDashboard() {
       } else if (activeSpendingTab === "heatmap") {
         const params = {
           department: selectedHeatmapDepartment,
-          // FIX: Use the state variables from the UI
-          start_date: categoryDateRange.startDate, 
+          start_date: categoryDateRange.startDate,
           end_date: categoryDateRange.endDate,
-          aggregation: timeAggregation
+          aggregation: timeAggregation,
         };
         const res = await getSpendingHeatmap(params);
         setHeatmapData(res.data);
@@ -916,29 +665,14 @@ function BudgetDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (activeView === "fiscal-year" && isFinanceManager) {
-      fetchFiscalYearsList();
-    }
-  }, [activeView, isFinanceManager]);
-
-  const fetchFiscalYearsList = async () => {
-    try {
-      const res = await getFiscalYears();
-      setFiscalYears(res.data);
-    } catch (error) {
-      console.error("Failed to fetch fiscal years", error);
-    }
-  };
-
   // Add to useEffect that runs on mount
   useEffect(() => {
     if (!isFinanceManager && user?.department) {
       // Auto-set department for General Users
       const mappedDept = Object.keys(DEPARTMENTS_MAPPING).find((key) =>
         DEPARTMENTS_MAPPING[key].some((keyword) =>
-          user.department.includes(keyword)
-        )
+          user.department.includes(keyword),
+        ),
       );
 
       if (mappedDept) {
@@ -951,114 +685,7 @@ function BudgetDashboard() {
 
   // --- EVENT HANDLERS ---
 
-  const handleNavigate = (path) => {
-    navigate(path);
-    closeAllDropdowns();
-  };
-
-  const closeAllDropdowns = () => {
-    setShowBudgetDropdown(false);
-    setShowExpenseDropdown(false);
-    setShowCategoryDropdown(false);
-    setShowNotifications(false);
-    setShowProfileDropdown(false);
-  };
-
-  const toggleDropdown = (setter, currentState) => {
-    closeAllDropdowns();
-    setter(!currentState);
-  };
-
   const handleLogout = async () => await logout();
-
-  // --- FISCAL YEAR HANDLERS ---
-
-  const handleCreateFiscalYear = async () => {
-    try {
-      await createFiscalYear(newFiscalYear);
-      alert("Fiscal Year Created!");
-      setShowCreateFiscalYear(false);
-      fetchFiscalYearsList();
-    } catch (error) {
-      alert(
-        "Error creating fiscal year: " +
-          (error.response?.data?.detail || error.message)
-      );
-    }
-  };
-
-  const handleUpdateFiscalYearStatus = async (id, status) => {
-    if (!window.confirm(`Set status to ${status}?`)) return;
-    try {
-      await updateFiscalYearStatus(id, status);
-      fetchFiscalYearsList();
-    } catch (error) {
-      alert("Error updating status");
-    }
-  };
-
-  const handleGeneratePreview = async () => {
-    if (!closingYearId) {
-      alert("Select a year to close.");
-      return;
-    }
-    try {
-      const res = await getClosingPreview(closingYearId);
-      setPreviewAllocations(res.data.allocations || []);
-
-      // Auto-select "CARRYOVER" recommendations
-      const recommended = res.data.allocations
-        .filter((a) => a.recommended_action === "CARRYOVER")
-        .map((a) => a.allocation_id);
-
-      setSelectedCarryoverIds(recommended);
-      setYearEndStep(2);
-    } catch (error) {
-      alert("Error: " + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const handleProcessYearEnd = async () => {
-    if (!openingYearId) {
-      alert("Select a target New Year.");
-      return;
-    }
-    if (
-      !window.confirm(
-        "This action is irreversible. The old year will be locked."
-      )
-    )
-      return;
-
-    try {
-      await apiProcessYearEnd({
-        closing_year_id: closingYearId,
-        opening_year_id: openingYearId,
-        allocation_ids: selectedCarryoverIds,
-      });
-      alert("Year-End Processing Successful!");
-      setShowYearEndProcessing(false);
-      setYearEndStep(1);
-      fetchFiscalYearsList();
-    } catch (error) {
-      alert("Error: " + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const toggleCarryover = (id) => {
-    setSelectedCarryoverIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const getStatusColor = (status) => {
-    // Note: status from API is string "Open", "Locked", "Closed" via serializers?
-    // Actually the mock uses strings, but backend returns fields.
-    // Adapt based on fields if object, or string if mock-like.
-    // Assuming backend fields: is_active, is_locked
-    // Update logic in Render:
-    return "#6c757d";
-  };
 
   // --- CHART DATA PREPARATION ---
 
@@ -1070,323 +697,40 @@ function BudgetDashboard() {
   const monthlyForecastData = convertCumulativeToMonthly(forecastData);
 
   // 1. DEFAULT VIEW: Budget vs Actual (+ Projection Stitching)
-  const monthlyData = {
-    labels: moneyFlowData?.map((d) => d.month_name) || [],
-    datasets: [
-      {
-        label: "Budget",
-        data: moneyFlowData?.map((d) => d.budget) || [],
-        borderColor: "#007bff",
-        backgroundColor: "rgba(0, 123, 255, 0.1)",
-        tension: 0.4,
-        fill: true,
-        pointBackgroundColor: "#007bff",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        order: 2,
-      },
-      {
-        label: "Expense",
-        data: moneyFlowData?.map((d) => d.actual) || [],
-        borderColor: "#28a745",
-        backgroundColor: "rgba(40, 167, 69, 0.1)",
-        tension: 0.4,
-        fill: true,
-        pointBackgroundColor: "#28a745",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        order: 1,
-      },
-      // FORECAST LINE (Stitched)
-      ...(showForecasting && moneyFlowData && monthlyForecastData.length > 0
-        ? [
-            {
-              label: "Forecast (Projection)",
-              data: moneyFlowData.map((d, index) => {
-                const forecastPoint = monthlyForecastData.find(
-                  (f) => f.month_name === d.month_name
-                );
-                const val = forecastPoint ? forecastPoint.forecast : null;
-
-                // PM Logic: Hide forecast before last actual. Stitch at last actual.
-                if (index < lastActualExpenseIndex) return null;
-                if (index === lastActualExpenseIndex)
-                  return moneyFlowData[index].actual;
-                return val;
-              }),
-              borderColor: "#ff6b35",
-              backgroundColor: "rgba(255, 107, 53, 0.1)",
-              borderDash: [5, 5],
-              tension: 0.4,
-              fill: true,
-              pointBackgroundColor: "#ff6b35",
-              pointBorderColor: "#fff",
-              pointBorderWidth: 2,
-              pointRadius: 5,
-              order: 0,
-            },
-          ]
-        : []),
-    ],
-  };
-
-  // 2. COMPARE VIEW: Actual vs Forecast (Baseline)
-  const forecastComparisonData = {
-    labels: moneyFlowData?.map((d) => d.month_name) || [],
-    datasets: [
-      {
-        label: "Actual",
-        data: moneyFlowData?.map((d) => d.actual) || [],
-        borderColor: "#28a745",
-        backgroundColor: "rgba(40, 167, 69, 0.1)",
-        tension: 0.4,
-        fill: false,
-        pointBackgroundColor: "#28a745",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        pointRadius: 4,
-      },
-      {
-        label: "Forecast (Baseline)",
-        // PM Logic: Show full Jan-Dec baseline
-        data:
-          moneyFlowData?.map((d) => {
-            const forecastPoint = monthlyForecastData.find(
-              (f) => f.month_name === d.month_name
-            );
-            return forecastPoint ? forecastPoint.forecast : null;
-          }) || [],
-        borderColor: "#ff6b35",
-        backgroundColor: "rgba(255, 107, 53, 0.1)",
-        borderDash: [5, 5],
-        tension: 0.4,
-        fill: false,
-        pointBackgroundColor: "#ff6b35",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        pointRadius: 4,
-      },
-    ],
-  };
-
-  // Department Pie Chart Logic
-  const getDepartmentPieData = () => {
-    if (departmentDetailsData && departmentDetailsData.length > 0) {
-      // Use mapping to find departments
-      const mappedData = Object.keys(DEPARTMENTS_MAPPING).map((label) => {
-        const keywords = DEPARTMENTS_MAPPING[label];
-        const foundDept = departmentDetailsData.find((d) =>
-          keywords.some((k) => d.department_name.includes(k))
-        );
-        return {
-          label: label,
-          budget: foundDept ? Number(foundDept.budget) : 0,
-        };
-      });
-
-      const validData = mappedData.filter((d) => d.budget > 0);
-
-      // Make sure you have 8 colors for 8 departments, in the same order as your mapping
-      const departmentColors = [
-        "#007bff", // Merchandise Planning
-        "#28a745", // Store Operations
-        "#ffc107", // Marketing
-        "#dc3545", // Operations
-        "#6f42c1", // IT
-        "#fd7e14", // Logistics
-        "#20c997", // Human Resources
-        "#343a40", // Finance (dark gray)
-      ];
-
-      if (validData.length > 0) {
-        return {
-          labels: validData.map((d) => d.label),
-          datasets: [
-            {
-              data: validData.map((d) => d.budget),
-              backgroundColor: departmentColors.slice(0, validData.length),
-              borderColor: "#ffffff",
-              borderWidth: 2,
-              hoverOffset: 15,
-            },
-          ],
-        };
-      }
-    }
-    // Fallback if empty to avoid crash
-    return {
-      labels: Object.keys(DEPARTMENTS_MAPPING),
-      datasets: [
-        {
-          data: Object.keys(DEPARTMENTS_MAPPING).map(() => 1),
-          backgroundColor: ["#e9ecef"],
-        },
-      ],
-    };
-  };
-
-  const pieChartData = getDepartmentPieData();
-  const totalPieValue = pieChartData.datasets[0].data.reduce(
-    (sum, value) => sum + value,
-    0
+  const monthlyData = buildMoneyFlowChartData(
+    moneyFlowData,
+    showForecasting,
+    monthlyForecastData,
+    lastActualExpenseIndex,
   );
 
-  const pieChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "0%",
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const percentage =
-              totalPieValue > 0
-                ? ((context.raw / totalPieValue) * 100).toFixed(1)
-                : 0;
-            return `${context.label}: ${formatPeso(
-              context.raw
-            )} (${percentage}%)`;
-          },
-        },
-      },
-      beforeDraw: (chart) => {
-        const { width, height, ctx } = chart;
-        ctx.restore();
-        const fontSize = (height / 100).toFixed(2);
-        ctx.font = `bold ${fontSize}em sans-serif`;
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "center";
-        const text = formatPeso(totalPieValue);
-        ctx.fillStyle = "#007bff";
-        ctx.fillText(text, width / 2, height / 2);
-        ctx.save();
-      },
-    },
-  };
+  // 2. COMPARE VIEW: Actual vs Forecast (Baseline)
+  const forecastComparisonData = buildForecastComparisonData(
+    moneyFlowData,
+    monthlyForecastData,
+  );
 
-  const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { position: "top" } },
-    scales: {
-      x: { grid: { display: false } },
-      y: {
-        grid: { display: true },
-        beginAtZero: true,
-        ticks: {
-          callback: function (value) {
-            return formatPeso(value);
-          },
-        },
-      },
-    },
-    plugins: {
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            let label = context.dataset.label || "";
-            if (label) {
-              label += ": ";
-            }
-            label += formatPeso(context.parsed.y);
-            return label;
-          },
-        },
-      },
-    },
-  };
+  // Department Pie Chart Logic
+  const pieChartData = buildDepartmentPieData(
+    departmentDetailsData,
+    DEPARTMENTS_MAPPING,
+  );
 
-  // Spending Trends Chart Options
-  const spendingTrendsOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top" },
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            let label = context.dataset.label || "";
-            if (label) {
-              label += ": ";
-            }
-            label += formatPeso(context.parsed.y);
+  const totalPieValue = pieChartData.datasets[0].data.reduce(
+    (sum, value) => sum + value,
+    0,
+  );
 
-            // Add percentage change to tooltip
-            if (
-              spendingTrendsData?.datasets[0]?.percentageChange?.[
-                context.dataIndex
-              ] !== undefined
-            ) {
-              const change =
-                spendingTrendsData.datasets[0].percentageChange[
-                  context.dataIndex
-                ];
-              if (context.dataIndex > 0) {
-                label += ` (${change >= 0 ? "+" : ""}${change}% vs previous)`;
-              }
-            }
-            return label;
-          },
-        },
-      },
-    },
-    scales: {
-      x: { grid: { display: false } },
-      y: {
-        grid: { display: true },
-        beginAtZero: true,
-        ticks: {
-          callback: function (value) {
-            return formatPeso(value);
-          },
-        },
-      },
-    },
-  };
+  const pieChartOptions = createPieChartOptions(totalPieValue);
+  const lineChartOptions = createLineChartOptions();
 
   // Nav Handlers
-  const toggleBudgetDropdown = () => {
-    setShowBudgetDropdown(!showBudgetDropdown);
-    if (showExpenseDropdown) setShowExpenseDropdown(false);
-    if (showCategoryDropdown) setShowCategoryDropdown(false);
-    if (showNotifications) setShowNotifications(false);
-    if (showProfileDropdown) setShowProfileDropdown(false);
-  };
-
-  const toggleExpenseDropdown = () => {
-    setShowExpenseDropdown(!showExpenseDropdown);
-    if (showBudgetDropdown) setShowBudgetDropdown(false);
-    if (showCategoryDropdown) setShowCategoryDropdown(false);
-    if (showNotifications) setShowNotifications(false);
-    if (showProfileDropdown) setShowProfileDropdown(false);
-  };
-
-  const toggleCategoryDropdown = () => {
-    toggleDropdown(setShowCategoryDropdown, showCategoryDropdown);
-  };
-
-  const toggleNotifications = () => {
-    toggleDropdown(setShowNotifications, showNotifications);
-  };
-
-  const toggleProfileDropdown = () => {
-    toggleDropdown(setShowProfileDropdown, showProfileDropdown);
-  };
-
   const handleManageProfile = () => {
     setShowManageProfile(true);
-    setShowProfileDropdown(false);
   };
 
   const handleCloseManageProfile = () => {
     setShowManageProfile(false);
-  };
-
-  const toggleBudgetDetails = () => {
-    setShowBudgetDetails(!showBudgetDetails);
   };
 
   const toggleForecasting = () => {
@@ -1427,105 +771,15 @@ function BudgetDashboard() {
     exportSpendingReport(type, data, filters);
   };
 
-  // Heatmap rendering function
-  const renderHeatmap = () => {
-    if (!heatmapData.length) return null;
-
-    const maxValue = Math.max(...heatmapData.map((item) => item.value));
-    const minValue = Math.min(...heatmapData.map((item) => item.value));
-
-    return (
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "10px",
-        }}
-      >
-        {heatmapData.map((item, index) => {
-          // Calculate intensity based on value
-          const intensity = (item.value - minValue) / (maxValue - minValue);
-          const colorIntensity = Math.floor(intensity * 255);
-          const color = `rgba(255, ${255 - colorIntensity}, ${
-            255 - colorIntensity
-          }, ${0.3 + intensity * 0.7})`;
-
-          return (
-            <div
-              key={index}
-              style={{
-                backgroundColor: color,
-                padding: "20px",
-                borderRadius: "8px",
-                textAlign: "center",
-                position: "relative",
-                cursor: "pointer",
-                transition: "transform 0.2s",
-                minHeight: "80px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              title={`${item.period}: ${formatPeso(item.value)}`}
-            >
-              <div style={{ fontWeight: "bold", fontSize: "14px" }}>
-                {item.period}
-              </div>
-              <div style={{ fontSize: "12px", marginTop: "5px" }}>
-                {formatPeso(item.value)}
-              </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  marginTop: "5px",
-                  padding: "2px 6px",
-                  backgroundColor:
-                    item.intensity === "High"
-                      ? "#dc3545"
-                      : item.intensity === "Medium"
-                      ? "#ffc107"
-                      : "#28a745",
-                  color: "white",
-                  borderRadius: "10px",
-                }}
-              >
-                {item.intensity}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   // --- DATE FORMATTING HELPERS ---
-  const formattedTime = currentDate.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
-
-  const formattedDay = currentDate.toLocaleDateString("en-US", {
-    weekday: "long",
-  });
-
-  const formattedDate = currentDate.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
+  const {
+    day: formattedDay,
+    date: formattedDate,
+    time: formattedTime,
+  } = getFormattedDateParts(currentDate);
   const currentMonth = currentDate.toLocaleDateString("en-US", {
     month: "long",
   });
-
   const currentYear = currentDate.getFullYear();
 
   if (loading) {
@@ -1537,484 +791,25 @@ function BudgetDashboard() {
     );
   }
 
+  const handleDateRangeChange = (setter, field, value) => {
+    setter((prev) => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div
       className="app-container"
       style={{ minWidth: "1200px", overflowY: "auto", height: "100vh" }}
     >
       {/* Navigation Bar */}
-      <nav
-        className="navbar"
-        style={{ position: "static", marginBottom: "20px" }}
-      >
-        <div
-          className="navbar-content"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 20px",
-            height: "60px",
-          }}
-        >
-          {/* Logo and System Name */}
-          <div
-            className="navbar-brand"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              height: "60px",
-              overflow: "hidden",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                height: "45px",
-                width: "45px",
-                borderRadius: "8px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fff",
-              }}
-            >
-              <img
-                src={LOGOMAP}
-                alt="System Logo"
-                className="navbar-logo"
-                style={{
-                  height: "100%",
-                  width: "100%",
-                  objectFit: "contain",
-                  display: "block",
-                }}
-              />
-            </div>
-            <span
-              className="system-name"
-              style={{
-                fontWeight: 700,
-                fontSize: "1.3rem",
-                color: "var(--primary-color, #007bff)",
-              }}
-            >
-              BudgetPro
-            </span>
-          </div>
-
-          {/* Main Navigation Links */}
-          <div
-            className="navbar-links"
-            style={{ display: "flex", gap: "20px" }}
-          >
-            {/* Dashboard/Fiscal Year Toggle */}
-            <button
-              onClick={() => setActiveView("dashboard")}
-              className={`nav-link ${
-                activeView === "dashboard" ? "active" : ""
-              }`}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "14px",
-                cursor: "pointer",
-                outline: "none",
-              }}
-            >
-              Dashboard
-            </button>
-
-            {/* Only Finance Head sees this tab */}
-            {isFinanceManager && (
-              <button
-                onClick={() => setActiveView("fiscal-year")}
-                className={`nav-link ${
-                  activeView === "fiscal-year" ? "active" : ""
-                }`}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  color: activeView === "fiscal-year" ? "#007bff" : "#5f5f5fff",
-                  fontWeight: 400,
-                }}
-              >
-                FY Management
-              </button>
-            )}
-
-            {/* Budget Dropdown */}
-            <div className="nav-dropdown">
-              <div
-                className={`nav-link ${showBudgetDropdown ? "active" : ""}`}
-                onClick={toggleBudgetDropdown}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{ outline: "none" }}
-              >
-                Budget{" "}
-                <ChevronDown
-                  size={14}
-                  className={`dropdown-arrow ${
-                    showBudgetDropdown ? "rotated" : ""
-                  }`}
-                />
-              </div>
-              {showBudgetDropdown && (
-                <div
-                  className="dropdown-menu"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/budget-proposal")}
-                  >
-                    Budget Proposal
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/proposal-history")}
-                  >
-                    Proposal History
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/ledger-view")}
-                  >
-                    Ledger View
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/budget-allocation")}
-                  >
-                    Budget Allocation
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() =>
-                      handleNavigate("/finance/budget-variance-report")
-                    }
-                  >
-                    Budget Variance Report
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Expense Dropdown */}
-            <div className="nav-dropdown">
-              <div
-                className={`nav-link ${showExpenseDropdown ? "active" : ""}`}
-                onClick={toggleExpenseDropdown}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{ outline: "none" }}
-              >
-                Expense{" "}
-                <ChevronDown
-                  size={14}
-                  className={`dropdown-arrow ${
-                    showExpenseDropdown ? "rotated" : ""
-                  }`}
-                />
-              </div>
-              {showExpenseDropdown && (
-                <div
-                  className="dropdown-menu"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/expense-tracking")}
-                  >
-                    Expense Tracking
-                  </div>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => handleNavigate("/finance/expense-history")}
-                  >
-                    Expense History
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* User Controls */}
-          <div
-            className="navbar-controls"
-            style={{ display: "flex", alignItems: "center", gap: "15px" }}
-          >
-            <div
-              className="date-time-badge"
-              style={{
-                background: "#f3f4f6",
-                borderRadius: "16px",
-                padding: "4px 14px",
-                fontSize: "0.95rem",
-                color: "#007bff",
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {formattedDay}, {formattedDate} | {formattedTime}
-            </div>
-
-            <div className="notification-container">
-              <div
-                className="notification-icon"
-                onClick={toggleNotifications}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{
-                  position: "relative",
-                  cursor: "pointer",
-                  outline: "none",
-                }}
-              >
-                <Bell size={20} />
-                <span
-                  className="notification-badge"
-                  style={{
-                    position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
-                    backgroundColor: "red",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    fontSize: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  3
-                </span>
-              </div>
-
-              {showNotifications && (
-                <div
-                  className="notification-panel"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    right: 0,
-                    backgroundColor: "white",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    padding: "10px",
-                    width: "300px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="notification-header"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <h3>Notifications</h3>
-                    <button
-                      className="clear-all-btn"
-                      onMouseDown={(e) => e.preventDefault()}
-                      style={{ outline: "none" }}
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                  <div className="notification-list">
-                    <div
-                      className="notification-item"
-                      style={{
-                        display: "flex",
-                        padding: "8px 0",
-                        borderBottom: "1px solid #eee",
-                      }}
-                    >
-                      <div
-                        className="notification-icon-wrapper"
-                        style={{ marginRight: "10px" }}
-                      >
-                        <Bell size={16} />
-                      </div>
-                      <div className="notification-content" style={{ flex: 1 }}>
-                        <div
-                          className="notification-title"
-                          style={{ fontWeight: "bold" }}
-                        >
-                          Budget Approved
-                        </div>
-                        <div className="notification-message">
-                          Your Q3 budget has been approved
-                        </div>
-                        <div
-                          className="notification-time"
-                          style={{ fontSize: "12px", color: "#666" }}
-                        >
-                          2 hours ago
-                        </div>
-                      </div>
-                      <button
-                        className="notification-delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          outline: "none",
-                        }}
-                        onMouseDown={(e) => e.preventDefault()}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="profile-container" style={{ position: "relative" }}>
-              <div
-                className="profile-trigger"
-                onClick={toggleProfileDropdown}
-                onMouseDown={(e) => e.preventDefault()}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                  outline: "none",
-                }}
-              >
-                <img
-                  src={userProfile.avatar}
-                  alt="User avatar"
-                  className="profile-image"
-                  style={{ width: "32px", height: "32px", borderRadius: "50%" }}
-                />
-              </div>
-
-              {showProfileDropdown && (
-                <div
-                  className="profile-dropdown"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    right: 0,
-                    backgroundColor: "white",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    padding: "10px",
-                    width: "250px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    className="profile-info-section"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <img
-                      src={userProfile.avatar}
-                      alt="Profile"
-                      className="profile-dropdown-image"
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        marginRight: "10px",
-                      }}
-                    />
-                    <div className="profile-details">
-                      <div
-                        className="profile-name"
-                        style={{ fontWeight: "bold" }}
-                      >
-                        {userProfile.name}
-                      </div>
-                      <div
-                        className="profile-role-badge"
-                        style={{
-                          backgroundColor: "#e9ecef",
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          display: "inline-block",
-                        }}
-                      >
-                        {userProfile.role}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className="dropdown-divider"
-                    style={{
-                      height: "1px",
-                      backgroundColor: "#eee",
-                      margin: "10px 0",
-                    }}
-                  ></div>
-                  <div
-                    className="dropdown-item"
-                    onClick={handleManageProfile}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "8px 0",
-                      cursor: "pointer",
-                      outline: "none",
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                  >
-                    <User size={16} style={{ marginRight: "8px" }} />
-                    <span>Manage Profile</span>
-                  </div>
-                  <div
-                    className="dropdown-divider"
-                    style={{
-                      height: "1px",
-                      backgroundColor: "#eee",
-                      margin: "10px 0",
-                    }}
-                  ></div>
-                  <div
-                    className="dropdown-item"
-                    onClick={handleLogout}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "8px 0",
-                      cursor: "pointer",
-                      outline: "none",
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                  >
-                    <LogOut size={16} style={{ marginRight: "8px" }} />
-                    <span>Log Out</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navigation
+        userProfile={userProfile}
+        currentDate={currentDate}
+        onLogout={handleLogout}
+        onManageProfile={handleManageProfile}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        isFinanceManager={isFinanceManager}
+      />
 
       {/* Main Content - Reduced side margins */}
       <div
@@ -2033,3526 +828,146 @@ function BudgetDashboard() {
             {activeView === "dashboard" ? (
               <>
                 {/* Time period filter */}
-                <div className="time-filter" style={{ marginBottom: "25px" }}>
-                  <button
-                    className={`filter-button ${
-                      timeFilter === "monthly" ? "active" : ""
-                    }`}
-                    onClick={() => setTimeFilter("monthly")}
-                    style={{
-                      backgroundColor:
-                        timeFilter === "monthly" ? "#007bff" : "white",
-                      color: timeFilter === "monthly" ? "white" : "#007bff",
-                      border: "1px solid #007bff",
-                      outline: "none",
-                      padding: "8px 20px",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                    onFocus={(e) =>
-                      (e.target.style.boxShadow =
-                        "0 0 0 2px rgba(0, 123, 255, 0.25)")
-                    }
-                    onBlur={(e) => (e.target.style.boxShadow = "none")}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    className={`filter-button ${
-                      timeFilter === "quarterly" ? "active" : ""
-                    }`}
-                    onClick={() => setTimeFilter("quarterly")}
-                    style={{
-                      backgroundColor:
-                        timeFilter === "quarterly" ? "#007bff" : "white",
-                      color: timeFilter === "quarterly" ? "white" : "#007bff",
-                      border: "1px solid #007bff",
-                      outline: "none",
-                      padding: "8px 20px",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                    onFocus={(e) =>
-                      (e.target.style.boxShadow =
-                        "0 0 0 2px rgba(0, 123, 255, 0.25)")
-                    }
-                    onBlur={(e) => (e.target.style.boxShadow = "none")}
-                  >
-                    Quarterly
-                  </button>
-                  <button
-                    className={`filter-button ${
-                      timeFilter === "yearly" ? "active" : ""
-                    }`}
-                    onClick={() => setTimeFilter("yearly")}
-                    style={{
-                      backgroundColor:
-                        timeFilter === "yearly" ? "#007bff" : "white",
-                      color: timeFilter === "yearly" ? "white" : "#007bff",
-                      border: "1px solid #007bff",
-                      outline: "none",
-                      padding: "8px 20px",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                    onFocus={(e) =>
-                      (e.target.style.boxShadow =
-                        "0 0 0 2px rgba(0, 123, 255, 0.25)")
-                    }
-                    onBlur={(e) => (e.target.style.boxShadow = "none")}
-                  >
-                    Yearly
-                  </button>
-                </div>
+                <TimeFilter
+                  activeFilter={timeFilter}
+                  onFilterChange={setTimeFilter}
+                />
 
                 {/* Stats Grid */}
-                <div className="stats-grid" style={{ marginBottom: "30px" }}>
-                  {/* Budget Completion */}
-                  <div
-                    className="card compact-budget-card"
-                    style={{
-                      flex: "1 1 33%",
-                      transition: "all 0.2s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow =
-                        "0 4px 8px rgba(0, 123, 255, 0.3)";
-                      e.currentTarget.style.border = "1px solid #007bff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "";
-                      e.currentTarget.style.border = "1px solid #e0e0e0";
-                    }}
-                  >
-                    <h3 className="compact-card-title">Budget Completion</h3>
-                    <p className="compact-stat-value">
-                      {summaryData?.percentage_used?.toFixed(1) || 0}%
-                    </p>
-                    <p className="compact-card-subtext">
-                      Overall Status of Budget Plan
-                    </p>
-                    <div className="compact-progress-container">
-                      <div
-                        className="compact-progress-bar"
-                        style={{
-                          width: `${summaryData?.percentage_used || 0}%`,
-                          backgroundColor: "#007bff",
-                        }}
-                      />
-                    </div>
-                  </div>
+                <DashboardStats
+                  summaryData={summaryData}
+                  currentMonth={currentMonth}
+                  currentYear={currentYear}
+                />
 
-                  {/* Total Budget */}
-                  <div
-                    className="card compact-budget-card"
-                    style={{
-                      flex: "1 1 33%",
-                      transition: "all 0.2s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow =
-                        "0 4px 8px rgba(0, 123, 255, 0.3)";
-                      e.currentTarget.style.border = "1px solid #007bff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "";
-                      e.currentTarget.style.border = "1px solid #e0e0e0";
-                    }}
-                  >
-                    <h3 className="compact-card-title">Total Budget</h3>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#007bff",
-                        marginBottom: "8px",
-                        fontFamily: "Poppins, sans-serif",
-                      }}
-                    >
-                      As of {currentMonth} {currentYear}
-                    </div>
-                    <p className="compact-stat-value">
-                      {formatPeso(summaryData?.total_budget || 0)}
-                    </p>
-                    <p className="compact-card-subtext">
-                      {summaryData?.percentage_used?.toFixed(1) || 0}% allocated
-                    </p>
-                    <div className="compact-progress-container">
-                      <div
-                        className="compact-progress-bar"
-                        style={{
-                          width: `${summaryData?.percentage_used || 0}%`,
-                          backgroundColor: "#007bff",
-                        }}
-                      />
-                    </div>
-                  </div>
+                {/* 
+                   REFACTORED SECTION:
+                   1. MoneyFlowChart is now standalone (full width).
+                   2. DepartmentChart (simple) is removed.
+                   3. ForecastAccuracyAnalysis remains conditional.
+                   4. DepartmentBudgetAnalysis (complex) is added below.
+                */}
 
-                  {/* Remaining Budget */}
-                  <div
-                    className="card compact-budget-card"
-                    style={{
-                      flex: "1 1 33%",
-                      transition: "all 0.2s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow =
-                        "0 4px 8px rgba(0, 123, 255, 0.3)";
-                      e.currentTarget.style.border = "1px solid #007bff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "";
-                      e.currentTarget.style.border = "1px solid #e0e0e0";
-                    }}
-                  >
-                    <h3 className="compact-card-title">Remaining Budget</h3>
-                    <p className="compact-stat-value">
-                      {formatPeso(summaryData?.remaining_budget || 0)}
-                    </p>
-                    <p className="compact-card-subtext">
-                      {summaryData?.remaining_percentage?.toFixed(1) || 100}% of
-                      Total Budget
-                    </p>
-                    <span className="compact-badge">
-                      Available for Allocation
-                    </span>
-                  </div>
-                </div>
-
-                {/* Money Flow Chart */}
-                <div
-                  className="card chart-card"
-                  style={{
-                    width: "100%",
-                    marginBottom: "35px",
-                    height: "500px",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <div
-                    className="chart-header"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <h3 className="card-title">Money Flow</h3>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div style={{ display: "flex", gap: "4px" }}>
-                        <button
-                          style={{
-                            padding: "4px 8px",
-                            backgroundColor: "#007bff",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                          }}
-                        >
-                          Budget
-                        </button>
-                        <button
-                          style={{
-                            padding: "4px 8px",
-                            backgroundColor: "#28a745",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                          }}
-                        >
-                          Expense
-                        </button>
-                        {showForecasting && (
-                          <button
-                            style={{
-                              padding: "4px 8px",
-                              backgroundColor: "#ff6b35",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
-                          >
-                            Forecast
-                          </button>
-                        )}
-                      </div>
-                      <button
-                        onClick={toggleForecasting}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 12px",
-                          backgroundColor: showForecasting
-                            ? "#ff6b35"
-                            : "#e9ecef",
-                          color: showForecasting ? "white" : "#1b1d1fff",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          outline: "none",
-                          fontSize: "12px",
-                          fontWeight: "500",
-                          height: "32px",
-                        }}
-                        title={
-                          showForecasting ? "Hide Forecast" : "Show Forecast"
-                        }
-                      >
-                        <TrendingUp size={16} />
-                        Forecasting
-                      </button>
-                      <button
-                        onClick={toggleForecastComparison}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 12px",
-                          backgroundColor: showForecastComparison
-                            ? "#6f42c1"
-                            : "#e9ecef",
-                          color: showForecastComparison ? "white" : "#1b1d1fff",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          outline: "none",
-                          fontSize: "12px",
-                          fontWeight: "500",
-                          height: "32px",
-                        }}
-                        title={
-                          showForecastComparison
-                            ? "Hide Comparison"
-                            : "Show Forecast vs Actual"
-                        }
-                      >
-                        <BarChart3 size={16} />
-                        Compare
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    className="chart-container-large"
-                    style={{
-                      height: "420px",
-                      paddingBottom: "20px",
-                    }}
-                  >
-                    {showForecastComparison ? (
-                      <Line
-                        data={forecastComparisonData}
-                        options={lineChartOptions}
-                      />
-                    ) : (
-                      <Line data={monthlyData} options={lineChartOptions} />
-                    )}
-                  </div>
+                <div style={{ marginBottom: "30px" }}>
+                  <MoneyFlowChart
+                    data={
+                      showForecastComparison
+                        ? forecastComparisonData
+                        : monthlyData
+                    }
+                    options={lineChartOptions}
+                    showForecasting={showForecasting}
+                    toggleForecasting={toggleForecasting}
+                    showForecastComparison={showForecastComparison}
+                    toggleForecastComparison={toggleForecastComparison}
+                    onExport={() =>
+                      exportAccuracyReport(
+                        forecastAccuracyData,
+                        moneyFlowData,
+                        forecastData,
+                      )
+                    }
+                  />
                 </div>
 
                 {/* Forecast Accuracy Analysis */}
+                {/* TODO: Refactor hardcoded month logic in component */}
                 {showForecastComparison &&
                   moneyFlowData &&
                   forecastData.length > 0 && (
-                    <div className="card" style={{ marginBottom: "30px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "20px",
-                        }}
-                      >
-                        <h3 className="card-title">
-                          Forecast Accuracy Analysis
-                        </h3>
-                        <button
-                          onClick={() =>
-                            exportAccuracyReport(
-                              forecastAccuracyData,
-                              moneyFlowData,
-                              forecastData
-                            )
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "6px 12px",
-                            backgroundColor: "#28a745",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            outline: "none",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            height: "32px",
-                          }}
-                        >
-                          Export Accuracy Report
-                          <Download size={16} style={{ marginLeft: "6px" }} />
-                        </button>
-                      </div>
-
-                      {(() => {
-                        // DERIVE CARD DATA FROM TABLE DATA for consistency
-                        const lastMonthIndex = 10; // 0-based index for November
-                        const lastMonthName = "November";
-
-                        const monthlyForecasts =
-                          convertCumulativeToMonthly(forecastData);
-
-                        // Get values
-                        const actualVal = Number(
-                          moneyFlowData[lastMonthIndex]?.actual || 0
-                        );
-
-                        const forecastPoint = monthlyForecasts.find(
-                          (f) => f.month === lastMonthIndex + 1
-                        );
-                        const forecastVal = Number(
-                          forecastPoint?.forecast || 0
-                        );
-
-                        const varianceVal = actualVal - forecastVal;
-
-                        // Calculate Accuracy
-                        let accuracy = 0;
-                        if (actualVal > 0) {
-                          accuracy =
-                            100 * (1 - Math.abs(varianceVal) / actualVal);
-                        } else if (forecastVal === 0) {
-                          accuracy = 100;
-                        }
-
-                        // Clamp accuracy between 0 and 100 to avoid negative percentages or > 100%
-                        const displayAcc = Math.max(0, accuracy).toFixed(1);
-
-                        return (
-                          <>
-                            <div
-                              className="stats-grid"
-                              style={{ marginBottom: "20px" }}
-                            >
-                              {/* Accuracy Score Card */}
-                              <div
-                                className="card compact-budget-card"
-                                style={{ flex: "1 1 25%", textAlign: "center" }}
-                              >
-                                <Target
-                                  size={24}
-                                  style={{
-                                    margin: "0 auto 10px",
-                                    color: "#007bff",
-                                  }}
-                                />
-                                <h3 className="compact-card-title">
-                                  Accuracy Score
-                                </h3>
-                                <p
-                                  className="compact-stat-value"
-                                  style={{
-                                    color:
-                                      displayAcc >= 90 ? "#28a745" : "#dc3545",
-                                  }}
-                                >
-                                  {displayAcc}%
-                                </p>
-                                <span
-                                  className="compact-badge"
-                                  style={{
-                                    backgroundColor:
-                                      displayAcc >= 90 ? "#28a745" : "#dc3545",
-                                    color: "white",
-                                  }}
-                                >
-                                  {displayAcc >= 90
-                                    ? "Excellent"
-                                    : displayAcc >= 75
-                                    ? "Good"
-                                    : "Poor"}
-                                </span>
-                              </div>
-
-                              {/* Variance Card */}
-                              <div
-                                className="card compact-budget-card"
-                                style={{ flex: "1 1 25%" }}
-                              >
-                                <h3 className="compact-card-title">Variance</h3>
-                                <p
-                                  className="compact-stat-value"
-                                  style={{
-                                    color:
-                                      varianceVal >= 0 ? "#dc3545" : "#28a745",
-                                  }}
-                                >
-                                  {formatPeso(Math.abs(varianceVal))}
-                                </p>
-                                <p className="compact-card-subtext">
-                                  {Math.abs(varianceVal) < 0.01
-                                    ? "Exact Match"
-                                    : varianceVal >= 0
-                                    ? "Over Forecast"
-                                    : "Under Forecast"}
-                                </p>
-                              </div>
-
-                              {/* Actual Spend Card */}
-                              <div
-                                className="card compact-budget-card"
-                                style={{ flex: "1 1 25%" }}
-                              >
-                                <h3 className="compact-card-title">
-                                  Actual Spend ({lastMonthName})
-                                </h3>
-                                <p
-                                  className="compact-stat-value"
-                                  style={{ color: "#28a745" }}
-                                >
-                                  {formatPeso(actualVal)}
-                                </p>
-                                <p className="compact-card-subtext">
-                                  Last Completed Month
-                                </p>
-                              </div>
-
-                              {/* Forecasted Spend Card */}
-                              <div
-                                className="card compact-budget-card"
-                                style={{ flex: "1 1 25%" }}
-                              >
-                                <h3 className="compact-card-title">
-                                  Forecasted Spend ({lastMonthName})
-                                </h3>
-                                <p
-                                  className="compact-stat-value"
-                                  style={{ color: "#ff6b35" }}
-                                >
-                                  {formatPeso(forecastVal)}
-                                </p>
-                                <p className="compact-card-subtext">
-                                  Last Completed Month
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* Detailed Metrics Table */}
-                      <div style={{ marginTop: "20px" }}>
-                        <h4 style={{ marginBottom: "15px", color: "#374151" }}>
-                          Monthly Forecast vs Actual
-                        </h4>
-                        <div style={{ overflowX: "auto" }}>
-                          <table
-                            style={{
-                              width: "100%",
-                              borderCollapse: "collapse",
-                            }}
-                          >
-                            <thead>
-                              <tr style={{ backgroundColor: "#f8f9fa" }}>
-                                <th
-                                  style={{
-                                    padding: "12px",
-                                    textAlign: "left",
-                                    borderBottom: "2px solid #e9ecef",
-                                  }}
-                                >
-                                  Month
-                                </th>
-                                <th
-                                  style={{
-                                    padding: "12px",
-                                    textAlign: "right",
-                                    borderBottom: "2px solid #e9ecef",
-                                  }}
-                                >
-                                  Actual
-                                </th>
-                                <th
-                                  style={{
-                                    padding: "12px",
-                                    textAlign: "right",
-                                    borderBottom: "2px solid #e9ecef",
-                                  }}
-                                >
-                                  Forecast
-                                </th>
-                                <th
-                                  style={{
-                                    padding: "12px",
-                                    textAlign: "right",
-                                    borderBottom: "2px solid #e9ecef",
-                                  }}
-                                >
-                                  Variance
-                                </th>
-                                <th
-                                  style={{
-                                    padding: "12px",
-                                    textAlign: "right",
-                                    borderBottom: "2px solid #e9ecef",
-                                  }}
-                                >
-                                  Accuracy
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {moneyFlowData?.map((month, index) => {
-                                const monthlyForecasts =
-                                  convertCumulativeToMonthly(forecastData);
-                                const forecastPoint = monthlyForecasts.find(
-                                  (f) => f.month_name === month.month_name
-                                );
-                                const forecastValue = forecastPoint
-                                  ? Number(forecastPoint.forecast)
-                                  : 0;
-                                const actualValue = Number(month.actual);
-                                const variance = actualValue - forecastValue;
-                                const isExact = Math.abs(variance) < 0.01;
-
-                                // Calculate raw accuracy
-                                let rawAccuracy =
-                                  actualValue > 0
-                                    ? 100 *
-                                      (1 - Math.abs(variance) / actualValue)
-                                    : forecastValue === 0
-                                    ? 100
-                                    : 0;
-
-                                // Clamp the value between 0 and 100 for display
-                                const displayAccuracy = Math.max(
-                                  0,
-                                  Math.min(100, rawAccuracy)
-                                ).toFixed(1);
-
-                                return (
-                                  <tr
-                                    key={index}
-                                    style={{
-                                      borderBottom: "1px solid #e9ecef",
-                                    }}
-                                  >
-                                    <td style={{ padding: "12px" }}>
-                                      {month.month_name}
-                                    </td>
-                                    <td
-                                      style={{
-                                        padding: "12px",
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      {formatPeso(actualValue)}
-                                    </td>
-                                    <td
-                                      style={{
-                                        padding: "12px",
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      {forecastPoint
-                                        ? formatPeso(forecastValue)
-                                        : "N/A"}
-                                    </td>
-                                    <td
-                                      style={{
-                                        padding: "12px",
-                                        textAlign: "right",
-                                        color:
-                                          variance > 0 ? "#28a745" : "#dc3545",
-                                      }}
-                                    >
-                                      {isExact
-                                        ? "Exact"
-                                        : `${formatPeso(Math.abs(variance))} ${
-                                            variance > 0
-                                              ? "Actual > Forecast"
-                                              : "Actual < Forecast"
-                                          }`}
-                                    </td>
-                                    <td
-                                      style={{
-                                        padding: "12px",
-                                        textAlign: "right",
-                                        color:
-                                          displayAccuracy >= 90
-                                            ? "#28a745"
-                                            : displayAccuracy >= 80
-                                            ? "#007bff"
-                                            : displayAccuracy >= 70
-                                            ? "#ffc107"
-                                            : "#dc3545",
-                                      }}
-                                    >
-                                      {`${displayAccuracy}%`}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
+                    <ForecastAccuracyAnalysis
+                      moneyFlowData={moneyFlowData}
+                      forecastData={forecastData}
+                      forecastAccuracyData={forecastAccuracyData}
+                      onExport={() =>
+                        exportAccuracyReport(
+                          forecastAccuracyData,
+                          moneyFlowData,
+                          forecastData,
+                        )
+                      }
+                    />
                   )}
 
-                {/* Budget per Department Pie Chart */}
-                <div className="card" style={{ marginBottom: "30px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <h3 className="card-title">Budget per Department</h3>
-                    <button
-                      className="view-button"
-                      onClick={toggleBudgetDetails}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 12px",
-                        backgroundColor: "#007bff",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        outline: "none",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        height: "32px",
-                      }}
-                    >
-                      View Details
-                      <Eye
-                        size={16}
-                        style={{ color: "white", marginLeft: "6px" }}
-                      />
-                    </button>
-                  </div>
+                {/* Budget per Department (Complex View) */}
+                {/* Budget per Department (Complex View) */}
+                <DepartmentBudgetAnalysis
+                  pieChartData={pieChartData}
+                  pieChartOptions={pieChartOptions}
+                  departmentDetailsData={departmentDetailsData}
+                  onExport={() =>
+                    exportToExcel(
+                      summaryData,
+                      moneyFlowData,
+                      pieChartApiData, // Ensure this exists in state (it does in your Dashboard.jsx)
+                      departmentDetailsData,
+                      timeFilter,
+                    )
+                  }
+                />
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "20px",
-                      marginBottom: "20px",
-                      height: "300px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "50%",
-                        height: "100%",
-                        position: "relative",
-                      }}
-                    >
-                      <Pie data={pieChartData} options={pieChartOptions} />
-                    </div>
-                    <div
-                      style={{
-                        width: "50%",
-                        paddingLeft: "10px",
-                        height: "100%",
-                        overflowY: "auto",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      {pieChartData.labels.map((label, index) => {
-                        const amount = pieChartData.datasets[0].data[index];
-                        const percentage =
-                          totalPieValue > 0
-                            ? ((amount / totalPieValue) * 100).toFixed(1)
-                            : 0;
-                        return (
-                          <div
-                            key={index}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              marginBottom: "12px",
-                              fontSize: "14px",
-                              padding: "6px 0",
-                              gap: "8px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                flex: 1,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "14px",
-                                  height: "14px",
-                                  backgroundColor:
-                                    pieChartData.datasets[0].backgroundColor[
-                                      index
-                                    ],
-                                  borderRadius: "4px",
-                                  marginRight: "10px",
-                                  flexShrink: 0,
-                                }}
-                              ></div>
-                              <span
-                                style={{
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  marginRight: "8px",
-                                  fontWeight: "500",
-                                }}
-                              >
-                                {label}
-                              </span>
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontWeight: "bold",
-                                  flexShrink: 0,
-                                  minWidth: "120px",
-                                  textAlign: "right",
-                                }}
-                              >
-                                {formatPeso(amount)}
-                              </span>
-                              <span
-                                style={{
-                                  color: "#6c757d",
-                                  fontSize: "12px",
-                                  minWidth: "45px",
-                                  textAlign: "right",
-                                }}
-                              >
-                                {percentage}%
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {showBudgetDetails && (
-                    <div className="dept-budget-list">
-                      {departmentDetailsData ? (
-                        departmentDetailsData.map((dept, index) => (
-                          <div
-                            key={dept.department_id}
-                            className={`dept-budget-item ${
-                              index < departmentDetailsData.length - 1
-                                ? "with-border"
-                                : ""
-                            }`}
-                          >
-                            <div className="dept-budget-header">
-                              <h4 className="dept-budget-title">
-                                {dept.department_name}
-                              </h4>
-                              <p className="dept-budget-percentage">
-                                {dept.percentage_used?.toFixed(1)}% of budget
-                                used
-                              </p>
-                            </div>
-                            <div className="progress-container">
-                              <div
-                                className="progress-bar"
-                                style={{
-                                  width: `${dept.percentage_used}%`,
-                                  backgroundColor: "#007bff",
-                                }}
-                              ></div>
-                            </div>
-                            <div className="dept-budget-details">
-                              <p>Budget: {formatPeso(dept.budget)}</p>
-                              <p>Spent: {formatPeso(dept.spent)}</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p>Loading department details...</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* SPENDING ANALYTICS SECTION */}
-                <div className="card" style={{ marginBottom: "30px" }}>
-                  {/* Spending Analytics Header */}
-                  <div style={{ marginBottom: "25px" }}>
-                    <h2
-                      style={{
-                        color: "#007bff",
-                        marginBottom: "8px",
-                        fontSize: "22px",
-                      }}
-                    >
-                      Spending Behavior Analytics
-                    </h2>
-                    <p style={{ color: "#6c757d", fontSize: "14px" }}>
-                      Analyze spending patterns, trends, and category-wise
-                      expenditures
-                    </p>
-                  </div>
-
-                  {/* Analytics Tabs */}
-                  <div
-                    style={{
-                      marginBottom: "25px",
-                      display: "flex",
-                      gap: "15px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
-                      className={`filter-button ${
-                        activeSpendingTab === "trends" ? "active" : ""
-                      }`}
-                      onClick={() => setActiveSpendingTab("trends")}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor:
-                          activeSpendingTab === "trends" ? "#007bff" : "white",
-                        color:
-                          activeSpendingTab === "trends" ? "white" : "#007bff",
-                        border: "1px solid #007bff",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        outline: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        height: "40px",
-                        minWidth: "220px",
-                        justifyContent: "center",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (activeSpendingTab !== "trends") {
-                          e.currentTarget.style.backgroundColor = "#f0f8ff";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (activeSpendingTab !== "trends") {
-                          e.currentTarget.style.backgroundColor = "white";
-                        }
-                      }}
-                    >
-                      <TrendingUp size={18} style={{ marginRight: "8px" }} />
-                      Department Spending Trends
-                    </button>
-                    <button
-                      className={`filter-button ${
-                        activeSpendingTab === "categories" ? "active" : ""
-                      }`}
-                      onClick={() => setActiveSpendingTab("categories")}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor:
-                          activeSpendingTab === "categories"
-                            ? "#007bff"
-                            : "white",
-                        color:
-                          activeSpendingTab === "categories"
-                            ? "white"
-                            : "#007bff",
-                        border: "1px solid #007bff",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        outline: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        height: "40px",
-                        minWidth: "220px",
-                        justifyContent: "center",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (activeSpendingTab !== "categories") {
-                          e.currentTarget.style.backgroundColor = "#f0f8ff";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (activeSpendingTab !== "categories") {
-                          e.currentTarget.style.backgroundColor = "white";
-                        }
-                      }}
-                    >
-                      <PieChart size={18} style={{ marginRight: "8px" }} />
-                      Highest Spending Categories
-                    </button>
-                    <button
-                      className={`filter-button ${
-                        activeSpendingTab === "heatmap" ? "active" : ""
-                      }`}
-                      onClick={() => setActiveSpendingTab("heatmap")}
-                      style={{
-                        padding: "10px 20px",
-                        backgroundColor:
-                          activeSpendingTab === "heatmap" ? "#007bff" : "white",
-                        color:
-                          activeSpendingTab === "heatmap" ? "white" : "#007bff",
-                        border: "1px solid #007bff",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        outline: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        height: "40px",
-                        minWidth: "220px",
-                        justifyContent: "center",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (activeSpendingTab !== "heatmap") {
-                          e.currentTarget.style.backgroundColor = "#f0f8ff";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (activeSpendingTab !== "heatmap") {
-                          e.currentTarget.style.backgroundColor = "white";
-                        }
-                      }}
-                    >
-                      <Flame size={18} style={{ marginRight: "8px" }} />
-                      Spending Heatmaps
-                    </button>
-                  </div>
-
-                  {/* Department Spending Trends */}
-                  {activeSpendingTab === "trends" && (
-                    <div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "18px",
-                        }}
-                      >
-                        <h3 className="card-title" style={{ fontSize: "18px" }}>
-                          Department Spending Trends
-                        </h3>
-                        <button
-                          onClick={() =>
-                            handleExportSpendingReport(
-                              "Department Spending Trends"
-                            )
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "6px 12px",
-                            backgroundColor: "#28a745",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            outline: "none",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            height: "32px",
-                          }}
-                        >
-                          Export Report
-                          <Download size={16} style={{ marginLeft: "6px" }} />
-                        </button>
-                      </div>
-
-                      {/* Filters */}
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(4, 1fr)",
-                          gap: "15px",
-                          marginBottom: "25px",
-                          backgroundColor: "#f8f9fa",
-                          padding: "20px",
-                          borderRadius: "8px",
-                          alignItems: "end",
-                        }}
-                      >
-                        {/* Department Filter with Role-Based Rendering */}
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              color: "#495057",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Department
-                          </label>
-                          {isFinanceManager ? (
-                            // Finance/Admin: Show dropdown with all departments
-                            <div style={{ position: "relative" }}>
-                              <select
-                                value={selectedDepartment}
-                                onChange={(e) =>
-                                  setSelectedDepartment(e.target.value)
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px 12px",
-                                  paddingRight: "35px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  backgroundColor: "white",
-                                  fontSize: "14px",
-                                  appearance: "none",
-                                  outline: "none",
-                                  height: "40px",
-                                }}
-                              >
-                                <option value="All Departments">
-                                  All Departments
-                                </option>
-                                {DEPARTMENTS.map((dept) => (
-                                  <option key={dept} value={dept}>
-                                    {dept}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            // General User: Show static department name (no dropdown)
-                            <div
-                              style={{
-                                width: "100%",
-                                padding: "10px 12px",
-                                borderRadius: "6px",
-                                border: "1px solid #e9ecef",
-                                backgroundColor: "#f8f9fa",
-                                fontSize: "14px",
-                                color: "#495057",
-                                height: "40px",
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                            >
-                              {user?.department || "My Department"}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              color: "#495057",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Date Range
-                          </label>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr auto 1fr",
-                              gap: "8px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div style={{ position: "relative" }}>
-                              <input
-                                type="date"
-                                value={dateRange.startDate}
-                                onChange={(e) =>
-                                  setDateRange((prev) => ({
-                                    ...prev,
-                                    startDate: e.target.value,
-                                  }))
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px 12px",
-                                  paddingRight: "35px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  backgroundColor: "white",
-                                  fontSize: "14px",
-                                  outline: "none",
-                                  height: "40px",
-                                }}
-                              />
-                              <Calendar
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                            <span
-                              style={{
-                                color: "#6c757d",
-                                textAlign: "center",
-                                fontSize: "12px",
-                              }}
-                            >
-                              to
-                            </span>
-                            <div style={{ position: "relative" }}>
-                              <input
-                                type="date"
-                                value={dateRange.endDate}
-                                onChange={(e) =>
-                                  setDateRange((prev) => ({
-                                    ...prev,
-                                    endDate: e.target.value,
-                                  }))
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px 12px",
-                                  paddingRight: "35px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  backgroundColor: "white",
-                                  fontSize: "14px",
-                                  outline: "none",
-                                  height: "40px",
-                                }}
-                              />
-                              <Calendar
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              color: "#495057",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Time Granularity
-                          </label>
-                          <div style={{ position: "relative" }}>
-                            <select
-                              value={timeGranularity}
-                              onChange={(e) =>
-                                setTimeGranularity(e.target.value)
-                              }
-                              style={{
-                                width: "100%",
-                                padding: "10px 12px",
-                                paddingRight: "35px",
-                                borderRadius: "6px",
-                                border: "1px solid #ced4da",
-                                backgroundColor: "white",
-                                fontSize: "14px",
-                                appearance: "none",
-                                outline: "none",
-                                height: "40px",
-                              }}
-                            >
-                              <option value="Monthly">Monthly</option>
-                              <option value="Quarterly">Quarterly</option>
-                            </select>
-                            <ChevronDown
-                              size={14}
-                              style={{
-                                position: "absolute",
-                                right: "12px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "#6c757d",
-                                pointerEvents: "none",
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          {/* <button
-                            onClick={fetchSpendingAnalyticsData}
-                            style={{
-                              width: "100%",
-                              padding: "10px 12px",
-                              backgroundColor: "#007bff",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              outline: "none",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s",
-                              height: "40px",
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#0056b3")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#007bff")
-                            }
-                          >
-                            Generate Report
-                          </button> */}
-                        </div>
-                      </div>
-
-                      {/* Chart and Summary */}
-                      {spendingTrendsData ? (
-                        <>
-                          <div
-                            style={{ height: "350px", marginBottom: "25px" }}
-                          >
-                            <Line
-                              data={spendingTrendsData}
-                              options={spendingTrendsOptions}
-                            />
-                          </div>
-
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(220px, 1fr))",
-                              gap: "15px",
-                              marginBottom: "20px",
-                            }}
-                          >
-                            <div
-                              className="card"
-                              style={{
-                                padding: "16px",
-                                textAlign: "center",
-                                backgroundColor: "#f8f9fa",
-                              }}
-                            >
-                              <h4
-                                style={{
-                                  marginBottom: "8px",
-                                  color: "#495057",
-                                  fontSize: "13px",
-                                }}
-                              >
-                                Total Amount Spent
-                              </h4>
-                              <p
-                                style={{
-                                  fontSize: "20px",
-                                  fontWeight: "bold",
-                                  color: "#007bff",
-                                  margin: 0,
-                                }}
-                              >
-                                {formatPeso(spendingTrendsData.totalAmount)}
-                              </p>
-                            </div>
-                            <div
-                              className="card"
-                              style={{
-                                padding: "16px",
-                                textAlign: "center",
-                                backgroundColor: "#f8f9fa",
-                              }}
-                            >
-                              <h4
-                                style={{
-                                  marginBottom: "8px",
-                                  color: "#495057",
-                                  fontSize: "13px",
-                                }}
-                              >
-                                Percentage Change
-                              </h4>
-                              <p
-                                style={{
-                                  fontSize: "20px",
-                                  fontWeight: "bold",
-                                  color:
-                                    spendingTrendsData.avgPercentageChange >= 0
-                                      ? "#28a745"
-                                      : "#dc3545",
-                                  margin: 0,
-                                }}
-                              >
-                                {spendingTrendsData.avgPercentageChange >= 0
-                                  ? "+"
-                                  : ""}
-                                {spendingTrendsData.avgPercentageChange}%
-                              </p>
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  color:
-                                    spendingTrendsData.avgPercentageChange >= 0
-                                      ? "#28a745"
-                                      : "#dc3545",
-                                  display: "block",
-                                  marginTop: "4px",
-                                }}
-                              >
-                                vs first period
-                              </span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            padding: "30px",
-                            color: "#6c757d",
-                            backgroundColor: "#f8f9fa",
-                            borderRadius: "8px",
-                            fontSize: "14px",
-                          }}
-                        ></div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Highest Spending Categories */}
-                  {activeSpendingTab === "categories" && (
-                    <div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "18px",
-                        }}
-                      >
-                        <h3 className="card-title" style={{ fontSize: "18px" }}>
-                          Highest Spending Categories
-                        </h3>
-                        <button
-                          onClick={() =>
-                            handleExportSpendingReport(
-                              "Highest Spending Categories"
-                            )
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "6px 12px",
-                            backgroundColor: "#28a745",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            outline: "none",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            height: "32px",
-                          }}
-                        >
-                          Export Report
-                          <Download size={16} style={{ marginLeft: "6px" }} />
-                        </button>
-                      </div>
-
-                      {/* Filters */}
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(3, 1fr)",
-                          gap: "15px",
-                          marginBottom: "25px",
-                          backgroundColor: "#f8f9fa",
-                          padding: "20px",
-                          borderRadius: "8px",
-                          alignItems: "end",
-                        }}
-                      >
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              color: "#495057",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Department
-                          </label>
-                          {isFinanceManager ? (
-                            <div style={{ position: "relative" }}>
-                              <select
-                                value={selectedCategoryDepartment}
-                                onChange={(e) =>
-                                  setSelectedCategoryDepartment(e.target.value)
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px 12px",
-                                  paddingRight: "35px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  backgroundColor: "white",
-                                  fontSize: "14px",
-                                  appearance: "none",
-                                  outline: "none",
-                                  height: "40px",
-                                }}
-                              >
-                                <option value="All Departments">
-                                  All Departments
-                                </option>
-                                {DEPARTMENTS.map((dept) => (
-                                  <option key={dept} value={dept}>
-                                    {dept}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                width: "100%",
-                                padding: "10px 12px",
-                                borderRadius: "6px",
-                                border: "1px solid #e9ecef",
-                                backgroundColor: "#f8f9fa",
-                                fontSize: "14px",
-                                color: "#495057",
-                                height: "40px",
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                            >
-                              {user?.department || "My Department"}
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              color: "#495057",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Date Range
-                          </label>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr auto 1fr",
-                              gap: "8px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div style={{ position: "relative" }}>
-                              <input
-                                type="date"
-                                value={categoryDateRange.startDate}
-                                onChange={(e) =>
-                                  setCategoryDateRange((prev) => ({
-                                    ...prev,
-                                    startDate: e.target.value,
-                                  }))
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px 12px",
-                                  paddingRight: "35px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  backgroundColor: "white",
-                                  fontSize: "14px",
-                                  outline: "none",
-                                  height: "40px",
-                                }}
-                              />
-                              <Calendar
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                            <span
-                              style={{
-                                color: "#6c757d",
-                                textAlign: "center",
-                                fontSize: "12px",
-                              }}
-                            >
-                              to
-                            </span>
-                            <div style={{ position: "relative" }}>
-                              <input
-                                type="date"
-                                value={categoryDateRange.endDate}
-                                onChange={(e) =>
-                                  setCategoryDateRange((prev) => ({
-                                    ...prev,
-                                    endDate: e.target.value,
-                                  }))
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px 12px",
-                                  paddingRight: "35px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  backgroundColor: "white",
-                                  fontSize: "14px",
-                                  outline: "none",
-                                  height: "40px",
-                                }}
-                              />
-                              <Calendar
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          {/* <button
-                            onClick={fetchSpendingAnalyticsData}
-                            style={{
-                              width: "100%",
-                              padding: "10px 12px",
-                              backgroundColor: "#007bff",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              outline: "none",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s",
-                              height: "40px",
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#0056b3")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#007bff")
-                            }
-                          >
-                            Generate Report
-                          </button> */}
-                        </div>
-                      </div>
-
-                      {/* Categories Chart and Table */}
-                      {highestSpendingCategories.length > 0 ? (
-                        <>
-                          <div
-                            style={{ height: "280px", marginBottom: "25px" }}
-                          >
-                            <Bar
-                              data={{
-                                labels: highestSpendingCategories.map(
-                                  (cat) => cat.category
-                                ),
-                                datasets: [
-                                  {
-                                    label: "Spending Amount",
-                                    data: highestSpendingCategories.map(
-                                      (cat) => cat.amount
-                                    ),
-                                    backgroundColor: "#007bff",
-                                    borderColor: "#0056b3",
-                                    borderWidth: 1,
-                                  },
-                                ],
-                              }}
-                              options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                  legend: { display: false },
-                                  tooltip: {
-                                    callbacks: {
-                                      label: function (context) {
-                                        return `${context.label}: ${formatPeso(
-                                          context.parsed.y
-                                        )} (${
-                                          highestSpendingCategories[
-                                            context.dataIndex
-                                          ].percentage
-                                        }%)`;
-                                      },
-                                    },
-                                  },
-                                },
-                                scales: {
-                                  x: {
-                                    grid: { display: false },
-                                    ticks: {
-                                      maxRotation: 45,
-                                      font: { size: 12 },
-                                    },
-                                  },
-                                  y: {
-                                    grid: { display: true },
-                                    beginAtZero: true,
-                                    ticks: {
-                                      callback: function (value) {
-                                        return formatPeso(value);
-                                      },
-                                      font: { size: 12 },
-                                    },
-                                  },
-                                },
-                              }}
-                            />
-                          </div>
-
-                          <div
-                            style={{
-                              overflowX: "auto",
-                              backgroundColor: "#f8f9fa",
-                              borderRadius: "8px",
-                              padding: "12px",
-                            }}
-                          >
-                            <table
-                              style={{
-                                width: "100%",
-                                borderCollapse: "collapse",
-                              }}
-                            >
-                              <thead>
-                                <tr>
-                                  <th
-                                    style={{
-                                      padding: "10px 12px",
-                                      textAlign: "left",
-                                      borderBottom: "2px solid #dee2e6",
-                                      backgroundColor: "white",
-                                      color: "#495057",
-                                      fontWeight: "600",
-                                      fontSize: "13px",
-                                    }}
-                                  >
-                                    Rank
-                                  </th>
-                                  <th
-                                    style={{
-                                      padding: "10px 12px",
-                                      textAlign: "left",
-                                      borderBottom: "2px solid #dee2e6",
-                                      backgroundColor: "white",
-                                      color: "#495057",
-                                      fontWeight: "600",
-                                      fontSize: "13px",
-                                    }}
-                                  >
-                                    Category
-                                  </th>
-                                  <th
-                                    style={{
-                                      padding: "10px 12px",
-                                      textAlign: "right",
-                                      borderBottom: "2px solid #dee2e6",
-                                      backgroundColor: "white",
-                                      color: "#495057",
-                                      fontWeight: "600",
-                                      fontSize: "13px",
-                                    }}
-                                  >
-                                    Total Spent
-                                  </th>
-                                  <th
-                                    style={{
-                                      padding: "10px 12px",
-                                      textAlign: "right",
-                                      borderBottom: "2px solid #dee2e6",
-                                      backgroundColor: "white",
-                                      color: "#495057",
-                                      fontWeight: "600",
-                                      fontSize: "13px",
-                                    }}
-                                  >
-                                    Percentage of Total
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {highestSpendingCategories.map(
-                                  (category, index) => (
-                                    <tr
-                                      key={index}
-                                      style={{
-                                        borderBottom: "1px solid #e9ecef",
-                                        backgroundColor:
-                                          index % 2 === 0 ? "white" : "#f8f9fa",
-                                      }}
-                                    >
-                                      <td
-                                        style={{
-                                          padding: "10px 12px",
-                                          fontWeight: "bold",
-                                          color: "#007bff",
-                                          fontSize: "13px",
-                                        }}
-                                      >
-                                        {index + 1}
-                                      </td>
-                                      <td
-                                        style={{
-                                          padding: "10px 12px",
-                                          color: "#495057",
-                                          fontSize: "13px",
-                                        }}
-                                      >
-                                        {category.category}
-                                      </td>
-                                      <td
-                                        style={{
-                                          padding: "10px 12px",
-                                          textAlign: "right",
-                                          fontWeight: "bold",
-                                          color: "#212529",
-                                          fontSize: "13px",
-                                        }}
-                                      >
-                                        {formatPeso(category.amount)}
-                                      </td>
-                                      <td
-                                        style={{
-                                          padding: "10px 12px",
-                                          textAlign: "right",
-                                          color: "#6c757d",
-                                          fontSize: "13px",
-                                        }}
-                                      >
-                                        {category.percentage}%
-                                      </td>
-                                    </tr>
-                                  )
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-                        </>
-                      ) : (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            padding: "30px",
-                            color: "#6c757d",
-                            backgroundColor: "#f8f9fa",
-                            borderRadius: "8px",
-                            fontSize: "14px",
-                          }}
-                        ></div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 3. Heatmap Content */}
-                  {activeSpendingTab === "heatmap" && (
-                    <div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "18px",
-                        }}
-                      >
-                        <h3 className="card-title" style={{ fontSize: "18px" }}>
-                          Spending Intensity Heatmap
-                        </h3>
-                        <button
-                          onClick={() =>
-                            handleExportSpendingReport("Spending Heatmap")
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "6px 12px",
-                            backgroundColor: "#28a745",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Export Report <Download size={16} />
-                        </button>
-                      </div>
-
-                      {/* Heatmap Filters */}
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(4, 1fr)", // 4 Columns for layout
-                          gap: "15px",
-                          marginBottom: "25px",
-                          backgroundColor: "#f8f9fa",
-                          padding: "20px",
-                          borderRadius: "8px",
-                          alignItems: "end",
-                        }}
-                      >
-                        {/* 1. Department */}
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              fontSize: "13px",
-                              color: "#495057",
-                            }}
-                          >
-                            Department
-                          </label>
-                          {isFinanceManager ? (
-                            <div style={{ position: "relative"}}>
-                              <select
-                                value={selectedHeatmapDepartment}
-                                onChange={(e) =>
-                                  setSelectedHeatmapDepartment(e.target.value)
-                                }
-                                style={{
-                                  width: "100%",
-                                  padding: "10px",
-                                  borderRadius: "6px",
-                                  border: "1px solid #ced4da",
-                                  appearance: "none",
-backgroundColor: "white",           // ← Add this
-    color: "#212529",                   // ← Add this (Bootstrap dark gray)
-
-                           
-                                }}
-                              >
-                                <option value="All Departments">
-                                  All Departments
-                                </option>
-                                {DEPARTMENTS.map((dept) => (
-                                  <option key={dept} value={dept}>
-                                    {dept}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown
-                                size={14}
-                                style={{
-                                  position: "absolute",
-                                  right: "12px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  color: "#6c757d",
-                                  pointerEvents: "none",
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                width: "100%",
-                                padding: "10px",
-                                borderRadius: "6px",
-                                border: "1px solid #e9ecef",
-                                backgroundColor: "#f8f9fa",
-                                color: "#495057",
-                              }}
-                            >
-                              {user.department || "My Department"}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 2. Date Range (Crucial for seeing historical data) */}
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              fontSize: "13px",
-                              color: "#495057",
-                            }}
-                          >
-                            Date Range
-                          </label>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "5px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <input
-                              type="date"
-                              value={categoryDateRange.startDate}
-                              onChange={(e) =>
-                                setCategoryDateRange({
-                                  ...categoryDateRange,
-                                  startDate: e.target.value,
-                                })
-                              }
-                              style={{
-                                width: "100%",
-                                padding: "10px",
-                                borderRadius: "6px",
-                                background: "#ffffffff",
-                                border: "1px solid #ced4da",
-                                fontSize: "13px",
-                              }}
-                            />
-                            <span style={{ fontSize: "12px", color: "#666" }}>
-                              to
-                            </span>
-                            <input
-                              type="date"
-                              value={categoryDateRange.endDate}
-                              onChange={(e) =>
-                                setCategoryDateRange({
-                                  ...categoryDateRange,
-                                  endDate: e.target.value,
-                                })
-                              }
-                              style={{
-                                width: "100%",
-                                padding: "10px",
-                                borderRadius: "6px",
-                                border: "1px solid #ced4da",background: "#ffffffff",
-                                fontSize: "13px",
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* 3. Aggregation */}
-                        <div>
-                          <label
-                            style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontWeight: "500",
-                              fontSize: "13px",
-                              color: "#495057",
-                            }}
-                          >
-                            Aggregation
-                          </label>
-                          <div style={{ position: "relative" }}>
-                            <select
-                              value={timeAggregation}
-                              onChange={(e) =>
-                                setTimeAggregation(e.target.value)
-                              }
-                              style={{
-                                width: "100%",
-                                padding: "10px",
-                                borderRadius: "6px",
-                                border: "1px solid #ced4da",background: "#ffffffff",
-                                appearance: "none",
-                              }}
-                            >
-                              <option value="Monthly">Monthly</option>
-                              <option value="Quarterly">Quarterly</option>
-                            </select>
-                            <ChevronDown
-                              size={14}
-                              style={{
-                                position: "absolute",
-                                right: "12px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "#6c757d",
-                                pointerEvents: "none",
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* 4. Button */}
-                        {/* <button
-                          onClick={fetchSpendingAnalyticsData}
-                          style={{
-                            width: "100%",
-                            padding: "10px",
-                            background: "#007bff",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontWeight: "500",
-                          }}
-                        >
-                          Generate Heatmap
-                        </button> */}
-                      </div>
-
-                      {heatmapData.length > 0 ? (
-                        <>
-                          <div
-                            style={{
-                              marginBottom: "25px",
-                              backgroundColor: "#f8f9fa",
-                              padding: "20px",
-                              borderRadius: "8px",
-                            }}
-                          >
-                            {renderHeatmap()}
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "20px",
-                              padding: "15px",
-                              background: "#f8f9fa",
-                              borderRadius: "8px",
-                              fontSize: "14px",
-                            }}
-                          >
-                            <strong>Legend:</strong>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "5px",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  background: "#28a745",
-                                }}
-                              ></div>{" "}
-                              Low
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "5px",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  background: "#ffc107",
-                                }}
-                              ></div>{" "}
-                              Medium
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "5px",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  background: "#dc3545",
-                                }}
-                              ></div>{" "}
-                              High
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            padding: "40px",
-                            color: "#6c757d",
-                            backgroundColor: "#f8f9fa",
-                            borderRadius: "8px",
-                          }}
-                        >
-                          <p
-                            style={{
-                              marginBottom: "10px",
-                              fontSize: "16px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            No Data Available
-                          </p>
-                          <p style={{ fontSize: "13px" }}>
-                            Try adjusting the date range (e.g., set start date
-                            to 2023) or selecting a different department.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                {/* --- REFACTORED SPENDING ANALYTICS --- */}
+                <SpendingAnalytics
+                  activeTab={activeSpendingTab}
+                  onTabChange={setActiveSpendingTab}
+                  // Data
+                  trendsData={spendingTrendsData}
+                  categoriesData={highestSpendingCategories}
+                  heatmapData={heatmapData}
+                  // Context
+                  isFinanceManager={isFinanceManager}
+                  userDepartment={user?.department}
+                  // Trends Config
+                  trendsFilters={{
+                    department: selectedDepartment,
+                    dateRange: dateRange,
+                    granularity: timeGranularity,
+                  }}
+                  trendsHandlers={{
+                    setDepartment: setSelectedDepartment,
+                    setDateRange: (field, val) =>
+                      handleDateRangeChange(setDateRange, field, val),
+                    setGranularity: setTimeGranularity,
+                    onExport: () =>
+                      handleExportSpendingReport("Department Spending Trends"),
+                  }}
+                  // Categories Config
+                  categoriesFilters={{
+                    department: selectedCategoryDepartment,
+                    dateRange: categoryDateRange,
+                  }}
+                  categoriesHandlers={{
+                    setDepartment: setSelectedCategoryDepartment,
+                    setDateRange: (field, val) =>
+                      handleDateRangeChange(setCategoryDateRange, field, val),
+                    onExport: () =>
+                      handleExportSpendingReport("Highest Spending Categories"),
+                  }}
+                  // Heatmap Config
+                  heatmapFilters={{
+                    department: selectedHeatmapDepartment,
+                    dateRange: categoryDateRange, // Reusing category date range based on original code logic
+                    aggregation: timeAggregation,
+                  }}
+                  heatmapHandlers={{
+                    setDepartment: setSelectedHeatmapDepartment,
+                    setDateRange: (field, val) =>
+                      handleDateRangeChange(setCategoryDateRange, field, val),
+                    setAggregation: setTimeAggregation,
+                    onExport: () =>
+                      handleExportSpendingReport("Spending Heatmap"),
+                  }}
+                />
               </>
             ) : (
-              // FISCAL YEAR MANAGEMENT VIEW
-              <div className="fiscal-year-management-view">
-                {/* Header */}
-                <div style={{ marginBottom: "25px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <h1
-                      style={{ color: "#007bff", fontSize: "24px", margin: 0 }}
-                    >
-                      Fiscal Year Management
-                    </h1>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button
-                        onClick={() => setShowYearEndProcessing(true)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          padding: "10px 20px",
-                          backgroundColor: "#6f42c1",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        <CalendarIcon size={18} /> Year-End Processing
-                      </button>
-                      <button
-                        onClick={() => setShowCreateFiscalYear(true)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          padding: "10px 20px",
-                          backgroundColor: "#28a745",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        <Plus size={18} /> Create Fiscal Year
-                      </button>
-                    </div>
-                  </div>
-                  <p style={{ color: "#6c757d", fontSize: "14px", margin: 0 }}>
-                    Manage fiscal years, view status overview, and perform
-                    year-end processing.
-                  </p>
-                </div>
-
-                {/* Current Active Year Section */}
-                {/* Debug: Check if currentActiveYear exists */}
-                {/* {console.log("Current Active Year:", currentActiveYear)} */}
-
-                {currentActiveYear ? (
-                  <div style={{ marginBottom: "30px" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        marginBottom: "15px",
-                      }}
-                    >
-                      <CheckCircle size={20} color="#007bff" />
-                      <h3
-                        style={{ fontSize: "18px", color: "#333", margin: 0 }}
-                      >
-                        Current Active Year
-                      </h3>
-                    </div>
-
-                    <div
-                      className="stats-grid"
-                      style={{ display: "flex", gap: "20px" }}
-                    >
-                      {/* 1. Status Card */}
-                      <div
-                        className="card"
-                        style={{
-                          flex: 1,
-                          padding: "20px",
-                          background: "white",
-                          borderRadius: "8px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <div>
-                          <h4
-                            style={{
-                              margin: "0 0 10px",
-                              color: "#6c757d",
-                              fontSize: "13px",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.5px",
-                            }}
-                          >
-                            Fiscal Year
-                          </h4>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "24px",
-                                fontWeight: "bold",
-                                color: "#333",
-                              }}
-                            >
-                              {currentActiveYear.name}
-                            </span>
-                            <span
-                              style={{
-                                backgroundColor: "#e6f4ea",
-                                color: "#28a745",
-                                padding: "4px 10px",
-                                borderRadius: "20px",
-                                fontSize: "12px",
-                                fontWeight: "600",
-                              }}
-                            >
-                              Active
-                            </span>
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6c757d",
-                            marginTop: "15px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "5px",
-                          }}
-                        >
-                          <CalendarIcon size={14} />
-                          {currentActiveYear.start_date} —{" "}
-                          {currentActiveYear.end_date}
-                        </div>
-                      </div>
-
-                      {/* 2. Total Budget Card */}
-                      <div
-                        className="card"
-                        style={{
-                          flex: 1,
-                          padding: "20px",
-                          background: "white",
-                          borderRadius: "8px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <div>
-                          <h4
-                            style={{
-                              margin: "0 0 10px",
-                              color: "#6c757d",
-                              fontSize: "13px",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.5px",
-                            }}
-                          >
-                            Total Budget Allocated
-                          </h4>
-                          <span
-                            style={{
-                              fontSize: "28px",
-                              fontWeight: "bold",
-                              color: "#007bff",
-                            }}
-                          >
-                            {formatPeso(summaryData?.total_budget || 0)}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6c757d",
-                            marginTop: "15px",
-                          }}
-                        >
-                          For {currentActiveYear.name}
-                        </div>
-                      </div>
-
-                      {/* 3. Progress Card */}
-                      <div
-                        className="card"
-                        style={{
-                          flex: 1,
-                          padding: "20px",
-                          background: "white",
-                          borderRadius: "8px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              marginBottom: "10px",
-                            }}
-                          >
-                            <h4
-                              style={{
-                                margin: 0,
-                                color: "#6c757d",
-                                fontSize: "13px",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.5px",
-                              }}
-                            >
-                              Year Progress
-                            </h4>
-                            <span
-                              style={{
-                                fontSize: "14px",
-                                fontWeight: "600",
-                                color: "#333",
-                              }}
-                            >
-                              {calculateProgress(
-                                currentActiveYear.start_date,
-                                currentActiveYear.end_date
-                              )}
-                              %
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              width: "100%",
-                              height: "8px",
-                              backgroundColor: "#e9ecef",
-                              borderRadius: "4px",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: `${calculateProgress(
-                                  currentActiveYear.start_date,
-                                  currentActiveYear.end_date
-                                )}%`,
-                                height: "100%",
-                                backgroundColor: "#007bff",
-                                borderRadius: "4px",
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6c757d",
-                            marginTop: "15px",
-                          }}
-                        >
-                          Based on current date vs end date
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      padding: "20px",
-                      background: "#fff3cd",
-                      color: "#856404",
-                      borderRadius: "8px",
-                      marginBottom: "30px",
-                    }}
-                  >
-                    <strong>Notice:</strong> No fiscal year is currently active.
-                    Please set a year to "Open".
-                  </div>
-                )}
-
-                {/* Fiscal Year List Table */}
-                <div
-                  className="card"
-                  style={{
-                    background: "white",
-                    borderRadius: "8px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    padding: "0",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "15px 20px",
-                      borderBottom: "1px solid #e9ecef",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <h3 style={{ margin: 0, fontSize: "18px", color: "#333" }}>
-                      Fiscal Year List
-                    </h3>
-                  </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ backgroundColor: "#f8f9fa" }}>
-                        <th
-                          style={{
-                            padding: "15px 20px",
-                            textAlign: "left",
-                            fontSize: "13px",
-                            color: "#495057",
-                            fontWeight: "600",
-                            width: "20%",
-                          }}
-                        >
-                          Name
-                        </th>
-                        <th
-                          style={{
-                            padding: "15px 20px",
-                            textAlign: "left",
-                            fontSize: "13px",
-                            color: "#495057",
-                            fontWeight: "600",
-                            width: "20%",
-                          }}
-                        >
-                          Start Date
-                        </th>
-                        <th
-                          style={{
-                            padding: "15px 20px",
-                            textAlign: "left",
-                            fontSize: "13px",
-                            color: "#495057",
-                            fontWeight: "600",
-                            width: "20%",
-                          }}
-                        >
-                          End Date
-                        </th>
-                        <th
-                          style={{
-                            padding: "15px 20px",
-                            textAlign: "center",
-                            fontSize: "13px",
-                            color: "#495057",
-                            fontWeight: "600",
-                            width: "15%",
-                          }}
-                        >
-                          Status
-                        </th>
-                        <th
-                          style={{
-                            padding: "15px 20px",
-                            textAlign: "center",
-                            fontSize: "13px",
-                            color: "#495057",
-                            fontWeight: "600",
-                            width: "25%",
-                          }}
-                        >
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fiscalYears.map((fy) => (
-                        <tr
-                          key={fy.id}
-                          style={{
-                            borderBottom: "1px solid #e9ecef",
-                            backgroundColor: fy.is_current
-                              ? "rgba(0, 123, 255, 0.03)"
-                              : "white",
-                          }}
-                        >
-                          <td
-                            style={{
-                              padding: "15px 20px",
-                              color: "#333",
-                              fontWeight: "500",
-                            }}
-                          >
-                            {fy.name}
-                          </td>
-                          <td style={{ padding: "15px 20px", color: "#555" }}>
-                            {fy.start_date}
-                          </td>
-                          <td style={{ padding: "15px 20px", color: "#555" }}>
-                            {fy.end_date}
-                          </td>
-                          <td
-                            style={{
-                              padding: "15px 20px",
-                              textAlign: "center",
-                            }}
-                          >
-                            {fy.is_active && !fy.is_locked && (
-                              <span
-                                style={{
-                                  backgroundColor: "#d4edda",
-                                  color: "#155724",
-                                  padding: "4px 10px",
-                                  borderRadius: "12px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Open
-                              </span>
-                            )}
-                            {fy.is_locked && fy.is_active && (
-                              <span
-                                style={{
-                                  backgroundColor: "#fff3cd",
-                                  color: "#856404",
-                                  padding: "4px 10px",
-                                  borderRadius: "12px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Locked
-                              </span>
-                            )}
-                            {fy.is_locked && !fy.is_active && (
-                              <span
-                                style={{
-                                  backgroundColor: "#f8d7da",
-                                  color: "#721c24",
-                                  padding: "4px 10px",
-                                  borderRadius: "12px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Closed
-                              </span>
-                            )}
-                            {/* Fallback if status is weird */}
-                            {!fy.is_active && !fy.is_locked && (
-                              <span
-                                style={{
-                                  backgroundColor: "#e9ecef",
-                                  color: "#6c757d",
-                                  padding: "4px 10px",
-                                  borderRadius: "12px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Inactive
-                              </span>
-                            )}
-                          </td>
-                          <td
-                            style={{
-                              padding: "15px 20px",
-                              textAlign: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "8px",
-                                justifyContent: "center",
-                              }}
-                            >
-                              {!fy.is_locked ? (
-                                <button
-                                  onClick={() =>
-                                    handleUpdateFiscalYearStatus(
-                                      fy.id,
-                                      "Locked"
-                                    )
-                                  }
-                                  style={{
-                                    padding: "6px 12px",
-                                    backgroundColor: "#ffc107",
-                                    color: "#212529",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    fontSize: "12px",
-                                    fontWeight: "500",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <Lock size={12} /> Lock
-                                </button>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() =>
-                                      handleUpdateFiscalYearStatus(
-                                        fy.id,
-                                        "Open"
-                                      )
-                                    }
-                                    style={{
-                                      padding: "6px 12px",
-                                      backgroundColor: "#28a745",
-                                      color: "white",
-                                      border: "none",
-                                      borderRadius: "4px",
-                                      cursor: "pointer",
-                                      fontSize: "12px",
-                                      fontWeight: "500",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                    }}
-                                  >
-                                    <Unlock size={12} /> Re-Open
-                                  </button>
-
-                                  {fy.is_active && (
-                                    <button
-                                      onClick={() =>
-                                        handleUpdateFiscalYearStatus(
-                                          fy.id,
-                                          "Closed"
-                                        )
-                                      }
-                                      style={{
-                                        padding: "6px 12px",
-                                        backgroundColor: "#dc3545",
-                                        color: "white",
-                                        border: "none",
-                                        borderRadius: "4px",
-                                        cursor: "pointer",
-                                        fontSize: "12px",
-                                        fontWeight: "500",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "4px",
-                                      }}
-                                    >
-                                      <XCircle size={12} /> Close
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              // FISCAL YEAR MANAGEMENT VIEW (Refactored)
+              <FiscalYearManagement summaryData={summaryData} />
             )}
           </>
         )}
       </div>
 
-      {/* Create Fiscal Year Modal */}
-      {showCreateFiscalYear && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "30px",
-              borderRadius: "8px",
-              width: "500px",
-              maxWidth: "90%",
-            }}
-          >
-            <h3
-              style={{
-                marginBottom: "20px",
-                color: "#007bff",
-                fontSize: "20px",
-              }}
-            >
-              Create Fiscal Year
-            </h3>
-
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: "500",
-                  color: "#495057",
-                }}
-              >
-                Fiscal Year Name
-              </label>
-              <input
-                type="text"
-                value={newFiscalYear.name}
-                onChange={(e) =>
-                  setNewFiscalYear((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
-                }
-                placeholder="e.g., FY-2027"
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "4px",
-                  border: "1px solid #ced4da",
-                  backgroundColor: "white",
-                  color: "black",
-                  fontSize: "14px",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: "500",
-                  color: "#495057",
-                }}
-              >
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={newFiscalYear.start_date}
-                onChange={(e) =>
-                  setNewFiscalYear((prev) => ({
-                    ...prev,
-                    start_date: e.target.value,
-                  }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "4px",
-                  border: "1px solid #ced4da",
-                  backgroundColor: "white",
-                  color: "black",
-                  fontSize: "14px",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: "30px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: "500",
-                  color: "#495057",
-                }}
-              >
-                End Date
-              </label>
-              <input
-                type="date"
-                value={newFiscalYear.end_date}
-                onChange={(e) =>
-                  setNewFiscalYear((prev) => ({
-                    ...prev,
-                    end_date: e.target.value,
-                  }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "4px",
-                  border: "1px solid #ced4da",
-                  backgroundColor: "white",
-                  color: "black",
-                  fontSize: "14px",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                justifyContent: "flex-end",
-              }}
-            >
-              <button
-                onClick={() => setShowCreateFiscalYear(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  outline: "none",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateFiscalYear}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  outline: "none",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Create Fiscal Year
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && selectedFiscalYear && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "30px",
-              borderRadius: "8px",
-              width: "400px",
-              maxWidth: "90%",
-            }}
-          >
-            <h3
-              style={{
-                marginBottom: "15px",
-                color: "#007bff",
-                fontSize: "18px",
-              }}
-            >
-              Confirm Action
-            </h3>
-            <p style={{ marginBottom: "25px", color: "#495057" }}>
-              Are you sure you want to {confirmAction} fiscal year "
-              {selectedFiscalYear.name}"?
-            </p>
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                justifyContent: "flex-end",
-              }}
-            >
-              <button
-                onClick={() => setShowConfirmDialog(false)}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  outline: "none",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmFiscalYearAction}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor:
-                    confirmAction === "close" ? "#dc3545" : "#007bff",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  outline: "none",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Year-End Processing Modal (API Connected) */}
-      {showYearEndProcessing && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 2000,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: "30px",
-              borderRadius: "8px",
-              width: "900px",
-              maxHeight: "85vh",
-              overflowY: "auto",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "25px",
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: "20px", color: "#333" }}>
-                Year-End Processing
-              </h3>
-              <button
-                onClick={() => setShowYearEndProcessing(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  color: "#6c757d",
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* STEP 1: Select Old Year */}
-            {yearEndStep === 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
-                }}
-              >
-                <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
-                  Select the fiscal year you want to close. The system will
-                  calculate remaining budgets for all active allocations.
-                </p>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontWeight: "500",
-                      fontSize: "14px",
-                      color: "#333",
-                    }}
-                  >
-                    Select Year to Close (Old)
-                  </label>
-                  <select
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      border: "1px solid #ced4da",
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      outline: "none",
-                      color: "#333",
-                      backgroundColor: "white",
-                    }}
-                    onChange={(e) => setClosingYearId(e.target.value)}
-                    value={closingYearId}
-                  >
-                    <option value="">-- Select --</option>
-                    {fiscalYears
-                      .filter((fy) => !fy.is_locked)
-                      .map((fy) => (
-                        <option key={fy.id} value={fy.id}>
-                          {fy.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: "10px",
-                  }}
-                >
-                  <button
-                    onClick={() => setShowYearEndProcessing(false)}
-                    style={{
-                      padding: "10px 20px",
-                      marginRight: "10px",
-                      border: "1px solid #ced4da",
-                      borderRadius: "4px",
-                      background: "white",
-                      color: "#333",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleGeneratePreview}
-                    disabled={!closingYearId}
-                    style={{
-                      padding: "10px 20px",
-                      border: "none",
-                      borderRadius: "4px",
-                      background: closingYearId ? "#007bff" : "#ccc",
-                      color: "white",
-                      cursor: closingYearId ? "pointer" : "not-allowed",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Calculate & Preview
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: Review & Carryover */}
-            {yearEndStep === 2 && (
-              <div>
-                <div
-                  style={{
-                    marginBottom: "20px",
-                    display: "flex",
-                    gap: "20px",
-                    alignItems: "flex-end",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "#333",
-                      }}
-                    >
-                      Target New Year (Opening)
-                    </label>
-                    <select
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        border: "1px solid #ced4da",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        outline: "none",
-                        color: "#333",
-                        backgroundColor: "white",
-                      }}
-                      onChange={(e) => setOpeningYearId(e.target.value)}
-                      value={openingYearId}
-                    >
-                      <option value="">-- Select --</option>
-                      {fiscalYears
-                        .filter(
-                          (fy) =>
-                            fy.is_active &&
-                            !fy.is_locked &&
-                            fy.id !== parseInt(closingYearId)
-                        ) // <--- ADD THIS CHECK
-                        .map((fy) => (
-                          <option key={fy.id} value={fy.id}>
-                            {fy.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  <div
-                    style={{
-                      paddingBottom: "10px",
-                      fontSize: "14px",
-                      color: "#666",
-                    }}
-                  >
-                    <strong>{previewAllocations.length}</strong> allocations
-                    found with remaining balance.
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    marginBottom: "20px",
-                    maxHeight: "400px",
-                    overflowY: "auto",
-                  }}
-                >
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead
-                      style={{
-                        background: "#f8f9fa",
-                        borderBottom: "1px solid #e9ecef",
-                        position: "sticky",
-                        top: 0,
-                      }}
-                    >
-                      <tr>
-                        <th
-                          style={{
-                            padding: "12px",
-                            textAlign: "left",
-                            fontSize: "13px",
-                            color: "#495057",
-                          }}
-                        >
-                          Department
-                        </th>
-                        <th
-                          style={{
-                            padding: "12px",
-                            textAlign: "left",
-                            fontSize: "13px",
-                            color: "#495057",
-                          }}
-                        >
-                          Category
-                        </th>
-                        <th
-                          style={{
-                            padding: "12px",
-                            textAlign: "right",
-                            fontSize: "13px",
-                            color: "#495057",
-                          }}
-                        >
-                          Remaining
-                        </th>
-                        <th
-                          style={{
-                            padding: "12px",
-                            textAlign: "center",
-                            fontSize: "13px",
-                            color: "#495057",
-                          }}
-                        >
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewAllocations.length > 0 ? (
-                        previewAllocations.map((alloc) => (
-                          <tr
-                            key={alloc.allocation_id}
-                            style={{ borderBottom: "1px solid #f1f1f1" }}
-                          >
-                            <td
-                              style={{
-                                padding: "12px",
-                                fontSize: "13px",
-                                color: "#333",
-                              }}
-                            >
-                              {alloc.department}
-                            </td>
-                            <td
-                              style={{
-                                padding: "12px",
-                                fontSize: "13px",
-                                color: "#555",
-                              }}
-                            >
-                              {alloc.category}
-                            </td>
-                            <td
-                              style={{
-                                padding: "12px",
-                                textAlign: "right",
-                                fontSize: "13px",
-                                fontWeight: "500",
-                                color: "#28a745",
-                              }}
-                            >
-                              {formatPeso(alloc.remaining_balance)}
-                            </td>
-                            <td
-                              style={{ padding: "12px", textAlign: "center" }}
-                            >
-                              <label
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  cursor: "pointer",
-                                  fontSize: "13px",
-                                  gap: "8px",
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedCarryoverIds.includes(
-                                    alloc.allocation_id
-                                  )}
-                                  onChange={() =>
-                                    toggleCarryover(alloc.allocation_id)
-                                  }
-                                  style={{ cursor: "pointer" }}
-                                />
-                                {selectedCarryoverIds.includes(
-                                  alloc.allocation_id
-                                ) ? (
-                                  <span
-                                    style={{
-                                      color: "#28a745",
-                                      fontWeight: "500",
-                                    }}
-                                  >
-                                    Carryover
-                                  </span>
-                                ) : (
-                                  <span
-                                    style={{
-                                      color: "#dc3545",
-                                      fontWeight: "500",
-                                    }}
-                                  >
-                                    Expire
-                                  </span>
-                                )}
-                              </label>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan="4"
-                            style={{
-                              padding: "20px",
-                              textAlign: "center",
-                              color: "#666",
-                            }}
-                          >
-                            No remaining balances found for this fiscal year.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "10px",
-                  }}
-                >
-                  <button
-                    onClick={() => setYearEndStep(1)}
-                    style={{
-                      padding: "10px 20px",
-                      border: "1px solid #ced4da",
-                      borderRadius: "4px",
-                      background: "white",
-                      color: "#333",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleProcessYearEnd}
-                    disabled={!openingYearId}
-                    style={{
-                      padding: "10px 20px",
-                      border: "none",
-                      borderRadius: "4px",
-                      background: openingYearId ? "#28a745" : "#ccc",
-                      color: "white",
-                      cursor: openingYearId ? "pointer" : "not-allowed",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Process & Close Year
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* REMOVED: Inline Modals from bottom of file */}
     </div>
   );
 }
