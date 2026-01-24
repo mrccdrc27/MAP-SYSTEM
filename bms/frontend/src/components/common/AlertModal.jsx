@@ -1,12 +1,25 @@
 import React from "react";
-import { AlertCircle, CheckCircle } from "lucide-react";
+// MODIFICATION: Import AlertTriangle
+import { AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 
 const AlertModal = ({ isOpen, onClose, message, type = "info" }) => {
   if (!isOpen) return null;
 
-  const isError = type === "error";
-  const iconColor = isError ? "#dc3545" : "#28a745";
-  const Icon = isError ? AlertCircle : CheckCircle;
+  // MODIFICATION START: Handle 'warning' type
+  let Icon = CheckCircle;
+  let iconColor = "#28a745"; // Green
+  let title = "Success";
+
+  if (type === "error") {
+    Icon = AlertCircle;
+    iconColor = "#dc3545"; // Red
+    title = "Error";
+  } else if (type === "warning") {
+    Icon = AlertTriangle;
+    iconColor = "#ffc107"; // Orange/Yellow
+    title = "Attention";
+  }
+  // MODIFICATION END
 
   return (
     <div
@@ -38,7 +51,7 @@ const AlertModal = ({ isOpen, onClose, message, type = "info" }) => {
           <Icon size={48} color={iconColor} />
         </div>
         <h3 style={{ margin: "0 0 10px 0", color: "#333", fontSize: "1.25rem" }}>
-          {isError ? "Error" : "Success"}
+          {title}
         </h3>
         <p style={{ margin: "0 0 24px 0", color: "#666", fontSize: "1rem", lineHeight: "1.5" }}>
           {message}
@@ -47,8 +60,9 @@ const AlertModal = ({ isOpen, onClose, message, type = "info" }) => {
           onClick={onClose}
           style={{
             padding: "10px 24px",
-            backgroundColor: isError ? "#dc3545" : "#007bff",
-            color: "white",
+            // Use dynamic color for button too
+            backgroundColor: type === "warning" ? "#ffc107" : (type === "error" ? "#dc3545" : "#007bff"),
+            color: type === "warning" ? "#333" : "white",
             border: "none",
             borderRadius: "4px",
             fontSize: "14px",
