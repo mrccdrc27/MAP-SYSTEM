@@ -10,7 +10,7 @@ const AuthLayout = ({ children, title, subtitle, sideImage, logoImage, wide = fa
       {/* Left Panel */}
       <section className={styles.leftPanel}>
         <div className={styles.leftImage}>
-          <img src={sideImage || "/TTS_MAP_BG.png"} alt="Background" className={styles.assetImage} />
+          <img src={`${sideImage || "/TTS_MAP_BG.png"}?t=${Date.now()}`} alt="Background" className={styles.assetImage} />
         </div>
       </section>
 
@@ -18,7 +18,7 @@ const AuthLayout = ({ children, title, subtitle, sideImage, logoImage, wide = fa
       <section className={styles.rightPanel}>
         <header className={styles.formHeader}>
           <section className={styles.logo}>
-            <img src={logoImage || "/map-logo.png"} alt="Logo" />
+            <img src={`${logoImage || "/map-logo.png"}?t=${Date.now()}`} alt="Logo" />
             <h1 className={styles.logoText}>{title || "Sign In"}</h1>
           </section>
           {subtitle && <p>{subtitle}</p>}

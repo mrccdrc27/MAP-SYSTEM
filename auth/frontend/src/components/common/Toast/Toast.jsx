@@ -66,7 +66,8 @@ export const useToast = () => {
 
   const addToast = useCallback((type, title, message, duration = 5000) => {
     const id = ++toastId;
-    setToasts((prev) => [...prev, { id, type, title, message, duration }]);
+    // Replace existing toasts so only one toast is visible at a time
+    setToasts(() => [{ id, type, title, message, duration }]);
     return id;
   }, []);
 

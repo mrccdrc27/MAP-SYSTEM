@@ -41,6 +41,28 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication status by calling the unified /api/me/ endpoint
   const checkAuth = useCallback(async () => {
+    // If a Django session cookie exists (superadmin session), prefer session check
+    try {
+      if (typeof document !== 'undefined' && document.cookie && document.cookie.includes('sessionid=')) {
+        const sessionResp = await fetch('https://api.ticketing.mapactive.tech/superadmin/api/session/', {
+          credentials: 'include',
+        });
+
+        if (sessionResp.ok) {
+          const sessionData = await sessionResp.json();
+          if (sessionData.authenticated && sessionData.user) {
+            setUserType(USER_TYPES.STAFF);
+            setUser(sessionData.user);
+            setIsAuthenticated(true);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore and fall back to token-based check
+    }
+
     // Import here to avoid circular dependency issues
     const { UNIFIED_ME } = await import('../services/endpoints');
     setLoading(true);

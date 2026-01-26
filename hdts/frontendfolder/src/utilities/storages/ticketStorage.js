@@ -814,49 +814,23 @@ const normalizeTicket = (t) => {
   return ticket;
 };
 
-// Seed localStorage with normalized tickets only if no tickets exist yet.
-// This avoids overwriting live or backend-driven data on every page load.
-// If you need to force-reset the seeded tickets during development, remove the
-// condition or clear localStorage manually (localStorage.removeItem('tickets')).
-if (typeof window !== 'undefined') {
-  try {
-    const existing = localStorage.getItem('tickets');
-    if (!existing) {
-      const normalized = TICKETS.map(t => normalizeTicket(t));
-      localStorage.setItem('tickets', JSON.stringify(normalized));
-      console.log('🔄 Seeded tickets into localStorage (normalized categories)');
-    } else {
-      // If tickets already present, do not overwrite them. Ensure categories are normalized.
-      try {
-        const parsed = JSON.parse(existing);
-        const normalized = parsed.map(normalizeTicket);
-        if (JSON.stringify(normalized) !== JSON.stringify(parsed)) {
-          localStorage.setItem('tickets', JSON.stringify(normalized));
-          console.log('🔄 Normalized existing tickets in localStorage');
-        }
-      } catch (e) {
-        // if parsing fails, overwrite with fresh seed
-        const normalized = TICKETS.map(t => normalizeTicket(t));
-        localStorage.setItem('tickets', JSON.stringify(normalized));
-        console.log('🔄 Seeded tickets into localStorage (replaced corrupted data)');
-      }
-    }
-  } catch (e) {
-    // silent fallback in non-browser or restricted environments
-  }
-}
+// We no longer persist to the plain 'tickets' localStorage key. The app will
+// use the in-memory `TICKETS` as fallback and rely on the sanctioned
+// storage layer (if any) for persistence. This prevents creation of the
+// legacy 'tickets' key that is slated for removal.
 
 export const getEmployeeTickets = (employeeId) => {
-  const stored = localStorage.getItem('tickets');
-  let tickets = stored ? JSON.parse(stored) : TICKETS;
-
-  // Normalize any legacy tickets and persist normalized version
-  const normalized = tickets.map(normalizeTicket);
-  // If normalization changed anything, write back
-  if (JSON.stringify(normalized) !== JSON.stringify(tickets)) {
-    localStorage.setItem('tickets', JSON.stringify(normalized));
-    tickets = normalized;
+  // Read legacy 'tickets' only for migration; do not write it back.
+  let tickets = TICKETS;
+  try {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('tickets') : null;
+    tickets = stored ? JSON.parse(stored) : TICKETS;
+  } catch (e) {
+    tickets = TICKETS;
   }
+
+  const normalized = tickets.map(normalizeTicket);
+  tickets = normalized;
 
   return employeeId ? tickets.filter(t => t.employeeId === employeeId) : tickets;
 };
@@ -901,7 +875,6 @@ export const createTicket = (ticketData) => {
     ...ticketData,
   };
   tickets.push(newTicket);
-  localStorage.setItem("tickets", JSON.stringify(tickets));
   return newTicket;
 };
 
@@ -923,7 +896,7 @@ export const updateTicket = (ticketNumber, updates) => {
     if (updates.status === "Closed" && !tickets[index].closedAt) {
       tickets[index].closedAt = new Date().toISOString();
     }
-    localStorage.setItem("tickets", JSON.stringify(tickets));
+    // Do not persist to legacy 'tickets' key.
     return tickets[index];
   }
   return null;
@@ -947,7 +920,6 @@ export const addComment = (ticketNumber, comment) => {
   };
   ticket.comments.push(c);
   ticket.updatedAt = new Date().toISOString();
-  localStorage.setItem('tickets', JSON.stringify(tickets));
   return ticket;
 };
 

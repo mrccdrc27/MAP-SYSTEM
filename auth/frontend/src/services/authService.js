@@ -79,12 +79,23 @@ export const register = async (userData, userType = USER_TYPES.STAFF) => {
 export const logout = async () => {
   const type = getUserType();
   const endpoints = getEndpoints(type);
-  const response = await apiRequest(endpoints.LOGOUT, {
+  // Attempt to logout against the endpoint for the current user type
+  let response = await apiRequest(endpoints.LOGOUT, {
     method: 'POST',
     includeAuth: true,
   });
-  
-  // Clear client-side auth state (cookies cleared by backend)
+
+  // Additionally, attempt to call the other logout endpoint as a best-effort
+  // This helps clear HttpOnly cookies that may be set on sibling subdomains
+  try {
+    const otherLogout = type === USER_TYPES.EMPLOYEE ? STAFF_ENDPOINTS.LOGOUT : EMPLOYEE_ENDPOINTS.LOGOUT;
+    // Use direct axios instance to ensure cookies/credentials are sent
+    await api.post(otherLogout).catch(() => {});
+  } catch (err) {
+    // ignore errors - this is best-effort
+  }
+
+  // Clear client-side auth state (cookies should be cleared by backend logout calls)
   clearAuthState();
   return response;
 };

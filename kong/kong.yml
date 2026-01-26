@@ -146,6 +146,19 @@ services:
             - exp
           run_on_preflight: false
 
+  # Superadmin service (session-based, no JWT)
+  - name: auth-service-superadmin
+    url: http://${AUTH_SERVICE_HOST:auth-service}:${AUTH_SERVICE_PORT:8003}
+    tags:
+      - auth
+      - superadmin
+    routes:
+      - name: auth-superadmin
+        paths:
+          - /superadmin/api
+        strip_path: false
+        preserve_host: true
+
   # ---------------------------------------------------------------------------
   # WORKFLOW API SERVICE (Port 1001 - Backend)
   # ---------------------------------------------------------------------------

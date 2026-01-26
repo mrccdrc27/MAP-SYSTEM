@@ -46,6 +46,16 @@ export const AuthProvider = ({ children }) => {
     // Clear localStorage sync
     try {
       localStorage.removeItem('user');
+      // Remove legacy keys that should no longer be used
+      localStorage.removeItem('employeeUsers');
+      localStorage.removeItem('tickets');
+      // Also remove any token keys that might be present
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('employee_access_token');
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('employee_refresh_token');
+      localStorage.removeItem('admin_refresh_token');
     } catch (e) {
       // Ignore storage errors
     }
@@ -54,6 +64,10 @@ export const AuthProvider = ({ children }) => {
       clearTimeout(refreshTimeoutRef.current);
       refreshTimeoutRef.current = null;
     }
+    // Broadcast logout event for other parts of the app
+    try {
+      window.dispatchEvent(new Event('auth:logout'));
+    } catch (e) {}
   }, []);
 
   // Calculate next refresh time based on token expiration
@@ -163,13 +177,7 @@ export const AuthProvider = ({ children }) => {
         };
         
         setUser(userWithRole);
-        
-        // Sync to localStorage so authService.getCurrentUser() works
-        try {
-          localStorage.setItem('user', JSON.stringify(userWithRole));
-        } catch (e) {
-          // Ignore storage errors
-        }
+        // Do not write `user` to localStorage anymore. Keep user in React context only.
         
         // Initialize dynamic token refresh when user is authenticated
         initializeTokenRefresh();
@@ -200,6 +208,13 @@ export const AuthProvider = ({ children }) => {
 
   // Check session on mount
   useEffect(() => {
+    // Remove legacy/persistent localStorage keys to avoid stale cached profiles
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('employeeUsers');
+      localStorage.removeItem('tickets');
+    } catch (e) {}
+
     fetchUserProfile();
     
     // Cleanup timeout on unmount
@@ -230,10 +245,29 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post(LOGOUT_URL);
+      // Primary logout endpoint (token-based)
+      await api.post(LOGOUT_URL).catch(() => {});
+
+      // Best-effort: call other possible logout URLs that may clear cookies set by other endpoints
+      const extraLogoutPaths = [
+        '/api/v1/hdts/employees/api/logout/',
+        '/api/v1/users/logout/',
+        '/api/v1/users/logout',
+        '/api/v1/token/logout/',
+      ];
+
+      for (const p of extraLogoutPaths) {
+        try {
+          // Use the same axios instance so credentials (cookies) are sent
+          await api.post(p).catch(() => {});
+        } catch (err) {
+          // ignore
+        }
+      }
     } catch (e) {
-      console.warn("Logout endpoint error:", e);
+      console.warn('Logout endpoint error:', e);
     }
+    // Clear client-side auth state regardless of remote result
     clearAuth();
     // Redirect to auth-frontend login page
     const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';

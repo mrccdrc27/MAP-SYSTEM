@@ -43,8 +43,7 @@ export const AuthProvider = ({ children }) => {
             
             // Store using TokenUtils for consistency
             setAccessToken(data.access);
-            localStorage.setItem('user', JSON.stringify(data.user)); 
-            
+            // Do not persist `user` to localStorage anymore.
             setUser(data.user);
             navigate('/dashboard', { replace: true });
         } catch (error) {
@@ -72,7 +71,6 @@ export const AuthProvider = ({ children }) => {
 
     const updateUserContext = (updatedUserData) => {
         setUser(updatedUserData);
-        localStorage.setItem('user', JSON.stringify(updatedUserData));
     };
 
     const value = {

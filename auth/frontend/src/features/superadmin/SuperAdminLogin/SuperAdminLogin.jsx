@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useToast, Button, Input } from '../../../components/common';
 import { AuthLayout } from '../../../components/Layout';
 import { useSuperAdmin } from '../../../context/SuperAdminContext';
+import { getCSRFToken } from '../../../utils/csrf';
 import styles from './SuperAdminLogin.module.css';
 
 const SuperAdminLogin = () => {
@@ -26,15 +27,46 @@ const SuperAdminLogin = () => {
     e.preventDefault();
     setError('');
     
-    if (!email || !password) {
+    if (!email && !password) {
       setError('Email and password are required.');
+      toastError('Invalid Input', 'Email and password are required.');
+      return;
+    }
+    if (!email) {
+      setError('Email is required.');
+      toastError('Invalid Input', 'Email is required.');
+      return;
+    }
+    if (!password) {
+      setError('Password is required.');
+      toastError('Invalid Input', 'Password is required.');
+      return;
+    }
+    const normalizeErrorMessage = (msg) => {
+      if (!msg) return 'Invalid credentials.';
+      const lower = String(msg).toLowerCase();
+      if (lower.includes('invalid email') || lower.includes('invalid email or password') || lower.includes('invalid credentials') || lower.includes('invalid username') || lower.includes('invalid password')) {
+        return 'Invalid credentials.';
+      }
+      return msg;
+    };
+
+    const isValidEmailFormat = (value) => {
+      if (!value) return false;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    };
+
+    // Avoid native browser validation UI and show unified toast
+    if (!isValidEmailFormat(email)) {
+      setError('Invalid credentials.');
+      toastError('Login Failed', 'Invalid credentials.');
       return;
     }
 
     setLoading(true);
     try {
-      // Use relative path - Vite proxy will route to correct backend
-      const response = await fetch('/superadmin/api/login/', {
+      // Direct API call to gateway
+      const response = await fetch('https://api.ticketing.mapactive.tech/superadmin/api/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +86,7 @@ const SuperAdminLogin = () => {
         // Navigate to dashboard
         setTimeout(() => navigate('/superadmin/dashboard'), 1000);
       } else {
-        const errorMsg = data.error || 'Invalid email or password';
+        const errorMsg = normalizeErrorMessage(data.error || 'Invalid email or password');
         setError(errorMsg);
         toastError('Login Failed', errorMsg);
       }
@@ -84,7 +116,7 @@ const SuperAdminLogin = () => {
         <span>This portal is restricted to system administrators.</span>
       </div>
 
-      <form onSubmit={handleSubmit} className={styles.loginForm}>
+      <form noValidate onSubmit={handleSubmit} className={styles.loginForm}>
         <Input
           label="Superuser Email:"
           type="email"
@@ -95,6 +127,7 @@ const SuperAdminLogin = () => {
           autoFocus
           disabled={loading}
           className={styles.roundedInput}
+          id="superadmin-email"
           icon={<i className="fa-solid fa-envelope"></i>}
         />
 
@@ -107,6 +140,7 @@ const SuperAdminLogin = () => {
           required
           disabled={loading}
           className={styles.roundedInput}
+          id="superadmin-password"
           icon={
             password ? (
               <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>

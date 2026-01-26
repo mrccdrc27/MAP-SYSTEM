@@ -45,10 +45,38 @@ const Login = ({ userType = 'staff' }) => {
     }
   }, [isAuthenticated, loading, navigate]);
 
+  const normalizeErrorMessage = (msg) => {
+    if (!msg) return 'Invalid credentials.';
+    const lower = String(msg).toLowerCase();
+    if (lower.includes('invalid email') || lower.includes('invalid email or password') || lower.includes('invalid credentials') || lower.includes('invalid username') || lower.includes('invalid password')) {
+      return 'Invalid credentials.';
+    }
+    return msg;
+  };
+
+  const isValidEmailFormat = (value) => {
+    if (!value) return false;
+    // basic RFC-like check
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    // Prevent native browser validation bubbles
+    if (!email && !password) {
       error('Invalid Input', 'Email and password are required.');
+      return;
+    } else if (!email) {
+      error('Invalid Input', 'Email is required.');
+      return;
+    } else if (!password) {
+      error('Invalid Input', 'Password is required.');
+      return;
+    }
+
+    // If email is not in valid format, show unified credential error instead of native tooltip
+    if (!isValidEmailFormat(email)) {
+      error('Login Failed', 'Invalid credentials.');
       return;
     }
 
@@ -71,9 +99,9 @@ const Login = ({ userType = 'staff' }) => {
         setMode('otp');
       } else if (response.data.errors) {
         const errorMessages = Object.values(response.data.errors).flat();
-        error('Login Failed', errorMessages[0] || 'Login failed. Please try again.');
+        error('Login Failed', normalizeErrorMessage(errorMessages[0] || 'Login failed. Please try again.'));
       } else {
-        error('Error', response.data.detail || response.data.message || 'Login failed. Please try again.');
+        error('Login Failed', normalizeErrorMessage(response.data.detail || response.data.message || 'Login failed. Please try again.'));
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -103,7 +131,7 @@ const Login = ({ userType = 'staff' }) => {
            error('Verification Failed', 'Could not retrieve user profile.');
         }
       } else {
-        error('Verification Failed', response.data.detail || response.data.message || 'Invalid OTP code.');
+        error('Verification Failed', normalizeErrorMessage(response.data.detail || response.data.message || 'Invalid OTP code.'));
       }
     } catch (err) {
       console.error('OTP verification error:', err);
@@ -136,7 +164,7 @@ const Login = ({ userType = 'staff' }) => {
     >
       <ToastContainer />
       
-      <form onSubmit={mode === 'login' ? handleLoginSubmit : handleOtpSubmit} className={styles.loginForm}>
+      <form noValidate onSubmit={mode === 'login' ? handleLoginSubmit : handleOtpSubmit} className={styles.loginForm}>
         {mode === 'login' ? (
           <>
             <Input

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SuperAdminLayout from '../../../components/SuperAdminLayout/SuperAdminLayout';
+import { getCSRFToken } from '../../../utils/csrf';
 import { Button, Input, Alert } from '../../../components/common';
 import styles from './UserForm.module.css';
 
@@ -114,11 +115,16 @@ const UserForm = () => {
         delete submitData.confirm_password;
       }
 
+      // Include CSRF token for session-authenticated superadmin endpoints
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const csrf = getCSRFToken();
+      if (csrf) headers['X-CSRFToken'] = csrf;
+
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify(submitData),
       });

@@ -353,38 +353,10 @@ export default function TicketMessaging({ initialMessages = [], ticketId = null,
           return m;
         }));
 
-        // Reconcile localStorage: replace temp comment with server comment if present
-        try {
-          const raw = localStorage.getItem('tickets');
-          if (raw) {
-            const tickets = JSON.parse(raw);
-            const tgtIndex = tickets.findIndex(t => String(t.ticketNumber) === String(ticketNumber) || String(t.id) === String(targetId));
-            if (tgtIndex !== -1) {
-              const tk = tickets[tgtIndex];
-              tk.comments = Array.isArray(tk.comments) ? tk.comments : (Array.isArray(tk.comment) ? tk.comment : []);
-              // Find temp comment by id or by matching message and recent timestamp
-              const tempIndex = tk.comments.findIndex(c => String(c.id) === String(tempId) || (c.comment === messageToSend && Math.abs(new Date(c.created_at).getTime() - Date.now()) < 120000));
-              const serverComment = {
-                id: result.id || (tempIndex !== -1 ? tk.comments[tempIndex].id : Date.now()),
-                comment: result.comment || result.message || messageToSend,
-                created_at: result.created_at || new Date().toISOString(),
-                user: result.user || { id: 'current', name: 'You' },
-                is_internal: result.is_internal ?? false,
-              };
-
-              if (tempIndex !== -1) {
-                tk.comments[tempIndex] = serverComment;
-              } else {
-                tk.comments.push(serverComment);
-              }
-
-              tickets[tgtIndex] = tk;
-              localStorage.setItem('tickets', JSON.stringify(tickets));
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to reconcile localStorage comments:', e);
-        }
+        // Reconciliation with localStorage has been removed. The backend
+        // is now the source of truth for comments; the optimistic UI was
+        // already updated above and will be reconciled when the backend
+        // data is re-fetched or pushed via realtime updates.
       }
     } catch (err) {
       console.warn('Failed to send comment to backend:', err);

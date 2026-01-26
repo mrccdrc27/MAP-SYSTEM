@@ -62,7 +62,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isLoginRelated) {
       originalRequest._retry = true;
       
-      try {
+        // If a Django session cookie exists, this client is likely using session-based
+        // auth (superadmin). Skip token refresh attempts to avoid 401->refresh loops.
+        const hasSessionCookie = (typeof document !== 'undefined' && document.cookie && document.cookie.includes('sessionid='));
+        if (hasSessionCookie) {
+          return Promise.reject(error);
+        }
+
+        try {
         const userType = getUserType();
         const refreshEndpoint = userType === USER_TYPES.EMPLOYEE 
           ? EMPLOYEE_ENDPOINTS.TOKEN_REFRESH 

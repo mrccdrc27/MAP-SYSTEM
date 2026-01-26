@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaDollarSign, FaPlus } from 'react-icons/fa';
 import Button from '../../../shared/components/Button';
 import InputField from '../../../shared/components/InputField';
@@ -11,13 +11,34 @@ const BudgetProposalMetadata = {
   description: 'Submit budget proposals and financial requests',
   subCategories: [
     'CAPEX',
-    'OPEX',
-    'MERCH-SUP',
-    'MERCH-SW'
+    'OPEX'
   ]
 };
 
 const budgetSubCategories = BudgetProposalMetadata.subCategories;
+
+const subCategoryOptions = [
+  { value: 'CAPEX', label: 'Capital Expenses' },
+  { value: 'OPEX', label: 'Operational Expenses' }
+];
+
+const departmentOptions = [
+  { value: 'MERCH', label: 'Merchandising' },
+  { value: 'SALES', label: 'Sales & Store Operations' },
+  { value: 'MKT', label: 'Marketing' },
+  { value: 'OPS', label: 'Operations' },
+  { value: 'IT', label: 'IT Application & Data' },
+  { value: 'LOG', label: 'Logistics' },
+  { value: 'HR', label: 'Human Resources' },
+  { value: 'FIN', label: 'Finance' }
+];
+
+// Temporary hardcoded fiscal year options (will be fetched from BMS later)
+const fiscalYearOptions = [
+  { value: 4, label: 'FY 2026' },
+  { value: 3, label: 'FY 2025' },
+  { value: 2, label: 'FY 2024' }
+];
 
 // Cost elements based on sub-category
 const costElements = {
@@ -55,6 +76,7 @@ export default function BudgetProposalForm({
   budgetItems,
   setBudgetItems 
 }) {
+  const [showFinanceFields, setShowFinanceFields] = useState(false);
   // Compute local YYYY-MM-DD (avoid UTC offset from toISOString)
   const getLocalDateString = (dateObj) => {
     const y = dateObj.getFullYear();
@@ -80,8 +102,20 @@ export default function BudgetProposalForm({
     return tomorrow;
   };
   const addBudgetItem = () => {
-    setBudgetItems([...budgetItems, { costElement: '', description: '', estimatedCost: '' }]);
+    setBudgetItems([...budgetItems, { costElement: '', description: '', estimatedCost: '', category_code: '', account: '' }]);
   };
+
+  // Auto-select a sensible fiscal year if none chosen yet
+  useEffect(() => {
+    if ((!formData.fiscalYear || formData.fiscalYear === '') && fiscalYearOptions && fiscalYearOptions.length > 0) {
+      // Call parent's onChange handler to set fiscalYear
+      const handler = onChange('fiscalYear');
+      if (typeof handler === 'function') {
+        handler({ target: { value: fiscalYearOptions[0].value } });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const removeBudgetItem = (index) => {
     if (budgetItems.length > 1) {
@@ -125,26 +159,78 @@ export default function BudgetProposalForm({
         onBlur={onBlur('subCategory')}
         required
         error={errors.subCategory}
-        options={budgetSubCategories.map(sub => ({ value: sub, label: sub }))}
+        options={subCategoryOptions}
+      />
+
+      {/* Department */}
+      <SelectField
+        label="Department"
+        placeholder="Select Department"
+        value={formData.department_input || ''}
+        onChange={onChange('department_input')}
+        onBlur={onBlur('department_input')}
+        required
+        error={errors.department_input}
+        options={departmentOptions}
+      />
+
+      {/* Fiscal Year */}
+      <SelectField
+        label="Fiscal Year"
+        placeholder="Select Fiscal Year"
+        value={formData.fiscalYear || ''}
+        onChange={onChange('fiscalYear')}
+        onBlur={onBlur('fiscalYear')}
+        required
+        error={errors.fiscalYear}
+        options={fiscalYearOptions}
+      />
+
+      {/* Performance Start Date */}
+      <InputField
+        type="date"
+        label="Performance Start Date"
+        value={formData.performanceStartDate || ''}
+        onChange={onChange('performanceStartDate')}
+        onBlur={onBlur('performanceStartDate')}
+        required
+        error={errors.performanceStartDate}
+        min={today}
+      />
+
+      {/* Performance End Date */}
+      <InputField
+        type="date"
+        label="Performance End Date"
+        value={formData.performanceEndDate || ''}
+        onChange={onChange('performanceEndDate')}
+        onBlur={onBlur('performanceEndDate')}
+        required
+        error={errors.performanceEndDate}
+        min={getMinPerformanceEnd()}
       />
 
       {/* Budget Items */}
       <fieldset className={styles.budgetItemsFieldset}>
         <legend className={styles.budgetItemsLegend}>Budget Items</legend>
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ fontSize: 13, color: '#374151' }}>
+            <input type="checkbox" checked={showFinanceFields} onChange={() => setShowFinanceFields(!showFinanceFields)} style={{ marginRight: 8 }} />
+            Show Finance Fields (Category Code & Account)
+          </label>
+        </div>
         
         {budgetItems.map((item, index) => (
           <div key={index} className={styles.budgetItem}>
-            {/* Cost Element */}
-            <SelectField
-              label="Cost Element"
-              placeholder={formData.subCategory ? 'Select Cost Element' : 'Select Sub-Category first'}
-              value={item.costElement}
-              onChange={(e) => updateBudgetItem(index, 'costElement', e.target.value)}
-              disabled={!formData.subCategory}
-              options={formData.subCategory ? (costElements[formData.subCategory]?.map(element => ({ value: element, label: element })) || []) : []}
-              required={index === 0}
-              error={errors ? errors[`budgetItems_0_costElement`] : ''}
-            />
+                  {/* Cost Element (user input) */}
+                  <InputField
+                    label="Cost Element"
+                    placeholder={'Enter cost element'}
+                    value={item.costElement}
+                    onChange={(e) => updateBudgetItem(index, 'costElement', e.target.value)}
+                    required={index === 0}
+                    error={errors ? errors[`budgetItems_0_costElement`] : ''}
+                  />
 
             {/* Description */}
             <InputField
@@ -181,6 +267,69 @@ export default function BudgetProposalForm({
               error={errors ? errors[`budgetItems_0_estimatedCost`] : ''}
             />
 
+            {showFinanceFields && (
+              <>
+                {/* Category Code (hardcoded for now) */}
+                <SelectField
+                  label="Category Code"
+                  placeholder="Select Category Code"
+                  value={item.category_code || ''}
+                  onChange={(e) => updateBudgetItem(index, 'category_code', e.target.value)}
+                  onBlur={() => {}}
+                  required
+                  options={[
+                    { value: '', label: 'Select Category' },
+                    // IT-related categories
+                    { value: 'CAP-IT-HW', label: 'CAP-IT-HW — Capital: IT Hardware' },
+                    { value: 'IT-HW', label: 'IT-HW — Hardware (Desktops/Laptops)' },
+                    { value: 'IT-SW', label: 'IT-SW — Software Licenses / Subscriptions' },
+                    { value: 'IT-HOST', label: 'IT-HOST — Server Hosting / Cloud Services' },
+                    // Operations / Logistics
+                    { value: 'OPS-MAINT', label: 'OPS-MAINT — Maintenance & Repairs' },
+                    { value: 'OPS-FRE', label: 'OPS-FRE — Freight & Logistics' },
+                    // Marketing
+                    { value: 'MKT-ADV', label: 'MKT-ADV — Advertising & Promotions' },
+                    { value: 'MKT-MAT', label: 'MKT-MAT — Marketing Materials' },
+                    // HR / Travel
+                    { value: 'HR-TRV', label: 'HR-TRV — Travel & Training' },
+                    // Finance / Professional
+                    { value: 'FIN-CON', label: 'FIN-CON — Consulting / Professional Fees' },
+                    // General / fallback
+                    { value: 'GEN', label: 'GEN — General / Miscellaneous' }
+                  ]}
+                />
+
+                {/* Account (hardcoded for now) */}
+                <SelectField
+                  label="Account"
+                  placeholder="Select GL Account"
+                  value={item.account || ''}
+                  onChange={(e) => updateBudgetItem(index, 'account', e.target.value)}
+                  onBlur={() => {}}
+                  required
+                  options={[
+                    { value: '', label: 'Select Account' },
+                    // Values are temporary account IDs (use real Account.id from BMS later)
+                    { value: 10, label: '6100 - IT Operations' },
+                    { value: 11, label: '6200 - Office Supplies' },
+                    { value: 12, label: '6300 - Professional Services' },
+                    { value: 13, label: '6400 - Travel & Expenses' },
+                    { value: 14, label: '6500 - Hardware Purchases' },
+                    { value: 15, label: '6600 - Software Subscriptions' }
+                  ]}
+                />
+
+                {/* Inline warnings */}
+                {(!item.category_code || !item.account) && (
+                  <div style={{ color: '#b45309', fontSize: 13, marginTop: 6 }}>
+                    Finance fields are required for submission — please select Category Code and Account.
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* removed Account and Category Code inputs — generated on submit */}
+
             {/* Remove Button */}
             {budgetItems.length > 1 && (
               <Button
@@ -214,41 +363,17 @@ export default function BudgetProposalForm({
         </div>
       </fieldset>
 
-      {/* Performance Start Date */}
+      {/* Project Summary */}
       <InputField
-        type="date"
-        label="Performance Start Date"
-        value={formData.performanceStartDate || ''}
-        onChange={onChange('performanceStartDate')}
-        onBlur={onBlur('performanceStartDate')}
-        required
-        error={errors.performanceStartDate}
-        min={today}
+        label="Project Summary"
+        placeholder="Provide a brief project summary"
+        value={formData.projectSummary || ''}
+        onChange={onChange('projectSummary')}
+        onBlur={onBlur('projectSummary')}
+        error={errors.projectSummary}
       />
 
-      {/* Performance End Date */}
-      <InputField
-        type="date"
-        label="Performance End Date"
-        value={formData.performanceEndDate || ''}
-        onChange={onChange('performanceEndDate')}
-        onBlur={onBlur('performanceEndDate')}
-        required
-        error={errors.performanceEndDate}
-        min={getMinPerformanceEnd()}
-      />
-
-      {/* Prepared By */}
-      <InputField
-        type="text"
-        label="Prepared By"
-        placeholder="Enter name of preparer"
-        value={formData.preparedBy || ''}
-        onChange={onChange('preparedBy')}
-        onBlur={onBlur('preparedBy')}
-        required
-        error={errors.preparedBy}
-      />
+      {/* Project Description removed; use main Description field as optional 'Project Description' when category is New Budget Proposal */}
     </>
   );
 }

@@ -52,12 +52,11 @@ const ticketConfig = {
       { name: "subcategory", type: "select", label: "Product Type", options: [
         "Laptop", "Printer", "Projector", "Mouse", "Keyboard"
       ]},
-      { name: "assetName", type: "select", label: "Asset Name", options: [
+      { name: "assetName", type: "select", label: "Available Assets", options: [
         "Dell Latitude 5420",
         "HP ProBook 450 G9",
         "Lenovo ThinkPad X1"
       ]},
-      { name: "serialNumber", type: "text", label: "Serial Number", autoFillFrom: "assetName" },
       { name: "location", type: "text", label: "Location" },
       { name: "issue", type: "select", label: "Specify Issue", options: [
         "Not Functioning",
@@ -78,12 +77,11 @@ const ticketConfig = {
       { name: "subcategory", type: "select", label: "Product Type", options: [
         "Laptop", "Printer", "Projector", "Mouse", "Keyboard"
       ]},
-      { name: "assetName", type: "select", label: "Asset Name", options: [
+      { name: "assetName", type: "select", label: "Available Assets", options: [
         "Dell Latitude 5420",
         "HP ProBook 450 G9",
         "Lenovo ThinkPad X1"
       ]},
-      { name: "serialNumber", type: "text", label: "Serial Number", autoFillFrom: "assetName" },
       { name: "location", type: "text", label: "Location" }
     ]
   }

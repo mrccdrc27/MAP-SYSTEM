@@ -285,8 +285,6 @@ export const localTicketService = {
     };
     
     setToStorage(STORAGE_KEYS.TICKETS, tickets);
-    // Also write to 'tickets' key for UI visibility
-    localStorage.setItem('tickets', JSON.stringify(tickets));
     
     return {
       success: true,
@@ -301,8 +299,6 @@ export const localTicketService = {
       const mod = await import('../../mock-data/tickets.js');
       const mockTickets = mod.mockTickets || [];
       setToStorage(STORAGE_KEYS.TICKETS, mockTickets);
-      // Also write to 'tickets' key for UI visibility
-      localStorage.setItem('tickets', JSON.stringify(mockTickets));
       
       return {
         success: true,

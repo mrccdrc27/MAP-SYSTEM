@@ -58,6 +58,40 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
+// Map department short codes to display names (match `BudgetProposalForm.jsx` options)
+const departmentLabelMap = {
+  'MERCH': 'Merchandising',
+  'SALES': 'Sales & Store Operations',
+  'MKT': 'Marketing',
+  'OPS': 'Operations',
+  'IT': 'IT Application & Data',
+  'LOG': 'Logistics',
+  'HR': 'Human Resources',
+  'FIN': 'Finance'
+};
+
+const subCategoryLabelMap = {
+  'CAPEX': 'Capital Expenses',
+  'OPEX': 'Operational Expenses'
+};
+
+// Temporary fiscal year options (should match `BudgetProposalForm.jsx`)
+const fiscalYearOptions = [
+  { value: 4, label: 'FY 2026' },
+  { value: 3, label: 'FY 2025' },
+  { value: 2, label: 'FY 2024' }
+];
+
+// Temporary account options mapping (use BMS accounts later)
+const accountOptions = [
+  { value: 10, label: '6100 - IT Operations' },
+  { value: 11, label: '6200 - Office Supplies' },
+  { value: 12, label: '6300 - Professional Services' },
+  { value: 13, label: '6400 - Travel & Expenses' },
+  { value: 14, label: '6500 - Hardware Purchases' },
+  { value: 15, label: '6600 - Software Subscriptions' }
+];
+
 const DetailField = ({ label, value }) => (
   <fieldset>
     <label>{toTitleCase(label)}</label>
@@ -92,12 +126,13 @@ const formatTime = (date) => {
   }
 };
 
-// Format a date value to a user-friendly date-only string (reuses formatDate)
+// Format a date value to a user-friendly date-only string (full month name, no time)
 const formatDateOnly = (date) => {
   if (!date) return null;
   try {
-    const v = formatDate(date);
-    return v === 'None' ? null : v;
+    const d = new Date(date);
+    if (isNaN(d)) return String(date);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   } catch (e) {
     return String(date);
   }
@@ -440,6 +475,7 @@ export default function EmployeeTicketTracker() {
   const { ticketNumber } = useParams();
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showRawData, setShowRawData] = useState(false);
   const [activeTab, setActiveTab] = useState('messages'); // 'logs' or 'messages'
   const [isLoading, setIsLoading] = useState(true);
   // preview state removed - attachments now open in a new tab
@@ -604,6 +640,10 @@ export default function EmployeeTicketTracker() {
   const totalBudgetField = (ticket.totalBudget ?? ticket.total_budget) ?? getDyn(['totalBudget', 'total_budget', 'requestedBudget', 'requested_budget', 'requested_budget_value']);
   // Support both old 'budgetItems' and new 'items' structure
   const budgetItemsField = ticket.budgetItems || ticket.budget_items || getDyn(['items', 'budgetItems', 'budget_items']) || [];
+  const fiscalYearField = ticket.fiscalYear || ticket.fiscal_year || getDyn(['fiscalYear', 'fiscal_year']) || null;
+  const projectSummaryField = ticket.projectSummary || ticket.project_summary || getDyn(['projectSummary', 'project_summary']) || null;
+  const projectDescriptionField = ticket.projectDescription || ticket.project_description || getDyn(['projectDescription', 'project_description']) || null;
+  const departmentInputField = ticket.department_input || ticket.departmentInput || ticket.department_input || getDyn(['department_input', 'departmentInput']) || null;
 
   // Normalize scheduled request: explicit scheduled_date, or dynamic_data scheduled keys or nested scheduleRequest
   // Broader fallback check for schedule fields stored in dynamic_data in various shapes
@@ -962,7 +1002,7 @@ export default function EmployeeTicketTracker() {
                       {uiCategory === 'Others' ? (
                         'None'
                       ) : (
-                        subCategory || 'None'
+                          (subCategoryLabelMap[subCategory] || subCategory) || 'None'
                       )}
                     </div>
                   </div>
@@ -1089,39 +1129,74 @@ export default function EmployeeTicketTracker() {
                   {/* New Budget Proposal */}
                   {category === 'New Budget Proposal' && (
                     <>
-                      <div className={styles.categoryDetails}>Budget Proposal Details</div>
-                      <div className={styles.dynamicDetailsGrid}>
-                        <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Prepared By</div>
-                          <div className={styles.detailValue}>{preparedByField || 'N/A'}</div>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Performance Start</div>
-                          <div className={styles.detailValue}>{performanceStartField || 'N/A'}</div>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Performance End</div>
-                          <div className={styles.detailValue}>{performanceEndField || 'N/A'}</div>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Total Budget</div>
-                          <div className={styles.detailValue}>{formatMoney(totalBudgetField)}</div>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Budget Items</div>
-                          <div className={styles.detailValue}>
-                            {(budgetItemsField || []).length > 0 ? (
-                              (budgetItemsField || []).map((item, idx) => (
-                                <div key={idx}>
-                                  {`${item.costElement || item.cost_element || item.name || 'Item'}${item.description ? ` - ${item.description}` : ''} — ${item.estimatedCost || item.estimated_cost || item.estimated_cost_range || ''}`}
-                                </div>
-                              ))
-                            ) : (
-                              'No budget items provided'
+                          <div className={styles.categoryDetails}>Budget Proposal Details</div>
+                          <div className={styles.dynamicDetailsGrid}>
+                        
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Performance Start</div>
+                              <div className={styles.detailValue}>{performanceStartField || 'N/A'}</div>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Performance End</div>
+                              <div className={styles.detailValue}>{performanceEndField || 'N/A'}</div>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Total Budget</div>
+                              <div className={styles.detailValue}>{formatMoney(totalBudgetField)}</div>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Budget Items</div>
+                              <div className={styles.detailValue}>
+                                  {(budgetItemsField || []).length > 0 ? (
+                                  (budgetItemsField || []).map((item, idx) => {
+                                    const name = item.costElement || item.cost_element || item.name || item.cost_element_name || 'Item';
+                                    const desc = item.description || item.desc || '';
+                                    const costVal = item.estimatedCost || item.estimated_cost || item.estimated_cost_range || item.cost || 0;
+                                    const cost = formatMoney(costVal);
+                                    const accountVal = item.account || item.account_id || item.accountId || null;
+                                    const accountMatch = accountOptions.find(a => Number(a.value) === Number(accountVal));
+                                    const accountLabel = accountMatch ? accountMatch.label : (accountVal ? String(accountVal) : '');
+                                    return (
+                                      <div key={idx}>
+                                        {`${name}${desc ? ` - ${desc}` : ''} — ${cost}${accountLabel ? ` — ${accountLabel}` : ''}`}
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  'No budget items provided'
+                                )}
+                              </div>
+                            </div>
+                            {fiscalYearField && (
+                              <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Fiscal Year</div>
+                                <div className={styles.detailValue}>{(() => {
+                                  // fiscalYearField may be numeric id or string; try to find label
+                                  const id = typeof fiscalYearField === 'number' ? fiscalYearField : Number(fiscalYearField);
+                                  const match = fiscalYearOptions.find(fy => Number(fy.value) === Number(id));
+                                  return match ? match.label : fiscalYearField;
+                                })()}</div>
+                              </div>
+                            )}
+                            {departmentInputField && (
+                              <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Department Input</div>
+                                <div className={styles.detailValue}>{departmentLabelMap[departmentInputField] || departmentInputField}</div>
+                              </div>
+                            )}
+                            {projectSummaryField && (
+                              <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Project Summary</div>
+                                <div className={styles.detailValue}>{projectSummaryField}</div>
+                              </div>
+                            )}
+                            {projectDescriptionField && (
+                              <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Project Description</div>
+                                <div className={styles.detailValue}>{projectDescriptionField}</div>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      </div>
                     </>
                   )}
                   {/* Fallback: dynamic_data */}
@@ -1162,6 +1237,17 @@ export default function EmployeeTicketTracker() {
                 </Button>
               )}
 
+              {/* View raw ticket payload */}
+              <div style={{ marginTop: 12 }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowRawData(true)}
+                  className={styles.ticketActionButton}
+                >
+                  View Raw Data
+                </Button>
+              </div>
+
               <Tabs
                 tabs={[
                   { label: 'Messages', value: 'messages' },
@@ -1189,6 +1275,21 @@ export default function EmployeeTicketTracker() {
       </main>
 
       {/* Modals */}
+          {showRawData && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '90%', maxWidth: 900, maxHeight: '80%', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 18, boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ margin: 0 }}>Ticket Raw Payload</h3>
+                  <div>
+                    <Button variant="ghost" onClick={() => setShowRawData(false)}>Close</Button>
+                  </div>
+                </div>
+                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#f7f7f7', padding: 12, borderRadius: 6, fontSize: 12 }}>
+                  {JSON.stringify(ticket, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
       {showWithdrawModal && ticket && (ticket.id || ticket.ticket_number || ticket.ticketNumber) && (
         <ErrorBoundary>
           <EmployeeActiveTicketsWithdrawTicketModal

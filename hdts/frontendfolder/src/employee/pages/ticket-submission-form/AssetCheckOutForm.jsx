@@ -176,10 +176,10 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         )}
       />
 
-      {/* Asset Name */}
+      {/* Available Assets */}
       <FormField
         id="assetName"
-        label="Asset Name"
+        label="Available Assets"
         required
         error={errors.assetName}
         render={() => (
@@ -201,20 +201,7 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
         )}
       />
 
-      {/* Serial Number (Auto-filled) */}
-      <FormField
-        id="serialNumber"
-        label="Serial Number"
-        render={() => (
-          <input
-            type="text"
-            placeholder="Auto-filled when asset is selected"
-            readOnly
-            value={formData.serialNumber}
-            style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
-          />
-        )}
-      />
+      {/* Serial Number hidden per UI request */}
 
       {/* Location */}
       <FormField

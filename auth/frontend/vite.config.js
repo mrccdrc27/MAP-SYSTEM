@@ -22,45 +22,17 @@ export default defineConfig({
       '*.ticketing.mapactive.tech',
     ],
     proxy: {
-      // Route /api requests directly to auth backend (when not using Kong prefix)
-      '/api': {
-        target: 'http://localhost:8003',
-        changeOrigin: true,
-        secure: false,
-        cookieDomainRewrite: 'localhost',
-        cookiePathRewrite: '/',
-      },
-      // Route AUTH API requests through Kong Gateway (when using /auth prefix)
-      '/auth/api': {
-        target: 'http://localhost:8080',  // Kong Gateway
-        changeOrigin: true,
-        secure: false,
-        // Forward cookies properly
-        cookieDomainRewrite: 'localhost',
-        cookiePathRewrite: '/',
-        // Uncomment to bypass Kong and hit backend directly:
-        // target: 'http://localhost:8003',
-      },
-      // Route SUPERADMIN API requests directly to auth backend
+      // Route SUPERADMIN API requests through Kong Gateway
       '/superadmin/api': {
-        target: 'http://localhost:8003',
+        target: 'https://api.ticketing.mapactive.tech',
         changeOrigin: true,
-        secure: false,
-        cookieDomainRewrite: 'localhost',
+        secure: true,
+        cookieDomainRewrite: '',
         cookiePathRewrite: '/',
         headers: {
           'X-Forwarded-Host': '165.22.247.50',
           'X-Forwarded-Proto': 'http',
         },
-      },
-      // Static files and media (direct to backend)
-      '/static': {
-        target: 'http://localhost:8003',
-        changeOrigin: true,
-      },
-      '/media': {
-        target: 'http://localhost:8003',
-        changeOrigin: true,
       },
     },
   },

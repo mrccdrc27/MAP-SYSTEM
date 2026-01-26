@@ -230,10 +230,8 @@ export default function EmployeeSettings({ editingUserId = null }) {
             
             if (cached && profileId && String(cachedId) === String(profileId)) {
               const updated = { ...cached, profileImage: finalImageUrl, image: finalImageUrl, profile_picture: authProfilePicture };
-              try { localStorage.setItem('user', JSON.stringify(updated)); } catch (e) {}
-              try { localStorage.setItem('loggedInUser', JSON.stringify(updated)); } catch (e) {}
               try { if (setAuthUser) setAuthUser(updated); } catch (e) {}
-              console.log('💾 [SETTINGS] Updated localStorage and authUser');
+              console.log('💾 [SETTINGS] Updated authUser (localStorage writes removed)');
             }
         } catch (e) {
           // ignore storage errors
@@ -251,11 +249,9 @@ export default function EmployeeSettings({ editingUserId = null }) {
         console.log('💾 [SETTINGS] No token - using fallback preview');
         setUser((prev) => ({ ...(prev || {}), profileImage: previewUrl }));
         try {
-          const cached = authUser || (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { return null; } })();
+          const cached = authUser || null;
           if (cached) {
             const updated = { ...cached, profileImage: previewUrl };
-            try { localStorage.setItem('user', JSON.stringify(updated)); } catch (e) {}
-            try { localStorage.setItem('loggedInUser', JSON.stringify(updated)); } catch (e) {}
             try { if (setAuthUser) setAuthUser(updated); } catch (e) {}
           }
         } catch (e) {}

@@ -57,10 +57,9 @@ const EMPLOYEE_USERS = [
   },
 ];
 
-// Initialize users in localStorage on first load
-if (typeof window !== 'undefined' && !localStorage.getItem("employeeUsers")) {
-  localStorage.setItem("employeeUsers", JSON.stringify(EMPLOYEE_USERS));
-}
+// NOTE: persistence to `employeeUsers` localStorage was removed intentionally.
+// The app will use the in-memory `EMPLOYEE_USERS` as the canonical source
+// and will no longer write or seed the `employeeUsers` key in localStorage.
 
 // Normalize stored user roles to canonical labels and ensure loggedInUser role matches stored user
 const normalizeRole = (role) => {
@@ -88,9 +87,7 @@ const normalizeStoredUsers = () => {
       }
       return u;
     });
-    if (changed) {
-      localStorage.setItem('employeeUsers', JSON.stringify(users));
-    }
+    // Do not persist normalized users to localStorage; keep in-memory only.
 
     // Also update loggedInUser role if present and different
     const USER_KEY = 'loggedInUser';
@@ -99,9 +96,9 @@ const normalizeStoredUsers = () => {
       const parsed = JSON.parse(storedUser);
       const match = users.find(u => u.email && parsed.email && u.email.toLowerCase() === parsed.email.toLowerCase());
       if (match && match.role && parsed.role !== match.role) {
-        const { password, ...withoutPassword } = match;
-        localStorage.setItem(USER_KEY, JSON.stringify(withoutPassword));
-      }
+          const { password, ...withoutPassword } = match;
+          // Intentionally do not write back to localStorage('loggedInUser').
+        }
     }
   } catch (e) {
     // silent fail - don't break app
@@ -113,8 +110,14 @@ const normalizeStoredUsers = () => {
 normalizeStoredUsers();
 
 export const getEmployeeUsers = () => {
-  const stored = localStorage.getItem("employeeUsers");
-  return stored ? JSON.parse(stored) : EMPLOYEE_USERS;
+  // Always prefer in-memory seeded users. If migration from localStorage
+  // exists, we may read it, but we will not write to localStorage.
+  try {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('employeeUsers') : null;
+    return stored ? JSON.parse(stored) : EMPLOYEE_USERS;
+  } catch (e) {
+    return EMPLOYEE_USERS;
+  }
 };
 
 export const getEmployeeUserById = (id) => {
@@ -140,7 +143,6 @@ export const addEmployeeUser = (userData) => {
     lastLogin: null,
   };
   users.push(newUser);
-  localStorage.setItem("employeeUsers", JSON.stringify(users));
   return newUser;
 };
 
@@ -149,7 +151,7 @@ export const updateEmployeeUser = (id, updates) => {
   const index = users.findIndex(user => user.id === id);
   if (index !== -1) {
     users[index] = { ...users[index], ...updates };
-    localStorage.setItem("employeeUsers", JSON.stringify(users));
+    // Do not persist changes to localStorage; keep updates in-memory only.
     return users[index];
   }
   return null;

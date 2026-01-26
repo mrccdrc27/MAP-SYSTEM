@@ -41,6 +41,7 @@ export default function EmployeeTicketSubmissionForm() {
     category: '',
     subCategory: '',
     description: '',
+    projectDescription: '',
     assetName: '',
     assetId: '',
     serialNumber: '',
@@ -57,6 +58,9 @@ export default function EmployeeTicketSubmissionForm() {
     performanceStartDate: '',
     performanceEndDate: '',
     preparedBy: '',
+    department_input: '',
+    fiscalYear: '',
+    projectSummary: '',
     assetCheckout: ''
   });
 
@@ -195,7 +199,8 @@ export default function EmployeeTicketSubmissionForm() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileError, setFileError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [budgetItems, setBudgetItems] = useState([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
+  const [budgetItems, setBudgetItems] = useState([{ costElement: '', estimatedCost: '', description: '' }]);
+  
   const [showCustomDeviceType, setShowCustomDeviceType] = useState(false);
 
   // Consume AMS categories from context (prefetched on EmployeeHome)
@@ -257,16 +262,22 @@ export default function EmployeeTicketSubmissionForm() {
         break;
       
       case 'description':
-        if (!value.trim()) {
+        if (!value || !value.toString().trim()) {
           error = 'Description is required.';
-        } else if (value.trim().length < 10) {
+        } else if (value.toString().trim().length < 10) {
           error = 'Description must be at least 10 characters long.';
+        }
+        break;
+
+      case 'projectDescription':
+        if (isBudgetProposal && value && value.toString().trim().length > 0 && value.toString().trim().length < 10) {
+          error = 'Project Description must be at least 10 characters long.';
         }
         break;
       
       case 'assetName':
         if (isAssetCheckOut && !value) {
-          error = 'Asset Name is required.';
+          error = 'Available Assets is required.';
         }
         break;
       
@@ -343,11 +354,23 @@ export default function EmployeeTicketSubmissionForm() {
         }
         break;
       
-      case 'preparedBy':
-        if (isBudgetProposal && !value.trim()) {
-          error = 'Prepared By is required.';
+      
+      case 'department_input':
+        if (isBudgetProposal && !value) {
+          error = 'Department is required.';
         }
         break;
+      case 'fiscalYear':
+        if (isBudgetProposal && !value) {
+          error = 'Fiscal Year is required.';
+        }
+        break;
+      case 'projectSummary':
+        if (isBudgetProposal && value && value.toString().trim().length > 0 && value.toString().trim().length < 10) {
+          error = 'Project Summary must be at least 10 characters long.';
+        }
+        break;
+      
       
       default:
         break;
@@ -391,9 +414,12 @@ export default function EmployeeTicketSubmissionForm() {
         performanceStartDate: '',
         performanceEndDate: '',
         preparedBy: '',
+        department_input: '',
+        fiscalYear: '',
+        projectSummary: '',
         assetCheckout: ''
       }));
-      setBudgetItems([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
+      setBudgetItems([{ costElement: '', estimatedCost: '', description: '' }]);
     }
 
     // Reset asset name and serial number when sub-category changes
@@ -458,7 +484,8 @@ export default function EmployeeTicketSubmissionForm() {
     const newErrors = {};
     const newTouched = {};
     
-    const fieldsToValidate = ['subject', 'category', 'description'];
+    const fieldsToValidate = ['subject', 'category'];
+    if (!isBudgetProposal) fieldsToValidate.push('description');
     
     // Add category-specific required fields
     if (isITSupport || isAssetCheckOut || isBudgetProposal) {
@@ -482,7 +509,7 @@ export default function EmployeeTicketSubmissionForm() {
     }
 
     if (isBudgetProposal) {
-      fieldsToValidate.push('performanceStartDate', 'performanceEndDate', 'preparedBy');
+      fieldsToValidate.push('performanceStartDate', 'performanceEndDate', 'department_input', 'fiscalYear');
     }
 
     fieldsToValidate.forEach(field => {
@@ -615,15 +642,56 @@ export default function EmployeeTicketSubmissionForm() {
       // Add Budget Proposal specific data
       if (isBudgetProposal) {
         // Strip formatting (commas, currency symbols, dots) from estimatedCost before submitting
+        const generateCategoryCode = (subCat, dept, costEl) => {
+          try {
+            const subMap = { 'CAPEX': 'CAP', 'OPEX': 'OPE' };
+            const sub = subMap[subCat] || String((subCat || '').toUpperCase()).slice(0,3);
+            const deptPart = (dept || '').toString().toUpperCase();
+            const cleanCost = (costEl || '').toString().replace(/[^A-Za-z\s]/g, '').trim();
+            let costAbbrev = '';
+            if (!cleanCost) costAbbrev = 'XX';
+            else {
+              const words = cleanCost.split(/\s+/).filter(Boolean);
+              if (words.length === 1) {
+                costAbbrev = words[0].slice(0,2).toUpperCase();
+              } else {
+                costAbbrev = (words[0][0] || '') + (words[1][0] || '');
+                costAbbrev = costAbbrev.toUpperCase();
+              }
+            }
+            return `${sub}-${deptPart}-${costAbbrev}`;
+          } catch (e) {
+            return '';
+          }
+        };
+
         const cleanedItems = (budgetItems || []).map(it => {
           const cleanedCost = String(it.estimatedCost || '').replace(/[^0-9]/g, '');
-          return { ...it, estimatedCost: cleanedCost };
+          const amountNumber = cleanedCost ? Number(cleanedCost) : 0;
+          // Prefer selected category_code/account from the item if present (temporary hardcoded dropdowns)
+          const category_code = it.category_code || generateCategoryCode(formData.subCategory, formData.department_input, it.costElement || it.cost_element || '');
+          const account_id = it.account ? Number(it.account) : (currentUser?.id || 1);
+          return {
+            cost_element: it.costElement || it.cost_element || '',
+            description: it.description || '',
+            estimated_cost: Number(amountNumber),
+            account: account_id,
+            category_code: category_code
+          };
         });
+
         dynamicData.items = cleanedItems;
         dynamicData.totalBudget = calculateTotalBudget();
-        dynamicData.performanceStartDate = formData.performanceStartDate;
-        dynamicData.performanceEndDate = formData.performanceEndDate;
-        dynamicData.preparedBy = formData.preparedBy;
+        dynamicData.performance_start_date = formData.performanceStartDate;
+        dynamicData.performance_end_date = formData.performanceEndDate;
+        dynamicData.submitted_by_name = formData.preparedBy || `${currentUser?.first_name || ''} ${currentUser?.last_name || ''}`.trim();
+        dynamicData.department_input = formData.department_input || '';
+        // Default to a sensible fiscal year id (temporary) when none selected
+        dynamicData.fiscal_year = formData.fiscalYear ? Number(formData.fiscalYear) : 1;
+        dynamicData.project_summary = formData.projectSummary || '';
+        dynamicData.project_description = formData.projectDescription || '';
+        // also include title for convenience
+        dynamicData.title = formData.subject || '';
       }
 
       // Add dynamic data as JSON string
@@ -679,13 +747,17 @@ export default function EmployeeTicketSubmissionForm() {
       performanceStartDate: '',
       performanceEndDate: '',
       preparedBy: '',
+      department_input: '',
+      fiscalYear: '',
+      projectSummary: '',
+      projectDescription: '',
       assetCheckout: ''
     });
     setErrors({});
     setTouched({});
     setSelectedFiles([]);
     setFileError('');
-    setBudgetItems([{ costElement: '', estimatedCost: '', description: '', account: 2 }]);
+    setBudgetItems([{ costElement: '', estimatedCost: '', description: '' }]);
     setShowCustomDeviceType(false);
   };
 
@@ -824,11 +896,33 @@ export default function EmployeeTicketSubmissionForm() {
             />
           )}
 
+            {/* Project Description (optional for Budget Proposal) */}
+            {isBudgetProposal && (
+              <FormField
+                id="projectDescription"
+                label="Project Description"
+                error={errors.projectDescription}
+                render={() => (
+                  <div className={styles.inputWithCounter}>
+                    <textarea
+                      rows={5}
+                      placeholder="Provide a detailed project description"
+                      value={formData.projectDescription}
+                      maxLength={150}
+                      onChange={handleInputChange('projectDescription')}
+                      onBlur={handleBlur('projectDescription')}
+                    />
+                    <span className={styles.charCounter}>{String(formData.projectDescription?.length || 0)}/150</span>
+                  </div>
+                )}
+              />
+            )}
+
           {/* Description */}
           <FormField
             id="description"
-            label="Description"
-            required
+            label={'Description'}
+            required={true}
             error={errors.description}
             render={() => (
               <div className={styles.inputWithCounter}>

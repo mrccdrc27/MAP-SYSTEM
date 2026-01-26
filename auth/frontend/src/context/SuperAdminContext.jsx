@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getCSRFToken } from '../utils/csrf';
 
 const SuperAdminContext = createContext();
 
@@ -17,9 +18,12 @@ export const SuperAdminProvider = ({ children }) => {
 
   const checkSession = async () => {
     try {
-      // Use relative path - Vite proxy will route to correct backend
-      const response = await fetch('/superadmin/api/session/', {
+      // Direct API call to gateway
+      const response = await fetch('https://api.ticketing.mapactive.tech/superadmin/api/session/', {
         credentials: 'include',
+        headers: {
+          'X-CSRFToken': getCSRFToken() || '',
+        },
       });
 
       if (response.ok) {
@@ -46,10 +50,13 @@ export const SuperAdminProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Use relative path - Vite proxy will route to correct backend
-      await fetch('/superadmin/api/logout/', {
+      // Direct API call to gateway
+      await fetch('https://api.ticketing.mapactive.tech/superadmin/api/logout/', {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'X-CSRFToken': getCSRFToken() || '',
+        },
       });
     } catch (error) {
       console.error('Logout error:', error);
