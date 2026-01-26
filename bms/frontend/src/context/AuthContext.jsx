@@ -31,7 +31,7 @@ const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`;
 const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/validate/`;
 const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/`;
 const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
-const LOGOUT_URL = `${AUTH_URL}/logout/`;
+const LOGOUT_URL = `${AUTH_URL}/api/v1/users/logout/`;
 
 const createAuthRequest = () => {
   const token = getAccessToken();
