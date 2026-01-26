@@ -246,9 +246,10 @@ class Command(BaseCommand):
         return fys
 
     def seed_departments(self):
-        self.stdout.write("Seeding Departments...")
+        self.stdout.write("Seeding/Linking Departments...")
         dept_map = {}
         for d in DEPARTMENTS_CONFIG:
+            # Changed to update_or_create to be safe
             dept, _ = Department.objects.update_or_create(
                 code=d['code'],
                 defaults={'name': d['name'], 'is_active': True}
@@ -257,58 +258,35 @@ class Command(BaseCommand):
         return dept_map
 
     def seed_accounts(self):
-        self.stdout.write("Seeding Accounts...")
+        self.stdout.write("Seeding/Linking Accounts...")
+        # Ensure types exist (just in case init wasn't run)
         asset_type, _ = AccountType.objects.get_or_create(name='Asset')
         expense_type, _ = AccountType.objects.get_or_create(name='Expense')
         liability_type, _ = AccountType.objects.get_or_create(name='Liability')
-        # --- NEW: Add Equity Type ---
         equity_type, _ = AccountType.objects.get_or_create(name='Equity')
 
         creator_id = 1
         creator_name = 'admin_auth'
-
         acc_map = {}
 
-        # 1. Cash / Bank (Asset)
-        acc_cash, _ = Account.objects.update_or_create(
-            code='1010',
-            defaults={'name': 'Cash in Bank', 'account_type': asset_type,
-                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
-        )
-        acc_map['CASH'] = acc_cash
+        # Safe update_or_create logic
+        def ensure_account(code, name, type_obj):
+            obj, _ = Account.objects.update_or_create(
+                code=code,
+                defaults={
+                    'name': name, 
+                    'account_type': type_obj,
+                    'created_by_user_id': creator_id,
+                    'created_by_username': creator_name
+                }
+            )
+            return obj
 
-        # 2. Accounts Payable (Liability)
-        acc_payable, _ = Account.objects.update_or_create(
-            code='2010',
-            defaults={'name': 'Accounts Payable', 'account_type': liability_type,
-                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
-        )
-        acc_map['PAYABLE'] = acc_payable
-
-        # 3. General Asset
-        acc_asset, _ = Account.objects.update_or_create(
-            code='1500',
-            defaults={'name': 'Property, Plant & Equipment', 'account_type': asset_type,
-                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
-        )
-        acc_map['ASSET'] = acc_asset
-
-        # 4. General Expense
-        acc_expense, _ = Account.objects.update_or_create(
-            code='5000',
-            defaults={'name': 'General Expenses', 'account_type': expense_type,
-                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
-        )
-        acc_map['EXPENSE'] = acc_expense
-
-        # --- NEW: Equity Account (Required for Supplemental Budgets) ---
-        acc_equity, _ = Account.objects.update_or_create(
-            code='3000',
-            defaults={'name': 'Retained Earnings', 'account_type': equity_type,
-                      'created_by_user_id': creator_id, 'created_by_username': creator_name}
-        )
-        acc_map['EQUITY'] = acc_equity
-        # -------------------------------------------------------------
+        acc_map['CASH'] = ensure_account('1010', 'Cash in Bank', asset_type)
+        acc_map['PAYABLE'] = ensure_account('2010', 'Accounts Payable', liability_type)
+        acc_map['ASSET'] = ensure_account('1500', 'Property, Plant & Equipment', asset_type)
+        acc_map['EXPENSE'] = ensure_account('5000', 'General Expenses', expense_type)
+        acc_map['EQUITY'] = ensure_account('3000', 'Retained Earnings', equity_type)
 
         return acc_map
 

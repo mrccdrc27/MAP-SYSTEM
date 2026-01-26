@@ -49,6 +49,7 @@ import {
   getTopSpendingCategories,
   getSpendingHeatmap,
 } from "../../API/dashboardAPI";
+import { triggerForecastUpdate } from "../../API/fiscalYearAPI";
 import { useAuth } from "../../context/AuthContext";
 import ManageProfile from "../../pages/Finance/ManageProfile";
 import * as XLSX from "xlsx";
@@ -687,6 +688,36 @@ function BudgetDashboard() {
 
   const handleLogout = async () => await logout();
 
+  const handleRefreshForecasts = async () => {
+    if (
+      !window.confirm(
+        "Recalculate forecasts based on latest data? This may take a few seconds.",
+      )
+    )
+      return;
+
+    setLoading(true); // Show loading state to indicate activity
+    try {
+      await triggerForecastUpdate();
+      alert("Forecasts updated successfully!");
+
+      // Reload dashboard data to show new forecast
+      const [moneyFlowRes, forecastRes] = await Promise.all([
+        getMoneyFlowData(null),
+        getForecastData(null),
+      ]);
+      setMoneyFlowData(moneyFlowRes.data);
+      if (Array.isArray(forecastRes.data)) {
+        setForecastData(forecastRes.data);
+      }
+    } catch (error) {
+      alert("Failed to update forecasts: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // MODIFICATION END
+
   // --- CHART DATA PREPARATION ---
 
   const lastActualExpenseIndex = moneyFlowData
@@ -860,6 +891,11 @@ function BudgetDashboard() {
                     toggleForecasting={toggleForecasting}
                     showForecastComparison={showForecastComparison}
                     toggleForecastComparison={toggleForecastComparison}
+                    // MODIFICATION START: Pass props
+                    isFinanceManager={isFinanceManager}
+                    onRefreshForecast={handleRefreshForecasts}
+                    // MODIFICATION END
+
                     onExport={() =>
                       exportAccuracyReport(
                         forecastAccuracyData,

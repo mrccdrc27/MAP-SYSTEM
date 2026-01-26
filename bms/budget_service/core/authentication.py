@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 class AuthenticatedUser:
     """
-    User class to store authenticated user data from JWT token.
-    Compatible with centralized auth service token structure.
+    Temporary user object created from JWT token.
+    Now synchronized with the database User model via JIT provisioning.
     """
-    def __init__(self, user_data):
+    def __init__(self, user_data, db_user=None):
         self.id = user_data.get('id')
         self.user_id = user_data.get('user_id')
         self.email = user_data.get('email')
@@ -37,6 +37,10 @@ class AuthenticatedUser:
         self.department_name = user_data.get('department_name') or user_data.get('department')
         self.department_id = user_data.get('department_id') or self._resolve_department_id()
         
+        # ✅ NEW: Link to database User record (for ForeignKey compatibility)
+        self.db_user = db_user
+        self.pk = db_user.pk if db_user else self.id
+        
         # Standard Django properties
         self.is_active = True
         self.is_staff = False
@@ -45,10 +49,7 @@ class AuthenticatedUser:
         # Build roles_dict for backward compatibility
         self._roles_dict = self._build_roles_dict()
         
-        # 🔍 DEBUG: Log user creation
         logger.info(f"🔐 Created AuthenticatedUser: {self.email}")
-        logger.info(f"   Roles: {self.roles}")
-        logger.info(f"   BMS Roles: {self.bms_roles}")
         logger.info(f"   BMS Role: {self.get_bms_role()}")
     
     def _resolve_department_id(self):
@@ -92,48 +93,36 @@ class AuthenticatedUser:
         return roles_dict
     
     def get_role_for_system(self, system_name):
-        """
-        Get the role name for a specific system.
-        Backward compatible with the old roles.get('bms') pattern.
-        """
+        """Get the role name for a specific system"""
         return self._roles_dict.get(system_name)
     
     def has_bms_role(self, role_name):
         """Check if user has specific BMS role"""
-        result = any(
+        return any(
             self._get_role_name(role) == role_name 
             for role in self.bms_roles
         )
-        logger.debug(f"has_bms_role({role_name}): {result} for {self.email}")
-        return result
     
     def has_system_access(self, system_name):
         """Check if user has access to a specific system"""
-        result = any(
+        return any(
             self._get_system_name(role) == system_name
             for role in self.roles
         )
-        logger.debug(f"has_system_access({system_name}): {result} for {self.email}")
-        return result
     
     def has_system_role(self, system_name, role_name):
         """Check if user has a specific role in a specific system"""
         for role in self.roles:
             if (self._get_system_name(role) == system_name and 
                 self._get_role_name(role) == role_name):
-                logger.debug(f"has_system_role({system_name}, {role_name}): True for {self.email}")
                 return True
-        logger.debug(f"has_system_role({system_name}, {role_name}): False for {self.email}")
         return False
     
     def get_bms_role(self):
         """Get the user's BMS role (returns first BMS role found)"""
         for role in self.roles:
             if self._get_system_name(role) == 'bms':
-                bms_role = self._get_role_name(role)
-                logger.debug(f"get_bms_role(): {bms_role} for {self.email}")
-                return bms_role
-        logger.debug(f"get_bms_role(): None for {self.email}")
+                return self._get_role_name(role)
         return None
     
     def get_systems(self):
@@ -168,10 +157,14 @@ class AuthenticatedUser:
     def __str__(self):
         return self.email or self.username or str(self.user_id)
 
-
 class JWTCookieAuthentication(BaseAuthentication):
     """
-    JWT authentication via cookies OR Authorization header with system-level authorization.
+    JWT authentication via cookies OR Authorization header.
+    
+    ✅ NEW FEATURE: JIT (Just-In-Time) User Provisioning
+    - Automatically creates local User records on first login
+    - Updates existing records if role/department changed
+    - Ensures ForeignKey relationships work correctly
     """
     
     def authenticate(self, request):
@@ -182,12 +175,11 @@ class JWTCookieAuthentication(BaseAuthentication):
         if not token:
             auth_header = request.headers.get('Authorization')
             
-            # Fallback: Check META for HTTP_AUTHORIZATION (common in some WSGI envs)
             if not auth_header:
                 auth_header = request.META.get('HTTP_AUTHORIZATION', '')
                 
             if auth_header and auth_header.startswith('Bearer '):
-                token = auth_header[7:]  # Remove 'Bearer ' prefix
+                token = auth_header[7:]
         
         if not token:
             return None
@@ -199,9 +191,7 @@ class JWTCookieAuthentication(BaseAuthentication):
                 algorithms=['HS256']
             )
             
-            # 🔍 DEBUG: Log the full payload
             logger.info(f"🔓 JWT Payload decoded for request to {request.path}")
-            logger.debug(f"   Full payload: {payload}")
             
             # Extract user information
             user_id = payload.get('user_id')
@@ -210,15 +200,8 @@ class JWTCookieAuthentication(BaseAuthentication):
             full_name = payload.get('full_name', '')
             roles = payload.get('roles', [])
             
-            # 🔍 DEBUG: Log roles
-            logger.info(f"   User: {email}")
-            logger.info(f"   Roles in token: {roles}")
-            
             if not user_id:
                 raise AuthenticationFailed('Invalid token: missing user_id')
-            
-            if not roles:
-                logger.warning(f"⚠️ No roles found in token for user {email}")
             
             # Extract BMS-specific roles
             bms_roles = []
@@ -227,8 +210,10 @@ class JWTCookieAuthentication(BaseAuthentication):
                 if extracted:
                     bms_roles.append(extracted)
             
-            # 🔍 DEBUG: Log BMS roles
             logger.info(f"   BMS roles extracted: {bms_roles}")
+            
+            # ✅ NEW: JIT Provisioning - Create or Update User
+            db_user = self._provision_user(payload)
             
             # Create user data object
             user_data = {
@@ -244,9 +229,10 @@ class JWTCookieAuthentication(BaseAuthentication):
                 'department_id': payload.get('department_id'),
             }
             
-            user = AuthenticatedUser(user_data)
+            # ✅ NEW: Pass db_user to AuthenticatedUser
+            user = AuthenticatedUser(user_data, db_user=db_user)
             
-            # 🔍 DEBUG: Verify user has BMS access
+            # Verify BMS access
             has_bms = user.has_system_access('bms')
             logger.info(f"   ✅ Authentication successful. Has BMS access: {has_bms}")
             
@@ -263,10 +249,109 @@ class JWTCookieAuthentication(BaseAuthentication):
             logger.warning(f"❌ Invalid token: {str(e)}")
             raise AuthenticationFailed('Invalid token')
         except AuthenticationFailed:
-            raise  # Re-raise AuthenticationFailed as-is
+            raise
         except Exception as e:
             logger.error(f"❌ Authentication error: {str(e)}", exc_info=True)
             raise AuthenticationFailed('Authentication failed')
+    
+    def _provision_user(self, payload):
+        """
+        JIT Provisioning: Create or update User in local BMS database.
+        
+        This ensures ForeignKey relationships work correctly when models
+        reference User (e.g., approved_by, created_by).
+        
+        Returns: User model instance
+        """
+        from core.models import User, Department
+        
+        user_id = payload.get('user_id')
+        email = payload.get('email')
+        username = payload.get('username')
+        
+        # Extract name parts
+        full_name = payload.get('full_name', '')
+        name_parts = full_name.split(' ', 1) if full_name else ['', '']
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
+        
+        # Extract BMS role
+        roles = payload.get('roles', [])
+        bms_role = None
+        for role in roles:
+            if isinstance(role, dict) and role.get('system') == 'bms':
+                bms_role = role.get('role')
+                break
+            elif isinstance(role, str) and role.startswith('bms:'):
+                bms_role = role.split(':', 1)[1]
+                break
+        
+        # Resolve department
+        department_name = payload.get('department_name') or payload.get('department')
+        department = None
+        if department_name:
+            department = Department.objects.filter(
+                name__iexact=department_name
+            ).first() or Department.objects.filter(
+                name__icontains=department_name
+            ).first()
+        
+        # Get or Create User
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # ✅ UPDATE: Sync with latest token data
+            updated = False
+            
+            if user.email != email:
+                user.email = email
+                updated = True
+            
+            if user.username != username:
+                user.username = username
+                updated = True
+            
+            if user.first_name != first_name or user.last_name != last_name:
+                user.first_name = first_name
+                user.last_name = last_name
+                updated = True
+            
+            if bms_role and user.role != bms_role:
+                logger.info(f"🔄 Updating role for {email}: {user.role} -> {bms_role}")
+                user.role = bms_role
+                updated = True
+            
+            if department and user.department_id != department.id:
+                logger.info(f"🔄 Updating department for {email}: {user.department_name} -> {department.name}")
+                user.department_id = department.id
+                user.department_name = department.name
+                updated = True
+            
+            if updated:
+                user.save()
+                logger.info(f"✅ Updated User record for {email}")
+            
+            return user
+            
+        except User.DoesNotExist:
+            # ✅ CREATE: First time login
+            logger.info(f"🆕 Creating new User record for {email}")
+            
+            user = User.objects.create(
+                id=user_id,
+                email=email,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                role=bms_role or 'GENERAL_USER',
+                department_id=department.id if department else None,
+                department_name=department.name if department else None,
+                is_active=True,
+                is_staff=(bms_role in ['ADMIN', 'FINANCE_HEAD'])
+            )
+            
+            logger.info(f"✅ Created User record: {user.id} - {user.email} ({user.role})")
+            return user
     
     def _extract_role_if_system(self, role, system_name):
         """Safely extract role if it matches the system"""
