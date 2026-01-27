@@ -5,7 +5,7 @@ import chartStyles from './CoordinatorAdminDashboardCharts.module.css';
 import tableStyles from './CoordinatorAdminDashboardTable.module.css';
 import statCardStyles from './CoordinatorAdminDashboardStatusCards.module.css';
 import styles from './CoordinatorAdminDashboard.module.css';
-import authService from '../../../utilities/service/authService';
+import { useAuth } from '../../../context/AuthContext';
 import Skeleton from '../../../shared/components/Skeleton/Skeleton';
 import { backendTicketService } from '../../../services/backend/ticketService';
 
@@ -290,7 +290,7 @@ const TrendLineChart = ({ data, title, isTicketChart = true }) => {
 
 const CSATTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
   const navigate = useNavigate();
-  const currentUser = authService.getCurrentUser();
+  const { user: currentUser } = useAuth();
   const [csatTickets, setCSatTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 

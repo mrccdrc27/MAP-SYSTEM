@@ -5,7 +5,7 @@ import chartStyles from './CoordinatorAdminDashboardCharts.module.css';
 import tableStyles from './CoordinatorAdminDashboardTable.module.css';
 import statCardStyles from './CoordinatorAdminDashboardStatusCards.module.css';
 import styles from './CoordinatorAdminDashboard.module.css';
-import authService from '../../../utilities/service/authService';
+import { useAuth } from '../../../context/AuthContext';
 import { backendTicketService } from '../../../services/backend/ticketService';
 
 const myTicketPaths = [
@@ -306,7 +306,7 @@ const TrendLineChart = ({ data, title }) => {
 
 const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month', setPieRange }) => {
   const navigate = useNavigate();
-  const currentUser = authService.getCurrentUser();
+  const { user: currentUser } = useAuth();
   const [ticketDataState, setTicketDataState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activityTimeline, setActivityTimeline] = useState([]);
@@ -442,13 +442,13 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
       try {
         setIsLoading(true);
         
-        // Call the my-tickets endpoint which filters by ticket_owner_id
-        const response = await backendTicketService.getMyTickets();
+        // Use getOwnedTickets (workflow API) for consistency with all-tickets page
+        const response = await backendTicketService.getOwnedTickets({ pageSize: 1000 });
         
         if (!mounted) return;
         
-        // Process the response data
-        const tickets = Array.isArray(response) ? response : [];
+        // Process the response data - workflow API returns { results: [...] }
+        const tickets = Array.isArray(response) ? response : (response?.results || []);
         
         // Store raw tickets for line chart recomputation
         setRawTickets(tickets);
@@ -456,8 +456,10 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
         // Calculate priority stats
         const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
         tickets.forEach(ticket => {
-          if (ticket.priority && priorityCounts[ticket.priority] !== undefined) {
-            priorityCounts[ticket.priority]++;
+          // workflow API returns priority or priorityLevel
+          const prio = ticket.priority || ticket.priorityLevel;
+          if (prio && priorityCounts[prio] !== undefined) {
+            priorityCounts[prio]++;
           }
         });
         
@@ -482,18 +484,35 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
           'Withdrawn': 'statusWithdrawn'
         };
         
+        // Helper to mask status for display
+        const maskStatus = (status) => {
+          if (!status) return 'Unknown';
+          const lower = status.toLowerCase();
+          if (lower === 'pending') return 'Pending';
+          if (lower === 'pending_external' || lower === 'pending external') return 'In Progress';
+          if (lower === 'completed') return 'Resolved';
+          return status;
+        };
+        
         // Transform tickets to table data
-        const tableData = tickets.map(ticket => ({
-          ticketNumber: ticket.ticket_number,
-          subject: ticket.subject || 'N/A',
-          category: ticket.category || 'N/A',
-          subCategory: ticket.sub_category || 'N/A',
-          status: {
-            text: ticket.status || 'Unknown',
-            statusClass: statusClassMap[ticket.status] || 'statusNew'
-          },
-          dateCreated: ticket.submit_date ? new Date(ticket.submit_date).toLocaleString() : 'N/A'
-        }));
+        // Workflow API uses: ticket_number, subject, status, created_at (not submit_date)
+        // Use workflowName for Workflow column, currentStepName for Current Step column
+        const tableData = tickets.map(ticket => {
+          const maskedStatus = maskStatus(ticket.status);
+          return {
+            ticketNumber: ticket.ticket_number,
+            subject: ticket.subject || 'N/A',
+            category: ticket.workflowName || ticket.workflow_name || 'N/A',
+            subCategory: ticket.currentStepName || ticket.current_step_name || 'N/A',
+            status: {
+              text: maskedStatus,
+              statusClass: statusClassMap[maskedStatus] || 'statusNew'
+            },
+            dateCreated: (ticket.submit_date || ticket.created_at || ticket.dateCreated) 
+              ? new Date(ticket.submit_date || ticket.created_at || ticket.dateCreated).toLocaleString() 
+              : 'N/A'
+          };
+        });
         
         // Pie data for priority distribution
         const pieData = [
@@ -508,10 +527,13 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
         
         // Generate activity timeline from recent tickets
         const recentTickets = tickets.slice(0, 5);
-        const timeline = recentTickets.map(ticket => ({
-          time: ticket.submit_date ? new Date(ticket.submit_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-          action: `Ticket ${ticket.ticket_number} assigned to you`
-        }));
+        const timeline = recentTickets.map(ticket => {
+          const dateStr = ticket.submit_date || ticket.created_at || ticket.dateCreated;
+          return {
+            time: dateStr ? new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            action: `Ticket ${ticket.ticket_number} assigned to you`
+          };
+        });
         
         setTicketDataState({
           stats,
@@ -558,14 +580,13 @@ const MyTicketsTab = ({ chartRange = 'month', setChartRange, pieRange = 'month',
           <StatCard
             key={i}
             {...stat}
-            onClick={() => stat.path && navigate(stat.path)}
           />
         ))}
       </div>
 
       <DataTable
         title="My Assigned Tickets"
-        headers={['Ticket Number', 'Subject', 'Category', 'Sub-Category', 'Status', 'Date Created']}
+        headers={['Ticket Number', 'Subject', 'Workflow', 'Current Step', 'Status', 'Date Created']}
         data={ticketData.tableData}
         maxVisibleRows={5}
         loading={isLoading}

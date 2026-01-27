@@ -620,9 +620,10 @@ export default function AdminArchive() {
                                     <td className={styles.expandCell}>
                                       {allTasksForTicket.length > 1 && (
                                         <button
-                                          onClick={() =>
-                                            toggleTicket(mainTask.ticket_id)
-                                          }
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            toggleTicket(mainTask.ticket_id);
+                                          }}
                                           className={styles.expandButton}
                                           title={`Show all ${allTasksForTicket.length} tasks`}
                                         >
@@ -720,7 +721,8 @@ export default function AdminArchive() {
                                         <button
                                           className={styles.btn}
                                           title="Assign ticket to workflow"
-                                          onClick={() => {
+                                          onClick={(event) => {
+                                            event.stopPropagation();
                                             setSelectedTicketForAssign(mainTask);
                                             setShowAssignModal(true);
                                           }}
@@ -731,11 +733,12 @@ export default function AdminArchive() {
                                         <button
                                           className={styles.btn}
                                           title="View ticket details"
-                                          onClick={() =>
+                                          onClick={(event) => {
+                                            event.stopPropagation();
                                             navigate(
                                               `/admin/archive/${mainTask.ticket_number}`
-                                            )
-                                          }
+                                            );
+                                          }}
                                         >
                                           👁
                                         </button>

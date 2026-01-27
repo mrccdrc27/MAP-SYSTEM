@@ -1,595 +1,624 @@
 import { useState, useRef, useEffect } from 'react';
-import useScrollShrink from '../../../shared/hooks/useScrollShrink.jsx';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FiMenu, FiX } from 'react-icons/fi';
-import CoordinatorAdminNotifications, { INITIAL_NOTIFICATION_COUNT } from '../pop-ups/CoordinatorAdminNotifications';
-import styles from './CoordinatorAdminNavigationBar.module.css';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import MapLogo from '../../../shared/assets/MapLogo.png';
-import authService from '../../../utilities/service/authService';
+import CoordinatorAdminNotifications from '../pop-ups/CoordinatorAdminNotifications';
 import { useAuth } from '../../../context/AuthContext';
-import { backendEmployeeService } from '../../../services/backend/employeeService';
-import { API_CONFIG } from '../../../config/environment';
+import NavigationBar from '../../../shared/components/NavigationBar.jsx';
+import customNavStyles from './CoordinatorAdminNavigationBar.module.css';
 import { resolveMediaUrl } from '../../../utilities/helpers/mediaUrl';
 
-const ArrowDownIcon = ({ flipped }) => (
-  <svg
-    className={`${styles['arrow-icon']} ${flipped ? styles['arrow-flipped'] : ''}`}
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="var(--primary-color)"
-    strokeWidth="2"
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
+// External URLs for profile and logout
+const AUTH_FRONTEND_URL = import.meta.env.VITE_AUTH_FRONTEND_URL || 'https://login.ticketing.mapactive.tech';
+const PROFILE_URL = `${AUTH_FRONTEND_URL}/profile`;
+const LOGOUT_REDIRECT_URL = `${AUTH_FRONTEND_URL}/staff`;
 
-const NotificationIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={styles['notif-icon']} viewBox="0 0 24 24" fill="currentColor">
-    <path
-      fillRule="evenodd"
-      d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 104.496 0 25.057 25.057 0 01-4.496 0z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
+// Note: dropdown menu is moved inside `.dropdown-container` to
+// support mobile accordion rendering (dropdown-container -> dropdown-menu).
+// Mobile items are left-aligned under the trigger via CSS text-align: left !important;
+// Dropdown state (openSection, toggleSection, closeSection) is centralized in NavigationBar.jsx.
+// Mobile nav uses drawer style (slides from left with fixed 280px width).
 
 const CoordinatorAdminNavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const navRef = useRef(null);
   const { user: currentUser } = useAuth();
-  console.debug('[CoordinatorAdminNav] currentUser:', currentUser);
-  const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg'; // Default profile image matching auth frontend
-  // Use relative URL - Vite proxy will forward to helpdesk-backend
-  const BACKEND_BASE_URL = '';
-  // Inline SVG fallback used if the PNG looks wrong or fails to load
-  const FALLBACK_SVG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23007bff"/%3E%3Ctext x="50" y="55" text-anchor="middle" font-size="36" fill="%23fff"%3E%3C/tspan%3E%3C/text%3E%3C/svg%3E';
-
-  // State to hold the actual profile image URL fetched from backend
-  const [profileImageUrl, setProfileImageUrl] = useState(DEFAULT_PROFILE_IMAGE);
-
-  // Fetch current employee profile from backend to get freshest image path
-  useEffect(() => {
-    const fetchProfileImage = async () => {
-      try {
-        // First, try to get profile picture from currentUser (auth context)
-        if (currentUser?.profile_picture) {
-          const resolved = resolveMediaUrl(currentUser.profile_picture);
-          if (resolved) {
-            console.debug('[CoordinatorAdminNav] Using profile image from auth context:', resolved);
-            setProfileImageUrl(resolved);
-            return;
-          }
-        }
-
-        const token = localStorage.getItem('access_token');
-
-        if (token) {
-          // Try to fetch latest employee profile from backend
-          try {
-            const data = await backendEmployeeService.getCurrentEmployee();
-            // Server may return snake_case or camelCase keys
-            const merged = data || {};
-
-            // Resolve image URL similarly to settings page using resolveMediaUrl
-            const imgCandidate = merged.profile_image || merged.image || merged.profileImage || merged.image_url || merged.imageUrl;
-            const resolved = resolveMediaUrl(imgCandidate);
-            if (resolved) {
-              setProfileImageUrl(resolved);
-              return;
-            }
-          } catch (err) {
-            console.error('[Admin Navbar] Employee profile fetch failed:', err);
-          }
-        }
-
-        // Fallback: setProfileImageUrl stays as DEFAULT_PROFILE_IMAGE
-      } catch (err) {
-        console.error('Unexpected error fetching profile image:', err);
-      }
-    };
-
-    if (currentUser) fetchProfileImage();
-  }, [currentUser]);
-
-  // Listen for profile updates dispatched by settings or other UI
-  useEffect(() => {
-    const onProfileUpdated = (e) => {
-      console.debug('[CoordinatorAdminNav] profile:updated event', e && e.detail);
-      try {
-        const detail = e?.detail || {};
-        const eventUserId = detail.userId || detail.user_id || detail.companyId || detail.company_id || null;
-        const current = currentUser;
-        const currentId = current?.id || current?.companyId || current?.company_id || null;
-
-        // If the event is for a different user, ignore it
-        if (eventUserId && currentId && String(eventUserId) !== String(currentId)) return;
-
-        // If the event includes a resolved (and cache-busted) image URL, use it directly
-        const newImg = detail.profileImage || detail.image || detail.imageUrl || detail.profile_picture;
-        if (newImg) {
-          setProfileImageUrl(newImg);
-          return;
-        }
-      } catch (err) {
-        // fall through to re-fetch below
-      }
-
-      // Fallback: re-fetch profile from backend or context
-      const refetchProfile = async () => {
-        try {
-          // First check if currentUser has the profile picture
-          if (currentUser?.profile_picture) {
-            const resolved = resolveMediaUrl(currentUser.profile_picture);
-            if (resolved) {
-              setProfileImageUrl(resolved);
-              return;
-            }
-          }
-
-          const token = localStorage.getItem('access_token');
-          if (token) {
-            const data = await backendEmployeeService.getCurrentEmployee();
-            const imgCandidate = data?.profile_image || data?.image || data?.profileImage || data?.image_url || data?.imageUrl;
-            if (imgCandidate) {
-              const resolved = resolveMediaUrl(imgCandidate);
-              if (resolved) setProfileImageUrl(resolved);
-            }
-          }
-        } catch (err) {
-          console.warn('[CoordinatorAdminNav] failed to re-fetch profile after profile:updated', err);
-        }
-      };
-      refetchProfile();
-    };
-
-    window.addEventListener('profile:updated', onProfileUpdated);
-    return () => window.removeEventListener('profile:updated', onProfileUpdated);
-  }, [currentUser]);
-  // Helper to build full name supporting camelCase and snake_case fields
-  const getFullName = () => {
-    const u = currentUser || (() => { try { return JSON.parse(localStorage.getItem('user')||'null'); } catch { return null; } })();
-    if (!u) return '';
-    const first = u.firstName || u.first_name || u.first || '';
-    const middle = u.middleName || u.middle_name || u.middle || '';
-    const last = u.lastName || u.last_name || u.last || '';
-    return `${first}${middle ? ' ' + middle : ''} ${last}`.trim();
-  };
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const [notifCount, setNotifCount] = useState(INITIAL_NOTIFICATION_COUNT);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // temporarily set threshold to 0; debug disabled in production to avoid noisy logs
-  const scrolled = useScrollShrink(0, { debug: false });
-
-  const toggleDropdown = (key) => {
-    setOpenDropdown((prev) => (prev === key ? null : key));
-  };
-
-  const handleNavigate = (path) => {
-    // Debug log navigation attempts to help diagnose routing issues
-    // eslint-disable-next-line no-console
-    console.debug('[CoordinatorAdminNavigationBar] navigate ->', path, 'current pathname:', location.pathname);
-    // If user is already on the same pathname, force a full reload so the
-    // admin page re-initializes its data (avoids needing a manual refresh).
-    if (location.pathname === path) {
-      try {
-        window.location.href = path;
-      } catch (e) {
-        // fallback to SPA navigate if full reload is blocked
-        navigate(path);
-      }
-    } else {
-      navigate(path);
-    }
-    setOpenDropdown(null);
-    setIsMobileMenuOpen(false);
-  };
-
-  const handleLogout = async () => {
-    // Try to call the auth service logout endpoint (server should clear HttpOnly cookies)
-    try {
-      const AUTH_BASE = API_CONFIG.AUTH.BASE_URL.replace(/\/$/, '');
-      const LOGOUT_URL = `${AUTH_BASE}/api/v1/token/logout/`;
-      try {
-        await fetch(LOGOUT_URL, { method: 'POST', credentials: 'include' });
-        if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Called auth logout endpoint');
-      } catch (err) {
-        if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Auth logout endpoint call failed:', err);
-      }
-    } catch (e) {
-      if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Logout: failed to compute auth logout URL', e);
-    }
-
-    // Clear all auth-related localStorage items
-    try {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('loggedInUser');
-      localStorage.removeItem('user');
-      localStorage.removeItem('chatbotMessages');
-    } catch (e) {
-      if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Clearing localStorage failed', e);
-    }
-
-    // Attempt to clear non-HttpOnly cookies by expiring them.
-    try {
-      if (typeof document !== 'undefined') {
-        const cookies = document.cookie ? document.cookie.split(';').map(c => c.split('=')[0].trim()) : [];
-        cookies.forEach((name) => {
-          try {
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
-          } catch (e) {
-            // ignore
-          }
-        });
-      }
-    } catch (e) {
-      if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Clearing cookies failed', e);
-    }
-
-    // Dispatch auth:logout event to stop the inactivity watcher
-    try {
-      window.dispatchEvent(new CustomEvent('auth:logout'));
-      if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Dispatched auth:logout event');
-    } catch (e) {
-      if (import.meta.env.DEV) console.debug('[CoordinatorAdminNavigationBar] Failed to dispatch auth:logout', e);
-    }
-
-    setIsMobileMenuOpen(false);
-
-    // Redirect to main app landing (clear cookies/localStorage above first)
-    try {
-      // Use a hard redirect to the frontend auth landing page
-      const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001';
-      window.location.href = `${authFrontendUrl}/`;
-    } catch (e) {
-      // Fallback to SPA route if redirect is blocked
-      try {
-        navigate('/', { state: { fromLogout: true } });
-      } catch (navErr) {
-        // last resort: reload current page
-        window.location.reload();
-      }
-    }
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (navRef.current && !navRef.current.contains(e.target)) {
-        setOpenDropdown(null);
-        setIsMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Close mobile menu on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 768) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const navRef = useRef(null);
 
   // Build nav sections based on current user role
   const role = currentUser?.role;
 
-  // Normalize displayed role labels across the admin navbar
-  const getDisplayRole = (user) => {
-    if (!user) return '';
-    const raw = (user.role || (user.system_roles && user.system_roles.find(r=>r.system_slug==='hdts')?.role_name) || '').toString();
-    if (!raw) return '';
-    const normalized = raw.trim();
-    // Map backend 'Admin' to UI-facing 'System Admin'
-    if (normalized.toLowerCase() === 'admin') return 'System Admin';
-    return normalized;
+  // Define all dropdown configurations
+  const dropdowns = {
+    tickets: {
+      label: 'Ticket Management',
+      path: '/admin/ticket-management/',
+      items: [
+        ['all-tickets', 'All Tickets'],
+        ['new-tickets', 'New Tickets'],
+        ['pending-tickets', 'Pending Tickets'],
+        ['open-tickets', 'Open Tickets'],
+        ['in-progress-tickets', 'In Progress Tickets'],
+        ['on-hold-tickets', 'On Hold Tickets'],
+        ['resolved-tickets', 'Resolved Tickets'],
+        ['withdrawn-tickets', 'Withdrawn Tickets'],
+        ['closed-tickets', 'Closed Tickets'],
+        ['rejected-tickets', 'Rejected Tickets'],
+      ],
+    },
+    users: {
+      label: 'User Access',
+      path: '/admin/user-access/',
+      items: [
+        ['all-users', 'All Users'],
+        ['employees', 'Employees'],
+        ['ticket-coordinators', 'Ticket Coordinators'],
+        ['system-admins', 'System Admins'],
+        ['pending-users', 'Pending Users'],
+        ['rejected-users', 'Rejected Users'],
+      ],
+    },
+    reports: {
+      label: 'Reports',
+      path: '/admin/reports/',
+      items: [
+        ['ticket', 'Ticket Reports'],
+        ['sla-compliance', 'SLA Compliance'],
+        ['csat-performance', 'CSAT Performance'],
+      ],
+    },
+    kb: {
+      label: 'Knowledge Base',
+      path: '/admin/knowledge/',
+      items: [
+        ['articles', 'Articles'],
+        ['archived', 'Archived Articles'],
+      ],
+    },
+    kbCoordinator: {
+      label: 'Knowledge Base',
+      path: '/admin/coordinator-knowledgebase',
+      items: [
+        ['', 'Knowledge Base'],
+      ],
+    },
+    csat: {
+      label: 'CSAT',
+      path: '/admin/csat/',
+      items: [
+        ['all', 'All Ratings'],
+        ['excellent', 'Excellent Ratings'],
+        ['good', 'Good Ratings'],
+        ['neutral', 'Neutral Ratings'],
+        ['poor', 'Poor Ratings'],
+        ['very-poor', 'Very Poor Ratings'],
+      ],
+    },
+    ams: {
+      label: 'AMS',
+      path: '/admin/ams/',
+      items: [
+        ['dashboard', 'AMS Dashboard'],
+        ['tickets', 'AMS Tickets'],
+      ],
+    },
+    bms: {
+      label: 'BMS',
+      path: '/admin/bms/',
+      items: [
+        ['dashboard', 'BMS Dashboard'],
+        ['tickets', 'BMS Tickets'],
+      ],
+    },
+    integrations: {
+      label: 'Integrations',
+      path: '',
+      // group structure so dropdown shows AMS and BMS as nested sections
+      groups: [
+        {
+          key: 'ams',
+          label: 'AMS',
+          path: '/admin/ams/',
+          items: [
+            ['dashboard', 'AMS Dashboard'],
+            ['tickets', 'AMS Tickets'],
+          ],
+        },
+        {
+          key: 'bms',
+          label: 'BMS',
+          path: '/admin/bms/',
+          items: [
+            ['dashboard', 'BMS Dashboard'],
+            ['tickets', 'BMS Tickets'],
+          ],
+        },
+      ],
+    },
   };
 
-  const ticketsSection = {
-    key: 'tickets',
-    label: 'Ticket Management',
-    basePath: '/admin/ticket-management',
-    links: [
-      { label: 'All Tickets', path: '/admin/ticket-management/all-tickets' },
-      { label: 'New Tickets', path: '/admin/ticket-management/new-tickets' },
-      { label: 'Pending Tickets', path: '/admin/ticket-management/pending-tickets' },
-      { label: 'Open Tickets', path: '/admin/ticket-management/open-tickets' },
-      { label: 'In Progress Tickets', path: '/admin/ticket-management/in-progress-tickets' },
-      { label: 'On Hold Tickets', path: '/admin/ticket-management/on-hold-tickets' },
-      { label: 'Resolved Tickets', path: '/admin/ticket-management/resolved-tickets' },
-      { label: 'Withdrawn Tickets', path: '/admin/ticket-management/withdrawn-tickets' },
-      { label: 'Closed Tickets', path: '/admin/ticket-management/closed-tickets' },
-      { label: 'Rejected Tickets', path: '/admin/ticket-management/rejected-tickets' }
-    ]
+  // Helper to normalize user object for NavigationBar (expects camelCase)
+  const normalizedUser = currentUser ? {
+    ...currentUser,
+    firstName: currentUser.first_name || currentUser.firstName || '',
+    lastName: currentUser.last_name || currentUser.lastName || '',
+    profileImage: resolveMediaUrl(currentUser.profile_picture || currentUser.profileImage || currentUser.image) || 'https://i.pinimg.com/1200x/a9/a8/c8/a9a8c8258957c8c7d6fcd320e9973203.jpg',
+  } : null;
+
+  // Logout handler - clears cookies and redirects to auth frontend
+  const handleLogout = async () => {
+    try {
+      // Try to call backend logout endpoint to clear HttpOnly cookies
+      const AUTH_URL = import.meta.env.VITE_AUTH_URL || '';
+      await fetch(`${AUTH_URL}/api/v1/token/logout/`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (e) {
+      console.debug('[CoordinatorAdminNav] Logout endpoint call failed:', e);
+    }
+
+    // Clear localStorage
+    try {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('chatbotMessages');
+    } catch (e) {
+      console.debug('[CoordinatorAdminNav] Clearing localStorage failed:', e);
+    }
+
+    // Clear non-HttpOnly cookies
+    try {
+      if (typeof document !== 'undefined') {
+        const cookies = document.cookie ? document.cookie.split(';').map(c => c.split('=')[0].trim()) : [];
+        cookies.forEach((name) => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+        });
+      }
+    } catch (e) {
+      console.debug('[CoordinatorAdminNav] Clearing cookies failed:', e);
+    }
+
+    // Dispatch logout event
+    try {
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+    } catch (e) {}
+
+    // Redirect to auth frontend
+    window.location.href = LOGOUT_REDIRECT_URL;
   };
 
-  const usersSection = {
-    key: 'users',
-    label: 'User Access',
-    basePath: '/admin/user-access',
-    links: [
-      { label: 'All Users', path: '/admin/user-access/all-users' },
-      { label: 'Employees', path: '/admin/user-access/employees' },
-      { label: 'Ticket Coordinators', path: '/admin/user-access/ticket-coordinators' },
-      { label: 'System Admins', path: '/admin/user-access/system-admins' },
-      { label: 'Pending Users', path: '/admin/user-access/pending-users' },
-      { label: 'Rejected Users', path: '/admin/user-access/rejected-users' }
-    ]
+  // Build sections array for shared layout based on role
+  const buildSections = () => {
+    // Ticket Coordinator: Ticket Management, Integrations, More (Reports + KB) - My Tickets is a direct link
+    // System Admin: Ticket Management, Users, CSAT, More (Reports + KB)
+    const sectionKeys =
+      role === 'Ticket Coordinator'
+        ? ['tickets', 'integrations', 'more']
+        : role === 'System Admin' || role === 'Admin'
+        ? ['tickets', 'users', 'csat', 'more']
+        : ['tickets', 'users', 'reports', 'kb'];
+
+    return sectionKeys.map((key) => {
+      if (key === 'more') {
+        // Combine Reports and KnowledgeBase into a single 'More' section
+        const reports = dropdowns.reports.items.map(([route, label]) => ({ label, path: `${dropdowns.reports.path}${route}` }));
+        // Use coordinator KB for Ticket Coordinator, admin KB for System Admin
+        const kbItems = (role === 'Ticket Coordinator')
+          ? dropdowns.kbCoordinator.items.map(([route, label]) => ({ label, path: `${dropdowns.kbCoordinator.path}${route}` }))
+          : dropdowns.kb.items.map(([route, label]) => ({ label, path: `${dropdowns.kb.path}${route}` }));
+        return {
+          key: 'more',
+          label: 'More',
+          basePath: '',
+          links: [...reports, ...kbItems],
+        };
+      }
+
+      // Special-case integrations which uses grouped structure
+      if (key === 'integrations') {
+        const groups = dropdowns.integrations?.groups || [];
+        const links = groups.flatMap((g) => (g.items || []).map(([route, label]) => ({
+          label,
+          path: `${g.path}${route}`,
+        })));
+        return {
+          key: 'integrations',
+          label: dropdowns.integrations.label,
+          basePath: '',
+          links,
+        };
+      }
+
+      const dropdown = dropdowns[key];
+      return {
+        key,
+        label: dropdown.label,
+        basePath: dropdown.path,
+        links: (dropdown.items || []).map(([route, label]) => ({
+          label,
+          path: `${dropdown.path}${route}`,
+        })),
+      };
+    });
   };
 
-  const reportsSection = {
-    key: 'reports',
-    label: 'Reports',
-    basePath: '/admin/reports',
-    links: [
-      { label: 'Ticket Reports', path: '/admin/reports/ticket' },
-      { label: 'SLA Compliance', path: '/admin/reports/sla-compliance' },
-      { label: 'CSAT Performance', path: '/admin/reports/csat-performance' }
-    ]
-  };
+  const sections = buildSections();
 
-  const kbSection = {
-    key: 'kb',
-    label: 'Knowledge Base',
-    basePath: '/admin/knowledge',
-    links: [
-      { label: 'Articles', path: '/admin/knowledge/articles' },
-      { label: 'Archived Articles', path: '/admin/knowledge/archived' }
-    ]
-  };
+  // coordinator local hamburger control: ensure hamburger renders so
+  // mobile drawer can be opened. Default to true here so coordinator
+  // can always open the mobile nav when needed.
+  const [showHamburgerForce, setShowHamburgerForce] = useState(true);
+  const [isNarrow, setIsNarrow] = useState(false);
 
-  // Coordinator-specific KB (placeholder page for Ticket Coordinators)
-  const kbCoordinatorSection = {
-    key: 'kb-coordinator',
-    label: 'Knowledge Base',
-    basePath: '/admin/coordinator-knowledgebase',
-    links: [
-      { label: 'Knowledge Base', path: '/admin/coordinator-knowledgebase' }
-    ]
-  };
+  // track which integrations subgroup is expanded (ams or bms)
+  const [openIntegrationGroup, setOpenIntegrationGroup] = useState(null);
 
-  // CSAT section (System Admin only)
-  const csatSection = {
-    key: 'csat',
-    label: 'CSAT',
-    basePath: '/admin/csat',
-    // Provide category links for filtering CSAT
-    disableActiveBold: true, // prevent bold/active styling for this dropdown
-    links: [
-      { label: 'All Ratings', path: '/admin/csat/all' },
-      { label: 'Excellent Ratings', path: '/admin/csat/excellent' },
-      { label: 'Good Ratings', path: '/admin/csat/good' },
-      { label: 'Neutral Ratings', path: '/admin/csat/neutral' },
-      { label: 'Poor Ratings', path: '/admin/csat/poor' },
-      { label: 'Very Poor Ratings', path: '/admin/csat/very-poor' }
-    ]
-  };
+  // track which subgroup inside `More` is expanded (e.g., reports or kb)
+  const [openMoreGroup, setOpenMoreGroup] = useState(null);
 
-  const amsSection = {
-    key: 'ams',
-    label: 'AMS',
-    basePath: '/admin/ams',
-    links: [
-      { label: 'AMS Dashboard', path: '/admin/ams/dashboard' },
-      { label: 'AMS Tickets', path: '/admin/ams/tickets' }
-    ]
-  };
+  // track viewport width to distinguish desktop vs mobile behavior
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < 769);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
-  const bmsSection = {
-    key: 'bms',
-    label: 'BMS',
-    basePath: '/admin/bms',
-    links: [
-      { label: 'BMS Dashboard', path: '/admin/bms/dashboard' },
-      { label: 'BMS Tickets', path: '/admin/bms/tickets' }
-    ]
-  };
+  // Navigation content - follows same pattern as EmployeeNavigationBar
+  const navContent = ({ closeMobileMenu, toggleSection, openSection, closeSection, ChevronIcon, mergedStyles, onNavigate }) => {
+    // navContent render helpers
+    const renderDropdownMenu = (key) => {
+      // Special-case the virtual 'more' dropdown which combines reports and coordinator KB
+      if (key === 'more') {
+          // Build groups based on role
+          let groups = [];
+          let kbItems = [];
+          
+          if (role === 'Ticket Coordinator') {
+            // Ticket Coordinator: Reports (with submenu) and Knowledge Base items (as direct links)
+            groups = [
+              { key: 'reports', label: 'Reports', path: dropdowns.reports.path, items: dropdowns.reports.items },
+            ];
+            kbItems = dropdowns.kbCoordinator.items.map(([route, label]) => ({
+              route,
+              label,
+              path: `${dropdowns.kbCoordinator.path}${route}`,
+              isDirectLink: true,
+            }));
+          } else if (role === 'System Admin' || role === 'Admin') {
+            // System Admin: Reports (with submenu) and Knowledge Base (with submenu)
+            groups = [
+              { key: 'reports', label: 'Reports', path: dropdowns.reports.path, items: dropdowns.reports.items },
+              { key: 'kb', label: 'Knowledge Base', path: dropdowns.kb.path, items: dropdowns.kb.items },
+            ];
+          }
 
-  const ownedTicketsSection = {
-    key: 'owned-tickets',
-    label: 'Owned Tickets',
-    basePath: '/admin/owned-tickets',
-    links: [
-      { label: 'My Tickets', path: '/admin/owned-tickets' }
-    ]
-  };
+          const isInPath = groups.some((g) => g.items.some(([route]) => location.pathname === `${g.path}${route}` || location.pathname.startsWith(`${g.path}${route}`))) ||
+                          kbItems.some((item) => location.pathname === item.path || location.pathname.startsWith(item.path));
+          const isOpen = openSection === 'more';
 
-  // Assigned Tickets section (System Admin only - to manage all assigned tickets)
-  const assignedTicketsSection = {
-    key: 'assigned-tickets',
-    label: 'Assigned Tickets',
-    basePath: '/admin/assigned-tickets',
-    links: [
-      { label: 'All Assigned Tickets', path: '/admin/assigned-tickets' }
-    ]
-  };
-
-  // Role-based section composition
-  let navSections = [];
-  if (role === 'Ticket Coordinator') {
-    // Ticket coordinator: Ticket Management, Owned Tickets, AMS, BMS, Reports
-    // Use coordinator-specific Knowledge Base placeholder
-    navSections = [ticketsSection, ownedTicketsSection, amsSection, bmsSection, reportsSection, kbCoordinatorSection];
-  } else if (role === 'System Admin') {
-    // System Admin: Dashboard (all), Ticket Management (view-only), User Access, Reports, KB, CSAT
-    // NOTE: Assigned Tickets should be hidden for System Admins per requirements.
-    navSections = [ticketsSection, usersSection, reportsSection, kbSection, csatSection];
-  } else {
-    // Default: show everything
-    navSections = [ticketsSection, usersSection, reportsSection, kbSection];
-  }
-
-  // If current user is a Ticket Coordinator, they should not see User Access
-  const visibleNavSections = navSections.filter(s => {
-    if (s.key === 'users' && currentUser?.role === 'Ticket Coordinator') return false;
-    return true;
-  });
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev);
-    // Close any open dropdowns when toggling mobile menu
-    setOpenDropdown(null);
-  };
-
-  return (
-    <nav className={`${styles['main-nav-bar']} ${scrolled ? styles.scrolled : ''}`} ref={navRef}>
-      {/* Logo & Brand (Desktop: Left, Mobile: Right) */}
-      <section className={styles['logo-placeholder']}>
-        <img src={MapLogo} alt="SmartSupport Logo" className={styles['logo-image']} />
-        <div className={styles['brand-wrapper']}>
-          <span className={styles['brand-name']}>SmartSupport</span>
-        </div>
-      </section>
-
-      {/* Navigation Links (Desktop: Middle, Mobile: Sidebar) */}
-      <section>
-        <ul className={`${styles['nav-list']} ${isMobileMenuOpen ? styles.open : ''}`}>
-          {/* Mobile Profile Section - Shows at top of mobile menu */}
-          <li className={styles['mobile-profile-section']}>
-            <div className={styles['profile-avatar-large']}>
-              <img 
-                src={profileImageUrl} 
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_PROFILE_IMAGE; }}
-                alt="Profile" 
-                className={styles['avatar-image']} 
-              />
-            </div>
-            <div className={styles['mobile-profile-info']}>
-              <h3>{getFullName()}</h3>
-              <div className={styles['mobile-profile-actions']}>
-                <button 
-                  className={styles['mobile-settings-btn']}
-                  onClick={() => { const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001'; window.location.href = `${authFrontendUrl}/profile`; }}
-                >
-                  Settings
-                </button>
+          return (
+            <li key="more" data-open={isOpen ? 'true' : 'false'} data-current={isInPath ? 'true' : 'false'} data-section="more" className={mergedStyles['nav-item']}>
+              <div className={`${mergedStyles['dropdown-container']} ${isOpen ? mergedStyles['open'] : ''} ${isInPath ? mergedStyles['active-link'] : ''}`} data-open={isOpen ? 'true' : 'false'} data-current={isInPath ? 'true' : 'false'}>
                 <button
-                  className={styles['mobile-logout-btn']}
-                  onClick={handleLogout}
+                  className={`${mergedStyles['dropdown-trigger']}`}
+                  aria-expanded={isOpen}
+                  onClick={() => toggleSection('more')}
+                  type="button"
                 >
-                  Log Out
+                  <span className={mergedStyles['dropdown-text']}>More</span>
+                  {ChevronIcon && (
+                    <ChevronIcon className={`${mergedStyles['arrow-icon']} ${isOpen ? mergedStyles['arrow-flipped'] : ''}`} />
+                  )}
                 </button>
-              </div>
-            </div>
-          </li>
 
-          {/* Dashboard Link */}
-          <li className={styles['nav-item']}>
-            <button
-              className={`${styles['nav-link']} ${location.pathname === '/admin/dashboard' ? styles.clicked : ''}`}
-              onClick={() => handleNavigate('/admin/dashboard')}
-            >
-              Dashboard
-            </button>
-          </li>
+                {isOpen && (
+                  <div className={mergedStyles['custom-dropdown']} role="menu">
+                    <div className={mergedStyles['dropdown-menu']}>
+                      {groups.map((g) => {
+                        const groupOpen = openMoreGroup === g.key;
+                        return (
+                          <div key={g.key} style={{ padding: '6px 0' }}>
+                            <button
+                              type="button"
+                              className={mergedStyles['dropdown-menu-item']}
+                              aria-expanded={groupOpen}
+                              onClick={() => setOpenMoreGroup((prev) => (prev === g.key ? null : g.key))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', fontWeight: 600, padding: '8px 16px', background: 'transparent' }}
+                            >
+                              <span>{g.label}</span>
+                              {ChevronIcon && (<ChevronIcon className={`${mergedStyles['arrow-icon']} ${groupOpen ? mergedStyles['arrow-flipped'] : ''}`} />)}
+                            </button>
 
-          {/* Navigation Sections with Dropdowns */}
-          {navSections.map(({ key, label, links, basePath, disableActiveBold }) => {
-            const isActiveSection = basePath && location.pathname.startsWith(basePath);
-            const activeClass = isActiveSection && !disableActiveBold ? styles.clicked : '';
-            return (
-              <li
-                key={key}
-                className={`${styles['dropdown-container']} ${openDropdown === key ? styles['open'] : ''}`}
-              >
-                <div
-                  className={`${styles['dropdown-trigger']} ${activeClass}`}
-                  onClick={() => toggleDropdown(key)}
-                >
-                  <span className={styles['dropdown-text']}>{label}</span>
-                  <ArrowDownIcon flipped={openDropdown === key} />
-                </div>
-                {openDropdown === key && (
-                  <div className={styles['custom-dropdown']}>
-                    <div className={styles['dropdown-menu']}>
-                      {links.map(({ label, path }) => (
-                        <button
-                          key={path}
-                          onClick={() => handleNavigate(path)}
-                          className={location.pathname === path ? styles.clicked : ''}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                            {groupOpen && (
+                              <div style={{ paddingLeft: 12 }}>
+                                {g.items.map(([route, label], index) => {
+                                  const itemPath = `${g.path}${route}`;
+                                  const isCurrentItem = location.pathname === itemPath;
+                                  return (
+                                    <button
+                                      key={g.key + route + index}
+                                      role="menuitem"
+                                      data-current={isCurrentItem ? 'true' : 'false'}
+                                      className={mergedStyles['dropdown-menu-item']}
+                                        onClick={() => {
+                                        closeSection();
+                                        closeMobileMenu();
+                                        setOpenMoreGroup(null);
+                                        if (typeof onNavigate === 'function') onNavigate(itemPath);
+                                      }}
+                                      style={{ animationDelay: `${index * 0.05}s` }}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Knowledge Base as direct link items (no chevron/group) */}
+                      {kbItems.map((item, index) => {
+                        const isCurrentItem = location.pathname === item.path;
+                        return (
+                          <button
+                            key={`kb-${item.route}-${index}`}
+                            role="menuitem"
+                            data-current={isCurrentItem ? 'true' : 'false'}
+                            className={mergedStyles['dropdown-menu-item']}
+                            onClick={() => {
+                              closeSection();
+                              closeMobileMenu();
+                              if (typeof onNavigate === 'function') onNavigate(item.path);
+                            }}
+                            style={{ animationDelay: `${(groups[0]?.items?.length || 0 + index) * 0.05}s` }}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
-              </li>
-            );
-          })}
+              </div>
+            </li>
+          );
+      }
 
+      // Special-case the `integrations` dropdown to render nested AMS/BMS with chevrons
+      if (key === 'integrations') {
+        const groups = dropdowns.integrations.groups || [];
+        const isInPath = groups.some((g) => g.items.some(([route]) => location.pathname === `${g.path}${route}` || location.pathname.startsWith(`${g.path}${route}`)));
+        const isOpen = openSection === 'integrations';
 
-        </ul>
-      </section>
+        return (
+          <li key="integrations" data-open={isOpen ? 'true' : 'false'} data-current={isInPath ? 'true' : 'false'} data-section="integrations" className={mergedStyles['nav-item']}>
+            <div className={`${mergedStyles['dropdown-container']} ${isOpen ? mergedStyles['open'] : ''} ${isInPath ? mergedStyles['active-link'] : ''}`} data-open={isOpen ? 'true' : 'false'} data-current={isInPath ? 'true' : 'false'}>
+              <button
+                className={`${mergedStyles['dropdown-trigger']}`}
+                aria-expanded={isOpen}
+                onClick={() => toggleSection('integrations')}
+                type="button"
+              >
+                <span className={mergedStyles['dropdown-text']}>Integrations</span>
+                {ChevronIcon && (
+                  <ChevronIcon className={`${mergedStyles['arrow-icon']} ${isOpen ? mergedStyles['arrow-flipped'] : ''}`} />
+                )}
+              </button>
 
-      {/* Right Section: Notifications & Profile (Desktop Only) */}
-      <section className={styles['nav-right-section']}>
-        {/* Hamburger on the right for mobile */}
-        <button
-          className={`${styles.hamburgerBtn} ${isMobileMenuOpen ? styles.open : ''}`}
-          onClick={toggleMobileMenu}
-          aria-expanded={isMobileMenuOpen}
-          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-        >
-          {isMobileMenuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
-        </button>
+              {isOpen && (
+                <div className={mergedStyles['custom-dropdown']} role="menu">
+                  <div className={mergedStyles['dropdown-menu']}>
+                    {groups.map((g) => {
+                      const groupOpen = openIntegrationGroup === g.key;
+                      return (
+                        <div key={g.key} style={{ padding: '6px 0' }}>
+                          <button
+                            type="button"
+                            className={mergedStyles['dropdown-menu-item']}
+                            aria-expanded={groupOpen}
+                            onClick={() => setOpenIntegrationGroup((prev) => (prev === g.key ? null : g.key))}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', fontWeight: 600, padding: '8px 16px', background: 'transparent' }}
+                          >
+                            <span>{g.label}</span>
+                            {ChevronIcon && (<ChevronIcon className={`${mergedStyles['arrow-icon']} ${groupOpen ? mergedStyles['arrow-flipped'] : ''}`} />)}
+                          </button>
 
-        <div
-          className={`${styles['notification-icon-container']} ${
-            openDropdown === 'notifications' ? styles['open'] : ''
-          }`}
-        >
+                          {groupOpen && (
+                            <div style={{ paddingLeft: 12 }}>
+                              {g.items.map(([route, label], index) => {
+                                const itemPath = `${g.path}${route}`;
+                                const isCurrentItem = location.pathname === itemPath;
+                                return (
+                                  <button
+                                    key={g.key + route + index}
+                                    role="menuitem"
+                                    data-current={isCurrentItem ? 'true' : 'false'}
+                                    className={mergedStyles['dropdown-menu-item']}
+                                    onClick={() => {
+                                      closeSection();
+                                      closeMobileMenu();
+                                      setOpenIntegrationGroup(null);
+                                      if (typeof onNavigate === 'function') onNavigate(itemPath);
+                                    }}
+                                    style={{ animationDelay: `${index * 0.05}s` }}
+                                  >
+                                    {label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </li>
+        );
+      }
+
+      const dropdown = dropdowns[key];
+      if (!dropdown) return null;
+
+      const isInPath = dropdown.items.some(([route]) => {
+        const itemPath = `${dropdown.path}${route}`;
+        return location.pathname === itemPath || location.pathname.startsWith(itemPath.replace(/\/$/, ''));
+      });
+      const isOpen = openSection === key;
+
+      return (
+                    <li key={key} data-open={isOpen ? 'true' : 'false'} data-current={isInPath ? 'true' : 'false'} data-section={key} className={mergedStyles['nav-item']}>
           <div
-            className={styles['notification-icon-wrapper']}
-            onClick={() => toggleDropdown('notifications')}
+            className={`${mergedStyles['dropdown-container']} ${isOpen ? mergedStyles['open'] : ''} ${isInPath ? mergedStyles['active-link'] : ''}`}
+            data-open={isOpen ? 'true' : 'false'}
+            data-current={isInPath ? 'true' : 'false'}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => ['Enter', ' '].includes(e.key) && toggleDropdown('notifications')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleSection(key);
+              }
+            }}
           >
-            <NotificationIcon />
-            {notifCount > 0 && (
-              <span className={styles['notification-badge']}>{notifCount}</span>
+                    <button
+                      className={`${mergedStyles['dropdown-trigger']}`}
+                      aria-expanded={isOpen}
+                      onClick={() => toggleSection(key)}
+                      type="button"
+                    >
+                      <span className={mergedStyles['dropdown-text']}>{dropdown.label}</span>
+                      {ChevronIcon && (
+                        <ChevronIcon
+                          className={`${mergedStyles['arrow-icon']} ${isOpen ? mergedStyles['arrow-flipped'] : ''}`}
+                        />
+                      )}
+                    </button>
+
+            {isOpen && (
+              <div
+                className={mergedStyles['custom-dropdown']}
+                role="menu"
+              >
+                <div className={mergedStyles['dropdown-menu']}>
+                  {dropdown.items.map(([route, label], index) => {
+                    const itemPath = `${dropdown.path}${route}`;
+                    const isCurrentItem = location.pathname === itemPath;
+                    return (
+                      <button
+                        key={route || label}
+                        role="menuitem"
+                        data-current={isCurrentItem ? 'true' : 'false'}
+                        className={mergedStyles['dropdown-menu-item']}
+                        onClick={() => {
+                          closeSection();
+                          closeMobileMenu();
+                          if (typeof onNavigate === 'function') onNavigate(itemPath);
+                        }}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
-          {openDropdown === 'notifications' && (
-            <CoordinatorAdminNotifications
-              show={openDropdown === 'notifications'}
-              onClose={() => setOpenDropdown(null)}
-              onCountChange={setNotifCount}
-            />
-          )}
-        </div>
+        </li>
+      );
+    };
 
-        <div className={styles['profile-container']}>
-          <div className={styles['profile-avatar']} onClick={() => toggleDropdown('profile')}>
-            <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_PROFILE_IMAGE; }} />
-          </div>
-          {openDropdown === 'profile' && (
-            <div className={styles['profile-dropdown']}>
-              <div className={styles['profile-header']}>
-                <div className={styles['profile-avatar-large']}>
-                  <img src={profileImageUrl} alt="Profile" className={styles['avatar-image']} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_PROFILE_IMAGE; }} />
-                </div>
-                <div className={styles['profile-info']}>
-                  <h3>{getFullName()}</h3>
-                </div>
-              </div>
-              <div className={styles['profile-menu']}>
-                <button onClick={() => { const authFrontendUrl = import.meta.env.VITE_AUTH_FRONTEND_URL || 'http://localhost:3001'; window.location.href = `${authFrontendUrl}/profile`; }}>Settings</button>
-                <button className={styles['logout-btn']} onClick={handleLogout}>Log Out</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-    </nav>
+    // Determine which dropdown keys to render based on role
+    // Note: myTickets is rendered as a direct link after tickets dropdown
+    // Order: Dashboard, Ticket Management, My Tickets, Integrations, More
+    const dropdownKeysBeforeMyTickets =
+      role === 'Ticket Coordinator'
+        ? ['tickets']
+        : role === 'System Admin' || role === 'Admin'
+        ? ['tickets', 'users', 'csat', 'more']
+        : ['tickets', 'users', 'reports', 'kb'];
+
+    const dropdownKeysAfterMyTickets =
+      role === 'Ticket Coordinator'
+        ? ['integrations', 'more']
+        : [];
+
+    return (
+      <>
+        {/* Dashboard Link */}
+        <li data-section="dashboard" className={mergedStyles['nav-item']}>
+          <NavLink
+            to="/admin/dashboard"
+            className={({ isActive }) => `${mergedStyles['nav-link']} ${isActive ? mergedStyles['active-link'] : ''}`}
+            onClick={() => closeMobileMenu()}
+          >
+            Dashboard
+          </NavLink>
+        </li>
+
+        {/* Render dropdown menus before My Tickets */}
+        {dropdownKeysBeforeMyTickets.map((key) => renderDropdownMenu(key))}
+
+        {/* My Tickets - Direct link for Ticket Coordinators (no dropdown) */}
+        {role === 'Ticket Coordinator' && (
+          <li data-section="myTickets" className={mergedStyles['nav-item']}>
+            <NavLink
+              to="/admin/owned-tickets"
+              className={({ isActive }) => `${mergedStyles['nav-link']} ${isActive ? mergedStyles['active-link'] : ''}`}
+              onClick={() => closeMobileMenu()}
+            >
+              My Tickets
+            </NavLink>
+          </li>
+        )}
+
+        {/* Render dropdown menus after My Tickets (Integrations, More) */}
+        {dropdownKeysAfterMyTickets.map((key) => renderDropdownMenu(key))}
+      </>
+    );
+  };
+
+  // Custom onNavigate that handles external URLs
+  const handleNavigate = (path) => {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      window.location.href = path;
+    } else {
+      navigate(path);
+    }
+  };
+
+  return (
+    <NavigationBar
+      logoImage={MapLogo}
+      brandName="SmartSupport"
+      homePath="/admin/dashboard"
+      logoPath="/admin/dashboard"
+      brandPath="/admin/dashboard"
+      onNavigate={handleNavigate}
+      showHamburgerForce={true}
+      customNavStyles={customNavStyles}
+      navContent={navContent}
+      navRole="coordinator"
+      compactOverride={true}
+      sections={sections}
+      NotificationDropdown={CoordinatorAdminNotifications}
+      notificationProps={{}}
+      currentUser={normalizedUser}
+      profileSettingsPath={PROFILE_URL}
+      profileLogoutPath={LOGOUT_REDIRECT_URL}
+      onLogout={handleLogout}
+      forceFixed={true}
+      navRef={navRef}
+    />
   );
 };
 

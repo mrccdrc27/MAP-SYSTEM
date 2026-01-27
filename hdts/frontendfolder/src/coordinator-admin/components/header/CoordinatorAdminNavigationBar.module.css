@@ -649,3 +649,152 @@
     height: 40px;
   }
 }
+
+/* === Coordinator-specific compact font sizing (matches frontendfolder) === */
+/* Small helper for font sizing inside coordinator nav */
+:global(nav[data-nav-role="coordinator"]) .nav-center {
+  --nav-item-font-size: 0.72rem;
+}
+
+/* Desktop nav-list styles from shared NavigationBar */
+:global(nav[data-nav-role="coordinator"]) .nav-list {
+  display: flex;
+  flex-direction: row;
+  list-style: none;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+:global(nav[data-nav-role="coordinator"]) .nav-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: var(--section-fixed-width, auto);
+  justify-content: center;
+  height: 100%;
+  font-size: var(--nav-item-font-size);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+:global(nav[data-nav-role="coordinator"]) .nav-link {
+  text-decoration: none;
+  color: var(--text-color);
+  font-size: var(--nav-item-font-size);
+  padding: 3px 4px;
+  line-height: 1;
+  transition: color 0.16s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+:global(nav[data-nav-role="coordinator"]) .nav-link:hover,
+:global(nav[data-nav-role="coordinator"]) .dropdown-trigger:hover {
+  color: var(--primary-color, #0056B3);
+  text-decoration: none;
+}
+
+:global(nav[data-nav-role="coordinator"]) .nav-link.active-link,
+:global(nav[data-nav-role="coordinator"]) .dropdown-trigger.active-link {
+  color: #0056B3;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* When dropdown is opened */
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-open="true"] .dropdown-trigger,
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-open="true"] .dropdown-text,
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-open="true"] .arrow-icon {
+  color: var(--primary-color, #0056B3);
+  font-weight: 400 !important;
+}
+
+/* When dropdown is in active path (current page) */
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-current="true"] .dropdown-trigger,
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-current="true"] .dropdown-text,
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-current="true"] .arrow-icon {
+  color: #0056B3;
+  font-weight: 600;
+}
+
+/* Ensure chevron is dark blue when dropdown is active */
+:global(nav[data-nav-role="coordinator"]) .dropdown-container[data-current="true"] .arrow-icon {
+  color: #0056B3 !important;
+  stroke: #0056B3 !important;
+}
+
+/* Dropdown container */
+:global(nav[data-nav-role="coordinator"]) .dropdown-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--text-color);
+  width: var(--section-fixed-width, auto);
+  justify-content: center;
+  height: 100%;
+}
+
+:global(nav[data-nav-role="coordinator"]) .dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: var(--nav-item-font-size);
+  padding: 3px 4px;
+  line-height: 1;
+  color: inherit;
+  transition: color 0.16s ease;
+  background: none;
+  border: none;
+  font-family: inherit;
+  height: 100%;
+}
+
+:global(nav[data-nav-role="coordinator"]) .dropdown-text {
+  white-space: nowrap;
+  display: inline-block;
+  text-align: center;
+  font-size: inherit;
+  min-width: 0;
+}
+
+:global(nav[data-nav-role="coordinator"]) .arrow-icon {
+  transition: transform 0.2s ease, color 0.2s ease, stroke 0.2s ease;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Smaller logo and brand for coordinator */
+:global(nav[data-nav-role="coordinator"]) .logo-image {
+  width: 32px;
+  height: 32px;
+}
+
+:global(nav[data-nav-role="coordinator"]) .brand-name {
+  font-size: 1rem;
+}
+
+/* Smaller avatar for coordinator */
+:global(nav[data-nav-role="coordinator"]) .avatar-image,
+:global(nav[data-nav-role="coordinator"]) .avatar-placeholder {
+  width: 30px;
+  height: 30px;
+}
+
+/* Smaller notification icon for coordinator */
+:global(nav[data-nav-role="coordinator"]) .notif-icon {
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+}

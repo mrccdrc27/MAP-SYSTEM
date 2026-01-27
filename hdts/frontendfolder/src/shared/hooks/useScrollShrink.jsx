@@ -75,7 +75,11 @@ export default function useScrollShrink(threshold = 10, { debug = false } = {}) 
       // choose the largest scrollTop among containers as heuristic
       const tops = containers.map(getScrollTop);
       const maxTop = Math.max(...tops, 0);
-      const next = maxTop > threshold;
+      // If caller explicitly passes threshold === 0 we treat that as
+      // an instruction to consider the nav "scrolled" even when maxTop === 0.
+      // Otherwise use the threshold comparison.
+      const t = Number(threshold);
+      const next = (t === 0) ? true : (maxTop > t);
       if (debug) {
         const detailed = containers.map((c, i) => ({
           name: (c === window ? 'window' : (c.id ? `#${c.id}` : (c.className ? `.${String(c.className).split(' ')[0]}` : c.tagName || 'element'))),

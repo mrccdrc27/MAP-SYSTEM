@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get(ME_URL);
       
       if (response.status === 200 && response.data.type && response.data.data) {
-        const userType = response.data.type; // 'user' or 'employee'
+        const userType = response.data.type; // 'staff' or 'employee'
         const profileData = response.data.data;
         
         // Extract role for HDTS system
@@ -156,7 +156,8 @@ export const AuthProvider = ({ children }) => {
         
         if (userType === 'employee') {
           hdtsRole = 'Employee';
-        } else if (userType === 'user') {
+        } else if (userType === 'staff' || userType === 'user') {
+          // Staff users have system_roles array with their HDTS role
           if (profileData && Array.isArray(profileData.system_roles)) {
             const hdts = profileData.system_roles.find(r => r.system_slug === "hdts");
             if (hdts) {

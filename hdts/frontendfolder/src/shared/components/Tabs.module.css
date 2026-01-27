@@ -6,127 +6,151 @@
 .tabList {
   display: flex;
   width: 100%;
-  /* subtle divider that matches card borders */
-  border-bottom: 1px solid rgba(15,23,42,0.04);
-  background: transparent; /* let the parent card background show through */
+  justify-content: flex-start;
+  color: var(--primary-color);
+  border-bottom: none;
+  background: transparent;
   gap: 0;
   align-items: stretch;
   box-sizing: border-box;
-  position: relative; /* ensure stacking context */
-  z-index: 1100; /* sit above common navbars/overlays so tabs remain clickable */
+  position: relative;
+  z-index: 1100;
+}
+
+/* Full-width bottom line - continuous gray line across all tabs */
+.tabList::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--tabs-divider, #e5e7eb);
+  z-index: 1095;
 }
 
 .tab {
-    /* Make tabs evenly distribute across the available width. Each tab will
-      take an equal share (flex:1) and may shrink when space is constrained. */
-    flex: 1 1 0;
-    box-sizing: border-box;
-    min-width: 0; /* allow flex items to shrink below content width when necessary */
-    max-width: none;
-  padding: 12px 0 16px 0; /* extra bottom padding so indicator doesn't overlap text */
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  padding: 12px 24px 14px;
   background: none;
   border: none;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #6b7280;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #9ca3af;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: color 0.15s ease, background 0.15s ease, border-bottom 0.15s ease;
+  transition: color 0.2s ease, font-weight 0.2s ease;
   outline: none;
   text-align: center;
   position: relative;
-  z-index: 1110; /* above the tabList to ensure the button surface is clickable */
-  pointer-events: auto; /* ensure clicks land on buttons */
+  z-index: 1110;
+  pointer-events: auto;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tab:hover {
-  /* Hover uses a subtle gray tint to match the page background and keep the label prominent */
-  color: var(--primary-color-strong, #1e40af);
-  background: rgba(0,0,0,0.06); /* subtle gray tint (6% black over white -> soft gray) */
+  color: var(--primary-color, #2563eb);
 }
 
 .activeTab {
-  color: #2563eb;
-  border-bottom: 3px solid #2563eb;
-  background: transparent;
-  font-weight: 800;
+  color: var(--primary-color, #2563eb);
+  font-weight: 700;
 }
 
-/* Slightly stronger background when hovering an already active tab, keep underline visible */
+.tabLabel {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0;
+  color: inherit;
+}
+
+/* Active tab indicator placed under the label so it matches text width */
+.tabLabel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* move down from the label baseline so it sits exactly on the tabList divider */
+  bottom: -14px;
+  height: 2px;
+  background: var(--primary-color, #2563eb);
+  border-radius: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.18s ease, opacity 0.12s ease;
+  opacity: 0;
+  z-index: 1110; /* sit above the full-width divider */
+}
+
+/* Show indicator on active tab with animation (target label pseudo) */
+.activeTab .tabLabel::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+/* Active and hover label color */
+.activeTab .tabLabel,
+.tab:hover .tabLabel {
+  color: var(--primary-color, #2563eb);
+}
+
+/* Remove background hover on active tab */
 .activeTab:hover {
-  background: rgba(0,0,0,0.08);
+  background: transparent;
 }
 
-/* Visible focus for keyboard users */
 .tab:focus {
-  /* Remove default outline on click so we don't get lines at top/around the button */
   outline: none;
 }
 
-/* Only show a subtle bottom-focused indicator for keyboard users */
 .tab:focus-visible {
-  box-shadow: inset 0 -3px 0 rgba(37,99,235,0.18);
+  box-shadow: inset 0 -2px 0 var(--primary-focus-shadow, rgba(37,99,235,0.3));
 }
 
 .tabContent {
-  padding: 18px 0 0 0;
+  padding: 24px 0 0 0;
   width: 100%;
 }
 
-/* Single-tab behavior: when there's only one tab, don't stretch it full-width.
-   Center the tab and give it a reasonable min/max width so it looks like
-   a single control rather than an entire bar. */
-/* Single-tab behavior: when there's only one tab, keep it compact and left-aligned */
-.tabList > .tab:only-child,
-.tabList > button:only-child {
-  display: inline-flex;
-  flex: 0 0 auto;
-  margin-left: 0; /* left-align single tab */
-  padding: 12px 24px;
-  min-width: 120px;
-  max-width: 480px;
-  align-self: flex-start;
+/* First tab flush with left edge - remove left padding completely */
+.tabList > .tab:first-child,
+.tabList > button:first-child {
+  padding-left: 0;
 }
 
-/* When tab panels should fill the available vertical space (useful for layouts
-   where the right column should stretch and allow inner panels to scroll),
-   apply the fullHeight modifier. */
+/* Make sure the first tab's text starts at the very left */
+.tabList > .tab:first-child .tabLabel,
+.tabList > button:first-child .tabLabel {
+  margin-left: 0;
+  padding-left: 0;
+}
+
 .fullHeight {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: 0; /* allow children with overflow to work correctly */
+  min-height: 0;
 }
 
 /* Responsive behavior */
 @media (max-width: 640px) {
   .tabList {
-    gap: 0.5rem;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px;
   }
 
-  /* Single-tab adjustments on small screens */
-  .tabList > .tab:only-child,
-  .tabList > button:only-child {
-    flex: 0 0 calc(var(--tab-default-width) * 0.9);
-    margin-left: 0; /* single tab stays left on small screens too */
-    padding: 10px 18px;
-    min-width: 120px;
-    align-self: flex-start;
-  }
-
-  /* On small screens we allow horizontal scrolling but keep tabs visually consistent.
-     Each tab will still try to take equal width but can shrink to fit within the scroll area. */
   .tab {
-    /* On small screens allow tabs to shrink but keep even distribution when possible */
-    flex: 1 1 0;
-    padding: 10px 14px;
-    white-space: nowrap;
-    min-width: 100px;
+    padding: 10px 16px;
+    font-size: 0.875rem;
+  }
+  
+  .tabList > .tab:first-child,
+  .tabList > button:first-child {
+    padding-left: 0;
+  }
+
+  /* mobile: tab bottom padding reduced, so adjust indicator offset */
+  .tabLabel::after {
+    bottom: -10px;
   }
 }

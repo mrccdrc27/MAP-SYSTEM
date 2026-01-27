@@ -58,7 +58,7 @@ const formatDateOnly = (date) => {
   try {
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return String(date);
-    return d.toLocaleDateString();
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   } catch (e) {
     return String(date);
   }
@@ -69,11 +69,45 @@ const formatMoney = (amount) => {
   const n = Number(amount);
   if (Number.isNaN(n)) return String(amount);
   try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(n);
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   } catch (e) {
     return n.toFixed(2);
   }
 };
+
+// Map department short codes to display names (match `BudgetProposalForm.jsx` options)
+const departmentLabelMap = {
+  'MERCH': 'Merchandising',
+  'SALES': 'Sales & Store Operations',
+  'MKT': 'Marketing',
+  'OPS': 'Operations',
+  'IT': 'IT Application & Data',
+  'LOG': 'Logistics',
+  'HR': 'Human Resources',
+  'FIN': 'Finance'
+};
+
+const subCategoryLabelMap = {
+  'CAPEX': 'Capital Expenses',
+  'OPEX': 'Operational Expenses'
+};
+
+// Fiscal year options (should match `BudgetProposalForm.jsx`)
+const fiscalYearOptions = [
+  { value: 4, label: 'FY 2026' },
+  { value: 3, label: 'FY 2025' },
+  { value: 2, label: 'FY 2024' }
+];
+
+// Account options mapping (use BMS accounts later)
+const accountOptions = [
+  { value: 10, label: '6100 - IT Operations' },
+  { value: 11, label: '6200 - Office Supplies' },
+  { value: 12, label: '6300 - Professional Services' },
+  { value: 13, label: '6400 - Travel & Expenses' },
+  { value: 14, label: '6500 - Hardware Purchases' },
+  { value: 15, label: '6600 - Software Subscriptions' }
+];
 
 // Build a simple activity log list from multiple possible payload shapes.
 const generateLogs = (ticket) => {
@@ -655,9 +689,21 @@ export default function CoordinatorAdminTicketTracker() {
 
   }
 
-  // Budget proposal normalization
-  const preparedByField = ticket.preparedBy || ticket.prepared_by || ticket.preparedByName || dyn.preparedBy || dyn.prepared_by || null;
-  const totalBudgetField = (ticket.totalBudget ?? ticket.total_budget) ?? (dyn.totalBudget ?? dyn.total_budget ?? null);
+  // Budget proposal normalization - extract fields similar to EmployeeTicketTracker
+  const getDyn = (keys) => {
+    for (const k of keys) {
+      if (dyn && Object.prototype.hasOwnProperty.call(dyn, k) && (dyn[k] !== null && dyn[k] !== undefined && dyn[k] !== '')) return dyn[k];
+    }
+    return null;
+  };
+  const performanceStartField = ticket.performanceStartDate || ticket.performance_start_date || ticket.performanceStart || getDyn(['performanceStartDate', 'performance_start_date', 'performanceStart']) || null;
+  const performanceEndField = ticket.performanceEndDate || ticket.performance_end_date || ticket.performanceEnd || getDyn(['performanceEndDate', 'performance_end_date', 'performanceEnd']) || null;
+  const totalBudgetField = (ticket.totalBudget ?? ticket.total_budget) ?? getDyn(['totalBudget', 'total_budget', 'requestedBudget', 'requested_budget', 'requested_budget_value']);
+  const budgetItemsField = ticket.budgetItems || ticket.budget_items || getDyn(['items', 'budgetItems', 'budget_items']) || [];
+  const fiscalYearField = ticket.fiscalYear || ticket.fiscal_year || getDyn(['fiscalYear', 'fiscal_year']) || null;
+  const projectSummaryField = ticket.projectSummary || ticket.project_summary || getDyn(['projectSummary', 'project_summary']) || null;
+  const projectDescriptionField = ticket.projectDescription || ticket.project_description || getDyn(['projectDescription', 'project_description']) || null;
+  const departmentInputField = ticket.department_input || ticket.departmentInput || getDyn(['department_input', 'departmentInput']) || null;
   // Compute effective status: treat New older than 24 hours as Pending for coordinator/admin view
   const rawStatus = computeEffectiveStatus(ticket) || originalStatus;
   // Mask "Pending External" as "In Progress" for display
@@ -729,7 +775,7 @@ export default function CoordinatorAdminTicketTracker() {
           root="Ticket Management"
           currentPage="Ticket Tracker"
           rootNavigatePage="/admin/ticket-management/all"
-          title={`Ticket No. ${number}`}
+          title={number}
         />
         <ViewCard>
           <div className={styles.contentGrid}>
@@ -773,7 +819,7 @@ export default function CoordinatorAdminTicketTracker() {
                         {uiCategory === 'Others' ? (
                           'None'
                         ) : (
-                          subCategory || 'None'
+                          subCategoryLabelMap[subCategory] || subCategory || 'None'
                         )}
                       </div>
                     </div>
@@ -844,12 +890,12 @@ export default function CoordinatorAdminTicketTracker() {
                         <div className={styles.categoryDetails}>Asset Details</div>
                         <div className={styles.dynamicDetailsGrid}>
                           <div className={styles.detailItem}>
-                            <div className={styles.detailLabel}>Asset Name</div>
+                            <div className={styles.detailLabel}>{category === 'Asset Check Out' ? 'Asset to Check Out' : 'Asset Name'}</div>
                             <div className={styles.detailValue}>{ticket.asset_name || ticket.assetName || 'N/A'}</div>
                           </div>
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Asset ID</div>
-                            <div className={styles.detailValue}>{ticket.asset_id || ticket.assetId || 'N/A'}</div>
+                            <div className={styles.detailValue}>{ticket.dynamic_data?.amsAssetId || ticket.ams_asset_id || ticket.asset_id || ticket.assetId || 'N/A'}</div>
                           </div>
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Serial Number</div>
@@ -887,15 +933,11 @@ export default function CoordinatorAdminTicketTracker() {
                         <div className={styles.dynamicDetailsGrid}>
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Performance Start</div>
-                            <div className={styles.detailValue}>{ticket.performanceStartDate || ticket.performance_start_date || ticket.performanceStart || 'N/A'}</div>
+                            <div className={styles.detailValue}>{performanceStartField || 'N/A'}</div>
                           </div>
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Performance End</div>
-                            <div className={styles.detailValue}>{ticket.performanceEndDate || ticket.performance_end_date || ticket.performanceEnd || 'N/A'}</div>
-                          </div>
-                          <div className={styles.detailItem}>
-                            <div className={styles.detailLabel}>Prepared By</div>
-                            <div className={styles.detailValue}>{preparedByField || 'N/A'}</div>
+                            <div className={styles.detailValue}>{performanceEndField || 'N/A'}</div>
                           </div>
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Total Budget</div>
@@ -904,17 +946,54 @@ export default function CoordinatorAdminTicketTracker() {
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Budget Items</div>
                             <div className={styles.detailValue}>
-                              {(ticket.budgetItems || ticket.budget_items || []).length > 0 ? (
-                                (ticket.budgetItems || ticket.budget_items || []).map((item, idx) => (
-                                  <div key={idx}>
-                                    {`${item.costElement || item.cost_element || item.name || 'Item'}${item.description ? ` - ${item.description}` : ''} — ${item.estimatedCost || item.estimated_cost || ''}`}
-                                  </div>
-                                ))
+                              {(budgetItemsField || []).length > 0 ? (
+                                (budgetItemsField || []).map((item, idx) => {
+                                  const name = item.costElement || item.cost_element || item.name || item.cost_element_name || 'Item';
+                                  const desc = item.description || item.desc || '';
+                                  const costVal = item.estimatedCost || item.estimated_cost || item.estimated_cost_range || item.cost || 0;
+                                  const cost = formatMoney(costVal);
+                                  const accountVal = item.account || item.account_id || item.accountId || null;
+                                  const accountMatch = accountOptions.find(a => Number(a.value) === Number(accountVal));
+                                  const accountLabel = accountMatch ? accountMatch.label : (accountVal ? String(accountVal) : '');
+                                  return (
+                                    <div key={idx}>
+                                      {`${name}${desc ? ` - ${desc}` : ''} — ${cost}${accountLabel ? ` — ${accountLabel}` : ''}`}
+                                    </div>
+                                  );
+                                })
                               ) : (
                                 'No budget items provided'
                               )}
                             </div>
                           </div>
+                          {fiscalYearField && (
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Fiscal Year</div>
+                              <div className={styles.detailValue}>{(() => {
+                                const id = typeof fiscalYearField === 'number' ? fiscalYearField : Number(fiscalYearField);
+                                const match = fiscalYearOptions.find(fy => Number(fy.value) === Number(id));
+                                return match ? match.label : fiscalYearField;
+                              })()}</div>
+                            </div>
+                          )}
+                          {departmentInputField && (
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Department Input</div>
+                              <div className={styles.detailValue}>{departmentLabelMap[departmentInputField] || departmentInputField}</div>
+                            </div>
+                          )}
+                          {projectSummaryField && (
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Project Summary</div>
+                              <div className={styles.detailValue}>{projectSummaryField}</div>
+                            </div>
+                          )}
+                          {projectDescriptionField && (
+                            <div className={styles.detailItem}>
+                              <div className={styles.detailLabel}>Project Description</div>
+                              <div className={styles.detailValue}>{projectDescriptionField}</div>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}

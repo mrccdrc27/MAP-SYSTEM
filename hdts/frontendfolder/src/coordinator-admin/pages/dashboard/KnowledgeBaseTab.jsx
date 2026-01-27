@@ -5,7 +5,7 @@ import chartStyles from './CoordinatorAdminDashboardCharts.module.css';
 import tableStyles from './CoordinatorAdminDashboardTable.module.css';
 import statCardStyles from './CoordinatorAdminDashboardStatusCards.module.css';
 import styles from './CoordinatorAdminDashboard.module.css';
-import authService from '../../../utilities/service/authService';
+import { useAuth } from '../../../context/AuthContext';
 import kbService from '../../../services/kbService';
 
 const kbFeedbackTypes = [

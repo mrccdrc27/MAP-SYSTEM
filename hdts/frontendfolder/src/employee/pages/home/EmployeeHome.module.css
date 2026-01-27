@@ -7,40 +7,50 @@
 /* === HEADER === */
 .welcomeHeader {
   font-family: 'Poppins', sans-serif;  /* H1 Typography spec: Poppins */
-  font-size: clamp(32px, 4vw, 40px);   /* H1 Typography spec: 32-40px clamp */
+  font-size: clamp(24px, 3vw, 28px);   /* Reduced from 32-40px to 24-28px */
   font-weight: 700;                     /* H1 Typography spec: Bold */
   line-height: 1.2;                     /* H1 Typography spec: 110%-120% */
   color: var(--text-color);             /* Theme color */
-  margin-bottom: 1.5rem;                /* Dashboard spacing: 24px below (matches major section spacing) */
+  margin-bottom: 1rem;                  /* Reduced from 1.5rem to 1rem */
 }
 
 .welcomeName {
   color: var(--primary-color);
 }
 
+.welcomeSubtext {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(13px, 1.2vw, 14px);
+  color: var(--secondary-text-color, #6b7280);
+  font-weight: 400;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
 /* === TOP SECTION CARDS === */
 .topSection {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr; /* Quick Actions slightly larger than Notice */
-  gap: 2rem; /* Increased gap for better breathing room */
-  margin-bottom: 2rem; /* Reduced spacing to bring Recent Tickets closer */
+  gap: 1.25rem; /* Reduced from 2rem to 1.25rem */
+  margin-bottom: 1.5rem; /* Reduced from 2rem to 1.5rem */
 }
 
 .card {
   background: white;
-  border-radius: 12px; /* Slightly more rounded for modern look */
-  padding: 32px; /* Increased padding for better content spacing */
+  border-radius: 8px; /* Reduced from 12px to 8px */
+  padding: 20px; /* Reduced from 32px to 20px */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Slightly stronger shadow */
   border: 1px solid #e5e7eb;
-  min-height: 200px; /* Ensure consistent card heights */
+  min-height: auto; /* Removed fixed height for more compact layout */
   display: flex;
   flex-direction: column;
 }
 
 .cardTitle {
-  font-size: 1.375rem; /* 22px - larger title */
+  font-size: 1.125rem; /* 18px - reduced from 22px */
   font-weight: 700; /* Bolder weight */
-  margin-bottom: 1.5rem; /* More space below title */
+  margin-bottom: 1rem; /* Reduced from 1.5rem to 1rem */
   color: #1a202c; /* Darker color for better hierarchy */
   letter-spacing: -0.025em; /* Slight letter spacing for cleaner look */
 }
@@ -49,13 +59,13 @@
 .actionGroupColumn {
   display: flex;
   flex-direction: column;
-  gap: 24px; /* Increased gap between primary and secondary buttons */
+  gap: 14px; /* Reduced from 24px to 14px */
   flex: 1; /* Take full height of card */
 }
 
 .actionGroupRow {
   display: flex;
-  gap: 20px; /* Increased gap between secondary buttons */
+  gap: 12px; /* Reduced from 20px to 12px */
   flex-wrap: wrap;
 }
 
@@ -91,18 +101,18 @@
 /* === NOTICE === */
 .noticeText {
   color: var(--secondary-text-color);
-  margin-bottom: 1.5rem; /* Increased space below intro text */
+  margin-bottom: 1rem; /* Reduced from 1.5rem to 1rem */
   line-height: 1.6;
-  font-size: 0.95rem; /* Slightly larger text */
+  font-size: 0.875rem; /* Reduced from 0.95rem to 0.875rem */
 }
 
 .workingHours {
-  color: var(--primary-color);
+  color: var(--success-color);
   font-weight: 700; /* Bolder for emphasis */
   background: rgba(var(--primary-color-rgb), 0.1);
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 2px 6px; /* Reduced padding */
+  border-radius: 4px; /* Reduced from 6px */
+  font-size: 0.875rem; /* Reduced from 0.9rem */
 }
 
 .noticeList {
@@ -111,15 +121,15 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px; /* Better spacing between list items */
+  gap: 10px; /* Reduced from 16px to 10px */
 }
 
 .noticeItem {
   color: var(--secondary-text-color);
-  padding-left: 1.25rem; /* More padding for bullet */
+  padding-left: 1rem; /* Reduced from 1.25rem */
   position: relative;
   line-height: 1.5;
-  font-size: 0.9rem;
+  font-size: 0.875rem; /* Reduced from 0.9rem */
 }
 
 .noticeItem::before {
@@ -128,24 +138,101 @@
   position: absolute;
   left: 0;
   font-weight: bold;
-  font-size: 1.2rem; /* Larger bullet */
+  font-size: 1rem; /* Reduced from 1.2rem */
   line-height: 1.2;
 }
 
 .phoneNumber {
-  color: var(--primary-color);
+  color: var(--warning-color);
   font-weight: 700; /* Bolder for emphasis */
   background: rgba(var(--primary-color-rgb), 0.1);
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 2px 6px; /* Reduced padding */
+  border-radius: 4px; /* Reduced from 6px */
+  font-size: 0.875rem; /* Reduced from 0.9rem */
+}
+
+/* Notice Card - Enhanced Styling with Red accent (scoped to .noticeCard only) */
+.noticeCard {
+  border-left: 4px solid var(--error-color) !important;
+  border-radius: 8px;
+  background: white !important;
+  padding: 20px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  position: relative;
+}
+
+.noticeCard .cardTitle {
+  color: var(--error-color);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.noticeCard .noticeText {
+  color: var(--secondary-text-color);
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+}
+
+.noticeCard .workingHours {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--success-color);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 0.9rem;
+}
+
+.noticeCard .noticeList {
+  margin: 0.75rem 0 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.noticeCard .noticeItem {
+  padding-left: 1.25rem;
+  position: relative;
+  color: var(--secondary-text-color);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+}
+
+.noticeCard .noticeItem::before {
+  content: '•';
+  color: #000000;
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.noticeCard .noticeItem strong {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.noticeCard .phoneNumber {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--warning-color);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
   font-size: 0.9rem;
 }
 
 /* === TICKET SECTION === */
 .recentTickets {
   background: white;
-  border-radius: 12px; /* Match card border radius */
-  padding: 32px; /* Match card padding */
+  border-radius: 8px; /* Reduced from 12px to match cards */
+  padding: 20px; /* Reduced from 32px to match cards */
   border: 1px solid #e5e7eb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Match card shadow */
 }
@@ -154,11 +241,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem; /* Reduced space below header */
+  margin-bottom: 0.875rem; /* Reduced from 1rem */
 }
 
 .sectionTitle {
-  font-size: 1.375rem; /* Match card title size */
+  font-size: 1.125rem; /* Reduced from 1.375rem to match card titles */
   font-weight: 700; /* Match card title weight */
   color: #1a202c; /* Match card title color */
   letter-spacing: -0.025em;
@@ -167,32 +254,34 @@
 .ticketList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem; /* Reduced gap between ticket items */
+  gap: 0.5rem; /* Reduced from 0.625rem to 0.5rem */
 }
 
 .ticketItem {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 6px;
+  padding: 16px;
   transition: all 0.2s ease;
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  border-left: 3px solid var(--primary-color);
+  gap: 12px;
+  border-left: 3px solid #f3f4f6;
 }
 
 .ticketItem:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border-color: #d1d5db;
+  border-left-color: var(--primary-color);
+  transform: translateY(-1px);
 }
 
 /* === TICKET INFO GROUP === */
 .ticketInfo {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   flex: 1;
 }
 
@@ -212,10 +301,44 @@
   color: var(--primary-color);
 }
 
-/* Align labels and values */
+/* === SUBJECT (NEW - Primary Focus) === */
+.ticketSubject {
+  font-size: 0.9375rem; /* Larger than other text */
+  font-weight: 600;
+  color: #1a202c;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+
+/* === METADATA ROW (NEW - Inline layout) === */
+.ticketMetadata {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.ticketMetadata > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ticketMetadata strong {
+  color: #374151;
+  font-weight: 500;
+}
+
+.ticketMetadata .separator {
+  color: #d1d5db;
+}
+
+/* Align labels and values - horizontal 2-column layout */
 .ticketDetailsGrid {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 2fr; /* Label on left, value on right */
   gap: 12px 20px;
 }
 
@@ -278,7 +401,24 @@
 
 /* === RESPONSIVE === */
 @media (max-width: 992px) {
-  /* PageLayout handles responsive padding - no need to override */
+  /* Make topSection stack earlier on medium screens for better readability */
+  .topSection {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  /* Ensure action buttons become full width and stack for medium screens */
+  .actionGroupRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .actionGroupRow > * {
+    width: 100%;
+  }
 }
 
 @media (max-width: 768px) {

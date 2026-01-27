@@ -20,7 +20,7 @@ const statusIcons = {
   ),
 };
 
-export default function WorkflowVisualizer2({ workflowData, ticketStatus }) {
+export default function WorkflowVisualizer2({ workflowData, ticketStatus, loading, error }) {
   // Debug logging to check node statuses
   // console.log("WorkflowVisualizer2 - workflowData:", workflowData);
   // if (workflowData?.nodes) {
@@ -29,12 +29,20 @@ export default function WorkflowVisualizer2({ workflowData, ticketStatus }) {
   //   });
   // }
 
+  if (loading) {
+    return <div className={styles.workflowLoading}>Loading visual workflow...</div>;
+  }
+
+  if (error) {
+    return <div className={styles.workflowLoading}>Failed to load workflow visualization</div>;
+  }
+
   if (
     !workflowData ||
     !Array.isArray(workflowData.nodes) ||
     workflowData.nodes.length === 0
   ) {
-    return <div className={styles.workflowLoading}>Loading visual workflow...</div>;
+    return <div className={styles.workflowLoading}>No workflow data available</div>;
   }
 
   const nodes = workflowData.nodes;

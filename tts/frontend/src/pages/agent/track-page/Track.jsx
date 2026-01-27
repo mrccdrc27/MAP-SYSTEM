@@ -39,7 +39,7 @@ export default function Track() {
 
   // state and tracker hook
   const [taskId, setTaskId] = useState(null);
-  const { tracker } = useWorkflowProgress(taskId);
+  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(taskId);
   const handleSearch = (e) => {
     e.preventDefault();
 
@@ -88,6 +88,8 @@ export default function Track() {
             notFound={notFound}
             searchTerm={searchTerm}
             tracker={tracker}
+            workflowLoading={workflowLoading}
+            workflowError={workflowError}
           />
         </section>
       </main>

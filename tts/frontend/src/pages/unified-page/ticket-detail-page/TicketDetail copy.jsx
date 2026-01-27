@@ -236,7 +236,7 @@ export default function TicketDetail() {
     }
   }, [state.ticket?.ticket_id, fetchActionLogs]);
 
-  const { tracker } = useWorkflowProgress(state.ticket?.ticket_id);
+  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(state.ticket?.ticket_id);
 
   // Helper function to get button text based on ticket state
   const getButtonText = (buttonType) => {
@@ -790,6 +790,8 @@ export default function TicketDetail() {
                     <WorkflowTracker2
                       workflowData={tracker}
                       ticketStatus={state.ticket?.status}
+                      loading={workflowLoading}
+                      error={workflowError}
                     />
                     <br />
                     <br />

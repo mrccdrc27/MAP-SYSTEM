@@ -26,17 +26,46 @@
 }
 
 /* When step 3 or 4 is active we want the container to visually match the
-   shared FormCard used before, but without an extra nested card element. */
+   shared FormCard used before, but without an extra nested card element.
+   This class applies the FormCard visual treatment and reduces the max
+   width so the look remains the same. */
 .stepContainerCard {
   background: #fff;
   box-shadow: 0 0 12px rgba(211,211,211,0.25);
   border-radius: 12px;
   border: 1px solid #d3d3d3;
   padding: 12px;
+  /* use same placement/size as .stepContainer so steps 3/4 don't change width */
   margin: 0 auto;
   max-width: 1000px;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Card visuals to apply inside the existing stepContainer without using
+   the FormCard 'formContainer' sizing. Use this to wrap step content so
+   the card appearance remains but the overall page width stays consistent. */
+.formCardVisual {
+  background: #fff;
+  box-shadow: 0 0 20px rgba(211,211,211,0.3);
+  border-radius: 25px;
+  border: 1px solid #d3d3d3;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* When the FormCard visuals are used inside the ticket submission step container,
+   remove inner padding for the actual form fields so they align with the container. */
+.stepContainer .formCardVisual .detailsForm {
+  padding: 0;
+}
+
+/* Also remove inner padding when using the stepContainerCard variant
+   so form fields align flush with the card visuals. */
+.stepContainerCard .detailsForm,
+.stepContainerCard .formCardVisual .detailsForm {
+  padding: 0;
 }
 
 @keyframes fadeIn {
@@ -65,6 +94,139 @@
   text-align: center;
   margin-top: 6px;
   margin-bottom: 10px;
+}
+
+/* Loading message */
+.loadingMessage {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* ===== ASSET CHECK IN SEARCH AND FILTER ===== */
+.assetSearchFilterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.assetSearchBox {
+  flex: 1;
+  min-width: 250px;
+}
+
+.assetSearchInput {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid #E6E6E6;
+  border-radius: 8px;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.assetSearchInput:focus {
+  border-color: #007BFF;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.assetSearchInput::placeholder {
+  color: #999;
+}
+
+.assetFilters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.assetFilterSelect {
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid #E6E6E6;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  min-width: 150px;
+  transition: border-color 0.2s;
+}
+
+.assetFilterSelect:focus {
+  border-color: #007BFF;
+}
+
+/* ===== ASSET TABLE FOR CHECK IN ===== */
+.assetTableContainer {
+  width: 100%;
+  margin: 16px 0;
+  border: 1px solid #E6E6E6;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+
+.assetTableScrollWrapper {
+  max-height: 270px; /* Approximately 5 rows + header */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.assetTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.assetTable thead {
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.assetTable thead::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: #E6E6E6;
+}
+
+.assetTable th {
+  padding: 12px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  background: #f8f9fa;
+}
+
+.assetTable td {
+  padding: 10px;
+  border-bottom: 1px solid #E6E6E6;
+  color: #555;
+}
+
+.assetTable tbody tr:hover {
+  background: #f5f8ff;
+}
+
+.assetTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.noAssetsMessage {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
 }
 
 /* ===== CATEGORY GRID ===== */
@@ -103,9 +265,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: transparent; /* no filled background */
   border-radius: 0;
   color: var(--primary-color, #007BFF);
+}
+
+.categoryCard.selected .categoryIcon {
+  /* keep icon itself blue when selected (no filled bg) */
+  background: transparent;
+  color: var(--primary-color, #007BFF);
+  border: none;
 }
 
 .categoryTitle {
@@ -119,13 +288,6 @@
   font-size: 12px;
   color: #666;
   line-height: 1.3;
-}
-
-.stepActions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: center;
 }
 
 /* ===== SUB-CATEGORY GRID ===== */
@@ -153,6 +315,21 @@
   color: #666;
   font-weight: 400;
 }
+
+.changeButton {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.12s ease;
+}
+
+ 
 
 .subCategoryGrid {
   display: grid;
@@ -192,6 +369,7 @@
   font-weight: 600;
   color: #0C0C0C;
   margin-bottom: 6px;
+  text-align: center;
 }
 
 .subCategoryDescription {
@@ -208,6 +386,11 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 10px;
+  background: white;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  box-shadow: none;
 }
 
 /* ===== REVIEW SECTION ===== */
@@ -216,7 +399,9 @@
   border: none;
   box-shadow: none;
   padding: 6px 4px;
+  border-radius: 0;
   margin-bottom: 8px;
+  display: block;
 }
 
 .reviewItem {
@@ -228,8 +413,13 @@
   gap: 10px;
 }
 
+.reviewItem:last-child {
+  border-bottom: none;
+}
+
 .reviewLabel {
-  font-size: 0.6875rem;
+  /* match EmployeeHome recent ticket label size */
+  font-size: 0.6875rem; /* ~11px */
   font-weight: 500;
   color: #6b7280;
   display: block;
@@ -237,7 +427,7 @@
 }
 
 .reviewValue {
-  font-size: 0.6875rem;
+  font-size: 0.6875rem; /* ~11px - same as reviewLabel */
   color: #0c0c0c;
   word-break: break-word;
 }
@@ -247,8 +437,9 @@
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  font-size: 0.6875rem;
+  font-size: 0.6875rem; /* matches .reviewValue */
   color: #0c0c0c;
+  word-break: break-word;
 }
 
 .descriptionContent {
@@ -256,6 +447,11 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.descriptionContent.expanded {
+  max-height: none;
+  overflow: visible;
 }
 
 .descriptionContentExpanded {
@@ -273,21 +469,98 @@
   padding: 0;
   margin-top: 2px;
   color: var(--primary-color, #007BFF);
-  font-size: 0.6875rem;
+  font-size: 0.6875rem; /* matches .reviewValue */
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.descriptionToggle span,
+.descriptionToggle svg {
+  color: inherit;
 }
 
 .descriptionToggle svg {
+  /* Ensure svg uses currentColor where applicable */
   fill: currentColor;
 }
 
 .descriptionToggle:hover {
+  /* Darken text/icon only on hover — keep non-button appearance */
+  background: transparent;
   color: var(--primary-color-hover);
-  opacity: 0.8;
+  transform: none;
+  opacity: 1;
 }
 
+.descriptionToggle:hover svg,
+.descriptionToggle:hover svg * {
+  color: var(--primary-color-hover);
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Remove card visuals inside the Review (step 4) area */
+.reviewSection,
+.reviewSection .subCategoryCard,
+.reviewSection .formCardVisual,
+.reviewSection .filePreview,
+.reviewSection .fileItem,
+.reviewSection .ticketItem,
+.reviewSection .categoryDetailsSection,
+.reviewSection .successContainer {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Keep selectedCategoryBanner with its original light blue styling in review */
+.reviewSection .selectedCategoryBanner {
+  background: #EFF6FF !important;
+  border-radius: 6px;
+  color: var(--primary-color) !important;
+}
+
+.compressedFileItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+}
+
+.compressedIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.compressedName {
+  font-size: 13px;
+  color: #0C0C0C;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.compressedSize {
+  font-size: 11px;
+  color: #6b7280;
+  margin-left: 0;
+}
 .attachmentsFullWidth {
   width: 100%;
   padding: 0;
@@ -295,10 +568,11 @@
   box-sizing: border-box;
 }
 
+/* Attachments list used in Review step - stacked items without bullets */
 .attachmentsRow {
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: 0;
+  margin-bottom: 0; /* no bottom margin since fullWidth container below handles spacing */
   border-top: 1px solid #e6e6e6;
   padding-top: 20px;
 }
@@ -366,6 +640,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  word-break: break-word;
 }
 
 .attachmentSize {
@@ -386,40 +661,155 @@
   border-radius: 4px;
   color: var(--primary-color, #2563EB);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
   flex-shrink: 0;
   margin-left: 4px;
 }
 
 .attachmentViewBtn:hover {
   background: rgba(37, 99, 235, 0.08);
+  opacity: 0.9;
 }
 
-.attachmentItem.pdf {
-  background: #fff1f2;
+/* Colored variants for attachment rows to match file type */
+.attachmentItem.pdf,
+.compressedFileItem.pdf {
+  background: #fff1f2; /* very light red */
   border-color: #fecaca;
 }
 
-.attachmentItem.excel {
-  background: #ecfdf5;
+.attachmentItem.excel,
+.compressedFileItem.excel {
+  background: #ecfdf5; /* very light green */
   border-color: #bbf7d0;
 }
 
-.attachmentItem.word {
-  background: #eef2ff;
+.attachmentItem.word,
+.compressedFileItem.word {
+  background: #eef2ff; /* very light blue/purple */
   border-color: #c7d2fe;
 }
 
-.attachmentItem.image {
-  background: #f5f3ff;
+.attachmentItem.image,
+.compressedFileItem.image {
+  background: #f5f3ff; /* light indigo */
   border-color: #e9d5ff;
 }
 
-.attachmentItem.defaultFile {
+.attachmentItem.defaultFile,
+.compressedFileItem.defaultFile {
   background: #f8fafc;
   border-color: #e6eef6;
 }
 
+/* Actions (preview/download) hidden by default, revealed on hover */
+.attachmentActions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.attachmentItem:hover .attachmentActions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.attachmentActionBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  color: #374151;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.attachmentActionBtn:hover {
+  background: rgba(0,0,0,0.04);
+  color: #111827;
+}
+
+.compressedSize {
+  font-size: 11px;
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+/* Compressed inline attachments */
+.attachmentsCompressed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.compressedFileItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 60px;
+}
+
+.compressedIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.compressedName {
+  font-size: 14px;
+  color: #0C0C0C;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  flex: 1;
+  min-width: 0;
+}
+.attachmentName {
+  font-size: 13px;
+  color: #0C0C0C;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-word;
+}
+
+.attachmentSize {
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Show more / Show less button */
 .showMoreLessBtn {
   display: flex;
   align-items: center;
@@ -429,6 +819,7 @@
   padding: 0;
   background: transparent;
   border: none;
+  border-radius: 0;
   color: var(--primary-color, #007BFF);
   font-size: 13px;
   font-weight: 600;
@@ -436,16 +827,65 @@
   transition: opacity 0.15s ease;
 }
 
-.showMoreLessBtn:hover {
+.showMoreLessBtn:hover:not(:disabled) {
+  /* Darken text/icon only on hover — keep non-button appearance */
+  background: transparent;
   color: var(--primary-color-hover);
-  opacity: 0.9;
 }
 
+.showMoreLessBtn span,
+.showMoreLessBtn svg {
+  color: inherit;
+}
+
+.showMoreLessBtn svg {
+  fill: currentColor;
+}
+
+/* Ensure chevrons/icons inherit primary color (fill/stroke) */
 .showMoreLessBtn svg,
-.descriptionToggle svg {
+.descriptionToggle svg,
+.showMoreLessBtn svg *,
+.descriptionToggle svg * {
+  color: inherit;
   fill: currentColor !important;
   stroke: currentColor !important;
 }
+
+/* ===== SUCCESS VIEW ===== */
+.successContainer {
+  text-align: center;
+  padding: 24px 12px;
+}
+
+.successIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  background: #10B981;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.successTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #0C0C0C;
+  margin-bottom: 8px;
+}
+
+.successMessage {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* modal styles moved to EmployeeTicketSubmissionFormModal component */
 
 /* ✅ Form Fields */
 form {
@@ -458,35 +898,35 @@ form {
 .fieldset {
     border: none;
     padding: 0;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 8px;
   }
   
 .fieldsetLegend {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 }
 
 .formGroup {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .formLabel {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   color: #666;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .label {
     display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
+    margin-bottom: 6px;
+    font-size: 13px;
     color: #666;
     font-weight: 600;
     font-family: 'Poppins', sans-serif;
@@ -499,38 +939,15 @@ form {
 
 input[type="text"],
 input[type="date"],
+input[type="number"],
 select,
 textarea {
   width: 100%;
-  border-radius: 25px;
-  padding: 13px 16px;
+  border-radius: 12px;
+  padding: 8px 10px;
   border: 1px solid #d3d3d3;
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
-}
-
-/* Wrapper for inputs/textareas that show a right-side character counter */
-.inputWithCounter {
-  position: relative;
-}
-
-.inputWithCounter input,
-.inputWithCounter textarea {
-  /* add extra right padding so text doesn't underlap the counter */
-  padding-right: 56px;
-}
-
-.charCounter {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #6b7280;
-  background: rgba(255,255,255,0.8);
-  padding: 2px 6px;
-  border-radius: 9999px;
-  pointer-events: none;
 }
 
 /* Select/Dropdown Styling - Matching input field dimensions */
@@ -576,10 +993,10 @@ select:hover:not(:disabled) {
 /* Textarea */
 textarea {
   width: 100%;
-  height: 13vh;
-  min-height: 120px;
-  padding: 13px 16px;
-  border-radius: 25px;
+  height: 9vh;
+  min-height: 80px;
+  padding: 8px 10px;
+  border-radius: 12px;
   border: 1px solid #E0E0E0;
   background-color: #F8F8F8;
   color: #0C0C0C;
@@ -615,10 +1032,10 @@ select:focus {
 
 /* ✅ Error Message */
 .errorMessage {
-  font-size: 12px;
+  font-size: 11px;
   color: #DC2626;
   font-weight: 500;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 /* ✅ Submit Button Override */
@@ -628,7 +1045,7 @@ select:focus {
 .fileUploadWrapper {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -645,20 +1062,20 @@ select:focus {
 .filePreviewList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .filePreview {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 5px 10px;
   background-color: #f5f5f5;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #d3d3d3;
   font-size: clamp(0.75rem, 1.5vw, 0.875rem); /* 12–14px, matching index.css tiny-text/label */
   word-break: break-all;
-  min-height: 32px;
+  min-height: 28px;
 }
 
 .fileName {
@@ -703,10 +1120,10 @@ select:focus {
 
 /* Budget Items Section */
 .budgetItemsSection {
-  margin: 24px 0;
-  padding: 20px;
+  margin: 16px 0;
+  padding: 14px;
   background: #f9fafb;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
 }
 
@@ -714,11 +1131,11 @@ select:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .budgetHeader h3 {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #111827;
   margin: 0;
@@ -742,9 +1159,9 @@ select:focus {
 
 .budgetItem {
   background: white;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
   border: 1px solid #e5e7eb;
 }
 
@@ -752,8 +1169,8 @@ select:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -790,29 +1207,29 @@ select:focus {
 .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 10px;
 }
 
 .scheduleSection {
-  margin: 24px 0;
-  padding: 20px;
+  margin: 16px 0;
+  padding: 14px;
   background: #f9fafb;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
 }
 
 .scheduleSection h3 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 16px 0;
+  margin: 0 0 10px 0;
 }
 
 .fileList {
-  margin-top: 12px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .fileItem {
@@ -842,8 +1259,8 @@ select:focus {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 32px;
-  padding-top: 20px;
+  margin-top: 18px;
+  padding-top: 12px;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -851,9 +1268,9 @@ select:focus {
   background: #6b7280;
   color: white;
   border: none;
-  padding: 10px 24px;
+  padding: 8px 16px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
@@ -881,9 +1298,9 @@ select:focus {
 
 .form {
   background: white;
-  padding: 32px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .formGroup label {
@@ -898,12 +1315,12 @@ select:focus {
 .formGroup select,
 .formGroup textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   color: #111827;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.12s, box-shadow 0.12s;
 }
 
 .formGroup input:focus,
@@ -921,7 +1338,7 @@ select:focus {
 
 .formGroup textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 70px;
 }
 
 .sectionTitle {
@@ -941,34 +1358,21 @@ select:focus {
   border: 1px solid #e5e7eb;
 }
 
-/* Prefill Banner from Chatbot */
+/* ===== PREFILL BANNER (Chatbot) ===== */
 .prefillBanner {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
-  border: 1px solid #7dd3fc;
-  border-radius: 10px;
-  position: relative;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border: 1px solid #93C5FD;
+  border-radius: 8px;
+  margin-bottom: 16px;
 }
 
 .prefillBannerIcon {
-  font-size: 28px;
-  flex-shrink: 0;
+  font-size: 24px;
+  line-height: 1;
 }
 
 .prefillBannerContent {
@@ -977,168 +1381,59 @@ select:focus {
 
 .prefillBannerContent strong {
   display: block;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #0369a1;
+  color: #1E40AF;
   margin-bottom: 4px;
 }
 
 .prefillBannerContent p {
+  font-size: 12px;
+  color: #3B82F6;
   margin: 0;
-  font-size: 13px;
-  color: #0c4a6e;
-  line-height: 1.4;
 }
 
 .prefillBannerClose {
-  position: absolute;
-  top: 8px;
-  right: 10px;
   background: transparent;
   border: none;
   font-size: 20px;
-  font-weight: 600;
-  color: #0369a1;
+  color: #3B82F6;
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  transition: color 0.15s ease;
 }
 
 .prefillBannerClose:hover {
-  opacity: 1;
+  color: #1E40AF;
 }
 
-/* Asset Checkout Table Styles for Check-In Form */
-.assetCheckoutTableWrapper {
-  border: 2px solid #1f2937;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
+/* ===== INPUT WITH COUNTER ===== */
+.inputWithCounter {
+  position: relative;
 }
 
-/* Search Bar */
-.assetCheckoutSearchBar {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 2px solid #1f2937;
-  gap: 8px;
+.inputWithCounter input,
+.inputWithCounter textarea {
+  padding-right: 56px;
 }
 
-.assetCheckoutSearchInput {
-  flex: 1;
-  padding: 8px 12px;
-  border: 2px solid #1f2937;
-  border-radius: 20px;
-  font-size: 14px;
-  outline: none;
-}
-
-.assetCheckoutSearchInput:focus {
-  border-color: var(--primary-color, #2563EB);
-}
-
-.assetCheckoutClearBtn {
-  padding: 8px 16px;
-  background: transparent;
-  border: none;
-  color: #374151;
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.assetCheckoutClearBtn:hover {
-  color: #1f2937;
-}
-
-.assetCheckoutLoading,
-.assetCheckoutEmpty {
-  padding: 24px;
-  text-align: center;
+.charCounter {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
   color: #6b7280;
-  font-size: 14px;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 6px;
+  border-radius: 9999px;
+  pointer-events: none;
 }
 
-.assetCheckoutTableScroll {
-  max-height: 280px;
-  overflow-y: auto;
+.inputWithCounter textarea + .charCounter {
+  top: auto;
+  bottom: 12px;
+  transform: none;
 }
 
-.assetCheckoutTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.assetCheckoutTable thead {
-  position: sticky;
-  top: 0;
-  background: #f9fafb;
-  z-index: 1;
-}
-
-.assetCheckoutTable th {
-  padding: 12px 10px;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #1f2937;
-  white-space: nowrap;
-}
-
-.assetCheckoutTable td {
-  padding: 10px;
-  border-bottom: 1px solid #e5e7eb;
-  color: #4b5563;
-  border-right: 1px solid #e5e7eb;
-}
-
-.assetCheckoutTable td:last-child {
-  border-right: none;
-  text-align: center;
-}
-
-.assetCheckoutTable tbody tr {
-  transition: background-color 0.15s ease;
-}
-
-.assetCheckoutTable tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-.assetCheckoutRowSelected {
-  background-color: #eff6ff !important;
-}
-
-/* Select Button */
-.assetCheckoutSelectBtn {
-  padding: 6px 16px;
-  border: 2px solid var(--primary-color, #2563EB);
-  border-radius: 20px;
-  background: transparent;
-  color: var(--primary-color, #2563EB);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.assetCheckoutSelectBtn:hover {
-  background: var(--primary-color, #2563EB);
-  color: white;
-}
-
-.assetCheckoutSelectBtnSelected {
-  background: var(--primary-color, #2563EB);
-  color: white;
-}
-
-.assetCheckoutTable input[type="radio"] {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary-color, #2563EB);
-}

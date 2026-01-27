@@ -5,8 +5,16 @@ import chartStyles from './CoordinatorAdminDashboardCharts.module.css';
 import tableStyles from './CoordinatorAdminDashboardTable.module.css';
 import statCardStyles from './CoordinatorAdminDashboardStatusCards.module.css';
 import styles from './CoordinatorAdminDashboard.module.css';
-import authService from '../../../utilities/service/authService';
+import { useAuth } from '../../../context/AuthContext';
 import { backendTicketService } from '../../../services/backend/ticketService';
+
+const classificationDisplay = (value) => {
+  if (value === null || value === undefined || value === '') return '';
+  const v = String(value).toUpperCase();
+  if (v.startsWith('CAP')) return 'Capital Expenses';
+  if (v.startsWith('OP')) return 'Operational Expenses';
+  return value;
+};
 
 const isTicketCoordinatorUser = (user) => {
   if (!user) return false;
@@ -236,7 +244,7 @@ const TrendLineChart = ({ data, title, isTicketChart = true }) => {
 
 const TicketsTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
   const navigate = useNavigate();
-  const currentUser = authService.getCurrentUser();
+  const { user: currentUser } = useAuth();
   const [ticketDataState, setTicketDataState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activityTimeline, setActivityTimeline] = useState([]);
@@ -582,7 +590,8 @@ const TicketsTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
       const ticketNumber = t.ticketNumber || t.ticket_number || t.ticketNum || t.ticketNo || t.ticketId || t.id || '';
       const subject = t.subject || t.title || '';
       const category = t.category || t.assignedDepartment || t.assigned_department || '';
-      const subCategory = t.subCategory || t.sub_category || t.subcategory || '';
+      const rawSubCategory = t.subCategory || t.sub_category || t.subcategory || '';
+      const subCategory = classificationDisplay(rawSubCategory);
       const dateCreated = created ? formatDateShort(created) : '';
 
       const effective = computeEffectiveStatus(t);

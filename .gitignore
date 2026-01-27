@@ -2,6 +2,9 @@
 venv/
 env/
 
+# Ignore duplicate/old frontend folder
+frontendfolder/
+
 # Ignore all .env files
 *.env
 

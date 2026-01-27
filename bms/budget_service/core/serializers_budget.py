@@ -9,6 +9,23 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 
 
+def classification_display(value):
+    """Map classification codes to human-friendly labels.
+
+    Examples:
+    - 'CAPEX' -> 'Capital Expenses'
+    - 'OPEX' -> 'Operational Expenses'
+    """
+    if not value:
+        return "N/A"
+    v = str(value).upper()
+    if v.startswith('CAP'):
+        return 'Capital Expenses'
+    if v.startswith('OP') or v.startswith('OPE'):
+        return 'Operational Expenses'
+    return value
+
+
 class BudgetProposalSummarySerializer(serializers.Serializer):
     total_proposals = serializers.IntegerField()
     pending_approvals = serializers.IntegerField()
@@ -47,7 +64,7 @@ class BudgetProposalListSerializer(serializers.ModelSerializer):
         # Returns the Main Classification (CapEx/OpEx)
         first_item = obj.items.first()
         if first_item and first_item.category:
-            return first_item.category.classification  # e.g., 'OPEX'
+            return classification_display(first_item.category.classification)  # e.g., 'OPEX'
         return "Uncategorized"
 
     def get_sub_category(self, obj):
@@ -112,7 +129,7 @@ class BudgetProposalDetailSerializer(serializers.ModelSerializer):
         # MODIFIED: Return Classification (CapEx/OpEx) instead of Name
         first_item = obj.items.first()
         if first_item and first_item.category:
-            return first_item.category.classification
+            return classification_display(first_item.category.classification)
         return "General"
 
     def get_sub_category(self, obj):
@@ -168,7 +185,7 @@ class ProposalHistorySerializer(serializers.ModelSerializer):
         try:
             first_item = obj.proposal.items.first()
             if first_item and first_item.category:
-                return first_item.category.classification
+                return classification_display(first_item.category.classification)
             # Fallback to old AccountType logic if category is missing (migration safety)
             if first_item and first_item.account and first_item.account.account_type:
                 return first_item.account.account_type.name
@@ -183,13 +200,13 @@ class ProposalHistorySerializer(serializers.ModelSerializer):
             if first_item and first_item.category:
                 return first_item.category.name
             # Fallback
-            if first_item and first_item.cost_element:
+            return classification_display(obj.expense_category.classification)  # 'CAPEX' or 'OPEX'
                 return first_item.cost_element
             return "N/A"
         except Exception:
-            return "N/A"
+            return classification_display('OPEX')  # Expenses are typically OpEx
 
-
+            return classification_display('CAPEX')  # Assets are typically CapEx
 class AccountSetupSerializer(serializers.ModelSerializer):
     account_type = serializers.CharField(source='account_type.name')
     accomplished = serializers.SerializerMethodField()
@@ -345,10 +362,7 @@ class JournalEntryListSerializer(serializers.ModelSerializer):
         line = obj.lines.filter(expense_category__isnull=False).first()
         if line and line.expense_category:
             classification = line.expense_category.classification
-            if classification == 'CAPEX':
-                return 'CapEx'
-            if classification == 'OPEX':
-                return 'OpEx'
+            return classification_display(classification)
 
         # 2. Fallback to the JE category field, formatted nicely
         if obj.category:

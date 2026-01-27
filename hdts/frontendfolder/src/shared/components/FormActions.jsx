@@ -7,18 +7,30 @@ import styles from '../styles/formActions.module.css';
  * Props:
  * - onCancel: function to call when cancel clicked
  * - cancelLabel: label for cancel button (default: 'Cancel')
- * - onSubmit: submit handler (form should still handle onSubmit)
+ * - onSubmit: submit handler - called when submit button clicked
  * - submitLabel: label for submit button
  * - submitDisabled: boolean
  * - submitVariant: 'primary'|'secondary' (default: 'primary')
+ * - cancelSize: button size for cancel button
+ * - submitSize: button size for submit button
  */
 export default function FormActions({
   onCancel,
   cancelLabel = 'Cancel',
+  onSubmit,
   submitLabel = 'Submit',
   submitDisabled = false,
-  submitVariant = 'primary'
+  submitVariant = 'primary',
+  cancelSize,
+  submitSize
 }) {
+  const handleSubmitClick = (e) => {
+    e.preventDefault();
+    if (onSubmit && !submitDisabled) {
+      onSubmit(e);
+    }
+  };
+
   return (
     <div className={styles.actionContainer}>
       <div className={styles.actionFlexChild}>
@@ -27,6 +39,7 @@ export default function FormActions({
           variant="outline"
           className={styles.formAction}
           onClick={onCancel}
+          size={cancelSize}
         >
           {cancelLabel}
         </Button>
@@ -34,10 +47,12 @@ export default function FormActions({
 
       <div className={styles.actionFlexChild}>
         <Button
-          type="submit"
+          type="button"
           variant={submitVariant}
           className={styles.formAction}
           disabled={submitDisabled}
+          onClick={handleSubmitClick}
+          size={submitSize}
         >
           {submitDisabled ? 'Please wait...' : submitLabel}
         </Button>

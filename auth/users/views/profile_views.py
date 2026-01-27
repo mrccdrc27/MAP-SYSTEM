@@ -24,6 +24,8 @@ from ..serializers import (
 )
 from ..forms import ProfileSettingsForm
 from ..decorators import jwt_cookie_required
+from ..authentication import EmployeeUser
+from hdts.serializers import EmployeeProfileSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +72,20 @@ class MeView(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         """Override retrieve to wrap response with user type."""
         user = self.get_object()
+        
+        # Check if this is an employee user (wrapped by EmployeeUser)
+        if isinstance(user, EmployeeUser):
+            # Use employee serializer for employee users
+            serializer = EmployeeProfileSerializer(user.employee, context={'request': request})
+            return Response({
+                'type': 'employee',
+                'data': serializer.data
+            })
+        
+        # Staff user - use default serializer
         serializer = self.get_serializer(user)
         
-        # Extract user_type from JWT token
+        # Extract user_type from JWT token (should be 'staff' for regular users)
         user_type = 'staff'  # Default to staff
         token_str = request.COOKIES.get('access_token')
         if token_str:

@@ -5,7 +5,7 @@ import chartStyles from './CoordinatorAdminDashboardCharts.module.css';
 import tableStyles from './CoordinatorAdminDashboardTable.module.css';
 import statCardStyles from './CoordinatorAdminDashboardStatusCards.module.css';
 import styles from './CoordinatorAdminDashboard.module.css';
-import authService from '../../../utilities/service/authService';
+import { useAuth } from '../../../context/AuthContext';
 import { backendUserService } from '../../../services/backend/userService.js';
 
 const userPaths = [
@@ -290,7 +290,7 @@ const TrendLineChart = ({ data, title, isTicketChart = true }) => {
 
 const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
   const navigate = useNavigate();
-  const currentUser = authService.getCurrentUser();
+  const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState([]); // currently displayed users (pending hdts employees)
   const [rawUsers, setRawUsers] = useState([]); // all users from auth service
@@ -400,14 +400,12 @@ const UsersTab = ({ chartRange, setChartRange, pieRange, setPieRange }) => {
 
 
   useEffect(() => {
-    // Fetch once on mount. Avoid depending on a freshly-parsed currentUser object
-    // (authService.getCurrentUser() returns a new object each call), which caused
-    // this effect to re-run every render and produce flickering skeletons.
+    // Fetch once on mount. Use currentUser from useAuth context (stable reference)
     let mounted = true;
     setLoadingUsers(true);
 
-    // Read a stable snapshot of current user for local filtering
-    const current = authService.getCurrentUser();
+    // Use currentUser from context (stable reference)
+    const current = currentUser;
 
     // Fetch pending HDTS employees (employees only, status = Pending) for main table
     // AND all HDTS users (for pie and line charts) in parallel

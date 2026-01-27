@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Notification from '../../../shared/notification/NotificationContent';
 import { HiOutlineDocumentAdd } from 'react-icons/hi';
 import { MdUpdate } from 'react-icons/md';
+import { getUnreadCount } from '../../../services/notificationService';
 
 export const initialNotifications = [
   {
@@ -33,6 +34,27 @@ export const INITIAL_NOTIFICATION_COUNT = initialNotifications.length;
 const CoordinatorAdminNotifications = ({ show, onClose, onCountChange }) => {
   const [notifications, setNotifications] = useState(initialNotifications);
 
+  // Fetch unread count from API on mount (for badge display before panel is opened)
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const data = await getUnreadCount();
+        const count = data.unread_count || 0;
+        if (onCountChange) {
+          onCountChange(count);
+        }
+      } catch (err) {
+        // If API fails, fallback to static notifications count
+        console.error('Failed to fetch unread count:', err);
+        if (onCountChange) {
+          onCountChange(notifications.length);
+        }
+      }
+    };
+    fetchUnreadCount();
+  }, [onCountChange]);
+
+  // Update count when notifications change (for local operations like delete)
   useEffect(() => {
     if (onCountChange) onCountChange(notifications.length);
   }, [notifications, onCountChange]);

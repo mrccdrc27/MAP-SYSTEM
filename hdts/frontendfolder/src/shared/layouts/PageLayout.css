@@ -1,54 +1,109 @@
-/* Shared layout styles (extracted from CoordinatorAdminLayout.module.css) */
-
 :root {
-  --navbar-height: 64px;
+  --navbar-height: 60px;
   --bg-color: #F8F8F8;
   --text-color: #0C0C0C;
-  --margin-size-main: 0 2.5vw;
-  --margin-size-min: 0 4.5vw;
+  --margin-size-main: 0 2.25vw;
+  --margin-size-min: 0 4vw;
 }
 
 .layoutRoot {
   height: 100vh;
   width: 100vw;
-  display: flex;
-  flex-direction: column;
   background-color: var(--bg-color);
   color: var(--text-color);
   box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
 }
 
-.navbarWrapper {
+/* Fixed scrollable container with native scrollbar */
+.scrollContainer {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  background: transparent;
-}
-
-.scrollContainer {
-  position: fixed;
-  top: var(--navbar-height);
-  left: 0;
+  height: 100vh;
   width: 100vw;
-  height: calc(100vh - var(--navbar-height));
   overflow-y: auto;
   overflow-x: hidden;
   background-color: var(--bg-color);
   color: var(--text-color);
   box-sizing: border-box;
   scroll-behavior: smooth;
-
-  display: flex;
-  flex-direction: column;
-  padding: 36px 38px 38px 38px; /* 100px total - 64px navbar = 36px top */
+  z-index: 1;
 }
 
-/* Breadcrumb Navigation */
+.contentWrapper {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 30px 30px 30px;
+}
+
+/* Fixed navbar that hides/shows on scroll */
+.navbarWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(100% - 12px);
+  height: var(--actual-navbar-height, var(--navbar-height));
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  transition: transform 220ms ease, opacity 220ms ease;
+  will-change: transform, opacity;
+}
+
+/* Hide navbar by translating it up */
+.navbarHidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Content padding accounts for fixed navbar height */
+.mainContent {
+  flex: 1;
+  padding-top: calc(var(--actual-navbar-height, var(--navbar-height)) + 18px);
+  width: 100%;
+  transition: padding-top 180ms ease;
+}
+
+/* GitHub-style light scrollbar - made thinner */
+.scrollContainer {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d0 transparent;
+}
+
+.scrollContainer::-webkit-scrollbar {
+  width: 7px;
+}
+
+.scrollContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb {
+  background-color: #d0d0d0;
+  border-radius: 4px;
+  transition: background-color 150ms ease;
+}
+
+.scrollContainer:hover::-webkit-scrollbar-thumb,
+.scrollContainer:focus-within::-webkit-scrollbar-thumb {
+  background-color: #b0b0b0;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb:active {
+  background-color: #909090;
+}
+
+.scrollContainer::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Breadcrumb Navigation - made more compact */
 .breadcrumbContainer {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding: 0;
 }
 
@@ -59,14 +114,14 @@
   margin: 0;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .breadcrumbItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
+  gap: 7px;
+  font-size: 0.8rem;
 }
 
 .breadcrumbLink {
@@ -92,19 +147,18 @@
   font-weight: 600;
 }
 
-.mainContent {
-  flex: 1;
-}
-
-/* Responsive adjustments */
 @media (max-width: 1024px) {
-  .scrollContainer {
-    padding: 20px 28px 28px 28px; /* 64px navbar handled by position + 20px spacing */
+  .contentWrapper {
+    padding: 0 24px 24px 24px;
   }
 }
 
 @media (max-width: 480px) {
-  .scrollContainer {
-    padding: 16px 16px 20px 16px; /* 64px navbar handled by position + 16px spacing */
+  .contentWrapper {
+    padding: 0 16px 18px 16px;
+  }
+  
+  .breadcrumbItem {
+    font-size: 0.75rem;
   }
 }

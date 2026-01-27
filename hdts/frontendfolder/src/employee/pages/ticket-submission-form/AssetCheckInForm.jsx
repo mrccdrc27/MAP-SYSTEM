@@ -7,7 +7,7 @@ const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247
 // AMS API URL for fetching asset checkouts
 const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app';
 
-export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField, employeeId, onAssetCheckoutSelect }) {
+export default function AssetCheckInForm({ formData, onChange, onBlur, errors, FormField, employeeId, onAssetCheckoutSelect, hideAssetTable = false, minCheckInDate = null }) {
   // Locations state - fetched from API
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
@@ -19,7 +19,7 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Selected checkout date for min date calculation
+  // Selected checkout date for min date calculation (when using internal table selection)
   const [selectedCheckoutDate, setSelectedCheckoutDate] = useState(null);
 
   // Fetch asset checkouts from AMS API when employeeId is available
@@ -116,8 +116,12 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
 
   // Get minimum check in date: checkout_date + 1 day, or today if no checkout selected
   const getMinCheckInDate = () => {
-    if (selectedCheckoutDate) {
-      const checkoutDate = new Date(selectedCheckoutDate);
+    // Use passed minCheckInDate prop first (from wizard Step 2 selection)
+    // Then fall back to selectedCheckoutDate (from internal table selection)
+    const checkoutDateStr = minCheckInDate || selectedCheckoutDate;
+    
+    if (checkoutDateStr) {
+      const checkoutDate = new Date(checkoutDateStr);
       checkoutDate.setDate(checkoutDate.getDate() + 1);
       const yyyy = checkoutDate.getFullYear();
       const mm = String(checkoutDate.getMonth() + 1).padStart(2, '0');
@@ -157,82 +161,85 @@ export default function AssetCheckInForm({ formData, onChange, onBlur, errors, F
   return (
     <>
       {/* Asset to Checkout - Table view of employee's checked out assets */}
-      <FormField
-        id="assetCheckout"
-        label="Asset to Check In"
-        required
-        error={errors.assetCheckout}
-        render={() => (
-          <div className={styles.assetCheckoutTableWrapper}>
-            {/* Search Bar */}
-            <div className={styles.assetCheckoutSearchBar}>
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.assetCheckoutSearchInput}
-              />
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className={styles.assetCheckoutClearBtn}
-              >
-                Clear
-              </button>
-            </div>
+      {/* Only show if hideAssetTable is false (asset already selected in Step 2 for wizard) */}
+      {!hideAssetTable && (
+        <FormField
+          id="assetCheckout"
+          label="Asset to Check In"
+          required
+          error={errors.assetCheckout}
+          render={() => (
+            <div className={styles.assetCheckoutTableWrapper}>
+              {/* Search Bar */}
+              <div className={styles.assetCheckoutSearchBar}>
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={styles.assetCheckoutSearchInput}
+                />
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className={styles.assetCheckoutClearBtn}
+                >
+                  Clear
+                </button>
+              </div>
 
-            {loadingAssetCheckouts ? (
-              <div className={styles.assetCheckoutLoading}>Loading your checked out assets...</div>
-            ) : filteredCheckouts.length === 0 ? (
-              <div className={styles.assetCheckoutEmpty}>
-                {assetCheckouts.length === 0 
-                  ? 'No assets currently checked out to you.'
-                  : 'No assets match your search.'}
-              </div>
-            ) : (
-              <div className={styles.assetCheckoutTableScroll}>
-                <table className={styles.assetCheckoutTable}>
-                  <thead>
-                    <tr>
-                      <th>Ticket No.</th>
-                      <th>Asset Name</th>
-                      <th>Serial No.</th>
-                      <th>Date of Check Out</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCheckouts.map(checkout => {
-                      const isSelected = String(formData.assetCheckout) === String(checkout.id);
-                      return (
-                        <tr 
-                          key={checkout.id} 
-                          className={isSelected ? styles.assetCheckoutRowSelected : ''}
-                        >
-                          <td>{checkout.ticket_number || checkout.ticket_id || 'N/A'}</td>
-                          <td>{checkout.asset_details?.name || 'N/A'}</td>
-                          <td>{checkout.asset_details?.serial_number || 'N/A'}</td>
-                          <td>{formatDate(checkout.checkout_date)}</td>
-                          <td>
-                            <button
-                              type="button"
-                              onClick={() => handleSelectAssetCheckout(checkout)}
-                              className={`${styles.assetCheckoutSelectBtn} ${isSelected ? styles.assetCheckoutSelectBtnSelected : ''}`}
-                            >
-                              {isSelected ? 'Selected' : 'Select'}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      />
+              {loadingAssetCheckouts ? (
+                <div className={styles.assetCheckoutLoading}>Loading your checked out assets...</div>
+              ) : filteredCheckouts.length === 0 ? (
+                <div className={styles.assetCheckoutEmpty}>
+                  {assetCheckouts.length === 0 
+                    ? 'No assets currently checked out to you.'
+                    : 'No assets match your search.'}
+                </div>
+              ) : (
+                <div className={styles.assetCheckoutTableScroll}>
+                  <table className={styles.assetCheckoutTable}>
+                    <thead>
+                      <tr>
+                        <th>Ticket No.</th>
+                        <th>Asset Name</th>
+                        <th>Serial No.</th>
+                        <th>Date of Check Out</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCheckouts.map(checkout => {
+                        const isSelected = String(formData.assetCheckout) === String(checkout.id);
+                        return (
+                          <tr 
+                            key={checkout.id} 
+                            className={isSelected ? styles.assetCheckoutRowSelected : ''}
+                          >
+                            <td>{checkout.ticket_number || checkout.ticket_id || 'N/A'}</td>
+                            <td>{checkout.asset_details?.name || 'N/A'}</td>
+                            <td>{checkout.asset_details?.serial_number || 'N/A'}</td>
+                            <td>{formatDate(checkout.checkout_date)}</td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAssetCheckout(checkout)}
+                                className={`${styles.assetCheckoutSelectBtn} ${isSelected ? styles.assetCheckoutSelectBtnSelected : ''}`}
+                              >
+                                {isSelected ? 'Selected' : 'Select'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        />
+      )}
 
       {/* Check In Date */}
       <FormField

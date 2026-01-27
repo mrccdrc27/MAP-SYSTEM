@@ -1081,14 +1081,14 @@ export default function EmployeeTicketTracker() {
                       <div className={styles.categoryDetails}>Asset Details</div>
                       <div className={styles.dynamicDetailsGrid}>
                         <div className={styles.detailItem}>
-                          <div className={styles.detailLabel}>Asset Name</div>
+                          <div className={styles.detailLabel}>{category === 'Asset Check Out' ? 'Asset to Check Out' : 'Asset Name'}</div>
                           <div className={styles.detailValue}>{ticket.asset_name || ticket.assetName || 'N/A'}</div>
                         </div>
                         {/* Hide Asset ID for Asset Check In category */}
                         {category !== 'Asset Check In' && (
                           <div className={styles.detailItem}>
                             <div className={styles.detailLabel}>Asset ID</div>
-                            <div className={styles.detailValue}>{ticket.asset_id || ticket.assetId || 'N/A'}</div>
+                            <div className={styles.detailValue}>{ticket.dynamic_data?.amsAssetId || ticket.ams_asset_id || ticket.asset_id || ticket.assetId || 'N/A'}</div>
                           </div>
                         )}
                         <div className={styles.detailItem}>
@@ -1237,16 +1237,14 @@ export default function EmployeeTicketTracker() {
                 </Button>
               )}
 
-              {/* View raw ticket payload */}
-              <div style={{ marginTop: 12 }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => setShowRawData(true)}
-                  className={styles.ticketActionButton}
-                >
-                  View Raw Data
-                </Button>
-              </div>
+              {/* View Raw Data Button */}
+              <Button
+                variant="outline"
+                onClick={() => setShowRawData(true)}
+                style={{ marginTop: 8, width: '100%' }}
+              >
+                View Raw Ticket Data
+              </Button>
 
               <Tabs
                 tabs={[

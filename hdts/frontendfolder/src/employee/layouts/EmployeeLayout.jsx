@@ -60,13 +60,13 @@ const getHeaderConfig = (path, currentUser, location) => {
       root: 'Home',
       currentPage: 'Submit Ticket',
       rootNavigatePage: '/employee/home',
-      title: 'Ticket Submission Form',
+      title: '', // No title, just breadcrumb
     },
     '/employee/frequently-asked-questions': {
       root: 'Home',
       currentPage: 'Frequently Asked Questions',
       rootNavigatePage: '/employee/home',
-      title: 'Frequently Asked Questions',
+      title: '',
     },
   };
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 // API URL for fetching locations from HDTS backend
 const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
 
-export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField, onAssetSelect, prefetchedCategories = [], prefetchLoading = false }) {
+export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, FormField, onAssetSelect, prefetchedCategories = [], prefetchLoading = false, hideSubCategory = false }) {
   // Use categories passed from parent (prefetched on page load)
   const categories = prefetchedCategories;
   const loadingCategories = prefetchLoading;
@@ -151,30 +151,32 @@ export default function AssetCheckOutForm({ formData, onChange, onBlur, errors, 
 
   return (
     <>
-      {/* Sub-Category (Type of Product) */}
-      <FormField
-        id="subCategory"
-        label="Sub-Category (Type of Product)"
-        required
-        error={errors.subCategory}
-        render={() => (
-          <select
-            value={formData.subCategory}
-            onChange={handleCategoryChange}
-            onBlur={onBlur('subCategory')}
-            disabled={loadingCategories}
-          >
-            <option value="">
-              {loadingCategories ? 'Loading categories...' : 'Select Product Type'}
-            </option>
-            {categories.map(category => (
-              <option key={category.id} value={category.name}>
-                {category.name}
+      {/* Sub-Category (Type of Product) - Hidden when called from wizard since it's already selected */}
+      {!hideSubCategory && (
+        <FormField
+          id="subCategory"
+          label="Sub-Category (Type of Product)"
+          required
+          error={errors.subCategory}
+          render={() => (
+            <select
+              value={formData.subCategory}
+              onChange={handleCategoryChange}
+              onBlur={onBlur('subCategory')}
+              disabled={loadingCategories}
+            >
+              <option value="">
+                {loadingCategories ? 'Loading categories...' : 'Select Product Type'}
               </option>
-            ))}
-          </select>
-        )}
-      />
+              {categories.map(category => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          )}
+        />
+      )}
 
       {/* Available Assets */}
       <FormField

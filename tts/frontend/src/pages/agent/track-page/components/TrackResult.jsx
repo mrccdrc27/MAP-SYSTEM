@@ -5,7 +5,7 @@ import general from "../../../../style/general.module.css";
 // visual
 import WorkflowVisualizer2 from "../../../../components/ticket/WorkflowVisualizer2";
 
-const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
+const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker, workflowLoading, workflowError }) => {
   if (notFound) {
     return (
       <div className={styles.SearchImageContainer}>
@@ -79,7 +79,7 @@ const TrackResult = ({ matchedTicket, notFound, searchTerm, tracker }) => {
         {/* Progress Tracker */}
         <div className={styles.ticketProgress}>
           <h3>Current Progress</h3>
-          <WorkflowVisualizer2 workflowData={tracker} ticketStatus={matchedTicket?.status} />
+          <WorkflowVisualizer2 workflowData={tracker} ticketStatus={matchedTicket?.status} loading={workflowLoading} error={workflowError} />
         </div>
 
         {/* Ticket Details */}

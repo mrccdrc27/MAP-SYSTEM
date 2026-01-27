@@ -91,7 +91,7 @@ export default function AdminArchiveDetail() {
   }, [ticketData?.ticket?.ticket_id, fetchActionLogs]);
 
   // Workflow progress tracker
-  const { tracker } = useWorkflowProgress(ticketData?.ticket?.ticket_id);
+  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(ticketData?.ticket?.ticket_id);
 
   // Handle Navigate button - go to the ticket detail page
   const handleNavigateToTicket = () => {
@@ -610,7 +610,7 @@ export default function AdminArchiveDetail() {
 
                     {/* Workflow Tracker */}
                     {has_workflow && (
-                      <WorkflowTracker2 workflowData={tracker} ticketStatus={ticket?.status} />
+                      <WorkflowTracker2 workflowData={tracker} ticketStatus={ticket?.status} loading={workflowLoading} error={workflowError} />
                     )}
 
                     {/* sla */}

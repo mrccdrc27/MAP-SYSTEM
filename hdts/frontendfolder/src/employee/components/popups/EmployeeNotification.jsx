@@ -44,6 +44,8 @@ const EmployeeNotification = ({ show, onClose, onCountChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Store the actual unread count from API (not derived from limited local notifications)
+  const [apiUnreadCount, setApiUnreadCount] = useState(0);
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
@@ -67,8 +69,11 @@ const EmployeeNotification = ({ show, onClose, onCountChange }) => {
       }));
       
       setNotifications(transformedNotifications);
+      // Store the API unread count and notify parent
+      const unreadFromAPI = data.unread_count ?? transformedNotifications.filter(n => !n.isRead).length;
+      setApiUnreadCount(unreadFromAPI);
       if (onCountChange) {
-        onCountChange(data.unread_count || transformedNotifications.filter(n => !n.isRead).length);
+        onCountChange(unreadFromAPI);
       }
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -92,28 +97,52 @@ const EmployeeNotification = ({ show, onClose, onCountChange }) => {
     const fetchUnreadCount = async () => {
       try {
         const data = await getUnreadCount();
+        const count = typeof data.unread_count === 'number' ? data.unread_count : 
+                      typeof data.unread_count === 'string' ? parseInt(data.unread_count, 10) : 0;
+        setApiUnreadCount(count);
         if (onCountChange) {
-          onCountChange(data.unread_count || 0);
+          onCountChange(count);
         }
       } catch (err) {
         console.error('Failed to fetch unread count:', err);
       }
     };
+    // Fetch immediately on mount
     fetchUnreadCount();
-  }, [onCountChange]);
+  }, []); // Empty dependency array to run only on mount
 
-  // Notify parent about the count
+  // Also update parent when onCountChange changes and we have a count
   useEffect(() => {
-    if (onCountChange) {
-      const unreadCount = notifications.filter(n => !n.isRead).length;
-      onCountChange(unreadCount);
+    if (onCountChange && apiUnreadCount > 0) {
+      onCountChange(apiUnreadCount);
     }
-  }, [notifications, onCountChange]);
+  }, [onCountChange, apiUnreadCount]);
+
+  // Update count when a notification is marked as read locally
+  // This decrements the count by 1 instead of recounting from limited local data
+  const decrementUnreadCount = useCallback(() => {
+    setApiUnreadCount(prev => {
+      const newCount = Math.max(0, prev - 1);
+      if (onCountChange) {
+        onCountChange(newCount);
+      }
+      return newCount;
+    });
+  }, [onCountChange]);
 
   const handleDelete = async (id) => {
     try {
+      // Check if the notification being deleted was unread
+      const notification = notifications.find(n => n.id === id);
+      const wasUnread = notification && !notification.isRead;
+      
       await deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+      
+      // Decrement count if deleted notification was unread
+      if (wasUnread) {
+        decrementUnreadCount();
+      }
     } catch (err) {
       console.error('Failed to delete notification:', err);
     }
@@ -123,6 +152,11 @@ const EmployeeNotification = ({ show, onClose, onCountChange }) => {
     try {
       await clearAllNotifications();
       setNotifications([]);
+      // Reset count to 0 when all are cleared
+      setApiUnreadCount(0);
+      if (onCountChange) {
+        onCountChange(0);
+      }
     } catch (err) {
       console.error('Failed to clear notifications:', err);
     }
@@ -134,6 +168,11 @@ const EmployeeNotification = ({ show, onClose, onCountChange }) => {
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, isRead: true }))
       );
+      // Reset count to 0 when all are marked as read
+      setApiUnreadCount(0);
+      if (onCountChange) {
+        onCountChange(0);
+      }
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     }
@@ -149,6 +188,8 @@ const EmployeeNotification = ({ show, onClose, onCountChange }) => {
             n.id === notification.id ? { ...n, isRead: true } : n
           )
         );
+        // Decrement the unread count
+        decrementUnreadCount();
       }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);

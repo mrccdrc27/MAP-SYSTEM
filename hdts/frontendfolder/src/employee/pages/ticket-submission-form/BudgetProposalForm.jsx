@@ -40,6 +40,16 @@ const fiscalYearOptions = [
   { value: 2, label: 'FY 2024' }
 ];
 
+// Temporary account options mapping (use BMS accounts later)
+const accountOptions = [
+  { value: 10, label: '6100 - IT Operations' },
+  { value: 11, label: '6200 - Office Supplies' },
+  { value: 12, label: '6300 - Professional Services' },
+  { value: 13, label: '6400 - Travel & Expenses' },
+  { value: 14, label: '6500 - Hardware Purchases' },
+  { value: 15, label: '6600 - Software Subscriptions' }
+];
+
 // Cost elements based on sub-category
 const costElements = {
   'CAPEX': [
@@ -309,13 +319,7 @@ export default function BudgetProposalForm({
                   required
                   options={[
                     { value: '', label: 'Select Account' },
-                    // Values are temporary account IDs (use real Account.id from BMS later)
-                    { value: 10, label: '6100 - IT Operations' },
-                    { value: 11, label: '6200 - Office Supplies' },
-                    { value: 12, label: '6300 - Professional Services' },
-                    { value: 13, label: '6400 - Travel & Expenses' },
-                    { value: 14, label: '6500 - Hardware Purchases' },
-                    { value: 15, label: '6600 - Software Subscriptions' }
+                    ...accountOptions
                   ]}
                 />
 
@@ -378,4 +382,4 @@ export default function BudgetProposalForm({
   );
 }
 
-export { BudgetProposalMetadata };
+export { BudgetProposalMetadata, departmentOptions, fiscalYearOptions, accountOptions };
