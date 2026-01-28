@@ -2,9 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, QA, develop ]
+    branches: [ "bms/login" ]
   pull_request:
-    branches: [ main, QA, develop ]
+    branches: [ "bms/login" ]
 
 jobs:
   build-docker:
