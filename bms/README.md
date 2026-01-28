@@ -110,4 +110,4 @@ gunicorn capstone.wsgi:application
 
 ### Workflows:
 
--MAP-SYSTEM/.github/workflows/bms-ci.yml
+-MAP-SYSTEM/.github/workflows/basic-ci.yml

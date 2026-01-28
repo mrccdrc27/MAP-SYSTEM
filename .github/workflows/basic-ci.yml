@@ -1,0 +1,24 @@
+name: Basic CI Check
+
+on:
+  push:
+    branches: [ "bms/login", "main" ]
+  pull_request:
+    branches: [ "bms/login", "main" ]
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        
+    - name: Verify Backend Dependencies
+      run: |
+        cd bms/budget_service
+        pip install -r requirements.txt
+        echo "Backend dependencies install successfully"
