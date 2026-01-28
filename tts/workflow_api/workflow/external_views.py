@@ -117,11 +117,13 @@ def get_ams_ticket_data_normalized(task):
     # Check is_resolved status
     is_resolved = task.ams_executed if hasattr(task, 'ams_executed') else False
     
-    # Get asset - check multiple sources including dynamic_data
+    # Get asset - use amsAssetId (display ID like AST-XXX) for AMS integration
+    # This is the format AMS expects to look up assets
     asset = (
+        dynamic_data.get('amsAssetId') or  # Primary: display ID from HDTS
         ticket_data.get('asset_id') or 
         ticket_data.get('asset') or 
-        dynamic_data.get('assetId')
+        dynamic_data.get('assetId')  # Fallback: integer ID
     )
     
     # Get checkout_date - check multiple sources including dynamic_data
