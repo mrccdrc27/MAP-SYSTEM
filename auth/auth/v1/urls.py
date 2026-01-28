@@ -1,4 +1,4 @@
-# auth/auth/v1
+# auth/auth/v1/urls.py
 from django.urls import path, include
 from rest_framework.response import Response
 from rest_framework.decorators import api_view

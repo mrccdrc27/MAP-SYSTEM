@@ -119,16 +119,26 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# CORS - Updated for Render with Railway fallback
+# ============================================================================
+# CORS CONFIGURATION - FIXED FOR SHARED DOMAIN AUTHENTICATION
+# ============================================================================
+
+# CORS Configuration - Allow frontend to access backend with cookies
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Local frontend
+    "https://bms.mapactive.tech",  # BMS Frontend (PRODUCTION)
+    "https://login.ticketing.mapactive.tech",  # Centralized Auth Login
+    "https://api.ticketing.mapactive.tech",  # Centralized Auth API
     "https://frontend-r2az.onrender.com",  # Old Render frontend (keep for safety or remove)
-    "https://budget-pro-static-site.onrender.com",  # <--- ADD THIS NEW URL
-    "https://auth-service-cdln.onrender.com",
-    
-    os.getenv('FRONTEND_URL'),
-    os.getenv('AUTH_SERVICE_URL'),
+    "https://budget-pro-static-site.onrender.com",  # Render frontend
+    "https://auth-service-cdln.onrender.com",  # Auth service
 ]
+
+# Add environment variable origins if they exist
+if os.getenv('FRONTEND_URL'):
+    CORS_ALLOWED_ORIGINS.append(os.getenv('FRONTEND_URL'))
+if os.getenv('AUTH_SERVICE_URL'):
+    CORS_ALLOWED_ORIGINS.append(os.getenv('AUTH_SERVICE_URL'))
 
 # Added Railway URLs as fallback
 railway_frontend = os.getenv('RAILWAY_FRONTEND_URL')
@@ -138,6 +148,77 @@ if railway_frontend:
 # Filter out None values
 CORS_ALLOWED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin]
 
+# CRITICAL: Allow credentials (cookies) to be sent cross-origin
+# This enables the browser to send HttpOnly cookies from .mapactive.tech
+CORS_ALLOW_CREDENTIALS = True
+
+# CORS_ALLOW_ALL_ORIGINS should be False in production for security
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+
+# Allow specific headers
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# ============================================================================
+# CSRF CONFIGURATION
+# ============================================================================
+
+# CSRF Configuration - Required for Django 4.0+ cross-origin POST requests
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'https://bms.mapactive.tech',
+    'https://login.ticketing.mapactive.tech',
+]
+
+# Add from environment variable if exists
+env_csrf_origins = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '')
+if env_csrf_origins:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in env_csrf_origins.split(',') if origin.strip()])
+
+# Clean up list (remove duplicates)
+CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS))
+
+# ============================================================================
+# COOKIE DOMAIN CONFIGURATION - CRITICAL FOR CROSS-SUBDOMAIN AUTH
+# ============================================================================
+
+# Set cookie domain to .mapactive.tech to share across subdomains
+COOKIE_DOMAIN = os.getenv('COOKIE_DOMAIN', '.mapactive.tech')
+
+if not DEBUG:
+    # Production settings for shared domain cookies
+    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+    CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
+    
+    # CRITICAL: Use 'None' for SameSite when using cross-origin with credentials
+    # This allows cookies to be sent from bms.mapactive.tech to api.bms.mapactive.tech
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = 'None'
+    
+    # Secure must be True when SameSite=None (HTTPS required)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    # Development settings
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
+# ============================================================================
+# SERVICE-TO-SERVICE API KEYS
+# ============================================================================
 
 # Settings for when THIS BMS service calls OTHER services
 BMS_AUTH_KEY_FOR_DTS = os.getenv('API_KEY_FOR_BMS_TO_CALL_DTS') # Key BMS uses
@@ -155,12 +236,6 @@ AMS_STATUS_UPDATE_URL = os.getenv('AMS_STATUS_UPDATE_ENDPOINT_URL')
 HDTS_STATUS_UPDATE_URL = os.getenv('HDTS_STATUS_UPDATE_ENDPOINT_URL')
 
 # Keys expected from client services calling THIS (BMS) service
-
-
-
-
-
-
 DTS_CLIENT_API_KEY_EXPECTED = os.getenv('DTS_CLIENT_API_KEY')
 TTS_CLIENT_API_KEY_EXPECTED = os.getenv('TTS_CLIENT_API_KEY')
 HDS_CLIENT_API_KEY_EXPECTED = os.getenv('HDS_CLIENT_API_KEY')
@@ -171,41 +246,18 @@ if DTS_CLIENT_API_KEY_EXPECTED:
     SERVICE_API_KEYS[DTS_CLIENT_API_KEY_EXPECTED] = "DTS"
 if TTS_CLIENT_API_KEY_EXPECTED:
     SERVICE_API_KEYS[TTS_CLIENT_API_KEY_EXPECTED] = "TTS"
-    
-# MODIFICATION START
 if HDS_CLIENT_API_KEY_EXPECTED:
     SERVICE_API_KEYS[HDS_CLIENT_API_KEY_EXPECTED] = "HDS"
 if AMS_CLIENT_API_KEY_EXPECTED:
     SERVICE_API_KEYS[AMS_CLIENT_API_KEY_EXPECTED] = "AMS"
-# MODIFICATION END
 
 # Filter out None values if a key isn't set in .env
 SERVICE_API_KEYS = {k: v for k, v in SERVICE_API_KEYS.items() if k}
 
-# --- ADD THIS SECTION ---
-# CSRF Configuration - Required for Django 4.0+ cross-origin POST requests (Logout/Login)
-CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
-# Clean up list (trim spaces and remove empty strings)
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if origin.strip()]
-# ------------------------
-# MODIFICATION START: Shared Domain Cookie Settings
-# This enables cookies to be shared across subdomains (e.g., auth.mapactive.tech and bms.mapactive.tech)
-COOKIE_DOMAIN = os.getenv('COOKIE_DOMAIN', '.mapactive.tech') # Default to custom domain
-if not DEBUG:
-    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
-    SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
-    CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
-    SESSION_COOKIE_SAMESITE = 'Lax' # or 'None' if using different subdomains for API/Frontend
-    CSRF_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-# MODIFICATION END
-# ------------------------
+# ============================================================================
+# EMAIL CONFIGURATION
+# ============================================================================
 
-CORS_ALLOW_ALL_ORIGINS = True  # For development - restrict in production
-CORS_ALLOW_CREDENTIALS = True
-
-# Email Configuration
 EMAIL_BACKEND = os.getenv(
     'EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
@@ -215,8 +267,10 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
+# ============================================================================
+# CLOUDINARY CONFIGURATION
+# ============================================================================
 
-# Cloudinary Configuration
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -236,20 +290,25 @@ if DEBUG:
 else:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
+# ============================================================================
+# DEBUG TOOLBAR
+# ============================================================================
 
-# Debug toolbar settings
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
 
-# JWT Settings
+# ============================================================================
+# JWT AUTHENTICATION CONFIGURATION - CRITICAL FOR CENTRALIZED AUTH
+# ============================================================================
 
 # JWT Signing Key - MUST match the centralized auth service's signing key
 # This allows BMS to verify tokens issued by the centralized auth service
+# CRITICAL: This MUST be the EXACT same value as in your auth service
 JWT_SIGNING_KEY = os.getenv('DJANGO_JWT_SIGNING_KEY', SECRET_KEY)
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),  # Match auth service
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Match auth service
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Match auth service
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -267,12 +326,15 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
+# ============================================================================
+# MIDDLEWARE
+# ============================================================================
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS must be before CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'core.middleware.HealthCheckCSRFExemptMiddleware', 
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -284,10 +346,14 @@ MIDDLEWARE = [
 
 CSRF_EXEMPT_URLS = ['/health/']
 
-# REST Framework settings
+# ============================================================================
+# REST FRAMEWORK CONFIGURATION - CRITICAL FOR AUTHENTICATION
+# ============================================================================
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [ 
         'core.authentication.JWTCookieAuthentication',  # Primary: JWT via cookies or Bearer header (centralized auth)
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Fallback: Standard JWT header auth
         'core.service_authentication.APIKeyAuthentication',  # For service-to-service API keys
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -300,7 +366,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Cache configuration for user data
+# ============================================================================
+# CACHE CONFIGURATION
+# ============================================================================
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -310,14 +379,16 @@ CACHES = {
 
 ROOT_URLCONF = 'capstone.urls'
 
+# ============================================================================
+# DRF SPECTACULAR (API DOCUMENTATION)
+# ============================================================================
 
-# DRF Spectacular settings for API documentation
 SPECTACULAR_SETTINGS = {
     "TITLE": "Budget Service API",
     "DESCRIPTION": "API for Budget Management",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    "SECURITY": [{"BearerAuth": []}],  # <-- Add this line
+    "SECURITY": [{"BearerAuth": []}],
     "COMPONENT_SPLIT_REQUEST": True,
     "COMPONENT_SECURITY_SCHEMES": {
         "BearerAuth": {
@@ -341,6 +412,9 @@ SPECTACULAR_SETTINGS = {
     'OPERATION_SORTER': 'method',
 }
 
+# ============================================================================
+# TEMPLATES
+# ============================================================================
 
 TEMPLATES = [
     {
@@ -359,9 +433,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'capstone.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
@@ -394,15 +468,17 @@ else:
         }
     }
 
+# ============================================================================
+# SUPERUSER CONFIGURATION
+# ============================================================================
 
-# Optional: Only needed if using Django's createsuperuser command
 DJANGO_SUPERUSER_USERNAME = os.getenv('DJANGO_SUPERUSER_USERNAME')
 DJANGO_SUPERUSER_EMAIL = os.getenv('DJANGO_SUPERUSER_EMAIL')
 DJANGO_SUPERUSER_PASSWORD = os.getenv('DJANGO_SUPERUSER_PASSWORD')
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# ============================================================================
+# PASSWORD VALIDATION
+# ============================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -432,25 +508,25 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.ScryptPasswordHasher',
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+# ============================================================================
+# INTERNATIONALIZATION
+# ============================================================================
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
+# ============================================================================
+# STATIC FILES
+# ============================================================================
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_URL = 'static/'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+# ============================================================================
+# DEFAULT AUTO FIELD
+# ============================================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
