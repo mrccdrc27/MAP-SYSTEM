@@ -266,20 +266,28 @@ EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default='')
 # Frontend URL for invitation links
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
-# Cookie domain configuration
-COOKIE_DOMAIN = config('COOKIE_DOMAIN', default='localhost')
+# Cookie domain for sharing across *.mapactive.tech subdomains
+COOKIE_DOMAIN = config('COOKIE_DOMAIN', default='.mapactive.tech' if IS_PRODUCTION else 'localhost')
 
-# Session and Cookie Security Settings
-# Only enforce secure cookies in production with HTTPS
-# For development, allow HTTP even when DEBUG=False
+# Session Cookie Settings
 SESSION_COOKIE_SECURE = config('DJANGO_SESSION_COOKIE_SECURE', default='False' if not IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-SESSION_COOKIE_SAMESITE = config('DJANGO_SESSION_COOKIE_SAMESITE', default='Lax')
 SESSION_COOKIE_HTTPONLY = config('DJANGO_SESSION_COOKIE_HTTPONLY', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-SESSION_COOKIE_DOMAIN = config('DJANGO_SESSION_COOKIE_DOMAIN', default=None)
+
+# CRITICAL: Use .mapactive.tech domain for cookie sharing
+SESSION_COOKIE_DOMAIN = config('DJANGO_SESSION_COOKIE_DOMAIN', default=COOKIE_DOMAIN if COOKIE_DOMAIN != 'localhost' else None)
+
+# CRITICAL: Use 'None' for SameSite to allow cross-origin with credentials
+SESSION_COOKIE_SAMESITE = config('DJANGO_SESSION_COOKIE_SAMESITE', default='None' if IS_PRODUCTION else 'Lax')
+
+# CSRF Cookie Settings
 CSRF_COOKIE_SECURE = config('DJANGO_CSRF_COOKIE_SECURE', default='False' if not IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-CSRF_COOKIE_SAMESITE = config('DJANGO_CSRF_COOKIE_SAMESITE', default='Lax')
-CSRF_COOKIE_DOMAIN = config('DJANGO_CSRF_COOKIE_DOMAIN', default=None)
 CSRF_COOKIE_HTTPONLY = config('DJANGO_CSRF_COOKIE_HTTPONLY', default='False', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+
+# CRITICAL: Use .mapactive.tech domain for CSRF cookie sharing
+CSRF_COOKIE_DOMAIN = config('DJANGO_CSRF_COOKIE_DOMAIN', default=COOKIE_DOMAIN if COOKIE_DOMAIN != 'localhost' else None)
+
+# CRITICAL: Use 'None' for SameSite to allow cross-origin with credentials
+CSRF_COOKIE_SAMESITE = config('DJANGO_CSRF_COOKIE_SAMESITE', default='None' if IS_PRODUCTION else 'Lax')
 # Set to True in production with HTTPS
 
 # CSRF Trusted Origins - Required for Django 4.0+
