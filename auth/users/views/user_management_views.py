@@ -661,13 +661,18 @@ class UserByIdView(APIView):
     def get(self, request, user_id):
         try:
             user = User.objects.get(pk=user_id)
+            first = user.first_name or ''
+            middle = getattr(user, 'middle_name', '') or ''
+            last = user.last_name or ''
+            full_name = ' '.join(p for p in [first, middle, last] if p)
             return Response({
                 'id': user.id,
                 'email': user.email,
                 'username': user.username,
                 'first_name': user.first_name,
+                'middle_name': getattr(user, 'middle_name', ''),
                 'last_name': user.last_name,
-                'full_name': f"{user.first_name} {user.last_name}".strip(),
+                'full_name': full_name,
             })
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

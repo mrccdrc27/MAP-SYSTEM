@@ -2,6 +2,7 @@
 API views for employee authentication and profile management.
 """
 import logging
+from django.conf import settings
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, BasePermission
@@ -109,8 +110,12 @@ class EmployeeTokenObtainPairView(generics.GenericAPIView):
     API endpoint for employee login with reCAPTCHA verification.
     POST: Login with email and password, returns JWT tokens
     """
-    serializer_class = None  # Will be set dynamically
     permission_classes = (AllowAny,)
+
+    def get_serializer_class(self):
+        """Return the appropriate serializer class."""
+        from .serializers import EmployeeTokenObtainPairWithRecaptchaSerializer
+        return EmployeeTokenObtainPairWithRecaptchaSerializer
 
     def post(self, request, *args, **kwargs):
         """Authenticate employee and return JWT tokens."""
@@ -203,13 +208,17 @@ class EmployeeTokenRefreshView(APIView):
                 status=status.HTTP_200_OK
             )
             
+            cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+            use_secure = not settings.DEBUG
             response.set_cookie(
                 'access_token',
                 access_token,
                 httponly=True,
-                secure=True,
-                samesite='Strict',
-                max_age=900
+                secure=use_secure,
+                samesite='Lax',
+                max_age=900,
+                path='/',
+                domain=cookie_domain,
             )
             
             return response
@@ -301,6 +310,37 @@ class EmployeeProfileView(generics.RetrieveUpdateAPIView):
                 'employee': EmployeeProfileSerializer(employee).data,
                 'message': 'Profile fully updated successfully'
             },
+            status=status.HTTP_200_OK
+        )
+
+
+class EmployeeVerifyPasswordView(APIView):
+    """
+    API endpoint to verify employee's current password.
+    POST: Verify password without changing it
+    """
+    permission_classes = (IsEmployeeAuthenticated,)
+
+    def post(self, request):
+        """Verify employee's current password."""
+        current_password = request.data.get('current_password')
+        
+        if not current_password:
+            return Response(
+                {'detail': 'Current password is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        employee = request.employee if hasattr(request, 'employee') else Employees.objects.get(id=request.user.id)
+        
+        if not employee.check_password(current_password):
+            return Response(
+                {'detail': 'Password is incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response(
+            {'detail': 'Password verified successfully'},
             status=status.HTTP_200_OK
         )
 
@@ -407,31 +447,46 @@ class VerifyEmployeeOTPView(APIView):
         employee.save(update_fields=['last_login'])
 
         # Generate tokens manually (same as serializer) to avoid RefreshToken.for_user() issue
+        import uuid
         now = timezone.now()
         access_exp = now + timedelta(minutes=15)
         refresh_exp = now + timedelta(days=7)
         
+        # Build full name
+        full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
+        
+        # Get JWT issuer for Kong compatibility (must match Kong JWT credential key)
+        jwt_issuer = getattr(settings, 'SIMPLE_JWT', {}).get('ISSUER', 'tts-jwt-issuer')
+        
         access_payload = {
-            'employee_id': employee.id,
-            'email': employee.email,
-            'first_name': employee.first_name,
-            'last_name': employee.last_name,
-            'company_id': employee.company_id,
             'token_type': 'access',
-            'exp': access_exp.timestamp(),
-            'iat': now.timestamp(),
+            'exp': int(access_exp.timestamp()),
+            'iat': int(now.timestamp()),
+            'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
+            'user_id': employee.id,
+            'employee_id': employee.id,  # Keep for backward compatibility
+            'email': employee.email,
+            'username': employee.username or employee.email.split('@')[0],
+            'full_name': full_name,
+            'user_type': 'employee',
+            'roles': [{'system': 'hdts', 'role': 'Employee'}]
         }
         
         refresh_payload = {
-            'employee_id': employee.id,
-            'email': employee.email,
             'token_type': 'refresh',
-            'exp': refresh_exp.timestamp(),
-            'iat': now.timestamp(),
+            'exp': int(refresh_exp.timestamp()),
+            'iat': int(now.timestamp()),
+            'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
+            'user_id': employee.id,
+            'employee_id': employee.id,  # Keep for backward compatibility
+            'email': employee.email,
+            'user_type': 'employee',
         }
         
         algorithm = getattr(settings, 'SIMPLE_JWT', {}).get('ALGORITHM', 'HS256')
-        secret = settings.SECRET_KEY
+        secret = getattr(settings, 'SIMPLE_JWT', {}).get('SIGNING_KEY', settings.SECRET_KEY)
         
         access_token = jwt.encode(access_payload, secret, algorithm=algorithm)
         refresh_token = jwt.encode(refresh_payload, secret, algorithm=algorithm)
@@ -445,22 +500,28 @@ class VerifyEmployeeOTPView(APIView):
             status=status.HTTP_200_OK
         )
         
-        # Set secure cookies
+        # Set secure cookies using COOKIE_DOMAIN from settings
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        use_secure = not settings.DEBUG
         response.set_cookie(
             'access_token',
             access_token,
             httponly=True,
-            secure=True,
-            samesite='Strict',
-            max_age=900
+            secure=use_secure,
+            samesite='Lax',
+            max_age=900,
+            path='/',
+            domain=cookie_domain,
         )
         response.set_cookie(
             'refresh_token',
             refresh_token,
             httponly=True,
-            secure=True,
-            samesite='Strict',
-            max_age=86400
+            secure=use_secure,
+            samesite='Lax',
+            max_age=86400,
+            path='/',
+            domain=cookie_domain,
         )
 
         return response

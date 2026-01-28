@@ -1,0 +1,131 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+  gap: var(--space-sm);
+  font-family: inherit;
+  font-size: var(--font-sm);
+  min-height: 42px;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.secondary {
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-hover);
+}
+
+.danger {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+}
+
+.success {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.success:hover:not(:disabled) {
+  background-color: var(--color-success-hover);
+}
+
+.warning {
+  background-color: var(--color-warning);
+  color: var(--text-color);
+}
+
+.warning:hover:not(:disabled) {
+  background-color: var(--color-warning-hover);
+}
+
+.outline {
+  background-color: transparent;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.outline:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.text {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  padding: 0;
+  min-height: auto;
+}
+
+.text:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+/* Sizes */
+.small {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-xs);
+  min-height: 32px;
+}
+
+.large {
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--font-lg);
+  min-height: 52px;
+}
+
+/* Loading State */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+.outline .spinner {
+  border-top-color: var(--color-primary);
+  border-left-color: var(--primary-shadow-light);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullWidth {
+  width: 100%;
+}

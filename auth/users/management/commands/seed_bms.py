@@ -45,8 +45,7 @@ class Command(BaseCommand):
                     system=bms_system,
                     defaults={
                         'description': f'{r_name} role for BMS', 
-                        'is_custom': False,
-                        'is_active': True
+                        'is_custom': False
                     }
                 )
                 roles_map[r_name] = role
