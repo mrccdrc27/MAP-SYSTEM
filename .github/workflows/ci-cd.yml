@@ -9,7 +9,7 @@ on:
     branches:
       - main
       - develop
-      - bms/login           # ← add this line
+      - bms/login
   pull_request:
     branches:
       - main
@@ -59,29 +59,29 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-          cache-dependency-path: 'budget_service/requirements.txt'
+          cache-dependency-path: 'bms/budget_service/requirements.txt'
 
       - name: Install Python dependencies
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-django pytest-cov flake8 black isort
 
       - name: Check code formatting (Black)
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         run: |
           black --check --diff --color .
         continue-on-error: true # Don't fail build, just warn
 
       - name: Check import sorting (isort)
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         run: |
           isort --check-only --diff .
         continue-on-error: true
 
       - name: Lint with flake8
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         run: |
           # Stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -90,7 +90,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Django System Checks
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         env:
           DJANGO_SETTINGS_MODULE: capstone.settings
           DJANGO_SECRET_KEY: 'test-secret-key-for-ci'
@@ -102,7 +102,7 @@ jobs:
           python manage.py check --deploy --fail-level WARNING
 
       - name: Check for missing migrations
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         env:
           DJANGO_SETTINGS_MODULE: capstone.settings
           DJANGO_SECRET_KEY: 'test-secret-key-for-ci'
@@ -113,7 +113,7 @@ jobs:
           python manage.py makemigrations --dry-run --check
 
       - name: Run Database Migrations
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         env:
           DJANGO_SETTINGS_MODULE: capstone.settings
           DJANGO_SECRET_KEY: 'test-secret-key-for-ci'
@@ -128,7 +128,7 @@ jobs:
           python manage.py migrate --noinput
 
       - name: Run Django Tests
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         env:
           DJANGO_SETTINGS_MODULE: capstone.settings
           DJANGO_SECRET_KEY: 'test-secret-key-for-ci'
@@ -147,7 +147,7 @@ jobs:
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
-          file: ./budget_service/coverage.xml
+          file: ./bms/budget_service/coverage.xml
           flags: backend
         continue-on-error: true
 
@@ -167,24 +167,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          cache-dependency-path: 'bms/frontend/package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./frontend
+        working-directory: ./bms/frontend
         run: npm ci
 
       - name: Run ESLint
-        working-directory: ./frontend
+        working-directory: ./bms/frontend
         run: npm run lint
         continue-on-error: true
 
       - name: Run Frontend Tests
-        working-directory: ./frontend
+        working-directory: ./bms/frontend
         run: npm test
         continue-on-error: true # React apps often don't have tests configured
 
       - name: Build Frontend
-        working-directory: ./frontend
+        working-directory: ./bms/frontend
         env:
           VITE_API_URL: https://api.bms.mapactive.tech/api
           VITE_AUTH_URL: https://api.ticketing.mapactive.tech
@@ -192,7 +192,7 @@ jobs:
         run: npm run build
 
       - name: Check build artifacts
-        working-directory: ./frontend
+        working-directory: ./bms/frontend
         run: |
           if [ ! -d "dist" ]; then
             echo "❌ Build failed - dist folder not created"
@@ -222,14 +222,14 @@ jobs:
         continue-on-error: true
 
       - name: Backend - Check for known vulnerabilities
-        working-directory: ./budget_service
+        working-directory: ./bms/budget_service
         run: |
           pip install safety
           safety check --json || true
         continue-on-error: true
 
       - name: Frontend - Audit npm packages
-        working-directory: ./frontend
+        working-directory: ./bms/frontend
         run: |
           npm audit --audit-level=high || true
         continue-on-error: true
