@@ -1,6 +1,6 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
-import { TrendingUp, Target, Download, BarChart3 } from "lucide-react"; // Added BarChart3
+import { TrendingUp, BarChart3, RefreshCw } from "lucide-react"; // Added BarChart3
 import "./DashboardCharts.css";
 
 const MoneyFlowChart = ({
@@ -10,7 +10,8 @@ const MoneyFlowChart = ({
   toggleForecasting,
   showForecastComparison,
   toggleForecastComparison,
-  onExport,
+  isFinanceManager, // New Prop
+  onRefreshForecast, // New Prop
 }) => {
   return (
     <div className="card chart-card" style={{ flex: 2 }}>
@@ -64,7 +65,23 @@ const MoneyFlowChart = ({
           </div>
           {/* --- RESTORED LEGEND END --- */}
 
+          
+
           <div className="toggle-group">
+
+            {/* MODIFICATION START: Refresh Forecast Button */}
+            {isFinanceManager && (
+                <button
+                  className="toggle-btn"
+                  onClick={onRefreshForecast}
+                  title="Recalculate Forecasts based on latest data"
+                >
+                  <RefreshCw size={16} />
+                  Refresh
+                </button>
+            )}
+            {/* MODIFICATION END */}
+
             <button
               className={`toggle-btn ${showForecasting ? "active" : ""}`}
               onClick={toggleForecasting}

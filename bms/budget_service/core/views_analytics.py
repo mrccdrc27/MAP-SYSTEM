@@ -7,10 +7,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.utils.dateparse import parse_date
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from django.db.models import Q
 from core.permissions import IsBMSUser
-
+# MODIFICATION START: New View for Triggering Forecasts
+from django.core.management import call_command
+from rest_framework.decorators import api_view, permission_classes
+from core.permissions import IsBMSFinanceHead
 from .models import Expense, Department, ExpenseCategory
 from .views_dashboard import get_user_department_id
 from .views_utils import get_user_bms_role
@@ -273,3 +276,26 @@ class SpendingHeatmapView(BaseAnalyticsView):
             final_result.append(item)
 
         return Response(final_result)
+    
+    
+@extend_schema(
+    tags=['Analytics'],
+    summary="Trigger Forecast Recalculation",
+    description="Manually triggers the forecast generation logic. Restricted to Finance Heads.",
+    responses={200: OpenApiResponse(description="Forecast generation started")}
+)
+@api_view(['POST'])
+@permission_classes([IsBMSFinanceHead])
+def trigger_forecast_generation(request):
+    """
+    Manually triggers the forecast generation logic.
+    This solves the issue where forecasts are static until a script is run.
+    """
+    try:
+        # Run the management command programmatically
+        # This is synchronous but fast enough for this specific logic (< 2 sec)
+        call_command('generate_forecasts')
+        return Response({"message": "Forecast generation completed successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# MODIFICATION END

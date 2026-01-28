@@ -1,5 +1,11 @@
 import budgetApi from './budgetAPI';
 
+
+export const triggerForecastUpdate = () => {
+    // MODIFICATION: Updated to match consistent URL structure
+    return budgetApi.post('/dashboard/analytics/forecast/trigger/');
+};
+
 /**
  * Get all fiscal years for the management list.
  */
