@@ -19,7 +19,7 @@ from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from django.urls import reverse_lazy
 from django.conf import settings
 
@@ -238,29 +238,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         response = Response(response_data, status=status.HTTP_200_OK)
 
-        # Set access token cookie
-        response.set_cookie(
-            'access_token',
-            access_token,
-            max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
-            httponly=False,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite='Lax',
-            path='/',
-            domain=None
-        )
-
-        # Set refresh token cookie
-        response.set_cookie(
-            'refresh_token',
-            refresh_token,
-            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-            httponly=False,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite='Lax',
-            path='/',
-            domain=None
-        )
+        # Use utility for consistent cookie settings across environments
+        from ..utils import set_auth_cookies
+        response = set_auth_cookies(response, access_token, refresh_token)
 
         return response
 
@@ -329,17 +309,9 @@ class CookieTokenRefreshView(generics.GenericAPIView):
                 status=status.HTTP_200_OK
             )
             
-            # Set new access token cookie
-            response.set_cookie(
-                'access_token',
-                access_token,
-                max_age=expires_in,
-                httponly=False,
-                secure=settings.SESSION_COOKIE_SECURE,
-                samesite='Lax',
-                path='/',
-                domain=None
-            )
+            # Use utility for consistent cookie settings across environments
+            from ..utils import set_auth_cookies
+            response = set_auth_cookies(response, access_token)
             
             return response
             
@@ -381,14 +353,91 @@ class CookieLogoutView(generics.GenericAPIView):
     serializer_class = LogoutSerializer
     
     def post(self, request, *args, **kwargs):
+        from django.contrib.auth import logout as django_logout
+        from django.conf import settings
+        
+        # Also logout from Django session
+        django_logout(request)
+        
         response_data = {'message': 'Logout successful'}
         response = Response(response_data, status=status.HTTP_200_OK)
         
-        # Clear both access and refresh token cookies
-        response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
-        response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
+        # Get the cookie domain from settings (should be 'localhost' for dev)
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        
+        # Clear both access and refresh token cookies - must match domain used when setting
+        response.delete_cookie('access_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=cookie_domain, samesite='Lax')
+        
+        # Also try without domain in case cookies were set differently
+        response.delete_cookie('access_token', path='/', samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', samesite='Lax')
+        
+        # Also clear sessionid cookie just to be sure
+        response.delete_cookie('sessionid', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('sessionid', path='/', samesite='Lax')
         
         return response
+
+
+@extend_schema(
+    tags=['Tokens'],
+    summary="Issue SSO tokens for external system",
+    description="Issue fresh JWT access and refresh tokens for authenticated user to be used in SSO flow with external systems. Returns raw tokens in response body.",
+    responses={
+        200: OpenApiResponse(
+            response=inline_serializer(
+                name='SSOTokensResponse',
+                fields={
+                    'access_token': drf_serializers.CharField(),
+                    'refresh_token': drf_serializers.CharField(),
+                    'expires_in': drf_serializers.IntegerField(),
+                }
+            ),
+            description="Fresh tokens issued successfully"
+        ),
+        401: OpenApiResponse(
+            description="User not authenticated"
+        )
+    }
+)
+class IssueSSOTokensView(generics.GenericAPIView):
+    """Issue fresh JWT tokens for SSO with external systems like AMS."""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        
+        # Generate fresh tokens using the custom serializer to include claims
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+        
+        # Calculate expires_in
+        access_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
+        expires_in = int(access_lifetime.total_seconds()) if access_lifetime else 300
+        
+        # Get role from system_roles (use first role or 'User' as default)
+        role = 'User'
+        user_system_roles = user.system_roles.all()
+        if user_system_roles.exists():
+            first_role = user_system_roles.first()
+            if first_role and first_role.role:
+                role = first_role.role.name
+        
+        return Response({
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'expires_in': expires_in,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name or '',
+                'last_name': user.last_name or '',
+                'role': role,
+                'contact_number': user.phone_number or '',
+            }
+        }, status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -449,8 +498,38 @@ class UILogoutView(TemplateView):
         
         response = redirect(logout_url)
         
-        # Clear JWT cookies
-        response.delete_cookie('access_token', path='/', domain=None, samesite='Lax')
-        response.delete_cookie('refresh_token', path='/', domain=None, samesite='Lax')
+        # Get the cookie domain from settings (should be 'localhost' for dev)
+        from django.conf import settings
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        
+        # Clear JWT cookies - must match domain used when setting
+        response.delete_cookie('access_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('access_token', path='/', samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', samesite='Lax')
+        
+        return response
+
+
+class EmployeeLogoutRedirectView(View):
+    """Logout endpoint for employees that clears cookies and redirects to auth-frontend."""
+    
+    def get(self, request, *args, **kwargs):
+        from django.conf import settings
+        
+        # Redirect to auth-frontend employee login
+        auth_frontend_url = getattr(settings, 'AUTH_FRONTEND_URL', 'http://localhost:3001')
+        response = redirect(f'{auth_frontend_url}/employee')
+        
+        # Get the cookie domain from settings
+        cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+        
+        # Clear JWT cookies - try both with and without domain
+        response.delete_cookie('access_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('access_token', path='/', samesite='Lax')
+        response.delete_cookie('refresh_token', path='/', samesite='Lax')
+        response.delete_cookie('sessionid', path='/', domain=cookie_domain, samesite='Lax')
+        response.delete_cookie('sessionid', path='/', samesite='Lax')
         
         return response

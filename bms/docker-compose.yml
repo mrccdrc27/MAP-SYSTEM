@@ -12,7 +12,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
     ports:
-      - "15432:5432"  # Using port 15432 (outside reserved range)
+      - "15432:5432"
     networks:
       - my_network
     healthcheck:
@@ -22,7 +22,6 @@ services:
       retries: 5
 
   auth_service:
-    # 1. Point to the ROOT auth folder
     build: ../auth  
     container_name: auth_service
     volumes:
@@ -31,9 +30,6 @@ services:
       - "8001:8000"
     env_file:
       - ../auth/.env
-    
-    # 2. OVERRIDE the entrypoint script.
-    # This runs the setup logic manually, bypassing Windows file issues.
     command: >
       sh -c "python manage.py makemigrations --noinput &&
              python manage.py migrate --noinput &&
@@ -43,11 +39,12 @@ services:
              python manage.py seed_hdts &&
              python manage.py seed_bms && 
              gunicorn auth.wsgi:application --bind 0.0.0.0:8000"
-             
     environment:
       - RECAPTCHA_ENABLED=False
       - DJANGO_ENV=development
       - DJANGO_SECRET_KEY=g^-i4u72k#@x1xmf4r@$%afoft=xsati0&8o9v5sa(s-#_wz++
+      # CRITICAL FIX: Must match BMS signing key
+      - DJANGO_JWT_SIGNING_KEY=super-secret-shared-key-12345
       - DJANGO_DEBUG=True
       # Database Config
       - POSTGRES_DB=budgetpro_auth
@@ -74,7 +71,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=a4d
     ports:
-      - "15433:5432"  # Using port 15433 (outside reserved range)
+      - "15433:5432"
     networks:
       - my_network
     healthcheck:
@@ -84,7 +81,6 @@ services:
       retries: 5
 
   budget_service:
-    # (Keep existing configuration)
     build: ./budget_service
     container_name: budget_service
     volumes:
@@ -92,6 +88,8 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # CRITICAL: Enable demo data seeding
+      - SEED_DEMO_DATA=true
       - DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
       - DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     env_file:

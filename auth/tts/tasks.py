@@ -108,6 +108,7 @@ def sync_user_system_role_to_workflow_api(user_system_role_id, action='create'):
             "user_id": user_system_role.user.id,
             "user_email": user_system_role.user.email,
             "user_full_name": user_full_name,
+            "department": user_system_role.user.department or '',
             "system": user_system_role.system.slug,
             "role_id": user_system_role.role.id,
             "role_name": user_system_role.role.name,

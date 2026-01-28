@@ -1,0 +1,153 @@
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--space-md);
+}
+
+.roundedInput :global(.input) {
+  border-radius: 40px !important;
+  height: 44px !important;
+  padding: 0 20px !important;
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--bg-color) !important;
+  font-size: var(--font-sm) !important;
+  color: var(--text-color) !important;
+}
+
+.roundedInput :global(.label) {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+
+.rememberMe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-start;
+  font-size: var(--font-sm);
+  color: var(--text-color);
+  user-select: none;
+  cursor: pointer;
+  margin-bottom: var(--space-md);
+}
+
+.rememberMe input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.logInButton {
+  border-radius: 40px !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  font-size: var(--font-base) !important;
+  background-color: var(--color-primary) !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+.logInButton:hover {
+  background-color: var(--color-primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+.formFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
+  gap: var(--space-sm);
+}
+
+.forgotLink a,
+.forgotLink button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.forgotLink a:hover,
+.forgotLink button:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.infoBox {
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: var(--font-sm);
+  color: #004085;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--space-md);
+}
+
+.backToLogin {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto;
+}
+
+.backToLogin:hover {
+  text-decoration: underline;
+}
+
+.registerPrompt {
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--muted-text-color);
+  margin-top: 0;
+}
+
+.registerLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.registerLink:hover {
+  text-decoration: underline;
+}
+
+.backToPortalLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backToPortalLink:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}

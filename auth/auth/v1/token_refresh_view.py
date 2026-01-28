@@ -1,4 +1,3 @@
-#auth/auth/v1/token_refresh_view.py
 """
 Unified Token Refresh View for both User and Employee models.
 Reads refresh_token from cookies only (not from request body).
@@ -125,11 +124,15 @@ class UnifiedTokenRefreshView(APIView):
         
         full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
         
+        # Get JWT issuer for Kong compatibility (must match Kong JWT credential key)
+        jwt_issuer = getattr(settings, 'SIMPLE_JWT', {}).get('ISSUER', 'tts-jwt-issuer')
+        
         access_payload = {
             'token_type': 'access',
             'exp': int(access_exp.timestamp()),
             'iat': int(now.timestamp()),
             'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
             'user_id': employee.id,
             'employee_id': employee.id,
             'email': employee.email,

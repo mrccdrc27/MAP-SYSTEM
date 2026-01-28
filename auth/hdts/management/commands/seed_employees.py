@@ -149,6 +149,19 @@ class Command(BaseCommand):
                 'status': 'Rejected',
                 'otp_enabled': False,
             },
+                        {
+                'email': 'employeeaccount@gmail.com',
+                'username': 'employeeaccount',
+                'password': 'Employee*1',
+                'first_name': 'employee',
+                'middle_name': '',
+                'last_name': 'account',
+                'suffix': None,
+                'phone_number': '+63917000009',
+                'department': 'IT Department',
+                'status': 'Approved',
+                'otp_enabled': False,
+            },
         ]
 
         created_count = 0

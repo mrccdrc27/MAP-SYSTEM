@@ -384,6 +384,7 @@ class AdminInviteUserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         
         return Response({
             "user": result["user"].email,
+            "company_id": result["user"].company_id,
             "temporary_password": result["temporary_password"],
             "role": result["assigned_role"].role.name,
             "system": result["assigned_role"].system.slug
