@@ -9,10 +9,12 @@ on:
     branches:
       - main
       - develop
+      - bms/login           # ← add this line
   pull_request:
     branches:
       - main
       - develop
+      - bms/login
   workflow_dispatch: # Allow manual trigger
 
 # Cancel in-progress runs if new commit is pushed
