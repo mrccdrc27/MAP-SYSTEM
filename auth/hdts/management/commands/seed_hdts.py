@@ -143,19 +143,6 @@ class Command(BaseCommand):
                 'department': 'Asset Department',
                 'company_id': None,
             },
-            {
-                'first_name': 'Employee',
-                'last_name': 'Account',
-                'email': 'employeeaccount@gmail.com',
-                'username': 'employeeaccount',
-                'phone_number': '+639170000006',
-                'role': 'Employee',
-                'is_staff': False,
-                'profile_picture': 'https://i.pinimg.com/736x/63/92/24/639224f094deff2ebf9cd261fba24004.jpg',
-                'department': 'IT Department',
-                'company_id': None,
-                'password': 'Employee*1',
-            },
         ]
 
         for user_data in predefined_users:
@@ -195,9 +182,7 @@ class Command(BaseCommand):
                 defaults=defaults,
             )
             if created:
-                # Use custom password if provided, otherwise default
-                password = user_data.get('password', 'password123')
-                user.set_password(password)
+                user.set_password('password123')  # Default password
                 # ensure company_id/department saved when created
                 if _user_model_has_field('company_id') and not getattr(user, 'company_id', None):
                     # use provided or generate

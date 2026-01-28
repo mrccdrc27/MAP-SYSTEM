@@ -1,18 +1,24 @@
 """
-Login and authentication flow views - handles API-based login with OTP verification.
-Template-serving views have been removed - frontend now handles all UI.
+Login and authentication flow views - handles user login, OTP for login, and system welcome page.
 """
 
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
-from django.views.decorators.cache import never_cache
-from django.utils.decorators import method_decorator
-from django.views.generic import FormView, TemplateView
-from django.urls import reverse_lazy
+from rest_framework.exceptions import ValidationError
 import logging
 
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
+from django.views.generic import FormView
+from django.shortcuts import redirect
+from django.contrib.auth import login
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.http import JsonResponse, HttpResponseServerError
+from django.views.generic import TemplateView
+
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.conf import settings
 
 from system_roles.models import UserSystemRole
@@ -22,8 +28,11 @@ from ..forms import LoginForm
 from ..serializers import CustomTokenObtainPairSerializer
 from ..decorators import jwt_cookie_required
 from ..rate_limiting import (
+    check_login_rate_limits,
     record_failed_login_attempt,
     record_successful_login,
+    get_client_ip,
+    generate_device_fingerprint
 )
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -243,9 +252,39 @@ class LoginView(FormView):
         else:
             response = redirect('system-welcome')
 
-        # Use utility for consistent cookie settings across environments
-        from ..utils import set_auth_cookies
-        response = set_auth_cookies(response, access_token, refresh_token, remember_me=remember_me)
+        # Set cookie durations based on remember_me selection
+        if remember_me:
+            access_max_age = 30 * 24 * 60 * 60  # 30 days
+            refresh_max_age = 30 * 24 * 60 * 60
+        else:
+            access_max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+            refresh_max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
+
+        # Determine cookie settings based on environment
+        cookie_domain = '.onrender.com' if settings.IS_PRODUCTION else None
+        cookie_secure = settings.IS_PRODUCTION
+        cookie_samesite = 'None' if settings.IS_PRODUCTION else 'Lax'
+        response.set_cookie(
+            'access_token',
+            access_token,
+            max_age=access_max_age,
+            httponly=True,
+            secure=cookie_secure,
+            samesite=cookie_samesite,
+            path='/',
+            domain=cookie_domain
+        )
+
+        response.set_cookie(
+            'refresh_token',
+            refresh_token,
+            max_age=refresh_max_age,
+            httponly=True,
+            secure=cookie_secure,
+            samesite=cookie_samesite,
+            path='/',
+            domain=cookie_domain
+        )
 
         if selected_system:
             messages.success(
@@ -504,25 +543,9 @@ class LoginAPIView(APIView):
             
             # Use Response Serializer to ensure consistent output format
             response_serializer = LoginResponseSerializer(response_data)
-            response = Response(response_serializer.data, status=status.HTTP_200_OK)
-
-            # Set cookies if tokens are present (for successful login)
-            if response_data.get('access_token'):
-                access_token = response_data.get('access_token')
-                refresh_token = response_data.get('refresh_token')
-                
-                # Use utility for consistent cookie settings across environments
-                from ..utils import set_auth_cookies
-                response = set_auth_cookies(response, access_token, refresh_token)
-
-            return response
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
         else:
             email = request.data.get('email', '')
-            # Log serializer errors to aid debugging of 400 responses
-            try:
-                logger.warning(f"Login serializer errors: {serializer.errors}")
-            except Exception:
-                logger.exception("Failed to log serializer errors for login API")
             if email:
                 record_failed_login_attempt(request, user_email=email)
             
@@ -533,7 +556,6 @@ class LoginAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class VerifyOTPLoginView(APIView):
     """
     API endpoint to verify OTP during login flow.
@@ -569,18 +591,7 @@ class VerifyOTPLoginView(APIView):
                 logger.info(f"User {user.email} successfully logged in with OTP verification")
             
             response_serializer = LoginResponseSerializer(response_data)
-            response = Response(response_serializer.data, status=status.HTTP_200_OK)
-
-            # Set cookies if tokens are present
-            if response_data.get('access_token'):
-                access_token = response_data.get('access_token')
-                refresh_token = response_data.get('refresh_token')
-                
-                # Use utility for consistent cookie settings across environments
-                from ..utils import set_auth_cookies
-                response = set_auth_cookies(response, access_token, refresh_token)
-
-            return response
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
         
         return Response({
             'success': False,

@@ -24,82 +24,8 @@ from ..serializers import (
 )
 from ..forms import ProfileSettingsForm
 from ..decorators import jwt_cookie_required
-from ..authentication import EmployeeUser
-from hdts.serializers import EmployeeProfileSerializer
 
 logger = logging.getLogger(__name__)
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary="Get current authenticated user",
-    description="Returns the current authenticated user's basic information with user type. Used by frontends to check authentication status on page load and determine which API endpoints to use.",
-    responses={
-        200: OpenApiResponse(
-            response=inline_serializer(
-                name='MeResponse',
-                fields={
-                    'type': drf_serializers.ChoiceField(choices=['staff', 'employee']),
-                    'data': UserProfileSerializer()
-                }
-            ),
-            description="User is authenticated. Returns user type and data."
-        ),
-        401: OpenApiResponse(
-            response=inline_serializer(
-                name='MeUnauthorizedError',
-                fields={'detail': drf_serializers.CharField()}
-            ),
-            description="Not authenticated. No valid JWT cookie present."
-        )
-    }
-)
-class MeView(generics.RetrieveAPIView):
-    """
-    Simple endpoint to check if user is authenticated.
-    GET /api/me/
-    
-    Returns user type ('staff' or 'employee') and user data.
-    The user type is extracted from the JWT token's user_type claim.
-    This is the primary endpoint for frontend auth checks.
-    """
-    permission_classes = (IsAuthenticated,)
-    serializer_class = UserProfileSerializer
-    
-    def get_object(self):
-        return self.request.user
-    
-    def retrieve(self, request, *args, **kwargs):
-        """Override retrieve to wrap response with user type."""
-        user = self.get_object()
-        
-        # Check if this is an employee user (wrapped by EmployeeUser)
-        if isinstance(user, EmployeeUser):
-            # Use employee serializer for employee users
-            serializer = EmployeeProfileSerializer(user.employee, context={'request': request})
-            return Response({
-                'type': 'employee',
-                'data': serializer.data
-            })
-        
-        # Staff user - use default serializer
-        serializer = self.get_serializer(user)
-        
-        # Extract user_type from JWT token (should be 'staff' for regular users)
-        user_type = 'staff'  # Default to staff
-        token_str = request.COOKIES.get('access_token')
-        if token_str:
-            try:
-                from rest_framework_simplejwt.tokens import AccessToken
-                access_token = AccessToken(token_str)
-                user_type = access_token.payload.get('user_type', 'staff')
-            except Exception:
-                pass
-        
-        return Response({
-            'type': user_type,
-            'data': serializer.data
-        })
 
 
 @extend_schema_view(
@@ -213,40 +139,31 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             print(f"[AUTH_PROFILE_UPDATE]   - {key}: {file_obj.name} ({file_obj.content_type}, {file_obj.size} bytes)")
         
         # If not admin/superuser, restrict which fields can be updated
-        # NOTE: The Serializer also restricts fields in __init__, so this check is stricter than necessary.
-        # We will log it but NOT block it here, relying on the serializer to ignore extra fields.
-        # This allows the frontend to send a full FormData object without causing 403s.
         if not is_admin_or_superuser:
             allowed_fields = {'username', 'phone_number', 'profile_picture'}
-            # We filter request.data to only keys that are actually present in the request
-            # For Multipart, all keys are strings.
-            present_keys = set(request.data.keys())
-            restricted_fields = present_keys - allowed_fields
+            restricted_fields = set(request.data.keys()) - allowed_fields
             
             print(f"[AUTH_PROFILE_UPDATE] Non-admin user detected")
             print(f"[AUTH_PROFILE_UPDATE] Allowed fields: {allowed_fields}")
-            print(f"[AUTH_PROFILE_UPDATE] Requested fields: {present_keys}")
+            print(f"[AUTH_PROFILE_UPDATE] Requested fields: {set(request.data.keys())}")
+            print(f"[AUTH_PROFILE_UPDATE] Restricted fields: {restricted_fields}")
             
             if restricted_fields:
-                print(f"[AUTH_PROFILE_UPDATE] [WARNING] Restricted fields detected but ignored: {restricted_fields}")
-                # We do NOT return 403 here anymore, letting Serializer handle it.
+                print(f"[AUTH_PROFILE_UPDATE] [REJECTED] Restricted fields detected")
+                print(f"{'='*80}\n")
+                return Response(
+                    {
+                        'error': 'Permission denied',
+                        'detail': f'You can only update: {", ".join(allowed_fields)}. '
+                                 f'Attempted to update restricted fields: {", ".join(restricted_fields)}'
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
         
         print(f"[AUTH_PROFILE_UPDATE] Permission check: PASSED")
         print(f"[AUTH_PROFILE_UPDATE] Creating serializer...")
         
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        
-        print(f"[AUTH_PROFILE_UPDATE] Serializer created: {serializer.__class__.__name__}")
-        print(f"[AUTH_PROFILE_UPDATE] Validating serializer...")
-        
-        if not serializer.is_valid():
-            print(f"[AUTH_PROFILE_UPDATE] [ERROR] Validation Failed!")
-            print(f"[AUTH_PROFILE_UPDATE] Errors: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        print(f"[AUTH_PROFILE_UPDATE] Serializer valid: True")
-        print(f"[AUTH_PROFILE_UPDATE] [OK] Validation passed")
-        print(f"[AUTH_PROFILE_UPDATE] Saving changes...")
         
         print(f"[AUTH_PROFILE_UPDATE] Serializer created: {type(serializer).__name__}")
         print(f"[AUTH_PROFILE_UPDATE] Validating serializer...")

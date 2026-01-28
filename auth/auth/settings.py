@@ -1,3 +1,4 @@
+#auth/auth/settings.py
 from pathlib import Path
 from decouple import config
 import os
@@ -25,6 +26,76 @@ ALLOWED_HOSTS = config(
     default='localhost,127.0.0.1,auth_service' if not IS_PRODUCTION else 'localhost',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = config(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:3000,http://127.0.0.1:3000',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = config(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# --- ADD THIS BLOCK ---
+# Explicitly allow the Render Frontend URL
+RENDER_FRONTEND_URL = "https://budget-pro-static-site.onrender.com"
+
+if RENDER_FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
+
+if RENDER_FRONTEND_URL not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(RENDER_FRONTEND_URL)
+# ---------------------
+
+# Always allow the Render domain, regardless of DEBUG setting
+ALLOWED_HOSTS.extend([
+    'auth-service-cdln.onrender.com',
+    '.onrender.com'
+])
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    
+# Share cookies across *.onrender.com subdomains
+if IS_PRODUCTION:
+    SESSION_COOKIE_DOMAIN = '.onrender.com'
+    CSRF_COOKIE_DOMAIN = '.onrender.com'
+    SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-domain
+    CSRF_COOKIE_SAMESITE = 'None'
+    # Must be True when SameSite=None (HTTPS required)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    # Local development
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DJANGO_DEBUG', default='False' if IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
+
+ALLOWED_HOSTS = config(
+    'DJANGO_ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,auth_service' if not IS_PRODUCTION else 'localhost',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# Always allow the Render domain, regardless of DEBUG setting
+ALLOWED_HOSTS.extend([
+    'auth-service-cdln.onrender.com',
+    '.onrender.com'
+])
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 # testapp
@@ -65,7 +136,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'auth.middleware.JWTAuthenticationMiddleware',  # Add JWT authentication middleware for cookies
-    # AuthenticationRoutingMiddleware removed - frontend handles all routing
+    'users.authentication_middleware.AuthenticationRoutingMiddleware',  # Centralized auth & routing
 ]
 
 ROOT_URLCONF = 'auth.urls'
@@ -182,7 +253,7 @@ JWT_SIGNING_KEY = config(
 )
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Short-lived for security, refresh via polling
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Short-lived for security, refresh via polling
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -190,7 +261,6 @@ SIMPLE_JWT = {
     'SIGNING_KEY': JWT_SIGNING_KEY,
     'USER_ID_FIELD': 'id',  # Use the integer primary key field
     'USER_ID_CLAIM': 'user_id',  # The claim in the token that will contain the user ID
-    'ISSUER': config('JWT_ISSUER', default='tts-jwt-issuer'),  # Required by Kong JWT plugin
 }
 
 SPECTACULAR_SETTINGS = {
@@ -239,11 +309,6 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Media Base URL for generating absolute URLs to media files
-# When behind Kong gateway, use the gateway URL (e.g., http://localhost:8080/auth)
-# When accessed directly, use the service URL (e.g., http://localhost:8003)
-MEDIA_BASE_URL = config('MEDIA_BASE_URL', default='')
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -273,20 +338,14 @@ COOKIE_DOMAIN = config('COOKIE_DOMAIN', default='localhost')
 # Only enforce secure cookies in production with HTTPS
 # For development, allow HTTP even when DEBUG=False
 SESSION_COOKIE_SECURE = config('DJANGO_SESSION_COOKIE_SECURE', default='False' if not IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-SESSION_COOKIE_SAMESITE = config('DJANGO_SESSION_COOKIE_SAMESITE', default='Lax')
-SESSION_COOKIE_HTTPONLY = config('DJANGO_SESSION_COOKIE_HTTPONLY', default='True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-SESSION_COOKIE_DOMAIN = config('DJANGO_SESSION_COOKIE_DOMAIN', default=None)
 CSRF_COOKIE_SECURE = config('DJANGO_CSRF_COOKIE_SECURE', default='False' if not IS_PRODUCTION else 'True', cast=lambda x: x.lower() in ('true', '1', 'yes'))
-CSRF_COOKIE_SAMESITE = config('DJANGO_CSRF_COOKIE_SAMESITE', default='Lax')
-CSRF_COOKIE_DOMAIN = config('DJANGO_CSRF_COOKIE_DOMAIN', default=None)
-CSRF_COOKIE_HTTPONLY = config('DJANGO_CSRF_COOKIE_HTTPONLY', default='False', cast=lambda x: x.lower() in ('true', '1', 'yes'))
 # Set to True in production with HTTPS
 
 # CSRF Trusted Origins - Required for Django 4.0+
 # Add your Railway domain and frontend domain here
 CSRF_TRUSTED_ORIGINS = config(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://localhost:1000,http://127.0.0.1:1000,http://165.22.247.50:5173,http://165.22.247.50:1000' if not IS_PRODUCTION else 'https://yourdomain.com',
+    default='http://localhost:3000,http://127.0.0.1:3000' if not IS_PRODUCTION else 'https://yourdomain.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -294,7 +353,7 @@ CSRF_TRUSTED_ORIGINS = config(
 # Always use environment variable if provided; defaults to localhost origins
 CORS_ALLOWED_ORIGINS = config(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,http://165.22.247.50:5173,http://165.22.247.50:1000',
+    default='http://localhost:1000,http://127.0.0.1:1000,http://localhost:3000,http://127.0.0.1:3000',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -328,7 +387,7 @@ SYSTEM_TEMPLATE_URLS = {
     'tts': config('TTS_SYSTEM_URL', default='http://localhost:1000'),
     'ams': config('AMS_SYSTEM_URL', default='http://localhost:3000/ams'),
     'hdts': config('HDTS_SYSTEM_URL', default='http://localhost:5173/employee/home'),
-    'bms': config('BMS_SYSTEM_URL', default='http://localhost:3000/bms'),
+    'bms': config('BMS_SYSTEM_URL', default='http://localhost:5173/'),
 }
 
 # Fallback system URL for unknown systems
