@@ -14,11 +14,13 @@ from system_roles.models import UserSystemRole
 
 User = get_user_model()
 
+
 class Command(BaseCommand):
     help = 'Seed Centralized Auth with BMS-specific users and roles.'
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.WARNING('Starting BMS Central Auth Seeder...'))
+        self.stdout.write(self.style.WARNING(
+            'Starting BMS Central Auth Seeder...'))
 
         with transaction.atomic():
             # 1. Ensure BMS System exists
@@ -28,8 +30,8 @@ class Command(BaseCommand):
                 defaults={
                     'name': 'Budget Management System',
                     'description': 'Financial planning and tracking system',
-                    'url': 'http://localhost:5173', # Local default
-                    'icon': 'monitor' 
+                    'url': 'http://localhost:5173',  # Local default
+                    'icon': 'monitor'
                 }
             )
             if created:
@@ -38,15 +40,14 @@ class Command(BaseCommand):
             # 2. Ensure BMS Roles exist
             roles_map = {}
             role_names = ['ADMIN', 'FINANCE_HEAD', 'GENERAL_USER']
-            
+
             for r_name in role_names:
                 role, _ = Role.objects.get_or_create(
                     name=r_name,
                     system=bms_system,
                     defaults={
-                        'description': f'{r_name} role for BMS', 
-                        'is_custom': False,
-                        'is_active': True
+                        'description': f'{r_name} role for BMS',
+                        'is_custom': False
                     }
                 )
                 roles_map[r_name] = role
@@ -59,30 +60,54 @@ class Command(BaseCommand):
                 2: 'Human Resources',
                 3: 'IT Application & Data',
                 4: 'Operations Department',
-                5: 'Marketing / Marketing Communications'
+                5: 'Marketing / Marketing Communications',
+                6: 'Sales / Store Operations',          # Add
+                7: 'Logistics Management',              # Add
+                8: 'Merchandising / Merchandise Planning'  # Add
             }
 
             users_data = [
                 # Admin (Finance Dept)
-                {'email': 'admin@example.com', 'username': 'admin_auth', 'password': 'Password123!', 'first_name': 'AuthAdmin', 'last_name': 'User', 'role_code': 'ADMIN', 'dept_id': 1},
-                
+                {'email': 'admin@example.com', 'username': 'admin_auth', 'password': 'Password123!',
+                    'first_name': 'AuthAdmin', 'last_name': 'User', 'role_code': 'ADMIN', 'dept_id': 1},
+
                 # Finance Head
-                {'email': 'finance_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!', 'first_name': 'Leon', 'last_name': 'Kennedy', 'role_code': 'FINANCE_HEAD', 'dept_id': 1},
-                
+                {'email': 'finance_head@example.com', 'username': 'finance_head_auth', 'password': 'Password123!',
+                    'first_name': 'Leon', 'last_name': 'Kennedy', 'role_code': 'FINANCE_HEAD', 'dept_id': 1},
+
                 # IT Support (Admin Access)
-                {'email': 'it_user@example.com', 'username': 'it_user_auth', 'password': 'Password123!', 'first_name': 'IT', 'last_name': 'Support', 'role_code': 'ADMIN', 'dept_id': 3},
-                
+                {'email': 'it_user@example.com', 'username': 'it_user_auth', 'password': 'Password123!',
+                    'first_name': 'IT', 'last_name': 'Support', 'role_code': 'ADMIN', 'dept_id': 3},
+
                 # Operations User (General User - Restricted to Dept)
-                {'email': 'ops_user@example.com', 'username': 'ops_user_auth', 'password': 'password123', 'first_name': 'Chris', 'last_name': 'Redfield', 'role_code': 'GENERAL_USER', 'dept_id': 4},
-                
+                {'email': 'ops_user@example.com', 'username': 'ops_user_auth', 'password': 'password123',
+                    'first_name': 'Chris', 'last_name': 'Redfield', 'role_code': 'GENERAL_USER', 'dept_id': 4},
+
                 # Marketing User
-                {'email': 'mkt_user@example.com', 'username': 'mkt_user_auth', 'password': 'Password123!', 'first_name': 'Jill', 'last_name': 'Valentine', 'role_code': 'GENERAL_USER', 'dept_id': 5},
+                {'email': 'mkt_user@example.com', 'username': 'mkt_user_auth', 'password': 'Password123!',
+                    'first_name': 'Jill', 'last_name': 'Valentine', 'role_code': 'GENERAL_USER', 'dept_id': 5},
 
                 # HR User
-                {'email': 'hr_user@example.com', 'username': 'hr_user_auth', 'password': 'Password123!', 'first_name': 'Ada', 'last_name': 'Wong', 'role_code': 'GENERAL_USER', 'dept_id': 2},
-                
+                {'email': 'hr_user@example.com', 'username': 'hr_user_auth', 'password': 'Password123!',
+                    'first_name': 'Ada', 'last_name': 'Wong', 'role_code': 'GENERAL_USER', 'dept_id': 2},
+
+                # Add these to users_data in seed_bms.py:
+
+                # Sales User
+                {'email': 'sales@example.com', 'username': 'sales_user', 'password': 'Password123!',
+                 'first_name': 'Sales', 'last_name': 'Manager', 'role_code': 'GENERAL_USER', 'dept_id': 6},
+
+                # Logistics User
+                {'email': 'logistics@example.com', 'username': 'logistics_user', 'password': 'Password123!',
+                 'first_name': 'Logistics', 'last_name': 'Manager', 'role_code': 'GENERAL_USER', 'dept_id': 7},
+
+                # Merchandising User
+                {'email': 'merch@example.com', 'username': 'merch_user', 'password': 'Password123!',
+                 'first_name': 'Merch', 'last_name': 'Planner', 'role_code': 'GENERAL_USER', 'dept_id': 8},
+
                 # Extra Admin
-                {'email': 'adibentulan@gmail.com', 'username': 'adi123', 'password': 'password123', 'first_name': 'Eldrin', 'last_name': 'Adi', 'role_code': 'ADMIN', 'dept_id': 3},
+                {'email': 'adibentulan@gmail.com', 'username': 'adi123', 'password': 'password123',
+                    'first_name': 'Eldrin', 'last_name': 'Adi', 'role_code': 'ADMIN', 'dept_id': 3},
             ]
 
             for u_data in users_data:
@@ -94,11 +119,11 @@ class Command(BaseCommand):
                         'username': u_data['username'],
                         'first_name': u_data['first_name'],
                         'last_name': u_data['last_name'],
-                        'department': dept_map.get(u_data['dept_id']), 
+                        'department': dept_map.get(u_data['dept_id']),
                         'is_active': True,
                         # is_staff usually grants access to Django Admin, mostly for Superusers/Admins
                         'is_staff': u_data['role_code'] in ['ADMIN', 'FINANCE_HEAD'],
-                        'status': 'Approved', # Important for login checks
+                        'status': 'Approved',  # Important for login checks
                         'notified': True
                     }
                 )
@@ -117,6 +142,8 @@ class Command(BaseCommand):
                             'assigned_at': timezone.now()
                         }
                     )
-                    self.stdout.write(f"  > Assigned {u_data['role_code']} to {user.email}")
+                    self.stdout.write(
+                        f"  > Assigned {u_data['role_code']} to {user.email}")
 
-        self.stdout.write(self.style.SUCCESS('BMS Central Auth Seeding Complete!'))
+        self.stdout.write(self.style.SUCCESS(
+            'BMS Central Auth Seeding Complete!'))

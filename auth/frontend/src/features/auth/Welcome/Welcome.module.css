@@ -1,0 +1,227 @@
+.welcomePage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-content-color) 0%, #e8f0fe 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-xl) var(--space-md);
+}
+
+.welcomeCard {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 800px;
+}
+
+.cardHeader {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-lg);
+}
+
+.logo img {
+  height: 60px;
+  width: auto;
+}
+
+.greeting {
+  font-size: var(--font-2xl);
+  color: var(--heading-color);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+
+.subtitle {
+  color: var(--muted-text-color);
+  font-size: var(--font-base);
+}
+
+.systemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.systemCard {
+  background-color: var(--bg-content-color);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.systemCard:hover:not(:disabled) {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary);
+}
+
+.systemCard:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.systemCard.redirecting {
+  border-color: var(--color-primary);
+  background-color: var(--primary-shadow-light);
+}
+
+.iconContainer {
+  width: 64px;
+  height: 64px;
+  background-color: var(--primary-shadow-light);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-md);
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  transition: all 0.3s ease;
+}
+
+.systemCard:hover:not(:disabled) .iconContainer {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.systemName {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--heading-color);
+  margin-bottom: var(--space-sm);
+}
+
+.systemDescription {
+  color: var(--muted-text-color);
+  font-size: var(--font-sm);
+  line-height: 1.5;
+  margin-bottom: var(--space-sm);
+}
+
+.roleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background-color: var(--primary-shadow-light);
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  margin-top: var(--space-sm);
+}
+
+.roleTag i {
+  font-size: 0.7rem;
+}
+
+.redirectIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  font-size: var(--font-sm);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--muted-text-color);
+}
+
+.emptyState i {
+  font-size: 3rem;
+  color: var(--color-warning);
+  margin-bottom: var(--space-lg);
+}
+
+.emptyState h3 {
+  font-size: var(--font-xl);
+  color: var(--heading-color);
+  margin-bottom: var(--space-sm);
+}
+
+.emptyState p {
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-lg);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--border-color);
+}
+
+.profileLink {
+  text-decoration: none;
+}
+
+.loadingContainer {
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.loadingContainer p {
+  color: var(--muted-text-color);
+  margin-top: var(--space-md);
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--primary-shadow-light);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.miniSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--primary-shadow-light);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .welcomeCard {
+    padding: var(--space-xl);
+  }
+
+  .systemsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardFooter {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+}

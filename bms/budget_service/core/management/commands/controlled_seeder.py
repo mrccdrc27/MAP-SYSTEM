@@ -5,7 +5,7 @@ from datetime import datetime
 import random
 import calendar
 from decimal import Decimal
-from django.contrib.auth import get_user_model # Standard Django way
+from django.contrib.auth import get_user_model
 
 # Import models
 from core.models import (
@@ -16,27 +16,27 @@ from core.models import (
 # Get the active User model (whether it's custom or default)
 User = get_user_model()
 
-# ... (SIMULATED_USERS, DEPARTMENTS_CONFIG, CATEGORY_TREE - KEEP SAME) ...
+# ✅ MODIFIED: Changed SIMULATED_USERS to include email
 SIMULATED_USERS = [
-    {'id': 1, 'username': 'admin_auth', 'full_name': 'AuthAdmin User',
+    {'id': 1, 'username': 'admin_auth', 'email': 'admin@example.com', 'full_name': 'AuthAdmin User',
         'dept': 'FIN', 'role': 'ADMIN'},
-    {'id': 2, 'username': 'finance_head_auth', 'full_name': 'Finance Head',
+    {'id': 2, 'username': 'finance_head_auth', 'email': 'finance_head@example.com', 'full_name': 'Finance Head',
         'dept': 'FIN', 'role': 'FINANCE_HEAD'},
-    {'id': 3, 'username': 'it_user_auth',
+    {'id': 3, 'username': 'it_user_auth', 'email': 'it_user@example.com',
         'full_name': 'IT Support', 'dept': 'IT', 'role': 'ADMIN'},
-    {'id': 4, 'username': 'ops_user_auth', 'full_name': 'Operations Staff',
+    {'id': 4, 'username': 'ops_user_auth', 'email': 'ops_user@example.com', 'full_name': 'Operations Staff',
         'dept': 'OPS', 'role': 'GENERAL_USER'},
-    {'id': 5, 'username': 'adi123', 'full_name': 'Eldrin Adi',
+    {'id': 5, 'username': 'adi123', 'email': 'adi@example.com', 'full_name': 'Eldrin Adi',
         'dept': 'IT', 'role': 'ADMIN'},
-    {'id': 6, 'username': 'mkt_user_auth', 'full_name': 'Marketing Specialist',
+    {'id': 6, 'username': 'mkt_user_auth', 'email': 'marketing@example.com', 'full_name': 'Marketing Specialist',
         'dept': 'MKT', 'role': 'GENERAL_USER'},
-    {'id': 7, 'username': 'hr_user_auth', 'full_name': 'HR Manager',
+    {'id': 7, 'username': 'hr_user_auth', 'email': 'hr_user@example.com', 'full_name': 'HR Manager',
         'dept': 'HR', 'role': 'GENERAL_USER'},
-    {'id': 8, 'username': 'sales_user', 'full_name': 'Sales Manager',
+    {'id': 8, 'username': 'sales_user', 'email': 'sales@example.com', 'full_name': 'Sales Manager',
         'dept': 'SALES', 'role': 'GENERAL_USER'},
-    {'id': 9, 'username': 'logistics_user', 'full_name': 'Logistics Manager',
+    {'id': 9, 'username': 'logistics_user', 'email': 'logistics@example.com', 'full_name': 'Logistics Manager',
         'dept': 'LOG', 'role': 'GENERAL_USER'},
-    {'id': 10, 'username': 'merch_user', 'full_name': 'Merch Planner',
+    {'id': 10, 'username': 'merch_user', 'email': 'merch@example.com', 'full_name': 'Merch Planner',
         'dept': 'MERCH', 'role': 'GENERAL_USER'},
 ]
 
@@ -134,41 +134,36 @@ class Command(BaseCommand):
     help = 'Controlled, idempotent seeder for BMS.'
 
     def handle(self, *args, **options):
-        # MODIFICATION START: Make seeding deterministic
         random.seed(42)
-        # MODIFICATION END
-
         self.stdout.write(self.style.WARNING(
             'Starting CONTROLLED seeding process...'))
 
         try:
             with transaction.atomic():
-                # Verify DB is clean or print what exists
                 current_cats = ExpenseCategory.objects.count()
                 self.stdout.write(
                     f"Current Category Count before run: {current_cats}")
 
                 fiscal_years = self.seed_fiscal_years()
                 departments = self.seed_departments()
-                
-                # NEW: Seed Users
-                self.seed_users(departments) 
-                
-                accounts = self.seed_accounts()
 
+                # ✅ CRITICAL FIX: Seed users FIRST, before anything references them
+                user_map = self.seed_users(departments)
+
+                accounts = self.seed_accounts(user_map)
                 categories = self.seed_categories(departments)
                 self.stdout.write(
                     f"Categories seeded map keys: {list(categories.keys())}")
 
                 projects = self.seed_proposals_and_projects(
-                    departments, fiscal_years, accounts, categories)
+                    departments, fiscal_years, accounts, categories, user_map)
                 self.stdout.write(f"Projects created: {len(projects)}")
 
                 allocations = self.seed_allocations(
-                    projects, categories, fiscal_years)
+                    projects, categories, fiscal_years, user_map)
                 self.stdout.write(f"Allocations created: {len(allocations)}")
 
-                self.seed_expenses(allocations, fiscal_years)
+                self.seed_expenses(allocations, fiscal_years, user_map)
 
                 self.stdout.write(self.style.SUCCESS(
                     'Successfully seeded database with controlled data.'))
@@ -178,55 +173,58 @@ class Command(BaseCommand):
             import traceback
             traceback.print_exc()
 
-    # --- MODIFIED METHOD ---
+    # ✅ COMPLETELY REWRITTEN: Now returns a user_map for referencing
     def seed_users(self, departments):
-        self.stdout.write("Seeding Local BMS Users...")
-        
-        dept_name_map = {d['code']: d['name'] for d in DEPARTMENTS_CONFIG}
+        """
+        Create or update BMS mirror users from SIMULATED_USERS.
+        Returns a dict mapping usernames to User instances.
+        """
+        self.stdout.write("Seeding Local BMS Mirror Users...")
 
-        # Introspect the User model to see which fields are valid
-        valid_fields = {f.name for f in User._meta.get_fields()}
+        dept_name_map = {d['code']: d['name'] for d in DEPARTMENTS_CONFIG}
+        user_map = {}
 
         for u_data in SIMULATED_USERS:
             dept_code = u_data['dept']
             dept_name = dept_name_map.get(dept_code)
             username = u_data['username']
-            
-            # GENERATE A DUMMY EMAIL if not provided
-            # This prevents the Unique Constraint error on empty emails
-            email = f"{username}@example.com" 
+            email = u_data['email']  # ✅ Now required in SIMULATED_USERS
 
-            defaults = {
-                'first_name': u_data['full_name'].split(' ')[0],
-                'last_name': ' '.join(u_data['full_name'].split(' ')[1:]),
-                'is_active': True,
-                'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD'],
-                'email': email  # Explicitly set the email
-            }
-            
-            if 'role' in valid_fields:
-                defaults['role'] = u_data['role']
-            
-            if 'department_name' in valid_fields:
-                defaults['department_name'] = dept_name
-            
-            # Use update_or_create on USERNAME, but update email too
+            # Split full_name into first/last
+            name_parts = u_data['full_name'].split(' ', 1)
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+            # ✅ CRITICAL: Use email as primary lookup (matches JIT provisioning logic)
             user, created = User.objects.update_or_create(
-                username=username,
-                defaults=defaults
+                email=email,  # Primary lookup key
+                defaults={
+                    'username': username,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'role': u_data['role'],
+                    'department_name': dept_name,
+                    'is_active': True,
+                    'is_staff': u_data['role'] in ['ADMIN', 'FINANCE_HEAD'],
+                }
             )
-            
+
+            user_map[username] = user  # Map username → User instance
+
             if created:
-                self.stdout.write(f"  Created local user: {username}")
+                self.stdout.write(
+                    f"  ✅ Created mirror user: {username} (id={user.id}, email={email})")
             else:
-                self.stdout.write(f"  Updated local user: {username}")
+                self.stdout.write(
+                    f"  🔄 Updated mirror user: {username} (id={user.id})")
+
+        return user_map
 
     def seed_fiscal_years(self):
         self.stdout.write("Seeding Fiscal Years (2023-2026)...")
         fys = {}
-        # Always include previous 3 years plus current year for realism/history
         current_year = datetime.now().year
-        years_to_seed = list(range(current_year - 3, current_year + 1))  # e.g., 2023-2026
+        years_to_seed = list(range(current_year - 3, current_year + 1))
 
         for year in years_to_seed:
             name = f"FY {year}"
@@ -249,7 +247,6 @@ class Command(BaseCommand):
         self.stdout.write("Seeding/Linking Departments...")
         dept_map = {}
         for d in DEPARTMENTS_CONFIG:
-            # Changed to update_or_create to be safe
             dept, _ = Department.objects.update_or_create(
                 code=d['code'],
                 defaults={'name': d['name'], 'is_active': True}
@@ -257,24 +254,26 @@ class Command(BaseCommand):
             dept_map[d['code']] = dept
         return dept_map
 
-    def seed_accounts(self):
+    # ✅ MODIFIED: Now accepts user_map parameter
+    def seed_accounts(self, user_map):
         self.stdout.write("Seeding/Linking Accounts...")
-        # Ensure types exist (just in case init wasn't run)
         asset_type, _ = AccountType.objects.get_or_create(name='Asset')
         expense_type, _ = AccountType.objects.get_or_create(name='Expense')
         liability_type, _ = AccountType.objects.get_or_create(name='Liability')
         equity_type, _ = AccountType.objects.get_or_create(name='Equity')
 
-        creator_id = 1
-        creator_name = 'admin_auth'
+        # ✅ FIXED: Use actual User instance from user_map
+        creator = user_map.get('admin_auth')
+        creator_id = creator.id if creator else 1
+        creator_name = creator.username if creator else 'admin_auth'
+
         acc_map = {}
 
-        # Safe update_or_create logic
         def ensure_account(code, name, type_obj):
             obj, _ = Account.objects.update_or_create(
                 code=code,
                 defaults={
-                    'name': name, 
+                    'name': name,
                     'account_type': type_obj,
                     'created_by_user_id': creator_id,
                     'created_by_username': creator_name
@@ -283,10 +282,14 @@ class Command(BaseCommand):
             return obj
 
         acc_map['CASH'] = ensure_account('1010', 'Cash in Bank', asset_type)
-        acc_map['PAYABLE'] = ensure_account('2010', 'Accounts Payable', liability_type)
-        acc_map['ASSET'] = ensure_account('1500', 'Property, Plant & Equipment', asset_type)
-        acc_map['EXPENSE'] = ensure_account('5000', 'General Expenses', expense_type)
-        acc_map['EQUITY'] = ensure_account('3000', 'Retained Earnings', equity_type)
+        acc_map['PAYABLE'] = ensure_account(
+            '2010', 'Accounts Payable', liability_type)
+        acc_map['ASSET'] = ensure_account(
+            '1500', 'Property, Plant & Equipment', asset_type)
+        acc_map['EXPENSE'] = ensure_account(
+            '5000', 'General Expenses', expense_type)
+        acc_map['EQUITY'] = ensure_account(
+            '3000', 'Retained Earnings', equity_type)
 
         return acc_map
 
@@ -294,7 +297,6 @@ class Command(BaseCommand):
         self.stdout.write("Seeding Categories (The Tree)...")
         cat_map = {}
 
-        # 1. Root Categories
         root_capex, _ = ExpenseCategory.objects.update_or_create(
             code='CAPEX', defaults={'name': 'Capital Expenditure', 'level': 1, 'classification': 'CAPEX'}
         )
@@ -302,13 +304,12 @@ class Command(BaseCommand):
             code='OPEX', defaults={'name': 'Operational Expenditure', 'level': 1, 'classification': 'OPEX'}
         )
 
-        # 2. Sub-Categories (MODIFIED: Now unpacks 3 values including code)
         for dept_code, items in CATEGORY_TREE.items():
-            for item_name, classification, code in items:  # ← CHANGED: Added 'code'
+            for item_name, classification, code in items:
                 parent = root_capex if classification == 'CAPEX' else root_opex
 
                 cat, created = ExpenseCategory.objects.update_or_create(
-                    code=code,  # ← CHANGED: Use hardcoded code instead of generated slug
+                    code=code,
                     defaults={
                         'name': item_name,
                         'level': 2,
@@ -317,54 +318,52 @@ class Command(BaseCommand):
                     }
                 )
                 if created:
-                    print(f"  Created Category: {code}")  # ← CHANGED: Log the clean code
+                    print(f"  Created Category: {code}")
 
                 if dept_code not in cat_map:
                     cat_map[dept_code] = []
                 cat_map[dept_code].append(cat)
-        
+
         return cat_map
 
-    def seed_proposals_and_projects(self, departments, fiscal_years, accounts, categories):
+    # ✅ MODIFIED: Now uses user_map to get actual User instances
+    def seed_proposals_and_projects(self, departments, fiscal_years, accounts, categories, user_map):
         self.stdout.write("Seeding Proposals and Projects...")
         projects = []
 
-        # MODIFICATION: Use dynamic year range instead of hard-coded list
         current_year = datetime.now().year
-        years_to_seed = list(range(current_year - 3, current_year + 1))  # e.g., 2023-2026
-        
-        for year in years_to_seed:  # CHANGED: Now includes 2026
+        years_to_seed = list(range(current_year - 3, current_year + 1))
+
+        # ✅ FIXED: Get finance head User instance
+        finance_head_user = user_map.get('finance_head_auth')
+
+        for year in years_to_seed:
             fy = fiscal_years[year]
             for dept_code, dept_obj in departments.items():
-                user = next(
+                # ✅ FIXED: Get department user from user_map
+                user_data = next(
                     (u for u in SIMULATED_USERS if u['dept'] == dept_code), SIMULATED_USERS[0])
-                finance_head = SIMULATED_USERS[1]
+                dept_user = user_map.get(user_data['username'])
+
                 dept_cats = categories.get(dept_code, [])
                 if not dept_cats:
                     continue
 
-                # Seed 5 proposals per department
                 for i in range(1, 6):
                     cat = random.choice(dept_cats)
-                    
-                    # MODIFICATION: Adjust status logic for current year (2026)
+
                     if year < current_year:
-                        # Historical years: Force APPROVED to ensure data exists
                         status = 'APPROVED'
                     elif year == current_year:
-                        # Current year: Mix of statuses for realism
-                        status = random.choice(['APPROVED', 'APPROVED', 'SUBMITTED', 'REJECTED'])
+                        status = random.choice(
+                            ['APPROVED', 'APPROVED', 'SUBMITTED', 'REJECTED'])
                     else:
-                        # Future years: Should not occur with current logic
                         status = 'SUBMITTED'
 
                     ticket_id = f"TKT-{dept_code}-{year}-{i:03d}"
                     amount = Decimal(str(random.randint(5000, 500000)))
-                    # Set logical submission date: early January for that year
-                    submission_date = datetime(year, 1, random.randint(
-                        5, 14), random.randint(8, 17), random.randint(0, 59))
-                    
-                    # Make submission date timezone aware
+                    submission_date = datetime(year, 1, random.randint(5, 14),
+                                               random.randint(8, 17), random.randint(0, 59))
                     submission_dt = timezone.make_aware(submission_date)
 
                     proposal, created = BudgetProposal.objects.update_or_create(
@@ -374,13 +373,13 @@ class Command(BaseCommand):
                             'department': dept_obj,
                             'fiscal_year': fy,
                             'project_summary': f"Request for {cat.name} to support operations.",
-                            'project_description': f"Detailed description for {cat.name}. Validated by {user['full_name']}.",
-                            'submitted_by_name': user['full_name'],
+                            'project_description': f"Detailed description for {cat.name}. Validated by {user_data['full_name']}.",
+                            'submitted_by_name': user_data['full_name'],
                             'status': status,
                             'performance_start_date': datetime(year, 1, 15).date(),
                             'performance_end_date': datetime(year, 12, 15).date(),
                             'sync_status': 'SYNCED',
-                            'finance_manager_name': finance_head['full_name'] if status != 'SUBMITTED' else '',
+                            'finance_manager_name': finance_head_user.get_full_name() if status != 'SUBMITTED' else '',
                             'submitted_at': submission_dt,
                         }
                     )
@@ -394,13 +393,12 @@ class Command(BaseCommand):
                             estimated_cost=amount,
                             account=accounts['ASSET'] if cat.classification == 'CAPEX' else accounts['EXPENSE']
                         )
-                        
-                        # Create Initial History (Submitted)
+
                         ProposalHistory.objects.get_or_create(
                             proposal=proposal,
                             action='SUBMITTED',
                             defaults={
-                                'action_by_name': user['full_name'],
+                                'action_by_name': user_data['full_name'],
                                 'action_at': submission_dt,
                                 'new_status': 'SUBMITTED',
                                 'comments': f"Initial submission via seeder."
@@ -408,17 +406,17 @@ class Command(BaseCommand):
                         )
 
                     if status == 'APPROVED':
-                        proposal.approved_by_name = finance_head['full_name']
+                        proposal.approved_by_name = finance_head_user.get_full_name()
                         proposal.approval_date = datetime(year, 1, 20)
                         proposal.save()
-                        
-                        # Create Approval History
-                        approval_dt = timezone.make_aware(datetime(year, 1, 20, 10, 0, 0))
+
+                        approval_dt = timezone.make_aware(
+                            datetime(year, 1, 20, 10, 0, 0))
                         ProposalHistory.objects.get_or_create(
                             proposal=proposal,
                             action='APPROVED',
                             defaults={
-                                'action_by_name': finance_head['full_name'],
+                                'action_by_name': finance_head_user.get_full_name(),
                                 'action_at': approval_dt,
                                 'previous_status': 'SUBMITTED',
                                 'new_status': 'APPROVED',
@@ -426,9 +424,8 @@ class Command(BaseCommand):
                             }
                         )
 
-                        # MODIFICATION: Adjust project status for current year
                         project_status = 'IN_PROGRESS' if year == current_year else 'COMPLETED'
-                        
+
                         project, _ = Project.objects.update_or_create(
                             budget_proposal=proposal,
                             defaults={
@@ -444,31 +441,33 @@ class Command(BaseCommand):
                         ProjectFiscalYear.objects.get_or_create(
                             project=project, fiscal_year=fy)
                         projects.append(project)
+
                     elif status == 'REJECTED':
-                        proposal.rejected_by_name = finance_head['full_name']
+                        proposal.rejected_by_name = finance_head_user.get_full_name()
                         proposal.rejection_date = datetime(year, 1, 25)
                         proposal.save()
-                        
-                        # Create Rejection History
-                        rejection_dt = timezone.make_aware(datetime(year, 1, 25, 14, 30, 0))
+
+                        rejection_dt = timezone.make_aware(
+                            datetime(year, 1, 25, 14, 30, 0))
                         ProposalHistory.objects.get_or_create(
                             proposal=proposal,
                             action='REJECTED',
                             defaults={
-                                'action_by_name': finance_head['full_name'],
+                                'action_by_name': finance_head_user.get_full_name(),
                                 'action_at': rejection_dt,
                                 'previous_status': 'SUBMITTED',
                                 'new_status': 'REJECTED',
                                 'comments': "Rejected due to budget constraints (Seeder)."
                             }
                         )
-                        
+
         return projects
 
-    def seed_allocations(self, projects, categories, fiscal_years):
+    # ✅ MODIFIED: Now uses user_map
+    def seed_allocations(self, projects, categories, fiscal_years, user_map):
         self.stdout.write("Seeding Budget Allocations...")
         allocations = []
-        finance_head = SIMULATED_USERS[1]
+        finance_head_user = user_map.get('finance_head_auth')
 
         for project in projects:
             item = project.budget_proposal.items.first()
@@ -497,7 +496,7 @@ class Command(BaseCommand):
                     'account': item.account,
                     'proposal': project.budget_proposal,
                     'amount': item.estimated_cost,
-                    'created_by_name': finance_head['full_name'],
+                    'created_by_name': finance_head_user.get_full_name(),
                     'is_active': True,
                     'is_locked': False
                 }
@@ -505,14 +504,14 @@ class Command(BaseCommand):
             allocations.append(allocation)
         return allocations
 
-    def seed_expenses(self, allocations, fiscal_years):
+    # ✅ MODIFIED: Now uses user_map to get actual User instances with correct IDs
+    def seed_expenses(self, allocations, fiscal_years, user_map):
         self.stdout.write("Seeding Historical Expenses...")
 
         current_month = datetime.now().month
         current_year = datetime.now().year
-        current_day = datetime.now().day  # NEW: Get current day
+        current_day = datetime.now().day
 
-        # Seasonal multipliers to create realistic curves
         SEASONAL_MULTIPLIERS = {
             1: 0.9, 2: 0.85, 3: 1.0, 4: 1.1, 5: 1.05, 6: 1.15,
             7: 0.95, 8: 0.9, 9: 1.2, 10: 1.1, 11: 1.25, 12: 1.3
@@ -521,90 +520,75 @@ class Command(BaseCommand):
         created_count = 0
         global_txn_counter = 0
 
+        # ✅ FIXED: Get finance head User instance
+        finance_head_user = user_map.get('finance_head_auth')
+
         for alloc in allocations:
             year = alloc.fiscal_year.start_date.year
             project_end = alloc.project.end_date
 
-            # --- MODIFIED: Determine end month based on year ---
             if year < current_year:
-                # Historical years: Create all 12 months
-                end_month = min(12, project_end.month) if year <= project_end.year else 12
+                end_month = min(
+                    12, project_end.month) if year <= project_end.year else 12
             elif year == current_year:
-                # Current year: Only create up to current month
                 end_month = current_month
             else:
-                # Future years: Skip entirely
                 continue
-            # --------------------------------------------------
-            
+
             for month in range(1, end_month + 1):
-                # 70% chance of expense in any given month
                 if random.random() < 0.3:
                     continue
-                
-                # --- MODIFIED: Determine max_day based on month and year ---
+
                 if year == current_year and month == current_month:
-                    # Current month: Only create expenses up to current day
-                    max_day = min(28, current_day - 1)  # -1 to avoid today
+                    max_day = min(28, current_day - 1)
                 elif month == project_end.month and year == project_end.year:
-                    # Project end month: Limit to project end day
                     max_day = min(28, project_end.day)
                 else:
-                    # Other months: Full month (safe value of 28)
                     max_day = 28
-                # ----------------------------------------------------------
-                
-                # Skip if max_day is invalid (e.g., current month just started)
+
                 if max_day < 1:
                     continue
-                
-                # Calculate day ONCE and use it
+
                 day = random.randint(1, max_day)
                 expense_date = datetime(year, month, day).date()
-                
-                # Double-check: Skip if expense would be after project end
+
                 if expense_date > project_end:
                     continue
 
-                # Pick users
-                user = next(
-                    (u for u in SIMULATED_USERS if u['dept'] == alloc.department.code),
+                # ✅ FIXED: Get department user from user_map
+                user_data = next(
+                    (u for u in SIMULATED_USERS if u['dept']
+                     == alloc.department.code),
                     SIMULATED_USERS[0]
                 )
-                finance_head = SIMULATED_USERS[1]
+                dept_user = user_map.get(user_data['username'])
 
-                # --- Calculation Logic (unchanged) ---
                 burn_rate = Decimal(random.uniform(0.015, 0.035))
-                seasonal_factor = Decimal(str(SEASONAL_MULTIPLIERS.get(month, 1.0)))
+                seasonal_factor = Decimal(
+                    str(SEASONAL_MULTIPLIERS.get(month, 1.0)))
                 year_diff = year - 2023
                 growth_factor = Decimal(1.0 + (year_diff * 0.05))
                 amount = alloc.amount * burn_rate * seasonal_factor * growth_factor
                 amount = round(amount, 2)
 
-                # Ensure we don't overspend the allocation
                 if alloc.get_remaining_budget() < amount:
                     continue
 
-                # --- MODIFIED: Status logic for current year ---
                 if year == current_year:
                     if month < current_month:
-                        # Past months in current year: Approved
                         status = 'APPROVED'
                     elif month == current_month:
-                        # Current month: Mix of statuses
-                        status = random.choice(['APPROVED', 'APPROVED', 'SUBMITTED'])
+                        status = random.choice(
+                            ['APPROVED', 'APPROVED', 'SUBMITTED'])
                     else:
-                        # Future months: Should not occur with new logic
                         continue
                 else:
-                    # Historical years: All approved
                     status = 'APPROVED'
-                # -------------------------------------------------
 
                 global_txn_counter += 1
                 txn_id = f"TXN-{year}{month:02d}-{global_txn_counter:05d}"
 
-                # Use update_or_create to avoid unique violations on re-runs
+                # ✅ CRITICAL FIX: Use actual User.id from BMS database
                 Expense.objects.update_or_create(
                     transaction_id=txn_id,
                     defaults={
@@ -618,11 +602,11 @@ class Command(BaseCommand):
                         'description': f"Purchase for {alloc.project.name} - {calendar_month_name(month)}",
                         'vendor': random.choice(['Supplier A', 'Vendor B', 'Service Corp', 'Logistics Inc']),
                         'status': status,
-                        'submitted_by_user_id': user['id'],
-                        'submitted_by_username': user['username'],
+                        'submitted_by_user_id': dept_user.id,  # ✅ FIXED: Use actual BMS User ID
+                        'submitted_by_username': dept_user.username,
                         'submitted_at': timezone.make_aware(datetime(year, month, day, 9, 0, 0)),
-                        'approved_by_user_id': finance_head['id'] if status == 'APPROVED' else None,
-                        'approved_by_username': finance_head['username'] if status == 'APPROVED' else None,
+                        'approved_by_user_id': finance_head_user.id if status == 'APPROVED' else None,  # ✅ FIXED
+                        'approved_by_username': finance_head_user.username if status == 'APPROVED' else None,
                         'approved_at': timezone.make_aware(datetime(year, month, day, 14, 0, 0)) if status == 'APPROVED' else None,
                         'is_accomplished': True if status == 'APPROVED' else False
                     }
@@ -630,6 +614,5 @@ class Command(BaseCommand):
 
                 created_count += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(f"Generated {created_count} expense records.")
-        )
+        self.stdout.write(self.style.SUCCESS(
+            f"Generated {created_count} expense records."))

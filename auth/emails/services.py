@@ -62,6 +62,12 @@ class EmailService:
             logger.info(f"Email sent successfully to {to_email} using template {template_name}")
             return True, 'sent', None
                 
+        except ConnectionRefusedError as e:
+            # SMTP server not available - log warning but don't fail the request
+            error_msg = f"Email server not available (Mailpit not running?): {str(e)}. To fix: Run 'mailpit' or set DJANGO_EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend in .env"
+            logger.warning(error_msg)
+            # Return success=False but don't raise - allows operations to continue
+            return False, None, error_msg
         except Exception as e:
             error_msg = f"Failed to send email: {str(e)}"
             logger.error(error_msg, exc_info=True)

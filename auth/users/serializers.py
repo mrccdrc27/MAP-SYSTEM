@@ -93,7 +93,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Remove any non-digit characters for validation
         phone_digits = re.sub(r'\D', '', value)
         if len(phone_digits) != 11 or not phone_digits.startswith('09'):
-            raise serializers.ValidationError("Phone number must be 11 digits starting with 09 (e.g., 09123456789).")
+            raise serializers.ValidationError("Phone number must be 11 digits starting with 09.")
         return value
 
     def validate_password(self, value):
@@ -157,7 +157,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     def get_profile_picture(self, obj):
         """Get the full URL for the profile picture."""
+        from django.conf import settings
+        
         if obj.profile_picture:
+            # Use MEDIA_BASE_URL if configured (for Kong gateway routing)
+            # Kong routes /media to auth-service, so no prefix needed
+            if getattr(settings, 'MEDIA_BASE_URL', ''):
+                return f"{settings.MEDIA_BASE_URL.rstrip('/')}{obj.profile_picture.url}"
+            
+            # Fall back to request-based URL building
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.profile_picture.url)
@@ -195,15 +203,91 @@ def validate_profile_picture_file_size(image):
     if image.size > max_file_size:
         raise ValidationError(f"Profile picture file size must be less than {max_file_size // (1024 * 1024)}MB.")
 
+def resize_image(image):
+    """Resize image to 1024x1024 and return as InMemoryUploadedFile"""
+    from io import BytesIO
+    from django.core.files.uploadedfile import InMemoryUploadedFile
+    try:
+        # Reset file pointer
+        if hasattr(image, 'seek'):
+            image.seek(0)
+        
+        img = Image.open(image)
+        target_size = (1024, 1024)
+        
+        # Convert RGBA to RGB if necessary (for JPEG compatibility)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'RGBA':
+                rgb_img.paste(img, mask=img.split()[3])
+            else:
+                rgb_img.paste(img)
+            img = rgb_img
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Resize image using LANCZOS filter for quality
+        try:
+            # Try newer LANCZOS API first
+            img = img.resize(target_size, Image.Resampling.LANCZOS)
+        except AttributeError:
+            # Fall back to older API for older Pillow versions
+            img = img.resize(target_size, Image.LANCZOS)
+        
+        # Save to BytesIO object
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=90)
+        output.seek(0)
+        
+        # Get the original filename
+        original_name = image.name if hasattr(image, 'name') else 'profile_picture.jpg'
+        # Change extension to jpg since we're converting to JPEG
+        if original_name.lower().endswith('.png'):
+            original_name = original_name[:-4] + '.jpg'
+        
+        # Wrap in InMemoryUploadedFile for Django compatibility
+        resized_file = InMemoryUploadedFile(
+            file=output,
+            field_name='profile_picture',
+            name=original_name,
+            content_type='image/jpeg',
+            size=output.getbuffer().nbytes,
+            charset=None
+        )
+        
+        print(f"[PROFILE_PICTURE_RESIZE] Image resized successfully: {resized_file.name}")
+        return resized_file
+    except Exception as e:
+        print(f"[PROFILE_PICTURE_RESIZE] Image resize error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise ValidationError("Failed to process image.")
+
 def validate_profile_picture_dimensions(image):
     max_width = 1024
     max_height = 1024
     try:
+        # Reset file pointer before reading
+        if hasattr(image, 'seek'):
+            image.seek(0)
+        img = Image.open(image)
+        img.verify()  # Verify it's a valid image
+        # Re-open after verify (verify() can only be called once)
+        if hasattr(image, 'seek'):
+            image.seek(0)
         img = Image.open(image)
         width, height = img.size
         if width > max_width or height > max_height:
             raise ValidationError(f"Profile picture dimensions must not exceed {max_width}x{max_height} pixels.")
-    except Exception:
+        # Reset file pointer for Django to save
+        if hasattr(image, 'seek'):
+            image.seek(0)
+    except ValidationError:
+        raise
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Image validation error: {type(e).__name__}: {e}")
         raise ValidationError("Invalid image file.")
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -219,7 +303,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(
         required=False,
         allow_null=True,
-        validators=[validate_profile_picture_file_size, validate_profile_picture_dimensions]
+        validators=[validate_profile_picture_file_size]
     )
 
     class Meta:
@@ -248,7 +332,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
                     self.fields.pop(field_name)
 
     def validate_profile_picture(self, value):
-        """Validate and log profile picture field."""
+        """Resize and validate profile picture field."""
         print(f"[SERIALIZER] validate_profile_picture called")
         print(f"[SERIALIZER] profile_picture value: {value}")
         print(f"[SERIALIZER] profile_picture type: {type(value)}")
@@ -256,6 +340,15 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             print(f"[SERIALIZER] profile_picture.name: {value.name}")
             print(f"[SERIALIZER] profile_picture.size: {value.size}")
             print(f"[SERIALIZER] profile_picture.content_type: {value.content_type}")
+            
+            # Validate file size first
+            validate_profile_picture_file_size(value)
+            
+            # Resize the image to 1024x1024
+            print(f"[SERIALIZER] Resizing image to 1024x1024...")
+            value = resize_image(value)
+            print(f"[SERIALIZER] Image resized successfully")
+        
         return value
 
     def validate_email(self, value):
@@ -397,6 +490,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        
+        # Add issuer claim for Kong JWT validation
+        # This MUST match the 'key' in Kong's jwt_secrets consumer config
+        token['iss'] = 'tts-jwt-issuer'
         
         # Add custom claims
         token['email'] = user.email
@@ -714,13 +811,18 @@ def send_otp_email(user, otp_code):
 def send_password_reset_email(user, reset_token, request=None):
     """Send password reset email."""
     try:
-        # Build reset URL
-        if request:
-            base_url = f"{request.scheme}://{request.get_host()}"
-        else:
-            base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        # Build reset URL - prefer configured URL over request host for user-facing links
+        # This prevents internal Docker hostnames (e.g., auth-service:8000) from being used
+        base_url = getattr(settings, 'FRONTEND_URL', None) or getattr(settings, 'PUBLIC_URL', None)
         
-        reset_url = f"{base_url}/api/v1/users/password/reset?token={reset_token.token}"
+        if not base_url and request:
+            # Fallback to request only if no configured URL
+            base_url = f"{request.scheme}://{request.get_host()}"
+        
+        if not base_url:
+            base_url = 'http://localhost:3000'  # Final fallback for development
+        
+        reset_url = f"{base_url}/reset-password?token={reset_token.token}"
         
         success, _, _ = get_email_service().send_password_reset_email(
             user_email=user.email,

@@ -404,3 +404,54 @@ def role_assignments_view(request):
     }
     return render(request, 'management/tts/role_management_assignments.html', context)
 
+
+@api_view(['GET'])
+@permission_classes([IsTTSAdmin])
+def manage_assignments_api(request):
+    """
+    API endpoint for managing TTS role assignments.
+    Returns user system roles data for TTS system only.
+    
+    GET: Returns JSON with TTS role assignments in the same format as /api/v1/system-roles/user-system-roles/
+    Requires TTS admin or superuser privileges.
+    Authentication: JWT cookie or Authorization header
+    """
+    try:
+        # Get TTS system
+        tts_system = System.objects.get(slug='tts')
+        
+        # Get all existing role assignments for TTS system
+        assignments = UserSystemRole.objects.filter(system=tts_system).select_related('user', 'role')
+        
+        # Format data to match the system-roles API structure
+        assignments_data = []
+        for assignment in assignments:
+            assignments_data.append({
+                'id': assignment.user.id,  # Use user ID as the main ID to match agent management structure
+                'email': assignment.user.email,
+                'username': assignment.user.username,
+                'first_name': assignment.user.first_name,
+                'last_name': assignment.user.last_name,
+                'is_active': assignment.user.is_active,
+                'is_staff': assignment.user.is_staff,
+                'date_joined': assignment.user.date_joined.isoformat() if assignment.user.date_joined else None,
+                'system_slug': assignment.system.slug,
+                'role': assignment.role.name,
+                'assigned_at': assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                'last_logged_on': assignment.user.last_login.isoformat() if assignment.user.last_login else None,
+                'settings': assignment.settings or {},
+            })
+        
+        return Response(assignments_data, status=status.HTTP_200_OK)
+        
+    except System.DoesNotExist:
+        return Response(
+            {"error": "TTS system not found"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"An unexpected error occurred: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+

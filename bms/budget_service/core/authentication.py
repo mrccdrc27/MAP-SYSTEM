@@ -2,9 +2,7 @@
 """
 JWT Authentication for BMS Budget Service.
 
-This module provides JWT authentication that is compatible with the centralized
-auth service. It supports both cookie-based auth (for browser requests) and
-header-based auth (for API requests with Bearer token).
+CRITICAL FIX: JIT Provisioning now handles ID conflicts properly
 """
 import jwt
 import logging
@@ -37,7 +35,7 @@ class AuthenticatedUser:
         self.department_name = user_data.get('department_name') or user_data.get('department')
         self.department_id = user_data.get('department_id') or self._resolve_department_id()
         
-        # ✅ NEW: Link to database User record (for ForeignKey compatibility)
+        # âœ… NEW: Link to database User record (for ForeignKey compatibility)
         self.db_user = db_user
         self.pk = db_user.pk if db_user else self.id
         
@@ -49,7 +47,7 @@ class AuthenticatedUser:
         # Build roles_dict for backward compatibility
         self._roles_dict = self._build_roles_dict()
         
-        logger.info(f"🔐 Created AuthenticatedUser: {self.email}")
+        logger.info(f"🔓 Created AuthenticatedUser: {self.email}")
         logger.info(f"   BMS Role: {self.get_bms_role()}")
     
     def _resolve_department_id(self):
@@ -161,10 +159,7 @@ class JWTCookieAuthentication(BaseAuthentication):
     """
     JWT authentication via cookies OR Authorization header.
     
-    ✅ NEW FEATURE: JIT (Just-In-Time) User Provisioning
-    - Automatically creates local User records on first login
-    - Updates existing records if role/department changed
-    - Ensures ForeignKey relationships work correctly
+    ✅ FIXED: JIT User Provisioning now handles ID conflicts properly
     """
     
     def authenticate(self, request):
@@ -191,7 +186,7 @@ class JWTCookieAuthentication(BaseAuthentication):
                 algorithms=['HS256']
             )
             
-            logger.info(f"🔓 JWT Payload decoded for request to {request.path}")
+            logger.info(f"🔐 JWT Payload decoded for request to {request.path}")
             
             # Extract user information
             user_id = payload.get('user_id')
@@ -212,8 +207,13 @@ class JWTCookieAuthentication(BaseAuthentication):
             
             logger.info(f"   BMS roles extracted: {bms_roles}")
             
-            # ✅ NEW: JIT Provisioning - Create or Update User
-            db_user = self._provision_user(payload)
+            # ✅ FIXED: JIT Provisioning with proper error handling
+            db_user = None
+            try:
+                db_user = self._provision_user(payload)
+            except Exception as e:
+                logger.error(f"❌ JIT provisioning failed: {e}", exc_info=True)
+                # Continue without db_user - AuthenticatedUser can still work
             
             # Create user data object
             user_data = {
@@ -229,7 +229,7 @@ class JWTCookieAuthentication(BaseAuthentication):
                 'department_id': payload.get('department_id'),
             }
             
-            # ✅ NEW: Pass db_user to AuthenticatedUser
+            # ✅ Pass db_user to AuthenticatedUser (can be None)
             user = AuthenticatedUser(user_data, db_user=db_user)
             
             # Verify BMS access
@@ -256,18 +256,23 @@ class JWTCookieAuthentication(BaseAuthentication):
     
     def _provision_user(self, payload):
         """
-        JIT Provisioning: Create or update User in local BMS database.
+        ✅ FIXED: JIT Provisioning with proper ID handling
         
-        This ensures ForeignKey relationships work correctly when models
-        reference User (e.g., approved_by, created_by).
+        Creates or updates User in local BMS database.
+        Handles ID conflicts by using email as the primary lookup.
         
-        Returns: User model instance
+        Returns: User model instance or None if creation fails
         """
         from core.models import User, Department
+        from django.db import IntegrityError, transaction
         
         user_id = payload.get('user_id')
         email = payload.get('email')
         username = payload.get('username')
+        
+        if not email:
+            logger.error("❌ No email in JWT payload, cannot provision user")
+            return None
         
         # Extract name parts
         full_name = payload.get('full_name', '')
@@ -296,62 +301,70 @@ class JWTCookieAuthentication(BaseAuthentication):
                 name__icontains=department_name
             ).first()
         
-        # Get or Create User
+        # ✅ CRITICAL FIX: Use EMAIL as primary lookup, not ID
+        # This prevents IntegrityError when auth service and BMS have different user IDs
         try:
-            user = User.objects.get(id=user_id)
+            # Try to get user by email first (most reliable)
+            user = User.objects.filter(email=email).first()
             
-            # ✅ UPDATE: Sync with latest token data
-            updated = False
+            if user:
+                # User exists - UPDATE
+                updated = False
+                
+                if user.username != username:
+                    user.username = username
+                    updated = True
+                
+                if user.first_name != first_name or user.last_name != last_name:
+                    user.first_name = first_name
+                    user.last_name = last_name
+                    updated = True
+                
+                if bms_role and user.role != bms_role:
+                    logger.info(f"🔄 Updating role for {email}: {user.role} -> {bms_role}")
+                    user.role = bms_role
+                    updated = True
+                
+                if department and user.department_id != department.id:
+                    logger.info(f"🔄 Updating department for {email}: {user.department_name} -> {department.name}")
+                    user.department_id = department.id
+                    user.department_name = department.name
+                    updated = True
+                
+                if updated:
+                    user.save()
+                    logger.info(f"✅ Updated User record for {email}")
+                
+                return user
             
-            if user.email != email:
-                user.email = email
-                updated = True
-            
-            if user.username != username:
-                user.username = username
-                updated = True
-            
-            if user.first_name != first_name or user.last_name != last_name:
-                user.first_name = first_name
-                user.last_name = last_name
-                updated = True
-            
-            if bms_role and user.role != bms_role:
-                logger.info(f"🔄 Updating role for {email}: {user.role} -> {bms_role}")
-                user.role = bms_role
-                updated = True
-            
-            if department and user.department_id != department.id:
-                logger.info(f"🔄 Updating department for {email}: {user.department_name} -> {department.name}")
-                user.department_id = department.id
-                user.department_name = department.name
-                updated = True
-            
-            if updated:
-                user.save()
-                logger.info(f"✅ Updated User record for {email}")
-            
-            return user
-            
-        except User.DoesNotExist:
-            # ✅ CREATE: First time login
-            logger.info(f"🆕 Creating new User record for {email}")
-            
-            user = User.objects.create(
-                id=user_id,
-                email=email,
-                username=username,
-                first_name=first_name,
-                last_name=last_name,
-                role=bms_role or 'GENERAL_USER',
-                department_id=department.id if department else None,
-                department_name=department.name if department else None,
-                is_active=True,
-                is_staff=(bms_role in ['ADMIN', 'FINANCE_HEAD'])
-            )
-            
-            logger.info(f"✅ Created User record: {user.id} - {user.email} ({user.role})")
-            return user
+            else:
+                # User doesn't exist - CREATE
+                logger.info(f"🆕 Creating new User record for {email}")
+                
+                with transaction.atomic():
+                    # Don't specify ID - let Django auto-generate it
+                    user = User.objects.create(
+                        email=email,
+                        username=username or email.split('@')[0],
+                        first_name=first_name,
+                        last_name=last_name,
+                        role=bms_role or 'GENERAL_USER',
+                        department_id=department.id if department else None,
+                        department_name=department.name if department else None,
+                        is_active=True,
+                        is_staff=(bms_role in ['ADMIN', 'FINANCE_HEAD'])
+                    )
+                    
+                    logger.info(f"✅ Created User record: {user.id} - {user.email} ({user.role})")
+                    return user
+                    
+        except IntegrityError as e:
+            logger.error(f"❌ Database integrity error creating user {email}: {e}")
+            # Try one more time to get by email (race condition)
+            return User.objects.filter(email=email).first()
+        except Exception as e:
+            logger.error(f"❌ Unexpected error provisioning user {email}: {e}", exc_info=True)
+            return None
     
     def _extract_role_if_system(self, role, system_name):
         """Safely extract role if it matches the system"""

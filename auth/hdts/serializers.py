@@ -68,10 +68,24 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_phone_number(self, value):
-        """Validate phone number format."""
+        """Validate phone number format and uniqueness."""
         is_valid, error_message = validate_phone_number(value)
         if not is_valid:
             raise serializers.ValidationError(error_message)
+        
+        # Check if phone number already exists (normalize to E.164 format for comparison)
+        if value:
+            # Convert local format to E.164 for comparison
+            normalized_phone = value
+            if value.startswith('09'):
+                normalized_phone = '+63' + value[1:]
+            
+            # Check for existing phone numbers in both formats
+            if Employees.objects.filter(phone_number=normalized_phone).exists():
+                raise serializers.ValidationError("An employee with this phone number already exists.")
+            if Employees.objects.filter(phone_number=value).exists():
+                raise serializers.ValidationError("An employee with this phone number already exists.")
+        
         return value
 
     def validate_email(self, value):
@@ -195,11 +209,15 @@ class EmployeeTokenObtainPairSerializer(serializers.Serializer):
         # Build full name
         full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
         
+        # Get JWT issuer for Kong compatibility (must match Kong JWT credential key)
+        jwt_issuer = getattr(settings, 'SIMPLE_JWT', {}).get('ISSUER', 'tts-jwt-issuer')
+        
         access_payload = {
             'token_type': 'access',
             'exp': int(access_exp.timestamp()),
             'iat': int(now.timestamp()),
             'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
             'user_id': employee.id,
             'employee_id': employee.id,  # Keep for backward compatibility
             'email': employee.email,
@@ -219,6 +237,7 @@ class EmployeeTokenObtainPairSerializer(serializers.Serializer):
             'exp': int(refresh_exp.timestamp()),
             'iat': int(now.timestamp()),
             'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
             'user_id': employee.id,
             'employee_id': employee.id,  # Keep for backward compatibility
             'email': employee.email,
@@ -347,11 +366,15 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
         # Build full name
         full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
         
+        # Get JWT issuer for Kong compatibility (must match Kong JWT credential key)
+        jwt_issuer = getattr(settings, 'SIMPLE_JWT', {}).get('ISSUER', 'tts-jwt-issuer')
+        
         access_payload = {
             'token_type': 'access',
             'exp': int(access_exp.timestamp()),
             'iat': int(now.timestamp()),
             'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
             'user_id': employee.id,
             'employee_id': employee.id,  # Keep for backward compatibility
             'email': employee.email,
@@ -371,6 +394,7 @@ class EmployeeTokenObtainPairWithRecaptchaSerializer(serializers.Serializer):
             'exp': int(refresh_exp.timestamp()),
             'iat': int(now.timestamp()),
             'jti': uuid.uuid4().hex,
+            'iss': jwt_issuer,  # Required by Kong JWT plugin
             'user_id': employee.id,
             'employee_id': employee.id,  # Keep for backward compatibility
             'email': employee.email,
@@ -394,6 +418,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     """Serializer for retrieving employee profile information."""
     full_name = serializers.SerializerMethodField()
     system_roles = serializers.SerializerMethodField()
+    profile_picture = serializers.SerializerMethodField()
     
     class Meta:
         model = Employees
@@ -403,6 +428,22 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'otp_enabled', 'last_login', 'created_at', 'updated_at', 'full_name', 'system_roles'
         )
         read_only_fields = ('id', 'company_id', 'status', 'created_at', 'updated_at', 'full_name', 'system_roles')
+
+    def get_profile_picture(self, obj):
+        """Get the full URL for the profile picture using MEDIA_BASE_URL."""
+        if obj.profile_picture:
+            # Use MEDIA_BASE_URL if configured (for Kong gateway routing)
+            # Kong routes /media to auth-service, so no prefix needed
+            media_base_url = getattr(settings, 'MEDIA_BASE_URL', '')
+            if media_base_url:
+                return f"{media_base_url.rstrip('/')}{obj.profile_picture.url}"
+            
+            # Fall back to request-based URL building
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_picture.url)
+            return obj.profile_picture.url
+        return None
 
     def get_full_name(self, obj):
         """Return full name of employee."""

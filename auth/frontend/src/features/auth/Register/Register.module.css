@@ -1,0 +1,76 @@
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.gridFull {
+  grid-column: span 2;
+}
+
+.gridHalf {
+  grid-column: span 1;
+}
+
+.errorBanner {
+  background-color: var(--status-danger-bg);
+  color: var(--color-danger);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-sm);
+  text-align: center;
+  font-weight: 500;
+}
+
+.submitButton {
+  margin-top: var(--space-md);
+  border-radius: 40px !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  background-color: var(--color-primary) !important;
+}
+
+.roundedInput :global(.input) {
+  border-radius: 40px !important;
+  height: 44px !important;
+  padding: 0 20px !important;
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--bg-color) !important;
+  font-size: var(--font-sm) !important;
+}
+
+.roundedInput :global(.label) {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+
+.authFooter {
+  text-align: center;
+  margin-top: var(--space-xl);
+  font-size: var(--font-sm);
+  color: var(--muted-text-color);
+}
+
+.link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .gridFull, .gridHalf {
+    grid-column: span 1;
+  }
+}

@@ -52,11 +52,15 @@ def generate_employee_tokens(employee):
     # Build full name
     full_name = f"{employee.first_name} {employee.middle_name or ''} {employee.last_name}".replace('  ', ' ').strip()
     
+    # Get JWT issuer for Kong compatibility (must match Kong JWT credential key)
+    jwt_issuer = getattr(settings, 'SIMPLE_JWT', {}).get('ISSUER', 'tts-jwt-issuer')
+    
     access_payload = {
         'token_type': 'access',
         'exp': int(access_exp.timestamp()),
         'iat': int(now.timestamp()),
         'jti': uuid.uuid4().hex,
+        'iss': jwt_issuer,  # Required by Kong JWT plugin
         'user_id': employee.id,
         'employee_id': employee.id,  # Keep for backward compatibility
         'email': employee.email,
@@ -76,6 +80,7 @@ def generate_employee_tokens(employee):
         'exp': int(refresh_exp.timestamp()),
         'iat': int(now.timestamp()),
         'jti': uuid.uuid4().hex,
+        'iss': jwt_issuer,  # Required by Kong JWT plugin
         'user_id': employee.id,
         'employee_id': employee.id,  # Keep for backward compatibility
         'email': employee.email,
@@ -114,23 +119,40 @@ def set_employee_cookies(response, access_token, refresh_token):
     access_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('ACCESS_TOKEN_LIFETIME', timedelta(minutes=5))
     refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
     
+    # Get cookie domain from settings
+    cookie_domain = getattr(settings, 'COOKIE_DOMAIN', 'localhost')
+    
+    # For cross-subdomain cookies in production (e.g., login.domain.com -> api.domain.com):
+    # - Use SameSite=None with Secure=True
+    # - For localhost/development, use SameSite=Lax
+    is_production_domain = cookie_domain and cookie_domain not in ('localhost', '127.0.0.1') and not cookie_domain.replace('.', '').isdigit()
+    
+    if is_production_domain and use_secure:
+        # Production with HTTPS - use SameSite=None for cross-subdomain
+        cookie_samesite = 'None'
+    else:
+        # Development or non-HTTPS - use SameSite=Lax
+        cookie_samesite = 'Lax'
+    
     response.set_cookie(
         'access_token',
         access_token,
         httponly=True,
         secure=use_secure,
-        samesite='Lax',
+        samesite=cookie_samesite,
         max_age=int(access_lifetime.total_seconds()),
-        path='/'
+        path='/',
+        domain=cookie_domain,
     )
     response.set_cookie(
         'refresh_token',
         refresh_token,
         httponly=True,
         secure=use_secure,
-        samesite='Lax',
+        samesite=cookie_samesite,
         max_age=int(refresh_lifetime.total_seconds()),
-        path='/'
+        path='/',
+        domain=cookie_domain,
     )
     return response
 
