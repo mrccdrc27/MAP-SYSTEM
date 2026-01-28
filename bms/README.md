@@ -110,4 +110,5 @@ gunicorn capstone.wsgi:application
 
 ### Workflows:
 
--MAP-SYSTEM/.github/workflows/basic-ci.yml
+- MAP-SYSTEM/.github/workflows/basic-ci.yml
+- build-and-test.yml
