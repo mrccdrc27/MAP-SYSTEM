@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from roles.models import Role
 from systems.models import System
 from system_roles.models import UserSystemRole
+from auth.hdts.models import Employees
 import random
 
 User = get_user_model()
@@ -233,3 +234,45 @@ class Command(BaseCommand):
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error assigning role to user: {str(e)}'))
                 self.stdout.write(self.style.WARNING(f"Available fields in UserSystemRole: {[f.name for f in UserSystemRole._meta.get_fields()]}"))
+            # If this is an Employee role, ensure there is an Employees profile
+            try:
+                if role.name == 'Employee':
+                    emp_defaults = {
+                        'user': user,
+                        'username': user.username,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'phone_number': user.phone_number,
+                        'status': 'Approved' if user.is_active else 'Pending',
+                        'profile_picture': user_data.get('profile_picture'),
+                    }
+                    # include company_id/department when available on User
+                    if _user_model_has_field('company_id'):
+                        emp_defaults['company_id'] = getattr(user, 'company_id', None)
+                    if _user_model_has_field('department'):
+                        emp_defaults['department'] = getattr(user, 'department', None)
+
+                    # Remove None values so get_or_create won't try to set them
+                    emp_defaults = {k: v for k, v in emp_defaults.items() if v is not None}
+
+                    employee_obj, emp_created = Employees.objects.get_or_create(
+                        email=user.email,
+                        defaults=emp_defaults
+                    )
+
+                    # Ensure it's linked to the auth User and has a password if provided
+                    if not employee_obj.user:
+                        employee_obj.user = user
+
+                    provided_pw = user_data.get('password')
+                    if provided_pw:
+                        employee_obj.set_password(provided_pw)
+
+                    # Save if newly created or we made changes
+                    employee_obj.save()
+                    if emp_created:
+                        self.stdout.write(f'Created Employees profile for {user.email}')
+                    else:
+                        self.stdout.write(f'Ensured Employees profile for {user.email}')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Error creating/updating Employees profile: {str(e)}'))

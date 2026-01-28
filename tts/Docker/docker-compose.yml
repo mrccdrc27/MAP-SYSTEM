@@ -239,12 +239,6 @@ services:
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       DJANGO_ALLOWED_HOSTS: "165.22.247.50,api.mapactive.tech,login.mapactive.tech,mapactive.tech,ams.mapactive.tech,api.ticketing.mapactive.tech,login.ticketing.mapactive.tech,ticketing.mapactive.tech,165.22.247.50:3001,165.22.247.50:8003,127.0.0.1,localhost,auth-service,host.docker.internal"
       KONG_TRUSTED: "true"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/authservice"
-      PGHOST: "db"
-      PGPORT: "5432"
-      POSTGRES_DB: "authservice"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgrespass"
       RECAPTCHA_ENABLED: "False"
       FRONTEND_URL: "https://login.ticketing.mapactive.tech"
       PUBLIC_BASE_URL: "https://api.ticketing.mapactive.tech"
@@ -258,8 +252,8 @@ services:
       DJANGO_CSRF_COOKIE_SAMESITE: "None"
       DJANGO_CSRF_COOKIE_DOMAIN: ".mapactive.tech"
       DJANGO_CSRF_COOKIE_HTTPONLY: "False"
-      DJANGO_CORS_ALLOWED_ORIGINS: "https://mapactive.tech,https://login.mapactive.tech,https://api.mapactive.tech,https://ams.mapactive.tech,https://ticketing.mapactive.tech,https://login.ticketing.mapactive.tech,https://api.ticketing.mapactive.tech,https://ticketflow.ticketing.mapactive.tech,https://hdts.ticketing.mapactive.tech,http://165.22.247.50:1000,http://127.0.0.1:1000,http://165.22.247.50:8080,http://165.22.247.50:3001,http://127.0.0.1:3001,http://165.22.247.50:5173,http://127.0.0.1:5173,http://localhost:5173,https://map-ams.up.railway.app,https://mapams.up.railway.app"
-      DJANGO_CSRF_TRUSTED_ORIGINS: "https://mapactive.tech,https://login.mapactive.tech,https://api.mapactive.tech,https://ams.mapactive.tech,https://ticketing.mapactive.tech,https://login.ticketing.mapactive.tech,https://api.ticketing.mapactive.tech,https://ticketflow.ticketing.mapactive.tech,https://hdts.ticketing.mapactive.tech,http://165.22.247.50:8080,http://165.22.247.50:3001,http://127.0.0.1:3001,http://165.22.247.50:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://165.22.247.50:5173,https://mapams.up.railway.app"
+      DJANGO_CORS_ALLOWED_ORIGINS: "https://mapactive.tech,https://login.mapactive.tech,https://api.mapactive.tech,https://ams.mapactive.tech,https://ticketing.mapactive.tech,https://login.ticketing.mapactive.tech,https://api.ticketing.mapactive.tech,https://ticketflow.ticketing.mapactive.tech,https://hdts.ticketing.mapactive.tech,http://165.22.247.50:1000,http://127.0.0.1:1000,http://165.22.247.50:8080,http://165.22.247.50:3001,http://127.0.0.1:3001,http://165.22.247.50:5173,http://127.0.0.1:5173,http://localhost:5173,https://map-ams.up.railway.app,https://mapams.up.railway.app,https://bms.mapactive.tech"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "https://mapactive.tech,https://login.mapactive.tech,https://api.mapactive.tech,https://ams.mapactive.tech,https://ticketing.mapactive.tech,https://login.ticketing.mapactive.tech,https://api.ticketing.mapactive.tech,https://ticketflow.ticketing.mapactive.tech,https://hdts.ticketing.mapactive.tech,http://165.22.247.50:8080,http://165.22.247.50:3001,http://127.0.0.1:3001,http://165.22.247.50:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://165.22.247.50:5173,https://mapams.up.railway.app,https://bms.mapactive.tech"
       TTS_SYSTEM_URL: "http://165.22.247.50:1000/"
       AMS_SYSTEM_URL: "http://165.22.247.50:3000/ams"
       HDTS_SYSTEM_URL: "http://165.22.247.50:5173/hdts"
@@ -276,8 +270,6 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      db:
-        condition: service_healthy
     command: sh -c "sleep 10 && ./entrypoint.sh"
 
   # Auth Worker - Added to handle async sync tasks
@@ -293,12 +285,6 @@ services:
       DJANGO_SECRET_KEY: "signing-key-1234"
       DJANGO_JWT_SIGNING_KEY: "signing-key-1234"
       KONG_TRUSTED: "true"
-      DATABASE_URL: "postgres://postgres:postgrespass@db:5432/authservice"
-      PGHOST: "db"
-      PGPORT: "5432"
-      POSTGRES_DB: "authservice"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgrespass"
       CELERY_BROKER_URL: "amqp://admin:admin@rabbitmq:5672/"
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "notification@noreply.mapactive.tech"
@@ -308,7 +294,7 @@ services:
       rabbitmq:
         condition: service_healthy
       db:
-        condition: service_healthy
+        condition: service_started
     command: >
       sh -c "sleep 15 && 
              celery -A auth worker --pool=solo --loglevel=info -Q auth-sync-queue"

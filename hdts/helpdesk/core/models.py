@@ -454,13 +454,13 @@ def send_ticket_to_workflow(sender, instance, created, **kwargs):
             # TTS expects these at the top level for asset check-in/check-out workflows
             if instance.dynamic_data and instance.category in ('Asset Check In', 'Asset Check Out'):
                 dd = instance.dynamic_data
-                # AMS critical fields
-                ticket_data['asset_id'] = dd.get('asset_id')
+                # AMS critical fields - use amsAssetId (display ID like AST-XXX) for asset_id
+                ticket_data['asset_id'] = dd.get('amsAssetId') or dd.get('asset_id')
                 ticket_data['asset_id_number'] = dd.get('asset_id_number')
                 ticket_data['location_id'] = dd.get('location_id')
                 # Checkout fields
-                ticket_data['checkout_date'] = dd.get('checkout_date')
-                ticket_data['return_date'] = dd.get('return_date')
+                ticket_data['checkout_date'] = dd.get('checkout_date') or dd.get('checkOutDate')
+                ticket_data['return_date'] = dd.get('return_date') or dd.get('expectedReturnDate')
                 # Checkin fields
                 ticket_data['checkin_date'] = dd.get('checkin_date')
                 ticket_data['asset_checkout'] = dd.get('asset_checkout')  # Reference to checkout record

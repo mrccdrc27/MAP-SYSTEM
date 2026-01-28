@@ -234,7 +234,7 @@ class TicketSerializer(serializers.ModelSerializer):
         if dynamic and isinstance(dynamic, dict):
             for key, field in [
                 ('assetName', 'asset_name'),
-                ('assetId', 'asset_id'),
+                ('amsAssetId', 'asset_id'),  # Use display ID (AST-XXX) not integer
                 ('serialNumber', 'serial_number'),
                 ('location', 'location'),
                 ('checkOutDate', 'check_out_date'),

@@ -103,20 +103,27 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
     employee = ticket_data.get('employee', {}) or {}
     first_name = employee.get('first_name', '')
     last_name = employee.get('last_name', '')
-    submitted_by_name = f"{first_name} {last_name}".strip() or 'Unknown'
+    
+    # Extract dynamic data
+    dynamic_data = ticket_data.get('dynamic_data', {}) or {}
+    
+    submitted_by_name = (
+        dynamic_data.get('submitted_by_name') or
+        dynamic_data.get('submittedBy') or
+        f"{first_name} {last_name}".strip() or 
+        'Unknown'
+    )
     
     # Extract department - try multiple sources
     department = (
+        dynamic_data.get('department_input', '') or
         employee.get('department', '') or 
         ticket_data.get('department', '') or 
         ticket_data.get('department_input', '') or
         'Unknown'
     )
     # Clean up department name (e.g., "IT Department" -> "IT")
-    department_clean = department.replace(' Department', '').strip()
-    
-    # Extract dynamic data
-    dynamic_data = ticket_data.get('dynamic_data', {}) or {}
+    department_clean = department.replace(' Department', '').strip() if isinstance(department, str) else str(department)
     
     # Transform items
     raw_items = dynamic_data.get('items', []) or []
@@ -169,17 +176,39 @@ def transform_ticket_to_bms_payload(ticket_data: Dict[str, Any], ticket_number: 
     payload = {
         'ticket_id': ticket_number,
         'department_input': department_clean,
-        'title': ticket_data.get('subject', 'Untitled Budget Proposal'),
-        'project_summary': ticket_data.get('category', 'Budget Proposal'),
-        'project_description': ticket_data.get('description', '') or 'Budget proposal submitted via TTS',
+        'title': dynamic_data.get('title', ticket_data.get('subject', 'Untitled Budget Proposal')),
+        'project_summary': dynamic_data.get('project_summary', ticket_data.get('category', 'Budget Proposal')),
+        'project_description': dynamic_data.get('project_description', ticket_data.get('description', '')) or 'Budget proposal submitted via TTS',
         'submitted_by_name': submitted_by_name,
-        'fiscal_year': int(ticket_data.get('fiscal_year', FALLBACK_FISCAL_YEARS[0]) or FALLBACK_FISCAL_YEARS[0]),
+        'fiscal_year': int(dynamic_data.get('fiscal_year', ticket_data.get('fiscal_year', FALLBACK_FISCAL_YEARS[0])) or FALLBACK_FISCAL_YEARS[0]),
         'items': transformed_items,
     }
     
-    # Add optional performance dates if available
-    perf_start = dynamic_data.get('performanceStartDate') or ticket_data.get('performance_start_date')
-    perf_end = dynamic_data.get('performanceEndDate') or ticket_data.get('performance_end_date')
+    # Add total budget if available
+    total_budget = dynamic_data.get('totalBudget') or dynamic_data.get('total_budget')
+    if total_budget is not None:
+        payload['total_budget'] = parse_float_with_commas(total_budget)
+    
+    # Add employee contact info if available
+    employee_email = dynamic_data.get('employeeEmail') or dynamic_data.get('employee_email') or employee.get('email')
+    if employee_email:
+        payload['employee_email'] = employee_email
+    
+    employee_phone = dynamic_data.get('employeePhone') or dynamic_data.get('employee_phone') or employee.get('phone_number')
+    if employee_phone:
+        payload['employee_phone'] = str(employee_phone)
+    
+    # Add optional performance dates if available - check both camelCase and snake_case
+    perf_start = (
+        dynamic_data.get('performanceStartDate') or 
+        dynamic_data.get('performance_start_date') or 
+        ticket_data.get('performance_start_date')
+    )
+    perf_end = (
+        dynamic_data.get('performanceEndDate') or 
+        dynamic_data.get('performance_end_date') or 
+        ticket_data.get('performance_end_date')
+    )
     
     if perf_start:
         payload['performance_start_date'] = str(perf_start)
