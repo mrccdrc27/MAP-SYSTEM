@@ -215,6 +215,7 @@ const BudgetProposal = () => {
   };
 
   const handleStatusChange = (status) => {
+    // ✅ CRITICAL FIX: Validate BOTH approval and rejection
     if (status === "APPROVED") {
       if (!financeOperatorName || !financeOperatorName.trim()) {
         showAlert("Finance Manager Name is required for approval.", "error");
@@ -225,12 +226,43 @@ const BudgetProposal = () => {
         return;
       }
     }
+
+    // ✅ NEW: Validate rejection reason
+    if (status === "REJECTED") {
+      if (!reviewComment || !reviewComment.trim()) {
+        showAlert("Comment is required for rejection.", "error");
+        return;
+      }
+    }
+
     setReviewStatus(status);
     setShowConfirmationPopup(true);
   };
 
   const handleSubmitReview = async () => {
     if (!selectedProposal) return;
+
+    // ✅ FINAL VALIDATION
+    if (
+      reviewStatus === "APPROVED" &&
+      (!financeOperatorName?.trim() || !financeOperatorSignature)
+    ) {
+      showAlert(
+        "Finance Manager Name and Signature are required for approval.",
+        "error",
+      );
+      return;
+    }
+
+    if (
+      reviewStatus === "REJECTED" &&
+      !reviewComment?.trim() &&
+      !rejectionReason
+    ) {
+      showAlert("Please provide a rejection reason or comment.", "error");
+      return;
+    }
+
     let finalComment = reviewComment;
     if (reviewStatus === "REJECTED" && rejectionReason)
       finalComment = `Reason: ${rejectionReason}. \n${reviewComment}`;
@@ -240,20 +272,46 @@ const BudgetProposal = () => {
       formData.append("status", reviewStatus);
       formData.append("comment", finalComment);
       formData.append("finance_manager_name", financeOperatorName);
+
+      // ✅ FIXED: Properly convert base64 to blob
       if (financeOperatorSignature?.startsWith("data:")) {
         const fetchRes = await fetch(financeOperatorSignature);
         const blob = await fetchRes.blob();
         formData.append("signature", blob, "signature.png");
+      } else if (financeOperatorSignature) {
+        // If it's already a file object
+        formData.append("signature", financeOperatorSignature);
       }
+
+      console.log("📤 Submitting review:", {
+        status: reviewStatus,
+        proposalId: selectedProposal.id,
+        hasSignature: !!financeOperatorSignature,
+        financeName: financeOperatorName,
+      });
+
       await reviewProposal(selectedProposal.id, formData);
+
       setShowConfirmationPopup(false);
       setShowReviewPopup({ visible: false, readOnly: false });
       setCurrentPage(1);
+
       const summaryRes = await getProposalSummary();
       setSummaryData(summaryRes.data);
-      showAlert("Review submitted successfully.", "success");
+
+      showAlert(
+        `Proposal ${reviewStatus.toLowerCase()} successfully.`,
+        "success",
+      );
     } catch (err) {
-      showAlert("Failed to submit review.", "error");
+      console.error("❌ Review submission error:", err);
+      const errorMsg =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.response?.data?.finance_manager_name?.[0] ||
+        err.response?.data?.signature?.[0] ||
+        "Failed to submit review.";
+      showAlert(errorMsg, "error");
     }
   };
 
@@ -444,8 +502,8 @@ const BudgetProposal = () => {
                           borderRadius: "4px",
                           width: "100%",
                           zIndex: 10,
-                          maxHeight: "none", 
-                          overflowY: "visible", 
+                          maxHeight: "none",
+                          overflowY: "visible",
                         }}
                       >
                         {departmentOptions.map((dept) => (

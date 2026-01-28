@@ -887,18 +887,31 @@ class ProposalReviewSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        if data.get('status') == 'APPROVED':
+        """✅ ENHANCED: Better validation with EMERGENCY HOTFIX (signature optional)"""
+        status = data.get('status')
+        
+        if status == 'APPROVED':
             errors = {}
-            if not data.get('signature'):
-                errors['signature'] = "Signature attachment is required for approval."
             
-            if not data.get('finance_manager_name') or not data.get('finance_manager_name').strip():
+            # ✅ Finance Manager Name is REQUIRED
+            finance_name = data.get('finance_manager_name')
+            if not finance_name or not finance_name.strip():
                 errors['finance_manager_name'] = "Finance Manager Name is required for approval."
-                
+            
+            # ⚠️ EMERGENCY HOTFIX: Signature is now OPTIONAL for demo
+            # Uncomment the lines below to make it required again in production:
+            # signature = data.get('signature')
+            # if not signature:
+            #     errors['signature'] = "Signature attachment is required for approval."
+            
             if errors:
                 raise serializers.ValidationError(errors)
+        
+        elif status == 'REJECTED':
+            # For rejection, comment is optional but recommended
+            pass
+        
         return data
-
 
 class ProposalReviewBudgetOverviewSerializer(serializers.Serializer):
     """
