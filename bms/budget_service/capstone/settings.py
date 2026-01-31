@@ -310,16 +310,17 @@ if DEBUG or not CLOUDINARY_URL:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.StaticFilesStorage",  # ← CHANGED
         },
     }
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.StaticFilesStorage",  # ← CHANGED
         },
     }
 
