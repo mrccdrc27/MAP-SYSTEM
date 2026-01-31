@@ -558,6 +558,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = 'static/'
 
 # ============================================================================
+# BACKWARD COMPATIBILITY FOR CLOUDINARY STORAGE
+# ============================================================================
+# Django 5.2 uses STORAGES, but cloudinary-storage still looks for STATICFILES_STORAGE
+# This provides backward compatibility
+STATICFILES_STORAGE = STORAGES['staticfiles']['BACKEND']
+
+
+# ============================================================================
 # DEFAULT AUTO FIELD
 # ============================================================================
 
