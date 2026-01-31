@@ -2,12 +2,13 @@ import React from "react";
 import {
   ArrowLeft,
   Download,
-  User as UserIcon,
+  User,
   Calendar,
   CheckCircle,
   XCircle,
   FileText,
   RefreshCw,
+  FileSignature,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 
@@ -175,7 +176,7 @@ const AuditTrailModal = ({
               </div>
             </div>
 
-            {/* MODIFICATION START: Dynamic Proposal Context Section */}
+            {/* Complete Proposal Details */}
             <div
               className="complete-details-section"
               style={{
@@ -212,7 +213,114 @@ const AuditTrailModal = ({
                 </div>
               </div>
             </div>
-            {/* MODIFICATION END */}
+
+            {/* ✅ NEW: Finance Approval Details with Signature */}
+            {auditProposalDetails && (auditProposalDetails.status === "APPROVED" || auditProposalDetails.status === "REJECTED") && (
+              <div
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  padding: "20px",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                <h4 style={{ 
+                  margin: "0 0 15px 0", 
+                  fontSize: "14px", 
+                  color: "#333", 
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <FileSignature size={18} />
+                  Finance Department Approval
+                </h4>
+                
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+                  gap: "15px", 
+                  fontSize: "13px",
+                  marginBottom: "15px"
+                }}>
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Finance Manager:</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      {auditProposalDetails.finance_manager_name || "N/A"}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Approved By (System User):</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      {auditProposalDetails.approved_by_name || auditProposalDetails.rejected_by_name || "N/A"}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Review Date:</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      {new Date(auditProposalDetails.approval_date || auditProposalDetails.rejection_date).toLocaleString()}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Decision:</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      <StatusBadge
+                        type={auditProposalDetails.status}
+                        name={auditProposalDetails.status}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ✅ Signature Display */}
+                {auditProposalDetails.signature && (
+                  <div style={{ marginTop: "15px" }}>
+                    <strong style={{ 
+                      fontSize: "13px", 
+                      color: "#6c757d",
+                      display: "block",
+                      marginBottom: "8px"
+                    }}>
+                      Digital Signature:
+                    </strong>
+                    <div style={{
+                      padding: "10px",
+                      backgroundColor: "white",
+                      border: "1px solid #dee2e6",
+                      borderRadius: "4px",
+                      display: "inline-block"
+                    }}>
+                      <img
+                        src={auditProposalDetails.signature}
+                        alt="Finance Manager Signature"
+                        style={{
+                          maxWidth: "300px",
+                          maxHeight: "100px",
+                          display: "block"
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <div style={{ 
+                        display: "none", 
+                        color: "#dc3545",
+                        fontSize: "12px",
+                        fontStyle: "italic"
+                      }}>
+                        Signature image failed to load
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Change Log Table */}
             <div style={{ marginBottom: "20px", padding: "20px", border: "1px solid #e9ecef", borderRadius: "8px" }}>
@@ -259,7 +367,7 @@ const AuditTrailModal = ({
                     <div style={{ fontSize: "11px", color: "#666" }}>{new Date(entry.last_modified).toLocaleString()}</div>
                   </div>
                   <div style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <UserIcon size={12} /> {entry.last_modified_by}
+                    <User size={12} /> {entry.last_modified_by}
                   </div>
                   {entry.comments && (
                     <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "#fff", borderLeft: "2px solid #007bff", fontSize: "12px" }}>

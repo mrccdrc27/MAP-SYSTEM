@@ -134,6 +134,7 @@ const ProposalConfirmationModal = ({
               borderRadius: "4px",
               border: "1px solid #ccc",
               resize: "vertical",
+              backgroundColor: "white",
             }}
             placeholder="Add feedback here..."
           ></textarea>

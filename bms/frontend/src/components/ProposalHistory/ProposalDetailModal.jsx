@@ -156,13 +156,135 @@ const ProposalDetailModal = ({ isOpen, detail, loading, onClose, onPrint }) => {
               </div>
             )}
             
+            {/* ✅ FIXED: Finance Review Section with Signature Display */}
             {(detail.status === "APPROVED" || detail.status === "REJECTED") && (
-              <div style={{ marginTop: "30px", padding: "15px", backgroundColor: "#f9f9f9", borderRadius: "4px" }}>
-                <h4 style={{ fontSize: "14px" }}>Finance Review</h4>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", fontSize: "13px" }}>
-                  <div><strong>Reviewed By:</strong> {detail.approved_by_name || detail.rejected_by_name || detail.finance_manager_name}</div>
-                  <div><strong>Date:</strong> {new Date(detail.approval_date || detail.rejection_date).toLocaleDateString()}</div>
+              <div style={{ 
+                marginTop: "30px", 
+                padding: "20px", 
+                backgroundColor: "#f9f9f9", 
+                borderRadius: "8px",
+                border: "1px solid #e9ecef"
+              }}>
+                <h4 style={{ 
+                  fontSize: "14px", 
+                  marginBottom: "15px",
+                  color: "#495057",
+                  fontWeight: "600"
+                }}>
+                  Finance Department Approval
+                </h4>
+                
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "1fr 1fr", 
+                  gap: "15px", 
+                  fontSize: "13px",
+                  marginBottom: "15px"
+                }}>
+                  {/* ✅ FIX: Show BOTH names for transparency */}
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Finance Manager:</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      {detail.finance_manager_name || detail.approved_by_name || "N/A"}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Approved By (System User):</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      {detail.approved_by_name || detail.rejected_by_name || "N/A"}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Review Date:</strong>
+                    <div style={{ marginTop: "4px" }}>
+                      {new Date(detail.approval_date || detail.rejection_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: "#6c757d" }}>Decision:</strong>
+                    <div style={{ 
+                      marginTop: "4px",
+                      color: detail.status === "APPROVED" ? "#0d6832" : "#9b1c1c",
+                      fontWeight: "600"
+                    }}>
+                      {detail.status}
+                    </div>
+                  </div>
                 </div>
+
+                {/* ✅ NEW: Signature Display Section */}
+                {detail.signature && (
+                  <div style={{ marginTop: "15px" }}>
+                    <strong style={{ 
+                      fontSize: "13px", 
+                      color: "#6c757d",
+                      display: "block",
+                      marginBottom: "8px"
+                    }}>
+                      Digital Signature:
+                    </strong>
+                    <div style={{
+                      padding: "10px",
+                      backgroundColor: "white",
+                      border: "1px solid #dee2e6",
+                      borderRadius: "4px",
+                      display: "inline-block"
+                    }}>
+                      <img
+                        src={detail.signature}
+                        alt="Finance Manager Signature"
+                        style={{
+                          maxWidth: "300px",
+                          maxHeight: "100px",
+                          display: "block"
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <div style={{ 
+                        display: "none", 
+                        color: "#dc3545",
+                        fontSize: "12px",
+                        fontStyle: "italic"
+                      }}>
+                        Signature image failed to load
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ✅ NEW: Comments Section */}
+                {detail.comments && detail.comments.length > 0 && (
+                  <div style={{ marginTop: "15px" }}>
+                    <strong style={{ 
+                      fontSize: "13px", 
+                      color: "#6c757d",
+                      display: "block",
+                      marginBottom: "8px"
+                    }}>
+                      Review Comments:
+                    </strong>
+                    <div style={{
+                      padding: "10px",
+                      backgroundColor: "white",
+                      border: "1px solid #dee2e6",
+                      borderRadius: "4px",
+                      fontSize: "13px",
+                      lineHeight: "1.5"
+                    }}>
+                      {detail.comments.map((comment, idx) => (
+                        <div key={idx} style={{ marginBottom: idx < detail.comments.length - 1 ? "8px" : "0" }}>
+                          <strong>{comment.user_username}:</strong> {comment.comment}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
