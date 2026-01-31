@@ -109,7 +109,6 @@ INSTALLED_APPS = [
     # 'finance',
     # 'budgeting',
     # 'expenses',
-    'cloudinary',
     'core',
 ]
 
