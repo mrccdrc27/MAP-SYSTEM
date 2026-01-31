@@ -2,11 +2,10 @@ from warnings import filters
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.conf import settings
+from django.core.files.storage import default_storage
+from rest_framework.permissions import AllowAny
 from rest_framework import status  # , permissions
-from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import AllowAny  # TODO Remove Later
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse, OpenApiParameter, inline_serializer
@@ -178,3 +177,45 @@ class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'code']
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def storage_diagnostic(request):
+    """
+    Diagnostic endpoint to check file storage configuration.
+    Access at: GET /api/diagnostics/storage/
+    """
+    import cloudinary
+    
+    storage_info = {
+        'DEBUG': settings.DEBUG,
+        'storage_backend': default_storage.__class__.__name__,
+        'storage_module': default_storage.__class__.__module__,
+        'expected_backend': 'MediaCloudinaryStorage' if not settings.DEBUG else 'FileSystemStorage',
+        'cloudinary_configured': bool(getattr(settings, 'CLOUDINARY_URL', None)),
+        'cloudinary_cloud_name': cloudinary.config().cloud_name if hasattr(cloudinary.config(), 'cloud_name') else None,
+        'media_url': settings.MEDIA_URL,
+        'default_file_storage': getattr(settings, 'DEFAULT_FILE_STORAGE', 'Not Set'),
+    }
+    
+    # Check if Cloudinary is actually working
+    try:
+        test_result = cloudinary.api.ping()
+        storage_info['cloudinary_ping'] = 'SUCCESS'
+    except Exception as e:
+        storage_info['cloudinary_ping'] = f'FAILED: {str(e)}'
+    
+    # Determine if configuration is correct
+    is_correct = (
+        not settings.DEBUG and 
+        storage_info['storage_backend'] == 'MediaCloudinaryStorage' and
+        storage_info['cloudinary_ping'] == 'SUCCESS'
+    )
+    
+    return Response({
+        'status': 'OK' if is_correct else 'MISCONFIGURED',
+        'details': storage_info,
+        'recommendation': (
+            'Configuration is correct ✅' if is_correct else
+            '⚠️  Set DEBUG=False in Render environment variables and redeploy'
+        )
+    })

@@ -18,7 +18,8 @@ from .views_dashboard import (
 )
 from .views import (
     DepartmentViewSet,
-    ValidProjectAccountView
+    ValidProjectAccountView,
+    storage_diagnostic
 )
 from .views_expense import (
     ExpenseDetailViewForModal, ExpenseHistoryDetailView, ExpenseHistoryView,
@@ -154,6 +155,8 @@ urlpatterns = [
     # MODIFICATION START
     path('budget/supplemental/request/', SupplementalBudgetRequestView.as_view(), name='budget-supplemental-request'),
     # MODIFICATION END
+    # Diagnostic endpoint (REMOVE IN PRODUCTION)
+    path('diagnostics/storage/', storage_diagnostic, name='storage-diagnostic'),
 ]
 
 # MODIFICATION START Serve Media Files (Fix for Render 404s)
