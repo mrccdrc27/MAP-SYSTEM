@@ -313,7 +313,6 @@ if DEBUG or not CLOUDINARY_URL:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
     STORAGES = {
         "default": {
@@ -323,6 +322,7 @@ else:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
+
 # ============================================================================
 # DEBUG TOOLBAR
 # ============================================================================
@@ -555,7 +555,6 @@ USE_TZ = True
 # ============================================================================
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 STATIC_URL = 'static/'
 
 # ============================================================================
