@@ -91,8 +91,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',
+    'cloudinary_storage',  
     'django.contrib.staticfiles',
+    'cloudinary', 
 
     # Third-party apps
     'rest_framework',
@@ -268,27 +269,55 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
 # ============================================================================
-# CLOUDINARY CONFIGURATION
+# CLOUDINARY CONFIGURATION (ROBUST)
 # ============================================================================
 
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+from urllib.parse import urlparse
 
-# Configure Cloudinary using CLOUDINARY_URL (reads from environment automatically)
-cloudinary.config(
-    cloudinary_url=os.getenv('CLOUDINARY_URL')
-)
+# Get Cloudinary URL from environment
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
+
+if CLOUDINARY_URL:
+    # Parse the Cloudinary URL to extract components
+    # Format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+    parsed = urlparse(CLOUDINARY_URL)
+    
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': parsed.hostname,  # du7iy1ahe
+        'API_KEY': parsed.username,      # 278315874871179
+        'API_SECRET': parsed.password,   # bvaJmQMElGxH0SY2ZaiMdQZeXMc
+    }
+    
+    # Configure cloudinary library (for direct uploads via API)
+    cloudinary.config(
+        cloud_name=parsed.hostname,
+        api_key=parsed.username,
+        api_secret=parsed.password,
+        secure=True  # Always use HTTPS
+    )
+else:
+    # Fallback for local development (if CLOUDINARY_URL not set)
+    CLOUDINARY_STORAGE = None
 
 # Media File Storage Configuration
 MEDIA_URL = '/media/'
 
-# Use Cloudinary in production (Render), local filesystem in development
-if DEBUG:
+# ✅ Use Cloudinary in production, local filesystem in development
+if DEBUG or not CLOUDINARY_URL:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    print("📁 Using local file storage (DEBUG=True or no CLOUDINARY_URL)")
 else:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    print(f"☁️  Using Cloudinary storage: {CLOUDINARY_STORAGE['CLOUD_NAME']}")
+    
+    # Optional: Set a subfolder prefix in Cloudinary
+    # This creates /budget_system/budget_proposals/signatures/xyz.png
+    # Instead of /budget_proposals/signatures/xyz.png
+    # CLOUDINARY_STORAGE_PREFIX = 'budget_system'
 
 # ============================================================================
 # DEBUG TOOLBAR
