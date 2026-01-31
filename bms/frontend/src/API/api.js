@@ -1,32 +1,36 @@
 // bms/frontend/src/API/api.js
-import axios from 'axios';
-import { getAccessToken, setAccessToken, removeAccessToken } from './TokenUtils';
+import axios from "axios";
+import {
+  getAccessToken,
+  setAccessToken,
+  removeAccessToken,
+} from "./TokenUtils";
 
 // BMS Backend API URL (for budget operations)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8001/api";
 
 // Auth service URL (for token refresh)
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:8003';
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
 
 const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Will automatically add the JWT to every request
 api.interceptors.request.use(
-    (config) => {
-        const token = getAccessToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+  (config) => {
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
 );
 
 // Singleton pattern for token refresh
@@ -34,100 +38,85 @@ let refreshTokenPromise = null;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-    failedQueue.forEach(prom => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
-    });
-    failedQueue = [];
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
 };
 
 // Response interceptor: Handle automatic token refresh
 api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-        // Check if the error is 401 and it's not a retry request
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            
-            // If a refresh is already in progress, queue the original request
-            if (refreshTokenPromise) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                .then(newAccessToken => {
-                    originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
-                    return api(originalRequest);
-                })
-                .catch(err => {
-                    return Promise.reject(err);
-                });
-            }
+    // Check if the error is 401 and it's not a retry request
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      // If a refresh is already in progress, queue the original request
+      if (refreshTokenPromise) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((newAccessToken) => {
+            originalRequest.headers["Authorization"] =
+              "Bearer " + newAccessToken;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
 
-            originalRequest._retry = true;
-            
-            // Start the refresh token request
-            refreshTokenPromise = new Promise(async (resolve, reject) => {
-                try {
-                    // FIXED: Get refresh token from localStorage (not cookies)
-                    const refreshToken = localStorage.getItem('refreshToken');
-                    
-                    if (!refreshToken) {
-                        throw new Error('No refresh token available');
-                    }
-                    
-                    // FIXED: Call standard JWT refresh endpoint with token in body
-                    const response = await axios.post(
-                        `${AUTH_URL}/api/v1/token/refresh/`,
-                        { refresh: refreshToken },  // Send in request body
-                        { 
-                            headers: { 'Content-Type': 'application/json' }
-                            // Removed withCredentials: true (we're not using cookies)
-                        }
-                    );
-                    
-                    const newAccessToken = response.data.access;
-                    const newRefreshToken = response.data.refresh; // Token rotation
-                    
-                    if (newAccessToken) {
-                        setAccessToken(newAccessToken);
-                        
-                        // FIXED: Update refresh token if rotated
-                        if (newRefreshToken) {
-                            localStorage.setItem('refreshToken', newRefreshToken);
-                        }
-                        
-                        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                        processQueue(null, newAccessToken);
-                        resolve(newAccessToken);
-                    } else {
-                        throw new Error('No access token in response');
-                    }
-                    
-                } catch (refreshError) {
-                    console.error("Token refresh failed:", refreshError);
-                    
-                    // FIXED: Clean up both tokens
-                    removeAccessToken();
-                    localStorage.removeItem('refreshToken');
-                    
-                    processQueue(refreshError, null);
-                    reject(refreshError);
+      originalRequest._retry = true;
 
-                    window.location.href = '/login';
-                } finally {
-                    refreshTokenPromise = null;
-                }
-            });
+      // Start the refresh token request
+      refreshTokenPromise = new Promise(async (resolve, reject) => {
+        try {
+          // Call cookie-based refresh endpoint
+          const response = await axios.post(
+            `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`,
+            {}, // Empty body - backend reads refresh_token from cookies
+            {
+              withCredentials: true, // Critical: sends cookies with request
+              headers: { "Content-Type": "application/json" },
+            },
+          );
 
-            return refreshTokenPromise.then(() => api(originalRequest));
+          // MODIFICATION: Backend sets new access_token cookie automatically
+          // No need to extract from response body - browser handles it
+          if (response.data.message === "Token refreshed successfully") {
+            // The new access_token is now in cookies, no need to store manually
+            // just signal that refresh succeeded
+            processQueue(null, "token_refreshed");
+            resolve("token_refreshed");
+          } else {
+            throw new Error("Token refresh failed");
+          }
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+
+          // FIXED: Clean up both tokens
+          removeAccessToken();
+          localStorage.removeItem("refreshToken");
+
+          processQueue(refreshError, null);
+          reject(refreshError);
+
+          window.location.href = "/login";
+        } finally {
+          refreshTokenPromise = null;
         }
-        
-        return Promise.reject(error);
+      });
+
+      return refreshTokenPromise.then(() => api(originalRequest));
     }
+
+    return Promise.reject(error);
+  },
 );
 
 export default api;
