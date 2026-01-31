@@ -170,10 +170,18 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         # get_object is overridden to return the user attached to the request
-        return self.request.user
+        user = self.request.user
+        # If this is an EmployeeUser wrapper, return the underlying employee object
+        if isinstance(user, EmployeeUser):
+            return user.employee
+        return user
 
     def get_serializer_class(self):
         """Return different serializers for different HTTP methods."""
+        # Check if this is an employee user
+        user = self.request.user
+        if isinstance(user, EmployeeUser):
+            return EmployeeProfileSerializer
         if self.request.method in ['PATCH', 'PUT']:
             return UserProfileUpdateSerializer
         return UserProfileSerializer

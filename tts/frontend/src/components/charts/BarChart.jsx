@@ -30,6 +30,7 @@ export default function BarChart({
   chartTitle = "Bar Chart",
   onClick,
   horizontal = false,
+  heightStyle,
 }) {
   const chartRef = useRef(null);
 
@@ -79,7 +80,7 @@ export default function BarChart({
   };
 
   return (
-    <div className={`${styles.chartCardCont} ${onClick ? styles.clickable : ''}`}>
+    <div className={`${styles.chartCardCont} ${onClick ? styles.clickable : ''}`} style={heightStyle ? { height: heightStyle } : undefined}>
       {labels.length && dataPoints.length ? (
         <Bar 
           ref={chartRef}

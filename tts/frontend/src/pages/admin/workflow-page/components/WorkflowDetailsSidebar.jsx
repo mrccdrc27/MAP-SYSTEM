@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useRef, useEffect } from "react";
 import { FileText, ClipboardList } from "lucide-react";
 import { WORKFLOW_TEMPLATES } from "../constants/workflowTemplates";
 import styles from "../create-workflow.module.css";
@@ -62,9 +62,25 @@ const WorkflowDetailsForm = memo(function WorkflowDetailsForm({
   workflowMetadata,
   setWorkflowMetadata,
 }) {
+  const textareaRef = useRef(null);
+
   const handleChange = (field, value) => {
     setWorkflowMetadata((prev) => ({ ...prev, [field]: value }));
   };
+
+  const getCharCounterClass = (current, max) => {
+    if (current > max) return 'error';
+    if (current > max * 0.9) return 'warning';
+    return '';
+  };
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [workflowMetadata.description]);
 
   return (
     <div className={styles.sidebarSection}>
@@ -79,6 +95,9 @@ const WorkflowDetailsForm = memo(function WorkflowDetailsForm({
             onChange={(e) => handleChange("name", e.target.value)}
             placeholder="Workflow name"
           />
+          <div className={`${styles.charCounter} ${getCharCounterClass(workflowMetadata.name.length, 64)}`}>
+            {workflowMetadata.name.length}/64
+          </div>
         </div>
         <div className={styles.inputRow}>
           <div className={styles.inputGroup}>
@@ -91,6 +110,9 @@ const WorkflowDetailsForm = memo(function WorkflowDetailsForm({
               onChange={(e) => handleChange("category", e.target.value)}
               placeholder="IT, HR"
             />
+            <div className={`${styles.charCounter} ${getCharCounterClass(workflowMetadata.category.length, 64)}`}>
+              {workflowMetadata.category.length}/64
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>
@@ -102,6 +124,9 @@ const WorkflowDetailsForm = memo(function WorkflowDetailsForm({
               onChange={(e) => handleChange("sub_category", e.target.value)}
               placeholder="Support"
             />
+            <div className={`${styles.charCounter} ${getCharCounterClass(workflowMetadata.sub_category.length, 64)}`}>
+              {workflowMetadata.sub_category.length}/64
+            </div>
           </div>
         </div>
         <div className={styles.inputGroup}>
@@ -114,15 +139,22 @@ const WorkflowDetailsForm = memo(function WorkflowDetailsForm({
             onChange={(e) => handleChange("department", e.target.value)}
             placeholder="IT Support"
           />
+          <div className={`${styles.charCounter} ${getCharCounterClass(workflowMetadata.department.length, 64)}`}>
+            {workflowMetadata.department.length}/64
+          </div>
         </div>
         <div className={styles.inputGroup}>
           <label>Description <span className={styles.required}>*</span></label>
           <textarea
+            ref={textareaRef}
             value={workflowMetadata.description}
             onChange={(e) => handleChange("description", e.target.value)}
             placeholder="Brief description of the workflow"
-            rows={2}
+            style={{ minHeight: '40px' }}
           />
+          <div className={`${styles.charCounter} ${getCharCounterClass(workflowMetadata.description.length, 256)}`}>
+            {workflowMetadata.description.length}/256
+          </div>
         </div>
       </div>
     </div>

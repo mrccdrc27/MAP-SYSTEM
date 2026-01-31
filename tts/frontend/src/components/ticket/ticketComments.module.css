@@ -661,6 +661,24 @@
   margin-top: 8px;
 }
 
+.errorMessage {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background-color: var(--status-error-bg, #fee);
+  border: 1px solid var(--status-error-color, #fcc);
+  border-radius: 4px;
+  color: var(--status-error-color, #c33);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.errorMessage i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
 .fileInputContainer {
   position: relative;
 }

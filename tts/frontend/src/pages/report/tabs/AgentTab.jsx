@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // components
 import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
@@ -8,6 +8,12 @@ import PieChart from "../../../components/charts/PieChart";
 import BarChart from "../../../components/charts/BarChart";
 import DoughnutChart from "../../../components/charts/DoughnutChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
+
+// components
+import DrilldownModal, { DRILLDOWN_COLUMNS } from "../components/DrilldownModal";
+
+// hooks
+import useDrilldownAnalytics from "../../../api/useDrilldownAnalytics";
 
 // icons
 import { 
@@ -29,6 +35,20 @@ import styles from "../report.module.css";
 
 export default function AgentTab({ timeFilter, analyticsData = {}, loading, error }) {
   const ticketsReport = analyticsData || {};
+
+  // Drilldown state
+  const [drilldownOpen, setDrilldownOpen] = useState(false);
+  const [drilldownTitle, setDrilldownTitle] = useState('');
+  const [drilldownColumns, setDrilldownColumns] = useState([]);
+  const [drilldownParams, setDrilldownParams] = useState({});
+  const [drilldownType, setDrilldownType] = useState('');
+  
+  const {
+    loading: drilldownLoading,
+    drilldownData,
+    drilldownUserTasks,
+    clearDrilldownData,
+  } = useDrilldownAnalytics();
 
   if (loading) {
     return (
@@ -99,8 +119,51 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
   const totalUsers = dashboard?.total_users || 0;
   const escalationRate = Math.round(dashboard?.escalation_rate || 0);
 
+  // Drilldown handlers
+  const handleUserResolutionClick = async (userName, userId) => {
+    setDrilldownTitle(`Tasks for ${userName}`);
+    setDrilldownColumns(DRILLDOWN_COLUMNS.userTasks);
+    setDrilldownType('user');
+    setDrilldownParams({ user_id: userId });
+    setDrilldownOpen(true);
+    await drilldownUserTasks({ 
+      user_id: userId,
+      start_date: timeFilter?.startDate?.toISOString()?.split('T')[0],
+      end_date: timeFilter?.endDate?.toISOString()?.split('T')[0],
+    });
+  };
+
+  const handleDrilldownPageChange = async (page) => {
+    const params = { 
+      ...drilldownParams, 
+      page,
+      start_date: timeFilter?.startDate?.toISOString()?.split('T')[0],
+      end_date: timeFilter?.endDate?.toISOString()?.split('T')[0],
+    };
+    
+    if (drilldownType === 'user') {
+      await drilldownUserTasks(params);
+    }
+  };
+
+  const handleCloseDrilldown = () => {
+    setDrilldownOpen(false);
+    clearDrilldownData();
+  };
+
   return (
     <div className={styles.tabContent}>
+      {/* Drilldown Modal */}
+      <DrilldownModal
+        isOpen={drilldownOpen}
+        onClose={handleCloseDrilldown}
+        title={drilldownTitle}
+        data={drilldownData}
+        columns={drilldownColumns}
+        onPageChange={handleDrilldownPageChange}
+        loading={drilldownLoading}
+      />
+      
       {/* KPI Section */}
       <div className={styles.chartSection} style={{ marginBottom: '24px' }}>
         <h2>Agent & SLA KPI</h2>
@@ -147,7 +210,7 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
       <div className={styles.chartsGrid}>
         {/* Agent Performance */}
       <div className={styles.chartSection}>
-        <h2>Agent & SLA Performance</h2>
+        <h2>Agent & SLA Performance <span className={styles.clickHint}>(click to drill down)</span></h2>
         <div className={styles.chartRow}>
           <ChartContainer title="SLA Compliance by Priority">
             <DoughnutChart
@@ -181,15 +244,6 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
               chartLabel="Percentage"
             />
           </ChartContainer>
-
-          <ChartContainer title="User Resolution Rates">
-            <PieChart
-              labels={userLabels}
-              dataPoints={userResolutionRates}
-              chartTitle="User Resolution Rates"
-              chartLabel="Resolution %"
-            />
-          </ChartContainer>
         </div>
       </div>
     </div>
@@ -200,7 +254,7 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
           <div className={styles.trendHeader}>
             <h2>
               <Trophy size={20} style={{ marginRight: '8px', color: '#f1c40f' }} />
-              Per-User Task Item Performance
+              Per-User Task Item Performance <span className={styles.clickHint}>(click rows to drill down)</span>
             </h2>
             <small style={{ color: 'var(--secondary-color)' }}>Showing top agents by activity</small>
           </div>
@@ -231,7 +285,7 @@ export default function AgentTab({ timeFilter, analyticsData = {}, loading, erro
                   if (resRate < 50) badgeStatusClass = styles.badgeDanger;
 
                   return (
-                    <tr key={idx}>
+                    <tr key={idx} onClick={() => handleUserResolutionClick(user.user_name, user.user_id)} style={{ cursor: 'pointer' }}>
                       <td>
                         <div className={styles.userInfo}>
                           <div className={styles.userAvatar} style={{

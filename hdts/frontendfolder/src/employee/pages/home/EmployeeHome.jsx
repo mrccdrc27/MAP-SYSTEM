@@ -112,8 +112,10 @@ const EmployeeHome = () => {
   return (
     <div className={styles.pageContainer}>
       <h1 className={styles.welcomeHeader}>
-        Welcome, <span className={styles.welcomeName}>{displayName}<span className={styles.welcomeName}>!</span></span>
+        Welcome, <span className={styles.welcomeName}>{fullName || displayName}</span>
+        <span className={styles.welcomeDot}>.</span>
       </h1>
+      <p className={styles.welcomeSubtext}>Submit a ticket and we'll help you out.</p>
 
       <div className={styles.topSection}>
         <div className={styles.card}>
@@ -136,10 +138,10 @@ const EmployeeHome = () => {
           </div>
         </div>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Notice</h2>
+        <div className={`${styles.card} ${styles.noticeCard}`}>
+          <h2 className={styles.cardTitle}>Notice<span className={styles.noticeBang}>!</span></h2>
           <p className={styles.noticeText}>
-            Our support team operates during <span className={styles.workingHours}>8:00 AM - 5:00 PM</span>.
+            Our support team operates during <span className={styles.workingHours}>8:00 AM - 5:00 PM</span>
           </p>
           <ul className={styles.noticeList}>
             <li className={styles.noticeItem}>

@@ -56,18 +56,8 @@ const getHeaderConfig = (path, currentUser, location) => {
   }
 
   const staticHeaders = {
-    '/employee/submit-ticket': {
-      root: 'Home',
-      currentPage: 'Submit Ticket',
-      rootNavigatePage: '/employee/home',
-      title: '', // No title, just breadcrumb
-    },
-    '/employee/frequently-asked-questions': {
-      root: 'Home',
-      currentPage: 'Frequently Asked Questions',
-      rootNavigatePage: '/employee/home',
-      title: '',
-    },
+    // Submit Ticket intentionally has no breadcrumb entry to avoid showing 'Home / Submit Ticket'
+    // FAQ page intentionally has no breadcrumb entry to avoid showing 'Home / FAQs'
   };
 
   return staticHeaders[path] || null;

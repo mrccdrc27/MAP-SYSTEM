@@ -1,5 +1,5 @@
 // react
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // components
 import ComponentSkeleton from "../../../components/skeleton/ComponentSkeleton";
@@ -9,6 +9,12 @@ import BarChart from "../../../components/charts/BarChart";
 import ChartContainer from "../../../components/charts/ChartContainer";
 import PieChart from "../../../components/charts/PieChart";
 import DoughnutChart from "../../../components/charts/DoughnutChart";
+
+// components
+import DrilldownModal, { DRILLDOWN_COLUMNS } from "../components/DrilldownModal";
+
+// hooks
+import useDrilldownAnalytics from "../../../api/useDrilldownAnalytics";
 
 // icons
 import { 
@@ -34,6 +40,22 @@ const countByField = (data, field) => {
 
 export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, error }) {
   const workflowsReport = analyticsData || {};
+
+  // Drilldown state
+  const [drilldownOpen, setDrilldownOpen] = useState(false);
+  const [drilldownTitle, setDrilldownTitle] = useState('');
+  const [drilldownColumns, setDrilldownColumns] = useState([]);
+  const [drilldownParams, setDrilldownParams] = useState({});
+  const [drilldownType, setDrilldownType] = useState('');
+  
+  const {
+    loading: drilldownLoading,
+    drilldownData,
+    drilldownWorkflowTasks,
+    drilldownStepTasks,
+    drilldownDepartmentTasks,
+    clearDrilldownData,
+  } = useDrilldownAnalytics();
 
   const workflowMetrics = useMemo(() => workflowsReport.workflow_metrics || [], [workflowsReport]);
   const departmentAnalytics = useMemo(() => workflowsReport.department_analytics || [], [workflowsReport]);
@@ -95,8 +117,87 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
   const stepLabels = stepPerformance?.map(s => s.step_name?.split(' - ')[1] || s.step_name) || [];
   const stepDataPoints = stepPerformance?.map(s => s.total_tasks) || [];
 
+  // Drilldown handlers
+  const handleWorkflowClick = async (workflowName) => {
+    const workflow = workflowMetrics.find(w => w.workflow_name === workflowName);
+    if (!workflow) return;
+    
+    setDrilldownTitle(`Tasks in ${workflowName} Workflow`);
+    setDrilldownColumns(DRILLDOWN_COLUMNS.workflows);
+    setDrilldownType('workflow');
+    setDrilldownParams({ workflow_id: workflow.workflow_id });
+    setDrilldownOpen(true);
+    await drilldownWorkflowTasks({ 
+      workflow_id: workflow.workflow_id,
+      start_date: timeFilter?.startDate?.toISOString()?.split('T')[0],
+      end_date: timeFilter?.endDate?.toISOString()?.split('T')[0],
+    });
+  };
+
+  const handleDepartmentClick = async (department) => {
+    setDrilldownTitle(`Tasks in ${department} Department`);
+    setDrilldownColumns(DRILLDOWN_COLUMNS.tickets);
+    setDrilldownType('department');
+    setDrilldownParams({ department });
+    setDrilldownOpen(true);
+    await drilldownDepartmentTasks({ 
+      department,
+      start_date: timeFilter?.startDate?.toISOString()?.split('T')[0],
+      end_date: timeFilter?.endDate?.toISOString()?.split('T')[0],
+    });
+  };
+
+  const handleStepClick = async (stepName) => {
+    const step = stepPerformance.find(s => (s.step_name?.split(' - ')[1] || s.step_name) === stepName);
+    if (!step) return;
+    
+    setDrilldownTitle(`Tasks in ${stepName} Step`);
+    setDrilldownColumns(DRILLDOWN_COLUMNS.taskItems);
+    setDrilldownType('step');
+    setDrilldownParams({ step_id: step.step_id });
+    setDrilldownOpen(true);
+    await drilldownStepTasks({ 
+      step_id: step.step_id,
+      start_date: timeFilter?.startDate?.toISOString()?.split('T')[0],
+      end_date: timeFilter?.endDate?.toISOString()?.split('T')[0],
+    });
+  };
+
+  const handleDrilldownPageChange = async (page) => {
+    const params = { 
+      ...drilldownParams, 
+      page,
+      start_date: timeFilter?.startDate?.toISOString()?.split('T')[0],
+      end_date: timeFilter?.endDate?.toISOString()?.split('T')[0],
+    };
+    
+    if (drilldownType === 'workflow') {
+      await drilldownWorkflowTasks(params);
+    } else if (drilldownType === 'department') {
+      await drilldownDepartmentTasks(params);
+    } else if (drilldownType === 'step') {
+      await drilldownStepTasks(params);
+    }
+  };
+
+  const handleCloseDrilldown = () => {
+    setDrilldownOpen(false);
+    clearDrilldownData();
+  };
+
   return (
     <div className={styles.tabContent}>
+      {/* Drilldown Modal */}
+      <DrilldownModal
+        isOpen={drilldownOpen}
+        onClose={handleCloseDrilldown}
+        title={drilldownTitle}
+        data={drilldownData}
+        columns={drilldownColumns}
+        onPageChange={handleDrilldownPageChange}
+        loading={drilldownLoading}
+      />
+      
       {/* KPI Section */}
       <div className={styles.chartSection} style={{ marginBottom: '24px' }}>
         <h2>Workflow KPI</h2>
@@ -143,7 +244,7 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
       <div className={styles.chartsGrid}>
         {/* Workflow Performance Section - Focus on the requested fixes */}
         <div className={styles.chartSection}>
-          <h2>Workflow Execution & Completion</h2>
+          <h2>Workflow Execution & Completion <span className={styles.clickHint}>(click to drill down)</span></h2>
           <div className={styles.chartRow}>
             <ChartContainer title="Workflows by Execution Count">
               <BarChart
@@ -152,6 +253,7 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
                 chartTitle="Tasks per Workflow"
                 chartLabel="Count"
                 horizontal={true}
+                onClick={({ label }) => handleWorkflowClick(label)}
               />
             </ChartContainer>
 
@@ -162,6 +264,7 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
                 chartTitle="Completion Rate per Workflow (%)"
                 chartLabel="Percentage"
                 horizontal={true}
+                onClick={({ label }) => handleWorkflowClick(label)}
               />
             </ChartContainer>
           </div>
@@ -169,7 +272,7 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
 
         {/* Breakdown Section */}
         <div className={styles.chartSection}>
-          <h2>Department & Step Performance</h2>
+          <h2>Department & Step Performance <span className={styles.clickHint}>(click to drill down)</span></h2>
           <div className={styles.chartRow}>
             <ChartContainer title="Workflows by Department">
               <DoughnutChart
@@ -177,6 +280,7 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
                 values={deptDataPoints}
                 chartTitle="Department Distribution"
                 chartLabel="Tickets"
+                onClick={({ label }) => handleDepartmentClick(label)}
               />
             </ChartContainer>
 
@@ -187,6 +291,7 @@ export default function WorkflowTab({ timeFilter, analyticsData = {}, loading, e
                 chartTitle="Tasks Distribution by Step"
                 chartLabel="Count"
                 horizontal={true}
+                onClick={({ label }) => handleStepClick(label)}
               />
             </ChartContainer>
           </div>

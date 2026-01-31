@@ -11,6 +11,7 @@ const TimeFilter = ({ onFilterApply }) => {
   const [selectedOption, setSelectedOption] = useState("today");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [error, setError] = useState("");
 
   // Filter Section
   const [showFilter, setShowFilter] = useState(false);
@@ -63,6 +64,20 @@ const TimeFilter = ({ onFilterApply }) => {
   };
 
   const applyFilter = () => {
+    setError("");
+    const now = new Date();
+    if (startDate && startDate > now) {
+      setError("Start date cannot be in the future.");
+      return;
+    }
+    if (endDate && endDate > now) {
+      setError("End date cannot be in the future.");
+      return;
+    }
+    if (startDate && endDate && startDate > endDate) {
+      setError("Start date cannot be after end date.");
+      return;
+    }
     console.log("Applying filter with: ", { startDate, endDate }); // ADD THIS
     onFilterApply({ startDate, endDate });
   };
@@ -71,6 +86,7 @@ const TimeFilter = ({ onFilterApply }) => {
     setSelectedOption("today");
     setStartDate(null);
     setEndDate(null);
+    setError("");
     onFilterApply({ startDate: null, endDate: null }); // Add this
   };
 
@@ -112,10 +128,14 @@ const TimeFilter = ({ onFilterApply }) => {
             <label className={styles.tfLabel}>Start Date</label>
             <DatePicker
               selected={startDate}
-              onChange={(date) => setStartDate(date)}
+              onChange={(date) => {
+                setStartDate(date);
+                setError("");
+              }}
               dateFormat="MM/dd/yyyy"
               placeholderText="Select start date"
               className={styles.tfSelect}
+              maxDate={new Date()}
             />
           </div>
 
@@ -123,10 +143,15 @@ const TimeFilter = ({ onFilterApply }) => {
             <label className={styles.tfLabel}>End Date</label>
             <DatePicker
               selected={endDate}
-              onChange={(date) => setEndDate(date)}
+              onChange={(date) => {
+                setEndDate(date);
+                setError("");
+              }}
               dateFormat="MM/dd/yyyy"
               placeholderText="Select end date"
               className={styles.tfSelect}
+              minDate={startDate || undefined}
+              maxDate={new Date()}
             />
           </div>
 
@@ -138,6 +163,7 @@ const TimeFilter = ({ onFilterApply }) => {
               Reset Filter
             </button>
           </div>
+          {error && <div className={styles.tfError}>{error}</div>}
         </div>
       )}
     </>

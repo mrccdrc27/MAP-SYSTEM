@@ -112,6 +112,25 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
     await drilldownTicketsByAge({ age_bucket: ageBucket });
   };
 
+  const handleCategoryClick = async (category) => {
+    setDrilldownTitle(`Tickets - ${category} Category`);
+    setDrilldownColumns(DRILLDOWN_COLUMNS.tickets);
+    setDrilldownType('category');
+    setDrilldownParams({ category });
+    setDrilldownOpen(true);
+    // Note: Backend may need to support category drilldown
+    await drilldownTicketsByStatus({ status: 'all', category }); // Placeholder
+  };
+
+  const handleDepartmentClick = async (department) => {
+    setDrilldownTitle(`Tickets - ${department} Department`);
+    setDrilldownColumns(DRILLDOWN_COLUMNS.tickets);
+    setDrilldownType('department');
+    setDrilldownParams({ department });
+    setDrilldownOpen(true);
+    await drilldownDepartmentTasks({ department });
+  };
+
   const handleDrilldownPageChange = async (page) => {
     const params = { 
       ...drilldownParams, 
@@ -126,6 +145,10 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
       await drilldownTicketsByPriority(params);
     } else if (drilldownType === 'age') {
       await drilldownTicketsByAge(params);
+    } else if (drilldownType === 'category') {
+      await drilldownTicketsByStatus({ ...params, status: 'all' }); // Placeholder
+    } else if (drilldownType === 'department') {
+      await drilldownDepartmentTasks(params);
     }
   };
 
@@ -342,15 +365,6 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
                   chartLabel="Category"
                 />
               </ChartContainer>
-              <ChartContainer title="Tickets by Sub-Category">
-                <BarChart
-                  labels={subCategoryLabels}
-                  dataPoints={subCategoryDataPoints}
-                  chartTitle="Tickets by Sub-Category"
-                  chartLabel="Count"
-                  horizontal={true}
-                />
-              </ChartContainer>
               <ChartContainer title="Tickets by Department">
                 <DoughnutChart
                   labels={departmentLabels}
@@ -360,6 +374,22 @@ export default function TicketTab({ timeFilter, analyticsData = {}, trendData = 
                 />
               </ChartContainer>
             </div>
+            {subCategoryLabels.length > 0 && (
+              <div className={styles.chartRow}>
+                <ChartContainer title="Tickets by Sub-Category">
+                  <div style={{ overflow: 'auto' }}>
+                    <BarChart
+                      labels={subCategoryLabels}
+                      dataPoints={subCategoryDataPoints}
+                      chartTitle="Tickets by Sub-Category"
+                      chartLabel="Count"
+                      horizontal={true}
+                      heightStyle="auto"
+                    />
+                  </div>
+                </ChartContainer>
+              </div>
+            )}
           </div>
         )}
       </div>

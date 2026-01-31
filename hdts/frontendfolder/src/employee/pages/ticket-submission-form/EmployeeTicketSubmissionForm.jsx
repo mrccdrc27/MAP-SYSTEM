@@ -59,57 +59,10 @@ const categoryMetadata = {
   }
 };
 
-// Mock data for assets that can be checked in (assets currently checked out by the employee)
-// Generate 50 mock checked out assets
-const generateMockAssets = () => {
-  const assetTypes = [
-    { type: 'Laptop', names: ['Dell Latitude 5520', 'Dell Latitude 7420', 'HP EliteBook 840', 'Lenovo ThinkPad X1 Carbon', 'MacBook Pro 14"', 'MacBook Air M2', 'ASUS ZenBook 14', 'Acer Swift 3'] },
-    { type: 'Monitor', names: ['Dell 27" P2722H', 'Dell 24" P2422H', 'LG 27" UltraFine', 'Samsung 32" Curved', 'BenQ 24" GW2480', 'ASUS ProArt 27"', 'HP Z27 4K'] },
-    { type: 'Keyboard', names: ['Logitech MX Keys', 'Microsoft Sculpt', 'Keychron K2', 'Apple Magic Keyboard', 'Razer BlackWidow', 'Corsair K70'] },
-    { type: 'Mouse', names: ['Logitech MX Master 3', 'Logitech G502', 'Apple Magic Mouse', 'Microsoft Arc', 'Razer DeathAdder', 'SteelSeries Rival'] },
-    { type: 'Headset', names: ['Jabra Evolve2 75', 'Poly Voyager Focus 2', 'Sony WH-1000XM5', 'Bose 700', 'Logitech Zone Wireless', 'HyperX Cloud II'] },
-    { type: 'Webcam', names: ['Logitech C920', 'Logitech Brio 4K', 'Razer Kiyo Pro', 'Elgato Facecam', 'Microsoft LifeCam HD'] },
-    { type: 'Docking Station', names: ['Dell WD19TBS', 'Lenovo ThinkPad USB-C Dock', 'HP USB-C Dock G5', 'CalDigit TS4', 'Anker 575'] },
-    { type: 'Tablet', names: ['iPad Pro 12.9"', 'iPad Air', 'Samsung Galaxy Tab S8', 'Microsoft Surface Pro 9', 'Lenovo Tab P11'] }
-  ];
-  const locations = ['Makati Office', 'Caloocan Office', 'Quezon City Office', 'Taguig Office', 'Pasig Office', 'Mandaluyong Office'];
-  
-  const assets = [];
-  let baseDate = new Date('2026-01-27');
-  
-  for (let i = 1; i <= 50; i++) {
-    const typeInfo = assetTypes[Math.floor(Math.random() * assetTypes.length)];
-    const assetName = typeInfo.names[Math.floor(Math.random() * typeInfo.names.length)];
-    const location = locations[Math.floor(Math.random() * locations.length)];
-    
-    // Generate check out date starting from Jan 27, 2026, adding 0-30 days randomly
-    const checkOutDate = new Date(baseDate);
-    checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 31));
-    
-    // Format ticket number: TXYYYYMMDDXXXXXX
-    const ticketDate = new Date(checkOutDate);
-    const year = ticketDate.getFullYear();
-    const month = String(ticketDate.getMonth() + 1).padStart(2, '0');
-    const day = String(ticketDate.getDate()).padStart(2, '0');
-    const seq = String(i).padStart(6, '0');
-    const ticketNo = `TX${year}${month}${day}${seq}`;
-    
-    assets.push({
-      id: i,
-      ticket_no: ticketNo,
-      name: `${assetName} ${typeInfo.type === 'Laptop' || typeInfo.type === 'Monitor' ? '' : ''}`.trim(),
-      type_of_product: typeInfo.type,
-      serial_number: `SN-${typeInfo.type.substring(0, 3).toUpperCase()}-${String(i).padStart(4, '0')}`,
-      check_out_date: checkOutDate.toISOString().split('T')[0],
-      location: location
-    });
-  }
-  
-  // Sort by check out date
-  return assets.sort((a, b) => new Date(a.check_out_date) - new Date(b.check_out_date));
-};
-
-const MOCK_CHECKED_OUT_ASSETS = generateMockAssets();
+// API URLs for fetching real data
+const AMS_ASSETS_URL = 'https://ams-assets.up.railway.app';
+const AMS_CONTEXTS_URL = 'https://ams-contexts.up.railway.app';
+const HDTS_API_URL = import.meta.env.VITE_HDTS_BACKEND_URL || 'http://165.22.247.50:5001';
 
 export default function EmployeeTicketSubmissionForm() {
   const navigate = useNavigate();
@@ -157,6 +110,14 @@ export default function EmployeeTicketSubmissionForm() {
     location: ''
   });
   const [selectedAssetCheckOutDate, setSelectedAssetCheckOutDate] = useState(null);
+
+  // State for Asset Check In Step 2 - real API data
+  const [checkedOutAssets, setCheckedOutAssets] = useState([]);
+  const [loadingCheckedOutAssets, setLoadingCheckedOutAssets] = useState(false);
+  const [assetTypeCategories, setAssetTypeCategories] = useState([]);
+  const [loadingAssetTypes, setLoadingAssetTypes] = useState(false);
+  const [checkInLocations, setCheckInLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
   // Track if we loaded from chatbot prefill (to show notification)
   const [loadedFromChatbot, setLoadedFromChatbot] = useState(false);
@@ -318,6 +279,91 @@ export default function EmployeeTicketSubmissionForm() {
   useEffect(() => {
     prefetchAms();
   }, [prefetchAms]);
+
+  // Fetch checked out assets for the current employee from AMS API
+  useEffect(() => {
+    const fetchCheckedOutAssets = async () => {
+      if (!currentUser?.id) return;
+      
+      setLoadingCheckedOutAssets(true);
+      try {
+        const response = await fetch(`${AMS_ASSETS_URL}/asset-checkout/by-employee/${currentUser.id}/`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            // Map the API response to match expected table format
+            const mappedAssets = data.map(checkout => ({
+              id: checkout.id,
+              ticket_no: checkout.ticket_number || checkout.ticketNumber || 'N/A',
+              name: checkout.asset_details?.name || 'Unknown Asset',
+              type_of_product: checkout.asset_details?.name?.split(' ')[0] || 'Other', // Extract type from name
+              serial_number: checkout.asset_details?.serial_number || 'N/A',
+              check_out_date: checkout.checkout_date || null,
+              location: '', // Location will be selected by user
+              asset_id: checkout.asset_details?.id,
+              asset_display_id: checkout.asset_details?.asset_id
+            }));
+            setCheckedOutAssets(mappedAssets);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching checked out assets:', error);
+        setCheckedOutAssets([]);
+      } finally {
+        setLoadingCheckedOutAssets(false);
+      }
+    };
+
+    fetchCheckedOutAssets();
+  }, [currentUser?.id]);
+
+  // Fetch asset type categories from AMS Contexts API for filter dropdown
+  useEffect(() => {
+    const fetchAssetTypeCategories = async () => {
+      setLoadingAssetTypes(true);
+      try {
+        const response = await fetch(`${AMS_CONTEXTS_URL}/categories/hd/registration/`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            // Extract unique category names for the "All Types" dropdown
+            const uniqueTypes = [...new Set(data.map(cat => cat.name))].sort();
+            setAssetTypeCategories(uniqueTypes);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching asset type categories:', error);
+        setAssetTypeCategories([]);
+      } finally {
+        setLoadingAssetTypes(false);
+      }
+    };
+
+    fetchAssetTypeCategories();
+  }, []);
+
+  // Fetch locations from HDTS API for filter dropdown
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoadingLocations(true);
+      try {
+        const response = await fetch(`${HDTS_API_URL}/api/locations/`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.locations)) {
+            setCheckInLocations(data.locations);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        setCheckInLocations([]);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   // Local date string in YYYY-MM-DD to use for date input min
   const localToday = (() => {
@@ -1029,23 +1075,18 @@ export default function EmployeeTicketSubmissionForm() {
     
     // For Asset Check In, show asset table instead of sub-category cards
     if (isAssetCheckIn) {
-      // Get unique values for filter dropdowns
-      const uniqueTypes = [...new Set(MOCK_CHECKED_OUT_ASSETS.map(a => a.type_of_product))].sort();
-      const uniqueLocations = [...new Set(MOCK_CHECKED_OUT_ASSETS.map(a => a.location))].sort();
-      
       // Filter assets based on search query and filters
-      const filteredAssets = MOCK_CHECKED_OUT_ASSETS.filter(asset => {
+      const filteredAssets = checkedOutAssets.filter(asset => {
         const matchesSearch = assetSearchQuery === '' || 
-          asset.ticket_no.toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
-          asset.name.toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
-          asset.type_of_product.toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
-          asset.serial_number.toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
-          asset.location.toLowerCase().includes(assetSearchQuery.toLowerCase());
+          (asset.ticket_no || '').toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
+          (asset.name || '').toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
+          (asset.type_of_product || '').toLowerCase().includes(assetSearchQuery.toLowerCase()) ||
+          (asset.serial_number || '').toLowerCase().includes(assetSearchQuery.toLowerCase());
         
-        const matchesType = assetFilters.type_of_product === '' || asset.type_of_product === assetFilters.type_of_product;
-        const matchesLocation = assetFilters.location === '' || asset.location === assetFilters.location;
+        const matchesType = assetFilters.type_of_product === '' || 
+          (asset.name || '').toLowerCase().includes(assetFilters.type_of_product.toLowerCase());
         
-        return matchesSearch && matchesType && matchesLocation;
+        return matchesSearch && matchesType;
       });
       
       return (
@@ -1063,7 +1104,7 @@ export default function EmployeeTicketSubmissionForm() {
             <div className={styles.assetSearchBox}>
               <input
                 type="text"
-                placeholder="Search by ticket no, name, type, serial number, or location..."
+                placeholder="Search by ticket no, name, type, or serial number..."
                 value={assetSearchQuery}
                 onChange={(e) => setAssetSearchQuery(e.target.value)}
                 className={styles.assetSearchInput}
@@ -1074,9 +1115,10 @@ export default function EmployeeTicketSubmissionForm() {
                 value={assetFilters.type_of_product}
                 onChange={(e) => setAssetFilters(prev => ({ ...prev, type_of_product: e.target.value }))}
                 className={styles.assetFilterSelect}
+                disabled={loadingAssetTypes}
               >
-                <option value="">All Types</option>
-                {uniqueTypes.map(type => (
+                <option value="">{loadingAssetTypes ? 'Loading...' : 'All Types'}</option>
+                {assetTypeCategories.map(type => (
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
@@ -1084,71 +1126,76 @@ export default function EmployeeTicketSubmissionForm() {
                 value={assetFilters.location}
                 onChange={(e) => setAssetFilters(prev => ({ ...prev, location: e.target.value }))}
                 className={styles.assetFilterSelect}
+                disabled={loadingLocations}
               >
-                <option value="">All Locations</option>
-                {uniqueLocations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
+                <option value="">{loadingLocations ? 'Loading...' : 'All Locations'}</option>
+                {checkInLocations.map(loc => (
+                  <option key={loc.id} value={loc.city}>{loc.city}</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div className={styles.assetTableContainer}>
-            <div className={styles.assetTableScrollWrapper}>
-              <table className={styles.assetTable}>
-                <thead>
-                  <tr>
-                    <th>Ticket No.</th>
-                    <th>Asset Name</th>
-                    <th>Type of Product</th>
-                    <th>Serial Number</th>
-                    <th>Check Out Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAssets.map(asset => (
-                    <tr key={asset.id}>
-                      <td>{asset.ticket_no}</td>
-                      <td>{asset.name}</td>
-                      <td>{asset.type_of_product}</td>
-                      <td>{asset.serial_number}</td>
-                      <td>{new Date(asset.check_out_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                      <td>
-                        <Button
-                          variant="primary"
-                          size="small"
-                          onClick={() => {
-                            // Set selected asset data and go to Step 3
-                            setFormData(prev => ({
-                              ...prev,
-                              subCategory: asset.name,
-                              assetName: asset.name,
-                              assetId: asset.id,
-                              amsAssetId: asset.ticket_no,
-                              serialNumber: asset.serial_number,
-                              location: asset.location,
-                              assetCheckout: asset.id
-                            }));
-                            // Store the check out date for minimum check in date validation
-                            setSelectedAssetCheckOutDate(asset.check_out_date);
-                            setCurrentStep(3);
-                          }}
-                        >
-                          Select
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {filteredAssets.length === 0 && (
-              <div className={styles.noAssetsMessage}>
-                {MOCK_CHECKED_OUT_ASSETS.length === 0 
-                  ? 'No assets currently checked out. Please check out an asset first.'
-                  : 'No assets match your search criteria.'}
-              </div>
+            {loadingCheckedOutAssets ? (
+              <div className={styles.loadingMessage}>Loading your checked out assets...</div>
+            ) : (
+              <>
+                <div className={styles.assetTableScrollWrapper}>
+                  <table className={styles.assetTable}>
+                    <thead>
+                      <tr>
+                        <th>Ticket No.</th>
+                        <th>Asset Name</th>
+                        <th>Serial Number</th>
+                        <th>Check Out Date</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAssets.map(asset => (
+                        <tr key={asset.id}>
+                          <td>{asset.ticket_no}</td>
+                          <td>{asset.name}</td>
+                          <td>{asset.serial_number}</td>
+                          <td>{asset.check_out_date ? new Date(asset.check_out_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</td>
+                          <td>
+                            <Button
+                              variant="primary"
+                              size="small"
+                              onClick={() => {
+                                // Set selected asset data and go to Step 3
+                                setFormData(prev => ({
+                                  ...prev,
+                                  subCategory: asset.name,
+                                  assetName: asset.name,
+                                  assetId: asset.asset_id || asset.id,
+                                  amsAssetId: asset.asset_display_id || asset.ticket_no,
+                                  serialNumber: asset.serial_number,
+                                  location: '',
+                                  assetCheckout: asset.id
+                                }));
+                                // Store the check out date for minimum check in date validation
+                                setSelectedAssetCheckOutDate(asset.check_out_date);
+                                setCurrentStep(3);
+                              }}
+                            >
+                              Select
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredAssets.length === 0 && (
+                  <div className={styles.noAssetsMessage}>
+                    {checkedOutAssets.length === 0 
+                      ? 'No assets currently checked out to you.'
+                      : 'No assets match your search criteria.'}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

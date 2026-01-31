@@ -3,7 +3,8 @@
   gap: 8px;
   margin-bottom: 12px;
   animation: slideIn 0.3s ease-out;
-  align-items: flex-end; /* Align avatar/content to bottom */
+  align-items: flex-end;
+  /* Align avatar/content to bottom */
 }
 
 @keyframes slideIn {
@@ -11,6 +12,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -50,7 +52,7 @@
 
 .avatarPlaceholder {
   width: 40px;
-  height: 40px; 
+  height: 40px;
 }
 
 .messageContent {
@@ -93,14 +95,16 @@
 }
 
 .bubble {
-  padding: 8px 14px; /* Slightly more compact padding */
+  padding: 8px 14px;
+  /* Slightly more compact padding */
   border-radius: 18px;
   word-wrap: break-word;
-  box-shadow: var(--box-shadow, 0 1px 2px rgba(0, 0, 0, 0.1));
+  /* box-shadow: var(--box-shadow, 0 1px 2px rgba(0, 0, 0, 0.1)); */
   position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end; /* Align text and time to bottom */
+  align-items: flex-end;
+  /* Align text and time to bottom */
   gap: 6px;
   transition: all 0.3s ease;
 }
@@ -122,6 +126,7 @@
   color: var(--bg1-color);
   border-bottom-right-radius: 4px;
 }
+
 .bubbleOwn .bubbleTime {
   color: rgba(255, 255, 255, 0.8);
 }
@@ -135,6 +140,7 @@
   color: var(--text-color);
   border-bottom-left-radius: 4px;
 }
+
 .bubbleOther .bubbleTime {
   color: var(--muted-text-color);
 }
@@ -209,7 +215,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%; /* Match bubble height area for centering if needed, or just auto */
+  height: 100%;
+  /* Match bubble height area for centering if needed, or just auto */
   height: auto;
 }
 
@@ -217,7 +224,8 @@
 .messageWrapper.own .menuWrapper {
   left: auto;
   right: 100%;
-  margin-right: 4px; /* Space between bubble and menu */
+  margin-right: 4px;
+  /* Space between bubble and menu */
 }
 
 /* Position menu to the right of the bubble for Other messages (if enabled in future) */
@@ -236,8 +244,9 @@
   height: 28px;
   border-radius: 50%;
   border: none;
-  background: var(--bg1-color); /* Give it a background to stand out */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: var(--bg1-color);
+  /* Give it a background to stand out */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -260,6 +269,18 @@
   white-space: pre-wrap;
   transition: font-size 0.3s ease;
 }
+
+.editedTag {
+  font-size: 0.75em;
+  color: #dcdcdc;
+  margin-left: 4px;
+  font-style: italic;
+
+  /* Optional resets */
+  line-height: normal;
+  white-space: nowrap;
+}
+
 
 
 
@@ -294,6 +315,7 @@
     opacity: 0;
     transform: translateY(4px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -340,10 +362,12 @@
     opacity: 0;
     transform: translateX(-50%) translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -447,7 +471,8 @@
 }
 
 .attachmentMenuRight {
-  width: 24px; /* Placeholder for symmetry */
+  width: 24px;
+  /* Placeholder for symmetry */
 }
 
 .messageWrapper:hover .attachmentMenuLeft {
@@ -471,15 +496,18 @@
 }
 
 .own .attachmentsExpanded {
-  direction: rtl; /* Stagger from right for own messages */
+  direction: rtl;
+  /* Stagger from right for own messages */
 }
 
-.attachmentsExpanded > * {
+.attachmentsExpanded>* {
   break-inside: avoid-column;
   margin-bottom: 12px;
-  display: inline-block; /* Helps prevent column breaking */
+  display: inline-block;
+  /* Helps prevent column breaking */
   width: 100%;
-  direction: ltr; /* Reset text direction */
+  direction: ltr;
+  /* Reset text direction */
 }
 
 .attachmentsWithMenu {
@@ -503,4 +531,10 @@
 
 .messageWrapper:hover .attachmentActions {
   opacity: 1;
+}
+
+.messageTime {
+  font-size: 12px;
+  color: var(--muted-text-color);
+  margin-left: 6px;
 }

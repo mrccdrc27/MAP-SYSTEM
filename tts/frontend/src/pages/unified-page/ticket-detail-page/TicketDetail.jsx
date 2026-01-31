@@ -228,15 +228,15 @@ export default function TicketDetail() {
     }
   }, [stepInstance, instanceLoading, instanceError]);
 
-  const { fetchActionLogs, logs } = useFetchActionLogs();
+  const { fetchActionLogs, logs, loading: logsLoading, error: logsError } = useFetchActionLogs();
 
   useEffect(() => {
     if (state.ticket?.ticket_id) {
-      fetchActionLogs(state.ticket.ticket_id);
+      fetchActionLogs(ticketNumber);
     }
-  }, [state.ticket?.ticket_id, fetchActionLogs]);
+  }, [state.ticket?.ticket_id, fetchActionLogs, ticketNumber]);
 
-  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(state.ticket?.ticket_id);
+  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(ticketNumber);
 
   // Helper function to get button text based on ticket state
   const getButtonText = (buttonType) => {
@@ -827,8 +827,8 @@ export default function TicketDetail() {
                         logs={
                           logs && logs.length > 0 ? [...logs].reverse() : []
                         }
-                        loading={loading}
-                        error={error}
+                        loading={logsLoading}
+                        error={logsError}
                       />
                     </div>
                   </>

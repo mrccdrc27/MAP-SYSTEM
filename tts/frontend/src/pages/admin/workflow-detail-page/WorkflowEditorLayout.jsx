@@ -65,6 +65,12 @@ function useGraphValidation(nodes = [], edges = [], isDataLoaded = false) {
       errors.push(`${orphanNodes.length} orphan step(s) without connections`);
     }
     
+    // Check for self-loops
+    const selfLoopEdges = edges.filter(e => e.source === e.target);
+    if (selfLoopEdges.length > 0) {
+      errors.push(`${selfLoopEdges.length} self-loop transition(s) detected (node connected to itself)`);
+    }
+    
     return errors;
   }, [nodes, edges, isDataLoaded]);
 }
@@ -185,27 +191,27 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
   }, [actualWorkflowId, versionsLoading, versions?.length, fetchVersions]);
 
   // Handle version rollback
-  const handleVersionRollback = async (versionId) => {
-    try {
-      await rollbackToVersion(versionId);
-      // Trigger workflow refresh to reload the editor with new data
-      triggerRefresh();
-      // Navigate to force reload the page with new workflow data
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to rollback workflow:', error);
-    }
-  };
+  // const handleVersionRollback = async (versionId) => {
+  //   try {
+  //     await rollbackToVersion(versionId);
+  //     // Trigger workflow refresh to reload the editor with new data
+  //     triggerRefresh();
+  //     // Navigate to force reload the page with new workflow data
+  //     window.location.reload();
+  //   } catch (error) {
+  //     console.error('Failed to rollback workflow:', error);
+  //   }
+  // };
 
   // Handle version preview
-  const handleVersionPreview = async (versionId) => {
-    try {
-      await fetchVersionDetail(versionId);
-      // The selectedVersion state will be updated with the full definition
-    } catch (error) {
-      console.error('Failed to fetch version details:', error);
-    }
-  };
+  // const handleVersionPreview = async (versionId) => {
+  //   try {
+  //     await fetchVersionDetail(versionId);
+  //     // The selectedVersion state will be updated with the full definition
+  //   } catch (error) {
+  //     console.error('Failed to fetch version details:', error);
+  //   }
+  // };
 
   // Loading state
   if (!workflowData) {
@@ -287,6 +293,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                 <button
                   onClick={() => setRightSidebarTab('editor')}
                   style={{
+                    flex: 1,
                     padding: '6px 12px',
                     fontSize: '13px',
                     fontWeight: rightSidebarTab === 'editor' ? '600' : '500',
@@ -303,6 +310,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                 <button
                   onClick={() => setRightSidebarTab('validation')}
                   style={{
+                    flex: 1,
                     padding: '6px 12px',
                     fontSize: '13px',
                     fontWeight: rightSidebarTab === 'validation' ? '600' : '500',
@@ -316,7 +324,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                 >
                   Validation ({validationErrors.length})
                 </button>
-                <button
+                {/* <button
                   onClick={() => setRightSidebarTab('versions')}
                   style={{
                     padding: '6px 12px',
@@ -331,7 +339,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                   }}
                 >
                   Versions ({versions.length})
-                </button>
+                </button> */}
               </div>
 
               {/* Tab Content */}
@@ -358,7 +366,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                 )}
 
                 {/* Versions Tab */}
-                {rightSidebarTab === 'versions' && (
+                {/* {rightSidebarTab === 'versions' && (
                   <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                     <VersionHistoryPanel
                       versions={versions}
@@ -370,7 +378,7 @@ export default function WorkflowEditorLayout({ workflowId, workflowIdentifier, i
                       onPreviewVersion={handleVersionPreview}
                     />
                   </div>
-                )}
+                )} */}
               </div>
             </aside>
           </div>

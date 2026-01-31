@@ -492,7 +492,7 @@ export default function ForecastTab({ timeFilter }) {
         </ChartContainer>
 
         {/* Recommendations Section */}
-        <ChartContainer title="AI Recommendations" icon={<Zap size={20} />}>
+        <ChartContainer title="Recommendation" icon={<Zap size={20} />}>
           <div style={{ padding: '8px 0' }}>
             {recommendations.length > 0 ? (
               recommendations.map((rec, idx) => (
@@ -852,7 +852,7 @@ export default function ForecastTab({ timeFilter }) {
 
         {/* Hourly Distribution */}
         <ChartContainer title="Hourly Distribution Pattern" icon={<Clock size={20} />}>
-          <BarChart
+          <LineChart
             labels={hourLabels}
             dataPoints={hourData}
             chartLabel="Tickets"

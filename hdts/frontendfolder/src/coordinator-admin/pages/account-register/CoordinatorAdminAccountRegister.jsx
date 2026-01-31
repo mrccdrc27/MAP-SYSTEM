@@ -424,6 +424,7 @@ const CoordinatorAdminAccountRegister = () => {
             {/* Action Buttons */}
             <FormActions
               onCancel={() => navigate('/admin/user-access/all-users')}
+              onSubmit={handleSubmit}
               cancelLabel="Cancel"
               submitLabel={isSubmitting ? 'Creating...' : 'Create Account'}
               submitDisabled={isSubmitting}

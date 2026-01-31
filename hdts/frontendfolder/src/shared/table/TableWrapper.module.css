@@ -12,7 +12,8 @@
 .table-card {
   width: 100%;
   max-width: 1200px;
-  height: 700px; /* Fixed card height */
+  height: auto; /* Auto height for flexible content */
+  min-height: 500px;
   background: #ffffff;
   border-radius: 8px;
   border: 1px solid #cccccc;
@@ -30,7 +31,7 @@
 
 /* === Header === */
 .table-header {
-  padding: 15px 30px;
+  padding: 10px 20px;
   flex-shrink: 0;
 }
 
@@ -39,11 +40,11 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .table-title {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-color);
   margin: 0;

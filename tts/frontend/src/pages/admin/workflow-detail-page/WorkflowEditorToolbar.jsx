@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, BarChart3, Grid3x3, Zap, AlertCircle } from 'lucide-react';
+import { Plus, BarChart3, Grid3x3, Zap, AlertCircle, Undo } from 'lucide-react';
 import styles from '../workflow-page/create-workflow.module.css';
 import { getDefaultRole, VALIDATION_RULES } from '../../../utils/workflowValidation';
 
@@ -9,6 +9,8 @@ export default function WorkflowEditorToolbar({
   transitionCount,
   isEditingGraph,
   roles = [],
+  onUndo,
+  canUndo = false,
 }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newStepLabel, setNewStepLabel] = useState('');
@@ -119,6 +121,17 @@ export default function WorkflowEditorToolbar({
             </div>
           </div>
         )}
+        
+        <button
+          onClick={onUndo}
+          disabled={!canUndo || !isEditingGraph}
+          className={styles.btnSecondary}
+          style={{ width: '100%', marginTop: '8px' }}
+          title={canUndo ? 'Undo last deletion' : 'No actions to undo'}
+        >
+          <Undo style={{ width: '16px', height: '16px' }} />
+          Undo Delete
+        </button>
       </div>
 
       {/* Quick Add Templates */}

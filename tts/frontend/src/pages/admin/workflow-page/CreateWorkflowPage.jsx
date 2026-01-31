@@ -17,7 +17,7 @@ import useFetchWorkflows from "../../../api/useFetchWorkflows";
 import {
   WorkflowToolbar,
   ValidationPanel,
-  SLAPanel,
+  // SLAPanel,
 } from "../../../components/workflow/shared";
 
 // Components
@@ -383,7 +383,7 @@ export default function CreateWorkflowPage() {
             {/* RIGHT SIDEBAR */}
             <aside className={styles.rightSidebar}>
               <ValidationPanel errors={validationErrors} />
-              <SLAPanel
+              {/* <SLAPanel
                 responseSLA={{
                   hours: Math.floor(
                     (workflowMetadata.response_time_sla || 0) / 60
@@ -408,7 +408,7 @@ export default function CreateWorkflowPage() {
                     resolution_time_sla: sla.hours * 60 + sla.minutes,
                   }))
                 }
-              />
+              /> */}
               {showHelp && <HelpTips />}
             </aside>
           </div>

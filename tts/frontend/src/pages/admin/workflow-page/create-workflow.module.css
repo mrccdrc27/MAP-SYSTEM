@@ -849,6 +849,21 @@
   border-color: var(--primary-color);
 }
 
+.charCounter {
+  font-size: 0.6875rem;
+  color: var(--muted-text-color);
+  text-align: right;
+  margin-top: 2px;
+}
+
+.charCounter.warning {
+  color: var(--status-warning-color);
+}
+
+.charCounter.error {
+  color: var(--error-color);
+}
+
 .inputRow {
   display: flex;
   flex-direction: column;
@@ -3279,6 +3294,28 @@
   background: var(--bg-content-color, #f9fafb);
   border-color: var(--primary-color, #3b82f6);
   color: var(--primary-color, #3b82f6);
+}
+
+.actionBtnUndo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: var(--table-head-size, 0.8125rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg1-color, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  color: var(--text-color, #374151);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actionBtnUndo:hover {
+  background: var(--bg-content-color, #f9fafb);
+  border-color: var(--secondary-color, #6b7280);
+  color: var(--secondary-color, #6b7280);
 }
 
 .actionBtnSave {

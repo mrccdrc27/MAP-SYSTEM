@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useState, useEffect } from 'react';
 import { Edit3, Save, X, Clock, Tag, FileText, Building2, Layers, ChevronUp, ChevronDown, Sliders, Info } from 'lucide-react';
-import { useWorkflowConfig } from './hooks/useWorkflowConfig';
+import { useWorkflowConfig, parseDurationToSeconds } from './hooks/useWorkflowConfig';
 import { useWorkflowAPI } from '../../../api/useWorkflowAPI';
 import styles from './WorkflowConfigPanel.module.css';
 
@@ -179,6 +179,31 @@ const WorkflowConfigPanel = memo(function WorkflowConfigPanel({
     );
   }
   
+  // Check if SLA configuration is complete and valid
+  const isSLAConfigured = (() => {
+    if (!workflow.urgent_sla && !workflow.high_sla && !workflow.medium_sla && !workflow.low_sla) {
+      return false; // No SLA configured at all
+    }
+    
+    // Parse SLA values to seconds for comparison
+    const urgentSeconds = workflow.urgent_sla ? parseDurationToSeconds(workflow.urgent_sla) : 0;
+    const highSeconds = workflow.high_sla ? parseDurationToSeconds(workflow.high_sla) : 0;
+    const mediumSeconds = workflow.medium_sla ? parseDurationToSeconds(workflow.medium_sla) : 0;
+    const lowSeconds = workflow.low_sla ? parseDurationToSeconds(workflow.low_sla) : 0;
+    
+    // All SLAs must be set (non-zero)
+    if (urgentSeconds === 0 || highSeconds === 0 || mediumSeconds === 0 || lowSeconds === 0) {
+      return false;
+    }
+    
+    // SLA ordering must be valid: urgent < high < medium < low
+    if (urgentSeconds >= highSeconds || highSeconds >= mediumSeconds || mediumSeconds >= lowSeconds) {
+      return false;
+    }
+    
+    return true;
+  })();
+  
   const canEdit = !readOnly && !isSaving;
   
   return (
@@ -203,6 +228,9 @@ const WorkflowConfigPanel = memo(function WorkflowConfigPanel({
             <div className={styles.cardHeader} style={{ justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FileText size={14} /> Basic Information
+                {!isSLAConfigured && (
+                  <span className={styles.warningIndicator} title="SLA configuration recommended">⚠</span>
+                )}
               </div>
               {canEdit && (
                 <div className={styles.headerActions}>
@@ -230,6 +258,12 @@ const WorkflowConfigPanel = memo(function WorkflowConfigPanel({
               )}
             </div>
             <div className={styles.cardBody}>
+              {!isSLAConfigured && (
+                <div className={styles.slaWarning}>
+                  <Info size={14} />
+                  <span>SLA configuration is recommended for proper workflow setup and will enable full editing capabilities.</span>
+                </div>
+              )}
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>Workflow Name</label>
                 {isEditing ? (
@@ -267,8 +301,17 @@ const WorkflowConfigPanel = memo(function WorkflowConfigPanel({
           <div className={styles.card}>
             <div className={styles.cardHeader}>
               <Tag size={14} /> Classification
+              {!isSLAConfigured && (
+                <span className={styles.warningIndicator} title="SLA configuration recommended">⚠</span>
+              )}
             </div>
             <div className={styles.cardBody}>
+              {!isSLAConfigured && (
+                <div className={styles.slaWarning}>
+                  <Info size={14} />
+                  <span>SLA configuration is recommended for proper workflow setup and will enable full editing capabilities.</span>
+                </div>
+              )}
               <div className={styles.fieldRow}>
                 <div className={styles.field}>
                   <label className={styles.fieldLabel}>Category</label>

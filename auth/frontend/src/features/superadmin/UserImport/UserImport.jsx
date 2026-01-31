@@ -6,11 +6,11 @@ import styles from './UserImport.module.css';
 
 const UserImport = () => {
   const navigate = useNavigate();
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [results, setResults] = useState(null);
+  // const [file, setFile] = useState(null);
+  // const [loading, setLoading] = useState(false);
+  // const [error, setError] = useState('');
+  // const [success, setSuccess] = useState('');
+  // const [results, setResults] = useState(null);
 
   const sampleHeaders = [
     'email',
@@ -27,19 +27,19 @@ const UserImport = () => {
     'is_staff',
   ];
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
-        setError('Please select a valid CSV file');
-        setFile(null);
-        return;
-      }
-      setFile(selectedFile);
-      setError('');
-      setResults(null);
-    }
-  };
+  // const handleFileChange = (e) => {
+  //   const selectedFile = e.target.files[0];
+  //   if (selectedFile) {
+  //     if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
+  //       setError('Please select a valid CSV file');
+  //       setFile(null);
+  //       return;
+  //     }
+  //     setFile(selectedFile);
+  //     setError('');
+  //     setResults(null);
+  //   }
+  // };
 
   const handleDownloadTemplate = () => {
     const csvContent = sampleHeaders.join(',') + '\n';
@@ -54,56 +54,56 @@ const UserImport = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
     
-    if (!file) {
-      setError('Please select a file to upload');
-      return;
-    }
+  //   if (!file) {
+  //     setError('Please select a file to upload');
+  //     return;
+  //   }
 
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    setResults(null);
+  //   setLoading(true);
+  //   setError('');
+  //   setSuccess('');
+  //   setResults(null);
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append('file', file);
 
-      const response = await fetch('/superadmin/api/users/import/', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
+  //     const response = await fetch('/superadmin/api/users/import/', {
+  //       method: 'POST',
+  //       credentials: 'include',
+  //       body: formData,
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (response.ok) {
-        setSuccess(`Import completed! ${data.created} users created, ${data.skipped} skipped.`);
-        setResults(data);
-        setFile(null);
-        // Reset file input
-        const fileInput = document.getElementById('file-input');
-        if (fileInput) fileInput.value = '';
-      } else {
-        setError(data.error || 'Failed to import users');
-      }
-    } catch (err) {
-      console.error('Error importing users:', err);
-      setError('An error occurred while importing users');
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (response.ok) {
+  //       setSuccess(`Import completed! ${data.created} users created, ${data.skipped} skipped.`);
+  //       setResults(data);
+  //       setFile(null);
+  //       // Reset file input
+  //       const fileInput = document.getElementById('file-input');
+  //       if (fileInput) fileInput.value = '';
+  //     } else {
+  //       setError(data.error || 'Failed to import users');
+  //     }
+  //   } catch (err) {
+  //     console.error('Error importing users:', err);
+  //     setError('An error occurred while importing users');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <SuperAdminLayout>
       <div className="page-wrapper">
         <header className="page-header">
           <div className="page-title-section">
-            <h1>Import Users</h1>
-            <p className="page-subtitle">Batch create user accounts using a CSV file upload.</p>
+            <h1>User Import Template</h1>
+            <p className="page-subtitle">Download the CSV template for user data import.</p>
           </div>
           <div className="page-actions">
             <Button variant="secondary" onClick={() => navigate('/superadmin/users')} icon={<i className="fa fa-arrow-left"></i>}>
@@ -113,16 +113,16 @@ const UserImport = () => {
         </header>
 
         <div className="page-content">
-          <Card title="CSV File Import" flat>
+          <Card title="CSV Template Download" flat>
 
         <Alert type="info">
           <strong>Instructions:</strong>
           <ul style={{ paddingLeft: 'var(--space-md)', marginTop: 'var(--space-xs)' }}>
-            <li>Upload a CSV file with user data</li>
-            <li>The first row should contain headers</li>
+            <li>Download the CSV template below</li>
+            <li>Use the template to format your user data</li>
+            <li>The first row contains the required headers</li>
             <li>Email is required; password will be auto-generated if not provided</li>
-            <li>Existing emails will be skipped</li>
-            <li>Download the template below for the correct format</li>
+            <li>Import functionality is currently disabled</li>
           </ul>
         </Alert>
 
@@ -140,7 +140,7 @@ const UserImport = () => {
           </Button>
         </div>
 
-        {error && (
+        {/* {error && (
           <Alert type="error" onClose={() => setError('')}>
             {error}
           </Alert>
@@ -150,9 +150,9 @@ const UserImport = () => {
           <Alert type="success" onClose={() => setSuccess('')}>
             {success}
           </Alert>
-        )}
+        )} */}
 
-        <form onSubmit={handleSubmit} className={styles.uploadForm}>
+        {/* <form onSubmit={handleSubmit} className={styles.uploadForm}>
           <div className={styles.fileInputWrapper}>
             <label htmlFor="file-input" className={styles.fileLabel}>
               <i className="fa fa-cloud-upload-alt"></i>
@@ -176,9 +176,9 @@ const UserImport = () => {
           >
             Import Users
           </Button>
-        </form>
+        </form> */}
 
-        {results && (
+        {/* {results && (
           <div className={styles.resultsSection}>
             <h4>Import Results</h4>
             <div className={styles.resultsGrid}>
@@ -235,7 +235,7 @@ const UserImport = () => {
               </div>
             )}
           </div>
-        )}
+        )} */}
       </Card>
       </div>
     </div>

@@ -8,7 +8,6 @@ import ErrorBoundary from "../../components/ErrorBoundary";
 import TicketTab from "./tabs/TicketTab";
 import WorkflowTab from "./tabs/WorkflowTab";
 import AgentTab from "./tabs/AgentTab";
-import IntegrationTab from "./tabs/IntegrationTab";
 import TaskItemTab from "./tabs/TaskItemTab";
 import InsightsTab from "./tabs/InsightsTab";
 import ForecastTab from "./tabs/ForecastTab";
@@ -124,14 +123,6 @@ export default function Report() {
             error={error}
           />
         );
-      case "integration":
-        return (
-          <IntegrationTab
-            analyticsData={ticketsReport}
-            loading={loading}
-            error={error}
-          />
-        );
       case "insights":
         return <InsightsTab timeFilter={timeFilter} />;
       case "forecast":
@@ -184,7 +175,6 @@ export default function Report() {
               "workflow",
               "insights",
               "forecast",
-              "integration",
             ].map((tab) => {
               const tabLabels = {
                 taskitem: "Tasks",

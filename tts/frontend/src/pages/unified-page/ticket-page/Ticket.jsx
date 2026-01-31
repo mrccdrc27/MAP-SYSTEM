@@ -19,10 +19,16 @@ import TicketTable from "../../../tables/unified-table/TicketTable";
 import useUserTickets from "../../../api/useUserTickets";
 
 export default function Ticket() {
+  // Valid tabs
+  const validTabs = ["All", "Critical", "High", "Medium", "Low", "Acted"];
+  
   // Tabs with URL sync
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") || "All";
-  const [activeTab, setActiveTab] = useState(urlTab);
+  
+  // Validate tab parameter - fallback to "All" if invalid
+  const validatedTab = validTabs.includes(urlTab) ? urlTab : "All";
+  const [activeTab, setActiveTab] = useState(validatedTab);
 
   const debouncedActiveTab = useDebounce(activeTab, 500);
   const { userTickets, loading, error } = useUserTickets(debouncedActiveTab);
@@ -105,6 +111,13 @@ export default function Ticket() {
     setStatusOptions([...Array.from(statusSet)]);
     setCategoryOptions([...Array.from(categorySet)]);
   }, [userTickets]);
+
+  // Validate URL tab on mount and correct if invalid
+  useEffect(() => {
+    if (!validTabs.includes(urlTab)) {
+      setSearchParams({ tab: "All" }, { replace: true });
+    }
+  }, [urlTab, setSearchParams]);
 
   // Sync tab to URL
   useEffect(() => {

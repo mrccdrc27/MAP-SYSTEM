@@ -80,6 +80,7 @@ const WorkflowEditorContent = forwardRef(({
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [undoStack, setUndoStack] = useState([]);
   const { getViewport } = useReactFlow();
 
   // Ref to store handlers and roles to avoid stale closures in node data
@@ -101,6 +102,8 @@ const WorkflowEditorContent = forwardRef(({
           : e
       )
     );
+    // Push to undo stack
+    setUndoStack((prev) => [...prev, { type: 'delete-edge', edgeId: edgeIdStr }]);
     setUnsavedChanges(true);
     if (setHasUnsavedChanges) setHasUnsavedChanges(true);
   }, [setEdges, setHasUnsavedChanges]);
@@ -122,6 +125,11 @@ const WorkflowEditorContent = forwardRef(({
   const handleDeleteNode = useCallback((nodeId) => {
     const nodeIdStr = String(nodeId);
     
+    // Find connected edges before marking as deleted
+    const connectedEdgeIds = edges
+      .filter((e) => e.source === nodeIdStr || e.target === nodeIdStr)
+      .map((e) => e.id);
+    
     // Mark the node as deleted
     setNodes((nds) =>
       nds.map((n) =>
@@ -140,9 +148,51 @@ const WorkflowEditorContent = forwardRef(({
       )
     );
     
+    // Push to undo stack
+    setUndoStack((prev) => [...prev, { type: 'delete-node', nodeId: nodeIdStr, connectedEdges: connectedEdgeIds }]);
+    
     setUnsavedChanges(true);
     if (setHasUnsavedChanges) setHasUnsavedChanges(true);
-  }, [setNodes, setEdges, setHasUnsavedChanges]);
+  }, [setNodes, setEdges, setHasUnsavedChanges, edges]);
+
+  // Handle undo of last deletion
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    
+    const lastAction = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    
+    if (lastAction.type === 'delete-node') {
+      // Restore the node
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === lastAction.nodeId
+            ? { ...n, data: { ...n.data, to_delete: false }, className: '' }
+            : n
+        )
+      );
+      // Restore connected edges
+      setEdges((eds) =>
+        eds.map((e) =>
+          lastAction.connectedEdges.includes(e.id)
+            ? { ...e, data: { ...e.data, to_delete: false }, className: '' }
+            : e
+        )
+      );
+    } else if (lastAction.type === 'delete-edge') {
+      // Restore the edge
+      setEdges((eds) =>
+        eds.map((e) =>
+          e.id === lastAction.edgeId
+            ? { ...e, data: { ...e.data, to_delete: false }, className: '' }
+            : e
+        )
+      );
+    }
+    
+    setUnsavedChanges(true);
+    if (setHasUnsavedChanges) setHasUnsavedChanges(true);
+  }, [undoStack, setNodes, setEdges, setHasUnsavedChanges]);
 
   // Handle inline node update from expanded node form
   const handleInlineNodeUpdate = useCallback((nodeId, updates) => {
@@ -259,6 +309,7 @@ const WorkflowEditorContent = forwardRef(({
 
       await updateWorkflowGraph(workflowId, graphData);
       setUnsavedChanges(false);
+      setUndoStack([]); // Clear undo stack after successful save
       console.log('Workflow saved successfully');
     } catch (err) {
       console.error('Failed to save workflow:', err);
@@ -282,6 +333,8 @@ const WorkflowEditorContent = forwardRef(({
     deleteNode: (nodeId) => {
       handleDeleteNode(nodeId);
     },
+    undo: handleUndo,
+    canUndo: undoStack.length > 0,
     setUnsavedChanges: (value) => {
       setUnsavedChanges(value);
     },
@@ -289,7 +342,7 @@ const WorkflowEditorContent = forwardRef(({
     // Expose nodes and edges for validation
     getNodes: () => nodes,
     getEdges: () => edges,
-  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, saveChanges, handleAddNode, nodes, edges]);
+  }), [setNodes, setEdges, handleDeleteEdge, handleDeleteNode, handleUndo, undoStack.length, saveChanges, handleAddNode, nodes, edges]);
 
   // Update the handlers ref when handlers/roles change
   useEffect(() => {
@@ -389,6 +442,7 @@ const WorkflowEditorContent = forwardRef(({
 
     setNodes(rnodes);
     setEdges(redges);
+    setUndoStack([]); // Clear undo stack when loading new workflow data
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowData, setNodes, setEdges, onStepClick]);
 
@@ -571,6 +625,17 @@ const WorkflowEditorContent = forwardRef(({
               title="Add new step"
             >
               <Plus size={14} /> Add Step
+            </button>
+          )}
+          
+          {/* Undo Button - only when editing and can undo */}
+          {isEditingGraph && undoStack.length > 0 && (
+            <button
+              onClick={handleUndo}
+              className={styles.actionBtnUndo}
+              title="Undo last deletion"
+            >
+              ↶ Undo
             </button>
           )}
           

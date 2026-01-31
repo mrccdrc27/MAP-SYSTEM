@@ -10,7 +10,7 @@
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .table-wrapper-inner::-webkit-scrollbar {
@@ -26,7 +26,7 @@
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 /* === Table Header === */
@@ -38,9 +38,9 @@
 .sortable-header,
 .selection-header,
 .actions-header {
-  height: 50px;
-  padding: 0.75rem;
-  font-size: 0.75rem;
+  height: 36px;
+  padding: 0.5rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #0C0C0C;
   text-transform: uppercase;
@@ -116,13 +116,13 @@
 }
 
 .table-cell {
-  height: 50px;
-  padding: 0.75rem;
+  height: 36px;
+  padding: 0.5rem;
   vertical-align: middle;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: #0C0C0C;
 }
 

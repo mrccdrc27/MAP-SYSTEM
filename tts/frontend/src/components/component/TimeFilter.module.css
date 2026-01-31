@@ -105,6 +105,13 @@
   color: var(--bg-color);
 }
 
+.tfError {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+  width: 100%;
+}
+
 .tfSelect,
 .tfButton,
 .tfButtonApply {

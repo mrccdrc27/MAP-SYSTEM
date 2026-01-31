@@ -4,10 +4,43 @@ import styles from './ticketComments.module.css';
 
 const FileUpload = ({ onFilesSelected, maxFiles = 5, uniqueId = 'file-upload', clearTrigger = 0 }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef();
+
+  // Define allowed file extensions
+  const ALLOWED_EXTENSIONS = [
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar', '.txt'
+  ];
+
+  const isFileTypeAllowed = (filename) => {
+    const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    return ALLOWED_EXTENSIONS.includes(extension);
+  };
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
+    
+    // Validate file types
+    const invalidFiles = files.filter(file => !isFileTypeAllowed(file.name));
+    
+    if (invalidFiles.length > 0) {
+      const invalidFileNames = invalidFiles.map(f => f.name).join(', ');
+      setErrorMessage(`The following files are not allowed: ${invalidFileNames}. Only PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG, PNG, GIF, ZIP, RAR, and TXT files are supported.`);
+      
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setErrorMessage(''), 5000);
+      return;
+    }
+    
+    // Clear any previous error
+    setErrorMessage('');
+    
     const limitedFiles = files.slice(0, maxFiles);
     setSelectedFiles(limitedFiles);
     onFilesSelected(limitedFiles);
@@ -28,6 +61,7 @@ const FileUpload = ({ onFilesSelected, maxFiles = 5, uniqueId = 'file-upload', c
   useEffect(() => {
     if (clearTrigger > 0) {
       setSelectedFiles([]);
+      setErrorMessage('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -44,6 +78,12 @@ const FileUpload = ({ onFilesSelected, maxFiles = 5, uniqueId = 'file-upload', c
 
   return (
     <div className={styles.fileUpload}>
+      {errorMessage && (
+        <div className={styles.errorMessage}>
+          <i className="fas fa-exclamation-triangle"></i> {errorMessage}
+        </div>
+      )}
+      
       <div className={styles.fileInputContainer}>
         <input
           ref={fileInputRef}

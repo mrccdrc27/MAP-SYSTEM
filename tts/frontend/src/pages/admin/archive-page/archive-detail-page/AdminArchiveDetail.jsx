@@ -83,15 +83,15 @@ export default function AdminArchiveDetail() {
   }, [ticketData?.ticket?.created_at]);
 
   // Action logs
-  const { fetchActionLogs, logs } = useFetchActionLogs();
+  const { fetchActionLogs, logs, loading: logsLoading, error: logsError } = useFetchActionLogs();
   useEffect(() => {
-    if (ticketData?.ticket?.ticket_id) {
-      fetchActionLogs(ticketData.ticket.ticket_id);
+    if (ticketData?.ticket) {
+      fetchActionLogs(ticketNumber);
     }
-  }, [ticketData?.ticket?.ticket_id, fetchActionLogs]);
+  }, [ticketData?.ticket, fetchActionLogs, ticketNumber]);
 
   // Workflow progress tracker
-  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(ticketData?.ticket?.ticket_id);
+  const { tracker, loading: workflowLoading, error: workflowError } = useWorkflowProgress(ticketNumber);
 
   // Handle Navigate button - go to the ticket detail page
   const handleNavigateToTicket = () => {
@@ -619,7 +619,7 @@ export default function AdminArchiveDetail() {
                       {/* Here */}
                       <SLAStatus
                         ticket={ticket}
-                        targetResolution={ticket?.target_resolution}
+                        targetResolution={ticket?.expected_return_date || ticket?.response_time || ticket?.target_resolution}
                         className={styles.slaStatusSection}
                       />
                     </div>
@@ -629,8 +629,8 @@ export default function AdminArchiveDetail() {
                       <h4>Action Logs</h4>
                       <ActionLogList
                         logs={logs}
-                        loading={loading}
-                        error={error}
+                        loading={logsLoading}
+                        error={logsError}
                       />
                     </div>
                   </>
