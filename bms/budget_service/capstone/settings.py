@@ -304,20 +304,25 @@ else:
 # Media File Storage Configuration
 MEDIA_URL = '/media/'
 
-# ✅ Use Cloudinary in production, local filesystem in development
 if DEBUG or not CLOUDINARY_URL:
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    print("📁 Using local file storage (DEBUG=True or no CLOUDINARY_URL)")
 else:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    print(f"☁️  Using Cloudinary storage: {CLOUDINARY_STORAGE['CLOUD_NAME']}")
-    
-    # Optional: Set a subfolder prefix in Cloudinary
-    # This creates /budget_system/budget_proposals/signatures/xyz.png
-    # Instead of /budget_proposals/signatures/xyz.png
-    # CLOUDINARY_STORAGE_PREFIX = 'budget_system'
-
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 # ============================================================================
 # DEBUG TOOLBAR
 # ============================================================================
