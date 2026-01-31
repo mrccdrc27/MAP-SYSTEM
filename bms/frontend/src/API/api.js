@@ -106,7 +106,9 @@ api.interceptors.response.use(
           processQueue(refreshError, null);
           reject(refreshError);
 
-          window.location.href = "/login";
+          //  MODIFIED: Redirect to centralized login page
+          const centralLoginUrl = "https://login.ticketing.mapactive.tech/staff";
+          window.location.href = centralLoginUrl;
         } finally {
           refreshTokenPromise = null;
         }

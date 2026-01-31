@@ -299,7 +299,10 @@ const CentralAuthProvider = ({ children }) => {
       setUser(null);
       setInitialized(true);
       setLoading(false);
-      window.location.href = "/login";
+      
+      // MODIFIED: Redirect to centralized login page
+      const centralLoginUrl = "https://login.ticketing.mapactive.tech/staff";
+      window.location.href = centralLoginUrl;
     }
   };
 
