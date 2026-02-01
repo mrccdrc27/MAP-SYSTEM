@@ -847,6 +847,7 @@ function BudgetDashboard() {
         className="content-container"
         style={{
           padding: "10px 20px",
+          paddingTop: "5rem",
           maxWidth: "1400px",
           margin: "0 auto",
           width: "95%",
