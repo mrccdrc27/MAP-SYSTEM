@@ -35,7 +35,7 @@ class AuthenticatedUser:
         self.department_name = user_data.get('department_name') or user_data.get('department')
         self.department_id = user_data.get('department_id') or self._resolve_department_id()
         
-        # âœ… NEW: Link to database User record (for ForeignKey compatibility)
+        # NEW: Link to database User record (for ForeignKey compatibility)
         self.db_user = db_user
         self.pk = db_user.pk if db_user else self.id
         

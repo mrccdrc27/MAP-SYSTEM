@@ -79,7 +79,7 @@ const AllocationFormModal = ({
               color: "#333",
             }}
           >
-            {/* âœ… FIX: Clarified Modal Title */}
+            {/* FIX: Clarified Modal Title */}
             {type === "modify"
               ? "Create Follow-up Adjustment"
               : "New Budget Allocation"}
@@ -264,7 +264,7 @@ const AllocationFormModal = ({
               >
                 Amount <span style={{ color: "red" }}>*</span>
               </label>
-              {/* âœ… FIX: Amount Input with Validation */}
+              {/* FIX: Amount Input with Validation */}
               <div style={{ position: "relative" }}>
                 <span
                   style={{
@@ -277,7 +277,7 @@ const AllocationFormModal = ({
                     fontWeight: "600"
                   }}
                 >
-                  â‚±
+                  ₱
                 </span>
                 <input
                   type="text"

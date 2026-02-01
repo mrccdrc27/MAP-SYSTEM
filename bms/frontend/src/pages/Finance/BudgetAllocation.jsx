@@ -339,7 +339,7 @@ const BudgetAllocation = () => {
            category: entryToEdit.category,
            debit_account: entryToEdit.debit_account,
            credit_account: entryToEdit.credit_account,
-           // âœ… FIX: Clear amount field - user creates NEW adjustment
+           // FIX: Clear amount field - user creates NEW adjustment
            amount: "" // CHANGED from entryToEdit.amount
          });
          setShowModifyModal(true);
