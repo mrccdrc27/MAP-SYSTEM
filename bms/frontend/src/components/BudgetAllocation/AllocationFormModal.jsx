@@ -14,6 +14,28 @@ const AllocationFormModal = ({
 }) => {
   if (!isOpen) return null;
 
+  // FIX: Validate numeric input with max 2 decimal places
+  const handleAmountInput = (e) => {
+    const value = e.target.value;
+    
+    // Allow empty string (for clearing)
+    if (value === "") {
+      onAmountChange({ target: { name: "amount", value: "" } });
+      return;
+    }
+    
+    // Only allow valid decimal numbers (max 2 decimal places)
+    if (/^\d*\.?\d{0,2}$/.test(value)) {
+      onAmountChange({ target: { name: "amount", value } });
+    }
+  };
+
+  // FIX: Format amount for display (add â‚± prefix if not empty)
+  const formatAmountDisplay = (val) => {
+    if (!val || val === "") return "";
+    return val; // Show raw number while typing
+  };
+
   return (
     <div
       style={{
@@ -57,8 +79,9 @@ const AllocationFormModal = ({
               color: "#333",
             }}
           >
+            {/* âœ… FIX: Clarified Modal Title */}
             {type === "modify"
-              ? "Adjust Existing Budget"
+              ? "Create Follow-up Adjustment"
               : "New Budget Allocation"}
           </h3>
           <button
@@ -166,7 +189,6 @@ const AllocationFormModal = ({
                 fontSize: "13px",
                 fontWeight: "600",
                 marginBottom: "8px",
-         
               }}
             >
               Target Department <span style={{ color: "red" }}>*</span>
@@ -182,7 +204,7 @@ const AllocationFormModal = ({
                 borderRadius: "4px",
                 fontSize: "14px",
                 outline: "none",
-                       backgroundColor: "white",
+                backgroundColor: "white",
               }}
             >
               <option value="">Select Department</option>
@@ -242,23 +264,39 @@ const AllocationFormModal = ({
               >
                 Amount <span style={{ color: "red" }}>*</span>
               </label>
-              <input
-                type="text"
-                name="amount"
-                value={data.amount}
-                onChange={onAmountChange}
-                placeholder="₱0.00"
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#007bff",
-                       backgroundColor: "white",
-                }}
-              />
+              {/* âœ… FIX: Amount Input with Validation */}
+              <div style={{ position: "relative" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#666",
+                    fontSize: "14px",
+                    fontWeight: "600"
+                  }}
+                >
+                  â‚±
+                </span>
+                <input
+                  type="text"
+                  name="amount"
+                  value={formatAmountDisplay(data.amount)}
+                  onChange={handleAmountInput}
+                  placeholder="0.00"
+                  style={{
+                    width: "100%",
+                    padding: "10px 10px 10px 25px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#007bff",
+                    backgroundColor: "white",
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -283,7 +321,6 @@ const AllocationFormModal = ({
               name="debit_account"
               value={data.debit_account}
               onChange={onChange}
-              // MODIFICATION: Only disable if NO department is selected
               disabled={!data.department}
               style={{
                 width: "100%",
@@ -378,7 +415,7 @@ const AllocationFormModal = ({
                 fontWeight: "500",
               }}
             >
-              {type === "modify" ? "Confirm Adjustment" : "Allocate Funds"}
+              {type === "modify" ? "Create Adjustment" : "Allocate Funds"}
             </button>
           </div>
         </form>

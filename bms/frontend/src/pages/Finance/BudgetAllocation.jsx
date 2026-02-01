@@ -306,48 +306,49 @@ const BudgetAllocation = () => {
   };
 
   const handleActionSelect = (action) => {
-    setModalType(action);
-    setShowActionDropdown(false);
-    
-    if (action === "add") {
-      if (!isFinanceManager) {
-        setShowRequestModal(true);
-      } else {
-        // Reset data for new entry
-        setModalData({ 
-          id: null, 
-          ticket_id: "AUTO-GENERATED", 
-          date: new Date().toISOString().split('T')[0], 
-          department: "", 
-          category: "", 
-          debit_account: "", 
-          credit_account: "", 
-          amount: "" 
-        });
-        setShowModifyModal(true);
-      }
-    } else if (action === "modify") {
-      if (selectedRowId) {
-        // Find the selected entry data to pre-fill
-        const entryToEdit = adjustments.find(a => a.id === selectedRowId);
-        if (entryToEdit) {
-           setModalData({
-             id: entryToEdit.id,
-             ticket_id: entryToEdit.ticket_id,
-             date: entryToEdit.date,
-             department: entryToEdit.department_name, // Map correctly
-             category: entryToEdit.category,
-             debit_account: entryToEdit.debit_account,
-             credit_account: entryToEdit.credit_account,
-             amount: entryToEdit.amount
-           });
-           setShowModifyModal(true);
-        }
-      } else {
-        showAlert("Please select a row to modify.", "warning");
-      }
+  setModalType(action);
+  setShowActionDropdown(false);
+  
+  if (action === "add") {
+    if (!isFinanceManager) {
+      setShowRequestModal(true);
+    } else {
+      // Reset data for new entry
+      setModalData({ 
+        id: null, 
+        ticket_id: "AUTO-GENERATED", 
+        date: new Date().toISOString().split('T')[0], 
+        department: "", 
+        category: "", 
+        debit_account: "", 
+        credit_account: "", 
+        amount: "" 
+      });
+      setShowModifyModal(true);
     }
-  };
+  } else if (action === "modify") {
+    if (selectedRowId) {
+      // Find the selected entry data to pre-fill
+      const entryToEdit = adjustments.find(a => a.id === selectedRowId);
+      if (entryToEdit) {
+         setModalData({
+           id: entryToEdit.id,
+           ticket_id: entryToEdit.ticket_id,
+           date: entryToEdit.date,
+           department: entryToEdit.department_name,
+           category: entryToEdit.category,
+           debit_account: entryToEdit.debit_account,
+           credit_account: entryToEdit.credit_account,
+           // âœ… FIX: Clear amount field - user creates NEW adjustment
+           amount: "" // CHANGED from entryToEdit.amount
+         });
+         setShowModifyModal(true);
+      }
+    } else {
+      showAlert("Please select a row to modify.", "warning");
+    }
+  }
+};
 
   const handleModalSubmit = async (e) => {
     e.preventDefault();
