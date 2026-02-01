@@ -215,7 +215,7 @@ const BudgetProposal = () => {
   };
 
   const handleStatusChange = (status) => {
-    // ✅ CRITICAL FIX: Validate BOTH approval and rejection
+
     if (status === "APPROVED") {
       if (!financeOperatorName || !financeOperatorName.trim()) {
         showAlert("Finance Manager Name is required for approval.", "error");
@@ -223,14 +223,6 @@ const BudgetProposal = () => {
       }
       if (!financeOperatorSignature) {
         showAlert("Signature is required for approval.", "error");
-        return;
-      }
-    }
-
-    // ✅ NEW: Validate rejection reason
-    if (status === "REJECTED") {
-      if (!reviewComment || !reviewComment.trim()) {
-        showAlert("Comment is required for rejection.", "error");
         return;
       }
     }
