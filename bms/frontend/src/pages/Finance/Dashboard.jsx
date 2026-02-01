@@ -858,17 +858,17 @@ function BudgetDashboard() {
           <>
             {activeView === "dashboard" ? (
               <>
-                {/* Time period filter */}
-                <TimeFilter
-                  activeFilter={timeFilter}
-                  onFilterChange={setTimeFilter}
-                />
 
                 {/* Stats Grid */}
                 <DashboardStats
                   summaryData={summaryData}
                   currentMonth={currentMonth}
                   currentYear={currentYear}
+                />
+                {/* Time period filter */}
+                <TimeFilter
+                  activeFilter={timeFilter}
+                  onFilterChange={setTimeFilter}
                 />
 
                 {/* 
