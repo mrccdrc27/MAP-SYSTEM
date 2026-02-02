@@ -5,11 +5,9 @@ import { getAccessToken, removeAccessToken } from './TokenUtils';
 const AUTH_URL = (import.meta.env.VITE_AUTH_URL || "http://localhost:18001").replace(/\/$/, "");
 
 const authApi = axios.create({
-    baseURL: `${AUTH_URL}/api/v1`, // Using V1
+    baseURL: `${AUTH_URL}/auth/api/v1`, // FIXED: Added /auth/
     headers: { 'Content-Type': 'application/json' },
-    // MODIFICATION START: Enable credentials for shared cookies
     withCredentials: true,
-    // MODIFICATION END
 });
 
 authApi.interceptors.request.use(
