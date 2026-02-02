@@ -12,6 +12,8 @@ const Navigation = ({
   activeView = "dashboard",
   onViewChange,
   isFinanceManager = false,
+  notifications = [],
+  onClearNotifications = null,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -222,7 +224,9 @@ const Navigation = ({
               onMouseDown={(e) => e.preventDefault()}
             >
               <Bell size={20} />
-              <span className="notification-badge">3</span>
+              {notifications.length > 0 && (
+                <span className="notification-badge">{notifications.length}</span>
+              )}
             </div>
 
             {showNotifications && (
@@ -231,30 +235,37 @@ const Navigation = ({
                   <h3>Notifications</h3>
                   <button
                     className="clear-all-btn"
-                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onClearNotifications) onClearNotifications();
+                    }}
                   >
                     Clear All
                   </button>
                 </div>
                 <div className="notification-list">
-                  <div className="notification-item">
-                    <div className="notification-icon-wrapper">
-                      <Bell size={16} />
-                    </div>
-                    <div className="notification-content">
-                      <div className="notification-title">Budget Approved</div>
-                      <div className="notification-message">
-                        Your Q3 budget has been approved
+                  {notifications.length === 0 ? (
+                    <div className="notification-empty">No new notifications</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div className="notification-item" key={n.id}>
+                        <div className="notification-icon-wrapper">
+                          <Bell size={16} />
+                        </div>
+                        <div className="notification-content">
+                          <div className="notification-title">{n.title}</div>
+                          <div className="notification-message">{n.message}</div>
+                          <div className="notification-time">{n.time}</div>
+                        </div>
+                        <button
+                          className="notification-delete"
+                          onMouseDown={(e) => e.preventDefault()}
+                        >
+                          &times;
+                        </button>
                       </div>
-                      <div className="notification-time">2 hours ago</div>
-                    </div>
-                    <button
-                      className="notification-delete"
-                      onMouseDown={(e) => e.preventDefault()}
-                    >
-                      &times;
-                    </button>
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}

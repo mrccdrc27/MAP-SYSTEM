@@ -106,6 +106,11 @@ const ProposalConfirmationModal = ({
                 padding: "8px",
                 borderRadius: "4px",
                 border: "1px solid #ccc",
+                backgroundColor: "white",
+                color: "#000",
+                WebkitAppearance: "menulist",
+                MozAppearance: "menulist",
+                appearance: "menulist",
               }}
             >
               <option value="">Select a reason</option>
