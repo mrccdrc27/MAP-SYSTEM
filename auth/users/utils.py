@@ -32,12 +32,9 @@ def get_cookie_settings():
         not cookie_domain.replace('.', '').isdigit()
     )
     
-    if is_production_domain and use_secure:
-        # Production with HTTPS - use SameSite=None for cross-subdomain
-        samesite = 'None'
-    else:
-        # Development or non-HTTPS - use SameSite=Lax
-        samesite = 'Lax'
+    # Use SameSite=None for production domains (required for cross-subdomain cookies)
+    #  SameSite=Lax for localhost/development
+    samesite = 'None' if is_production_domain else 'Lax'
     
     return {
         'domain': cookie_domain if cookie_domain != 'localhost' else None,
