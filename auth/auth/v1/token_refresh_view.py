@@ -40,7 +40,9 @@ class UnifiedTokenRefreshView(APIView):
     
     def post(self, request, *args, **kwargs):
         """Refresh access token using refresh token from cookie."""
-        refresh_token = request.COOKIES.get('refresh_token')
+        # Allow minimal fallback: accept refresh token in request body under 'refresh',
+        # but prefer the cookie when present to preserve existing secure flow.
+        refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh_token')
         
         if not refresh_token:
             logger.warning("Token refresh attempted without refresh_token cookie")
