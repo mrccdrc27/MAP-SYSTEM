@@ -14,6 +14,7 @@ const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:8003";
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // CRITICAL: Enable credentials for cookie-based auth
   headers: {
     "Content-Type": "application/json",
   },
@@ -76,38 +77,52 @@ api.interceptors.response.use(
       // Start the refresh token request
       refreshTokenPromise = new Promise(async (resolve, reject) => {
         try {
-          // Call cookie-based refresh endpoint
+          console.log(
+            "[api.js] Attempting token refresh via centralized auth service...",
+          );
+
           const response = await axios.post(
             `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`,
-            {}, // Empty body - backend reads refresh_token from cookies
+            {},
             {
-              withCredentials: true, // Critical: sends cookies with request
+              withCredentials: true,
               headers: { "Content-Type": "application/json" },
             },
           );
 
-          // MODIFICATION: Backend sets new access_token cookie automatically
-          // No need to extract from response body - browser handles it
-          if (response.data.message === "Token refreshed successfully") {
-            // The new access_token is now in cookies, no need to store manually
-            // just signal that refresh succeeded
+          console.log("[api.js] Token refresh response:", response.data);
+
+          // FIX: Backend sets new access_token cookie automatically
+          // The new access_token is now in cookies, browser handles it
+          if (
+            response.data.message === "Token refreshed successfully" ||
+            response.status === 200
+          ) {
+            console.log("[api.js] ✅ Token refreshed successfully via cookies");
+
+            // Signal that refresh succeeded
             processQueue(null, "token_refreshed");
             resolve("token_refreshed");
           } else {
             throw new Error("Token refresh failed");
           }
         } catch (refreshError) {
-          console.error("Token refresh failed:", refreshError);
+          console.error("[api.js] ❌ Token refresh failed:", refreshError);
 
-          // FIXED: Clean up both tokens
+          // Clean up both tokens
           removeAccessToken();
           localStorage.removeItem("refreshToken");
 
           processQueue(refreshError, null);
           reject(refreshError);
 
-          //  MODIFIED: Redirect to centralized login page
-          const centralLoginUrl = "https://login.ticketing.mapactive.tech/staff";
+          // ✅ FIX: Redirect to CENTRALIZED login page, not BMS login
+          const centralLoginUrl =
+            "https://login.ticketing.mapactive.tech/staff";
+          console.log(
+            "[api.js] Redirecting to centralized login:",
+            centralLoginUrl,
+          );
           window.location.href = centralLoginUrl;
         } finally {
           refreshTokenPromise = null;

@@ -21,15 +21,16 @@ import { AuthProvider as LocalAuthProvider } from "./AuthContextLocal";
 
 const AuthContext = createContext();
 
-// Remove trailing slash
+// Auth service base URL - controlled by environment variable
+// Production: https://api.ticketing.mapactive.tech
+// Docker: http://localhost:8001
 const AUTH_URL = (
-  import.meta.env.VITE_AUTH_URL || "http://localhost:18001"
+  import.meta.env.VITE_AUTH_URL || "http://localhost:8001"
 ).replace(/\/$/, "");
 
-// Use the API Login endpoint that returns tokens
+// ONLY the endpoints actually used by AuthContext
+// Token refresh happens in api.js interceptor, not here
 const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`;
-const TOKEN_VERIFY_URL = `${AUTH_URL}/api/v1/token/validate/`;
-const TOKEN_REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/`;
 const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGOUT_URL = `${AUTH_URL}/api/v1/users/logout/`;
 
@@ -48,7 +49,7 @@ const createAuthRequest = () => {
   return axios.create({
     baseURL: AUTH_URL,
     headers: headers,
-    withCredentials: true,
+    withCredentials: true, // Enable cookies for cross-origin requests
   });
 };
 
@@ -74,7 +75,7 @@ const CentralAuthProvider = ({ children }) => {
     [user]
   );
 
-  // NEW: Check for tokens in URL (from centralized auth redirect)
+  // Check for tokens in URL (from centralized auth redirect)
   const checkUrlForTokens = useCallback(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const accessToken = urlParams.get("access_token");
@@ -84,7 +85,6 @@ const CentralAuthProvider = ({ children }) => {
       console.log("[Auth] Found access_token in URL, storing in localStorage");
       setAccessToken(accessToken);
       
-      // FIXED: Store refresh token as well
       if (refreshToken) {
         console.log("[Auth] Found refresh_token in URL, storing in localStorage");
         localStorage.setItem('refreshToken', refreshToken);
@@ -132,16 +132,13 @@ const CentralAuthProvider = ({ children }) => {
         console.log("[Auth] Tokens found in URL, will fetch profile");
       }
 
-      // MODIFICATION START: Attempt SSO/Cookie check even if no local token exists
       const token = getAccessToken();
       
-      // If no token and not found in URL, we normally bail. 
-      // BUT with shared cookies on .mapactive.tech, we might have an HttpOnly cookie.
-      // We attempt to fetch the profile to see if the cookie is valid.
+      // Always attempt to fetch profile (works with cookies OR localStorage token)
       if (!token && !foundInUrl) {
-         console.log("[Auth] No local token. Attempting Cookie/SSO validation...");
+        console.log("[Auth] No local token. Attempting Cookie/SSO validation...");
       } else {
-         console.log("[Auth] Token found or in URL, attempting to fetch profile");
+        console.log("[Auth] Token found or in URL, attempting to fetch profile");
       }
 
       // Always try fetching profile. If cookie exists (SSO) or token exists, it will succeed.
@@ -155,12 +152,11 @@ const CentralAuthProvider = ({ children }) => {
         return false;
       }
 
-      console.log("[Auth] ✅ User authenticated with BMS access");
+      console.log("[Auth] User authenticated with BMS access");
       setUser(userData);
       setLoading(false);
       setInitialized(true);
       return true;
-      // MODIFICATION END
 
     } catch (error) {
       console.warn("[Auth] Profile fetch failed:", error);
@@ -193,16 +189,15 @@ const CentralAuthProvider = ({ children }) => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  // Login Function
+  // Login Function (for local BMS login page - Docker mode)
   const login = async (credentials) => {
     try {
-      console.log("[Auth] Logging in via Public API...", credentials.email);
+      console.log("[Auth] Logging in via API...", credentials.email);
       const authApi = createAuthRequest();
 
       const payload = {
         email: credentials.email,
         password: credentials.password,
-        // FIXED: Include reCAPTCHA response if provided
         g_recaptcha_response: credentials.g_recaptcha_response || ''
       };
 
@@ -224,7 +219,7 @@ const CentralAuthProvider = ({ children }) => {
       if (response.data.success) {
         console.log("[Auth] Login Successful. Response:", response.data);
 
-        // FIXED: Store BOTH access and refresh tokens
+        // Store BOTH access and refresh tokens if provided
         if (response.data.access_token) {
           console.log("[Auth] Storing access_token in localStorage");
           setAccessToken(response.data.access_token);
@@ -235,8 +230,7 @@ const CentralAuthProvider = ({ children }) => {
           localStorage.setItem('refreshToken', response.data.refresh_token);
         }
 
-        // CRITICAL FIX: Decode the token to get user data with roles
-        // The login response might not have all the data we need
+        // Decode the token to get user data with roles
         const decodedUser = getUserFromToken();
 
         if (!decodedUser) {
@@ -246,13 +240,13 @@ const CentralAuthProvider = ({ children }) => {
 
         console.log("[Auth] Decoded user from token:", decodedUser);
 
-        // Verify BMS Access using the decoded token data
+        // Verify BMS Access
         if (!hasAnySystemRole(decodedUser, "bms")) {
           console.error("[Auth] No BMS Access after login. User roles:", decodedUser?.roles);
           return { success: false, error: "No BMS Access." };
         }
 
-        // Set User State using decoded token data
+        // Set User State
         console.log("[Auth] Setting user state from token");
         setUser(decodedUser);
         setLoading(false);
@@ -274,7 +268,7 @@ const CentralAuthProvider = ({ children }) => {
           errs.non_field_errors?.[0] ||
           errs.email?.[0] ||
           errs.password?.[0] ||
-          errs.g_recaptcha_response?.[0] ||  // FIXED: Handle reCAPTCHA errors
+          errs.g_recaptcha_response?.[0] ||
           msg;
       } else if (errorData?.detail) {
         msg = errorData.detail;
@@ -293,16 +287,28 @@ const CentralAuthProvider = ({ children }) => {
     } catch (error) {
       console.error("[Auth] Logout error:", error);
     } finally {
-      // FIXED: Clean up both tokens
+      // Clean up both tokens
       removeAccessToken();
       localStorage.removeItem('refreshToken');
       setUser(null);
       setInitialized(true);
       setLoading(false);
       
-      // MODIFIED: Redirect to centralized login page
-      const centralLoginUrl = "https://login.ticketing.mapactive.tech/staff";
-      window.location.href = centralLoginUrl;
+      // Determine redirect URL based on environment
+      // Production: centralized login
+      // Docker: BMS login page
+      const isProduction = import.meta.env.VITE_USE_CENTRAL_AUTH === "true";
+      const logoutUrl = isProduction 
+        ? "https://login.ticketing.mapactive.tech/staff"
+        : "/login";
+      
+      console.log('[Auth] Redirecting to login:', logoutUrl);
+      
+      if (isProduction) {
+        window.location.href = logoutUrl;
+      } else {
+        window.location.pathname = logoutUrl;
+      }
     }
   };
 
