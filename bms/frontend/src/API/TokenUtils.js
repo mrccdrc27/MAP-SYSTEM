@@ -20,6 +20,14 @@ export const hasAccessToken = () => {
     .some(row => row.startsWith('access_token='));
 };
 
+export const setRefreshToken = (token) => {
+  localStorage.setItem('refreshToken', token);
+};
+
+export const getRefreshToken = () => {
+  return localStorage.getItem('refreshToken');
+};
+
 /**
  * Get access token from local storage or cookies
  * @returns {string|null} The access token or null if not found
@@ -48,17 +56,13 @@ export const setAccessToken = (token) => {
 /**
  * Remove access token from local storage and cookies (if possible)
  */
+// Update removeAccessToken to clean refresh too
 export const removeAccessToken = () => {
-  // Remove from localStorage
   localStorage.removeItem('accessToken');
-  
-  // Also remove legacy key for backwards compatibility
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('refreshToken');  // Add this
+  localStorage.removeItem('access_token');  // Legacy
+  localStorage.removeItem('refresh_token'); // Legacy
   localStorage.removeItem('user');
-  
-  // Try to expire the cookie
-  // Note: This will only work if the cookie wasn't set with HttpOnly
   document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 };
 
