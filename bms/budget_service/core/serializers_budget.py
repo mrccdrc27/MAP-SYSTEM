@@ -441,10 +441,14 @@ class JournalEntryCreateSerializer(serializers.Serializer):
         return entry
 
 
+# MODIFICATION START: Updated to include account_type_name for easier frontend filtering
 class AccountDropdownSerializer(serializers.ModelSerializer):
+    account_type_name = serializers.CharField(source='account_type.name', read_only=True)
+
     class Meta:
         model = Account
-        fields = ['id', 'code', 'name', 'account_type']
+        fields = ['id', 'code', 'name', 'account_type', 'account_type_name']
+# MODIFICATION END
 
 
 class DepartmentDropdownSerializer(serializers.ModelSerializer):

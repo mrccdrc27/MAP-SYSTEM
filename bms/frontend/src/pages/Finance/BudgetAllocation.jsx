@@ -155,28 +155,79 @@ const BudgetAllocation = () => {
           getAccounts(),
           getProjects(),
         ]);
-        
+
         const depts = deptRes.data.map((d) => ({
           value: d.code,
           label: d.name,
           id: d.id,
         }));
-        
+
         setDepartmentOptions([
           { value: "", label: "All Departments" },
           ...depts,
         ]);
-        
-        const allAccounts = accRes.data.map(acc => ({
-            id: acc.id,
-            value: acc.name, // Use name for the select value as expected by backend serializer
-            name: `${acc.code} - ${acc.name}`, // Display Code - Name
-            type: acc.account_type, // Keep type for filtering
-            raw_name: acc.name // Keep raw name for checks
+
+        const allAccounts = accRes.data.map((acc) => ({
+          id: acc.id,
+          value: acc.name, // Select value
+          name: `${acc.code} - ${acc.name}`, // Display label
+          type_name: acc.account_type_name, // New field from backend
+          raw_name: acc.name,
         }));
 
-        setAccountOptions(allAccounts); // Store formatted options
-        
+        setAccountOptions(allAccounts);
+
+        // 1. Funding Sources (Debit Side)
+        // Should include:
+        // - Assets (Cash/Bank) -> For Injections
+        // - Equity (Retained Earnings) -> For Injections
+        // - Expenses -> For Internal Transfers (taking budget FROM here)
+        const validSources = allAccounts.filter((acc) => {
+          const type = acc.type_name || "";
+          const n = acc.raw_name.toLowerCase();
+
+          // Always allow Cash/Bank/Equity/Liabilities
+          if (type === "Equity" || type === "Liability") return true;
+          if (type === "Asset" && (n.includes("cash") || n.includes("bank")))
+            return true;
+
+          // Allow Expenses (for re-allocation scenarios)
+          if (type === "Expense") return true;
+
+          // Allow general Assets (like PPE) if you transfer Capital Budget
+          if (type === "Asset") return true;
+
+          return false;
+        });
+
+        // 2. Allocation Targets (Credit Side)
+        // Should include:
+        // - Expenses (Operating Budget)
+        // - Assets (Capital Budget)
+        // - Exclude: Cash/Bank/Equity (You don't "allocate budget" INTO the bank, you take it OUT)
+        const validTargets = allAccounts.filter((acc) => {
+          const type = acc.type_name || "";
+          const n = acc.raw_name.toLowerCase();
+
+          // Exclude Sources
+          if (
+            n.includes("cash") ||
+            n.includes("bank") ||
+            n.includes("retained")
+          )
+            return false;
+          if (type === "Equity") return false;
+
+          return type === "Expense" || type === "Asset";
+        });
+
+        setModalDropdowns({
+          departments: depts,
+          debitAccounts: validSources, // "Funding Source"
+          creditAccounts: validTargets, // "Target Allocation"
+        });
+        // MODIFICATION END
+
         setProjects(
           projRes.data.map((p) => ({
             value: p.id,
@@ -184,35 +235,11 @@ const BudgetAllocation = () => {
             department_id: p.department_id,
           })),
         );
-
-        // --- INTELLIGENT FILTERING ---
-        // 1. Funding Sources: Equity, Liability, or Cash Assets
-        const validSources = allAccounts.filter(acc => {
-            // Note: Adjust logic if account_type comes back as ID vs Name
-            // Safe fallback: Check name for "Cash", "Bank", "Retained", "Payable"
-            const n = acc.raw_name.toLowerCase();
-            return n.includes("cash") || n.includes("bank") || n.includes("retained") || n.includes("equity");
-        });
-
-        // 2. Allocation Targets: Expenses or Non-Cash Assets
-        const validTargets = allAccounts.filter(acc => {
-            const n = acc.raw_name.toLowerCase();
-            // Exclude Cash/Equity sources
-            const isSource = n.includes("cash") || n.includes("bank") || n.includes("retained");
-            return !isSource; 
-        });
-
-        setModalDropdowns({
-          departments: depts,
-          debitAccounts: validSources,
-          creditAccounts: validTargets,
-        });
-        
       } catch (err) {
         console.error("Initial fetch error", err);
       }
     };
-    
+
     fetchData();
     const interval = setInterval(() => setCurrentDate(new Date()), 60000);
     return () => clearInterval(interval);
@@ -306,49 +333,59 @@ const BudgetAllocation = () => {
   };
 
   const handleActionSelect = (action) => {
-  setModalType(action);
-  setShowActionDropdown(false);
-  
-  if (action === "add") {
-    if (!isFinanceManager) {
-      setShowRequestModal(true);
-    } else {
-      // Reset data for new entry
-      setModalData({ 
-        id: null, 
-        ticket_id: "AUTO-GENERATED", 
-        date: new Date().toISOString().split('T')[0], 
-        department: "", 
-        category: "", 
-        debit_account: "", 
-        credit_account: "", 
-        amount: "" 
-      });
-      setShowModifyModal(true);
-    }
-  } else if (action === "modify") {
-    if (selectedRowId) {
-      // Find the selected entry data to pre-fill
-      const entryToEdit = adjustments.find(a => a.id === selectedRowId);
-      if (entryToEdit) {
-         setModalData({
-           id: entryToEdit.id,
-           ticket_id: entryToEdit.ticket_id,
-           date: entryToEdit.date,
-           department: entryToEdit.department_name,
-           category: entryToEdit.category,
-           debit_account: entryToEdit.debit_account,
-           credit_account: entryToEdit.credit_account,
-           // FIX: Clear amount field - user creates NEW adjustment
-           amount: "" // CHANGED from entryToEdit.amount
-         });
-         setShowModifyModal(true);
+    setModalType(action);
+    setShowActionDropdown(false);
+
+    if (action === "add") {
+      if (!isFinanceManager) {
+        setShowRequestModal(true);
+      } else {
+        setModalData({
+          id: null,
+          ticket_id: "AUTO-GENERATED",
+          date: new Date().toISOString().split("T")[0],
+          department: "",
+          category: "",
+          debit_account: "",
+          credit_account: "",
+          amount: "",
+        });
+        setShowModifyModal(true);
       }
-    } else {
-      showAlert("Please select a row to modify.", "warning");
+    } else if (action === "modify") {
+      if (selectedRowId) {
+        const entryToEdit = adjustments.find((a) => a.id === selectedRowId);
+        if (entryToEdit) {
+          // MODIFICATION START: Auto-select Department & Map Accounts correctly
+          // 1. Map Department Name -> Department Code (for the select value)
+          const matchedDept = departmentOptions.find(
+            (opt) => opt.label === entryToEdit.department_name,
+          );
+
+          // 2. Map Account Names -> Ensuring they exist in options
+          // The table shows 'Category' sometimes in the account column due to serializer logic,
+          // but 'entryToEdit' from backend should have raw account names (debit_account, credit_account)
+          // We use the raw values which match the 'value' key in our options.
+
+          setModalData({
+            id: entryToEdit.id,
+            ticket_id: entryToEdit.ticket_id,
+            date: entryToEdit.date,
+            // Use the CODE (value) not the NAME (label)
+            department: matchedDept ? matchedDept.value : "",
+            category: entryToEdit.category, // CapEx/OpEx
+            debit_account: entryToEdit.debit_account,
+            credit_account: entryToEdit.credit_account,
+            amount: "", // User inputs new amount for adjustment
+          });
+          setShowModifyModal(true);
+          // MODIFICATION END
+        }
+      } else {
+        showAlert("Please select a row to modify.", "warning");
+      }
     }
-  }
-};
+  };
 
   const handleModalSubmit = async (e) => {
     e.preventDefault();
