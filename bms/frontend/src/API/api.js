@@ -56,8 +56,26 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Check if the error is 401 and it's not a retry request
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // DEBUG: Log response status and a short snapshot (avoid logging raw tokens)
+    console.warn("[api.js] Interceptor caught response error:", {
+      status: error.response?.status,
+      url: originalRequest?.url,
+      data_preview: error.response?.data ? Object.keys(error.response.data).slice(0, 5) : null,
+    });
+
+    // Handle 401 or 403 (403 often indicates cookie-auth failure / JWT verification issue)
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+      // If 403, give more specific debug advice
+      if (error.response?.status === 403) {
+        console.error(
+          "[api.js] Received 403 - cookie-based auth may be failing (possible JWT signing key mismatch or cookie domain issue).",
+          {
+            suggestion: "Check DJANGO_JWT_SIGNING_KEY in both central auth and BMS; verify cookie domain and SameSite settings",
+            response_headers: error.response?.headers,
+          },
+        );
+      }
+
       // If a refresh is already in progress, queue the original request
       if (refreshTokenPromise) {
         return new Promise((resolve, reject) => {
@@ -80,31 +98,56 @@ api.interceptors.response.use(
         try {
           console.log(
             "[api.js] Attempting token refresh via centralized auth service...",
+            { AUTH_URL },
           );
+
+          // DEBUG: show document.cookie (will be empty for HttpOnly cookies) to indicate HttpOnly presence
+          try {
+            console.log("[api.js] document.cookie (for debugging):", document.cookie);
+          } catch (e) {
+            console.warn("[api.js] Could not access document.cookie:", e);
+          }
 
           // If central auth isn't enabled, skip central logic and redirect to local login
           if (!USE_CENTRAL_AUTH) {
             console.warn(
-              "[api.js] Central auth disabled (VITE_USE_CENTRAL_AUTH=false). Redirecting to local login.",
+              "[api.js] Central auth disabled (VITE_USE_CENTRAL_AUTH=false). Redirecting to centralized login (for debugging flow).",
             );
-            // Clean up tokens and redirect to local login route handled by LocalAuthProvider
+            // Clean up tokens and redirect to centralized login to force re-auth
             removeAccessToken();
             localStorage.removeItem("refreshToken");
-            window.location.href = "/login";
-            reject(new Error("Central auth disabled - redirecting to local login"));
+            const centralLoginUrl =
+              "https://login.ticketing.mapactive.tech/staff";
+            window.location.href = centralLoginUrl;
+            reject(
+              new Error("Central auth disabled - redirecting to centralized login"),
+            );
             return;
           }
 
           // Primary: Cookie-based (current)
+          console.log("[api.js] Calling cookie refresh endpoint:", `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`);
           let response = await axios.post(
             `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`,
             {}, // Empty body
-            { withCredentials: true, headers: { "Content-Type": "application/json" } },
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "application/json" },
+            },
           );
 
+          // DEBUG: Log cookie refresh response
+          console.log("[api.js] Cookie refresh response:", {
+            status: response.status,
+            data_keys: Object.keys(response.data || {}),
+          });
+
           // If succeeds, proceed (cookie refresh may not return access token body)
-          if (response.status === 200 &&
-            (response.data.message === "Token refreshed successfully" || response.data.message === "Token refreshed")) {
+          if (
+            response.status === 200 &&
+            (response.data.message === "Token refreshed successfully" ||
+              response.data.message === "Token refreshed")
+          ) {
             console.log("[api.js] ✅ Cookie-based refresh succeeded");
             processQueue(null, "token_refreshed");
             resolve("token_refreshed");
@@ -112,15 +155,26 @@ api.interceptors.response.use(
           }
 
           // Fallback: If cookie fails or doesn't return token, try body-based if refresh_token in localStorage
-          console.warn("[api.js] ⚠️ Cookie refresh did not yield token, attempting body fallback...");
+          console.warn(
+            "[api.js] ⚠️ Cookie refresh did not yield token, attempting body fallback...",
+          );
           const refreshToken = localStorage.getItem("refreshToken");
-          if (!refreshToken) throw new Error("No fallback refresh token in localStorage");
+          if (!refreshToken)
+            throw new Error("No fallback refresh token in localStorage");
 
           response = await axios.post(
             `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`, // Use same endpoint (server needs to support body fallback)
             { refresh: refreshToken }, // Body payload (they need to support this)
-            { withCredentials: true, headers: { "Content-Type": "application/json" } },
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "application/json" },
+            },
           );
+
+          console.log("[api.js] Body fallback response:", {
+            status: response.status,
+            data_keys: Object.keys(response.data || {}),
+          });
 
           if (response.status === 200 && response.data.access) {
             console.log("[api.js] ✅ Body fallback refresh succeeded");
@@ -141,13 +195,18 @@ api.interceptors.response.use(
           processQueue(refreshError, null);
           reject(refreshError);
 
-          // ✅ FIX: Redirect to CENTRALIZED login page
+          // Redirect to centralized login and provide a helpful debug hint
           const centralLoginUrl =
             "https://login.ticketing.mapactive.tech/staff";
           console.log(
-            "[api.js] Redirecting to centralized login:",
+            "[api.js] Redirecting to centralized login for re-authentication:",
             centralLoginUrl,
           );
+
+          console.error(
+            "[api.js] Debug hint: If you see 403s when cookie auth is attempted, verify DJANGO_JWT_SIGNING_KEY is identical between central auth and BMS, and check cookie domain (should be .mapactive.tech) and SameSite attributes.",
+          );
+
           window.location.href = centralLoginUrl;
         } finally {
           refreshTokenPromise = null;

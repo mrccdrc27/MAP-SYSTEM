@@ -60,19 +60,19 @@ const CentralAuthProvider = ({ children }) => {
 
   const isAdmin = useCallback(
     () => user && hasSystemRole(user, "bms", "ADMIN"),
-    [user]
+    [user],
   );
   const isFinanceHead = useCallback(
     () => user && hasSystemRole(user, "bms", "FINANCE_HEAD"),
-    [user]
+    [user],
   );
   const hasBmsAccess = useCallback(
     () => user && hasAnySystemRole(user, "bms"),
-    [user]
+    [user],
   );
   const getBmsRole = useCallback(
     () => (user ? getSystemRole(user, "bms") : null),
-    [user]
+    [user],
   );
 
   // Check for tokens in URL (from centralized auth redirect)
@@ -81,18 +81,43 @@ const CentralAuthProvider = ({ children }) => {
     const accessToken = urlParams.get("access_token");
     const refreshToken = urlParams.get("refresh_token");
 
+    // DEBUG: show whether tokens exist in URL (do NOT print raw tokens)
+    console.log("[Auth] URL params found:", {
+      has_access_token: !!accessToken,
+      has_refresh_token: !!refreshToken,
+      raw_search: window.location.search,
+    });
+
     if (accessToken) {
-      console.log("[Auth] Found access_token in URL, storing in localStorage");
       setAccessToken(accessToken);
-      
       if (refreshToken) {
-        console.log("[Auth] Found refresh_token in URL, storing in localStorage");
-        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+
+      // 🔍 DEBUG - Verify storage worked (presence-only)
+      console.log("[Auth] Stored tokens - verify:", {
+        accessInStorage: !!localStorage.getItem("accessToken"),
+        refreshInStorage: !!localStorage.getItem("refreshToken"),
+      });
+
+      // DEBUG: log decoded user info from token (non-sensitive fields only)
+      try {
+        const decoded = getUserFromToken();
+        console.log("[Auth] Decoded token user (if available):", {
+          username: decoded?.username,
+          email: decoded?.email,
+          roles: decoded?.roles,
+        });
+      } catch (e) {
+        console.warn("[Auth] Failed to decode token for debug:", e);
       }
 
       // Clean URL to remove tokens
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
+
+      // DEBUG: confirm URL cleaned
+      console.log("[Auth] Cleaned URL ->", window.location.href);
 
       return true;
     }
@@ -133,12 +158,22 @@ const CentralAuthProvider = ({ children }) => {
       }
 
       const token = getAccessToken();
-      
+
+      // DEBUG: token presence / expiry
+      console.log("[Auth] Token presence / expiry:", {
+        token_present: !!token,
+        token_expired: token ? isTokenExpired(token) : null,
+      });
+
       // Always attempt to fetch profile (works with cookies OR localStorage token)
       if (!token && !foundInUrl) {
-        console.log("[Auth] No local token. Attempting Cookie/SSO validation...");
+        console.log(
+          "[Auth] No local token. Attempting Cookie/SSO validation...",
+        );
       } else {
-        console.log("[Auth] Token found or in URL, attempting to fetch profile");
+        console.log(
+          "[Auth] Token found or in URL, attempting to fetch profile",
+        );
       }
 
       // Always try fetching profile. If cookie exists (SSO) or token exists, it will succeed.
@@ -157,7 +192,6 @@ const CentralAuthProvider = ({ children }) => {
       setLoading(false);
       setInitialized(true);
       return true;
-
     } catch (error) {
       console.warn("[Auth] Profile fetch failed:", error);
 
@@ -198,7 +232,7 @@ const CentralAuthProvider = ({ children }) => {
       const payload = {
         email: credentials.email,
         password: credentials.password,
-        g_recaptcha_response: credentials.g_recaptcha_response || ''
+        g_recaptcha_response: credentials.g_recaptcha_response || "",
       };
 
       const response = await authApi.post(TOKEN_OBTAIN_URL, payload);
@@ -224,10 +258,10 @@ const CentralAuthProvider = ({ children }) => {
           console.log("[Auth] Storing access_token in localStorage");
           setAccessToken(response.data.access_token);
         }
-        
+
         if (response.data.refresh_token) {
           console.log("[Auth] Storing refresh_token in localStorage");
-          localStorage.setItem('refreshToken', response.data.refresh_token);
+          localStorage.setItem("refreshToken", response.data.refresh_token);
         }
 
         // Decode the token to get user data with roles
@@ -242,7 +276,10 @@ const CentralAuthProvider = ({ children }) => {
 
         // Verify BMS Access
         if (!hasAnySystemRole(decodedUser, "bms")) {
-          console.error("[Auth] No BMS Access after login. User roles:", decodedUser?.roles);
+          console.error(
+            "[Auth] No BMS Access after login. User roles:",
+            decodedUser?.roles,
+          );
           return { success: false, error: "No BMS Access." };
         }
 
@@ -289,21 +326,21 @@ const CentralAuthProvider = ({ children }) => {
     } finally {
       // Clean up both tokens
       removeAccessToken();
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem("refreshToken");
       setUser(null);
       setInitialized(true);
       setLoading(false);
-      
+
       // Determine redirect URL based on environment
       // Production: centralized login
       // Docker: BMS login page
       const isProduction = import.meta.env.VITE_USE_CENTRAL_AUTH === "true";
-      const logoutUrl = isProduction 
+      const logoutUrl = isProduction
         ? "https://login.ticketing.mapactive.tech/staff"
         : "/login";
-      
-      console.log('[Auth] Redirecting to login:', logoutUrl);
-      
+
+      console.log("[Auth] Redirecting to login:", logoutUrl);
+
       if (isProduction) {
         window.location.href = logoutUrl;
       } else {
