@@ -28,11 +28,14 @@ const AUTH_URL = (
   import.meta.env.VITE_AUTH_URL || "http://localhost:8001"
 ).replace(/\/$/, "");
 
-// ONLY the endpoints actually used by AuthContext
-// Token refresh happens in api.js interceptor, not here
 const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`;
 const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGOUT_URL = `${AUTH_URL}/api/v1/users/logout/`;
+
+// MODIFICATION START
+// URL for manual refresh within Context (matches api.js correction)
+const REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/cookie/`;
+// MODIFICATION END
 
 const createAuthRequest = () => {
   const token = getAccessToken();
@@ -147,6 +150,7 @@ const CentralAuthProvider = ({ children }) => {
     }
   }, []);
 
+  // MODIFICATION START
   // Check Auth Status
   const checkAuthStatus = useCallback(async () => {
     try {
@@ -176,8 +180,45 @@ const CentralAuthProvider = ({ children }) => {
         );
       }
 
-      // Always try fetching profile. If cookie exists (SSO) or token exists, it will succeed.
-      const userData = await fetchUserProfile();
+      // Logic: Wrap profile fetch to handle 401s manually since this axios instance lacks interceptors
+      let userData;
+      try {
+        const response = await createAuthRequest().get(PROFILE_URL);
+        userData = response.data;
+      } catch (err) {
+        // If 401 Unauthorized, try to refresh the token manually
+        if (err.response && err.response.status === 401) {
+          console.log(
+            "[Auth] Profile returned 401. Attempting one-time refresh via Context...",
+          );
+
+          // Attempt Manual Refresh
+          await axios.post(
+            REFRESH_URL,
+            {}, // Empty body
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+
+          console.log("[Auth] Refresh successful. Retrying profile fetch...");
+          // Retry Profile Fetch
+          const retryResponse = await createAuthRequest().get(PROFILE_URL);
+          userData = retryResponse.data;
+        } else {
+          // Throw other errors to be caught by the outer catch
+          throw err;
+        }
+      }
+
+      // Map system_roles to roles format
+      if (userData.system_roles) {
+        userData.roles = userData.system_roles.map((r) => ({
+          system: r.system_slug || r.system,
+          role: r.role_name || r.role,
+        }));
+      }
 
       if (!hasAnySystemRole(userData, "bms")) {
         console.error("[Auth] No BMS Access.");
@@ -215,9 +256,20 @@ const CentralAuthProvider = ({ children }) => {
       setUser(null);
       setLoading(false);
       setInitialized(true);
+
+      // Force redirect to Central Login if auth fails (prevents showing local 404/Login)
+      const USE_CENTRAL_AUTH = import.meta.env.VITE_USE_CENTRAL_AUTH === "true";
+      if (USE_CENTRAL_AUTH) {
+        console.log(
+          "[Auth] Redirecting to Centralized Login due to session expiry...",
+        );
+        window.location.href = "https://login.ticketing.mapactive.tech/staff";
+      }
+
       return false;
     }
   }, [fetchUserProfile, checkUrlForTokens]);
+  // MODIFICATION END
 
   useEffect(() => {
     checkAuthStatus();

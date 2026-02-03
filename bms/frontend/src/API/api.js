@@ -60,17 +60,23 @@ api.interceptors.response.use(
     console.warn("[api.js] Interceptor caught response error:", {
       status: error.response?.status,
       url: originalRequest?.url,
-      data_preview: error.response?.data ? Object.keys(error.response.data).slice(0, 5) : null,
+      data_preview: error.response?.data
+        ? Object.keys(error.response.data).slice(0, 5)
+        : null,
     });
 
     // Handle 401 or 403 (403 often indicates cookie-auth failure / JWT verification issue)
-    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+    if (
+      (error.response?.status === 401 || error.response?.status === 403) &&
+      !originalRequest._retry
+    ) {
       // If 403, give more specific debug advice
       if (error.response?.status === 403) {
         console.error(
           "[api.js] Received 403 - cookie-based auth may be failing (possible JWT signing key mismatch or cookie domain issue).",
           {
-            suggestion: "Check DJANGO_JWT_SIGNING_KEY in both central auth and BMS; verify cookie domain and SameSite settings",
+            suggestion:
+              "Check DJANGO_JWT_SIGNING_KEY in both central auth and BMS; verify cookie domain and SameSite settings",
             response_headers: error.response?.headers,
           },
         );
@@ -103,7 +109,10 @@ api.interceptors.response.use(
 
           // DEBUG: show document.cookie (will be empty for HttpOnly cookies) to indicate HttpOnly presence
           try {
-            console.log("[api.js] document.cookie (for debugging):", document.cookie);
+            console.log(
+              "[api.js] document.cookie (for debugging):",
+              document.cookie,
+            );
           } catch (e) {
             console.warn("[api.js] Could not access document.cookie:", e);
           }
@@ -120,21 +129,28 @@ api.interceptors.response.use(
               "https://login.ticketing.mapactive.tech/staff";
             window.location.href = centralLoginUrl;
             reject(
-              new Error("Central auth disabled - redirecting to centralized login"),
+              new Error(
+                "Central auth disabled - redirecting to centralized login",
+              ),
             );
             return;
           }
 
-          // Primary: Cookie-based (current)
-          console.log("[api.js] Calling cookie refresh endpoint:", `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`);
+          // MODIFICATION START
+          // Fixed URL: Removed '/auth' prefix. Backend structure is root -> api/v1/ -> token/refresh/cookie/
+          console.log(
+            "[api.js] Calling cookie refresh endpoint:",
+            `${AUTH_URL}/api/v1/token/refresh/cookie/`,
+          );
           let response = await axios.post(
-            `${AUTH_URL}/auth/api/v1/token/refresh/cookie/`,
-            {}, // Empty body
+            `${AUTH_URL}/api/v1/token/refresh/cookie/`,
+            {}, // Empty body to ensure Content-Type is sent
             {
               withCredentials: true,
               headers: { "Content-Type": "application/json" },
             },
           );
+          // MODIFICATION END
 
           // DEBUG: Log cookie refresh response
           console.log("[api.js] Cookie refresh response:", {
