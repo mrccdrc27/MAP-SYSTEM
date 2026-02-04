@@ -342,8 +342,15 @@ const BudgetAdjustmentTab = ({
                     {getCompactDepartmentName(entry.department_name)}
                   </td>
                   <td style={{ padding: "12px" }}>{entry.category}</td>
-                  <td style={{ padding: "12px" }}>{entry.debit_account}</td>
+
+                  {/* FIX START: Swap Debit/Credit to match Funding Source/Target Headers */}
+                  {/* Funding Source (Column 5) = Credit Account */}
                   <td style={{ padding: "12px" }}>{entry.credit_account}</td>
+
+                  {/* Target (Column 6) = Debit Account */}
+                  <td style={{ padding: "12px" }}>{entry.debit_account}</td>
+                  {/* FIX END */}
+
                   <td style={{ padding: "12px" }}>
                     {formatTableAmount(entry.amount)}
                   </td>

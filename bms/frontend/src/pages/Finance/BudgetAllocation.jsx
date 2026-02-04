@@ -372,11 +372,15 @@ const BudgetAllocation = () => {
             id: entryToEdit.id,
             ticket_id: entryToEdit.ticket_id,
             date: entryToEdit.date,
-            // Use the CODE (value) not the NAME (label)
             department: matchedDept ? matchedDept.value : "",
-            category: entryToEdit.category, // CapEx/OpEx
-            debit_account: entryToEdit.debit_account,
-            credit_account: entryToEdit.credit_account,
+            category: entryToEdit.category,
+            // FIX START: Swap mappings to align with Frontend Variable Names vs Accounting Reality
+            // modalData.debit_account (Source Input) <--- needs entry.credit_account (Source API)
+            debit_account: entryToEdit.credit_account,
+
+            // modalData.credit_account (Target Input) <--- needs entry.debit_account (Target API)
+            credit_account: entryToEdit.debit_account,
+            // FIX END
             amount: "", // User inputs new amount for adjustment
           });
           setShowModifyModal(true);
