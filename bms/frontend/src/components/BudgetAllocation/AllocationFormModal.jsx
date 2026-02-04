@@ -18,11 +18,17 @@ const AllocationFormModal = ({
   // MODIFICATION START: Filter categories based on selection (CapEx/OpEx)
   // We filter available sub-categories based on the 'category' (CapEx/OpEx) selected in the form
   const filteredSubCategories = allCategories
-    ? allCategories.filter(
-        (cat) =>
-          cat.classification?.toUpperCase() === data.category?.toUpperCase(),
-      )
-    : [];
+  ? allCategories.filter((cat) => {
+      const selectedClassification = data.category?.toUpperCase();
+      const catClassification = cat.classification?.toUpperCase();
+      
+      // ✅ Show categories that match selected type OR are MIXED
+      return (
+        catClassification === selectedClassification || 
+        catClassification === 'MIXED'
+      ) && cat.level > 1; // Exclude root categories
+    })
+  : [];
 
   // Check if target is a "Budget Account" (Expense/Asset) vs Funding Source
   // We only show sub-category selection for Budget Accounts

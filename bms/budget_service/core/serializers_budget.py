@@ -249,27 +249,23 @@ class LedgerViewSerializer(serializers.ModelSerializer):
                   'description', 'account', 'amount']
 
     def get_category(self, obj):
-        """
-        Returns the main classification: CapEx or OpEx
-        """
-        # 1. Check this line's expense_category
+        # PRIORITY: Use journal_transaction_type
+        if obj.journal_transaction_type == 'CAPITAL_EXPENDITURE':
+            return 'CapEx'
+        elif obj.journal_transaction_type == 'OPERATIONAL_EXPENDITURE':
+            return 'OpEx'
+        
+        # Fallback to expense_category
         if obj.expense_category:
-            return obj.expense_category.classification  # 'CAPEX' or 'OPEX'
-
-        # 2. Check sibling lines (e.g., if this is the Credit side, find the Debit side)
-        sibling_lines = obj.journal_entry.lines.all()
-        for line in sibling_lines:
-            if line.expense_category:
-                return line.expense_category.classification
-
-        # 3. Fallback: Use Journal Entry category as a hint
+            return obj.expense_category.classification
+        
+        # Legacy fallbacks
         je_cat = obj.journal_entry.category
         if je_cat == 'EXPENSES':
-            return 'OPEX'  # Expenses are typically OpEx
+            return 'OpEx'
         if je_cat == 'ASSETS':
-            return 'CAPEX'  # Assets are typically CapEx
-
-        # 4. Default for unknown
+            return 'CapEx'
+        
         return 'N/A'
 
     def get_sub_category(self, obj):
@@ -938,6 +934,7 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
         max_length=255, required=False, allow_blank=True)
     amount = serializers.DecimalField(max_digits=15, decimal_places=2, validators=[
                                       MinValueValidator(Decimal('0.01'))])
+    category_name = serializers.CharField()  
 
     # UI inputs (Strings)
     department_name = serializers.CharField()

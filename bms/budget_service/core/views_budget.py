@@ -713,9 +713,12 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
         review_input_serializer.is_valid(raise_exception=True)
 
         new_status = review_input_serializer.validated_data['status']
-        comment_text = review_input_serializer.validated_data.get('comment', '')
-        finance_operator = review_input_serializer.validated_data.get('finance_manager_name', '')
-        signature_file = review_input_serializer.validated_data.get('signature')
+        comment_text = review_input_serializer.validated_data.get(
+            'comment', '')
+        finance_operator = review_input_serializer.validated_data.get(
+            'finance_manager_name', '')
+        signature_file = review_input_serializer.validated_data.get(
+            'signature')
 
         reviewer_user_id = request.user.id
         reviewer_name = request.user.get_full_name() or request.user.username
@@ -756,7 +759,8 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                     if not item.category:
                         import logging
                         logger = logging.getLogger(__name__)
-                        logger.error(f"Item {item.id} has no category. Skipping allocation creation.")
+                        logger.error(
+                            f"Item {item.id} has no category. Skipping allocation creation.")
                         continue
 
                     # Check if allocation already exists (prevents duplicates on re-approval)
@@ -784,14 +788,15 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                         # If re-approving, update amount and unlock
                         existing_allocation.amount = item.estimated_cost
                         existing_allocation.is_locked = False
-                        existing_allocation.save(update_fields=['amount', 'is_locked'])
+                        existing_allocation.save(
+                            update_fields=['amount', 'is_locked'])
 
             elif new_status == 'REJECTED':
                 proposal.rejected_by_name = reviewer_name
                 proposal.rejection_date = timezone.now()
                 proposal.approved_by_name = None
                 proposal.approval_date = None
-                
+
                 if hasattr(proposal, 'project') and proposal.project is not None:
                     proposal.project.status = 'CANCELLED'
                     proposal.project.save(update_fields=['status'])
@@ -820,20 +825,26 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 target_url = None
                 api_key_to_use = None
-                
+
                 tid = proposal.external_system_id.upper()
-                
+
                 if tid.startswith("AST") or tid.startswith("REP") or tid.startswith("REG"):
-                     target_url = getattr(settings, 'AMS_STATUS_UPDATE_URL', None)
-                     api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None)
-                
+                    target_url = getattr(
+                        settings, 'AMS_STATUS_UPDATE_URL', None)
+                    api_key_to_use = getattr(
+                        settings, 'API_KEY_FOR_BMS_TO_CALL_AMS', None)
+
                 elif tid.startswith("HD") or tid.startswith("TRV"):
-                     target_url = getattr(settings, 'HDTS_STATUS_UPDATE_URL', None)
-                     api_key_to_use = getattr(settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
+                    target_url = getattr(
+                        settings, 'HDTS_STATUS_UPDATE_URL', None)
+                    api_key_to_use = getattr(
+                        settings, 'API_KEY_FOR_BMS_TO_CALL_HDTS', None)
 
                 else:
-                     target_url = getattr(settings, 'DTS_STATUS_UPDATE_URL', None)
-                     api_key_to_use = getattr(settings, 'BMS_AUTH_KEY_FOR_DTS', None)
+                    target_url = getattr(
+                        settings, 'DTS_STATUS_UPDATE_URL', None)
+                    api_key_to_use = getattr(
+                        settings, 'BMS_AUTH_KEY_FOR_DTS', None)
 
                 if target_url:
                     payload = {
@@ -842,28 +853,33 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
                         'comment': comment_text,
                         'reviewed_by': reviewer_name,
                         'reviewed_at': timezone.now().isoformat(),
-                        'order_number': proposal.external_system_id 
+                        'order_number': proposal.external_system_id
                     }
                     headers = {
                         'Content-Type': 'application/json',
                         'X-API-Key': api_key_to_use or ''
                     }
-                    
-                    response = requests.post(target_url, json=payload, headers=headers, timeout=5)
-                    
+
+                    response = requests.post(
+                        target_url, json=payload, headers=headers, timeout=5)
+
                     if 200 <= response.status_code < 300:
                         proposal.sync_status = 'SYNCED'
                     else:
-                        print(f"External system returned {response.status_code}: {response.text}")
+                        print(
+                            f"External system returned {response.status_code}: {response.text}")
                         proposal.sync_status = 'FAILED'
-                        
+
                     proposal.last_sync_timestamp = timezone.now()
-                    proposal.save(update_fields=['sync_status', 'last_sync_timestamp'])
+                    proposal.save(
+                        update_fields=['sync_status', 'last_sync_timestamp'])
                 else:
-                    print(f"Warning: No callback URL configured for prefix {tid}. Skipping notification.")
+                    print(
+                        f"Warning: No callback URL configured for prefix {tid}. Skipping notification.")
 
             except requests.RequestException as e:
-                print(f"Error notifying external system for proposal {proposal.id}: {e}")
+                print(
+                    f"Error notifying external system for proposal {proposal.id}: {e}")
                 proposal.sync_status = 'FAILED'
                 proposal.save(update_fields=['sync_status'])
 
@@ -900,16 +916,17 @@ class BudgetProposalUIViewSet(viewsets.ReadOnlyModelViewSet):
         )
         return Response(ProposalCommentSerializer(comment_obj).data, status=status.HTTP_201_CREATED)
 
+
 @extend_schema(tags=['External System Integration (API Key Protected)'])
 class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
-                                   mixins.UpdateModelMixin,
-                                   mixins.RetrieveModelMixin,
-                                   viewsets.GenericViewSet):
+                                    mixins.UpdateModelMixin,
+                                    mixins.RetrieveModelMixin,
+                                    viewsets.GenericViewSet):
     """
     ViewSet for external systems (DTS/TTS/AMS/HDTS) to create and manage budget proposals.
-    
+
     **Authentication**: Requires valid API Key in `X-API-Key` header.
-    
+
     **Endpoints**:
     - POST /external/budget-proposals/ - Create a new proposal
     - PUT /external/budget-proposals/{external_system_id}/ - Update existing proposal
@@ -922,7 +939,7 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsTrustedService]
     lookup_field = 'external_system_id'
-    
+
     def get_service_name(self):
         """Extract service name from the authenticated service principal"""
         if hasattr(self.request.user, 'service_name'):
@@ -987,16 +1004,17 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
     def create(self, request, *args, **kwargs):
         """Create a new budget proposal"""
         service_name = self.get_service_name()
-        
+
         # Log the incoming request for debugging
-        print(f"📥 Incoming proposal from {service_name}: {request.data.get('ticket_id')}")
-        
+        print(
+            f"📥 Incoming proposal from {service_name}: {request.data.get('ticket_id')}")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # Save the proposal
         proposal = serializer.save()
-        
+
         # Return created proposal
         headers = self.get_success_headers(serializer.data)
         return Response(
@@ -1030,18 +1048,19 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
         """Update an existing proposal"""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        
+
         # Prevent updates to finalized proposals
         if instance.status in ['APPROVED', 'REJECTED']:
             return Response(
                 {"error": f"Cannot update proposal with status '{instance.status}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         proposal = serializer.save()
-        
+
         return Response({
             "message": "Budget proposal updated successfully",
             "proposal_id": proposal.id,
@@ -1069,7 +1088,7 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
         """Retrieve proposal details"""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        
+
         # Add useful metadata
         return Response({
             "proposal_id": instance.id,
@@ -1110,18 +1129,18 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
         """Cancel a proposal (soft delete)"""
         proposal = self.get_object()
         service_name = self.get_service_name()
-        
+
         # Only allow cancellation of pending proposals
         if proposal.status in ['APPROVED', 'REJECTED']:
             return Response(
                 {"error": f"Cannot cancel a {proposal.status.lower()} proposal"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         with transaction.atomic():
             proposal.is_deleted = True
             proposal.save()
-            
+
             # Log the cancellation
             ProposalHistory.objects.create(
                 proposal=proposal,
@@ -1131,7 +1150,7 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
                 previous_status=proposal.status,
                 comments=f"Proposal cancelled by {service_name}"
             )
-        
+
         return Response({
             "message": "Proposal cancelled successfully",
             "proposal_id": proposal.id,
@@ -1173,7 +1192,7 @@ class ExternalBudgetProposalViewSet(mixins.CreateModelMixin,
         """Quick status check for external systems"""
         try:
             proposal = self.get_object()
-            
+
             return Response({
                 "exists": True,
                 "status": proposal.status,
@@ -1706,18 +1725,30 @@ class BudgetAdjustmentView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         data = serializer.validated_data
+
+        # ✅ ADD: Map category to journal_transaction_type
+        user_category = data.get('category_name')  # "OpEx" or "CapEx"
+
+        if user_category == 'OpEx':
+            journal_txn_type = 'OPERATIONAL_EXPENDITURE'
+        elif user_category == 'CapEx':
+            journal_txn_type = 'CAPITAL_EXPENDITURE'
+        else:
+            journal_txn_type = 'TRANSFER'
+
         user = self.request.user
         amount = data['amount']
-        
+
         transfer_type = data.get('transfer_type', 'TRANSFER')
         source_alloc = data.get('source_alloc')
         dest_alloc = data.get('dest_alloc')
         dept = data['department']
-        
+
         # New Field
         dest_sub_cat_id = data.get('destination_sub_category_id')
-        
-        description = data.get('description') or f"Budget {transfer_type.title()}"
+
+        description = data.get(
+            'description') or f"Budget {transfer_type.title()}"
 
         with transaction.atomic():
             # 1. Update Allocations (Real Impact)
@@ -1725,12 +1756,13 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 if source_alloc:
                     source_alloc.amount -= amount  # Reduce source
                     if source_alloc.amount < 0:
-                        raise serializers.ValidationError("Source allocation cannot go negative")
+                        raise serializers.ValidationError(
+                            "Source allocation cannot go negative")
                     source_alloc.save()
-            
+
             # --- FIX START: Handle Destination Allocation (Create if missing) ---
             dest_category = None
-            
+
             if dest_alloc:
                 # If existing bucket found, update it
                 dest_alloc.amount += amount
@@ -1741,17 +1773,19 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 # This handles the case where a department gets budget for a new category via adjustment
                 try:
                     category = ExpenseCategory.objects.get(id=dest_sub_cat_id)
-                    
+
                     # We need a fiscal year. Use the one from source, or find active.
-                    fy = source_alloc.fiscal_year if source_alloc else FiscalYear.objects.filter(is_active=True).first()
-                    
+                    fy = source_alloc.fiscal_year if source_alloc else FiscalYear.objects.filter(
+                        is_active=True).first()
+
                     # Create new allocation bucket
                     dest_alloc = BudgetAllocation.objects.create(
                         fiscal_year=fy,
                         department=dept,
                         category=category,
                         account=data['destination_account_obj'],
-                        project=source_alloc.project if source_alloc else Project.objects.filter(department=dept).first(), # Best guess project
+                        project=source_alloc.project if source_alloc else Project.objects.filter(
+                            department=dept).first(),  # Best guess project
                         amount=amount,
                         created_by_name=getattr(user, 'username', 'N/A'),
                         is_active=True,
@@ -1759,7 +1793,7 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                     )
                     dest_category = category
                 except ExpenseCategory.DoesNotExist:
-                    pass # Should be caught by serializer validaiton theoretically
+                    pass  # Should be caught by serializer validaiton theoretically
             # --- FIX END ---
 
             # 2. Create Journal Entry (Audit)
@@ -1773,16 +1807,17 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 created_by_user_id=user.id,
                 created_by_username=getattr(user, 'username', 'N/A')
             )
-            
+
             source_account = data.get('source_account_obj')
             if transfer_type == 'SUPPLEMENTAL':
                 if not source_account:
                     source_account = Account.objects.filter(
-                        Q(name__icontains='Treasury') | Q(account_type__name='Equity')
+                        Q(name__icontains='Treasury') | Q(
+                            account_type__name='Equity')
                     ).first()
-            
+
             if not source_account:
-                 source_account = Account.objects.filter(is_active=True).first()
+                source_account = Account.objects.filter(is_active=True).first()
 
             # CREDIT the source
             JournalEntryLine.objects.create(
@@ -1801,10 +1836,10 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 journal_entry=je,
                 account=data['destination_account_obj'],
                 transaction_type='DEBIT',
-                journal_transaction_type='TRANSFER',
+                journal_transaction_type=journal_txn_type,  
                 amount=amount,
                 description=f"{transfer_type.title()} to {data['destination_account_obj'].name}",
-                expense_category=dest_category # Use the precise category
+                expense_category=dest_category
             )
 
             self.created_instance = je
@@ -1898,7 +1933,7 @@ class ExternalJournalEntryViewSet(viewsets.ModelViewSet):
     """
     queryset = JournalEntry.objects.all()
     # Use the new robust serializer
-    serializer_class = ExternalJournalEntrySerializer 
+    serializer_class = ExternalJournalEntrySerializer
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [IsTrustedService]
     http_method_names = ['post']
@@ -2106,14 +2141,16 @@ class JournalEntryDetailView(generics.RetrieveAPIView):
     serializer_class = JournalEntryDetailSerializer
     permission_classes = [IsBMSUser]
     lookup_field = 'entry_id'  # We will look up by "JE-2026-XXXX"
+
+
 class ExternalReferenceViewSet(viewsets.ViewSet):
     """
     Read-only endpoints for External Systems to fetch Master Data.
     Protected by API Key.
-    
+
     **Authentication Required**: X-API-Key header
     **Allowed Services**: DTS, TTS, HDS, AMS (configured in settings.SERVICE_API_KEYS)
-    
+
     **Available Endpoints**:
     - GET /api/external-references/departments/ - List active departments
     - GET /api/external-references/categories/ - List expense categories (optionally filtered by department)
@@ -2148,7 +2185,8 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def departments(self, request):
         """Get valid Departments (ID, Name, Code)"""
-        depts = Department.objects.filter(is_active=True).values('id', 'name', 'code')
+        depts = Department.objects.filter(
+            is_active=True).values('id', 'name', 'code')
         return Response(list(depts))
 
     @extend_schema(
@@ -2212,13 +2250,13 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
         if dept_code:
             # 1. Try to filter by SubCategoryBudgetCap (Strongest Link)
             # This confirms the department actually has a policy/cap for this category
-            
+
             # Find categories linked to this dept via Caps
             cap_linked_ids = SubCategoryBudgetCap.objects.filter(
                 department__code__iexact=dept_code,
                 is_active=True
             ).values_list('expense_category_id', flat=True)
-            
+
             if cap_linked_ids.exists():
                 qs = qs.filter(id__in=cap_linked_ids)
             else:
@@ -2415,7 +2453,7 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
         fiscal_year = FiscalYear.objects.filter(
             start_date__lte=today, end_date__gte=today, is_active=True
         ).first()
-        
+
         if not fiscal_year:
             return Response({"error": "No active fiscal year"}, status=404)
 
@@ -2430,27 +2468,28 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
             d_cap = DepartmentBudgetCap.objects.get(
                 department=dept, fiscal_year=fiscal_year, is_active=True
             )
-            
+
             # Calculate total org budget for context
             total_org_allocations = BudgetAllocation.objects.filter(
                 fiscal_year=fiscal_year, is_active=True
             ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-            
+
             # Department's limit based on percentage of total
-            dept_limit = total_org_allocations * (d_cap.percentage_of_total / 100)
-            
+            dept_limit = total_org_allocations * \
+                (d_cap.percentage_of_total / 100)
+
             # Current spending for this department
             current_dept_spent = Expense.objects.filter(
-                department=dept, 
+                department=dept,
                 budget_allocation__fiscal_year=fiscal_year,
                 status__in=['APPROVED', 'SUBMITTED']
             ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-            
+
             # Calculate Usage Percentage
             dept_usage_pct = 0.0
             if dept_limit > 0:
                 dept_usage_pct = (current_dept_spent / dept_limit) * 100
-            
+
             dept_cap_info = {
                 "limit_amount": round(dept_limit, 2),
                 "spent_amount": round(current_dept_spent, 2),
@@ -2473,8 +2512,9 @@ class ExternalReferenceViewSet(viewsets.ViewSet):
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
         for c_cap in cat_caps_qs:
-            cat_limit = dept_total_alloc * (c_cap.percentage_of_department / 100)
-            
+            cat_limit = dept_total_alloc * \
+                (c_cap.percentage_of_department / 100)
+
             current_cat_spent = Expense.objects.filter(
                 department=dept,
                 category=c_cap.expense_category,
