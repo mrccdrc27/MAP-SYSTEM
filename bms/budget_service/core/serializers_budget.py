@@ -10,10 +10,17 @@ from django.core.validators import MinValueValidator
 
 
 class BudgetProposalSummarySerializer(serializers.Serializer):
-    total_proposals = serializers.IntegerField()
-    pending_approvals = serializers.IntegerField()
-    total_budget = serializers.DecimalField(max_digits=15, decimal_places=2)
+    # Metric 1: Pending (Workload)
+    pending_count = serializers.IntegerField()
+    pending_value = serializers.DecimalField(max_digits=20, decimal_places=2)
 
+    # Metric 2: Approved (Committed Budget)
+    approved_count = serializers.IntegerField()
+    approved_value = serializers.DecimalField(max_digits=20, decimal_places=2)
+
+    # Metric 3: Rejected (Filtered/Savings)
+    rejected_count = serializers.IntegerField()
+    rejected_value = serializers.DecimalField(max_digits=20, decimal_places=2)
 
 class BudgetProposalListSerializer(serializers.ModelSerializer):
     submitted_by = serializers.CharField(
