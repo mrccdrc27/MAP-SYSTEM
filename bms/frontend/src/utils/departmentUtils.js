@@ -10,14 +10,10 @@ export const getDepartmentInfo = (user) => {
   return {
     id: user.department_id || user.dept_id || null,
     name: user.department_name || user.department || user.dept_name || 'Unknown Department',
-    // Short name for compact displays
     shortName: getShortDepartmentName(user.department_name || user.department)
   };
 };
 
-/**
- * Get abbreviated department name for compact displays
- */
 export const getShortDepartmentName = (departmentName) => {
   if (!departmentName) return 'Unknown';
   

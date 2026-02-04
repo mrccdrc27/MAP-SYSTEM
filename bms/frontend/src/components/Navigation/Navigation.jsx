@@ -309,7 +309,6 @@ const Navigation = ({
                   <div className="profile-details">
                     <div className="profile-name">{userProfile.name}</div>
                     <div className="profile-role-badge">{formattedRole}</div>
-                    {/* ✅ NEW: Department badge */}
                     {departmentInfo && (
                       <div className="profile-department-badge">
                         <Building2 size={12} />
