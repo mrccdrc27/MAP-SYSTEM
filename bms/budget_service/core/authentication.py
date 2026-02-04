@@ -300,8 +300,11 @@ class JWTCookieAuthentication(BaseAuthentication):
             ).first() or Department.objects.filter(
                 name__icontains=department_name
             ).first()
+
+        # Extract profile picture URL if provided
+        profile_picture = payload.get('profile_picture_url') or payload.get('profile_picture')
         
-        # ✅ CRITICAL FIX: Use EMAIL as primary lookup, not ID
+        # CRITICAL FIX: Use EMAIL as primary lookup, not ID
         # This prevents IntegrityError when auth service and BMS have different user IDs
         try:
             # Try to get user by email first (most reliable)
@@ -331,6 +334,11 @@ class JWTCookieAuthentication(BaseAuthentication):
                     user.department_name = department.name
                     updated = True
                 
+                if profile_picture and hasattr(user, 'profile_picture') and user.profile_picture != profile_picture:
+                    logger.info(f"🔄 Updating profile picture for {email}")
+                    user.profile_picture = profile_picture
+                    updated = True
+                
                 if updated:
                     user.save()
                     logger.info(f"✅ Updated User record for {email}")
@@ -351,6 +359,7 @@ class JWTCookieAuthentication(BaseAuthentication):
                         role=bms_role or 'GENERAL_USER',
                         department_id=department.id if department else None,
                         department_name=department.name if department else None,
+                        profile_picture=profile_picture,
                         is_active=True,
                         is_staff=(bms_role in ['ADMIN', 'FINANCE_HEAD'])
                     )

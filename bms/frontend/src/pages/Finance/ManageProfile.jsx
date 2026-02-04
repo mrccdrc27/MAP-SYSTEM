@@ -3,6 +3,7 @@ import "./ManageProfile.css";
 import { updateProfile } from "../../API/authAPI";
 import { useAuth } from "../../context/AuthContext";
 import { formatRoleForDisplay } from "../../utils/roleFormatter";
+import { getProfilePicture } from "../../utils/profileUtils";
 
 export default function ManageProfile({ onClose }) {
   const { user, logout, getBmsRole, updateUserContext } = useAuth();
@@ -26,7 +27,7 @@ export default function ManageProfile({ onClose }) {
       // Helper to parse full_name if first/last are missing (fallback for Token-only state)
       let fName = user.first_name || "";
       let lName = user.last_name || "";
-      
+
       if (!fName && !lName && user.full_name) {
         const parts = user.full_name.split(" ");
         fName = parts[0];
@@ -123,7 +124,7 @@ export default function ManageProfile({ onClose }) {
                 <div className="profileImageSection">
                   <div className="profileImageContainer">
                     <img
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                      src={getProfilePicture(user)}
                       alt="Profile"
                       className="profileImage"
                     />

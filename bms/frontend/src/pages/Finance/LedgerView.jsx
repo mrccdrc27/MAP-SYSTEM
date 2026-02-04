@@ -26,6 +26,8 @@ import { useAuth } from "../../context/AuthContext";
 import { getLedgerEntries, getJournalEntryDetails } from "../../API/ledgerAPI";
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
+import { getUserDisplayInfo } from "../../utils/profileUtils";
+
 import * as XLSX from "xlsx"; // For Excel export
 // MODIFICATION START: Modular Imports
 import Navigation from "../../components/Navigation/Navigation";
@@ -224,18 +226,12 @@ const LedgerView = () => {
 
   const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
   const isFinanceManager = isFinanceHead() || isAdmin();
+  const userDisplayInfo = getUserDisplayInfo(user);
+
   const userProfile = {
-    name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-        user.full_name ||
-        user.username ||
-        "User"
-      : "User",
+    name: userDisplayInfo.name,
     role: userRole,
-    avatar:
-      user?.profile_picture ||
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    
+    avatar: userDisplayInfo.avatar,
     department: user?.department,
     department_name: user?.department_name,
   };
@@ -363,21 +359,21 @@ const LedgerView = () => {
                     <ChevronDown size={14} />
                   </button>
                   {showDepartmentDropdown && (
-                      <div
-                        className="dropdown-menu"
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          backgroundColor: "white",
-                          border: "1px solid #ccc",
-                          borderRadius: "4px",
-                          width: "100%",
-                          zIndex: 10,
-                          maxHeight: "none", 
-                          overflowY: "visible", 
-                        }}
-                      >
+                    <div
+                      className="dropdown-menu"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        width: "100%",
+                        zIndex: 10,
+                        maxHeight: "none",
+                        overflowY: "visible",
+                      }}
+                    >
                       {departmentOptions.map((dept) => (
                         <div
                           key={dept.value}

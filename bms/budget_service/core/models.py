@@ -1141,6 +1141,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    profile_picture = models.URLField(
+        max_length=500, 
+        null=True, 
+        blank=True,
+        help_text="URL to user's profile picture from central auth or uploaded to BMS"
+    )
+    
     # Managed by Central Auth, not BMS
     last_login = models.DateTimeField(null=True, blank=True) 
 

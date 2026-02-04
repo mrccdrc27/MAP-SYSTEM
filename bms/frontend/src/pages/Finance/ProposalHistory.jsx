@@ -20,6 +20,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getProposalHistory, getProposalDetail } from "../../API/proposalAPI";
 import { getAllDepartments } from "../../API/departments";
 import ManageProfile from "./ManageProfile";
+import { getUserDisplayInfo } from "../../utils/profileUtils";
 import * as XLSX from "xlsx";
 
 // MODIFICATION START: Import modularized components
@@ -74,10 +75,9 @@ const ProposalHistory = () => {
   ];
   // MODIFICATION END
 
-
   const shortenDepartmentName = (name, maxLength = 30) => {
     if (!name) return "N/A";
-    
+
     // First, handle special cases for long department names
     const specialCases = {
       "Merchandising / Merchandise Planning": "Merchandise Planning",
@@ -85,34 +85,34 @@ const ProposalHistory = () => {
       "Store Operations": "Store Operations",
       "Human Resources": "HR",
       "Information Technology": "IT",
-      "Marketing": "Marketing",
-      "Operations": "Operations",
-      "Logistics": "Logistics",
-      "Finance": "Finance",
+      Marketing: "Marketing",
+      Operations: "Operations",
+      Logistics: "Logistics",
+      Finance: "Finance",
     };
-    
+
     // Check if it's a special case (exact match or contains)
     for (const [key, value] of Object.entries(specialCases)) {
       if (name.includes(key)) {
         return value;
       }
     }
-    
+
     // If no special case, apply abbreviations
     const abbreviations = {
-      "Department": "Dept.",
-      "Management": "Mgmt.",
-      "Operations": "Ops.",
-      "Merchandising": "Merch.",
-      "Marketing": "Mktg.",
-      "Logistics": "Log.",
+      Department: "Dept.",
+      Management: "Mgmt.",
+      Operations: "Ops.",
+      Merchandising: "Merch.",
+      Marketing: "Mktg.",
+      Logistics: "Log.",
     };
-    
+
     let shortened = name;
     for (const [full, abbr] of Object.entries(abbreviations)) {
       shortened = shortened.replace(new RegExp(full, "gi"), abbr);
     }
-    
+
     // Final length check
     if (shortened.length <= maxLength) return shortened;
     return shortened.substring(0, maxLength - 3) + "...";
@@ -296,18 +296,11 @@ const ProposalHistory = () => {
   const userRole = getBmsRole ? getBmsRole() : user?.role || "User";
   const isFinanceManager = isFinanceHead() || isAdmin();
 
+  const userDisplayInfo = getUserDisplayInfo(user);
   const userProfile = {
-    name: user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-        user.full_name ||
-        user.username ||
-        "User"
-      : "User",
+    name: userDisplayInfo.name,
     role: userRole,
-    avatar:
-      user?.profile_picture ||
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    
+    avatar: userDisplayInfo.avatar,
     department: user?.department,
     department_name: user?.department_name,
   };
@@ -432,21 +425,21 @@ const ProposalHistory = () => {
                     <ChevronDown size={14} />
                   </button>
                   {showDepartmentDropdown && (
-                      <div
-                        className="dropdown-menu"
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          backgroundColor: "white",
-                          border: "1px solid #ccc",
-                          borderRadius: "4px",
-                          width: "100%",
-                          zIndex: 10,
-                          maxHeight: "none", 
-                          overflowY: "visible", 
-                        }}
-                      >
+                    <div
+                      className="dropdown-menu"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        width: "100%",
+                        zIndex: 10,
+                        maxHeight: "none",
+                        overflowY: "visible",
+                      }}
+                    >
                       {departmentOptions.map((dept) => (
                         <div
                           key={dept.value}

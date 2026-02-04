@@ -33,7 +33,6 @@ const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGOUT_URL = `${AUTH_URL}/api/v1/users/logout/`;
 
 const extractDepartmentInfo = (userData) => {
-  // Handle multiple possible department field names from JWT/API
   const departmentName = 
     userData.department_name || 
     userData.department || 
@@ -45,12 +44,23 @@ const extractDepartmentInfo = (userData) => {
     userData.dept_id || 
     null;
 
+  // ADD: Extract profile picture from various possible field names
+  const profilePicture = 
+    userData.profile_picture_url ||
+    userData.profile_picture ||
+    userData.avatar ||
+    userData.profile_image ||
+    null;
+
   return {
     ...userData,
     department_name: departmentName,
-    department: departmentName, // Backwards compatibility
+    department: departmentName,
     department_id: departmentId,
-    dept_id: departmentId, // Backwards compatibility
+    dept_id: departmentId,
+    // ADD: Normalize profile picture field
+    profile_picture: profilePicture,
+    profile_picture_url: profilePicture, // Set for consistency
   };
 };
 
