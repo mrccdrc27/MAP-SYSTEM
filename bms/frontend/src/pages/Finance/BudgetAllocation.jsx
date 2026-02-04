@@ -695,15 +695,16 @@ const BudgetAllocation = () => {
         type={modalType}
         data={modalData}
         onChange={(e) =>
-          setModalData({ ...modalData, [e.target.name]: e.target.value })
+          // FIX: Use functional update (prev) so simultaneous updates from the modal don't clobber each other
+          setModalData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
         }
         onAmountChange={(e) =>
-          setModalData({ ...modalData, amount: e.target.value })
+          setModalData((prev) => ({ ...prev, amount: e.target.value }))
         }
         onClose={() => setShowModifyModal(false)}
         onSubmit={handleModalSubmit}
         dropdowns={modalDropdowns}
-        allCategories={allCategories} // MODIFIED: Pass categories
+        allCategories={allCategories} 
         errors={formErrors}
       />
       <SupplementalRequestModal

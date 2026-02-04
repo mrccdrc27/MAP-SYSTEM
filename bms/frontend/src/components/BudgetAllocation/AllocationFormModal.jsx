@@ -13,10 +13,10 @@ const AllocationFormModal = ({
   allCategories,
   errors,
 }) => {
-  // --- 1. Hooks (Must always run, regardless of isOpen) ---
+  // --- 1. Hooks (Must always run) ---
   const [lockedCategory, setLockedCategory] = useState(null);
 
-  // Derived state calculations
+  // Derived state
   const selectedTargetAccount = dropdowns.creditAccounts.find(
     (acc) => acc.value === data.credit_account
   );
@@ -42,7 +42,6 @@ const AllocationFormModal = ({
 
   // Auto-Adjust & Lock Category
   useEffect(() => {
-    // Only run logic if modal is actually open to prevent background updates
     if (!isOpen) return;
 
     if (!selectedTargetAccount) {
@@ -52,7 +51,7 @@ const AllocationFormModal = ({
 
     let requiredCategory = "";
     
-    // BUSINESS LOGIC:
+    // BUSINESS LOGIC: Lock Category based on Account Type
     if (targetType === "asset") {
         requiredCategory = "CapEx";
     } else if (targetType === "expense") {
@@ -61,23 +60,30 @@ const AllocationFormModal = ({
 
     if (requiredCategory) {
         setLockedCategory(requiredCategory);
-        // Only trigger update if it's different to prevent loops
+        
+        // Only trigger update if it's different
         if (data.category !== requiredCategory) {
+            // 1. Update Category
             const syntheticEvent = {
                 target: { name: "category", value: requiredCategory }
             };
             onChange(syntheticEvent);
             
-            // Clear sub-category if we switched types
-            onChange({ target: { name: "sub_category_id", value: "" } });
+            // 2. Clear sub-category ONLY if it has a value (Prevent unnecessary updates)
+            if (data.sub_category_id) {
+                onChange({ target: { name: "sub_category_id", value: "" } });
+            }
         }
     } else {
         setLockedCategory(null);
     }
+    
+    // NOTE: Removed 'onChange' from dependency array to prevent render loops.
+    // This is safe because onChange is stable in the parent now, but checking it 
+    // triggers unnecessary effect runs.
+  }, [isOpen, data.credit_account, targetType, data.category, data.sub_category_id, selectedTargetAccount]); 
 
-  }, [isOpen, data.credit_account, targetType, data.category, onChange, selectedTargetAccount]);
-
-  // Helper Functions
+  // Helpers
   const handleAmountInput = (e) => {
     const value = e.target.value;
     if (value === "") {
@@ -94,7 +100,7 @@ const AllocationFormModal = ({
     return val;
   };
 
-  // --- 2. Conditional Return (Must be AFTER Hooks) ---
+  // --- 2. Conditional Return ---
   if (!isOpen) return null;
 
   return (
