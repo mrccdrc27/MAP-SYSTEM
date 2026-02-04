@@ -23,19 +23,44 @@ const AllocationFormModal = ({
   
   const targetType = selectedTargetAccount?.type_name?.toLowerCase() || "";
 
+  // --- DEBUGGING START ---
+  if (isOpen) {
+    console.group("AllocationFormModal Debug");
+    console.log("Current Data Category:", data.category);
+    console.log("Selected Account Type:", targetType);
+    console.log("Total Categories Available:", allCategories?.length);
+    if (allCategories && allCategories.length > 0) {
+        console.log("Sample Category[0]:", allCategories[0]);
+    } else {
+        console.warn("allCategories is empty or undefined!");
+    }
+  }
+  // --- DEBUGGING END ---
+
   // Filter Sub-Categories
-  const filteredSubCategories = allCategories
+  const filteredSubCategories = allCategories && Array.isArray(allCategories)
     ? allCategories.filter((cat) => {
-        const selectedClassification = data.category?.toUpperCase();
-        const catClassification = cat.classification?.toUpperCase();
+        // Handle case where category isn't selected yet
+        if (!data.category) return false;
+
+        const selectedClassification = data.category.toUpperCase(); // "CAPEX" or "OPEX"
+        const catClassification = cat.classification ? cat.classification.toUpperCase() : "NONE";
+        
+        // Debug specific filtering logic
+        // if (isOpen) console.log(`Filtering: ${cat.name} (${catClassification}) vs Selected: ${selectedClassification}`);
 
         return (
           (catClassification === selectedClassification ||
             catClassification === "MIXED") &&
-          cat.level > 1
+          cat.level > 1 // Ensure we don't show the Root "CapEx" container itself
         );
       })
     : [];
+    
+  if (isOpen) {
+      console.log("Filtered SubCategories Count:", filteredSubCategories.length);
+      console.groupEnd();
+  }
 
   const isTargetBudgetAccount =
     targetType === "expense" || targetType === "asset";
@@ -43,6 +68,9 @@ const AllocationFormModal = ({
   // Auto-Adjust & Lock Category
   useEffect(() => {
     if (!isOpen) return;
+
+    // Safety check: if dropdowns aren't loaded yet
+    if (!dropdowns || !dropdowns.creditAccounts) return;
 
     if (!selectedTargetAccount) {
         setLockedCategory(null);
@@ -69,7 +97,7 @@ const AllocationFormModal = ({
             };
             onChange(syntheticEvent);
             
-            // 2. Clear sub-category ONLY if it has a value (Prevent unnecessary updates)
+            // 2. Clear sub-category ONLY if it has a value
             if (data.sub_category_id) {
                 onChange({ target: { name: "sub_category_id", value: "" } });
             }
@@ -77,10 +105,6 @@ const AllocationFormModal = ({
     } else {
         setLockedCategory(null);
     }
-    
-    // NOTE: Removed 'onChange' from dependency array to prevent render loops.
-    // This is safe because onChange is stable in the parent now, but checking it 
-    // triggers unnecessary effect runs.
   }, [isOpen, data.credit_account, targetType, data.category, data.sub_category_id, selectedTargetAccount]); 
 
   // Helpers

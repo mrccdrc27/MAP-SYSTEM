@@ -159,6 +159,15 @@ const BudgetAllocation = () => {
           getExpenseCategories(), // MODIFIED: Fetch all categories
         ]);
 
+         // MODIFICATION START: Handle Pagination for Categories
+        // Safety check: If API returns paginated results, extract .results, else assume .data is the array
+        const categoriesArray = Array.isArray(catRes.data) 
+            ? catRes.data 
+            : (catRes.data.results || []);
+
+        setAllCategories(categoriesArray);
+        // MODIFICATION END
+
         const depts = deptRes.data.map((d) => ({
           value: d.code,
           label: d.name,
