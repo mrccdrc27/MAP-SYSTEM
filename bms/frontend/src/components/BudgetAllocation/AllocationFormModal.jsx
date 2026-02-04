@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react"; // Add useEffect import
 import { X } from "lucide-react";
 
 const AllocationFormModal = ({
@@ -18,17 +18,18 @@ const AllocationFormModal = ({
   // MODIFICATION START: Filter categories based on selection (CapEx/OpEx)
   // We filter available sub-categories based on the 'category' (CapEx/OpEx) selected in the form
   const filteredSubCategories = allCategories
-  ? allCategories.filter((cat) => {
-      const selectedClassification = data.category?.toUpperCase();
-      const catClassification = cat.classification?.toUpperCase();
-      
-      // ✅ Show categories that match selected type OR are MIXED
-      return (
-        catClassification === selectedClassification || 
-        catClassification === 'MIXED'
-      ) && cat.level > 1; // Exclude root categories
-    })
-  : [];
+    ? allCategories.filter((cat) => {
+        const selectedClassification = data.category?.toUpperCase();
+        const catClassification = cat.classification?.toUpperCase();
+
+        // ✅ Show categories that match selected type OR are MIXED
+        return (
+          (catClassification === selectedClassification ||
+            catClassification === "MIXED") &&
+          cat.level > 1
+        ); // Exclude root categories
+      })
+    : [];
 
   // Check if target is a "Budget Account" (Expense/Asset) vs Funding Source
   // We only show sub-category selection for Budget Accounts
@@ -60,6 +61,28 @@ const AllocationFormModal = ({
     if (!val || val === "") return "";
     return val; // Show raw number while typing
   };
+
+  // Auto-adjust category when target account changes
+  useEffect(() => {
+    if (!data.credit_account) return;
+
+    const selectedAccount = dropdowns.creditAccounts.find(
+      (acc) => acc.value === data.credit_account,
+    );
+    if (!selectedAccount) return;
+
+    const acctType = (selectedAccount.type_name || "").toLowerCase();
+
+    if (acctType === "asset" && data.category !== "CapEx") {
+      onChange({ target: { name: "category", value: "CapEx" } });
+      onChange({ target: { name: "sub_category_id", value: "" } });
+    }
+
+    if (acctType === "expense" && data.category !== "OpEx") {
+      onChange({ target: { name: "category", value: "OpEx" } });
+      onChange({ target: { name: "sub_category_id", value: "" } });
+    }
+  }, [data.credit_account, dropdowns.creditAccounts, data.category, onChange]);
 
   return (
     <div
