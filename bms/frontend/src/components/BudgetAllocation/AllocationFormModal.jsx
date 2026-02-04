@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"; // Add useEffect import
+import React, { useEffect, useState } from "react"; // Added useState
 import { X } from "lucide-react";
 
 const AllocationFormModal = ({
@@ -10,79 +10,89 @@ const AllocationFormModal = ({
   onClose,
   onSubmit,
   dropdowns,
-  allCategories, // MODIFIED: Receive categories
+  allCategories,
   errors,
 }) => {
+  // MODIFICATION START: strict logic for Account -> Category dependency
+  const [lockedCategory, setLockedCategory] = useState(null);
+
   if (!isOpen) return null;
 
-  // MODIFICATION START: Filter categories based on selection (CapEx/OpEx)
-  // We filter available sub-categories based on the 'category' (CapEx/OpEx) selected in the form
+  // 1. Identify the Target Account Type
+  const selectedTargetAccount = dropdowns.creditAccounts.find(
+    (acc) => acc.value === data.credit_account,
+  );
+
+  const targetType = selectedTargetAccount?.type_name?.toLowerCase() || "";
+
+  // 2. Filter Sub-Categories based on currently selected Category
+  // This logic is mostly correct, but we ensure it matches the Classification strictly
   const filteredSubCategories = allCategories
     ? allCategories.filter((cat) => {
-        const selectedClassification = data.category?.toUpperCase();
+        const selectedClassification = data.category?.toUpperCase(); // "CAPEX" or "OPEX"
         const catClassification = cat.classification?.toUpperCase();
 
-        // ✅ Show categories that match selected type OR are MIXED
+        // Must match Classification OR be Mixed
         return (
           (catClassification === selectedClassification ||
             catClassification === "MIXED") &&
-          cat.level > 1
-        ); // Exclude root categories
+          cat.level > 1 // Exclude root
+        );
       })
     : [];
 
-  // Check if target is a "Budget Account" (Expense/Asset) vs Funding Source
-  // We only show sub-category selection for Budget Accounts
-  const isTargetBudgetAccount = dropdowns.creditAccounts.some(
-    (acc) =>
-      acc.value === data.credit_account &&
-      (acc.type_name === "Expense" || acc.type_name === "Asset"),
-  );
+  // 3. Logic: Should we show the sub-category dropdown?
+  const isTargetBudgetAccount =
+    targetType === "expense" || targetType === "asset";
+
+  // 4. Auto-Adjust & Lock Category based on Account Type
+  useEffect(() => {
+    if (!selectedTargetAccount) {
+      setLockedCategory(null);
+      return;
+    }
+
+    let requiredCategory = "";
+
+    // BUSINESS LOGIC:
+    // Assets (PPE, Equipment) -> Must use Capital Expenditure (CapEx)
+    // Expenses (General, Travel) -> Must use Operational Expenditure (OpEx)
+
+    if (targetType === "asset") {
+      requiredCategory = "CapEx";
+    } else if (targetType === "expense") {
+      requiredCategory = "OpEx";
+    }
+
+    if (requiredCategory) {
+      setLockedCategory(requiredCategory);
+      // Only trigger update if it's different to prevent loops
+      if (data.category !== requiredCategory) {
+        // We mimic the event object to reuse the existing onChange handler
+        const syntheticEvent = {
+          target: { name: "category", value: requiredCategory },
+        };
+        onChange(syntheticEvent);
+
+        // Clear sub-category if we switched types
+        onChange({ target: { name: "sub_category_id", value: "" } });
+      }
+    } else {
+      setLockedCategory(null);
+    }
+  }, [data.credit_account, targetType, data.category, onChange]);
   // MODIFICATION END
 
-  // FIX: Validate numeric input with max 2 decimal places
   const handleAmountInput = (e) => {
     const value = e.target.value;
-
-    // Allow empty string (for clearing)
     if (value === "") {
       onAmountChange({ target: { name: "amount", value: "" } });
       return;
     }
-
-    // Only allow valid decimal numbers (max 2 decimal places)
     if (/^\d*\.?\d{0,2}$/.test(value)) {
       onAmountChange({ target: { name: "amount", value } });
     }
   };
-
-  // FIX: Format amount for display (add â‚± prefix if not empty)
-  const formatAmountDisplay = (val) => {
-    if (!val || val === "") return "";
-    return val; // Show raw number while typing
-  };
-
-  // Auto-adjust category when target account changes
-  useEffect(() => {
-    if (!data.credit_account) return;
-
-    const selectedAccount = dropdowns.creditAccounts.find(
-      (acc) => acc.value === data.credit_account,
-    );
-    if (!selectedAccount) return;
-
-    const acctType = (selectedAccount.type_name || "").toLowerCase();
-
-    if (acctType === "asset" && data.category !== "CapEx") {
-      onChange({ target: { name: "category", value: "CapEx" } });
-      onChange({ target: { name: "sub_category_id", value: "" } });
-    }
-
-    if (acctType === "expense" && data.category !== "OpEx") {
-      onChange({ target: { name: "category", value: "OpEx" } });
-      onChange({ target: { name: "sub_category_id", value: "" } });
-    }
-  }, [data.credit_account, dropdowns.creditAccounts, data.category, onChange]);
 
   return (
     <div
@@ -127,7 +137,6 @@ const AllocationFormModal = ({
               color: "#333",
             }}
           >
-            {/* FIX: Clarified Modal Title */}
             {type === "modify"
               ? "Create Follow-up Adjustment"
               : "New Budget Allocation"}
@@ -140,6 +149,7 @@ const AllocationFormModal = ({
           </button>
         </div>
 
+        {/* Error Display Block (kept same) */}
         {errors && Object.keys(errors).length > 0 && (
           <div
             style={{
@@ -168,6 +178,7 @@ const AllocationFormModal = ({
         )}
 
         <form onSubmit={onSubmit}>
+          {/* Ticket ID & Date Fields (kept same) */}
           <div
             style={{
               display: "grid",
@@ -264,90 +275,7 @@ const AllocationFormModal = ({
             </select>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "15px",
-              marginBottom: "20px",
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  marginBottom: "8px",
-                }}
-              >
-                Expense Category <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                name="category"
-                value={data.category}
-                onChange={onChange}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  backgroundColor: "white",
-                }}
-              >
-                <option value="">Select Category</option>
-                <option value="CapEx">Capital Expenditure</option>
-                <option value="OpEx">Operational Expenditure</option>
-              </select>
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  marginBottom: "8px",
-                }}
-              >
-                Amount <span style={{ color: "red" }}>*</span>
-              </label>
-              {/* FIX: Amount Input with Validation */}
-              <div style={{ position: "relative" }}>
-                <span
-                  style={{
-                    position: "absolute",
-                    left: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#666",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                  }}
-                >
-                  ₱
-                </span>
-                <input
-                  type="text"
-                  name="amount"
-                  value={formatAmountDisplay(data.amount)}
-                  onChange={handleAmountInput}
-                  placeholder="0.00"
-                  style={{
-                    width: "100%",
-                    padding: "10px 10px 10px 25px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#007bff",
-                    backgroundColor: "white",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
+          {/* Source Account Field (moved up for logic flow) */}
           <div style={{ marginBottom: "20px" }}>
             <label
               style={{
@@ -388,7 +316,7 @@ const AllocationFormModal = ({
             </select>
           </div>
 
-          <div style={{ marginBottom: "30px" }}>
+          <div style={{ marginBottom: "20px" }}>
             <label
               style={{
                 display: "block",
@@ -403,8 +331,7 @@ const AllocationFormModal = ({
             <div
               style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}
             >
-              Expense account to receive budget (e.g. General Expenses,
-              Equipment)
+              Expense/Asset account to receive budget
             </div>
             <select
               name="credit_account"
@@ -427,7 +354,106 @@ const AllocationFormModal = ({
               ))}
             </select>
           </div>
-          {/* MODIFICATION START: New Sub-Category Dropdown */}
+
+          {/* MODIFICATION START: Category & Sub-Cat Block */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "15px",
+              marginBottom: "20px",
+            }}
+          >
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Expense Category <span style={{ color: "red" }}>*</span>
+              </label>
+              {/* Disable if locked by account choice */}
+              <select
+                name="category"
+                value={data.category}
+                onChange={onChange}
+                disabled={!!lockedCategory}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: lockedCategory ? "#e9ecef" : "white", // Visual cue
+                  color: lockedCategory ? "#495057" : "black",
+                }}
+              >
+                <option value="">Select Category</option>
+                <option value="CapEx">Capital Expenditure</option>
+                <option value="OpEx">Operational Expenditure</option>
+              </select>
+              {lockedCategory && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#007bff",
+                    marginTop: "4px",
+                  }}
+                >
+                  Locked based on Target Account type.
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Amount <span style={{ color: "red" }}>*</span>
+              </label>
+              <div style={{ position: "relative" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#666",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  ₱
+                </span>
+                <input
+                  type="text"
+                  name="amount"
+                  value={data.amount}
+                  onChange={handleAmountInput}
+                  placeholder="0.00"
+                  style={{
+                    width: "100%",
+                    padding: "10px 10px 10px 25px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#007bff",
+                    backgroundColor: "white",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
           {isTargetBudgetAccount && (
             <div style={{ marginBottom: "20px" }}>
               <label
@@ -443,7 +469,7 @@ const AllocationFormModal = ({
               <div
                 style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}
               >
-                Specific bucket to receive funds (e.g. Data Tools, Hardware)
+                Specific bucket (Filtered by {data.category || "Category"})
               </div>
               <select
                 name="sub_category_id"
@@ -464,15 +490,23 @@ const AllocationFormModal = ({
                     ? "Select Expense Category first"
                     : "Select Sub-Category"}
                 </option>
-                {filteredSubCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name} ({cat.code})
+
+                {filteredSubCategories.length > 0 ? (
+                  filteredSubCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.code})
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>
+                    No sub-categories found for {data.category}
                   </option>
-                ))}
+                )}
               </select>
             </div>
           )}
           {/* MODIFICATION END */}
+
           <div
             style={{
               display: "flex",

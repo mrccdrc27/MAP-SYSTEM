@@ -361,34 +361,35 @@ const BudgetAllocation = () => {
       if (selectedRowId) {
         const entryToEdit = adjustments.find((a) => a.id === selectedRowId);
         if (entryToEdit) {
-          // MODIFICATION START: Auto-select Department & Map Accounts correctly
-          // 1. Map Department Name -> Department Code (for the select value)
+          
           const matchedDept = departmentOptions.find(
             (opt) => opt.label === entryToEdit.department_name,
           );
 
-          // 2. Map Account Names -> Ensuring they exist in options
-          // The table shows 'Category' sometimes in the account column due to serializer logic,
-          // but 'entryToEdit' from backend should have raw account names (debit_account, credit_account)
-          // We use the raw values which match the 'value' key in our options.
-
+          // MODIFICATION START: Better Account & Category Mapping
+          // Ensure we map the raw API data to the form state cleanly
+          
           setModalData({
             id: entryToEdit.id,
             ticket_id: entryToEdit.ticket_id,
             date: entryToEdit.date,
             department: matchedDept ? matchedDept.value : "",
-            category: entryToEdit.category,
-            // FIX START: Swap mappings to align with Frontend Variable Names vs Accounting Reality
-            // modalData.debit_account (Source Input) <--- needs entry.credit_account (Source API)
-            debit_account: entryToEdit.credit_account,
+            
+            // Map 'CapEx'/'OpEx' explicitly to match the dropdown values
+            category: entryToEdit.category === 'Capital Expenditure' ? 'CapEx' : 
+                      entryToEdit.category === 'Operational Expenditure' ? 'OpEx' : 
+                      entryToEdit.category,
 
-            // modalData.credit_account (Target Input) <--- needs entry.debit_account (Target API)
-            credit_account: entryToEdit.debit_account,
-            // FIX END
-            amount: "", // User inputs new amount for adjustment
+            debit_account: entryToEdit.credit_account, // Swap for correctness (Source)
+            credit_account: entryToEdit.debit_account, // Swap for correctness (Target)
+            
+            // Important: We reset amount to empty so user has to type new adjustment amount
+            amount: "", 
+            sub_category_id: "" // Reset sub-cat to force re-selection
           });
           setShowModifyModal(true);
           // MODIFICATION END
+
         }
       } else {
         showAlert("Please select a row to modify.", "warning");
