@@ -10,20 +10,39 @@ const AllocationFormModal = ({
   onClose,
   onSubmit,
   dropdowns,
+  allCategories, // MODIFIED: Receive categories
   errors,
 }) => {
   if (!isOpen) return null;
 
+  // MODIFICATION START: Filter categories based on selection (CapEx/OpEx)
+  // We filter available sub-categories based on the 'category' (CapEx/OpEx) selected in the form
+  const filteredSubCategories = allCategories
+    ? allCategories.filter(
+        (cat) =>
+          cat.classification?.toUpperCase() === data.category?.toUpperCase(),
+      )
+    : [];
+
+  // Check if target is a "Budget Account" (Expense/Asset) vs Funding Source
+  // We only show sub-category selection for Budget Accounts
+  const isTargetBudgetAccount = dropdowns.creditAccounts.some(
+    (acc) =>
+      acc.value === data.credit_account &&
+      (acc.type_name === "Expense" || acc.type_name === "Asset"),
+  );
+  // MODIFICATION END
+
   // FIX: Validate numeric input with max 2 decimal places
   const handleAmountInput = (e) => {
     const value = e.target.value;
-    
+
     // Allow empty string (for clearing)
     if (value === "") {
       onAmountChange({ target: { name: "amount", value: "" } });
       return;
     }
-    
+
     // Only allow valid decimal numbers (max 2 decimal places)
     if (/^\d*\.?\d{0,2}$/.test(value)) {
       onAmountChange({ target: { name: "amount", value } });
@@ -274,7 +293,7 @@ const AllocationFormModal = ({
                     transform: "translateY(-50%)",
                     color: "#666",
                     fontSize: "14px",
-                    fontWeight: "600"
+                    fontWeight: "600",
                   }}
                 >
                   ₱
@@ -379,7 +398,52 @@ const AllocationFormModal = ({
               ))}
             </select>
           </div>
-
+          {/* MODIFICATION START: New Sub-Category Dropdown */}
+          {isTargetBudgetAccount && (
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Target Sub-Category <span style={{ color: "red" }}>*</span>
+              </label>
+              <div
+                style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}
+              >
+                Specific bucket to receive funds (e.g. Data Tools, Hardware)
+              </div>
+              <select
+                name="sub_category_id"
+                value={data.sub_category_id || ""}
+                onChange={onChange}
+                disabled={!data.category}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: !data.category ? "#f5f5f5" : "white",
+                }}
+              >
+                <option value="">
+                  {!data.category
+                    ? "Select Expense Category first"
+                    : "Select Sub-Category"}
+                </option>
+                {filteredSubCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} ({cat.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {/* MODIFICATION END */}
           <div
             style={{
               display: "flex",

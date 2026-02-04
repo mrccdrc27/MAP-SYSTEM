@@ -1708,38 +1708,59 @@ class BudgetAdjustmentView(generics.CreateAPIView):
         data = serializer.validated_data
         user = self.request.user
         amount = data['amount']
-
-        # --- NEW CODE: Extract Transfer Type ---
+        
         transfer_type = data.get('transfer_type', 'TRANSFER')
-        # ---------------------------------------
-
         source_alloc = data.get('source_alloc')
         dest_alloc = data.get('dest_alloc')
         dept = data['department']
-
-        # --- NEW CODE: Description Update ---
-        description = data.get(
-            'description') or f"Budget {transfer_type.title()}"
-        # ------------------------------------
+        
+        # New Field
+        dest_sub_cat_id = data.get('destination_sub_category_id')
+        
+        description = data.get('description') or f"Budget {transfer_type.title()}"
 
         with transaction.atomic():
             # 1. Update Allocations (Real Impact)
-
-            # --- NEW CODE: Handle Transfer vs Supplemental ---
             if transfer_type == 'TRANSFER':
                 if source_alloc:
                     source_alloc.amount -= amount  # Reduce source
                     if source_alloc.amount < 0:
-                        raise serializers.ValidationError(
-                            "Source allocation cannot go negative")
+                        raise serializers.ValidationError("Source allocation cannot go negative")
                     source_alloc.save()
-
-            # For Supplemental, we DO NOT deduct from source (it's new money)
-            # -------------------------------------------------
-
+            
+            # --- FIX START: Handle Destination Allocation (Create if missing) ---
+            dest_category = None
+            
             if dest_alloc:
-                dest_alloc.amount += amount  # Increase destination
+                # If existing bucket found, update it
+                dest_alloc.amount += amount
                 dest_alloc.save()
+                dest_category = dest_alloc.category
+            elif dest_sub_cat_id:
+                # If bucket doesn't exist but we have specific sub-category, CREATE IT
+                # This handles the case where a department gets budget for a new category via adjustment
+                try:
+                    category = ExpenseCategory.objects.get(id=dest_sub_cat_id)
+                    
+                    # We need a fiscal year. Use the one from source, or find active.
+                    fy = source_alloc.fiscal_year if source_alloc else FiscalYear.objects.filter(is_active=True).first()
+                    
+                    # Create new allocation bucket
+                    dest_alloc = BudgetAllocation.objects.create(
+                        fiscal_year=fy,
+                        department=dept,
+                        category=category,
+                        account=data['destination_account_obj'],
+                        project=source_alloc.project if source_alloc else Project.objects.filter(department=dept).first(), # Best guess project
+                        amount=amount,
+                        created_by_name=getattr(user, 'username', 'N/A'),
+                        is_active=True,
+                        is_locked=False
+                    )
+                    dest_category = category
+                except ExpenseCategory.DoesNotExist:
+                    pass # Should be caught by serializer validaiton theoretically
+            # --- FIX END ---
 
             # 2. Create Journal Entry (Audit)
             je = JournalEntry.objects.create(
@@ -1752,46 +1773,38 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 created_by_user_id=user.id,
                 created_by_username=getattr(user, 'username', 'N/A')
             )
-
-            # --- NEW CODE: Source Account Logic for JE ---
+            
             source_account = data.get('source_account_obj')
-
             if transfer_type == 'SUPPLEMENTAL':
-                # If Supplemental, we credit a generic "Treasury" or "Equity" account
-                # because the money isn't coming from another allocation.
                 if not source_account:
-                    # Fallback lookup for a system account
                     source_account = Account.objects.filter(
-                        Q(name__icontains='Treasury') | Q(
-                            account_type__name='Equity')
+                        Q(name__icontains='Treasury') | Q(account_type__name='Equity')
                     ).first()
-
+            
             if not source_account:
-                # Safety fallback to prevent crash, though in production this should be configured
-                source_account = Account.objects.filter(is_active=True).first()
-            # ---------------------------------------------
+                 source_account = Account.objects.filter(is_active=True).first()
 
-            # For Asset Accounts (Budget Accounts):
-            # CREDIT the source (money decreasing OR Equity increasing)
+            # CREDIT the source
             JournalEntryLine.objects.create(
                 journal_entry=je,
                 account=source_account,
-                transaction_type='CREDIT',  # Decrease in asset / Increase in Equity
+                transaction_type='CREDIT',
                 journal_transaction_type='TRANSFER',
                 amount=amount,
                 description=f"{transfer_type.title()} source: {source_account.name}",
                 expense_category=source_alloc.category if source_alloc else None
             )
 
-            # DEBIT the destination (money increasing)
+            # DEBIT the destination
+            # Ensure we link the specific category we found/created
             JournalEntryLine.objects.create(
                 journal_entry=je,
                 account=data['destination_account_obj'],
-                transaction_type='DEBIT',  # Increase in asset
+                transaction_type='DEBIT',
                 journal_transaction_type='TRANSFER',
                 amount=amount,
                 description=f"{transfer_type.title()} to {data['destination_account_obj'].name}",
-                expense_category=dest_alloc.category if dest_alloc else None
+                expense_category=dest_category # Use the precise category
             )
 
             self.created_instance = je

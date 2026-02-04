@@ -932,7 +932,6 @@ class ProposalReviewBudgetOverviewSerializer(serializers.Serializer):
 
 
 # MODIFICATION START: Update BudgetAdjustmentSerializer to handle GL accounts
-# MODIFICATION START: Update BudgetAdjustmentSerializer to handle GL accounts
 class BudgetAdjustmentSerializer(serializers.Serializer):
     date = serializers.DateField()
     description = serializers.CharField(
@@ -951,6 +950,9 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
     source_account_name = serializers.CharField(
         required=False, allow_blank=True)
     destination_account_name = serializers.CharField()  # Where money goes TO
+    
+    # NEW FIELD
+    destination_sub_category_id = serializers.IntegerField(required=False, allow_null=True)
 
     def validate(self, data):
         try:
@@ -972,11 +974,35 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {'destination_account_name': "Invalid destination account selected."})
 
-            dest_alloc = BudgetAllocation.objects.filter(
-                department=department,
-                account=destination_account,
-                is_active=True
-            ).first()
+            # --- FIX START: Precise Destination Allocation Lookup ---
+            dest_alloc = None
+            dest_sub_cat_id = data.get('destination_sub_category_id')
+            
+            # Identify if target is a budget account (needs precise allocation)
+            is_dest_budget_account = destination_account.account_type.name in ['Expense', 'Asset']
+            
+            if is_dest_budget_account:
+                if not dest_sub_cat_id:
+                    # Fallback to old behavior (first match) if ID not provided
+                    # But warn or prefer one logic
+                    dest_alloc = BudgetAllocation.objects.filter(
+                        department=department,
+                        account=destination_account,
+                        is_active=True
+                    ).first()
+                else:
+                    # PRECISE LOOKUP
+                    dest_alloc = BudgetAllocation.objects.filter(
+                        department=department,
+                        account=destination_account,
+                        category_id=dest_sub_cat_id, # Match specific sub-category
+                        is_active=True
+                    ).first()
+                    
+                    # Optional: If allocation doesn't exist yet for this category+account combination,
+                    # we might need to handle creation logic in the View, or raise error.
+                    # For now, let's allow it to be None, and let the View decide if it creates a new bucket.
+            # --- FIX END ---
 
             # Initialize source variables
             source_account = None
@@ -995,21 +1021,13 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                     raise serializers.ValidationError(
                         {'source_account_name': "Invalid source account selected."})
 
-                # --- FIX START: Enhanced check for GL Funding Sources ---
-                # Exempt Liability, Equity, and specific Liquid Asset accounts (Cash/Bank) 
-                # from needing a budget allocation.
-                
+                # --- FIX START: Enhanced check for GL Funding Sources (Previous Fix Included) ---
                 is_liability_or_equity = source_account.account_type.name in ['Liability', 'Equity']
-                
-                # Check for Cash/Bank (GL Assets) vs Capital Assets (Budget Assets)
-                # Using code '1010' (Cash) or name matching as fallback
                 is_cash_account = (
                     source_account.code == '1010' or 
                     'cash' in source_account.name.lower() or 
                     'bank' in source_account.name.lower()
                 )
-
-                # A "Budget Account" is an Expense or Asset account that is NOT Cash
                 is_budget_account = (
                     source_account.account_type.name in ['Expense', 'Asset'] 
                     and not is_cash_account
@@ -1036,11 +1054,9 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                                 f"Insufficient funds in source account. Available: {available_funds:,.2f}, Requested: {data['amount']:,.2f}"
                             )
                     else:
-                        # If no allocation exists for source, they have 0 funds
                         raise serializers.ValidationError(
                             f"No active allocation found for source account {source_account.name}.")
                 else:
-                    # It is a Funding Source (Cash/GL). No allocation record exists, but we allow the transfer.
                     source_alloc = None
                 # --- FIX END ---
 
@@ -1050,6 +1066,8 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
             data['destination_account_obj'] = destination_account
             data['source_alloc'] = source_alloc
             data['dest_alloc'] = dest_alloc
+            # Pass the sub category ID through if needed
+            data['destination_sub_category_id'] = dest_sub_cat_id
 
         except Department.DoesNotExist:
             raise serializers.ValidationError("Invalid Department")

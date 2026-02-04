@@ -47,7 +47,7 @@ const BudgetAllocation = () => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ count: 0 });
   const [auditLogs, setAuditLogs] = useState([]);
-
+  const [allCategories, setAllCategories] = useState([]);
   // --- Dropdown Options ---
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
@@ -151,10 +151,12 @@ const BudgetAllocation = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [deptRes, accRes, projRes] = await Promise.all([
+        const [deptRes, accRes, projRes, catRes] = await Promise.all([
+          // MODIFIED: Added catRes
           getAllDepartments(),
           getAccounts(),
           getProjects(),
+          getExpenseCategories(), // MODIFIED: Fetch all categories
         ]);
 
         const depts = deptRes.data.map((d) => ({
@@ -167,6 +169,8 @@ const BudgetAllocation = () => {
           { value: "", label: "All Departments" },
           ...depts,
         ]);
+
+        setAllCategories(catRes.data);
 
         const allAccounts = accRes.data.map((acc) => ({
           id: acc.id,
@@ -400,9 +404,12 @@ const BudgetAllocation = () => {
         description: "Budget Adjustment",
         amount: parseFloat(modalData.amount.replace(/[₱,]/g, "")),
         department_name: modalData.department,
-        category_name: modalData.category,
+        category_name: modalData.category, // CapEx/OpEx
         source_account_name: modalData.debit_account,
         destination_account_name: modalData.credit_account,
+        // MODIFICATION START: Send specific sub-category ID
+        destination_sub_category_id: modalData.sub_category_id 
+        // MODIFICATION END
       };
       await createBudgetAdjustment(payload);
       setShowModifyModal(false);
@@ -695,6 +702,7 @@ const BudgetAllocation = () => {
         onClose={() => setShowModifyModal(false)}
         onSubmit={handleModalSubmit}
         dropdowns={modalDropdowns}
+        allCategories={allCategories} // MODIFIED: Pass categories
         errors={formErrors}
       />
       <SupplementalRequestModal

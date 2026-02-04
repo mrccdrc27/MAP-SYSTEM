@@ -506,11 +506,13 @@ const LedgerView = () => {
               style={{
                 flex: "1 1 auto",
                 overflowY: "auto",
-                overflowX: "auto", // Add horizontal scrolling for wide tables
+                overflowX: "auto", // Ensure horizontal scroll is enabled
                 border: "1px solid #e0e0e0",
                 borderRadius: "4px",
-                maxHeight: "calc(100vh - 300px)", // Adjust based on your layout
-                minHeight: "400px", // Ensure minimum height
+                maxHeight: "calc(100vh - 300px)",
+                minHeight: "400px",
+                // FIX: Add relative positioning context
+                position: "relative",
               }}
             >
               <table
@@ -519,15 +521,15 @@ const LedgerView = () => {
                   width: "100%",
                   minWidth: "1200px", // Ensure minimum width to prevent squeezing
                   borderCollapse: "collapse",
-                  fontSize: "14px", // Slightly larger font
-                  tableLayout: "auto", // Allow columns to expand based on content
+                  fontSize: "14px",
+                  tableLayout: "fixed", // FIX: Switch to fixed layout for better column control
                 }}
               >
                 <thead
                   style={{
                     position: "sticky",
                     top: 0,
-                    zIndex: 1,
+                    zIndex: 10, // Increased Z-Index to stay above body
                     backgroundColor: "#f8f9fa",
                   }}
                 >
@@ -615,7 +617,12 @@ const LedgerView = () => {
                         textAlign: "center",
                         borderBottom: "2px solid #dee2e6",
                         fontWeight: "600",
-                        minWidth: "100px", // ACTIONS
+                        width: "100px", // Fixed width for actions
+                        // Optional: Make Actions sticky to the right
+                        position: "sticky",
+                        right: 0,
+                        backgroundColor: "#f8f9fa",
+                        boxShadow: "-2px 0 5px rgba(0,0,0,0.05)", // Shadow for sticky effect
                       }}
                     >
                       ACTIONS
@@ -682,7 +689,18 @@ const LedgerView = () => {
                         <td style={{ padding: "12px", whiteSpace: "nowrap" }}>
                           {formatAmount(entry.amount)}
                         </td>
-                        <td style={{ padding: "12px", textAlign: "center" }}>
+                        <td
+                          style={{
+                            padding: "12px",
+                            textAlign: "center",
+                            // Optional: Sticky right matching header
+                            position: "sticky",
+                            right: 0,
+                            backgroundColor:
+                              index % 2 === 1 ? "#F8F8F8" : "#FFFFFF",
+                            boxShadow: "-2px 0 5px rgba(0,0,0,0.05)",
+                          }}
+                        >
                           <button
                             onClick={() => handleJournalEntryClick(entry)}
                             style={{
@@ -693,6 +711,7 @@ const LedgerView = () => {
                               borderRadius: "4px",
                               cursor: "pointer",
                               fontSize: "12px",
+                              minWidth: "60px",
                             }}
                           >
                             View
