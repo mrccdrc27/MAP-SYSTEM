@@ -703,19 +703,23 @@ const BudgetAllocation = () => {
         isOpen={showModifyModal}
         type={modalType}
         data={modalData}
-        onChange={(e) =>
-          // FIX: Use functional update (prev) so simultaneous updates from the modal don't clobber each other
-          setModalData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-        }
-        onAmountChange={(e) =>
-          setModalData((prev) => ({ ...prev, amount: e.target.value }))
-        }
+        onChange={(e) => {
+          // FIX: Destructure event properties OUTSIDE the state setter
+          // Accessing e.target inside the callback can fail due to React event pooling or async nature
+          const { name, value } = e.target;
+          setModalData((prev) => ({ ...prev, [name]: value }));
+        }}
+        onAmountChange={(e) => {
+          const val = e.target.value;
+          setModalData((prev) => ({ ...prev, amount: val }));
+        }}
         onClose={() => setShowModifyModal(false)}
         onSubmit={handleModalSubmit}
         dropdowns={modalDropdowns}
         allCategories={allCategories} 
         errors={formErrors}
       />
+      {/* MODIFICATION END */}
       <SupplementalRequestModal
         isOpen={showRequestModal}
         onClose={() => setShowRequestModal(false)}

@@ -18,94 +18,88 @@ const AllocationFormModal = ({
 
   // Derived state
   const selectedTargetAccount = dropdowns.creditAccounts.find(
-    (acc) => acc.value === data.credit_account
+    (acc) => acc.value === data.credit_account,
   );
-  
+
   const targetType = selectedTargetAccount?.type_name?.toLowerCase() || "";
 
-  // --- DEBUGGING START ---
-  if (isOpen) {
-    console.group("AllocationFormModal Debug");
-    console.log("Current Data Category:", data.category);
-    console.log("Selected Account Type:", targetType);
-    console.log("Total Categories Available:", allCategories?.length);
-    if (allCategories && allCategories.length > 0) {
-        console.log("Sample Category[0]:", allCategories[0]);
-    } else {
-        console.warn("allCategories is empty or undefined!");
-    }
-  }
-  // --- DEBUGGING END ---
-
   // Filter Sub-Categories
-  const filteredSubCategories = allCategories && Array.isArray(allCategories)
-    ? allCategories.filter((cat) => {
-        // Handle case where category isn't selected yet
-        if (!data.category) return false;
+  const filteredSubCategories =
+    allCategories && Array.isArray(allCategories)
+      ? allCategories.filter((cat) => {
+          // Handle case where category isn't selected yet
+          if (!data.category) return false;
 
-        const selectedClassification = data.category.toUpperCase(); // "CAPEX" or "OPEX"
-        const catClassification = cat.classification ? cat.classification.toUpperCase() : "NONE";
-        
-        // Debug specific filtering logic
-        // if (isOpen) console.log(`Filtering: ${cat.name} (${catClassification}) vs Selected: ${selectedClassification}`);
+          const selectedClassification = data.category.toUpperCase(); // "CAPEX" or "OPEX"
+          const catClassification = cat.classification
+            ? cat.classification.toUpperCase()
+            : "NONE";
 
-        return (
-          (catClassification === selectedClassification ||
-            catClassification === "MIXED") &&
-          cat.level > 1 // Ensure we don't show the Root "CapEx" container itself
-        );
-      })
-    : [];
-    
-  if (isOpen) {
-      console.log("Filtered SubCategories Count:", filteredSubCategories.length);
-      console.groupEnd();
-  }
+          // MODIFICATION START: Safe Root Check
+          // If 'level' exists, use it. If not, fallback to checking if code is strictly the root identifier.
+          const isNotRoot =
+            cat.level !== undefined && cat.level !== null
+              ? cat.level > 1
+              : cat.code !== "CAPEX" && cat.code !== "OPEX";
+          // MODIFICATION END
+
+          return (
+            (catClassification === selectedClassification ||
+              catClassification === "MIXED") &&
+            isNotRoot
+          );
+        })
+      : [];
 
   const isTargetBudgetAccount =
     targetType === "expense" || targetType === "asset";
 
   // Auto-Adjust & Lock Category
   useEffect(() => {
+    // Only run if modal is open
     if (!isOpen) return;
 
-    // Safety check: if dropdowns aren't loaded yet
-    if (!dropdowns || !dropdowns.creditAccounts) return;
-
     if (!selectedTargetAccount) {
-        setLockedCategory(null);
-        return;
+      setLockedCategory(null);
+      return;
     }
 
     let requiredCategory = "";
-    
+
     // BUSINESS LOGIC: Lock Category based on Account Type
     if (targetType === "asset") {
-        requiredCategory = "CapEx";
+      requiredCategory = "CapEx";
     } else if (targetType === "expense") {
-        requiredCategory = "OpEx";
+      requiredCategory = "OpEx";
     }
 
     if (requiredCategory) {
-        setLockedCategory(requiredCategory);
-        
-        // Only trigger update if it's different
-        if (data.category !== requiredCategory) {
-            // 1. Update Category
-            const syntheticEvent = {
-                target: { name: "category", value: requiredCategory }
-            };
-            onChange(syntheticEvent);
-            
-            // 2. Clear sub-category ONLY if it has a value
-            if (data.sub_category_id) {
-                onChange({ target: { name: "sub_category_id", value: "" } });
-            }
+      setLockedCategory(requiredCategory);
+
+      // Only trigger update if it's different
+      if (data.category !== requiredCategory) {
+        // 1. Update Category
+        const syntheticEvent = {
+          target: { name: "category", value: requiredCategory },
+        };
+        onChange(syntheticEvent);
+
+        // 2. Clear sub-category ONLY if it has a value (Prevent unnecessary updates)
+        if (data.sub_category_id) {
+          onChange({ target: { name: "sub_category_id", value: "" } });
         }
+      }
     } else {
-        setLockedCategory(null);
+      setLockedCategory(null);
     }
-  }, [isOpen, data.credit_account, targetType, data.category, data.sub_category_id, selectedTargetAccount]); 
+  }, [
+    isOpen,
+    data.credit_account,
+    targetType,
+    data.category,
+    data.sub_category_id,
+    selectedTargetAccount,
+  ]); // Removed onChange from deps
 
   // Helpers
   const handleAmountInput = (e) => {
@@ -162,83 +156,261 @@ const AllocationFormModal = ({
             marginBottom: "20px",
           }}
         >
-          <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "bold", color: "#333" }}>
-            {type === "modify" ? "Create Follow-up Adjustment" : "New Budget Allocation"}
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "20px",
+              fontWeight: "bold",
+              color: "#333",
+            }}
+          >
+            {type === "modify"
+              ? "Create Follow-up Adjustment"
+              : "New Budget Allocation"}
           </h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+          >
             <X size={24} color="#666" />
           </button>
         </div>
 
         {errors && Object.keys(errors).length > 0 && (
-          <div style={{ backgroundColor: "#fff5f5", border: "1px solid #feb2b2", borderRadius: "4px", padding: "10px", marginBottom: "20px" }}>
-            <strong style={{ color: "#c53030", fontSize: "13px" }}>Please correct the following errors:</strong>
-            <ul style={{ margin: "5px 0 0 15px", fontSize: "12px", color: "#c53030" }}>
-              {Object.values(errors).map((err, i) => <li key={i}>{err}</li>)}
+          <div
+            style={{
+              backgroundColor: "#fff5f5",
+              border: "1px solid #feb2b2",
+              borderRadius: "4px",
+              padding: "10px",
+              marginBottom: "20px",
+            }}
+          >
+            <strong style={{ color: "#c53030", fontSize: "13px" }}>
+              Please correct the following errors:
+            </strong>
+            <ul
+              style={{
+                margin: "5px 0 0 15px",
+                fontSize: "12px",
+                color: "#c53030",
+              }}
+            >
+              {Object.values(errors).map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
             </ul>
           </div>
         )}
 
         <form onSubmit={onSubmit}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "15px",
+              marginBottom: "20px",
+            }}
+          >
             <div>
-              <label style={{ display: "block", fontSize: "12px", color: "#666", marginBottom: "5px", fontWeight: "600" }}>Ticket ID</label>
-              <input type="text" value={data.ticket_id || "Auto-Generated"} disabled style={{ width: "100%", padding: "10px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "4px", color: "#6b7280" }} />
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  color: "#666",
+                  marginBottom: "5px",
+                  fontWeight: "600",
+                }}
+              >
+                Ticket ID
+              </label>
+              <input
+                type="text"
+                value={data.ticket_id || "Auto-Generated"}
+                disabled
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  backgroundColor: "#f3f4f6",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  color: "#6b7280",
+                }}
+              />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", color: "#666", marginBottom: "5px", fontWeight: "600" }}>Effective Date</label>
-              <input type="text" value={data.date} disabled style={{ width: "100%", padding: "10px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "4px", color: "#6b7280" }} />
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  color: "#666",
+                  marginBottom: "5px",
+                  fontWeight: "600",
+                }}
+              >
+                Effective Date
+              </label>
+              <input
+                type="text"
+                value={data.date}
+                disabled
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  backgroundColor: "#f3f4f6",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  color: "#6b7280",
+                }}
+              />
             </div>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>Target Department <span style={{ color: "red" }}>*</span></label>
-            <select name="department" value={data.department} onChange={onChange} style={{ width: "100%", padding: "10px", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "14px", outline: "none", backgroundColor: "white" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
+              Target Department <span style={{ color: "red" }}>*</span>
+            </label>
+            <select
+              name="department"
+              value={data.department}
+              onChange={onChange}
+              style={{
+                width: "100%",
+                padding: "10px",
+                border: "1px solid #d1d5db",
+                borderRadius: "4px",
+                fontSize: "14px",
+                outline: "none",
+                backgroundColor: "white",
+              }}
+            >
               <option value="">Select Department</option>
               {dropdowns.departments.map((d) => (
-                <option key={d.value} value={d.value}>{d.label}</option>
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>Funding Source (Source Account) <span style={{ color: "red" }}>*</span></label>
-            <div style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}>Source of funds (e.g. Retained Earnings, Cash in Bank)</div>
-            <select name="debit_account" value={data.debit_account} onChange={onChange} disabled={!data.department} style={{ width: "100%", padding: "10px", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "14px", backgroundColor: !data.department ? "#f5f5f5" : "white" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
+              Funding Source (Source Account){" "}
+              <span style={{ color: "red" }}>*</span>
+            </label>
+            <div
+              style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}
+            >
+              Source of funds (e.g. Retained Earnings, Cash in Bank)
+            </div>
+            <select
+              name="debit_account"
+              value={data.debit_account}
+              onChange={onChange}
+              disabled={!data.department}
+              style={{
+                width: "100%",
+                padding: "10px",
+                border: "1px solid #d1d5db",
+                borderRadius: "4px",
+                fontSize: "14px",
+                backgroundColor: !data.department ? "#f5f5f5" : "white",
+              }}
+            >
               <option value="">Select Source Account</option>
               {dropdowns.debitAccounts.map((acc) => (
-                <option key={acc.id} value={acc.value}>{acc.name}</option>
+                <option key={acc.id} value={acc.value}>
+                  {acc.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>Allocation Target (Destination Account) <span style={{ color: "red" }}>*</span></label>
-            <div style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}>Expense/Asset account to receive budget</div>
-            <select name="credit_account" value={data.credit_account} onChange={onChange} style={{ width: "100%", padding: "10px", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "14px", backgroundColor: "white" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
+              Allocation Target (Destination Account){" "}
+              <span style={{ color: "red" }}>*</span>
+            </label>
+            <div
+              style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}
+            >
+              Expense/Asset account to receive budget
+            </div>
+            <select
+              name="credit_account"
+              value={data.credit_account}
+              onChange={onChange}
+              style={{
+                width: "100%",
+                padding: "10px",
+                border: "1px solid #d1d5db",
+                borderRadius: "4px",
+                fontSize: "14px",
+                backgroundColor: "white",
+              }}
+            >
               <option value="">Select Target Account</option>
               {dropdowns.creditAccounts.map((acc) => (
-                <option key={acc.id} value={acc.value}>{acc.name}</option>
+                <option key={acc.id} value={acc.value}>
+                  {acc.name}
+                </option>
               ))}
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "15px",
+              marginBottom: "20px",
+            }}
+          >
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>Expense Category <span style={{ color: "red" }}>*</span></label>
-              <select 
-                name="category" 
-                value={data.category} 
-                onChange={onChange} 
-                disabled={!!lockedCategory} 
-                style={{ 
-                    width: "100%", 
-                    padding: "10px", 
-                    border: "1px solid #d1d5db", 
-                    borderRadius: "4px", 
-                    fontSize: "14px", 
-                    backgroundColor: lockedCategory ? "#e9ecef" : "white",
-                    color: lockedCategory ? "#495057" : "black"
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Expense Category <span style={{ color: "red" }}>*</span>
+              </label>
+              <select
+                name="category"
+                value={data.category}
+                onChange={onChange}
+                disabled={!!lockedCategory}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: lockedCategory ? "#e9ecef" : "white",
+                  color: lockedCategory ? "#495057" : "black",
                 }}
               >
                 <option value="">Select Category</option>
@@ -246,43 +418,153 @@ const AllocationFormModal = ({
                 <option value="OpEx">Operational Expenditure</option>
               </select>
               {lockedCategory && (
-                  <div style={{ fontSize: "11px", color: "#007bff", marginTop: "4px" }}>
-                      Locked to {lockedCategory} based on Target Account.
-                  </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#007bff",
+                    marginTop: "4px",
+                  }}
+                >
+                  Locked to {lockedCategory} based on Target Account.
+                </div>
               )}
             </div>
-            
+
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>Amount <span style={{ color: "red" }}>*</span></label>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Amount <span style={{ color: "red" }}>*</span>
+              </label>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#666", fontSize: "14px", fontWeight: "600" }}>₱</span>
-                <input type="text" name="amount" value={formatAmountDisplay(data.amount)} onChange={handleAmountInput} placeholder="0.00" style={{ width: "100%", padding: "10px 10px 10px 25px", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "14px", fontWeight: "600", color: "#007bff", backgroundColor: "white" }} />
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#666",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  ₱
+                </span>
+                <input
+                  type="text"
+                  name="amount"
+                  value={formatAmountDisplay(data.amount)}
+                  onChange={handleAmountInput}
+                  placeholder="0.00"
+                  style={{
+                    width: "100%",
+                    padding: "10px 10px 10px 25px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#007bff",
+                    backgroundColor: "white",
+                  }}
+                />
               </div>
             </div>
           </div>
 
           {isTargetBudgetAccount && (
             <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>Target Sub-Category <span style={{ color: "red" }}>*</span></label>
-              <div style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}>Specific bucket (Filtered by {data.category || 'Category'})</div>
-              <select name="sub_category_id" value={data.sub_category_id || ""} onChange={onChange} disabled={!data.category} style={{ width: "100%", padding: "10px", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "14px", backgroundColor: !data.category ? "#f5f5f5" : "white" }}>
-                <option value="">{!data.category ? "Select Expense Category first" : "Select Sub-Category"}</option>
-                
-                {filteredSubCategories.length > 0 ? (
-                    filteredSubCategories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name} ({cat.code})</option>
-                    ))
-                ) : (
-                    <option value="" disabled>No sub-categories found for {data.category}</option>
-                )}
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Target Sub-Category <span style={{ color: "red" }}>*</span>
+              </label>
+              <div
+                style={{ fontSize: "12px", color: "#666", marginBottom: "5px" }}
+              >
+                Specific bucket (Filtered by {data.category || "Category"})
+              </div>
+              <select
+                name="sub_category_id"
+                value={data.sub_category_id || ""}
+                onChange={onChange}
+                disabled={!data.category}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: !data.category ? "#f5f5f5" : "white",
+                }}
+              >
+                <option value="">
+                  {!data.category
+                    ? "Select Expense Category first"
+                    : "Select Sub-Category"}
+                </option>
 
+                {filteredSubCategories.length > 0 ? (
+                  filteredSubCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.code})
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>
+                    No sub-categories found for {data.category}
+                  </option>
+                )}
               </select>
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "20px", borderTop: "1px solid #eee" }}>
-            <button type="button" onClick={onClose} style={{ padding: "10px 24px", background: "white", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", fontWeight: "500" }}>Cancel</button>
-            <button type="submit" style={{ padding: "10px 24px", background: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "500" }}>{type === "modify" ? "Create Adjustment" : "Allocate Funds"}</button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+              paddingTop: "20px",
+              borderTop: "1px solid #eee",
+            }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "10px 24px",
+                background: "white",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "500",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "10px 24px",
+                background: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {type === "modify" ? "Create Adjustment" : "Allocate Funds"}
+            </button>
           </div>
         </form>
       </div>
