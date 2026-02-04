@@ -24,32 +24,36 @@ const AllocationFormModal = ({
   const targetType = selectedTargetAccount?.type_name?.toLowerCase() || "";
 
   // Filter Sub-Categories
-  const filteredSubCategories =
-    allCategories && Array.isArray(allCategories)
-      ? allCategories.filter((cat) => {
-          // Handle case where category isn't selected yet
-          if (!data.category) return false;
+  // Filter Sub-Categories
+  const filteredSubCategories = allCategories && Array.isArray(allCategories)
+    ? allCategories.filter((cat) => {
+        // Handle case where category isn't selected yet
+        if (!data.category) return false;
 
-          const selectedClassification = data.category.toUpperCase(); // "CAPEX" or "OPEX"
-          const catClassification = cat.classification
-            ? cat.classification.toUpperCase()
-            : "NONE";
+        const selectedClassification = data.category.toUpperCase();
+        const catClassification = cat.classification ? cat.classification.toUpperCase() : "NONE";
+        
+        // 1. Root Check
+        const isNotRoot = (cat.level !== undefined && cat.level !== null)
+            ? cat.level > 1 
+            : (cat.code !== 'CAPEX' && cat.code !== 'OPEX');
 
-          // MODIFICATION START: Safe Root Check
-          // If 'level' exists, use it. If not, fallback to checking if code is strictly the root identifier.
-          const isNotRoot =
-            cat.level !== undefined && cat.level !== null
-              ? cat.level > 1
-              : cat.code !== "CAPEX" && cat.code !== "OPEX";
-          // MODIFICATION END
+        // 2. Department Check (Optional Polish)
+        // If a department is selected (e.g. "IT"), only show categories that contain "IT" 
+        // OR are General/Universal.
+        const matchesDepartment = 
+            !data.department || // If no dept selected, show all
+            cat.code.includes(data.department) || // Matches "IT-HOST" or "CAP-IT-HW"
+            cat.code.startsWith("GEN"); // Always include "GEN-MISC"
 
-          return (
-            (catClassification === selectedClassification ||
-              catClassification === "MIXED") &&
-            isNotRoot
-          );
-        })
-      : [];
+        return (
+          (catClassification === selectedClassification ||
+            catClassification === "MIXED") &&
+          isNotRoot &&
+          matchesDepartment // <--- Applies the department filter
+        );
+      })
+    : [];
 
   const isTargetBudgetAccount =
     targetType === "expense" || targetType === "asset";
