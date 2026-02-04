@@ -32,6 +32,29 @@ const TOKEN_OBTAIN_URL = `${AUTH_URL}/api/v1/users/login/api/`;
 const PROFILE_URL = `${AUTH_URL}/api/v1/users/profile/`;
 const LOGOUT_URL = `${AUTH_URL}/api/v1/users/logout/`;
 
+const extractDepartmentInfo = (userData) => {
+  // Handle multiple possible department field names from JWT/API
+  const departmentName = 
+    userData.department_name || 
+    userData.department || 
+    userData.dept_name || 
+    null;
+    
+  const departmentId = 
+    userData.department_id || 
+    userData.dept_id || 
+    null;
+
+  return {
+    ...userData,
+    department_name: departmentName,
+    department: departmentName, // Backwards compatibility
+    department_id: departmentId,
+    dept_id: departmentId, // Backwards compatibility
+  };
+};
+
+
 // MODIFICATION START
 // URL for manual refresh within Context (matches api.js correction)
 const REFRESH_URL = `${AUTH_URL}/api/v1/token/refresh/cookie/`;
@@ -228,8 +251,14 @@ const CentralAuthProvider = ({ children }) => {
         return false;
       }
 
+      const enhancedUserData = extractDepartmentInfo(userData);
+      console.log('[Auth] Enhanced user data with department:', {
+        department_name: enhancedUserData.department_name,
+        department_id: enhancedUserData.department_id,
+      });
+
       console.log("[Auth] User authenticated with BMS access");
-      setUser(userData);
+      setUser(enhancedUserData);
       setLoading(false);
       setInitialized(true);
       return true;
@@ -244,8 +273,13 @@ const CentralAuthProvider = ({ children }) => {
         !isTokenExpired(getAccessToken()) &&
         hasAnySystemRole(localUser, "bms")
       ) {
+        const enhancedLocalUser = extractDepartmentInfo(localUser);
+        console.log('[Auth] Enhanced local token user with department:', {
+          department_name: enhancedLocalUser.department_name,
+          department_id: enhancedLocalUser.department_id,
+        });
         console.log("[Auth] Recovering session from local token");
-        setUser(localUser);
+        setUser(enhancedLocalUser);
         setLoading(false);
         setInitialized(true);
         return true;
@@ -336,8 +370,13 @@ const CentralAuthProvider = ({ children }) => {
         }
 
         // Set User State
+        const enhancedDecodedUser = extractDepartmentInfo(decodedUser);
+        console.log('[Auth] Enhanced decoded user with department:', {
+          department_name: enhancedDecodedUser.department_name,
+          department_id: enhancedDecodedUser.department_id,
+        });
         console.log("[Auth] Setting user state from token");
-        setUser(decodedUser);
+        setUser(enhancedDecodedUser);
         setLoading(false);
         setInitialized(true);
 
@@ -405,6 +444,15 @@ const CentralAuthProvider = ({ children }) => {
     setUser((prevUser) => ({ ...prevUser, ...updatedUserData }));
   };
 
+  const getDepartmentInfo = useCallback(() => {
+    if (!user) return null;
+
+    return {
+      id: user.department_id || user.dept_id || null,
+      name: user.department_name || user.department || 'Unknown Department',
+    };
+  }, [user]);
+
   const value = {
     user,
     setUser,
@@ -418,6 +466,7 @@ const CentralAuthProvider = ({ children }) => {
     isFinanceHead,
     hasBmsAccess,
     getBmsRole,
+    getDepartmentInfo, // ✅ NEW
     updateUserContext,
     checkAuthStatus,
   };

@@ -1,12 +1,11 @@
-// TODO: Reformat the Role to be frontend friendly
-
 import { useState, useEffect } from "react";
 import "./ManageProfile.css";
 import { updateProfile } from "../../API/authAPI";
 import { useAuth } from "../../context/AuthContext";
+import { formatRoleForDisplay } from "../../utils/roleFormatter";
 
 export default function ManageProfile({ onClose }) {
-  const { user, logout, getBmsRole, updateUserContext } = useAuth(); // Get user and the function to update the context
+  const { user, logout, getBmsRole, updateUserContext } = useAuth();
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -16,8 +15,6 @@ export default function ManageProfile({ onClose }) {
     department_name: "",
     role: "",
   });
-
-
 
   const [isSubmitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
@@ -36,17 +33,19 @@ export default function ManageProfile({ onClose }) {
         lName = parts.slice(1).join(" ");
       }
 
+      const bmsRole = getBmsRole() || user.role || "GENERAL_USER";
+
       setFormData({
         first_name: fName,
         last_name: lName,
         phone_number: user.phone_number || "",
         email: user.email || "",
         department_name: user.department_name || user.department || "",
-        // CHANGED: Use getBmsRole() to correctly extract the BMS specific role from the roles array
-        role: getBmsRole() || user.role || "User", 
+        // ✅ UPDATED: Store raw role code for backend, but we'll format for display
+        role: bmsRole,
       });
     }
-  }, [user, getBmsRole]); // Added getBmsRole to dependencies
+  }, [user, getBmsRole]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -71,7 +70,6 @@ export default function ManageProfile({ onClose }) {
 
     try {
       const updatedUserData = await updateProfile(dataToSubmit);
-      // Update the global context so the whole app sees the change
       updateUserContext(updatedUserData);
       setApiSuccess("Profile updated successfully!");
     } catch (error) {
@@ -88,6 +86,9 @@ export default function ManageProfile({ onClose }) {
       onClose();
     }
   };
+
+  // ✅ NEW: Format role for display
+  const displayRole = formatRoleForDisplay(formData.role);
 
   return (
     <>
@@ -127,7 +128,6 @@ export default function ManageProfile({ onClose }) {
                       className="profileImage"
                     />
                   </div>
-                  {/* Image change functionality can be added later */}
                 </div>
 
                 <div className="profileInfo">
@@ -138,7 +138,8 @@ export default function ManageProfile({ onClose }) {
                     <p>
                       <strong>Position:</strong>
                     </p>
-                    <p>{formData.role}</p>
+                    {/* ✅ UPDATED: Show formatted role */}
+                    <p>{displayRole}</p>
                     <p>
                       <strong>Department:</strong>
                     </p>
@@ -237,7 +238,7 @@ export default function ManageProfile({ onClose }) {
                     <input
                       type="password"
                       placeholder="••••••••"
-                      value="password123" // Demo value
+                      value="password123"
                       readOnly
                       className="read-only-input"
                     />

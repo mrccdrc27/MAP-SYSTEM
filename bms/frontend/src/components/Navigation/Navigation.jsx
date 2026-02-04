@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronDown, Bell, User, LogOut } from "lucide-react";
+import { ChevronDown, Bell, User, LogOut, Building2 } from "lucide-react";
 import LOGOMAP from "../../assets/MAP.jpg";
+import { formatRoleForDisplay } from "../../utils/roleFormatter";
+import {
+  getDepartmentInfo,
+  getShortDepartmentName,
+} from "../../utils/departmentUtils";
 import "./Navigation.css";
 
 const Navigation = ({
@@ -43,35 +48,33 @@ const Navigation = ({
 
   // --- VIEW SWITCHING HANDLERS ---
   const handleFiscalYearClick = () => {
-    // Always navigate to dashboard with fiscal-year state
     navigate("/finance/dashboard", { state: { view: "fiscal-year" } });
     closeAllDropdowns();
   };
 
   const handleDashboardClick = () => {
-    // Always navigate to dashboard with dashboard state
     navigate("/finance/dashboard", { state: { view: "dashboard" } });
     closeAllDropdowns();
   };
 
   // --- ACTIVE STATE LOGIC ---
-  const isDashboardActive = location.pathname === "/finance/dashboard" && activeView === "dashboard";
-  const isFiscalYearActive = location.pathname === "/finance/dashboard" && activeView === "fiscal-year";
-  
-  // Check if any budget dropdown item is active
+  const isDashboardActive =
+    location.pathname === "/finance/dashboard" && activeView === "dashboard";
+  const isFiscalYearActive =
+    location.pathname === "/finance/dashboard" && activeView === "fiscal-year";
+
   const isBudgetDropdownActive = [
     "/finance/budget-proposal",
     "/finance/proposal-history",
     "/finance/ledger-view",
     "/finance/budget-allocation",
-    "/finance/budget-variance-report"
-  ].some(path => location.pathname === path);
+    "/finance/budget-variance-report",
+  ].some((path) => location.pathname === path);
 
-  // Check if any expense dropdown item is active
   const isExpenseDropdownActive = [
     "/finance/expense-tracking",
-    "/finance/expense-history"
-  ].some(path => location.pathname === path);
+    "/finance/expense-history",
+  ].some((path) => location.pathname === path);
 
   // Date formatting
   const formattedTime = currentDate.toLocaleTimeString("en-US", {
@@ -90,6 +93,10 @@ const Navigation = ({
     day: "numeric",
   });
 
+  // ✅ Format role and department for display
+  const formattedRole = formatRoleForDisplay(userProfile.role);
+  const departmentInfo = getDepartmentInfo(userProfile);
+
   return (
     <nav className="navbar">
       <div className="navbar-content">
@@ -103,7 +110,6 @@ const Navigation = ({
 
         {/* Main Navigation Links */}
         <div className="navbar-links">
-          {/* Dashboard Toggle */}
           <button
             onClick={handleDashboardClick}
             className={`nav-link ${isDashboardActive ? "active" : ""}`}
@@ -111,7 +117,6 @@ const Navigation = ({
             Dashboard
           </button>
 
-          {/* Only Finance Head sees this tab */}
           {isFinanceManager && (
             <button
               onClick={handleFiscalYearClick}
@@ -225,7 +230,9 @@ const Navigation = ({
             >
               <Bell size={20} />
               {notifications.length > 0 && (
-                <span className="notification-badge">{notifications.length}</span>
+                <span className="notification-badge">
+                  {notifications.length}
+                </span>
               )}
             </div>
 
@@ -245,7 +252,9 @@ const Navigation = ({
                 </div>
                 <div className="notification-list">
                   {notifications.length === 0 ? (
-                    <div className="notification-empty">No new notifications</div>
+                    <div className="notification-empty">
+                      No new notifications
+                    </div>
                   ) : (
                     notifications.map((n) => (
                       <div className="notification-item" key={n.id}>
@@ -254,7 +263,9 @@ const Navigation = ({
                         </div>
                         <div className="notification-content">
                           <div className="notification-title">{n.title}</div>
-                          <div className="notification-message">{n.message}</div>
+                          <div className="notification-message">
+                            {n.message}
+                          </div>
                           <div className="notification-time">{n.time}</div>
                         </div>
                         <button
@@ -297,7 +308,14 @@ const Navigation = ({
                   />
                   <div className="profile-details">
                     <div className="profile-name">{userProfile.name}</div>
-                    <div className="profile-role-badge">{userProfile.role}</div>
+                    <div className="profile-role-badge">{formattedRole}</div>
+                    {/* ✅ NEW: Department badge */}
+                    {departmentInfo && (
+                      <div className="profile-department-badge">
+                        <Building2 size={12} />
+                        <span>{departmentInfo.shortName}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="dropdown-divider"></div>
