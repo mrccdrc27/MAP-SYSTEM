@@ -52,9 +52,12 @@ const BudgetProposal = () => {
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState([]);
   const [summaryData, setSummaryData] = useState({
-    total_proposals: 0,
-    pending_approvals: 0,
-    total_budget: "0.00",
+    pending_count: 0,
+    pending_value: 0,
+    approved_count: 0,
+    approved_value: 0,
+    rejected_count: 0,
+    rejected_value: 0,
   });
   const [pagination, setPagination] = useState({ count: 0 }); // FIXED: Added missing pagination state
   const [departmentOptions, setDepartmentOptions] = useState([]);

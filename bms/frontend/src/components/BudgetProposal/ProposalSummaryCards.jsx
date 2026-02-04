@@ -9,35 +9,50 @@ const ProposalSummaryCards = ({ summaryData }) => {
       maximumFractionDigits: 2 
     })}`;
   };
-  // MODIFICATION START: Updated JSX to use CSS classes from SummaryCards.css
+
+  // Safe defaults if data hasn't loaded yet
+  const data = summaryData || {
+    pending_count: 0, pending_value: 0,
+    approved_count: 0, approved_value: 0,
+    rejected_count: 0, rejected_value: 0
+  };
+
   return (
     <div className="stats-grid">
-      <div className="compact-budget-card">
-        <div className="compact-card-title">Total Proposals</div>
-        <div className="compact-stat-value">
-          {summaryData.total_proposals}
+      {/* Card 1: Workload (Pending) */}
+      <div className="compact-budget-card" style={{ borderLeft: "4px solid #f59e0b" }}>
+        <div className="compact-card-title">Pending Review</div>
+        <div className="compact-stat-value" style={{ color: "#f59e0b" }}>
+          {data.pending_count}
         </div>
-        <div className="compact-card-subtext">All submitted tickets</div>
+        <div className="compact-card-subtext">
+          Value: <strong>{formatCurrency(data.pending_value)}</strong>
+        </div>
       </div>
 
-      <div className="compact-budget-card">
-        <div className="compact-card-title">Pending Approval</div>
-        <div className="compact-stat-value">
-          {summaryData.pending_approvals}
+      {/* Card 2: Impact (Approved) */}
+      <div className="compact-budget-card" style={{ borderLeft: "4px solid #10b981" }}>
+        <div className="compact-card-title">Approved Budget</div>
+        <div className="compact-stat-value" style={{ color: "#10b981" }}>
+          {formatCurrency(data.approved_value)}
         </div>
-        <div className="compact-card-subtext">Awaiting finance review</div>
+        <div className="compact-card-subtext">
+          From {data.approved_count} approved proposals
+        </div>
       </div>
 
-      <div className="compact-budget-card">
-        <div className="compact-card-title">Budget Total</div>
-        <div className="compact-stat-value">
-          {formatCurrency(summaryData.total_budget)}
+      {/* Card 3: Filtered (Rejected) */}
+      <div className="compact-budget-card" style={{ borderLeft: "4px solid #ef4444" }}>
+        <div className="compact-card-title">Rejected Requests</div>
+        <div className="compact-stat-value" style={{ color: "#ef4444" }}>
+          {data.rejected_count}
         </div>
-        <div className="compact-card-subtext">Cumulative requested amount</div>
+        <div className="compact-card-subtext">
+          Value: {formatCurrency(data.rejected_value)}
+        </div>
       </div>
     </div>
   );
-  // MODIFICATION END
 };
 
 export default ProposalSummaryCards;

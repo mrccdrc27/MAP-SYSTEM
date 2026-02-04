@@ -111,6 +111,68 @@ class BudgetProposalSummaryView(generics.GenericAPIView):
         user = request.user
         bms_role = get_user_bms_role(user)
 
+        # 1. Base Query (Same as before)
+        today = timezone.now().date()
+        current_fiscal_year = FiscalYear.objects.filter(
+            start_date__lte=today, end_date__gte=today, is_active=True
+        ).first()
+
+        active_proposals = BudgetProposal.objects.filter(is_deleted=False)
+
+        if current_fiscal_year:
+            active_proposals = active_proposals.filter(
+                fiscal_year=current_fiscal_year)
+
+        # 2. Data Isolation (Same as before)
+        if bms_role not in ['ADMIN', 'FINANCE_HEAD']:
+            department_id = getattr(user, 'department_id', None)
+            if department_id:
+                active_proposals = active_proposals.filter(
+                    department_id=department_id)
+            else:
+                active_proposals = BudgetProposal.objects.none()
+
+        # 3. MODIFICATION START: Advanced Aggregation
+        from django.db.models import Count, Sum, Q, FloatField
+        from django.db.models.functions import Coalesce
+
+        metrics = active_proposals.aggregate(
+            # Metric 1: Pending (Workload)
+            pending_count=Count('id', filter=Q(status='SUBMITTED')),
+            pending_value=Coalesce(
+                Sum('items__estimated_cost', filter=Q(status='SUBMITTED')),
+                Decimal('0.00')
+            ),
+
+            # Metric 2: Approved (Committed Budget)
+            approved_count=Count('id', filter=Q(status='APPROVED')),
+            approved_value=Coalesce(
+                Sum('items__estimated_cost', filter=Q(status='APPROVED')),
+                Decimal('0.00')
+            ),
+
+            # Metric 3: Rejected (Filtered/Savings)
+            rejected_count=Count('id', filter=Q(status='REJECTED')),
+            rejected_value=Coalesce(
+                Sum('items__estimated_cost', filter=Q(status='REJECTED')),
+                Decimal('0.00')
+            ),
+        )
+
+        data = {
+            'pending_count': metrics['pending_count'],
+            'pending_value': metrics['pending_value'],
+            'approved_count': metrics['approved_count'],
+            'approved_value': metrics['approved_value'],
+            'rejected_count': metrics['rejected_count'],
+            'rejected_value': metrics['rejected_value'],
+        }
+        # MODIFICATION END
+
+        return Response(data)
+        user = request.user
+        bms_role = get_user_bms_role(user)
+
         # --- NEW CODE: Filter by Current Fiscal Year ---
         today = timezone.now().date()
         current_fiscal_year = FiscalYear.objects.filter(
@@ -1836,7 +1898,7 @@ class BudgetAdjustmentView(generics.CreateAPIView):
                 journal_entry=je,
                 account=data['destination_account_obj'],
                 transaction_type='DEBIT',
-                journal_transaction_type=journal_txn_type,  
+                journal_transaction_type=journal_txn_type,
                 amount=amount,
                 description=f"{transfer_type.title()} to {data['destination_account_obj'].name}",
                 expense_category=dest_category
