@@ -1236,24 +1236,38 @@ class BudgetTransferSerializer(serializers.ModelSerializer):
         year = obj.transferred_at.year if obj.transferred_at else timezone.now().year
         return f"{prefix}-{year}-{obj.id:03d}"
 
+    # MODIFICATION START: Updated to prioritize Username lookup over ID
     def get_requester_name(self, obj):
         """
         Retrieves the Full Name from the local User table (populated by JIT).
+        Prioritizes lookup by Username because User IDs often differ between 
+        the Auth Service and the local BMS database.
         """
         User = get_user_model()
         
-        # 1. Use the ID to find the JIT-synced user record
+        # 1. Try to find local user by USERNAME (Safest common identifier)
+        if obj.transferred_by_username:
+            try:
+                user = User.objects.get(username=obj.transferred_by_username)
+                full_name = user.get_full_name()
+                if full_name and full_name.strip():
+                    return full_name
+            except User.DoesNotExist:
+                pass
+
+        # 2. Fallback: Try ID (Legacy/Seeded data might match)
         if obj.transferred_by_user_id:
             try:
                 user = User.objects.get(id=obj.transferred_by_user_id)
-                # 2. Return 'Chris Redfield' instead of 'ops_user_auth'
-                return user.get_full_name() or user.username
+                full_name = user.get_full_name()
+                if full_name and full_name.strip():
+                    return full_name
             except User.DoesNotExist:
                 pass
         
-        # 3. Fallback to the username string stored on the transfer
+        # 3. Last Resort: Return the username string
         return obj.transferred_by_username or "Unknown"
-# MODIFICATION END
+    # MODIFICATION END
 
 
 class ExpenseCategoryVarianceSerializer(serializers.Serializer):
