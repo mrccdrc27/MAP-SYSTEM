@@ -727,7 +727,13 @@ const BudgetAllocation = () => {
         requestData={requestData}
         setRequestData={setRequestData}
         projects={filteredProjects(projects, requestData.department_input)}
-        categories={projectCategories}
+        
+        /* MODIFICATION START: Use allCategories instead of projectCategories */
+        /* projectCategories is empty because handleProjectChange isn't triggered here, 
+           and we want to allow selecting ANY category for a new request. */
+        categories={allCategories} 
+        /* MODIFICATION END */
+        
         isFinanceManager={isFinanceManager}
       />
       <SupplementalDetailsModal
