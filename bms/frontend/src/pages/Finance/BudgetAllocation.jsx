@@ -159,11 +159,11 @@ const BudgetAllocation = () => {
           getExpenseCategories(), // MODIFIED: Fetch all categories
         ]);
 
-         // MODIFICATION START: Handle Pagination for Categories
+        // MODIFICATION START: Handle Pagination for Categories
         // Safety check: If API returns paginated results, extract .results, else assume .data is the array
-        const categoriesArray = Array.isArray(catRes.data) 
-            ? catRes.data 
-            : (catRes.data.results || []);
+        const categoriesArray = Array.isArray(catRes.data)
+          ? catRes.data
+          : catRes.data.results || [];
 
         setAllCategories(categoriesArray);
         // MODIFICATION END
@@ -370,35 +370,36 @@ const BudgetAllocation = () => {
       if (selectedRowId) {
         const entryToEdit = adjustments.find((a) => a.id === selectedRowId);
         if (entryToEdit) {
-          
           const matchedDept = departmentOptions.find(
             (opt) => opt.label === entryToEdit.department_name,
           );
 
           // MODIFICATION START: Better Account & Category Mapping
           // Ensure we map the raw API data to the form state cleanly
-          
+
           setModalData({
             id: entryToEdit.id,
             ticket_id: entryToEdit.ticket_id,
             date: entryToEdit.date,
             department: matchedDept ? matchedDept.value : "",
-            
+
             // Map 'CapEx'/'OpEx' explicitly to match the dropdown values
-            category: entryToEdit.category === 'Capital Expenditure' ? 'CapEx' : 
-                      entryToEdit.category === 'Operational Expenditure' ? 'OpEx' : 
-                      entryToEdit.category,
+            category:
+              entryToEdit.category === "Capital Expenditure"
+                ? "CapEx"
+                : entryToEdit.category === "Operational Expenditure"
+                  ? "OpEx"
+                  : entryToEdit.category,
 
             debit_account: entryToEdit.credit_account, // Swap for correctness (Source)
             credit_account: entryToEdit.debit_account, // Swap for correctness (Target)
-            
+
             // Important: We reset amount to empty so user has to type new adjustment amount
-            amount: "", 
-            sub_category_id: "" // Reset sub-cat to force re-selection
+            amount: "",
+            sub_category_id: "", // Reset sub-cat to force re-selection
           });
           setShowModifyModal(true);
           // MODIFICATION END
-
         }
       } else {
         showAlert("Please select a row to modify.", "warning");
@@ -418,7 +419,7 @@ const BudgetAllocation = () => {
         source_account_name: modalData.debit_account,
         destination_account_name: modalData.credit_account,
         // MODIFICATION START: Send specific sub-category ID
-        destination_sub_category_id: modalData.sub_category_id 
+        destination_sub_category_id: modalData.sub_category_id,
         // MODIFICATION END
       };
       await createBudgetAdjustment(payload);
@@ -716,7 +717,7 @@ const BudgetAllocation = () => {
         onClose={() => setShowModifyModal(false)}
         onSubmit={handleModalSubmit}
         dropdowns={modalDropdowns}
-        allCategories={allCategories} 
+        allCategories={allCategories}
         errors={formErrors}
       />
       {/* MODIFICATION END */}
@@ -727,22 +728,29 @@ const BudgetAllocation = () => {
         requestData={requestData}
         setRequestData={setRequestData}
         projects={filteredProjects(projects, requestData.department_input)}
-        
         /* MODIFICATION START: Use allCategories instead of projectCategories */
         /* projectCategories is empty because handleProjectChange isn't triggered here, 
            and we want to allow selecting ANY category for a new request. */
-        categories={allCategories} 
+        categories={allCategories}
         /* MODIFICATION END */
-        
+
         isFinanceManager={isFinanceManager}
       />
-      <SupplementalDetailsModal
-        request={selectedRequest}
-        onClose={() => setShowDetailsModal(false)}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        isFinanceManager={isFinanceManager}
-      />
+      {/* MODIFICATION START: Conditionally render based on showDetailsModal boolean */}
+      {showDetailsModal && (
+        <SupplementalDetailsModal
+          request={selectedRequest}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedRequest(null); // Good practice to clear selection
+          }}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          isFinanceManager={isFinanceManager}
+        />
+      )}
+      {/* MODIFICATION END */}
+
       {showAuditModal && (
         <SupplementalAuditModal
           logs={auditLogs}
