@@ -122,6 +122,9 @@ CATEGORY_TREE = {
     'FIN': [
         ('Professional Services', 'OPEX', 'FIN-PROF'),
         ('Audit Fees', 'OPEX', 'FIN-AUDIT'),
+    ],
+    '_SYSTEM': [
+        ('General/Miscellaneous', 'OPEX', 'GEN-MISC'),
     ]
 }
 
@@ -164,6 +167,8 @@ class Command(BaseCommand):
                 self.stdout.write(f"Allocations created: {len(allocations)}")
 
                 self.seed_expenses(allocations, fiscal_years, user_map)
+                
+                self.reset_sequences()
 
                 self.stdout.write(self.style.SUCCESS(
                     'Successfully seeded database with controlled data.'))
@@ -444,6 +449,9 @@ class Command(BaseCommand):
             # FIN Department (80-81)
             'FIN-PROF': 80,
             'FIN-AUDIT': 81,
+            
+            # Fallback category (90-99 reserved for system categories)
+            'GEN-MISC': 90,
         }
         
         # Process the CATEGORY_TREE as before, but with stable IDs
@@ -778,3 +786,48 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f"Generated {created_count} expense records."))
+
+    def reset_sequences(self):
+        """Reset PostgreSQL auto-increment sequences after manual ID assignment"""
+        from django.db import connection
+        
+        self.stdout.write("Resetting PostgreSQL sequences...")
+        
+        with connection.cursor() as cursor:
+            # Reset FiscalYear sequence to max ID + 1
+            cursor.execute("""
+                SELECT setval(
+                    pg_get_serial_sequence('core_fiscalyear', 'id'),
+                    COALESCE((SELECT MAX(id) FROM core_fiscalyear), 1),
+                    true
+                );
+            """)
+            
+            # Reset Department sequence
+            cursor.execute("""
+                SELECT setval(
+                    pg_get_serial_sequence('core_department', 'id'),
+                    COALESCE((SELECT MAX(id) FROM core_department), 1),
+                    true
+                );
+            """)
+            
+            # Reset Account sequence
+            cursor.execute("""
+                SELECT setval(
+                    pg_get_serial_sequence('core_account', 'id'),
+                    COALESCE((SELECT MAX(id) FROM core_account), 1),
+                    true
+                );
+            """)
+            
+            # Reset ExpenseCategory sequence (CRITICAL)
+            cursor.execute("""
+                SELECT setval(
+                    pg_get_serial_sequence('core_expensecategory', 'id'),
+                    COALESCE((SELECT MAX(id) FROM core_expensecategory), 1),
+                    true
+                );
+            """)
+        
+        self.stdout.write(self.style.SUCCESS("✅ Sequences reset successfully"))
