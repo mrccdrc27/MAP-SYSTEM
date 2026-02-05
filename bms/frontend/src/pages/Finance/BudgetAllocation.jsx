@@ -246,7 +246,7 @@ const BudgetAllocation = () => {
           projRes.data.map((p) => ({
             value: p.id,
             label: p.name,
-            department_id: p.department_id,
+            department_id: p.department,
           })),
         );
       } catch (err) {

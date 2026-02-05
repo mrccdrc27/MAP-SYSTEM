@@ -25,7 +25,7 @@ const ProposalSummaryCards = ({ summaryData }) => {
         <div className="compact-stat-value" style={{ color: "#f59e0b" }}>
           {data.pending_count}
         </div>
-        <div className="compact-card-subtext">
+        <div className="compact-card-subtext" style={{ color: "#616161"}}>
           Value: <strong>{formatCurrency(data.pending_value)}</strong>
         </div>
       </div>
