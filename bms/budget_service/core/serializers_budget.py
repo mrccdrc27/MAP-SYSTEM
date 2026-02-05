@@ -7,6 +7,7 @@ from rest_framework import serializers
 from django.db.models import Sum, Q
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.contrib.auth import get_user_model
 
 
 class BudgetProposalSummarySerializer(serializers.Serializer):
@@ -21,6 +22,7 @@ class BudgetProposalSummarySerializer(serializers.Serializer):
     # Metric 3: Rejected (Filtered/Savings)
     rejected_count = serializers.IntegerField()
     rejected_value = serializers.DecimalField(max_digits=20, decimal_places=2)
+
 
 class BudgetProposalListSerializer(serializers.ModelSerializer):
     submitted_by = serializers.CharField(
@@ -261,18 +263,18 @@ class LedgerViewSerializer(serializers.ModelSerializer):
             return 'CapEx'
         elif obj.journal_transaction_type == 'OPERATIONAL_EXPENDITURE':
             return 'OpEx'
-        
+
         # Fallback to expense_category
         if obj.expense_category:
             return obj.expense_category.classification
-        
+
         # Legacy fallbacks
         je_cat = obj.journal_entry.category
         if je_cat == 'EXPENSES':
             return 'OpEx'
         if je_cat == 'ASSETS':
             return 'CapEx'
-        
+
         return 'N/A'
 
     def get_sub_category(self, obj):
@@ -446,7 +448,8 @@ class JournalEntryCreateSerializer(serializers.Serializer):
 
 # MODIFICATION START: Updated to include account_type_name for easier frontend filtering
 class AccountDropdownSerializer(serializers.ModelSerializer):
-    account_type_name = serializers.CharField(source='account_type.name', read_only=True)
+    account_type_name = serializers.CharField(
+        source='account_type.name', read_only=True)
 
     class Meta:
         model = Account
@@ -469,7 +472,7 @@ class AccountTypeDropdownSerializer(serializers.ModelSerializer):
 class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=Account.objects.filter(is_active=True))
-    
+
     # NEW FIELD: Allows to send "IT-HOST" or "CAP-IT-HW"
     category_code = serializers.CharField(
         write_only=True,
@@ -481,14 +484,14 @@ class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BudgetProposalItem
         fields = ['id', 'cost_element', 'description',
-                  'estimated_cost', 'account', 'notes', 'category_code']  
+                  'estimated_cost', 'account', 'notes', 'category_code']
         read_only_fields = ['id']
-    
+
     def validate_category_code(self, value):
         """Validate category code if provided"""
         if not value:
             return None  # ✅ Allow empty/None
-        
+
         try:
             ExpenseCategory.objects.get(code=value, is_active=True)
             return value
@@ -496,15 +499,16 @@ class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f"Invalid category code '{value}'. Use /api/external-references/categories/ to get valid codes."
             )
-    
+
     def validate(self, data):
         """Resolve category_code to actual category object"""
         category_code = data.pop('category_code', None)
-        
+
         if category_code:
             # User provided a code - use it
             try:
-                category = ExpenseCategory.objects.get(code=category_code, is_active=True)
+                category = ExpenseCategory.objects.get(
+                    code=category_code, is_active=True)
                 data['category'] = category
             except ExpenseCategory.DoesNotExist:
                 raise serializers.ValidationError({
@@ -514,31 +518,31 @@ class BudgetProposalItemCreateSerializer(serializers.ModelSerializer):
             # ✅ FALLBACK: Use a default "General" category
             # Try to find a generic category
             default_category = ExpenseCategory.objects.filter(
-                Q(code__iexact='GEN') | 
+                Q(code__iexact='GEN') |
                 Q(name__icontains='General') |
                 Q(name__icontains='Miscellaneous')
             ).first()
-            
+
             if not default_category:
                 # If no "General" category exists, use the first active OpEx category
                 default_category = ExpenseCategory.objects.filter(
                     classification='OPEX',
                     is_active=True
                 ).first()
-            
+
             if default_category:
                 data['category'] = default_category
             else:
                 # Last resort: any active category
-                data['category'] = ExpenseCategory.objects.filter(is_active=True).first()
-                
+                data['category'] = ExpenseCategory.objects.filter(
+                    is_active=True).first()
+
             if not data.get('category'):
                 raise serializers.ValidationError(
                     "No expense categories configured in the system. Contact your administrator."
                 )
-        
+
         return data
-    
 
 
 class BudgetProposalMessageSerializer(serializers.ModelSerializer):
@@ -598,36 +602,36 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         """
         if not value:
             return None  # ✅ Allow empty - fallback in validate()
-        
+
         try:
             # Try as integer ID
             if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
                 department_obj = Department.objects.get(
                     pk=int(value), is_active=True)
                 return department_obj
-            
+
             # Try as Department Code (most common)
             if isinstance(value, str):
                 department_obj = Department.objects.filter(
                     code__iexact=value, is_active=True
                 ).first()
-                
+
                 if department_obj:
                     return department_obj
-                
+
                 # Fallback: Try as Department Name
                 department_obj = Department.objects.filter(
                     name__icontains=value, is_active=True
                 ).first()
-                
+
                 if department_obj:
                     return department_obj
-            
+
             # If we get here, the provided value is invalid
             raise serializers.ValidationError(
                 f"Active department with identifier '{value}' not found."
             )
-            
+
         except Department.DoesNotExist:
             raise serializers.ValidationError(
                 f"Active department with identifier '{value}' not found."
@@ -643,37 +647,37 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         """
         # 1. ✅ DEPARTMENT FALLBACK LOGIC
         department = data.get('department')
-        
+
         if not department:
             # Strategy 1: Infer from Ticket ID Prefix
             ticket_id = data.get('ticket_id', '')
             department = self._infer_department_from_ticket(ticket_id)
-            
+
             if not department:
                 # Strategy 2: Infer from Category in Items
                 items = data.get('items', [])
                 department = self._infer_department_from_items(items)
-            
+
             if not department:
                 # Strategy 3: Use a "General" or default department
                 department = Department.objects.filter(
-                    Q(code__iexact='GEN') | 
+                    Q(code__iexact='GEN') |
                     Q(name__icontains='General') |
                     Q(name__icontains='Admin')
                 ).first()
-            
+
             if not department:
                 # Strategy 4: Use the first active department (absolute fallback)
                 department = Department.objects.filter(is_active=True).first()
-            
+
             if not department:
                 raise serializers.ValidationError(
                     "No departments configured in the system. Contact your administrator."
                 )
-            
+
             # Store resolved department
             data['department'] = department
-            
+
             # Log the fallback for auditing
             import logging
             logger = logging.getLogger(__name__)
@@ -681,7 +685,7 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
                 f"⚠️ Department fallback triggered for ticket {ticket_id}. "
                 f"Using: {department.code} ({department.name})"
             )
-        
+
         # 2. Calculate Total Cost of this new proposal
         items = data.get('items', [])
         total_proposed_cost = sum(item['estimated_cost'] for item in items)
@@ -715,7 +719,7 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
             )
 
         return data
-    
+
     def _infer_department_from_ticket(self, ticket_id):
         """
         Strategy 1: Infer department from ticket ID prefix.
@@ -726,9 +730,9 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         """
         if not ticket_id:
             return None
-        
+
         ticket_upper = ticket_id.upper()
-        
+
         # Mapping of ticket prefixes to department codes
         PREFIX_TO_DEPT = {
             'AST': 'OPS',     # Asset Management → Operations
@@ -739,7 +743,7 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
             'TICKET': 'IT',   # Generic Ticket → IT
             'REQ': 'OPS',     # General Request → Operations
         }
-        
+
         for prefix, dept_code in PREFIX_TO_DEPT.items():
             if ticket_upper.startswith(prefix):
                 dept = Department.objects.filter(
@@ -747,9 +751,9 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
                 ).first()
                 if dept:
                     return dept
-        
+
         return None
-    
+
     def _infer_department_from_items(self, items):
         """
         Strategy 2: Infer department from category codes in items.
@@ -757,21 +761,21 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         """
         if not items:
             return None
-        
+
         # Look at the first item's category
         first_item = items[0]
         category = first_item.get('category')
-        
+
         if not category:
             return None
-        
+
         # If category has a code like "IT-HOST" or "CAP-IT-HW"
         category_code = getattr(category, 'code', '')
-        
+
         # Extract department prefix from category code
         if '-' in category_code:
             parts = category_code.split('-')
-            
+
             # Handle patterns like "IT-HOST" or "CAP-IT-HW"
             if parts[0] in ['CAP', 'OPEX']:
                 # CapEx/OpEx prefix, real dept is second part
@@ -779,14 +783,14 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
             else:
                 # First part is the department
                 dept_prefix = parts[0]
-            
+
             if dept_prefix:
                 dept = Department.objects.filter(
                     code__iexact=dept_prefix, is_active=True
                 ).first()
                 if dept:
                     return dept
-        
+
         return None
 
     def create(self, validated_data):
@@ -799,12 +803,12 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         ticket_id_value = validated_data.pop('ticket_id')
         department_obj = validated_data.pop('department')
         items_data = validated_data.pop('items')
-        
+
         # 2. Clean up read_only fields
-        for field in ['approved_by_name', 'approval_date', 'rejected_by_name', 
+        for field in ['approved_by_name', 'approval_date', 'rejected_by_name',
                       'rejection_date', 'department_details']:
             validated_data.pop(field, None)
-        
+
         # 3. Set proposal metadata
         validated_data['external_system_id'] = ticket_id_value
         validated_data['department'] = department_obj
@@ -812,10 +816,10 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
         validated_data.setdefault('submitted_at', timezone.now())
         validated_data['sync_status'] = 'SYNCED'
         validated_data['last_sync_timestamp'] = timezone.now()
-        
+
         # 4. Create the proposal
         proposal = BudgetProposal.objects.create(**validated_data)
-        
+
         # 5. ✅ Create items (category is already resolved in validate())
         for item_data in items_data:
             try:
@@ -826,14 +830,16 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.error(f"Failed to create item for proposal {proposal.id}: {e}")
+                logger.error(
+                    f"Failed to create item for proposal {proposal.id}: {e}")
                 continue
-        
+
         # 6. Log history
         request = self.context.get('request')
-        service_name = getattr(request.user, 'service_name', 'External System') if request else 'System'
+        service_name = getattr(request.user, 'service_name',
+                               'External System') if request else 'System'
         action_name = proposal.submitted_by_name or f"System ({service_name})"
-        
+
         ProposalHistory.objects.create(
             proposal=proposal,
             action='SUBMITTED',
@@ -841,7 +847,7 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
             new_status=proposal.status,
             comments=f"Proposal received from {service_name} (ID={proposal.external_system_id}) for department {department_obj.name}."
         )
-        
+
         return proposal
 
     def update(self, instance, validated_data):
@@ -852,7 +858,7 @@ class BudgetProposalMessageSerializer(serializers.ModelSerializer):
 
         items_data = validated_data.pop('items', None)
         ticket_id_value = validated_data.pop('ticket_id', None)
-        
+
         if ticket_id_value:
             instance.external_system_id = ticket_id_value
 
@@ -896,29 +902,30 @@ class ProposalReviewSerializer(serializers.Serializer):
     def validate(self, data):
         """✅ ENHANCED: Better validation with EMERGENCY HOTFIX (signature optional)"""
         status = data.get('status')
-        
+
         if status == 'APPROVED':
             errors = {}
-            
+
             # ✅ Finance Manager Name is REQUIRED
             finance_name = data.get('finance_manager_name')
             if not finance_name or not finance_name.strip():
                 errors['finance_manager_name'] = "Finance Manager Name is required for approval."
-            
+
             # ⚠️ EMERGENCY HOTFIX: Signature is now OPTIONAL for demo
             # Uncomment the lines below to make it required again in production:
             # signature = data.get('signature')
             # if not signature:
             #     errors['signature'] = "Signature attachment is required for approval."
-            
+
             if errors:
                 raise serializers.ValidationError(errors)
-        
+
         elif status == 'REJECTED':
             # For rejection, comment is optional but recommended
             pass
-        
+
         return data
+
 
 class ProposalReviewBudgetOverviewSerializer(serializers.Serializer):
     """
@@ -941,7 +948,7 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
         max_length=255, required=False, allow_blank=True)
     amount = serializers.DecimalField(max_digits=15, decimal_places=2, validators=[
                                       MinValueValidator(Decimal('0.01'))])
-    category_name = serializers.CharField()  
+    category_name = serializers.CharField()
 
     # UI inputs (Strings)
     department_name = serializers.CharField()
@@ -954,9 +961,10 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
     source_account_name = serializers.CharField(
         required=False, allow_blank=True)
     destination_account_name = serializers.CharField()  # Where money goes TO
-    
+
     # NEW FIELD
-    destination_sub_category_id = serializers.IntegerField(required=False, allow_null=True)
+    destination_sub_category_id = serializers.IntegerField(
+        required=False, allow_null=True)
 
     def validate(self, data):
         try:
@@ -981,10 +989,11 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
             # --- FIX START: Precise Destination Allocation Lookup ---
             dest_alloc = None
             dest_sub_cat_id = data.get('destination_sub_category_id')
-            
+
             # Identify if target is a budget account (needs precise allocation)
-            is_dest_budget_account = destination_account.account_type.name in ['Expense', 'Asset']
-            
+            is_dest_budget_account = destination_account.account_type.name in [
+                'Expense', 'Asset']
+
             if is_dest_budget_account:
                 if not dest_sub_cat_id:
                     # Fallback to old behavior (first match) if ID not provided
@@ -999,10 +1008,10 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                     dest_alloc = BudgetAllocation.objects.filter(
                         department=department,
                         account=destination_account,
-                        category_id=dest_sub_cat_id, # Match specific sub-category
+                        category_id=dest_sub_cat_id,  # Match specific sub-category
                         is_active=True
                     ).first()
-                    
+
                     # Optional: If allocation doesn't exist yet for this category+account combination,
                     # we might need to handle creation logic in the View, or raise error.
                     # For now, let's allow it to be None, and let the View decide if it creates a new bucket.
@@ -1026,14 +1035,15 @@ class BudgetAdjustmentSerializer(serializers.Serializer):
                         {'source_account_name': "Invalid source account selected."})
 
                 # --- FIX START: Enhanced check for GL Funding Sources (Previous Fix Included) ---
-                is_liability_or_equity = source_account.account_type.name in ['Liability', 'Equity']
+                is_liability_or_equity = source_account.account_type.name in [
+                    'Liability', 'Equity']
                 is_cash_account = (
-                    source_account.code == '1010' or 
-                    'cash' in source_account.name.lower() or 
+                    source_account.code == '1010' or
+                    'cash' in source_account.name.lower() or
                     'bank' in source_account.name.lower()
                 )
                 is_budget_account = (
-                    source_account.account_type.name in ['Expense', 'Asset'] 
+                    source_account.account_type.name in ['Expense', 'Asset']
                     and not is_cash_account
                 )
 
@@ -1099,40 +1109,45 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
 
     def validate_amount(self, value):
         if value <= 0:
-            raise serializers.ValidationError("Budget amount must be greater than zero.")
+            raise serializers.ValidationError(
+                "Budget amount must be greater than zero.")
         return value
 
     def validate(self, data):
         # 1. Resolve Department (FIXED: More robust logic)
         dept_input = data.get('department_input')
         dept = None
-        
+
         # Try numeric ID first
         if str(dept_input).isdigit():
             try:
-                dept = Department.objects.get(id=int(dept_input), is_active=True)
+                dept = Department.objects.get(
+                    id=int(dept_input), is_active=True)
             except Department.DoesNotExist:
                 pass
-        
+
         # Try Code match
         if not dept:
-            dept = Department.objects.filter(code__iexact=dept_input, is_active=True).first()
-        
+            dept = Department.objects.filter(
+                code__iexact=dept_input, is_active=True).first()
+
         # Try Name match
         if not dept:
-            dept = Department.objects.filter(name__iexact=dept_input, is_active=True).first()
-        
+            dept = Department.objects.filter(
+                name__iexact=dept_input, is_active=True).first()
+
         if not dept:
             raise serializers.ValidationError({
                 "department_input": f"Invalid Department: '{dept_input}' not found or inactive."
             })
-        
+
         # --- DEBUG LOG ---
         print(f"🔍 Resolved Department: {dept.name} (ID: {dept.id})")
-        
+
         # 2. Resolve Project
         project_id = data.get('project_id')
-        project = Project.objects.filter(id=project_id, department=dept).first()
+        project = Project.objects.filter(
+            id=project_id, department=dept).first()
         if not project:
             raise serializers.ValidationError({
                 "project_id": "Project not found or does not belong to this department."
@@ -1145,11 +1160,11 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
         else:
             today = timezone.now().date()
             fy = FiscalYear.objects.filter(
-                start_date__lte=today, 
-                end_date__gte=today, 
+                start_date__lte=today,
+                end_date__gte=today,
                 is_active=True
             ).first()
-        
+
         if not fy:
             raise serializers.ValidationError({
                 "fiscal_year_id": "No active fiscal year found."
@@ -1157,7 +1172,8 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
 
         # 4. Resolve Category
         cat_id = data.get('category_id')
-        category = ExpenseCategory.objects.filter(id=cat_id, is_active=True).first()
+        category = ExpenseCategory.objects.filter(
+            id=cat_id, is_active=True).first()
         if not category:
             raise serializers.ValidationError({
                 "category_id": "Invalid Category."
@@ -1177,7 +1193,7 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
         data['fiscal_year_obj'] = fy
         data['category_obj'] = category
         data['allocation_obj'] = allocation
-        
+
         return data
 # MODIFICATION END
 
@@ -1185,18 +1201,26 @@ class SupplementalBudgetRequestSerializer(serializers.Serializer):
 
 
 class BudgetTransferSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source='destination_allocation.department.name', read_only=True)
-    category_name = serializers.CharField(source='destination_allocation.category.name', read_only=True)
+    department_name = serializers.CharField(
+        source='destination_allocation.department.name', read_only=True)
+    category_name = serializers.CharField(
+        source='destination_allocation.category.name', read_only=True)
 
     request_id = serializers.SerializerMethodField()
+
+    date_submitted = serializers.DateTimeField(
+        source='transferred_at', format="%Y-%m-%d %H:%M", read_only=True)
+
     
-    date_submitted = serializers.DateTimeField(source='transferred_at', format="%Y-%m-%d %H:%M", read_only=True)
-    requester_name = serializers.CharField(source='transferred_by_username', read_only=True)
-    
-    approval_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    rejection_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    approver_name = serializers.CharField(source='approved_by_username', read_only=True)
-    rejector_name = serializers.CharField(source='rejected_by_username', read_only=True)
+    requester_name = serializers.SerializerMethodField()
+    approval_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M", read_only=True)
+    rejection_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M", read_only=True)
+    approver_name = serializers.CharField(
+        source='approved_by_username', read_only=True)
+    rejector_name = serializers.CharField(
+        source='rejected_by_username', read_only=True)
 
     class Meta:
         model = BudgetTransfer  
@@ -1212,6 +1236,25 @@ class BudgetTransferSerializer(serializers.ModelSerializer):
         year = obj.transferred_at.year if obj.transferred_at else timezone.now().year
         return f"{prefix}-{year}-{obj.id:03d}"
 
+    def get_requester_name(self, obj):
+        """
+        Retrieves the Full Name from the local User table (populated by JIT).
+        """
+        User = get_user_model()
+        
+        # 1. Use the ID to find the JIT-synced user record
+        if obj.transferred_by_user_id:
+            try:
+                user = User.objects.get(id=obj.transferred_by_user_id)
+                # 2. Return 'Chris Redfield' instead of 'ops_user_auth'
+                return user.get_full_name() or user.username
+            except User.DoesNotExist:
+                pass
+        
+        # 3. Fallback to the username string stored on the transfer
+        return obj.transferred_by_username or "Unknown"
+# MODIFICATION END
+
 
 class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     category = serializers.CharField()
@@ -1223,35 +1266,39 @@ class ExpenseCategoryVarianceSerializer(serializers.Serializer):
     actual = serializers.DecimalField(max_digits=15, decimal_places=2)
     available = serializers.DecimalField(max_digits=15, decimal_places=2)
     children = serializers.ListField(child=serializers.DictField())
-    
-    
+
+
 # --- NEW: Serializers for Ledger Details Modal ---
 
 class JournalEntryLineDetailSerializer(serializers.ModelSerializer):
     account_name = serializers.CharField(source='account.name', read_only=True)
     account_code = serializers.CharField(source='account.code', read_only=True)
-    
+
     class Meta:
         model = JournalEntryLine
-        fields = ['id', 'account_name', 'account_code', 'transaction_type', 'amount', 'description']
+        fields = ['id', 'account_name', 'account_code',
+                  'transaction_type', 'amount', 'description']
+
 
 class JournalEntryDetailSerializer(serializers.ModelSerializer):
     """
     Detailed view of a Journal Entry, including lines and resolved category names.
     """
     lines = serializers.SerializerMethodField()
-    department_name = serializers.CharField(source='department.name', read_only=True)
-    created_by = serializers.CharField(source='created_by_username', read_only=True)
+    department_name = serializers.CharField(
+        source='department.name', read_only=True)
+    created_by = serializers.CharField(
+        source='created_by_username', read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
-    
+
     # FIX: Add logic to fetch the specific sub-category name
     sub_category = serializers.SerializerMethodField()
 
     class Meta:
         model = JournalEntry
         fields = [
-            'entry_id', 'date', 'category', 'sub_category', 'description', 
-            'total_amount', 'status', 'department', 'department_name', 
+            'entry_id', 'date', 'category', 'sub_category', 'description',
+            'total_amount', 'status', 'department', 'department_name',
             'created_by', 'created_at', 'lines'
         ]
 
@@ -1274,16 +1321,18 @@ class JournalEntryDetailSerializer(serializers.ModelSerializer):
         The parent JournalEntry only stores the high-level 'EXPENSES' choice.
         """
         # We look for a line that has an expense_category attached
-        line_with_category = obj.lines.filter(expense_category__isnull=False).first()
+        line_with_category = obj.lines.filter(
+            expense_category__isnull=False).first()
         if line_with_category:
             return line_with_category.expense_category.name
-        return "General" # Fallback if no specific category found
+        return "General"  # Fallback if no specific category found
 
     def get_department_name(self, obj):
         if obj.department:
             return obj.department.name
         return "N/A"
-    
+
+
 class ExternalJournalEntryLineSerializer(serializers.Serializer):
     """
     Input for JE Lines using Account CODE instead of ID.
@@ -1307,27 +1356,31 @@ class ExternalJournalEntrySerializer(serializers.Serializer):
     """
     date = serializers.DateField()
     category = serializers.ChoiceField(
-        choices=[c[0] for c in JournalEntry._meta.get_field('category').choices]
+        choices=[c[0]
+                 for c in JournalEntry._meta.get_field('category').choices]
     )
     description = serializers.CharField()
     lines = ExternalJournalEntryLineSerializer(many=True)
 
     def validate_lines(self, value):
         if len(value) < 2:
-            raise serializers.ValidationError("At least 2 lines (Debit/Credit) are required.")
+            raise serializers.ValidationError(
+                "At least 2 lines (Debit/Credit) are required.")
         return value
 
     def validate(self, data):
         # 1. Balance Check
         lines = data.get('lines', [])
-        total_debits = sum(l['amount'] for l in lines if l['transaction_type'] == 'DEBIT')
-        total_credits = sum(l['amount'] for l in lines if l['transaction_type'] == 'CREDIT')
-        
+        total_debits = sum(l['amount']
+                           for l in lines if l['transaction_type'] == 'DEBIT')
+        total_credits = sum(l['amount']
+                            for l in lines if l['transaction_type'] == 'CREDIT')
+
         if total_debits != total_credits:
             raise serializers.ValidationError(
                 f"Unbalanced Entry: Debits ({total_debits}) != Credits ({total_credits})"
             )
-            
+
         # 2. Account Code Validation (Check if they exist)
         for line in lines:
             code = line['account_code']
@@ -1335,22 +1388,24 @@ class ExternalJournalEntrySerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {'lines': f"Account Code '{code}' does not exist in BMS."}
                 )
-        
+
         return data
 
     def create(self, validated_data):
         lines_data = validated_data.pop('lines')
-        
+
         # Calculate total amount (sum of debits)
-        total_amount = sum(l['amount'] for l in lines_data if l['transaction_type'] == 'DEBIT')
+        total_amount = sum(l['amount']
+                           for l in lines_data if l['transaction_type'] == 'DEBIT')
 
         # 1. Create JE Header
         # User ID 0 represents "System/External Service" since services have no ID
         entry = JournalEntry.objects.create(
-            created_by_user_id=0, 
+            created_by_user_id=0,
             created_by_username="External Service (AMS)",
             total_amount=total_amount,
-            status='POSTED', # Auto-post external entries? Or use 'DRAFT' if review needed.
+            # Auto-post external entries? Or use 'DRAFT' if review needed.
+            status='POSTED',
             **validated_data
         )
 
@@ -1365,5 +1420,5 @@ class ExternalJournalEntrySerializer(serializers.Serializer):
                 amount=line['amount'],
                 description=validated_data['description']
             )
-            
+
         return entry
