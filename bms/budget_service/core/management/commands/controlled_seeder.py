@@ -221,19 +221,36 @@ class Command(BaseCommand):
         return user_map
 
     def seed_fiscal_years(self):
-        self.stdout.write("Seeding Fiscal Years (2023-2026)...")
+        """Seed Fiscal Years with STABLE IDs for external system compatibility"""
+        self.stdout.write("Seeding Fiscal Years (2023-2026) with stable IDs...")
         fys = {}
         current_year = datetime.now().year
         years_to_seed = list(range(current_year - 3, current_year + 1))
+        
+        # ✅ STABLE ID MAPPING - External systems can hardcode these
+        STABLE_FY_IDS = {
+            2023: 1,
+            2024: 2,
+            2025: 3,
+            2026: 4,
+        }
 
         for year in years_to_seed:
             name = f"FY {year}"
             is_active = (year == current_year)
             is_locked = (year < current_year)
-
-            fy, _ = FiscalYear.objects.update_or_create(
-                name=name,
+            stable_id = STABLE_FY_IDS.get(year)
+            
+            if not stable_id:
+                self.stdout.write(self.style.WARNING(
+                    f"⚠️  No stable ID for year {year}. Add to STABLE_FY_IDS mapping."
+                ))
+                continue
+            
+            fy, created = FiscalYear.objects.update_or_create(
+                id=stable_id,  # ✅ Force specific ID
                 defaults={
+                    'name': name,
                     'start_date': datetime(year, 1, 1).date(),
                     'end_date': datetime(year, 12, 31).date(),
                     'is_active': is_active,
@@ -241,89 +258,234 @@ class Command(BaseCommand):
                 }
             )
             fys[year] = fy
+            
+            if created:
+                self.stdout.write(f"  ✅ Created {name} with ID={stable_id}")
+        
         return fys
 
     def seed_departments(self):
-        self.stdout.write("Seeding/Linking Departments...")
+        """Seed Departments with STABLE IDs for external system compatibility"""
+        self.stdout.write("Seeding Departments with stable IDs...")
         dept_map = {}
-        for d in DEPARTMENTS_CONFIG:
-            dept, _ = Department.objects.update_or_create(
-                code=d['code'],
-                defaults={'name': d['name'], 'is_active': True}
+        
+        # ✅ STABLE ID MAPPING - Matches DEPARTMENTS_CONFIG order
+        STABLE_DEPARTMENTS = [
+            (1, 'MERCH', 'Merchandising / Merchandise Planning'),
+            (2, 'SALES', 'Sales / Store Operations'),
+            (3, 'MKT', 'Marketing / Marketing Communications'),
+            (4, 'OPS', 'Operations Department'),
+            (5, 'IT', 'IT Application & Data'),
+            (6, 'LOG', 'Logistics Management'),
+            (7, 'HR', 'Human Resources'),
+            (8, 'FIN', 'Finance Department'),
+        ]
+        
+        for stable_id, code, name in STABLE_DEPARTMENTS:
+            dept, created = Department.objects.update_or_create(
+                id=stable_id,  # ✅ Force specific ID
+                defaults={
+                    'code': code,
+                    'name': name,
+                    'is_active': True
+                }
             )
-            dept_map[d['code']] = dept
+            dept_map[code] = dept
+        
         return dept_map
 
-    # ✅ MODIFIED: Now accepts user_map parameter
     def seed_accounts(self, user_map):
-        self.stdout.write("Seeding/Linking Accounts...")
+        """Seed GL Accounts with STABLE IDs for external system compatibility"""
+        self.stdout.write("Seeding Accounts with stable IDs...")
+        
+        # Get or create account types (these can have auto IDs, not critical)
         asset_type, _ = AccountType.objects.get_or_create(name='Asset')
         expense_type, _ = AccountType.objects.get_or_create(name='Expense')
         liability_type, _ = AccountType.objects.get_or_create(name='Liability')
         equity_type, _ = AccountType.objects.get_or_create(name='Equity')
-
-        # ✅ FIXED: Use actual User instance from user_map
+        
         creator = user_map.get('admin_auth')
         creator_id = creator.id if creator else 1
         creator_name = creator.username if creator else 'admin_auth'
-
+        
         acc_map = {}
-
-        def ensure_account(code, name, type_obj):
-            obj, _ = Account.objects.update_or_create(
-                code=code,
+        
+        # ✅ STABLE ID MAPPING - These are the core GL accounts
+        STABLE_ACCOUNTS = [
+            (1, '1010', 'Cash in Bank', asset_type),
+            (2, '2010', 'Accounts Payable', liability_type),
+            (3, '1500', 'Property, Plant & Equipment', asset_type),
+            (4, '5000', 'General Expenses', expense_type),
+            (5, '3000', 'Retained Earnings', equity_type),
+        ]
+        
+        for stable_id, code, name, acc_type in STABLE_ACCOUNTS:
+            obj, created = Account.objects.update_or_create(
+                id=stable_id,  # ✅ Force specific ID
                 defaults={
+                    'code': code,
                     'name': name,
-                    'account_type': type_obj,
+                    'account_type': acc_type,
                     'created_by_user_id': creator_id,
-                    'created_by_username': creator_name
+                    'created_by_username': creator_name,
+                    'is_active': True
                 }
             )
-            return obj
-
-        acc_map['CASH'] = ensure_account('1010', 'Cash in Bank', asset_type)
-        acc_map['PAYABLE'] = ensure_account(
-            '2010', 'Accounts Payable', liability_type)
-        acc_map['ASSET'] = ensure_account(
-            '1500', 'Property, Plant & Equipment', asset_type)
-        acc_map['EXPENSE'] = ensure_account(
-            '5000', 'General Expenses', expense_type)
-        acc_map['EQUITY'] = ensure_account(
-            '3000', 'Retained Earnings', equity_type)
-
+            
+            # Use code as key for backwards compatibility
+            if code == '1010':
+                acc_map['CASH'] = obj
+            elif code == '2010':
+                acc_map['PAYABLE'] = obj
+            elif code == '1500':
+                acc_map['ASSET'] = obj
+            elif code == '5000':
+                acc_map['EXPENSE'] = obj
+            elif code == '3000':
+                acc_map['EQUITY'] = obj
+        
         return acc_map
 
     def seed_categories(self, departments):
-        self.stdout.write("Seeding Categories (The Tree)...")
+        """Seed Expense Categories with STABLE IDs for external system compatibility"""
+        self.stdout.write("Seeding Categories (The Tree) with stable IDs...")
         cat_map = {}
-
+        
+        # ✅ ROOT CATEGORIES - Critical that these have stable IDs
         root_capex, _ = ExpenseCategory.objects.update_or_create(
-            code='CAPEX', defaults={'name': 'Capital Expenditure', 'level': 1, 'classification': 'CAPEX'}
+            id=1,  # ✅ Force ID=1 for CAPEX
+            defaults={
+                'code': 'CAPEX',
+                'name': 'Capital Expenditure',
+                'level': 1,
+                'classification': 'CAPEX'
+            }
         )
         root_opex, _ = ExpenseCategory.objects.update_or_create(
-            code='OPEX', defaults={'name': 'Operational Expenditure', 'level': 1, 'classification': 'OPEX'}
+            id=2,  # ✅ Force ID=2 for OPEX
+            defaults={
+                'code': 'OPEX',
+                'name': 'Operational Expenditure',
+                'level': 1,
+                'classification': 'OPEX'
+            }
         )
-
+        
+        # ✅ STABLE ID MAPPING FOR ALL SUB-CATEGORIES
+        # Organized by department, IDs grouped in blocks of 10
+        STABLE_CATEGORY_IDS = {
+            # MERCH Department (10-18)
+            'MERCH-PLAN': 10,
+            'MERCH-BUY': 11,
+            'MERCH-RES': 12,
+            'MERCH-INV': 13,
+            'MERCH-SUP': 14,
+            'MERCH-TOOLS': 15,
+            'MERCH-TRN': 16,
+            'MERCH-TRV': 17,
+            'MERCH-SW': 18,
+            
+            # SALES Department (20-27)
+            'SALES-CONS': 20,
+            'SALES-POS': 21,
+            'SALES-REP': 22,
+            'SALES-INC': 23,
+            'SALES-UNI': 24,
+            'SALES-OPEN': 25,
+            'SALES-SUP': 26,
+            'SALES-UTIL': 27,
+            
+            # MKT Department (30-36)
+            'MKT-CAMP': 30,
+            'MKT-BRAND': 31,
+            'MKT-ADS': 32,
+            'MKT-SOCIAL': 33,
+            'MKT-EVENT': 34,
+            'MKT-INFL': 35,
+            'MKT-PHOTO': 36,
+            
+            # OPS Department (40-45)
+            'OPS-MAINT': 40,
+            'OPS-FLEET': 41,
+            'OPS-SUP': 42,
+            'OPS-PERMIT': 43,
+            'OPS-UTIL': 44,
+            'OPS-COMP': 45,
+            
+            # IT Department (50-57)
+            'IT-HOST': 50,
+            'IT-SW': 51,
+            'IT-CLOUD': 52,
+            'CAP-IT-HW': 53,
+            'IT-DATA': 54,
+            'IT-SEC': 55,
+            'IT-API': 56,
+            'IT-DOMAIN': 57,
+            
+            # LOG Department (60-67)
+            'LOG-SHIP': 60,
+            'LOG-EQUIP': 61,
+            'LOG-FUEL': 62,
+            'LOG-FREIGHT': 63,
+            'LOG-DELIV': 64,
+            'LOG-STOR': 65,
+            'LOG-PACK': 66,
+            'LOG-SAFE': 67,
+            
+            # HR Department (70-76)
+            'HR-RECRUIT': 70,
+            'HR-POST': 71,
+            'HR-ENGAGE': 72,
+            'HRM-TRN': 73,
+            'HR-MED': 74,
+            'HR-CHECK': 75,
+            'HR-SYS': 76,
+            
+            # FIN Department (80-81)
+            'FIN-PROF': 80,
+            'FIN-AUDIT': 81,
+        }
+        
+        # Process the CATEGORY_TREE as before, but with stable IDs
         for dept_code, items in CATEGORY_TREE.items():
             for item_name, classification, code in items:
                 parent = root_capex if classification == 'CAPEX' else root_opex
-
-                cat, created = ExpenseCategory.objects.update_or_create(
-                    code=code,
-                    defaults={
-                        'name': item_name,
-                        'level': 2,
-                        'parent_category': parent,
-                        'classification': classification
-                    }
-                )
-                if created:
-                    print(f"  Created Category: {code}")
-
+                stable_id = STABLE_CATEGORY_IDS.get(code)
+                
+                if stable_id:
+                    # ✅ Create with stable ID
+                    cat, created = ExpenseCategory.objects.update_or_create(
+                        id=stable_id,  # ✅ Force specific ID
+                        defaults={
+                            'code': code,
+                            'name': item_name,
+                            'level': 2,
+                            'parent_category': parent,
+                            'classification': classification
+                        }
+                    )
+                    
+                    if created:
+                        print(f"  ✅ Created Category: {code} (ID={stable_id})")
+                else:
+                    # ⚠️ Fallback for unmapped categories (should not happen if mapping is complete)
+                    cat, created = ExpenseCategory.objects.update_or_create(
+                        code=code,
+                        defaults={
+                            'name': item_name,
+                            'level': 2,
+                            'parent_category': parent,
+                            'classification': classification
+                        }
+                    )
+                    if created:
+                        print(f"  ⚠️  WARNING: Category {code} created WITHOUT stable ID! Add to mapping.")
+                
+                # Build department → category mapping for rest of seeder
                 if dept_code not in cat_map:
                     cat_map[dept_code] = []
                 cat_map[dept_code].append(cat)
-
+        
         return cat_map
 
     # ✅ MODIFIED: Now uses user_map to get actual User instances
