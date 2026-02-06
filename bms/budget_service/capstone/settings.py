@@ -129,6 +129,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://bms.mapactive.tech",  # BMS Frontend (PRODUCTION)
     "https://login.ticketing.mapactive.tech",  # Centralized Auth Login
     "https://api.ticketing.mapactive.tech",  # Centralized Auth API
+    "https://hdts.ticketing.mapactive.tech",  
     "https://frontend-r2az.onrender.com",  # Old Render frontend (keep for safety or remove)
     "https://budget-pro-static-site.onrender.com",  # Render frontend
     "https://auth-service-cdln.onrender.com",  # Auth service
@@ -177,6 +178,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'https://bms.mapactive.tech',
     'https://login.ticketing.mapactive.tech',
+    'https://hdts.ticketing.mapactive.tech',
 ]
 
 # Add from environment variable if exists
