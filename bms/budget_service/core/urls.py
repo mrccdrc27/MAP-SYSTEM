@@ -155,8 +155,6 @@ urlpatterns = [
     # MODIFICATION START
     path('budget/supplemental/request/', SupplementalBudgetRequestView.as_view(), name='budget-supplemental-request'),
     # MODIFICATION END
-    # Diagnostic endpoint (REMOVE IN PRODUCTION)
-    path('diagnostics/storage/', storage_diagnostic, name='storage-diagnostic'),
 ]
 
 # MODIFICATION START Serve Media Files (Fix for Render 404s)
