@@ -1,114 +1,125 @@
 # BudgetPro (BMS) - Budget Management System
 
-This is the **Budget Management System (BMS)** for MAP Active Philippines. It handles budget planning, expense tracking, and financial forecasting.
+![Backend Build](https://github.com/mrccdrc27/MAP-SYSTEM/actions/workflows/ci-cd.yml/badge.svg)
 
-It is built with:
-- **Backend:** Django + PostgreSQL
-- **Frontend:** React + Vite
-- **Auth:** Centralized Authentication Service (Django)
+**BudgetPro** is the financial backbone of the MAP Active ecosystem. It handles budget planning, expense tracking, forecasting, and integrates with external operational systems (TTS, AMS, HDS).
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## 🔗 Live System Access
+
+**Note:** The system runs on Render's Free Tier. **Please allow 50–90 seconds** for the backend to wake up upon first access.
+
+| Component | URL | Description |
+| :--- | :--- | :--- |
+| **Frontend UI** | [https://bms.mapactive.tech](https://bms.mapactive.tech) | Dashboard for Finance & Ops users. |
+| **API Root** | [https://api.bms.mapactive.tech](https://api.bms.mapactive.tech) | REST API Entry point. |
+| **API Docs (Swagger)**| [https://api.bms.mapactive.tech/api/docs/](https://api.bms.mapactive.tech/api/docs/) | Interactive API testing & documentation. |
+| **Health Check** | [https://api.bms.mapactive.tech/health/](https://api.bms.mapactive.tech/health/) | System status (DB connection check). |
+
+---
+
+## 🛠️ Architecture Overview
+
+The system is built on a microservices-inspired architecture:
+
+*   **Backend:** Django Rest Framework (Python 3.11)
+*   **Frontend:** React + Vite (Node 18)
+*   **Database:** PostgreSQL (NeonDB / Local Docker)
+*   **Authentication:** 
+    *   **Users:** Centralized SSO (JWT) via `auth_service`.
+    *   **Services:** API Key Authentication (`X-API-Key` header).
+
+---
+
+## 🚀 Local Development Setup
 
 ### Prerequisites
-- **Docker Desktop** installed and running.
-- **Git** installed.
+*   Docker Desktop installed.
+*   Git installed.
 
-### 1. Clone the Repository
+### 1. Clone & Configure
 ```bash
 git clone https://github.com/mrccdrc27/MAP-SYSTEM
 cd bms
-```
 
-### 2. Configure Environment Variables
-We use `.env` files for configuration. Example files are provided.
-
-**Step 2a: Backend Config**
-Copy the example file in `budget_service/capstone/`:
-```bash
+# Create Environment Files
 cp budget_service/capstone/.env.example budget_service/capstone/.env
-```
-
-**Step 2b: Frontend Config**
-Copy the example file in `frontend/`:
-```bash
 cp frontend/.env.example frontend/.env
 ```
 
-**Step 2c: Auth Service Config**
-Copy the example file in `../auth/` (root auth folder):
-```bash
-cp ../auth/.env.example ../auth/.env
-```
-
-### 3. Run with Docker Compose
-This command builds all services (Backend, Frontend, Auth, Databases) and starts them up.
+### 2. Run with Docker Compose
+This builds the Backend, Frontend, and Redis (for caching/Celery) containers.
 
 ```bash
 docker-compose up --build
 ```
 
-**Access Points:**
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:8000
-- **Auth Service:** http://localhost:8001
+*   **Frontend:** http://localhost:5173
+*   **Backend:** http://localhost:8000
 
-### 4. Data Seeding (Automatic)
-The `entrypoint.sh` script automatically runs migrations and seeds data on container startup.
-- If you need to **reset** the database entirely, run:
-  ```bash
-  docker-compose down -v
-  docker-compose up --build
-  ```
-### 5. Frontend
-- cd bms/frontend
-- npm run dev
-- Go to  http://localhost:5173/
+### 3. Data Seeding
+The system includes a controlled seeder that generates realistic demo data (Fiscal Years, Departments, Expenses).
+*   **Automatic:** Runs via `entrypoint.sh` if `SEED_DEMO_DATA=true` in `.env`.
+*   **Manual:**
+    ```bash
+    docker-compose exec web python manage.py controlled_seeder
+    ```
 
 ---
 
-## 🔑 Test Credentials
+## 🔐 Authentication & Integration Guide
 
-Use these accounts to test different roles in the system.
+BMS supports two distinct authentication methods.
 
-| Role | Email | Password | Access Level |
+### 1. User Authentication (Frontend)
+Users (Finance Heads, Operators) authenticate via the **Centralized Auth Service**.
+*   **Protocol:** JWT (JSON Web Tokens).
+*   **Header:** `Authorization: Bearer <access_token>`
+*   **Flow:** Frontend redirects to `login.ticketing.mapactive.tech`, receives token, and stores it in context.
+
+### 2. Service Integration (External Systems)
+External systems (TTS, AMS, HDS) must use API Keys to push data into BMS.
+
+*   **Header:** `X-API-Key: <your-service-key>`
+*   **Valid API Keys:** Configured in `settings.SERVICE_API_KEYS`.
+
+#### Key Integration Endpoints
+
+| Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| **Finance Head** | `finance_head@example.com` | `Password123!` | Full Access (Budgets, Reports, Approvals) |
-| **Ops User** | `ops_user@example.com` | `password123` | Limited Access (Expense Tracking, Proposals) |
-| **Admin** | `admin@example.com` | `Password123!` | System Admin Access |
+| `POST` | `/api/external-budget-proposals/` | Submit a budget request from TTS. | ✅ API Key |
+| `POST` | `/api/external-expenses/` | Log an expense from AMS/HDS. | ✅ API Key |
+| `GET` | `/api/external-references/departments/` | Fetch valid departments. | ✅ API Key |
+| `GET` | `/api/external-references/accounts/` | Fetch valid GL accounts. | ✅ API Key |
+
+> **Developer Note:** You may use [Swagger UI](https://api.bms.mapactive.tech/api/docs/) to test these endpoints.
 
 ---
 
-## ☁️ Deployment (Render)
+## 🧪 Test Credentials
 
-### Build Command
-The build command ensures the database is migrated and fully seeded with the latest logic.
+Use these accounts to verify Role-Based Access Control (RBAC). Other credentials exists in auth\users\management\commands\seed_bms.py.
 
-```bash
-pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py cleanup_categories && python manage.py controlled_seeder && python manage.py fix_missing_allocations && python manage.py seed_budget_caps && python manage.py generate_forecasts && python manage.py collectstatic --noinput
-```
-
-### Start Command
-```bash
-gunicorn capstone.wsgi:application
-```
+| Role | Email | Password | Scope |
+| :--- | :--- | :--- | :--- |
+| **Finance Head** | `finance_head@example.com` | *See Seeder* | Full access (Approvals, Allocations, Reports). |
+| **Ops User** | `ops_user@example.com` | *See Seeder* | Department-scoped access (Requests, Tracking). |
+| **Admin** | `admin@example.com` | *See Seeder* | Django Admin & System Config. |
 
 ---
 
-## 📚 API Documentation
 
-### Authentication
-- The system uses **Centralized Authentication**.
-- All requests must include the `Authorization: Bearer <token>` header.
-- The Frontend handles token management automatically via `AuthContext`.
+### Manual Deployment Commands (Render Shell)
+If you need to manually trigger maintenance tasks on the live server:
 
-### Key Endpoints
--
+```bash
+# Apply Database Migrations
+python manage.py migrate
 
+# Generate Forecast Data (Cold Start)
+python manage.py generate_forecasts
 
-
-### Workflows:
-
-- MAP-SYSTEM/.github/workflows/basic-ci.yml
-- build-and-test.yml
+# Update Static Files
+python manage.py collectstatic --noinput
+```
